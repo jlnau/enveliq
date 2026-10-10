@@ -585,9 +585,9 @@ await page.click("#themeBtn");
   // open full screen
   await page.evaluate(() => { view.layout = "screen"; applyView(); render(); });
   await page.locator("article.mail .qmain").first().click();
-  await page.waitForSelector(".reader", { state: "visible" });
-  await page.waitForFunction(() => { const r = document.querySelector(".reader")?.getBoundingClientRect(); return !!r && r.width > 0 && r.height > 0; });
-  const rdr = await page.locator(".reader").boundingBox();
+  // Wait and measure in one step. The list can be redrawn at any moment (a sync tick, say), which would replace the
+  // reader element between a separate "wait until visible" and "measure it" and make the measurement come back empty.
+  const rdr = await (await page.waitForFunction(() => { const r = document.querySelector(".reader")?.getBoundingClientRect(); return r && r.width > 0 && r.height > 0 ? { width: r.width, height: r.height } : null; })).jsonValue();
   check("full screen: tapping a row opens the email over the whole screen with a count and pinned buttons", rdr.width >= 419 && rdr.height >= 819 && /^\d+ of \d+$/.test((await page.locator(".rtop b").innerText()).trim()) && (await page.locator(".ract [data-status=reviewed]").isVisible()) && (await page.locator(".ract [data-status=trashed]").isVisible()));
   const t1 = (await page.locator(".rbody h3").innerText()).trim();
   await page.locator(".rtop [data-pick]").last().click();
