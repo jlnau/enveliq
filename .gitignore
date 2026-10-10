@@ -1,0 +1,12 @@
+__pycache__/
+.pytest_cache/
+.venv/
+data/*
+!data/.gitkeep
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+.env
+build/
+node_modules/
+CLAUDE.local.md
