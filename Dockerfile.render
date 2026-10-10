@@ -1,0 +1,24 @@
+# Enveliq PDF viewer container. It draws PDF pages as pictures and does nothing else.
+# Build:  docker build -f Dockerfile.render -t enveliq-render:local .
+# It is started by docker-compose.yml on a private network with no internet, no data folder and no keys.
+FROM python:3.13-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends poppler-utils \
+ && rm -rf /var/lib/apt/lists/* \
+ && groupadd --system --gid 10002 enveliq-render \
+ && useradd --system --uid 10002 --gid enveliq-render --home-dir /nonexistent --no-create-home --shell /usr/sbin/nologin enveliq-render
+
+WORKDIR /app
+COPY backend/mail/render.py ./render.py
+COPY render/server.py ./server.py
+
+USER 10002:10002
+EXPOSE 8766
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD ["python", "-c", "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8766/health', timeout=3).status == 200 else 1)"]
+
+CMD ["python", "server.py"]

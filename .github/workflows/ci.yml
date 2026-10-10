@@ -1,0 +1,220 @@
+# Automated checks for every push and pull request.
+# Actions are pinned to full commit hashes; Dependabot proposes updates.
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Backend tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest -q
+
+  browser:
+    name: Browser checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - run: pip install -r requirements.txt
+      - run: npm install --no-save --no-package-lock playwright@1.56.0
+      - run: npx playwright install --with-deps chromium
+      - name: Prototype escaping check
+        run: node scripts/check_prototype_injection.mjs
+      - name: Inbox page with real mail (simulated server)
+        run: node scripts/check_inbox_real_mail.mjs
+      - name: New email, Sent and pictures (simulated server)
+        run: node scripts/check_email_features.mjs
+      - name: Phone pop-ups (simulated server)
+        run: node scripts/check_phone_overlays.mjs
+      - name: Hermes chat (simulated server)
+        run: node scripts/check_agent.mjs
+      - name: Unsubscribe button (simulated server)
+        run: node scripts/check_unsub.mjs
+      - name: Shipping page and Home card (simulated server)
+        run: node scripts/check_shipping.mjs
+      - name: Refresh keeps your place, Expand all (simulated server)
+        run: node scripts/check_refresh.mjs
+      - name: Page stays put under open panels
+        run: node scripts/check_scrolllock.mjs
+      - name: Settings and Administration on a phone
+        run: node scripts/check_mobile_settings.mjs
+      - name: User menu, Profile settings and tidied Settings (simulated server)
+        run: node scripts/check_user_menu.mjs
+      - name: Messages page, sidebar count and Home card (simulated server)
+        run: node scripts/check_messages.mjs
+      - name: Writing help in the reply and New email boxes (simulated server)
+        run: node scripts/check_writehelp.mjs
+      - name: Links from the app to the step-by-step guides
+        run: node scripts/check_guide_links.mjs
+      - name: Waiting for reply page and Home card (simulated server)
+        run: node scripts/check_waiting.mjs
+      - name: All emails switch and Generate summary (simulated server)
+        run: node scripts/check_all_mail.mjs
+      - name: Sign-in flow (setup, two-factor, passkeys)
+        run: scripts/run_signin_e2e.sh
+      - name: Mailboxes page against a fake Proton Bridge
+        run: python scripts/mailbox_e2e.py
+      - name: Setup guide against a fake Bridge and a fake AI model
+        run: python scripts/welcome_e2e.py
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: docker build -t enveliq:ci .
+      - name: Start hardened container
+        run: |
+          docker run -d --name enveliq-ci --read-only --tmpfs /tmp \
+            --cap-drop ALL --security-opt no-new-privileges \
+            -v enveliq-ci-data:/data \
+            -e ENVELIQ_PUBLIC_URL=http://localhost:8765 \
+            -p 127.0.0.1:8765:8765 enveliq:ci
+      - name: Health check and non-root user
+        run: |
+          for i in $(seq 1 40); do
+            curl -sf http://127.0.0.1:8765/api/v1/health && break
+            sleep 0.5
+          done
+          curl -sf http://127.0.0.1:8765/api/v1/health
+          test "$(docker exec enveliq-ci id -u)" = "10001"
+      - name: Server log
+        if: always()
+        run: docker logs enveliq-ci || true
+      - name: PDF viewer container (locked down, private network)
+        run: |
+          docker build -f Dockerfile.render -t enveliq-render:ci .
+          docker network create --internal enveliq-render-ci-net
+          docker run -d --name enveliq-render-ci --network enveliq-render-ci-net --user 10002:10002 --read-only \
+            --cap-drop ALL --security-opt no-new-privileges --memory 1536m --pids-limit 64 enveliq-render:ci
+          for i in $(seq 1 40); do
+            docker exec enveliq-render-ci python -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8766/health',timeout=2)" && break
+            sleep 0.5
+          done
+          # The main image has no PDF parser; it asks the viewer over the private network.
+          if docker run --rm --entrypoint sh enveliq:ci -c 'command -v pdftocairo'; then echo "main image must not contain poppler"; exit 1; fi
+          docker run --rm --network enveliq-render-ci-net -v "$PWD/tests/sample.pdf:/s.pdf:ro" -e ENVELIQ_RENDER_URL=http://enveliq-render-ci:8766 \
+            --entrypoint python enveliq:ci -c "
+          import sys
+          sys.path.insert(0, '/app')
+          from backend.mail import render
+          out = render.view(open('/s.pdf','rb').read(), 'trip.pdf', 'application/pdf')
+          assert out['kind'] == 'pdf' and out['total'] == 2 and len(out['pages']) == 2, out
+          bad = render.view(b'%PDF-1.4 not a real pdf', 'x.pdf', 'application/pdf')
+          assert bad['kind'] == 'none', bad
+          print('viewer ok')"
+          # The viewer cannot reach the internet, and cannot write files or see any data.
+          if docker exec enveliq-render-ci python -c "import urllib.request;urllib.request.urlopen('http://1.1.1.1',timeout=4)"; then echo "viewer must have no internet"; exit 1; fi
+          test "$(docker exec enveliq-render-ci id -u)" = "10002"
+          if docker exec enveliq-render-ci sh -c 'touch /app/x 2>/dev/null'; then echo "viewer must be read-only"; exit 1; fi
+      - name: Viewer log
+        if: always()
+        run: docker logs enveliq-render-ci || true
+
+  audit:
+    name: Dependency scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - run: pip install pip-audit==2.10.1
+      - name: Scan pinned dependencies for known vulnerabilities
+        run: |
+          set +e
+          pip-audit --strict -r requirements.txt -f json -o audit.json
+          status=$?
+          python3 - <<'PY'
+          import json, pathlib
+          p = pathlib.Path("audit.json")
+          data = json.loads(p.read_text()) if p.exists() and p.stat().st_size else {}
+          for dep in data.get("dependencies", []):
+              for v in dep.get("vulns", []):
+                  fix = ", ".join(v.get("fix_versions") or []) or "no fix yet"
+                  print(f"::error title={dep['name']} {dep.get('version')}::{v['id']} (fixed in {fix}) {v.get('description', '')[:300]}")
+          PY
+          exit $status
+
+  # Publishes the two images to GitHub's private package store, but only for a push to main and only after every
+  # check above has passed. Arcane (or `docker pull`) then fetches them; nothing needs building on the server.
+  publish:
+    name: Publish images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [tests, browser, docker, audit]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Work out the image names
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          version="$(sed -n 's/^VERSION = "\([0-9.]*\)"$/\1/p' backend/version.py)"
+          test -n "$version"
+          echo "MAIN=ghcr.io/${owner}/enveliq" >> "$GITHUB_ENV"
+          echo "RENDER=ghcr.io/${owner}/enveliq-render" >> "$GITHUB_ENV"
+          echo "VERSION=${version}" >> "$GITHUB_ENV"
+          echo "SHORT=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+      - name: Sign in to the package store
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - name: Build and push Enveliq
+        run: |
+          docker build --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.version=${VERSION}" --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            -t "${MAIN}:latest" -t "${MAIN}:v${VERSION}" -t "${MAIN}:sha-${SHORT}" .
+          docker push --all-tags "${MAIN}"
+      - name: Build and push the PDF viewer
+        run: |
+          docker build -f Dockerfile.render --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.version=${VERSION}" --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            -t "${RENDER}:latest" -t "${RENDER}:v${VERSION}" -t "${RENDER}:sha-${SHORT}" .
+          docker push --all-tags "${RENDER}"
+      - name: Say what was published
+        run: |
+          {
+            echo "### Published"
+            echo "- \`${MAIN}:latest\` (also \`v${VERSION}\`, \`sha-${SHORT}\`)"
+            echo "- \`${RENDER}:latest\` (also \`v${VERSION}\`, \`sha-${SHORT}\`)"
+          } >> "$GITHUB_STEP_SUMMARY"

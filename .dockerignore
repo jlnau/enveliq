@@ -1,0 +1,13 @@
+.git
+.github
+.env
+data
+build
+node_modules
+tests
+docs
+scripts
+brand/*.png
+**/__pycache__
+*.md
+!README.md

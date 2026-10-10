@@ -1,0 +1,18 @@
+# Runtime dependencies. Versions are pinned and were at least two weeks old
+# when chosen. Argon2id comes from `cryptography` (no argon2-cffi needed).
+fastapi==0.141.1
+# Pinned directly: versions before 1.1.0 have published advisories.
+starlette==1.6.0
+uvicorn==0.53.0
+cryptography==50.0.1
+pydantic==2.13.4
+httpx==0.28.1            # talks to your OpenID Connect provider
+PyJWT==2.15.0            # verifies ID tokens from your provider
+webauthn==2.8.0          # passkeys (py_webauthn)
+segno==1.6.6             # QR codes for authenticator apps, generated locally
+# Pinned dependencies of webauthn:
+cbor2==5.9.0
+pyOpenSSL==26.4.0
+pyasn1==0.6.4
+pyasn1-modules==0.4.2
+tzdata==2025.2          # time zones for each person's task dates

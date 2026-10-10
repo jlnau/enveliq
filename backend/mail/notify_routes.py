@@ -1,0 +1,147 @@
+"""Reminder channels: setting them up, testing them, and the administrator's rules."""
+from __future__ import annotations
+
+from typing import Annotated, Any
+
+from fastapi import APIRouter, Depends, HTTPException, Path as PathParam
+from pydantic import Field, field_validator
+
+from ..models import StrictModel
+from ..security import Session
+from .limits import SlidingWindowLimiter
+from . import extra_channels
+from .notify import CHANNELS, Notifier
+from .outbound import OutboundError
+
+ChannelId = Annotated[str, PathParam(pattern=r"^[a-z_]{2,20}$")]
+
+
+class ChannelBody(StrictModel):
+    enabled: bool = True
+    values: dict[str, str] = Field(default_factory=dict, max_length=12)
+
+    @field_validator("values")
+    @classmethod
+    def short(cls, v: dict[str, str]) -> dict[str, str]:
+        for k, x in v.items():
+            if len(k) > 40 or len(x) > 700:
+                raise ValueError("value too long")
+        return v
+
+
+class SettingsBody(StrictModel):
+    morning_on: bool | None = None
+    morning_time: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    due_on: bool | None = None
+    repeat_hours: int | None = Field(default=None, ge=1, le=12)
+    repeat_max: int | None = Field(default=None, ge=0, le=5)
+    quiet_on: bool | None = None
+    quiet_from: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    quiet_to: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    show_titles: bool | None = None
+
+
+class DeviceBody(StrictModel):
+    endpoint: str = Field(max_length=800)
+    p256dh: str = Field(max_length=200)
+    auth: str = Field(max_length=100)
+    label: str = Field(default="", max_length=80)
+
+
+class AdminBody(StrictModel):
+    channels: dict[str, bool] | None = Field(default=None, max_length=30)
+    local_hosts: list[str] | None = Field(default=None, max_length=50)
+
+
+def build_notify_router(ctx: Any) -> APIRouter:
+    router = APIRouter(prefix="/api/v1")
+    notifier: Notifier = ctx.notifier
+    session_dep, admin_dep = ctx.full_session, ctx.admin_session
+    save_limit = SlidingWindowLimiter(max_events=60, window=60)
+    test_limit = SlidingWindowLimiter(max_events=10, window=60)
+    click_url = ctx.click_url
+
+    @router.get("/me/notifications")
+    def overview(session: Session = Depends(session_dep)):
+        out = notifier.overview(session.principal.user_id)
+        out["tz"] = ctx.tasks.timezone_of(session.principal.user_id)
+        return out
+
+    @router.put("/me/notifications/channels/{cid}")
+    def save_channel(cid: ChannelId, body: ChannelBody, session: Session = Depends(session_dep)):
+        user = session.principal.user_id
+        if cid not in CHANNELS:
+            raise HTTPException(status_code=404, detail="Unknown channel.")
+        if not save_limit.allow(f"n:{user}"):
+            raise HTTPException(status_code=429, detail="Too many changes. Wait a minute.")
+        if not notifier.admin()["channels"].get(cid, True):
+            raise HTTPException(status_code=403, detail="Your administrator has switched this channel off.")
+        try:
+            notifier.save_channel(user, cid, body.enabled, body.values)
+        except ValueError as err:
+            raise HTTPException(status_code=422, detail=str(err)) from None
+        return notifier.overview(user)
+
+    @router.delete("/me/notifications/channels/{cid}")
+    def clear_channel(cid: ChannelId, session: Session = Depends(session_dep)):
+        if cid not in CHANNELS:
+            raise HTTPException(status_code=404, detail="Unknown channel.")
+        notifier.clear_channel(session.principal.user_id, cid)
+        return notifier.overview(session.principal.user_id)
+
+    @router.post("/me/notifications/channels/{cid}/test")
+    def test_channel(cid: ChannelId, session: Session = Depends(session_dep)):
+        user = session.principal.user_id
+        if cid not in CHANNELS:
+            raise HTTPException(status_code=404, detail="Unknown channel.")
+        if not test_limit.allow(f"t:{user}"):
+            raise HTTPException(status_code=429, detail="Too many tests. Wait a minute.")
+        try:
+            notifier.send_one(user, cid, {"title": "Enveliq test", "body": "This is how a reminder will look. You can ignore it.", "url": click_url or None}, force=True)
+        except OutboundError as err:
+            raise HTTPException(status_code=502, detail=err.message) from None
+        return {"ok": True}
+
+    @router.put("/me/notifications/settings")
+    def save_settings(body: SettingsBody, session: Session = Depends(session_dep)):
+        user = session.principal.user_id
+        if not save_limit.allow(f"n:{user}"):
+            raise HTTPException(status_code=429, detail="Too many changes. Wait a minute.")
+        notifier.save_settings(user, body.model_dump(exclude_none=True))
+        return notifier.overview(user)
+
+    @router.get("/me/notifications/browser/key")
+    def browser_key(session: Session = Depends(session_dep)):
+        return {"public_key": extra_channels.public_key_text(extra_channels.vapid_key(ctx.vault))}
+
+    @router.post("/me/notifications/browser")
+    def browser_add(body: DeviceBody, session: Session = Depends(session_dep)):
+        user = session.principal.user_id
+        if not save_limit.allow(f"n:{user}"):
+            raise HTTPException(status_code=429, detail="Too many changes. Wait a minute.")
+        if not notifier.admin()["channels"].get("browser", True):
+            raise HTTPException(status_code=403, detail="Your administrator has switched this channel off.")
+        try:
+            extra_channels.add_device(notifier, user, body.endpoint, body.p256dh, body.auth, body.label)
+        except ValueError as err:
+            raise HTTPException(status_code=422, detail=str(err)) from None
+        return notifier.overview(user)
+
+    @router.delete("/me/notifications/browser/{device_id}")
+    def browser_remove(device_id: Annotated[str, PathParam(pattern=r"^[0-9a-f]{12}$")], session: Session = Depends(session_dep)):
+        extra_channels.remove_device(notifier, session.principal.user_id, device_id)
+        return notifier.overview(session.principal.user_id)
+
+    @router.get("/admin/notifications")
+    def admin_get(session: Session = Depends(admin_dep)):
+        return {**notifier.admin(), "labels": {c: s["label"] for c, s in CHANNELS.items()}, "local_channels": [c for c, s in CHANNELS.items() if s.get("local_ok")]}
+
+    @router.put("/admin/notifications")
+    def admin_put(body: AdminBody, session: Session = Depends(admin_dep)):
+        try:
+            notifier.save_admin(body.channels, body.local_hosts)
+        except ValueError as err:
+            raise HTTPException(status_code=422, detail=str(err)) from None
+        return admin_get(session)
+
+    return router
