@@ -3,7 +3,7 @@
 fastapi==0.141.1
 # Pinned directly: versions before 1.1.0 have published advisories.
 starlette==1.6.0
-uvicorn==0.53.0
+uvicorn==0.54.0
 cryptography==50.0.1
 pydantic==2.13.4
 httpx==0.28.1            # talks to your OpenID Connect provider
