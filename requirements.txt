@@ -8,7 +8,7 @@ cryptography==50.0.1
 pydantic==2.13.4
 httpx==0.28.1            # talks to your OpenID Connect provider
 PyJWT==2.15.0            # verifies ID tokens from your provider
-webauthn==2.8.0          # passkeys (py_webauthn)
+webauthn==3.0.1          # passkeys (py_webauthn)
 segno==1.6.6             # QR codes for authenticator apps, generated locally
 # Pinned dependencies of webauthn:
 cbor2==5.9.0
