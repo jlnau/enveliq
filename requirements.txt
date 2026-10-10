@@ -2,7 +2,7 @@
 # when chosen. Argon2id comes from `cryptography` (no argon2-cffi needed).
 fastapi==0.141.1
 # Pinned directly: versions before 1.1.0 have published advisories.
-starlette==1.6.0
+starlette==1.7.0
 uvicorn==0.54.0
 cryptography==50.0.1
 pydantic==2.13.5
