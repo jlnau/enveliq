@@ -1,4 +1,6 @@
 # Weekly update proposals. Each arrives as a pull request that the checks run against.
+# Small updates (patch and minor versions) of each kind are grouped into ONE pull request per week.
+# Major version jumps still arrive on their own, so each one can be read and tested separately.
 version: 2
 updates:
   - package-ecosystem: pip
@@ -7,15 +9,24 @@ updates:
       interval: weekly
     cooldown:
       default-days: 14
+    groups:
+      python-small-updates:
+        update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
     cooldown:
       default-days: 14
+    groups:
+      actions-small-updates:
+        update-types: [minor, patch]
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: weekly
     cooldown:
       default-days: 14
+    groups:
+      docker-small-updates:
+        update-types: [minor, patch]
