@@ -43,6 +43,10 @@ from .mail.shipping_routes import build_shipping_router
 from .mail.waiting import WaitBook
 from .mail.waiting_routes import build_waiting_router
 from .mail.check_routes import build_check_router
+from .backup import BackupManager
+from .backup_routes import build_backup_router
+from .export import build_exporter
+from .mail import contacts as contacts_mod
 from .mail.checkbox import CheckBox
 from .mail.tasks import TaskBook
 from .mail.notify import Notifier
@@ -325,6 +329,7 @@ async def lifespan(_: FastAPI):
     try_auto_unlock()
     vault.start_idle_watchdog()
     auto_sync.start()
+    backups.start()
     reminders.start()
     sync.start()
     reporter.start()
@@ -334,6 +339,7 @@ async def lifespan(_: FastAPI):
     finally:
         reporter.stop()
         auto_sync.stop()
+        backups.stop()
         reminders.stop()
         sync.stop()
         outbox.stop()
@@ -564,6 +570,7 @@ _click = "" if _pub.hostname in ("localhost", "127.0.0.1", "::1") else PUBLIC_OR
 reminders = Reminders(vault, taskbook, notifier, _click)
 reminders.subs = subbook
 sync = Sync(vault, taskbook, notifier, PUBLIC_ORIGIN)
+backups = BackupManager(vault, DATA_DIR / "backups")
 sync.trips = tripbook
 tripbook.changed = sync.mark
 notifier.origin = PUBLIC_ORIGIN
@@ -607,6 +614,25 @@ app.include_router(build_subscriptions_router(mail_ctx))
 app.include_router(build_trips_router(mail_ctx))
 app.include_router(build_waiting_router(mail_ctx))
 app.include_router(build_check_router(mail_ctx))
+exporter = build_exporter(
+    vault, users, public_account=public_account, public_message=public_message, principal_of=users.principal,
+    prefs=lambda uid: review.user_prefs(vault, uid),
+    contacts_of=lambda uid: [contacts_mod._public(a, p) for a, p in contacts_mod._load(vault, uid).items()],
+    threads_of=lambda uid: [t for t in (_thread_or_none(uid, tid) for tid in messagebook._index(uid)) if t],
+    notify_state=lambda uid: {"settings": notifier.settings(uid), "channels_on": notifier.enabled_channels(uid)},
+    sync_state=lambda uid: sync.overview(uid))
+
+
+def _thread_or_none(uid: str, tid: str):
+    try:
+        return messagebook._thread(tid, uid)
+    except KeyError:
+        return None
+
+
+app.include_router(build_backup_router(SimpleNamespace(
+    vault=vault, users=users, sessions=sessions, backups=backups, login_limiter=login_limiter, exporter=exporter,
+    admin_session=admin_session, full_session=full_session)))
 app.include_router(build_messages_router(mail_ctx))
 app.include_router(build_writehelp_router(mail_ctx))
 app.include_router(build_notify_router(mail_ctx))
