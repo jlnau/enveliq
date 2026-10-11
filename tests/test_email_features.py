@@ -333,7 +333,7 @@ def test_remote_pictures_are_counted_not_loaded(env):
     assert view["remote_images"] == 1
 
 
-def test_the_status_page_reports_the_running_version(env):
+def test_the_running_version_is_told_to_signed_in_people(env):
     from backend.version import VERSION
     _, client, _, _ = env
-    assert client.get("/api/v1/status").json()["version"] == VERSION
+    assert client.get("/api/v1/system").json()["version"] == VERSION

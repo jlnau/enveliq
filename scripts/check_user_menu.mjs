@@ -32,7 +32,8 @@ function makeServer(role) {
     if (p === "/") return route.fulfill({ status: 200, contentType: "text/html", body: html });
     if (p === "/embed.js") return route.fulfill({ status: 200, contentType: "text/javascript", body: authJs });
     if (p === "/static/auth.css") return route.fulfill({ status: 200, contentType: "text/css", body: authCss });
-    if (p === "/api/v1/status") return json(200, { cipher: "AES-256-GCM", kdf: "argon2id", initialized: true, unlocked: true, idle_lock_seconds: 900, version: "0.59" });
+    if (p === "/api/v1/status") return json(200, { initialized: true, unlocked: true, setup_required: false, sign_in: { password: true, passkeys: true, sso: { enabled: false, label: null } } });
+    if (p === "/api/v1/system") return json(200, { cipher: "AES-256-GCM", kdf: "Argon2id", idle_lock_seconds: 900, version: "0.59" });
     if (p === "/api/v1/me") return json(200, me);
     if (p === "/api/v1/me/profile") { calls.push(["profile", body()]); const b = body(); if (b.display_name !== undefined) me.display_name = b.display_name || me.username; if (b.email !== undefined) me.email = b.email || null; if (b.about !== undefined) me.about = b.about; return json(200, me); }
     if (p === "/api/v1/me/avatar") { if (req.method() === "PUT") { calls.push(["avatar", body().image.slice(0, 22)]); me.avatar_v = "abc123"; } else { calls.push(["avatar-remove"]); me.avatar_v = null; } return json(200, me); }

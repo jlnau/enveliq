@@ -2,6 +2,15 @@
 
 Newest first. Each entry says what changed for people and which parts of the code it touches. The history of earlier versions is in [VERSION_HISTORY.md](VERSION_HISTORY.md).
 
+## v0.79
+
+**The public status page says less.** A read-only probe of the live site found that `GET /api/v1/status`, which needs no sign-in, told anyone the Enveliq version, the exact Argon2 settings, the public address and whether the vault unlocks itself from a key file.
+
+- `backend/app.py`: `/api/v1/status` now returns only `initialized`, `unlocked`, `setup_required` and `sign_in` (password, passkeys, single sign-on), which the sign-in, setup and unlock pages use. While the vault is closed it also says `auto_unlock` and `auto_unlock_problem`, because the setup and unlock pages choose between a passphrase box and the key-file message from them. Once the vault is open those two are not sent.
+- `GET /api/v1/system` (new): signed-in people only (`no-store`). It gives the version, cipher, key derivation, idle-lock time and the two "raw mail is never kept" flags. Administrators also get the public address, whether it unlocks itself, the Argon2 settings and the attachment preview mode.
+- `prototype/index.html`: the page recognises a real server from the new status shape, and takes the version and the Security page's encryption line from `/api/v1/system`.
+- Tests: `tests/test_status_minimal.py` (new: nothing technical before sign-in, `system` needs a sign-in, administrators see more than other people); `tests/test_key_file.py` and `tests/test_email_features.py` follow the move. The 21 browser checks that fake the server use the new shape.
+
 ## v0.78
 
 **Licence changed to AGPL-3.0.** From this version Enveliq is released under the GNU Affero General Public Licence, version 3, instead of MIT, before the repository goes public.
