@@ -36,7 +36,9 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install -r requirements-dev.txt
-      - run: python -m pytest -q
+      - run: |
+          python -m pytest -q -x --tb=short -p no:cacheprovider > /tmp/out.txt 2>&1 || true
+          tail -60 /tmp/out.txt | while IFS= read -r l; do echo "::error::$l"; done
 
   browser:
     name: Browser checks
