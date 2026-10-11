@@ -8,7 +8,7 @@ It is **on for everyone and needs no setup**. It does not block, hide or delete 
 
 - A small **Be careful** label next to the subject in your list.
 - A note on the email's card, and at the top of **View original email**, that says what looks odd, for example: *"A link says paypal.com but really goes to evil.example."*
-- On a flagged email, **Unsubscribe** asks once more first. Unsubscribing from a scam tells the sender your address is real, so the button first says why, then offers **Go anyway**.
+- On a flagged email, **Unsubscribe** is not offered. Unsubscribing from a scam tells the sender your address is real, so one line says that instead of the button.
 
 If you are unsure about an email with this label, the safest thing is to type the company's own website address yourself instead of using a link in the email.
 

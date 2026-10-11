@@ -4222,12 +4222,6 @@ function scamHtml(w){
   if(!items.length)return "";
   return `<div class="scam-note" role="note"><b>Be careful with this one</b><p>Something looks odd. Before you click or share details, check another way, such as typing the company's own web address yourself.</p><ul>${items.map(r=>`<li>${esc(r.text.slice(0,300))}</li>`).join("")}</ul></div>`;
 }
-document.addEventListener("click",e=>{
-  const b=e.target.closest&&e.target.closest("[data-careful]");
-  if(!b)return;
-  const sure=b.parentElement&&b.parentElement.querySelector(".unsub-sure");
-  if(sure){sure.hidden=false;b.hidden=true;const a=sure.querySelector("a");if(a)a.focus()}
-});
 // "Links in this email": the real website of each link, shown as text. A link opens only after the person chooses it and sees where it goes.
 // The server already kept only plain public web addresses as openable (backend/mail/links.py); the address is checked again here. Enveliq
 // never fetches a link, and the new tab sends no referrer.
@@ -4253,11 +4247,12 @@ function linksHtml(list,careful){
   }).join("");
   return rows?`<div class="att-title">Links in this email</div><div class="link-list">${rows}</div><p class="att-foot">This is where each link really goes. Enveliq never opens a link for you.</p>`:"";
 }
+// On an email marked Be careful the Unsubscribe button is not offered at all: unsubscribing from a scam tells the sender the address is real.
+// One line says why. (The address is still stored for ordinary use; it is the page that holds the button back.)
 function unsubHtml(u,careful){
   if(!careful)return unsubPlain(u);
-  const link=unsubPlain(u,"Go anyway");
-  if(!link)return "";
-  return `<span class="unsub-careful"><button type="button" class="unsub" data-careful>Unsubscribe</button><span class="unsub-sure" hidden>This email looks odd, so unsubscribing could tell the sender your address is real. ${link}</span></span>`;
+  if(!unsubPlain(u))return "";
+  return `<span class="unsub-sure">Unsubscribe is hidden because this email looks odd. Unsubscribing tells the sender your address is real.</span>`;
 }
 function unsubPlain(u,word){
   word=word||"Unsubscribe";

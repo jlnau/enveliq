@@ -86,13 +86,13 @@ async function expandAll(page) {
   check("an ordinary newsletter keeps its plain Unsubscribe link", (await row("Weekly news").locator("a.unsub:visible").count()) === 1);
   const flagged = row("Your parcel is on hold");
   await shot(page, "scam-list");
-  check("on the flagged email the link is not offered straight away", (await flagged.locator("a.unsub:visible").count()) === 0 && (await flagged.locator("button[data-careful]").count()) === 1);
-  await flagged.locator("button[data-careful]").click();
-  check("pressing Unsubscribe explains why, then offers Go anyway", /could tell the sender your address is real/.test(await flagged.locator(".unsub-sure").innerText()) && (await flagged.locator(".unsub-sure a.unsub:visible").getAttribute("href")) === "https://parcel-help.example/u/9");
+  check("on the flagged email there is no Unsubscribe button or link at all", (await flagged.locator("a.unsub").count()) === 0 && (await flagged.locator("button.unsub").count()) === 0);
+  check("one line says why, and nothing offers to go ahead", /Unsubscribe is hidden because this email looks odd/.test(await flagged.locator(".unsub-sure").innerText()) && !/Go anyway/.test(await flagged.innerText()));
   await shot(page, "scam-unsub");
   await flagged.locator("[data-open-email]").click();
   await page.waitForSelector("#attachmentModal.open .email-doc");
   check("View original shows the note from the whole email, with the extra reason found in its links", (await page.locator(".email-doc .scam-note li").count()) === 3 && /pay a small fee/i.test(await page.locator(".email-doc").innerText()));
+  check("View original does not offer Unsubscribe on the flagged email either, and says why", (await page.locator("#viewerActions a.unsub, #viewerActions button.unsub").count()) === 0 && /Unsubscribe is hidden/.test(await page.locator("#viewerActions").innerText()));
   check("the reasons are shown as text: a hostile reason runs nothing", TOUR || ((await page.locator(".email-doc .scam-note img").count()) === 0 && (await page.evaluate(() => window.__pwned)) === undefined));
   await shot(page, "scam-viewer");
   check("no page errors", errors.length === 0);
