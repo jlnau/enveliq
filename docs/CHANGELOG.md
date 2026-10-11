@@ -12,6 +12,12 @@ Newest first. Each entry says what changed for people and which parts of the cod
 - `web/static/auth.js`: the tick-box on the sign-in page and a "Keep me signed in (days)" field in Sign-in rules, with a link to the vault key guide when no key file is set up.
 - Tests: `tests/test_remember_me.py`, `scripts/check_remember_me.mjs`.
 
+
+**Sample names and the publishing notes.** No change to how Enveliq works.
+
+- The made-up second person in the preview, the tests and the guides is now called Cara (she was Beth), and the sample script list in the version history no longer names real-looking people.
+- `SECURITY.md` ("Published images") and the v0.49 line in `docs/VERSION_HISTORY.md` now say that images are published when a GitHub Release is published, and that whether they can be pulled without signing in depends on the package's visibility.
+
 **Install Enveliq as an app, open the exact email from a notification, and optional new-email alerts.** Reminders by browser push already existed; this makes them useful on a phone.
 
 - `backend/app.py`: `GET /manifest.webmanifest` (new, no sign-in, the same for everyone) lets Android, iOS and desktop browsers install Enveliq (name, icon, standalone window). `manifest-src 'self'` is added to the page policies. `brand/web/` gains `enveliq-icon-192.png`, `enveliq-icon-512.png` and a maskable `enveliq-icon-maskable-512.png`, made from the logo. `prototype/index.html` and `web/auth.html` link the manifest and set a theme colour.
@@ -237,7 +243,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## v0.61
 
-**Messages, first release** (plan: [docs/MESSAGES.md](MESSAGES.md)). One-to-one and small-group (up to 8) messages between people on the same Enveliq, a **Messages** entry in the sidebar with an unread count, a Home card ("Beth and Sam left you 2 messages"), a Profile switch **Show me in the people list**, and a **Messages** on/off switch in Administration, Features (and for each person under General settings).
+**Messages, first release** (plan: [docs/MESSAGES.md](MESSAGES.md)). One-to-one and small-group (up to 8) messages between people on the same Enveliq, a **Messages** entry in the sidebar with an unread count, a Home card ("Cara and Sam left you 2 messages"), a Profile switch **Show me in the people list**, and a **Messages** on/off switch in Administration, Features (and for each person under General settings).
 
 - Backend: `backend/mail/messages.py` (store and rules), `backend/mail/messages_routes.py` (`/api/v1/messages/...`), `messages` added to `backend/mail/features.py` and `FeaturesBody`, `show_in_people` on `PATCH /me/profile` and `GET /me`, and the person's messages are removed when they are deleted (`delete_user_data` in `backend/app.py`).
 - Pages: `prototype/index.html` (sidebar entry, Home card, Messages page, phone layout), `web/static/auth.js` (Profile switch, Features text).

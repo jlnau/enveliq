@@ -8,7 +8,7 @@ A small, private way for the people who share one Enveliq (a household, a family
 
 - **Direct messages**: one person to one person, or a small group (up to 8).
 - **The board**: one shared place everybody can read and post to, for things like "bins go out Thursday".
-- **Notifications that wait for you**: the next time you open Enveliq, a card on Home says "Beth left you 2 messages", and *Messages* in the sidebar shows a count, the same way *Shipping* and *Waiting for reply* do. Nothing is sent anywhere else unless you ask for it.
+- **Notifications that wait for you**: the next time you open Enveliq, a card on Home says "Cara left you 2 messages", and *Messages* in the sidebar shows a count, the same way *Shipping* and *Waiting for reply* do. Nothing is sent anywhere else unless you ask for it.
 
 It is not email, not a chat service and not a place to send files. Plain text only. It is meant for short things.
 
@@ -19,7 +19,7 @@ Everything below follows from this. People using the same Enveliq can see **only
 ### How that is enforced (on the server, not in the page)
 
 1. **Messages are kept apart from everything else.** They live in their own encrypted records and never share a record with mail, summaries or tasks. The messaging code has no way to read those.
-2. **The server decides who may read, never the browser.** Every request is checked against the signed-in session. A conversation can be opened only by someone who is in it. The page never sends "show me Beth's inbox"; it can only ask "show me *my* conversations", and the server answers from the session.
+2. **The server decides who may read, never the browser.** Every request is checked against the signed-in session. A conversation can be opened only by someone who is in it. The page never sends "show me Cara's inbox"; it can only ask "show me *my* conversations", and the server answers from the session.
 3. **A conversation you are not in does not exist for you.** Asking for it by its id gets the same "not found" as an id that was never used, so nobody can even learn that it exists. Ids are long random numbers, not 1, 2, 3.
 4. **Administrators get no extra view.** Being an administrator lets you run Enveliq, not read what people say to each other. There is no administrator "see all messages" screen and no such endpoint. (Whoever has the server and the vault key could still read the stored data, as with all of Enveliq's data; see the note on encryption below.)
 5. **The people list shows the least possible.** When you pick someone to write to, you see their name and picture. Not their username, email address or anything else. Each person can choose not to appear in the list; they can still reply to someone who wrote to them.
@@ -36,7 +36,7 @@ Messages are encrypted at rest in Enveliq's vault, like everything else it keeps
 ## What a person sees
 
 - **Sidebar:** *Messages* with a blue count when something is waiting.
-- **Home:** a card at the top when you have unread messages ("Beth and Sam wrote to you"), gone once read.
+- **Home:** a card at the top when you have unread messages ("Cara and Sam wrote to you"), gone once read.
 - **Messages page:** conversations on the left (with the board pinned at the top), the open conversation on the right, a box to write at the bottom. On a phone the two sides are two screens.
 - **Writing:** Enter sends, Shift+Enter makes a new line. A message can be deleted by whoever wrote it ("unsend"), which removes it for everyone.
 - **Settings > Reminders:** one extra choice, "Tell me about new messages", off by default. If you switch it on it uses the reminder channels you already set up, and it says only *"You have a new message in Enveliq"*, never the words (unless you have chosen to show titles).
@@ -75,7 +75,7 @@ Audit log records *that* a message was sent (who, when, how many people), never 
 
 ## Tests that must pass before it ships
 
-1. Beth cannot open a conversation between Morgan and Sam, by its id or by guessing; she gets the same "not found" as for an id that does not exist.
+1. Cara cannot open a conversation between Morgan and Sam, by its id or by guessing; she gets the same "not found" as for an id that does not exist.
 2. Conversation lists, unread counts and the people list never include anything from conversations the person is not in.
 3. An administrator who is not in a conversation gets "not found" too, and no endpoint lists everyone's conversations.
 4. A person who hides from the list does not appear in the people list but can still reply.

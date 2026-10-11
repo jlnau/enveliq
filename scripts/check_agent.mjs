@@ -32,8 +32,8 @@ function makeServer(opts = {}) {
     if (p === "/api/v1/system") return json(200, { cipher: "AES-256-GCM", kdf: "Argon2id", idle_lock_seconds: 900 });
     if (p === "/api/v1/me") return json(200, { id: "u1", username: "morgan", display_name: "Morgan", role: "admin" });
     if (p === "/api/v1/accounts") return json(200, [{ id: "a1", provider: "proton", auth_method: "proton_bridge", owner_user_id: "u1", display_name: "Proton test", email_address: "me@example.invalid", server: "172.30.0.1", port: 1144, username: "u", settings: { send_identities: ["work@example.invalid"] } }]);
-    if (p === "/api/v1/accounts/a1/messages") return json(200, [{ id: "m1", subject: "Holiday photos", sender_display: "Beth", sender_address: "beth@example.invalid", summary: "Photos.", priority: "normal", category: null, action_required: false, received_at: now - 600,
-      reply_context: { reply_to: "beth@example.invalid", delivered_to: null, via_alias: null, message_id: "<m1@x>", references: [] } }]);
+    if (p === "/api/v1/accounts/a1/messages") return json(200, [{ id: "m1", subject: "Holiday photos", sender_display: "Cara", sender_address: "cara@example.invalid", summary: "Photos.", priority: "normal", category: null, action_required: false, received_at: now - 600,
+      reply_context: { reply_to: "cara@example.invalid", delivered_to: null, via_alias: null, message_id: "<m1@x>", references: [] } }]);
     if (p === "/api/v1/me/preferences") return json(200, { keep_reviewed: true, keep_archived: true, keep_days: 7, max_days: 14, instructions: "", undo_send_seconds: undo });
     if (p === "/api/v1/me/features") return json(200, { effective: features, admin: features, user: features });
     if (p === "/api/v1/sync/status") return json(200, { enabled: true, minutes: 10, now: Date.now() / 1000, accounts: { a1: { ok: true, at: now } } });

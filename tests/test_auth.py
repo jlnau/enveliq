@@ -73,13 +73,13 @@ def test_admin_must_set_up_two_factor_before_using_anything(appm):
 
 
 def test_tightened_policy_applies_to_existing_sessions(appm, admin):
-    create_user(admin, "beth")
-    beth = sign_in(appm, "beth")
-    assert beth.get("/api/v1/accounts").status_code == 200
+    create_user(admin, "cara")
+    cara = sign_in(appm, "cara")
+    assert cara.get("/api/v1/accounts").status_code == 200
     assert admin.put("/api/v1/admin/auth-policy", json={"require_mfa": "everyone"}).status_code == 200
-    assert beth.get("/api/v1/accounts").status_code == 403
-    enroll_totp(beth)
-    assert beth.get("/api/v1/accounts").status_code == 200
+    assert cara.get("/api/v1/accounts").status_code == 403
+    enroll_totp(cara)
+    assert cara.get("/api/v1/accounts").status_code == 200
 
 
 # ---------- passwords and TOTP ----------
@@ -122,10 +122,10 @@ def test_password_guessing_is_rate_limited(appm, admin):
 
 
 def test_session_cookie_is_new_on_every_sign_in_and_http_only(appm, admin):
-    create_user(admin, "beth")
+    create_user(admin, "cara")
     c = TestClient(appm.app, raise_server_exceptions=False)
     c.cookies.set(appm.SESSION_COOKIE, "attacker-chosen-token")
-    r = c.post("/api/v1/auth/login", json={"username": "beth", "password": USER_PASSWORD})
+    r = c.post("/api/v1/auth/login", json={"username": "cara", "password": USER_PASSWORD})
     set_cookie = r.headers["set-cookie"]
     assert "HttpOnly" in set_cookie and "SameSite=lax" in set_cookie
     issued = r.cookies.get(appm.SESSION_COOKIE)
@@ -177,9 +177,9 @@ def test_required_second_factor_cannot_be_removed(appm, admin):
 
 
 def test_password_change_signs_out_other_sessions(appm, admin):
-    create_user(admin, "beth")
-    first = sign_in(appm, "beth")
-    second = sign_in(appm, "beth")
+    create_user(admin, "cara")
+    first = sign_in(appm, "cara")
+    second = sign_in(appm, "cara")
     r = second.post("/api/v1/auth/password", json={"current_password": USER_PASSWORD, "new_password": "A brand new password 2026"})
     assert r.status_code == 204
     assert first.get("/api/v1/me").status_code == 401
@@ -208,14 +208,14 @@ def test_admin_can_require_numbers_capitals_and_symbols(appm, admin):
 
 
 def test_password_rules_apply_to_changes_and_admin_resets(appm, admin):
-    create_user(admin, "beth")
+    create_user(admin, "cara")
     admin.put("/api/v1/admin/auth-policy", json={"pw_min_digits": 3})
-    beth = sign_in(appm, "beth")
-    r = beth.post("/api/v1/auth/password", json={"current_password": USER_PASSWORD, "new_password": "No digits in this one"})
+    cara = sign_in(appm, "cara")
+    r = cara.post("/api/v1/auth/password", json={"current_password": USER_PASSWORD, "new_password": "No digits in this one"})
     assert r.status_code == 400 and "3 numbers" in r.json()["detail"]
-    ok = beth.post("/api/v1/auth/password", json={"current_password": USER_PASSWORD, "new_password": "Has digits 123 in it"})
+    ok = cara.post("/api/v1/auth/password", json={"current_password": USER_PASSWORD, "new_password": "Has digits 123 in it"})
     assert ok.status_code == 204
-    uid = next(u["id"] for u in admin.get("/api/v1/admin/users").json() if u["username"] == "beth")
+    uid = next(u["id"] for u in admin.get("/api/v1/admin/users").json() if u["username"] == "cara")
     assert admin.post(f"/api/v1/admin/users/{uid}/password", json={"password": "twelve letters"}).status_code == 400
 
 
@@ -263,13 +263,13 @@ def test_profile_picture_is_checked_by_content_and_can_be_removed(appm, admin):
 def test_other_people_only_ever_get_your_picture_never_your_details(appm, admin):
     admin.patch("/api/v1/me/profile", json={"email": "private@example.com", "about": "secret note"})
     admin.put("/api/v1/me/avatar", json={"image": TINY_PNG})
-    create_user(admin, "beth")
-    beth = sign_in(appm, "beth")
+    create_user(admin, "cara")
+    cara = sign_in(appm, "cara")
     morgan_id = admin.get("/api/v1/me").json()["id"]
-    assert beth.get(f"/api/v1/users/{morgan_id}/avatar").status_code == 200
-    assert beth.get("/api/v1/admin/users").status_code == 403
-    assert "private@example.com" not in beth.get("/api/v1/me").text
-    assert beth.patch("/api/v1/me/profile", json={"about": "mine"}).json()["about"] == "mine"
+    assert cara.get(f"/api/v1/users/{morgan_id}/avatar").status_code == 200
+    assert cara.get("/api/v1/admin/users").status_code == 403
+    assert "private@example.com" not in cara.get("/api/v1/me").text
+    assert cara.patch("/api/v1/me/profile", json={"about": "mine"}).json()["about"] == "mine"
     assert admin.get("/api/v1/me").json()["about"] == "secret note"
     assert TestClient(appm.app).get(f"/api/v1/users/{morgan_id}/avatar").status_code == 401
 
@@ -380,11 +380,11 @@ def test_sso_settings_show_redirect_uri_and_hide_secret(appm, admin, provider):
 
 def test_first_sso_sign_in_creates_the_user(appm, admin, provider):
     configure_sso(admin, provider)
-    claims = {"sub": "ak-uid-beth", "preferred_username": "beth", "name": "Beth", "email": "beth@example.test", "groups": ["family"]}
+    claims = {"sub": "ak-uid-cara", "preferred_username": "cara", "name": "Cara", "email": "cara@example.test", "groups": ["family"]}
     c, done = sso_sign_in(appm, provider, claims)
     assert done.status_code == 303 and done.headers["location"] == "/"
     me = c.get("/api/v1/me").json()
-    assert (me["username"], me["display_name"], me["role"], me["source"]) == ("beth", "Beth", "user", "oidc")
+    assert (me["username"], me["display_name"], me["role"], me["source"]) == ("cara", "Cara", "user", "oidc")
     # Second sign-in finds the same user instead of creating another.
     sso_sign_in(appm, provider, claims)
     assert len(admin.get("/api/v1/admin/users").json()) == 2
@@ -471,11 +471,11 @@ def test_sso_callback_without_a_started_sign_in_is_rejected(appm, admin, provide
 
 def test_disabled_sso_user_cannot_sign_in(appm, admin, provider):
     configure_sso(admin, provider)
-    c, _ = sso_sign_in(appm, provider, {"sub": "ak-uid-beth", "preferred_username": "beth"})
-    beth_id = c.get("/api/v1/me").json()["id"]
-    admin.patch(f"/api/v1/admin/users/{beth_id}", json={"disabled": True})
+    c, _ = sso_sign_in(appm, provider, {"sub": "ak-uid-cara", "preferred_username": "cara"})
+    cara_id = c.get("/api/v1/me").json()["id"]
+    admin.patch(f"/api/v1/admin/users/{cara_id}", json={"disabled": True})
     assert c.get("/api/v1/me").status_code == 401
-    _, done = sso_sign_in(appm, provider, {"sub": "ak-uid-beth", "preferred_username": "beth"})
+    _, done = sso_sign_in(appm, provider, {"sub": "ak-uid-cara", "preferred_username": "cara"})
     assert done.headers["location"] == "/login?error=sso_disabled_user"
 
 
@@ -485,10 +485,10 @@ def test_sso_issuer_must_be_https(appm, admin):
 
 
 def test_password_sign_in_can_be_limited_to_administrators(appm, admin):
-    create_user(admin, "beth")
+    create_user(admin, "cara")
     admin.put("/api/v1/admin/auth-policy", json={"password_login": "admins"})
     c = TestClient(appm.app, raise_server_exceptions=False)
-    r = c.post("/api/v1/auth/login", json={"username": "beth", "password": USER_PASSWORD})
+    r = c.post("/api/v1/auth/login", json={"username": "cara", "password": USER_PASSWORD})
     assert r.status_code == 403 and "single sign-on" in r.json()["detail"]
     r = c.post("/api/v1/auth/login", json={"username": "morgan", "password": ADMIN_PASSWORD})
     assert r.json()["next"] == "mfa"  # administrators always keep password sign-in (break-glass)
@@ -497,10 +497,10 @@ def test_password_sign_in_can_be_limited_to_administrators(appm, admin):
 # ---------- administration ----------
 
 def test_regular_users_cannot_administer(appm, admin):
-    create_user(admin, "beth")
-    beth = sign_in(appm, "beth")
+    create_user(admin, "cara")
+    cara = sign_in(appm, "cara")
     for method, path in (("get", "/api/v1/admin/users"), ("get", "/api/v1/admin/sso"), ("post", "/api/v1/lock")):
-        assert getattr(beth, method)(path).status_code == 403
+        assert getattr(cara, method)(path).status_code == 403
 
 
 def test_last_administrator_is_protected(appm, admin):
@@ -512,31 +512,31 @@ def test_last_administrator_is_protected(appm, admin):
 
 
 def test_disabling_a_user_signs_them_out_immediately(appm, admin):
-    beth_id = create_user(admin, "beth")["id"]
-    beth = sign_in(appm, "beth")
-    admin.patch(f"/api/v1/admin/users/{beth_id}", json={"disabled": True})
-    assert beth.get("/api/v1/me").status_code == 401
-    r = TestClient(appm.app).post("/api/v1/auth/login", json={"username": "beth", "password": USER_PASSWORD})
+    cara_id = create_user(admin, "cara")["id"]
+    cara = sign_in(appm, "cara")
+    admin.patch(f"/api/v1/admin/users/{cara_id}", json={"disabled": True})
+    assert cara.get("/api/v1/me").status_code == 401
+    r = TestClient(appm.app).post("/api/v1/auth/login", json={"username": "cara", "password": USER_PASSWORD})
     assert r.status_code == 401
 
 
 def test_deleting_a_user_deletes_their_mailboxes(appm, admin):
-    beth_id = create_user(admin, "beth")["id"]
-    beth = sign_in(appm, "beth")
-    r = beth.post("/api/v1/accounts", json={"provider": "IMAP", "display_name": "Beth", "email_address": "beth@example.test",
-                                            "auth_method": "imap", "server": "imap.example.test", "password": "beth-mail-pw"})
+    cara_id = create_user(admin, "cara")["id"]
+    cara = sign_in(appm, "cara")
+    r = cara.post("/api/v1/accounts", json={"provider": "IMAP", "display_name": "Cara", "email_address": "cara@example.test",
+                                            "auth_method": "imap", "server": "imap.example.test", "password": "cara-mail-pw"})
     assert r.status_code == 201
-    assert admin.delete(f"/api/v1/admin/users/{beth_id}").status_code == 204
+    assert admin.delete(f"/api/v1/admin/users/{cara_id}").status_code == 204
     assert appm.vault.list_accounts() == []
 
 
 def test_admin_reset_of_two_factor_signs_the_user_out(appm, admin):
-    beth_id = create_user(admin, "beth")["id"]
-    beth = sign_in(appm, "beth")
-    enroll_totp(beth)
-    assert admin.post(f"/api/v1/admin/users/{beth_id}/reset-mfa").status_code == 204
-    assert beth.get("/api/v1/me").status_code == 401
-    user = appm.vault.get_user(beth_id)
+    cara_id = create_user(admin, "cara")["id"]
+    cara = sign_in(appm, "cara")
+    enroll_totp(cara)
+    assert admin.post(f"/api/v1/admin/users/{cara_id}/reset-mfa").status_code == 204
+    assert cara.get("/api/v1/me").status_code == 401
+    user = appm.vault.get_user(cara_id)
     assert user["totp"] is None and user["recovery"] == []
 
 
@@ -553,10 +553,10 @@ def test_unlocking_does_not_sign_anyone_in_and_locking_signs_everyone_out(appm, 
 
 
 def test_user_records_are_encrypted_at_rest(appm, admin, tmp_path):
-    create_user(admin, "uniquebethname")
+    create_user(admin, "uniquecaraname")
     secret = admin.totp_secret
     appm.vault.lock()
-    scan = appm.vault.plaintext_scan(["uniquebethname", secret, "Morgan", '"username"', '"totp"'])
+    scan = appm.vault.plaintext_scan(["uniquecaraname", secret, "Morgan", '"username"', '"totp"'])
     assert not any(scan.values()), scan
 
 
