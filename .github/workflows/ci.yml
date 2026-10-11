@@ -13,6 +13,8 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -227,11 +229,15 @@ jobs:
           PY
           exit $status
 
-  # Publishes the two images to GitHub's private package store, but only for a push to main and only after every
-  # check above has passed. Arcane (or `docker pull`) then fetches them; nothing needs building on the server.
+  # Publishes the two images to GitHub's private package store, but only when a GitHub Release is published, and only
+  # after every check above has passed on that release's code. Merging pull requests into main runs the checks but
+  # publishes nothing, so several merges can go out together as one version.
+  # To release: bump VERSION in backend/version.py, merge that, then on GitHub draft a new release with the tag
+  # v<that version> (for example v1.4.0) and publish it. The tag must match backend/version.py or this job stops.
+  # Arcane (or `docker pull`) then fetches the new images; nothing needs building on the server.
   publish:
     name: Publish images
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'release'
     needs: [tests, browser, docker, audit]
     runs-on: ${{ fromJSON(vars.RUNNER_LABELS || '["ubuntu-24.04"]') }}
     timeout-minutes: 20
@@ -247,6 +253,7 @@ jobs:
           owner="${GITHUB_REPOSITORY_OWNER,,}"
           version="$(sed -n 's/^VERSION = "\([0-9.]*\)"$/\1/p' backend/version.py)"
           test -n "$version"
+          test "v${version}" = "${GITHUB_REF_NAME}" || { echo "::error::Release tag ${GITHUB_REF_NAME} does not match v${version} in backend/version.py"; exit 1; }
           echo "MAIN=ghcr.io/${owner}/enveliq" >> "$GITHUB_ENV"
           echo "RENDER=ghcr.io/${owner}/enveliq-render" >> "$GITHUB_ENV"
           echo "VERSION=${version}" >> "$GITHUB_ENV"
