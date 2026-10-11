@@ -96,6 +96,15 @@ These rules are architecture requirements, not UI preferences.
 - "Confirmed" means the provider says the email passed its checks. It does not mean the email is safe, and the page never says it is. When the provider adds no result, the page says nothing.
 - A Reply-To on another website is shown but only flags an email from a well-known name, because small businesses often use a free mail address for replies.
 
+## Trips (v0.74)
+
+- The AI reads each email once, with the same instructions and limits as every summary, and only copies what the email says. It is told not to work out any date or time, and Enveliq does not use a date it did not read from the email's words and check itself. Nothing the AI returns is trusted: every value is cut to a short length, control characters are removed, only known kinds and statuses are accepted, at most six bookings are taken from one email and a date far from the email's own date is ignored.
+- What is kept, per person, inside the encrypted vault: the kind, provider, booking reference, flight number or property name, places, start and end dates and times, and a mark for each email already filed. **No email text, subject, sender address or link is kept.** The server answers only for the signed-in person; another person's record answers "not found". Administrators cannot read it.
+- An email that carries a Be careful flag is never filed, so a fake booking change cannot put a trip on Home or in a calendar.
+- Enveliq never contacts an airline, a hotel or a rental company, and the page has no link to one.
+- In the person's calendar (only the one they set up for tasks, and only while the Trips calendar switch is on) each booking is an event that holds the places and the booking reference, and only "Enveliq trip" when titles are private. Events are rebuilt from the current list, so a removed, cancelled or finished booking, or switching the calendar off, takes them out. The private feed address, CalDAV password and Google connection are the ones already described for tasks.
+- An administrator can switch the feature off for everyone, and each person for themselves; while it is off nothing is filed and nothing goes in a calendar.
+
 ## Subscriptions and free trials (v0.73)
 
 - The AI reads each email once, with the same instructions and limits as every summary, and only copies what the email says. It is told not to work out any date, and Enveliq does not use any date it did not work out itself. Nothing the AI returns is trusted: every value is cut to a short length, control characters are removed, only known kinds and billing periods are accepted, and a date far from the email's own date is ignored.

@@ -43,6 +43,7 @@ Enveliq does that sorting for you, calmly and in plain words, and **it does it o
 | **Tasks** | Things to do, found in your email, with due dates. You can send them to your calendar or to-do list. |
 | **Shipping** | Your online orders followed from the emails you get, with a simple "Did it arrive?" |
 | **Subscriptions** | Renewals and free trials followed from your email, with a reminder a few days before so a free trial never turns into a charge by surprise. |
+| **Trips** | Flights, stays and hire cars followed from your booking emails, put together into trips, and added to your calendar if you like. |
 | **Waiting for reply** | Reminds you of emails you sent that nobody has answered. |
 | **Attachments** | Summaries of PDFs and other attachments, and a safe preview. The files themselves are never kept. |
 | **Writing help** | Optional. The AI suggests a reply, or checks one you wrote. It only suggests: you decide what is sent. |
@@ -169,23 +170,24 @@ All the guides are listed, by what you want to do, in the [**documentation index
 [The Be careful flag](docs/SCAM_WARNING.md) ·
 [Snooze](docs/SNOOZE.md) ·
 [Search](docs/SEARCH.md) ·
-[Subscriptions](docs/SUBSCRIPTIONS.md).
+[Subscriptions](docs/SUBSCRIPTIONS.md) ·
+[Trips](docs/TRIPS.md).
 
 ## Version history
 
 <details>
 <summary><b>What changed recently</b> (latest five versions)</summary>
 
+- **v0.74**: **Trips.** When an email is a booking, a change or a cancellation for a flight, a stay or a hire car, Enveliq now follows it. A **Trips** entry appears in the left menu (only once there is a trip) and lists each trip with its flights, stays and hire cars in date order, with the booking reference. A flight home joins the trip it belongs to. A small **Trips** card on Home shows a trip that is under way or starts within a week. If you have set up a calendar for your tasks (a calendar link, Google Calendar or CalDAV), your bookings go in it too, and you can switch that off on the Trips page. The AI only copies what each email says; Enveliq works out every date, every night and the grouping into trips itself. Emails marked Be careful are never followed. An administrator can switch it off for everyone, and you can switch it off for yourself. See [docs/TRIPS.md](docs/TRIPS.md).
 - **v0.73**: **Subscriptions and free trials.** When an email is about a subscription or a free trial, Enveliq now follows it. A **Coming up** card on Home says things like *"Streamly renews on the 14th"* or *"Clipboard Pro free trial ends tomorrow"*, and a **Subscriptions** entry appears in the left menu (only once there is something to follow) with every renewal and trial, the price as the email wrote it, and buttons for **I've cancelled it** and **This is not a subscription**. You choose how many days before to be reminded (1 to 14, three by default) and a reminder is sent by your reminder channels when the day comes. The AI only copies what each email says; Enveliq works out every date itself, including a free trial that says only "30 days". A date it had to work out from a receipt is shown as *probably*. Emails marked Be careful are never followed. An administrator can switch it off for everyone, and you can switch it off for yourself. See [docs/SUBSCRIPTIONS.md](docs/SUBSCRIPTIONS.md).
 - **v0.72**: **Search everywhere.** The search box now also tells you what it found in the other places Enveliq keeps things for you: emails in Reviewed, Archived and Snoozed, your tasks, the orders you are following and your waiting notes. A box called **Also found elsewhere** shows a few matches, each saying where it is, and pressing one takes you there. It uses only what Enveliq already keeps for you, so nothing new is saved. Also fixed: your tasks now show as soon as the page opens, not a minute later. See [docs/SEARCH.md](docs/SEARCH.md).
 - **v0.71**: **Snooze.** Press **Snooze** on an email to set it aside until Later today, Tomorrow, This weekend, Next week or a date you pick. It leaves your inbox, shows under a new **Snoozed** entry in the left menu with a count, and comes back at the top at the time you chose. The time is worked out in your own time zone. Your real mailbox is left alone: only Enveliq's list changes. See [docs/SNOOZE.md](docs/SNOOZE.md).
 - **v0.70**: **Forward to check.** Got an email you are not sure about? Forward it, as an attachment, to your household's check address and get one line back: either *"Be careful:"* with what looks odd, or *"Nothing odd found. That does not prove it is safe."* An administrator chooses a mailbox made only for this (Administration, Forward to check) and lists the people who may use it. Only those people get an answer; everyone else is ignored. It is plain code, the AI is not involved, the forwarded email is read once and never kept, and the answer never says an email is safe. That mailbox is never shown as an inbox to anyone. See [docs/SCAM_WARNING.md](docs/SCAM_WARNING.md).
-- **v0.69**: **Unsubscribe is hidden on an email marked Be careful.** Unsubscribing from a scam only tells the sender your address is real, so on a flagged email there is no Unsubscribe button any more, on the card or in View original. One line says why. This replaces the earlier extra step with **Go anyway**. Ordinary newsletters keep their Unsubscribe button. See [docs/SCAM_WARNING.md](docs/SCAM_WARNING.md).
 
 The full list is in [docs/VERSION_HISTORY.md](docs/VERSION_HISTORY.md), and a more technical one is in the [change log](docs/CHANGELOG.md).
 </details>
 
-Current version: **v0.73**
+Current version: **v0.74**
 
 ## For developers
 

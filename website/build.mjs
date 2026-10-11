@@ -52,6 +52,7 @@ const NAV = [
     ["docs/SNOOZE.md", "Snooze"],
     ["docs/SEARCH.md", "Search"],
     ["docs/SUBSCRIPTIONS.md", "Subscriptions"],
+    ["docs/TRIPS.md", "Trips"],
     ["docs/MESSAGES.md", "Messages between people"],
     ["docs/AGENT.md", "Hermes agent chat"],
   ] },

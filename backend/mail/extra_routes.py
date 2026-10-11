@@ -32,6 +32,7 @@ class FeaturesBody(StrictModel):
     all_mail: bool | None = None
     shipping: bool | None = None
     subscriptions: bool | None = None
+    travel: bool | None = None
     waiting: bool | None = None
     messages: bool | None = None
     write_help: bool | None = None

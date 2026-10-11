@@ -78,6 +78,8 @@ jobs:
         run: node scripts/check_snooze.mjs
       - name: Search everywhere (simulated server)
         run: node scripts/check_search_everywhere.mjs
+      - name: Trips page and Home card (simulated server)
+        run: node scripts/check_trips.mjs
       - name: Subscriptions page and Home card (simulated server)
         run: node scripts/check_subscriptions.mjs
       - name: Shipping page and Home card (simulated server)
