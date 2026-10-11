@@ -130,7 +130,7 @@ The AI you choose reads an email in order to write its summary. With a cloud AI 
 <details>
 <summary><b>Can it send or delete my email?</b></summary>
 
-It can send a reply, but only when you press Send. It never sends, deletes or changes anything on its own, and the AI cannot do any of those things.
+It can send a reply, but only when you press Send. It never sends or deletes anything on its own, and the AI cannot do either. The one thing it does by itself is a [rule you set yourself](docs/MAIL_RULES.md), such as archiving new email from one sender, and a rule can never delete.
 </details>
 
 <details>
@@ -177,7 +177,8 @@ All the guides are listed, by what you want to do, in the [**documentation index
 [Undo](docs/UNDO.md) ·
 [Checks before sending](docs/SEND_CHECKS.md) ·
 [Important people](docs/IMPORTANT_PEOPLE.md) ·
-[Signature and saved replies](docs/SAVED_REPLIES.md).
+[Signature and saved replies](docs/SAVED_REPLIES.md) ·
+[Mail rules](docs/MAIL_RULES.md).
 
 ## Version history
 
@@ -187,6 +188,7 @@ All the guides are listed, by what you want to do, in the [**documentation index
 - **Unreleased**: **A quick check before a new email goes.** If a new email has no subject, or the words say something is attached but nothing is, Enveliq now asks once before sending. It never blocks you: **Send anyway** always sends. The check happens in the page, so it works the same for every mailbox. See [docs/SEND_CHECKS.md](docs/SEND_CHECKS.md).
 - **Unreleased**: **Important people.** Pick the people whose email you never want buried, such as family, the school or your doctor. Their email is shown at the top of your inbox with a small **Important** label. Press **Important person** on an opened email, or manage the list in Settings, Important people. See [docs/IMPORTANT_PEOPLE.md](docs/IMPORTANT_PEOPLE.md).
 - **Unreleased**: **A signature and saved replies.** Write your signature once and it is put at the bottom of every new email and reply when you open the box, where you can still change it. Keep short pieces of text you use often ("Running late", "Thank you") and insert one with a tap. Both are in Settings, Signature & saved replies. See [docs/SAVED_REPLIES.md](docs/SAVED_REPLIES.md).
+- **Unreleased**: **Mail rules.** Tell Enveliq to archive, or mark as reviewed, new email from a sender you choose, such as a shop's weekly offers. Press **Always archive these** on an opened email, or add a rule in Settings, Mail rules. A rule only acts on new email as it arrives, never on mail already in your inbox or from your important people, and no rule can delete anything. See [docs/MAIL_RULES.md](docs/MAIL_RULES.md).
 - **v0.80**: **Five seconds to undo Reviewed, Archive and Bin, everywhere.** Pressing Reviewed, Archive or Bin now waits five seconds before it touches your mailbox, on every screen and for several ticked emails at once. The email leaves your list straight away and a bar at the bottom says what you did, with an **Undo** button. This used to be so only on a phone. See [docs/UNDO.md](docs/UNDO.md).
 - **v0.79**: **The public status page says less.** Before anyone signs in, Enveliq's status page now says only what the sign-in, setup and unlock pages need. It no longer shows the version, the encryption settings or the public address, and it says whether Enveliq unlocks itself from a key file only while the vault is closed. Signed-in people see the version in the inbox; administrators see the technical detail. This came from a read-only security probe of the live site.
 - **v0.78**: **Licence changed to AGPL-3.0.** Enveliq is now released under the GNU Affero General Public Licence, version 3, instead of MIT. Using, changing and sharing it stays free. The one new rule: if you change it and let other people use your version over a network, you share your changes under the same licence. The Terms of use page says so in plain words.

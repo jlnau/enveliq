@@ -88,6 +88,8 @@ jobs:
         run: node scripts/check_important_people.mjs
       - name: Signature and saved replies (simulated server)
         run: node scripts/check_saved_writing.mjs
+      - name: Mail rules (simulated server)
+        run: node scripts/check_rules.mjs
       - name: Trips page and Home card (simulated server)
         run: node scripts/check_trips.mjs
       - name: Subscriptions page and Home card (simulated server)
