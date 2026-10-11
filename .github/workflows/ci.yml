@@ -232,8 +232,9 @@ jobs:
   # Publishes the two images to GitHub's private package store, but only when a GitHub Release is published, and only
   # after every check above has passed on that release's code. Merging pull requests into main runs the checks but
   # publishes nothing, so several merges can go out together as one version.
-  # To release: bump VERSION in backend/version.py, merge that, then on GitHub draft a new release with the tag
-  # v<that version> (for example v1.4.0) and publish it. The tag must match backend/version.py or this job stops.
+  # To release: see docs/RELEASING.md. In short: merge a pull request that sets VERSION in backend/version.py, then on
+  # GitHub create a release with the tag v<that version> (for example v0.86) and publish it. The tag must match
+  # backend/version.py or this job stops.
   # Arcane (or `docker pull`) then fetches the new images; nothing needs building on the server.
   publish:
     name: Publish images
