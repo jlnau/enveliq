@@ -39,6 +39,8 @@ class SettingsBody(StrictModel):
     quiet_from: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     quiet_to: str | None = Field(default=None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     show_titles: bool | None = None
+    mail_on: bool | None = None
+    mail_details: bool | None = None
 
 
 class DeviceBody(StrictModel):
