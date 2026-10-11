@@ -80,6 +80,8 @@ jobs:
         run: node scripts/check_search_everywhere.mjs
       - name: Backup and restore, Export my data (simulated server)
         run: node scripts/check_backup.mjs
+      - name: The demo (made-up mail, no server)
+        run: node scripts/check_demo.mjs
       - name: Trips page and Home card (simulated server)
         run: node scripts/check_trips.mjs
       - name: Subscriptions page and Home card (simulated server)
