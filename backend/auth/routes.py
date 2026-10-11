@@ -31,6 +31,7 @@ class SetupBody(StrictModel):
 class LoginBody(StrictModel):
     username: str = Field(min_length=1, max_length=320)
     password: SecretStr = Field(min_length=1, max_length=1024)
+    remember: bool = False            # "Keep me signed in on this device"
 
 
 class CodeBody(StrictModel):
@@ -44,6 +45,7 @@ class PasskeyOptionsBody(StrictModel):
 class CredentialBody(StrictModel):
     credential: dict[str, Any]
     name: str | None = Field(default=None, max_length=64)
+    remember: bool = False            # "Keep me signed in on this device" (a passkey sign-in with no password step)
 
 
 class RenameBody(StrictModel):
@@ -87,6 +89,7 @@ class AvatarBody(StrictModel):
 class PolicyBody(StrictModel):
     require_mfa: Literal["off", "admins", "everyone"] | None = None
     password_login: Literal["everyone", "admins"] | None = None
+    remember_days: int | None = Field(default=None, ge=0, le=14)
     pw_min_length: int | None = Field(default=None, ge=8, le=128)
     pw_min_digits: int | None = Field(default=None, ge=0, le=32)
     pw_min_upper: int | None = Field(default=None, ge=0, le=32)
@@ -121,13 +124,20 @@ def build_router(ctx) -> APIRouter:
     def client_key(request: Request) -> str:
         return request.client.host if request.client else "unknown"
 
-    def set_session(response: Response, user: dict[str, Any], *, method: str) -> dict[str, Any]:
+    def remember_seconds(wanted: bool) -> int:
+        """How long a "keep me signed in" session may last: only when the person asked, and the administrator allows it."""
+        return ctx.remember_seconds() if wanted else 0
+
+    def set_session(response: Response, user: dict[str, Any], *, method: str, remember: bool = False) -> dict[str, Any]:
         state = "enroll" if users.mfa_required(user) and not users.has_mfa(user) else "full"
-        session = sessions.create(users.principal(user), state=state, auth_method=method)
-        ctx.set_cookie(response, ctx.session_cookie, session.token, max_age=sessions.max_lifetime_seconds)
+        session = sessions.create(users.principal(user), state=state, auth_method=method, remember_seconds=remember_seconds(remember))
+        ctx.set_cookie(response, ctx.session_cookie, session.token, max_age=sessions.life_of(session))
         user["last_login_at"] = time.time()
         users.save(user)
-        vault.audit({"event": "signed_in", "user_id": user["id"], "method": method, "at": time.time()})
+        event = {"event": "signed_in", "user_id": user["id"], "method": method, "at": time.time()}
+        if session.remember_seconds:
+            event["remembered_days"] = round(session.remember_seconds / 86400)
+        vault.audit(event)
         return {"next": "enroll_mfa" if state == "enroll" else "done", "user": users.public(user)}
 
     def start_flow(response: Response, kind: str, data: dict[str, Any], ttl: int = 300) -> None:
@@ -202,9 +212,9 @@ def build_router(ctx) -> APIRouter:
             user["password"] = passwords.hash_password(body.password.get_secret_value())
             users.save(user)
         if users.has_mfa(user):
-            start_flow(response, "mfa", {"user_id": user["id"]})
+            start_flow(response, "mfa", {"user_id": user["id"], "remember": body.remember})
             return {"next": "mfa", "methods": mfa_methods(user)}
-        return set_session(response, user, method="password")
+        return set_session(response, user, method="password", remember=body.remember)
 
     @r.post("/auth/mfa")
     def second_factor(body: CodeBody, request: Request, response: Response):
@@ -236,7 +246,7 @@ def build_router(ctx) -> APIRouter:
         flows.pop(fid)
         ctx.clear_cookie(response, ctx.flow_cookie)
         users.save(user)
-        return set_session(response, user, method="password+totp")
+        return set_session(response, user, method="password+totp", remember=bool(flow["data"].get("remember")))
 
     @r.post("/auth/passkeys/options")
     def passkey_options(body: PasskeyOptionsBody, request: Request, response: Response):
@@ -291,10 +301,13 @@ def build_router(ctx) -> APIRouter:
         stored["sign_count"] = new_count
         stored["last_used_at"] = time.time()
         users.save(user)
+        remember = body.remember
         if expected_user:  # second-factor step after a password: end that step too
+            mfa_flow = flows.get(flow["data"].get("mfa_flow"), "mfa")
+            remember = bool(mfa_flow and mfa_flow["data"].get("remember"))     # the tick was given with the password
             flows.pop(flow["data"].get("mfa_flow"))
         ctx.login_limiter.succeeded("pk:" + client_key(request))
-        return set_session(response, user, method="password+passkey" if expected_user else "passkey")
+        return set_session(response, user, method="password+passkey" if expected_user else "passkey", remember=remember)
 
     @r.post("/auth/logout", status_code=204)
     def logout(request: Request, response: Response):
@@ -506,7 +519,7 @@ def build_router(ctx) -> APIRouter:
     # ---------- single sign-on ----------
 
     @r.get("/auth/sso/start")
-    def sso_start(request: Request, link: int = 0):
+    def sso_start(request: Request, link: int = 0, remember: int = 0):
         settings = ctx.sso_settings()
         if settings is None:
             return RedirectResponse("/login?error=sso_disabled", status_code=303)
@@ -521,7 +534,7 @@ def build_router(ctx) -> APIRouter:
         except OIDCError as exc:
             return RedirectResponse(f"/login?error=sso_{exc.code}", status_code=303)
         response = RedirectResponse(url, status_code=303)
-        start_flow(response, "oidc", {**secrets_, "link_user": link_user}, ttl=600)
+        start_flow(response, "oidc", {**secrets_, "link_user": link_user, "remember": bool(remember) and not link}, ttl=600)
         return response
 
     @r.get("/auth/sso/callback")
@@ -600,11 +613,15 @@ def build_router(ctx) -> APIRouter:
         ctx.clear_cookie(response, ctx.flow_cookie)
         # The provider is responsible for its own second factor, so an SSO
         # sign-in is a full session even when Enveliq's MFA policy applies.
-        session = sessions.create(users.principal(user), state="full", auth_method="sso")
-        ctx.set_cookie(response, ctx.session_cookie, session.token, max_age=sessions.max_lifetime_seconds)
+        session = sessions.create(users.principal(user), state="full", auth_method="sso",
+                                  remember_seconds=remember_seconds(bool(flow["data"].get("remember"))))
+        ctx.set_cookie(response, ctx.session_cookie, session.token, max_age=sessions.life_of(session))
         user["last_login_at"] = time.time()
         users.save(user)
-        vault.audit({"event": "signed_in", "user_id": user["id"], "method": "sso", "at": time.time()})
+        event = {"event": "signed_in", "user_id": user["id"], "method": "sso", "at": time.time()}
+        if session.remember_seconds:
+            event["remembered_days"] = round(session.remember_seconds / 86400)
+        vault.audit(event)
         return response
 
     @r.delete("/auth/sso/link", status_code=204)
@@ -697,13 +714,13 @@ def build_router(ctx) -> APIRouter:
 
     @r.get("/admin/auth-policy")
     def get_policy(session: Session = Depends(ctx.admin_session)):
-        return users.policy()
+        return {**users.policy(), "remember_possible": ctx.remember_possible}
 
     @r.put("/admin/auth-policy")
     def put_policy(body: PolicyBody, session: Session = Depends(ctx.admin_session)):
         policy = users.set_policy(body.model_dump(exclude_none=True))
         vault.audit({"event": "auth_policy_updated", "by": session.principal.user_id, "at": time.time()})
-        return policy
+        return {**policy, "remember_possible": ctx.remember_possible}
 
     @r.get("/admin/sso")
     def get_sso(session: Session = Depends(ctx.admin_session)):
