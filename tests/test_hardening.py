@@ -150,20 +150,20 @@ def test_patch_null_password_keeps_stored_credential(env):
 
 
 def _second_user(appm, admin_client):
-    create_user(admin_client, "beth")
-    return sign_in(appm, "beth")
+    create_user(admin_client, "cara")
+    return sign_in(appm, "cara")
 
 
 def test_private_mailbox_is_indistinguishable_from_missing(env):
     appm, client, token = env
     account_id = make_account(client, token)
-    beth = _second_user(appm, client)
+    cara = _second_user(appm, client)
     missing = "00000000-0000-4000-8000-000000000000"
     for path in (f"/api/v1/accounts/{account_id}/messages", f"/api/v1/accounts/{missing}/messages"):
-        assert beth.get(path).status_code == 404
-    r = beth.patch(f"/api/v1/accounts/{account_id}", json={"display_name": "x"})
+        assert cara.get(path).status_code == 404
+    r = cara.patch(f"/api/v1/accounts/{account_id}", json={"display_name": "x"})
     assert r.status_code == 404
-    r = beth.post(f"/api/v1/accounts/{account_id}/messages/{missing}/resolve", json={"outcome": "reviewed"})
+    r = cara.post(f"/api/v1/accounts/{account_id}/messages/{missing}/resolve", json={"outcome": "reviewed"})
     assert r.status_code == 404
 
 
@@ -175,12 +175,12 @@ def test_shared_mailbox_hides_connection_details_from_other_users(env):
     account.pop("id")
     appm.vault.update_account(account_id, account)
 
-    beth = _second_user(appm, client)
-    listed = beth.get("/api/v1/accounts").json()
+    cara = _second_user(appm, client)
+    listed = cara.get("/api/v1/accounts").json()
     assert len(listed) == 1
     assert "server" not in listed[0] and "username" not in listed[0] and "settings" not in listed[0]
     assert "password_set" not in listed[0]
-    r = beth.delete(f"/api/v1/accounts/{account_id}")
+    r = cara.delete(f"/api/v1/accounts/{account_id}")
     assert r.status_code == 403
 
 
@@ -188,8 +188,8 @@ def test_shared_mailbox_hides_connection_details_from_other_users(env):
 
 def test_non_admin_cannot_lock_the_vault(env):
     appm, client, _ = env
-    beth = _second_user(appm, client)
-    assert beth.post("/api/v1/lock").status_code == 403
+    cara = _second_user(appm, client)
+    assert cara.post("/api/v1/lock").status_code == 403
     assert appm.vault.is_unlocked()
 
 
@@ -390,7 +390,7 @@ def test_preview_bytes_must_match_declared_type_and_owner():
     lease = store.put_safe_preview(mime_type="image/png", content=PNG + b"ok", **common)
     assert store.get_for_owner(lease.lease_id, "ha_user_morgan") is lease
     with pytest.raises(KeyError):
-        store.get_for_owner(lease.lease_id, "ha_user_beth")
+        store.get_for_owner(lease.lease_id, "ha_user_cara")
 
 
 # ---------- Logging ----------

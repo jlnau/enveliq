@@ -171,8 +171,8 @@ def test_hostile_email_text_stays_inside_its_markers(tmp_path):
 def test_other_people_cannot_summarise_your_mailbox(env):
     appm, admin, bridge, model = env
     aid = synced(admin, bridge)
-    create_user(admin, "beth")
-    beth = sign_in(appm, "beth")
-    assert beth.post(f"/api/v1/accounts/{aid}/summarise", json={}).status_code == 404
+    create_user(admin, "cara")
+    cara = sign_in(appm, "cara")
+    assert cara.post(f"/api/v1/accounts/{aid}/summarise", json={}).status_code == 404
     assert model.requests == []
-    assert beth.get("/api/v1/ai/status").json()["configured"] is True      # the status carries no mailbox data
+    assert cara.get("/api/v1/ai/status").json()["configured"] is True      # the status carries no mailbox data

@@ -38,7 +38,7 @@ $ scripts/run_signin_e2e.sh
 ✓ passwordless passkey sign-in works
 ✓ wrong code refused
 ✓ password + authenticator code sign-in works
-✓ admin added user beth
+✓ admin added user cara
 CSP violations: 0
 
 $ python3 scripts/mailbox_e2e.py
