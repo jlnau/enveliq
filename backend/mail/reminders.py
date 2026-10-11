@@ -43,6 +43,7 @@ class Reminders:
         self.vault, self.tasks, self.notifier, self.click_url, self.clock = vault, tasks, notifier, click_url, clock
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
+        self.subs: Any = None                           # set by the application: renewals and free trials (mail/subscriptions.py)
 
     # ---------- the words ----------
     def _list(self, tasks: list[dict[str, Any]], private: bool, today: date) -> str:
@@ -67,6 +68,21 @@ class Reminders:
         else:
             body = self._list(tasks, False, today)
         return {"title": title, "body": body, "priority": "high" if any(t.get("priority") == "high" for t in tasks) else "normal", "url": self.click_url or None}
+
+    def sub_note(self, due: list[dict[str, Any]], private: bool) -> dict[str, Any]:
+        """One message for the renewals and free trials coming up. Plain words; the service names only when the person allows titles."""
+        n = len(due)
+        if private:
+            return {"title": "Enveliq", "body": f"{n} subscription{'s' if n != 1 else ''} to look at. Open Enveliq to see {'them' if n != 1 else 'it'}.",
+                    "priority": "normal", "url": self.click_url or None}
+        def when(d: dict[str, Any]) -> str:
+            return "today" if d["days"] == 0 else "tomorrow" if d["days"] == 1 else f"in {d['days']} days"
+        def line(d: dict[str, Any]) -> str:
+            what = "free trial ends" if d["kind"] == "trial_ends" else "renews"
+            return f"• {d['service']} {what} {when(d)}" + (f" ({d['amount']})" if d.get("amount") else "")
+        title = f"{due[0]['service']} {'free trial ends' if due[0]['kind'] == 'trial_ends' else 'renews'} {when(due[0])}" if n == 1 else f"{n} subscriptions coming up"
+        body = "\n".join(line(d) for d in due[:MAX_LISTED]) + (f"\nand {n - MAX_LISTED} more" if n > MAX_LISTED else "")
+        return {"title": title, "body": body, "priority": "normal", "url": self.click_url or None}
 
     # ---------- one person ----------
     def run_user(self, uid: str, now: float | None = None) -> int:
@@ -124,6 +140,15 @@ class Reminders:
             again = [t for t in due_today if key(t) in sent_state and sent_state[key(t)]["count"] < 1 + st["repeat_max"] and now - sent_state[key(t)]["last"] >= wait]
             if again:
                 plan.append((self.note("nudge", again, private, today), [key(t) for t in again], "nudge"))
+        subs_state: dict[str, Any] = state.setdefault("subs", {})
+        if self.subs is not None and local >= start:
+            coming = self.subs.due_nudges(uid, now)
+            live_subs = {d["key"] for d in coming}
+            for k in [k for k in subs_state if k not in live_subs]:
+                del subs_state[k]
+            fresh_subs = [d for d in coming if d["key"] not in subs_state]
+            if fresh_subs:
+                plan.append((self.sub_note(fresh_subs, private), [d["key"] for d in fresh_subs], "subs"))
         sent = 0
         failed = False
         for note, keys, kind in plan:
@@ -131,7 +156,7 @@ class Reminders:
             if any(v is None for v in results.values()):
                 sent += 1
                 for k in keys:
-                    e = sent_state.setdefault(k, {"count": 0, "last": 0})
+                    e = (subs_state if kind == "subs" else sent_state).setdefault(k, {"count": 0, "last": 0})
                     e["count"] += 1
                     e["last"] = now
                 if kind == "morning":
