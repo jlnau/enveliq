@@ -15,7 +15,7 @@ from html.parser import HTMLParser
 from typing import Any
 
 from ..models import ReplyContext
-from . import scamcheck, unsub
+from . import links, scamcheck, unsub
 
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _ANGLE_ID = re.compile(r"<[^<>\s]{1,994}>")
@@ -323,6 +323,7 @@ def render_original(raw: bytes) -> dict[str, Any]:
         "attachments": attachments,
         "remote_images": remote_image_count(msg),
         "unsubscribe": unsub.find(msg),
+        "links": links.find(msg),
         "warning": scamcheck.from_whole(msg),
         "sender_check": scamcheck.sender_check(msg),
     }

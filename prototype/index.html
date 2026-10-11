@@ -282,6 +282,8 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 .email-head dd.ok{color:#1a6b34}.email-head dd.warn{color:#8a4b00;font-weight:600}
 .scam-note{margin:0 0 12px;padding:10px 14px;border:1px solid var(--amber);border-radius:10px;background:rgba(240,196,101,.1);color:var(--text);font-size:13.5px;line-height:1.5}.scam-note b{display:block;font-size:14px;margin-bottom:2px}.scam-note p{margin:0 0 6px}.scam-note ul{margin:0;padding-left:20px}.scam-note li{margin:2px 0}
 .email-doc .scam-note{background:#fff6dc;color:#4d3800;border-color:#d9a400}
+.link-list{display:flex;flex-direction:column;gap:6px;margin:6px 0}.link-row{border:1px solid #d5dae2;border-radius:10px;padding:8px 12px}.link-line{display:flex;align-items:center;justify-content:space-between;gap:10px}.link-name{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere}.link-name small{font-size:12.5px;opacity:.8}.link-note.warn{color:#8a5a00;opacity:1}.link-sure{margin-top:8px;padding-top:8px;border-top:1px dashed #d5dae2;font-size:13.5px;line-height:1.5;overflow-wrap:anywhere}.link-sure[hidden]{display:none}.link-row button{border:1px solid #c9d0dc;background:#f4f6fa;color:#20242b;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer}.link-row .att-only{color:#7c8490;font-size:12px}.link-sure a.unsub{margin-left:4px;color:#20242b;background:#f4f6fa;border:1px solid #9aa4b5;font-weight:600;white-space:nowrap}
+@media(max-width:640px){.link-line{flex-wrap:wrap}.link-row{padding:8px 10px}}
 .scam-note{max-width:100%;overflow-wrap:anywhere}@media(max-width:640px){.scam-note{padding:9px 12px;font-size:13px}.scam-note b{font-size:13.5px}.scam-pill{margin:0 6px 0 0;font-size:11px;padding:0 7px}}
 .scam-pill{display:inline-block;flex:none;margin:0 8px 0 0;padding:0 8px;border:1px solid var(--amber);border-radius:99px;color:var(--amber);font-size:11.5px;font-weight:600;line-height:18px;vertical-align:middle}
 .unsub[hidden]{display:none}.unsub-sure{font-size:13px;color:var(--text)}.unsub-sure[hidden]{display:none}.unsub-sure a{font-weight:600}
@@ -2132,7 +2134,7 @@ function openEmailViewer(id){
   $("attachmentModalName").textContent=m.subject;
   $("attachmentModalContext").textContent=`${m.sender} · ${m.date||m.time}`;
   $("attachmentViewerControls").innerHTML=`<span>Original email · continuous scroll</span>`;
-  $("viewerStrip").innerHTML="<span>Fetched from your mailbox on demand</span><span>Not stored by Enveliq</span><span>Remote images blocked</span><span>Links shown as text</span>";
+  $("viewerStrip").innerHTML="<span>Fetched from your mailbox on demand</span><span>Not stored by Enveliq</span><span>Remote images blocked</span><span>Links open only when you choose</span>";
   const rows=[["From",`${m.sender} <${m.address}>`],m.replyTo?["Reply-To",m.replyTo]:null,["To",m.deliveredTo||m.account],["Date",m.date||m.time],["Subject",m.subject]].filter(Boolean);
   $("attachmentViewer").innerHTML=`<article class="email-doc">
       <dl class="email-head">${rows.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
@@ -4226,6 +4228,31 @@ document.addEventListener("click",e=>{
   const sure=b.parentElement&&b.parentElement.querySelector(".unsub-sure");
   if(sure){sure.hidden=false;b.hidden=true;const a=sure.querySelector("a");if(a)a.focus()}
 });
+// "Links in this email": the real website of each link, shown as text. A link opens only after the person chooses it and sees where it goes.
+// The server already kept only plain public web addresses as openable (backend/mail/links.py); the address is checked again here. Enveliq
+// never fetches a link, and the new tab sends no referrer.
+document.addEventListener("click",e=>{
+  const b=e.target.closest&&e.target.closest("[data-link-ask]");
+  if(!b)return;
+  const row=b.closest(".link-row"),sure=row&&row.querySelector(".link-sure");
+  if(!sure)return;
+  const open=sure.hidden;
+  document.querySelectorAll(".link-sure").forEach(x=>{x.hidden=true});
+  document.querySelectorAll("[data-link-ask]").forEach(x=>x.setAttribute("aria-expanded","false"));
+  if(open){sure.hidden=false;b.setAttribute("aria-expanded","true");const a=sure.querySelector("a");if(a)a.focus()}
+});
+function linksHtml(list,careful){
+  if(!Array.isArray(list)||!list.length)return "";
+  const rows=list.slice(0,30).filter(l=>l&&typeof l.host==="string"&&l.host).map(l=>{
+    const host=esc(l.host.slice(0,100)),label=typeof l.label==="string"&&l.label?`<small>The email calls it “${esc(l.label.slice(0,80))}”</small>`:"";
+    const note=typeof l.note==="string"&&l.note?`<small class="link-note${l.flagged?" warn":""}">${esc(l.note.slice(0,300))}</small>`:"";
+    const ok=typeof l.url==="string"&&/^https?:\/\/[^\s"'<>\\]{4,2000}$/.test(l.url);
+    const act=ok?`<button type="button" data-link-ask aria-expanded="false">Open…</button>`:`<span class="att-only">Not opened from here</span>`;
+    const ask=ok?`<div class="link-sure" hidden><span>${careful||l.flagged?"This email looked odd. ":""}This goes to <b>${host}</b>. Open it in a new tab?</span> <a class="unsub" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer nofollow">${careful||l.flagged?"Open anyway":"Open it"}</a></div>`:"";
+    return `<div class="link-row"><div class="link-line"><span class="link-name"><b>${host}</b>${label}${note}</span>${act}</div>${ask}</div>`;
+  }).join("");
+  return rows?`<div class="att-title">Links in this email</div><div class="link-list">${rows}</div><p class="att-foot">This is where each link really goes. Enveliq never opens a link for you.</p>`:"";
+}
 function unsubHtml(u,careful){
   if(!careful)return unsubPlain(u);
   const link=unsubPlain(u,"Go anyway");
@@ -4280,7 +4307,7 @@ function presentOriginal(o,c){
   $("attachmentModalName").textContent=c.title;
   $("attachmentModalContext").textContent=c.context||"";
   $("attachmentViewerControls").innerHTML=`<span>${c.sent?"Sent email":"Original email"} · plain text</span>`;
-  $("viewerStrip").innerHTML="<span>Fetched from your mailbox on demand</span><span>Not stored by Enveliq</span><span>Scripts removed</span><span>Pictures from the internet not loaded</span><span>Links in the text not clickable</span>";
+  $("viewerStrip").innerHTML="<span>Fetched from your mailbox on demand</span><span>Not stored by Enveliq</span><span>Scripts removed</span><span>Pictures from the internet not loaded</span><span>Links open only when you choose</span>";
   const from=`${o.from.name?o.from.name+" ":""}<${o.from.address}>`;
   const sc=(!c.sent&&o.sender_check)||{};
   const senderRow=sc.result==="confirmed"?["Sender","Your email provider confirmed this came from that address.","ok"]:sc.result==="not_confirmed"?["Sender","Your email provider could not confirm this came from that address.","warn"]:null;
@@ -4290,7 +4317,7 @@ function presentOriginal(o,c){
   $("attachmentViewer").innerHTML=`<article class="email-doc">
     <dl class="email-head">${rows.map(([k,v,t])=>`<dt>${esc(k)}</dt><dd${t==="ok"||t==="warn"?` class="${t}"`:""}>${esc(v)}</dd>`).join("")}</dl>
     <h4>${esc(o.subject||c.title)}</h4>${scamHtml(o.warning||c.scam)}${remote}${hasInline?'<div class="pics" data-inline></div>':""}
-    <pre class="email-text">${esc(o.text||"(no text content)")}</pre>${o.truncated?'<p class="hint">Shortened for display.</p>':""}${attachmentsHtml(o,c)}
+    <pre class="email-text">${esc(o.text||"(no text content)")}</pre>${o.truncated?'<p class="hint">Shortened for display.</p>':""}${c.sent?"":linksHtml(o.links,!!(o.warning||c.scam))}${attachmentsHtml(o,c)}
   </article>`;
   wireAttachments($("attachmentViewer"),o,c);
   $("attachmentViewer").scrollTop=0;

@@ -69,3 +69,20 @@ So **no label does not mean safe**. It is a helper, not a guarantee.
 - `backend/mail/scamcheck.py`: the checks and the short `BRANDS` list (add a name only together with its real domains).
 - Header checks run at sync (`parse.summarise_headers`), link checks in `parse.render_original`; summarising merges them (`service._summarise_batch`).
 - Tests: `tests/test_scamcheck.py`, `scripts/check_scam_warning.mjs`.
+
+## Where does this link go?
+
+In **View original email**, a **Links in this email** list shows each link in the email with the website it really goes to, what the email calls it, and a plain note when something looks odd, for example *"A link says royalmail.com but really goes to parcel-help.example."*
+
+- **Nothing opens by itself.** Press **Open…** on a link and Enveliq says *"This goes to parcel-help.example. Open it in a new tab?"* Press **Open it** to go there.
+- **On an email marked Be careful** the question is firmer. It says the email looked odd and the button reads **Open anyway**.
+- **Some links cannot be opened from here**, such as a link to a number address or to a private address. They are listed with the reason and have no way to open.
+- Only the website name is shown, not the rest of the address, because the rest can hold a personal token.
+
+![The original of an email from Parcel Service with a Be careful note. Under it a list called Links in this email shows parcel-help.example with the note that a link says royalmail.com but really goes to parcel-help.example. Open was pressed, and a question asks whether to open it in a new tab, with an Open anyway button.](images/link-check.png)
+
+On a phone the list wraps and the buttons stay in reach:
+
+![The same list on a phone. Each link shows its website and a note, and the question and button fit the screen.](images/link-check-phone.png)
+
+Enveliq never opens a link for you and never fetches one. The list is worked out when you open the email and is not stored. It is plain code; the AI is not involved. A link that raises no note is not a promise that it is safe.
