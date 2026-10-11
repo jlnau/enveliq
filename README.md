@@ -112,7 +112,7 @@ The full details are in [SECURITY.md](SECURITY.md) and the plain-language [priva
 <details>
 <summary><b>Is it free?</b></summary>
 
-Yes. Enveliq is free, open-source software under the [MIT licence](LICENSE). You may need to pay for an AI service if you choose a cloud one; running a model on your own network costs nothing.
+Yes. Enveliq is free, open-source software under the [AGPL-3.0 licence](LICENSE). You may need to pay for an AI service if you choose a cloud one; running a model on your own network costs nothing.
 </details>
 
 <details>
@@ -180,16 +180,16 @@ All the guides are listed, by what you want to do, in the [**documentation index
 <details>
 <summary><b>What changed recently</b> (latest five versions)</summary>
 
+- **v0.78**: **Licence changed to AGPL-3.0.** Enveliq is now released under the GNU Affero General Public Licence, version 3, instead of MIT. Using, changing and sharing it stays free. The one new rule: if you change it and let other people use your version over a network, you share your changes under the same licence. The Terms of use page says so in plain words.
 - **v0.77**: **Help links go to the Enveliq website.** The "Open the guide" links in Settings, Administration, the setup guide and the plain-http warning now open the guides on the Enveliq website (enveliq.app) instead of the project's GitHub pages, so they are easier to read and need no GitHub account.
 - **v0.76**: **A demo you can try without installing anything.** There is now a made-up copy of the Enveliq inbox at demo.enveliq.app. Every person, email and number in it is invented, a banner on every screen says so, nothing you do is saved, and it cannot connect to anything. It is built from the same page as the real inbox, so it always looks like the real thing. See [docs/DEMO.md](docs/DEMO.md).
 - **v0.75**: **Backup and restore, and Export my data.** Administrators can now save a backup of everything Enveliq holds (still locked, and never including the key file), download it, switch on a daily backup that keeps the last few days, and restore one. Restoring asks for your password again and the word RESTORE, saves a copy of today first, and signs everyone out. Everyone can press **Export my data** in Settings, General, to download one readable file with their own information: no passwords or keys, and nothing of anyone else's. See [docs/BACKUP.md](docs/BACKUP.md).
-- **v0.74**: **Trips.** When an email is a booking, a change or a cancellation for a flight, a stay or a hire car, Enveliq now follows it. A **Trips** entry appears in the left menu (only once there is a trip) and lists each trip with its flights, stays and hire cars in date order, with the booking reference. A flight home joins the trip it belongs to. A small **Trips** card on Home shows a trip that is under way or starts within a week. If you have set up a calendar for your tasks (a calendar link, Google Calendar or CalDAV), your bookings go in it too, and you can switch that off on the Trips page. The AI only copies what each email says; Enveliq works out every date, every night and the grouping into trips itself. Emails marked Be careful are never followed. An administrator can switch it off for everyone, and you can switch it off for yourself. See [docs/TRIPS.md](docs/TRIPS.md).
 - **v0.72**: **Search everywhere.** The search box now also tells you what it found in the other places Enveliq keeps things for you: emails in Reviewed, Archived and Snoozed, your tasks, the orders you are following and your waiting notes. A box called **Also found elsewhere** shows a few matches, each saying where it is, and pressing one takes you there. It uses only what Enveliq already keeps for you, so nothing new is saved. Also fixed: your tasks now show as soon as the page opens, not a minute later. See [docs/SEARCH.md](docs/SEARCH.md).
 
 The full list is in [docs/VERSION_HISTORY.md](docs/VERSION_HISTORY.md), and a more technical one is in the [change log](docs/CHANGELOG.md).
 </details>
 
-Current version: **v0.77**
+Current version: **v0.78**
 
 ## For developers
 
@@ -252,4 +252,4 @@ The full list of checks is in `.github/workflows/ci.yml`.
 
 ## Licence
 
-Enveliq is free, open-source software under the MIT licence ([LICENSE](LICENSE)). There is no telemetry and the author receives no data. Plain-language [terms of use](docs/TERMS.md) and [privacy notes](docs/PRIVACY.md) are also shown in the app, and are general summaries, not legal advice.
+Enveliq is free, open-source software under the GNU Affero General Public Licence, version 3 ([LICENSE](LICENSE)). In plain words: use it, change it and share it freely, and if you change it and let other people use your version over a network, share your changes under the same licence. There is no telemetry and the author receives no data. Plain-language [terms of use](docs/TERMS.md) and [privacy notes](docs/PRIVACY.md) are also shown in the app, and are general summaries, not legal advice.

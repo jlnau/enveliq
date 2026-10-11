@@ -8,7 +8,7 @@ Enveliq is software you run on your own server. There is no Enveliq cloud servic
 
 ## Licence
 
-Enveliq is released under the MIT licence (see `LICENSE`). You may use, copy, change and share it, free of charge, provided the copyright and licence notice stay with it.
+Enveliq is released under the GNU Affero General Public Licence, version 3 (AGPL-3.0; see `LICENSE`). You may use, copy, change and share it, free of charge. If you change it and let other people use your version over a network, you must share your changes under the same licence. Running Enveliq for yourself, your household or your friends, with or without changes, asks nothing more of you.
 
 ## No warranty
 
