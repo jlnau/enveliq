@@ -21,7 +21,7 @@ def test_setup_without_a_passphrase_makes_the_key_file_and_unlocks_itself_after_
     from fastapi.testclient import TestClient
     client = TestClient(appm.app, raise_server_exceptions=False)
     assert client.get("/api/v1/status").json()["auto_unlock"] is True
-    r = client.post("/api/v1/setup", json={"setup_code": SETUP_CODE, "username": "jules", "password": ADMIN_PASSWORD})
+    r = client.post("/api/v1/setup", json={"setup_code": SETUP_CODE, "username": "morgan", "password": ADMIN_PASSWORD})
     assert r.status_code == 201, r.text
     key = tmp_path / "keys" / "vault.key"
     assert key.exists() and len(key.read_text().strip()) >= 32
@@ -36,7 +36,7 @@ def test_setup_without_a_passphrase_makes_the_key_file_and_unlocks_itself_after_
 def test_a_missing_wrong_or_short_key_leaves_it_locked_and_says_why(tmp_path):
     from fastapi.testclient import TestClient
     appm = fresh(tmp_path)
-    TestClient(appm.app).post("/api/v1/setup", json={"setup_code": SETUP_CODE, "username": "jules", "password": ADMIN_PASSWORD})
+    TestClient(appm.app).post("/api/v1/setup", json={"setup_code": SETUP_CODE, "username": "morgan", "password": ADMIN_PASSWORD})
     key = tmp_path / "keys" / "vault.key"
     good = key.read_text()
     appm.vault.lock()
@@ -68,7 +68,7 @@ def test_without_a_key_file_a_passphrase_is_still_required(tmp_path):
     appm = load_app(tmp_path / "data")
     client = TestClient(appm.app, raise_server_exceptions=False)
     assert client.get("/api/v1/status").json()["auto_unlock"] is False
-    r = client.post("/api/v1/setup", json={"setup_code": SETUP_CODE, "username": "jules", "password": ADMIN_PASSWORD})
+    r = client.post("/api/v1/setup", json={"setup_code": SETUP_CODE, "username": "morgan", "password": ADMIN_PASSWORD})
     assert r.status_code == 400 and "passphrase" in r.text.lower()
 
 
@@ -152,7 +152,7 @@ def test_a_key_in_the_environment_unlocks_after_a_restart_and_the_file_wins_if_b
     from fastapi.testclient import TestClient
     client = TestClient(appm.app, raise_server_exceptions=False)
     assert client.get("/api/v1/status").json()["auto_unlock"] is True
-    r = client.post("/api/v1/setup", json={"setup_code": SETUP_CODE, "username": "jules", "password": ADMIN_PASSWORD})
+    r = client.post("/api/v1/setup", json={"setup_code": SETUP_CODE, "username": "morgan", "password": ADMIN_PASSWORD})
     assert r.status_code == 201, r.text
     assert not (tmp_path / "keys").exists()
     appm.vault.lock()

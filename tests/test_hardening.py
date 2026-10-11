@@ -240,7 +240,7 @@ def test_session_count_is_capped(env):
 def test_lock_revokes_sessions_and_wipes_previews(env):
     appm, client, token = env
     lease = appm.preview_leases.put_safe_preview(
-        owner_user_id="ha_user_jules", account_id="a", message_id="m", attachment_id="x",
+        owner_user_id="ha_user_morgan", account_id="a", message_id="m", attachment_id="x",
         mime_type="image/png", filename="p.png", content=PNG + b"DECRYPTED-PREVIEW")
     backing = lease.content
     assert client.post("/api/v1/lock", headers=auth(token)).status_code == 204
@@ -252,7 +252,7 @@ def test_lock_revokes_sessions_and_wipes_previews(env):
 def test_idle_auto_lock_wipes_previews_and_sessions(env):
     appm, client, token = env
     appm.preview_leases.put_safe_preview(
-        owner_user_id="ha_user_jules", account_id="a", message_id="m", attachment_id="x",
+        owner_user_id="ha_user_morgan", account_id="a", message_id="m", attachment_id="x",
         mime_type="image/png", filename="p.png", content=PNG + b"DECRYPTED-PREVIEW")
     appm.vault.idle_lock_seconds = 0
     time.sleep(0.01)
@@ -289,7 +289,7 @@ def test_kdf_is_rfc9106_argon2id_and_parameters_are_stored(env):
 
 def test_old_development_identity_settings_grant_nothing(tmp_path: Path):
     # v0.12 trusted a server-side development identity; v0.17 removed it.
-    os.environ.update({"ENVELIQ_DEV_MODE": "1", "ENVELIQ_DEV_USER_ID": "ha_user_jules", "ENVELIQ_DEV_IS_ADMIN": "1"})
+    os.environ.update({"ENVELIQ_DEV_MODE": "1", "ENVELIQ_DEV_USER_ID": "ha_user_morgan", "ENVELIQ_DEV_IS_ADMIN": "1"})
     try:
         appm = load_app(tmp_path)
         c = TestClient(appm.app, raise_server_exceptions=False)
@@ -343,7 +343,7 @@ def test_saved_attachment_policy_is_enforced(env):
         "preview_ttl_seconds": 30, "global_ram_cap_bytes": 8388608})
     with pytest.raises(AttachmentPolicyError):
         appm.preview_leases.put_safe_preview(
-            owner_user_id="ha_user_jules", account_id="a", message_id="m", attachment_id="x",
+            owner_user_id="ha_user_morgan", account_id="a", message_id="m", attachment_id="x",
             mime_type="image/png", filename="p.png", content=PNG)
 
     # Policy survives a lock/unlock cycle.
@@ -357,7 +357,7 @@ def test_account_delete_purges_its_previews(env):
     appm, client, token = env
     account_id = make_account(client, token)
     appm.preview_leases.put_safe_preview(
-        owner_user_id="ha_user_jules", account_id=account_id, message_id="m", attachment_id="x",
+        owner_user_id="ha_user_morgan", account_id=account_id, message_id="m", attachment_id="x",
         mime_type="image/png", filename="p.png", content=PNG)
     assert client.delete(f"/api/v1/accounts/{account_id}", headers=auth(token)).status_code == 204
     assert appm.preview_leases.stats()["active_leases"] == 0
@@ -382,13 +382,13 @@ def test_preview_bytes_must_match_declared_type_and_owner():
     from backend.attachments import AttachmentPolicyError, PreviewLeaseStore
 
     store = PreviewLeaseStore()
-    common = dict(owner_user_id="ha_user_jules", account_id="a", message_id="m", attachment_id="x", filename="f")
+    common = dict(owner_user_id="ha_user_morgan", account_id="a", message_id="m", attachment_id="x", filename="f")
     with pytest.raises(AttachmentPolicyError):
         store.put_safe_preview(mime_type="image/png", content=b"<script>alert(1)</script>", **common)
     with pytest.raises(AttachmentPolicyError):
         store.put_safe_preview(mime_type="text/plain", content=b"\xff\xfe\x00binary", **common)
     lease = store.put_safe_preview(mime_type="image/png", content=PNG + b"ok", **common)
-    assert store.get_for_owner(lease.lease_id, "ha_user_jules") is lease
+    assert store.get_for_owner(lease.lease_id, "ha_user_morgan") is lease
     with pytest.raises(KeyError):
         store.get_for_owner(lease.lease_id, "ha_user_beth")
 

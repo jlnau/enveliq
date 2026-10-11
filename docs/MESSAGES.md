@@ -75,7 +75,7 @@ Audit log records *that* a message was sent (who, when, how many people), never 
 
 ## Tests that must pass before it ships
 
-1. Beth cannot open a conversation between Jules and Sam, by its id or by guessing; she gets the same "not found" as for an id that does not exist.
+1. Beth cannot open a conversation between Morgan and Sam, by its id or by guessing; she gets the same "not found" as for an id that does not exist.
 2. Conversation lists, unread counts and the people list never include anything from conversations the person is not in.
 3. An administrator who is not in a conversation gets "not found" too, and no endpoint lists everyone's conversations.
 4. A person who hides from the list does not appear in the people list but can still reply.

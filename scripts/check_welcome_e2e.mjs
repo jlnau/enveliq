@@ -306,7 +306,7 @@ await page.click("#userPill");
 await page.click("#adminBtn");
 await page.waitForSelector("#settings.open .embed-host >> text=Add a person");
 check("Administration has its own pop-up with the admin sections", (await page.locator("#settingsNav .settings-title").innerText()) === "Administration" && (await page.locator("#settingsNav button").allInnerTexts()).slice(0, 6).join("|") === "People|Sign-in rules & SSO|Automatic sync|Reviewed & archived|Microsoft sign-in|Features");
-check("Administration > Users shows the people", (await page.locator("#settings .embed-host >> text=jules").count()) >= 1);
+check("Administration > Users shows the people", (await page.locator("#settings .embed-host >> text=morgan").count()) >= 1);
 await page.click("[data-settings-tab=adminaiinstr]");
 await page.waitForSelector("#settings .embed-host >> #rv_instr");
 await page.locator("#settings .embed-host >> #rv_instr").fill("Write in British English.");

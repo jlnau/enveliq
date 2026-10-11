@@ -736,8 +736,8 @@ body.on-ship #waitBars{display:none!important}
   <div class="side-foot">
     <button class="nav" id="agentBtn" type="button" title="Talk to Hermes, your AI helper" aria-haspopup="dialog" aria-expanded="false" aria-controls="agentPop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-4.5 3.5V17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M12 8.2l.9 1.9 1.9.9-1.9.9-.9 1.9-.9-1.9-1.9-.9 1.9-.9z"/></svg><span class="nav-label">Agent</span></button>
     <button class="user-pill" id="userPill" aria-haspopup="true" aria-expanded="false" aria-controls="userMenu" title="Switch user">
-      <span class="avatar" id="avatar">JL</span>
-      <span class="user-copy"><strong id="userName">Jules</strong><small id="userRole">Administrator</small></span>
+      <span class="avatar" id="avatar">MO</span>
+      <span class="user-copy"><strong id="userName">Morgan</strong><small id="userRole">Administrator</small></span>
       <span class="user-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 9 4-4 4 4"/><path d="m8 15 4 4 4-4"/></svg></span>
     </button>
     <nav class="legal-links" aria-label="About Enveliq"><a href="/terms" target="_blank" rel="noopener">Terms</a><a href="/privacy" target="_blank" rel="noopener">Privacy</a><a href="/security" target="_blank" rel="noopener">Security</a></nav>
@@ -829,7 +829,7 @@ body.on-ship #waitBars{display:none!important}
   </div>
   <div class="menu-sep" id="menuSep"></div>
   <div class="menu-label" data-preview-only>Preview: switch person</div>
-  <button class="user-option" data-preview-only data-switch-user="jules"><span><strong>Jules</strong><br><small>Administrator</small></span><span>JL</span></button>
+  <button class="user-option" data-preview-only data-switch-user="morgan"><span><strong>Morgan</strong><br><small>Administrator</small></span><span>MO</span></button>
   <button class="user-option" data-preview-only data-switch-user="beth"><span><strong>Beth</strong><br><small>User</small></span><span>BE</span></button>
 </div>
 
@@ -1036,7 +1036,7 @@ body.on-ship #waitBars{display:none!important}
         <div class="section-card preview-only">
           <h4>Users</h4>
           <p>People with an Enveliq account. Administrators manage settings; they can't read other people's mail.</p>
-          <div class="account-card"><div><strong>Jules</strong><small>jules · Local account · Two-factor on</small></div><div class="account-actions"><span class="admin-badge">Administrator</span></div></div>
+          <div class="account-card"><div><strong>Morgan</strong><small>morgan · Local account · Two-factor on</small></div><div class="account-actions"><span class="admin-badge">Administrator</span></div></div>
           <div class="account-card"><div><strong>Beth</strong><small>beth · Created by single sign-on (Authentik) · Two-factor at Authentik</small></div><div class="account-actions"><button class="btn" data-preview-only>Make admin</button><button class="btn" data-preview-only>Disable</button><button class="btn" data-preview-only>Reset 2FA</button></div></div>
           <button class="add-account" data-preview-only>+ Add a person</button>
         </div>
@@ -1224,10 +1224,10 @@ body.on-ship #waitBars{display:none!important}
 </section>
 <script>
 const users={
-  jules:{id:"ha_user_jules",name:"Jules",initials:"JL",is_admin:true},
+  morgan:{id:"ha_user_morgan",name:"Morgan",initials:"MO",is_admin:true},
   beth:{id:"ha_user_beth",name:"Beth",initials:"BE",is_admin:false}
 };
-let currentUser=users.jules;
+let currentUser=users.morgan;
 
 function defaultAccountSettings(){
   return {
@@ -1252,7 +1252,7 @@ function defaultAccountSettings(){
     notifications:{
       highPriority:true,actionRequired:false,digest:"Off",includeSummary:true,
       quietHours:false,quietStart:"22:00",quietEnd:"07:00",
-      deliveryType:"script",target:"script.notify_jules",
+      deliveryType:"script",target:"script.notify_morgan",
       scriptPayload:"title_message_data"
     },
     privacy:{
@@ -1266,8 +1266,8 @@ function defaultAccountSettings(){
 
 let accounts=[
   {
-    id:"acct_jules_proton",providerId:"proton",owner:"ha_user_jules",provider:"Proton Mail",method:"Proton Bridge",
-    name:"Jules Proton",address:"jules@proton.example",status:"Connected",visibility:"private",
+    id:"acct_morgan_proton",providerId:"proton",owner:"ha_user_morgan",provider:"Proton Mail",method:"Proton Bridge",
+    name:"Morgan Proton",address:"morgan@proton.example",status:"Connected",visibility:"private",
     server:"192.168.1.50",port:"1143",username:"bridge-user",security:"STARTTLS / Bridge certificate",
     lastSync:"A few seconds ago",lastSuccess:"Today 23:37",connectedAt:"7 Oct 2026",processed:128,
     settings:defaultAccountSettings()
@@ -1281,13 +1281,13 @@ let accounts=[
   }
 ];
 accounts[0].settings.notifications.deliveryType="script";
-accounts[0].settings.notifications.target="script.notify_jules";
+accounts[0].settings.notifications.target="script.notify_morgan";
 accounts[1].settings.notifications.deliveryType="script";
 accounts[1].settings.notifications.target="script.notify_beth";
 // Addresses each mailbox can SEND from. Proton custom-domain addresses count;
 // forwarding aliases (Proton Pass / SimpleLogin style) do not - replies to
 // those go to the alias service's reverse-alias address instead.
-accounts[0].identities=["jules@proton.example","travel@jules-mail.example"];
+accounts[0].identities=["morgan@proton.example","travel@morgan-mail.example"];
 accounts[0].aliasService="Proton Pass aliases";
 accounts[1].identities=["beth@example.com"];
 
@@ -1344,18 +1344,18 @@ const emailProviders={
 };
 
 const data=[
-{id:1,owner:"ha_user_jules",account:"Jules Proton",sender:"Skyline Air",address:"no-reply@skyline-air.example",subject:"Your Skyline Air Travel Reminder",time:"Wed 17:09",summary:"Flight VA281 from Melbourne to Canberra departs Friday at 5:05 PM. Online check-in is open. Bag drop closes 60 minutes before departure.",priority:"normal",category:"Travel",action:true,status:"inbox",task:{title:"Check in for Skyline Air flight VA281",due:"Fri 9 Oct",detail:"Check in online for flight VA281 from Melbourne to Canberra. Make sure bag drop is completed at least 60 minutes before departure."},attachments:[{
+{id:1,owner:"ha_user_morgan",account:"Morgan Proton",sender:"Skyline Air",address:"no-reply@skyline-air.example",subject:"Your Skyline Air Travel Reminder",time:"Wed 17:09",summary:"Flight VA281 from Melbourne to Canberra departs Friday at 5:05 PM. Online check-in is open. Bag drop closes 60 minutes before departure.",priority:"normal",category:"Travel",action:true,status:"inbox",task:{title:"Check in for Skyline Air flight VA281",due:"Fri 9 Oct",detail:"Check in online for flight VA281 from Melbourne to Canberra. Make sure bag drop is completed at least 60 minutes before departure."},attachments:[{
   id:"att-eticket",name:"e-ticket.pdf",mime:"application/pdf",size:"184 KB",pages:3,previewKind:"pdf",
   summary:"Passenger itinerary for VA281, seat 5A, Melbourne to Canberra.",
   detail:"The attached e-ticket contains the passenger itinerary, baggage and airport information for flight VA281.",
   previewTitle:"Skyline Air e-ticket",
   previewPages:[
-    {title:"Skyline Air e-ticket",subtitle:"Passenger itinerary",lines:["Passenger: Jules Sample","Flight: VA281","Melbourne → Canberra","Departure: Friday 5:05 PM","Seat: 5A"],body:"Online check-in is open. Arrive at the airport with enough time to complete bag drop and security screening."},
+    {title:"Skyline Air e-ticket",subtitle:"Passenger itinerary",lines:["Passenger: Morgan Sample","Flight: VA281","Melbourne → Canberra","Departure: Friday 5:05 PM","Seat: 5A"],body:"Online check-in is open. Arrive at the airport with enough time to complete bag drop and security screening."},
     {title:"Baggage & check-in",subtitle:"Travel information",lines:["Checked baggage: 1 piece","Carry-on: Standard cabin allowance","Bag drop closes: 60 minutes before departure","Boarding gate closes before scheduled departure"],body:"Dangerous goods and oversized baggage remain subject to the airline's normal conditions of carriage."},
     {title:"Airport information",subtitle:"Final page",lines:["Departure airport: Melbourne","Arrival airport: Canberra","Booking status: Confirmed","Reference: VA281-DEMO"],body:"This is simulated test content used to demonstrate continuous multi-page safe PDF rendering in the prototype."}
   ]
 }]},
-{id:2,owner:"ha_user_jules",account:"Jules Proton",sender:"Harbourview Strata",address:"manager@harbourview-strata.example",subject:"Vote required: balcony repair levy",time:"Wed 16:42",summary:"The strata manager needs your yes or no vote on the proposed special levy for balcony repairs before Thursday's general meeting.",priority:"high",category:"Admin",action:true,status:"inbox",task:{title:"Send your vote on the balcony repair levy",due:"Thu 8 Oct",detail:"Reply to the strata manager with a yes or no vote on the special levy before the general meeting on Thursday."},attachments:[]},
+{id:2,owner:"ha_user_morgan",account:"Morgan Proton",sender:"Harbourview Strata",address:"manager@harbourview-strata.example",subject:"Vote required: balcony repair levy",time:"Wed 16:42",summary:"The strata manager needs your yes or no vote on the proposed special levy for balcony repairs before Thursday's general meeting.",priority:"high",category:"Admin",action:true,status:"inbox",task:{title:"Send your vote on the balcony repair levy",due:"Thu 8 Oct",detail:"Reply to the strata manager with a yes or no vote on the special levy before the general meeting on Thursday."},attachments:[]},
 {id:3,owner:"ha_user_beth",account:"Beth Gmail",sender:"Canberra Imaging",address:"appointments@example.com",subject:"Appointment confirmation",time:"Wed 15:21",summary:"Imaging appointment confirmed for Monday at 10:40 AM. Arrive 15 minutes early and bring the referral.",priority:"normal",category:"Health",action:true,status:"inbox",task:{title:"Attend imaging appointment",due:"Mon 12 Oct",detail:"Attend the imaging appointment at 10:40 AM and arrive 15 minutes early with the referral."},attachments:[{
   id:"att-imaging",name:"appointment-details.pdf",mime:"application/pdf",size:"146 KB",pages:2,previewKind:"pdf",
   summary:"Appointment details, location and preparation instructions.",
@@ -1383,8 +1383,8 @@ const data=[
 // Fictional originals and the headers a reply needs. In production these
 // come from the provider on demand and are never stored.
 const emailDetails={
-  1:{unsub:{url:"https://mail.skyline-air.example/preferences/u/8841",mailto:null,subject:null,host:"mail.skyline-air.example",source:"header"},deliveredTo:"travel@jules-mail.example",replyTo:null,viaAlias:null,messageId:"<va281-reminder-7731@mail.skyline-air.example>",date:"Wed 7 Oct 2026, 5:09 pm",
-     body:["Hi Jules,","Your trip is coming up. Here are the details for your flight.","Flight VA281\nMelbourne (MEL) to Canberra (CBR)\nDeparts Friday 9 October at 5:05 pm\nSeat 5A","Online check-in is now open. Check in online up to 90 minutes before departure to choose your seat and get your boarding pass.","Bag drop closes 60 minutes before departure. Please allow extra time for security screening, especially at peak times.","Travelling with sporting equipment or oversized items? These may need to be booked in advance. Check your booking for your included baggage allowance.","Your e-ticket is attached to this email. You can also find your booking in the app.","Have a great trip,\nThe Skyline Air team","This is an automated message. Replies to this address are not monitored."]},
+  1:{unsub:{url:"https://mail.skyline-air.example/preferences/u/8841",mailto:null,subject:null,host:"mail.skyline-air.example",source:"header"},deliveredTo:"travel@morgan-mail.example",replyTo:null,viaAlias:null,messageId:"<va281-reminder-7731@mail.skyline-air.example>",date:"Wed 7 Oct 2026, 5:09 pm",
+     body:["Hi Morgan,","Your trip is coming up. Here are the details for your flight.","Flight VA281\nMelbourne (MEL) to Canberra (CBR)\nDeparts Friday 9 October at 5:05 pm\nSeat 5A","Online check-in is now open. Check in online up to 90 minutes before departure to choose your seat and get your boarding pass.","Bag drop closes 60 minutes before departure. Please allow extra time for security screening, especially at peak times.","Travelling with sporting equipment or oversized items? These may need to be booked in advance. Check your booking for your included baggage allowance.","Your e-ticket is attached to this email. You can also find your booking in the app.","Have a great trip,\nThe Skyline Air team","This is an automated message. Replies to this address are not monitored."]},
   2:{deliveredTo:"strata.k7q2@alias.example",replyTo:"manager_at_harbourview-strata_example_q9x4k2@reverse.alias.example",viaAlias:"Proton Pass alias",messageId:"<levy-vote-2209@harbourview-strata.example>",date:"Wed 7 Oct 2026, 4:42 pm",
      body:["Dear owner,","The committee has proposed a special levy to fund repairs to the balconies on levels 2 to 6, following the engineer's report circulated last month.","Before Thursday's general meeting we need a yes or no vote from each lot owner. You can reply to this email with your vote, or vote in person at the meeting.","Summary of the proposal:\n- Total cost: as quoted in the engineer's report\n- Levy split by unit entitlement\n- Payable in two instalments\n- Works expected to start next quarter","If you have questions about the quotes or the payment schedule, reply to this email and I will answer before the meeting.","Kind regards,\nStrata Manager\nHarbourview Strata"]},
   3:{deliveredTo:"beth@example.com",replyTo:null,viaAlias:null,messageId:"<appt-55120@imaging.example>",date:"Wed 7 Oct 2026, 3:21 pm",
@@ -2615,7 +2615,7 @@ function manageActions(a){
 
 function notificationTargetFields(deliveryType,n){
   if(deliveryType==="script"){
-    const scripts=["script.notify_jules","script.notify_beth","script.notify_both"];
+    const scripts=["script.notify_morgan","script.notify_beth","script.notify_both"];
     return `
       <div class="notification-target-box">
         <h6>Home Assistant script target</h6>
@@ -2632,7 +2632,7 @@ function notificationTargetFields(deliveryType,n){
         </div>
         <div class="payload-preview">script.turn_on
 target:
-  entity_id: ${esc(n.target&&n.target.startsWith("script.")?n.target:"script.notify_jules")}
+  entity_id: ${esc(n.target&&n.target.startsWith("script.")?n.target:"script.notify_morgan")}
 data:
   variables:
     title: "Enveliq"
@@ -2643,7 +2643,7 @@ data:
   }
 
   if(deliveryType==="notify"){
-    const targets=["Home Assistant default","notify.mobile_app_jules_phone","notify.mobile_app_beth_phone"];
+    const targets=["Home Assistant default","notify.mobile_app_morgan_phone","notify.mobile_app_beth_phone"];
     return `
       <div class="notification-target-box">
         <h6>Home Assistant notification service</h6>
@@ -2890,7 +2890,7 @@ function saveManagedAccount(accountId){
     n.highPriority=checked("notifyHigh",n.highPriority);n.actionRequired=checked("notifyAction",n.actionRequired);n.includeSummary=checked("notifySummary",n.includeSummary);
     n.digest=valueOf("notifyDigest",n.digest);n.deliveryType=valueOf("notifyDelivery",n.deliveryType||"script");
     if(n.deliveryType==="script"){
-      n.target=valueOf("notifyScriptTarget",n.target||"script.notify_jules");
+      n.target=valueOf("notifyScriptTarget",n.target||"script.notify_morgan");
       n.scriptPayload=valueOf("notifyScriptPayload",n.scriptPayload||"title_message_data");
     }else if(n.deliveryType==="notify"){
       n.target=valueOf("notifyServiceTarget",n.target||"Home Assistant default");
@@ -3287,7 +3287,7 @@ document.addEventListener("click",e=>{
   const testNotification=e.target.closest("[data-test-notification]");
   if(testNotification){
     const delivery=valueOf("notifyDelivery","script");
-    const target=delivery==="script"?valueOf("notifyScriptTarget","script.notify_jules"):valueOf("notifyServiceTarget","Home Assistant default");
+    const target=delivery==="script"?valueOf("notifyScriptTarget","script.notify_morgan"):valueOf("notifyServiceTarget","Home Assistant default");
     toast(`Prototype notification sent via ${target}`);
     return;
   }
@@ -3691,8 +3691,8 @@ async function bootBackendMode(){
   const initials=name.split(/\s+/).map(w=>w[0]||"").join("").slice(0,2).toUpperCase()||"?";
   currentUser={id:me.id,name,initials,is_admin:me.role==="admin",avatar:me.avatar_v?`/api/v1/users/${me.id}/avatar?v=${me.avatar_v}`:""};
   // Sample data stands in for this person's mail until sync is connected.
-  for(const m of data)if(m.owner==="ha_user_jules")m.owner=me.id;
-  for(const a of accounts)if(a.owner==="ha_user_jules")a.owner=me.id;
+  for(const m of data)if(m.owner==="ha_user_morgan")m.owner=me.id;
+  for(const a of accounts)if(a.owner==="ha_user_morgan")a.owner=me.id;
   document.body.classList.add("backend");
   prepareEmbedPanels();
   const menu=$("userMenu");

@@ -27,11 +27,24 @@ const fileFor = (urlPath) => {
 
 for (const [f, html] of htmlOf) {
   const rel = path.relative(dist, f);
-  if (/<script\b/i.test(html)) bad(`${rel}: has a script`);
+  // The only <script> allowed is a block of search-engine data (JSON), which the browser never runs.
+  for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+    if (!/^\s*type="application\/ld\+json"\s*$/.test(m[1])) { bad(`${rel}: has a script`); continue; }
+    try { JSON.parse(m[2]); } catch { bad(`${rel}: its search-engine data is not valid JSON`); }
+  }
+  if (/<script\b(?![^>]*application\/ld\+json)/i.test(html)) bad(`${rel}: has a script`);
   if (/\sstyle="/i.test(html)) bad(`${rel}: has an inline style (the security policy blocks it)`);
   if (/\son[a-z]+="/i.test(html)) bad(`${rel}: has an inline event handler`);
   if (!/<title>[^<]{4,}<\/title>/.test(html)) bad(`${rel}: no title`);
-  if (!/<h1\b/.test(html)) bad(`${rel}: no main heading`);
+  if ((html.match(/<h1\b/g) || []).length !== 1) bad(`${rel}: should have exactly one main heading`);
+  const title = (html.match(/<title>([^<]*)/) || [])[1] || "", desc = (html.match(/name="description" content="([^"]*)/) || [])[1] || "";
+  const plain = (t) => t.replace(/&[a-z#0-9]+;/gi, "x");
+  if (plain(title).length > 62) bad(`${rel}: the title is too long for a search result (${plain(title).length} characters)`);
+  if (plain(desc).length < 20 || plain(desc).length > 165) bad(`${rel}: the description should be 20 to 165 characters (it is ${plain(desc).length})`);
+  const canonical = (html.match(/rel="canonical" href="([^"]*)"/) || [])[1];
+  const here = "/" + rel.replace(/index\.html$/, "");
+  if (rel !== "404.html" && canonical !== "https://enveliq.app" + here) bad(`${rel}: the canonical address is ${canonical}`);
+  for (const need of ['property="og:image"', 'name="twitter:card"', 'property="og:title"', 'name="viewport"']) if (!html.includes(need)) bad(`${rel}: missing ${need}`);
   for (const m of html.matchAll(/<img\b[^>]*>/g)) if (!/\salt="/.test(m[0])) bad(`${rel}: a picture has no alt text`);
   for (const m of html.matchAll(/\s(?:src|href)="([^"]+)"/g)) {
     const u = m[1]; count++;
@@ -47,7 +60,15 @@ for (const [f, html] of htmlOf) {
   }
 }
 for (const need of ["_headers", "robots.txt", "sitemap.xml", "404.html", "downloads/docker-compose.yml"]) if (!fs.existsSync(path.join(dist, need))) bad(`missing ${need}`);
+// the sitemap lists real pages, and none that are hidden from search
+const sitemap = fs.readFileSync(path.join(dist, "sitemap.xml"), "utf8");
+for (const m of sitemap.matchAll(/<loc>https:\/\/enveliq\.app([^<]*)<\/loc>/g)) {
+  const f = fileFor(m[1]);
+  if (!f) bad(`the sitemap lists ${m[1]}, which does not exist`);
+  else if (/name="robots" content="noindex/.test(htmlOf.get(f) || "")) bad(`the sitemap lists ${m[1]}, which is hidden from search`);
+}
+if (!fs.existsSync(path.join(dist, "images/share.png"))) bad("missing the share picture images/share.png");
 const headers = fs.existsSync(path.join(dist, "_headers")) ? fs.readFileSync(path.join(dist, "_headers"), "utf8") : "";
 if (!/default-src 'none'/.test(headers) || /unsafe-inline|unsafe-eval/.test(headers)) bad("the security policy in _headers is not strict");
-if (!failed) console.log(`✓ ${pages.length} pages, ${count} links and pictures checked; no scripts, no outside requests`);
+if (!failed) console.log(`✓ ${pages.length} pages, ${count} links and pictures checked; no scripts that run, no outside requests, search tags in place`);
 process.exit(failed ? 1 : 0);

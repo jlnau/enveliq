@@ -23,7 +23,7 @@ await (async () => {
 
   await p.goto(BASE + '/'); await p.waitForURL('**/setup'); step('fresh server sends you to /setup');
   await p.screenshot({ path: `${process.env.ENVELIQ_E2E_SHOTS || '.'}/e2e-setup.png`, fullPage: true });
-  await p.fill('#setup_code', SETUP_CODE); await p.fill('#display_name', 'Jules'); await p.fill('#username', 'jules');
+  await p.fill('#setup_code', SETUP_CODE); await p.fill('#display_name', 'Morgan'); await p.fill('#username', 'morgan');
   await p.fill('#password', 'Admin password 2026 e2e'); await p.fill('#password2', 'Admin password 2026 e2e');
   await p.fill('#passphrase', 'Vault passphrase 2026 e2e'); await p.fill('#passphrase2', 'Vault passphrase 2026 e2e');
   await p.click('button[type=submit]'); await p.waitForURL('**/account?enroll=1'); step('setup done, admin sent to two-factor setup');
@@ -78,7 +78,7 @@ await (async () => {
   await p.click('text=Sign in with a passkey'); await p.waitForURL(BASE + '/'); step('passwordless passkey sign-in works');
 
   await p.goto(BASE + '/account'); await p.click('nav >> text=Sign out'); await p.waitForURL('**/login');
-  await p.fill('#username', 'jules'); await p.fill('#password', 'Admin password 2026 e2e'); await p.click('button[type=submit]');
+  await p.fill('#username', 'morgan'); await p.fill('#password', 'Admin password 2026 e2e'); await p.click('button[type=submit]');
   await p.waitForSelector('#code'); await p.screenshot({ path: `${process.env.ENVELIQ_E2E_SHOTS || '.'}/e2e-mfa.png`, fullPage: true });
   await p.fill('#code', '123456'); await p.click('text=Verify'); await p.waitForSelector('.form-error'); step('wrong code refused: ' + await p.textContent('.form-error'));
   await p.fill('#code', totp(secret, 1)); await p.click('text=Verify'); await p.waitForURL(BASE + '/'); step('password + authenticator code sign-in works');

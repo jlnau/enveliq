@@ -321,7 +321,7 @@ def test_preview_leases_are_ram_only_and_zeroized(tmp_path: Path):
     # Starts with the real PNG signature: the store now checks magic bytes.
     marker = b"\x89PNG\r\n\x1a\n" + b"SAFE-DERIVATIVE-RAM-ONLY-TEST-123"
     lease = store.put_safe_preview(
-        owner_user_id="ha_user_jules",
+        owner_user_id="ha_user_morgan",
         account_id="acct",
         message_id="msg",
         attachment_id="att",

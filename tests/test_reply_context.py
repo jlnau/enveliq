@@ -15,7 +15,7 @@ def env(tmp_path: Path):
     client, _ = setup_admin(appm)
     headers = {}
     r = client.post("/api/v1/accounts", headers=headers, json={
-        "provider": "Proton Mail", "display_name": "Jules Proton", "email_address": "jules@proton.example",
+        "provider": "Proton Mail", "display_name": "Morgan Proton", "email_address": "morgan@proton.example",
         "auth_method": "proton_bridge", "server": "127.0.0.1", "port": 1143,
         "username": "bridge-user", "password": "bridge-password"})
     yield appm, client, headers, r.json()["id"]

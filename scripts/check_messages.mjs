@@ -32,7 +32,7 @@ function makeServer(opts = {}) {
     ] },
     { id: id("t", 24), members: [ME, "u3"], muted: false, messages: [{ id: id("m", 16), from: "u3", at: now - 1200, text: "Dinner at 7, I'll bring dessert", seen: false }] },
   ];
-  const name = (u) => (u === ME ? "Jules" : PEOPLE[u].name);
+  const name = (u) => (u === ME ? "Morgan" : PEOPLE[u].name);
   const card = (u) => PEOPLE[u];
   const unread = (t) => (t.muted ? 0 : t.messages.filter((m) => !m.seen && m.from !== ME && !m.deleted).length);
   const row = (t) => {
@@ -41,7 +41,7 @@ function makeServer(opts = {}) {
     return { id: t.id, title: names.length <= 1 ? names[0] : names.length === 2 ? `${names[0]}, ${names[1]} and you` : `${names[0]}, ${names[1]} and ${names.length - 1} more`, members: others.map(card), group: t.members.length > 2, muted: t.muted,
       unread: unread(t), last: last ? { from: last.from, mine: last.from === ME, name: name(last.from), text: last.text, at: last.at } : null, updated: t.messages.length ? t.messages[t.messages.length - 1].at : now };
   };
-  const view = (t) => ({ ...row(t), everyone: t.members.map((u) => (u === ME ? { id: ME, name: "Jules", avatar_v: null } : card(u))),
+  const view = (t) => ({ ...row(t), everyone: t.members.map((u) => (u === ME ? { id: ME, name: "Morgan", avatar_v: null } : card(u))),
     messages: t.messages.map((m) => ({ id: m.id, from: m.from, name: name(m.from), mine: m.from === ME, at: m.at, text: m.deleted ? "" : m.text, deleted: !!m.deleted })) });
   const handler = async (route) => {
     const req = route.request(), p = new URL(req.url()).pathname;
@@ -49,7 +49,7 @@ function makeServer(opts = {}) {
     const body = () => { try { return JSON.parse(req.postData() || "{}"); } catch (e) { return {}; } };
     if (p === "/") return route.fulfill({ status: 200, contentType: "text/html", body: html });
     if (p === "/api/v1/status") return json(200, { cipher: "AES-256-GCM", kdf: "argon2id", initialized: true, unlocked: true, idle_lock_seconds: 900 });
-    if (p === "/api/v1/me") return json(200, { id: ME, username: "jules", display_name: "Jules", role: "admin" });
+    if (p === "/api/v1/me") return json(200, { id: ME, username: "morgan", display_name: "Morgan", role: "admin" });
     if (p === "/api/v1/accounts") return json(200, [{ id: "a1", provider: "proton", auth_method: "proton_bridge", owner_user_id: ME, display_name: "Proton test", email_address: "me@example.invalid", server: "172.30.0.1", port: 1144, username: "u", settings: {} }]);
     if (p === "/api/v1/accounts/a1/messages") return json(200, [{ id: "m1", subject: "Vote required: balcony repair levy", sender_display: "Harbourview Strata", sender_address: "s@example.invalid", summary: "A vote is needed.", priority: "normal", category: "Information", action_required: false, received_at: now - 600, reply_context: ctx("m1") }]);
     if (p === "/api/v1/me/preferences") return json(200, { keep_reviewed: true, keep_archived: true, keep_days: 7, max_days: 14, instructions: "", undo_send_seconds: 0 });
