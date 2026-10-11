@@ -31,7 +31,7 @@
     --line: #d8dde8;
     --text: #161b26;
     --muted: #4f596d;
-    --faint: #6a7388;
+    --faint: #5b657a;
     --link: #0a58c7;
     --code: #eef1f7;
     --bar: rgba(243, 245, 249, .9);
@@ -200,3 +200,10 @@ details p { margin: 0 0 16px; color: var(--muted); max-width: 40em; }
 }
 .doc a, .doc li, .doc p { overflow-wrap: anywhere; }
 .doc pre code { overflow-wrap: normal; }
+
+/* The tour page */
+.row h2 { font: 750 clamp(22px, 2.6vw, 28px)/1.2 var(--head); margin: 0 0 14px; letter-spacing: -.01em; }
+.row-shot figcaption { padding: 10px 16px 12px; font-size: 14px; color: var(--muted); background: var(--panel); border-top: 1px solid var(--line); }
+.row-shot.phone-shot { justify-self: center; width: min(300px, 100%); border-radius: 28px; }
+.row-shot.phone-shot figcaption { text-align: center; }
+.row-shot img { display: block; width: 100%; height: auto; }

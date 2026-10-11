@@ -67,6 +67,7 @@ for (const m of sitemap.matchAll(/<loc>https:\/\/enveliq\.app([^<]*)<\/loc>/g)) 
   if (!f) bad(`the sitemap lists ${m[1]}, which does not exist`);
   else if (/name="robots" content="noindex/.test(htmlOf.get(f) || "")) bad(`the sitemap lists ${m[1]}, which is hidden from search`);
 }
+for (const need of ["favicon.ico", "images/apple-touch-icon.png", ".well-known/security.txt", "tour/index.html"]) if (!fs.existsSync(path.join(dist, need))) bad(`missing ${need}`);
 if (!fs.existsSync(path.join(dist, "images/share.png"))) bad("missing the share picture images/share.png");
 const headers = fs.existsSync(path.join(dist, "_headers")) ? fs.readFileSync(path.join(dist, "_headers"), "utf8") : "";
 if (!/default-src 'none'/.test(headers) || /unsafe-inline|unsafe-eval/.test(headers)) bad("the security policy in _headers is not strict");

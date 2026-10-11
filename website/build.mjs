@@ -183,7 +183,9 @@ const head = ({ title, description, canonical, home, noindex, ld }) => `<!doctyp
 <meta name="description" content="${esc(description)}">
 <meta name="theme-color" content="#0b0e14">
 <link rel="canonical" href="${SITE}${canonical}">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="icon" type="image/webp" href="/images/icon.webp">
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:type" content="website">
@@ -208,6 +210,7 @@ const head = ({ title, description, canonical, home, noindex, ld }) => `<!doctyp
     <a class="brand" href="/"><img src="/images/icon.webp" width="32" height="32" alt=""><span>Enveliq</span></a>
     <nav class="top" aria-label="Main">
       <a href="/#what">What it does</a>
+      <a href="/tour/">Tour</a>
       <a href="/docs/install/">Install</a>
       <a href="/docs/">Guides</a>
       <a href="/docs/security/">Security</a>
@@ -220,7 +223,7 @@ const foot = () => `
 <footer class="foot">
   <div class="foot-in">
     <p><strong>Enveliq</strong> turns email into clarity. Free to use, and it runs on your own computer.</p>
-    <p class="links"><a href="/docs/install/">Install</a> <a href="/docs/">Guides</a> <a href="/docs/privacy/">Privacy</a> <a href="/docs/terms/">Terms</a> <a href="${REPO}" rel="noopener noreferrer">Source code</a></p>
+    <p class="links"><a href="/tour/">Tour</a> <a href="/docs/install/">Install</a> <a href="/docs/">Guides</a> <a href="/docs/privacy/">Privacy</a> <a href="/docs/terms/">Terms</a> <a href="${REPO}" rel="noopener noreferrer">Source code</a></p>
     <p class="small">This website sets no cookies, runs no scripts and loads nothing from other sites.</p>
   </div>
 </footer>
@@ -277,10 +280,19 @@ write("index.html", head({
   ] }),
 }) + home + foot());
 
+const tour = fs.readFileSync(path.join(here, "src", "tour.html"), "utf8");
+write("tour/index.html", head({
+  title: "A look around Enveliq: screenshots of the app",
+  description: "See Enveliq's parcel tracking, one-tap questions, writing help, new email and safe email viewer. Every screen uses made-up example mail.",
+  canonical: "/tour/", home: true,
+  ld: ldJson({ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [["Enveliq", "/"], ["A look around Enveliq", "/tour/"]].map(([name, u], i) => ({ "@type": "ListItem", position: i + 1, name, item: SITE + u })) }),
+}) + tour + foot());
+
 write("404.html", head({ title: "Page not found - Enveliq", description: "That page is not here.", canonical: "/404.html", noindex: true }) +
   `<main id="main" class="doc-col narrow"><article class="doc"><h1>That page is not here</h1><p>It may have moved. Try the <a href="/docs/">list of guides</a>, or go back to the <a href="/">front page</a>.</p></article></main>` + foot());
 
 copy(path.join(here, "src", "style.css"), "style.css");
+copy(path.join(here, "src", "favicon.ico"), "favicon.ico");
 for (const f of fs.readdirSync(path.join(here, "src", "images"))) copy(path.join(here, "src", "images", f), "images/" + f);
 for (const [from, to] of assets) copy(path.join(root, from), to.slice(1));
 for (const [from, to] of downloads) copy(path.join(root, from), to.slice(1));
@@ -297,12 +309,21 @@ write("_headers", `/*
 
 /images/*
   Cache-Control: public, max-age=86400
+
+/favicon.ico
+  Cache-Control: public, max-age=86400
+
+/.well-known/security.txt
+  Content-Type: text/plain; charset=utf-8
 `);
+// How to report a security problem (https://securitytxt.org). The date is a year from this build, and each publish renews it.
+const expires = new Date(Date.now() + 330 * 864e5).toISOString().replace(/\.\d+Z$/, "Z");
+write(".well-known/security.txt", `Contact: ${REPO}/security/advisories/new\nExpires: ${expires}\nPreferred-Languages: en\nCanonical: ${SITE}/.well-known/security.txt\nPolicy: ${SITE}/docs/security/\n`);
 write("robots.txt", `User-agent: *\nAllow: /\nSitemap: ${SITE}/sitemap.xml\n`);
 const changed = (rel) => { try { return execFileSync("git", ["log", "-1", "--format=%cs", "--", rel], { cwd: root, encoding: "utf8" }).trim(); } catch { return ""; } };
-const entries = [["/", "docs/README.md"], ...[...sources].filter(([rel]) => !NOINDEX.has(rel)).map(([rel, s]) => [s.url, rel])].map(([u, rel]) => [u, changed(rel)]);
+const entries = [["/", "docs/README.md"], ["/tour/", "website/src/tour.html"], ...[...sources].filter(([rel]) => !NOINDEX.has(rel)).map(([rel, s]) => [s.url, rel])].map(([u, rel]) => [u, changed(rel)]);
 // A shallow copy of the repository gives every page the same date. That says nothing, so the dates are left out then.
 const useDates = new Set(entries.map(([, d]) => d)).size > 1;
 write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.map(([u, d]) => `  <url><loc>${SITE}${u}</loc>${useDates && d ? `<lastmod>${d}</lastmod>` : ""}</url>`).join("\n")}\n</urlset>\n`);
 
-console.log(`Built ${sources.size + 2} pages into ${path.relative(process.cwd(), dist) || "dist"}`);
+console.log(`Built ${sources.size + 3} pages into ${path.relative(process.cwd(), dist) || "dist"}`);
