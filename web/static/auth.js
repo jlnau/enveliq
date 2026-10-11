@@ -33,9 +33,16 @@ const moreOpen = (title, open, ...children) => h("details", { class: "help", ope
 const chkBox = (id, checked, title, hint) => h("label", { class: "check", for: id }, h("input", { id, type: "checkbox", checked: !!checked }), h("span", {}, h("strong", { text: title }), hint ? h("div", { class: "hint", text: hint }) : null));
 const field = (label, input, hint) => h("div", {}, h("label", { for: input.id, text: label }), input, hint ? h("div", { class: "hint", text: hint }) : null);
 const input = (id, attrs = {}) => h("input", { id, name: id, ...attrs });
-// A link to one of the step-by-step guides on GitHub. It opens in a new tab and only loads when it is clicked.
-const GUIDES = "https://github.com/jlnau/enveliq/blob/main/docs/";
-const guide = (path, text) => h("a", { class: "guide-link", href: GUIDES + path, target: "_blank", rel: "noopener noreferrer", text: (text || "Open the step-by-step guide") + " ↗" });
+// A link to one of the step-by-step guides on the Enveliq website. It opens in a new tab and only loads when it is clicked.
+// A guide is named by its file in the project's docs folder (e.g. "AI_SUMMARIES.md" or "install/after-install.md#heading");
+// the website publishes it at /docs/ai-summaries/ and /docs/install/after-install/#heading.
+const GUIDES = "https://enveliq.app/docs/";
+const guideUrl = (path) => {
+  const [file, anchor] = path.split("#");
+  const name = file.replace(/\.md$/, "").replace(/\/?README$/, "").split("/").map((p) => p.toLowerCase().replace(/_/g, "-")).join("/");
+  return GUIDES + (name ? name + "/" : "") + (anchor ? "#" + anchor : "");
+};
+const guide = (path, text) => h("a", { class: "guide-link", href: guideUrl(path), target: "_blank", rel: "noopener noreferrer", text: (text || "Open the step-by-step guide") + " ↗" });
 const guideNote = (path, lead, text) => h("p", { class: "hint guide-note" }, lead ? lead + " " : "", guide(path, text));
 function toast(text) {
   const t = toastEl || document.getElementById("toast");
@@ -1110,7 +1117,7 @@ async function adminPage(me, only) {
       guideNote("AI_SUMMARIES.md", "Choosing a model, or not sure what to type?", "Open the AI guide"), aiPanel),
     sync: syncForm ? h("section", { class: "section" }, h("h2", { text: "Automatic sync" }), syncForm) : null,
     keep: keepForm ? h("section", { class: "section" }, h("h2", { text: "Reviewed and Archived" }), keepForm) : null,
-    microsoft: msConf ? h("section", { class: "section" }, h("h2", { text: "Microsoft sign-in (Outlook, Hotmail, Microsoft 365)" }), guideNote("MICROSOFT.md", "A longer guide with pictures of each step is on GitHub.", "Open the Microsoft guide"), microsoftSection(msConf, () => adminPage(me, only))) : null,
+    microsoft: msConf ? h("section", { class: "section" }, h("h2", { text: "Microsoft sign-in (Outlook, Hotmail, Microsoft 365)" }), guideNote("MICROSOFT.md", "A longer guide with pictures of each step is on the Enveliq website.", "Open the Microsoft guide"), microsoftSection(msConf, () => adminPage(me, only))) : null,
     features: featForm ? h("section", { class: "section" }, h("h2", { text: "Features" }), featForm) : null,
     agent: agForm ? h("section", { class: "section" }, h("h2", { text: "Agent chat" }), guideNote("AGENT.md", "", "How to connect a Hermes agent"), agForm) : null,
     reminders: remForm ? h("section", { class: "section" }, h("h2", { text: "Reminders" }), guideNote("NOTIFICATIONS.md", "", "How to set up reminders"), remForm, gForm ? h("h2", { text: "Google Calendar" }) : null, gForm ? guideNote("CALENDAR.md", "Every click, step by step:", "Google Calendar guide") : null, gForm) : null,
@@ -1607,7 +1614,7 @@ async function mailboxesPage(me, diagId) {
     ...(cards.length ? cards : [h("section", { class: "section" }, h("p", { class: "lead", text: "No mailboxes yet. Add one below. Gmail, iCloud, Yahoo, Fastmail, Proton Mail and any IMAP service work." }))]),
     h("section", { class: "section" }, h("h2", { text: "Add a mailbox" }),
       h("p", { class: "lead" }, "Enveliq reads only the headers of unread mail, shows the original on request, and never stores message bodies. The ", h("a", { href: "/welcome", text: "Setup guide" }), " explains every field."),
-      h("p", { class: "hint guide-note" }, "Step by step on GitHub: ", guide("install/after-install.md#step-4-connect-your-email", "Connecting your email"), " · ", guide("EMAIL_SERVICES.md", "Gmail, iCloud, Yahoo and others"), " · ", guide("MICROSOFT.md", "Outlook and Microsoft 365"), " · ", guide("PROTON_BRIDGE.md", "Proton Mail")), addPanel), out));
+      h("p", { class: "hint guide-note" }, "Step by step on the Enveliq website: ", guide("install/after-install.md#step-4-connect-your-email", "Connecting your email"), " · ", guide("EMAIL_SERVICES.md", "Gmail, iCloud, Yahoo and others"), " · ", guide("MICROSOFT.md", "Outlook and Microsoft 365"), " · ", guide("PROTON_BRIDGE.md", "Proton Mail")), addPanel), out));
 }
 // What Enveliq holds for one mailbox, with the same actions as the inbox. For finding out why something looks wrong.
 async function diagnosticsPage(me, account, back) {
