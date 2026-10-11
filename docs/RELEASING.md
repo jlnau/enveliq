@@ -16,7 +16,7 @@ GitHub has no built-in "release template" that pre-fills the form. What it does 
 2. **Choose a tag:** type the version with a `v` in front, for example `v0.86`, then choose **Create new tag: v0.86 on publish**. The tag must match `backend/version.py` exactly, or the publish step stops on purpose.
 3. **Target:** leave it on `main`.
 4. **Release title:** `Enveliq v0.86` (same number as the tag).
-5. **Description:** press **Generate release notes**, then add the two short parts from the template below at the top.
+5. **Description:** press **Generate release notes**, then add the two short parts from the template below at the top. (On the very first release the button is greyed out, because there is no earlier tag to compare with. Write the notes by hand.)
 6. Leave **Set as the latest release** ticked. Leave "pre-release" unticked.
 7. Press **Publish release**.
 8. Open the **Actions** tab and watch **Checks**. When **Publish images** shows a green tick, the new images are ready.
