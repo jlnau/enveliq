@@ -26,3 +26,12 @@ Open `website/dist/index.html` in a browser, or serve the folder with `python -m
 3. Add the custom domain `enveliq.app`.
 
 Each merge to `main` publishes again.
+
+## Search engines
+
+- Every page gets its own title, description, address (canonical), share picture and Twitter card. The share picture is `src/images/share.png` (1200 x 630).
+- The front page carries data that tells search engines it is a free application. Guide pages carry a breadcrumb trail. These are inert JSON blocks, not scripts.
+- Pages for people building Enveliq (see `NOINDEX` in `build.mjs`) stay on the site but are kept out of search results and the sitemap.
+- Long titles are shortened in `SHORT_TITLE`. Descriptions are cut at a sentence or word, at most 160 characters.
+- The sitemap adds "last changed" dates when the repository has real history. A shallow copy gives every page the same date, so the dates are left out then.
+- `npm run check` fails if a page loses its title, description, canonical address, share tags or heading, or if the sitemap lists a hidden page.

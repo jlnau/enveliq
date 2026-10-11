@@ -66,7 +66,7 @@ def next_totp(secret: str) -> str:
     return totp.code_at(secret, totp.current_step() + 1)
 
 
-def setup_admin(appm, *, username: str = "jules", with_passphrase: bool = True) -> tuple[TestClient, str]:
+def setup_admin(appm, *, username: str = "morgan", with_passphrase: bool = True) -> tuple[TestClient, str]:
     """First-run setup plus the authenticator enrolment the default policy
     requires for administrators. Returns (signed-in client, TOTP secret)."""
     client = TestClient(appm.app, raise_server_exceptions=False)

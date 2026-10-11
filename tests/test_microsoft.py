@@ -15,7 +15,7 @@ from helpers import PUBLIC_URL, create_user, load_app, setup_admin, sign_in
 from test_bridge import mails
 from backend.mail import microsoft as ms
 
-EMAIL = "jules@outlook.example"
+EMAIL = "morgan@outlook.example"
 CLIENT_ID = "12345678-abcd-1234-abcd-1234567890ab"
 CALLBACK = PUBLIC_URL + "/api/v1/mail/microsoft/callback"
 

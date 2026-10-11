@@ -6,6 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
 import { Marked } from "marked";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -65,6 +66,20 @@ const NAV = [
 ];
 const INDEX_SOURCE = "docs/README.md";   // becomes /docs/
 
+// Pages that are for people building or checking Enveliq, not for newcomers. They stay on the site but are kept out of search results.
+const NOINDEX = new Set(["docs/ARCHITECTURE.md", "docs/EMAIL_ASSIST.md", "docs/CHANGELOG.md", "docs/VERSION_HISTORY.md", "docs/AGENT.md"]);
+
+// Search results cut a title off after about 60 characters, so a few long headings get a shorter page title.
+const SHORT_TITLE = {
+  "docs/install/docker-desktop.md": "Install Enveliq on Windows or Mac (Docker Desktop)",
+  "docs/install/raspberry-pi.md": "Install Enveliq on a Raspberry Pi",
+  "docs/install/maintenance.md": "Update, back up and remove Enveliq",
+  "docs/NETWORK_ACCESS.md": "Open Enveliq on your network, no https needed",
+  "docs/EMAIL_SERVICES.md": "Connect Gmail, iCloud, Yahoo and other email",
+  "docs/SSO.md": "Single sign-on with Authentik, Authelia and more",
+  "docs/AGENT.md": "Talk to your Hermes agent from Enveliq",
+};
+
 // ---------- helpers ----------
 const read = (rel) => fs.readFileSync(path.join(root, rel), "utf8");
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -119,6 +134,15 @@ function resolveLink(href, fromRel) {
   return href;
 }
 
+// ---------- a description that fits in a search result ----------
+function tidy(text, max = 160) {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const stop = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("? "), cut.lastIndexOf("! "));
+  if (stop > 70) return cut.slice(0, stop + 1);
+  return cut.slice(0, cut.lastIndexOf(" ")).replace(/[,;:\-\s]+$/, "") + "…";
+}
+
 // ---------- Markdown to HTML ----------
 function render(rel) {
   const marked = new Marked({ gfm: true });
@@ -144,11 +168,13 @@ function render(rel) {
   let html = marked.parse(read(rel));
   html = html.replace(/<table>/g, '<div class="tbl"><table>').replace(/<\/table>/g, "</table></div>");
   const para = html.match(/<p>([\s\S]*?)<\/p>/);
-  return { html, title: title || rel, description: para ? stripTags(para[1]).replace(/\s+/g, " ").slice(0, 200) : "" };
+  return { html, title: SHORT_TITLE[rel] || title || rel, description: para ? tidy(stripTags(para[1]).replace(/\s+/g, " ")) : "" };
 }
 
 // ---------- page frame ----------
-const head = ({ title, description, canonical, home }) => `<!doctype html>
+const SHARE = { url: `${SITE}/images/share.png`, alt: "Enveliq: turn email into clarity. A private email assistant that runs on your own computer." };
+const ldJson = (obj) => `<script type="application/ld+json">${JSON.stringify(obj).replace(/</g, "\\u003c")}</script>`;
+const head = ({ title, description, canonical, home, noindex, ld }) => `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -162,7 +188,18 @@ const head = ({ title, description, canonical, home }) => `<!doctype html>
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:type" content="website">
 <meta property="og:url" content="${SITE}${canonical}">
-<link rel="stylesheet" href="/style.css">
+<meta property="og:site_name" content="Enveliq">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="${SHARE.url}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="${esc(SHARE.alt)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(description)}">
+<meta name="twitter:image" content="${SHARE.url}">
+<meta name="twitter:image:alt" content="${esc(SHARE.alt)}">${noindex ? '\n<meta name="robots" content="noindex, follow">' : ""}
+<link rel="stylesheet" href="/style.css">${ld ? "\n" + ld : ""}
 </head>
 <body${home ? ' class="home"' : ""}>
 <a class="skip" href="#main">Skip to the content</a>
@@ -214,7 +251,10 @@ ${html}
     </article>
   </div>
 </main>`;
-  write(url.slice(1) + "index.html", head({ title: `${title} - Enveliq`, description, canonical: url }) + body + foot());
+  const full = `${title} - Enveliq`;
+  const crumbs = [["Enveliq", "/"], ["Guides", "/docs/"], ...(url === "/docs/" ? [] : [[title, url]])];
+  const ld = ldJson({ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: crumbs.map(([name, u], i) => ({ "@type": "ListItem", position: i + 1, name, item: SITE + u })) });
+  write(url.slice(1) + "index.html", head({ title: full.length > 62 ? title : full, description, canonical: url, noindex: NOINDEX.has(rel), ld }) + body + foot());
 }
 
 // ---------- build ----------
@@ -228,9 +268,16 @@ write("index.html", head({
   title: "Enveliq: turn email into clarity",
   description: "A private email assistant that runs on your own computer. It reads your mail, tells you what needs a reply, and keeps everything else out of your way.",
   canonical: "/", home: true,
+  ld: ldJson({ "@context": "https://schema.org", "@graph": [
+    { "@type": "WebSite", "@id": SITE + "/#site", name: "Enveliq", url: SITE + "/", description: "A private email assistant that runs on your own computer." },
+    { "@type": "SoftwareApplication", "@id": SITE + "/#app", name: "Enveliq", url: SITE + "/", image: SHARE.url,
+      description: "A private, self-hosted email assistant for a household. It writes short summaries of your email, picks out what needs a reply, follows your parcels and keeps everything else out of your way. Raw emails and attachments are never stored.",
+      applicationCategory: "CommunicationApplication", operatingSystem: "Docker on Linux, Windows or macOS",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" }, isPartOf: { "@id": SITE + "/#site" } },
+  ] }),
 }) + home + foot());
 
-write("404.html", head({ title: "Page not found - Enveliq", description: "That page is not here.", canonical: "/404.html" }) +
+write("404.html", head({ title: "Page not found - Enveliq", description: "That page is not here.", canonical: "/404.html", noindex: true }) +
   `<main id="main" class="doc-col narrow"><article class="doc"><h1>That page is not here</h1><p>It may have moved. Try the <a href="/docs/">list of guides</a>, or go back to the <a href="/">front page</a>.</p></article></main>` + foot());
 
 copy(path.join(here, "src", "style.css"), "style.css");
@@ -252,7 +299,10 @@ write("_headers", `/*
   Cache-Control: public, max-age=86400
 `);
 write("robots.txt", `User-agent: *\nAllow: /\nSitemap: ${SITE}/sitemap.xml\n`);
-const urls = ["/", ...[...sources.values()].map((s) => s.url)];
-write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${SITE}${u}</loc></url>`).join("\n")}\n</urlset>\n`);
+const changed = (rel) => { try { return execFileSync("git", ["log", "-1", "--format=%cs", "--", rel], { cwd: root, encoding: "utf8" }).trim(); } catch { return ""; } };
+const entries = [["/", "docs/README.md"], ...[...sources].filter(([rel]) => !NOINDEX.has(rel)).map(([rel, s]) => [s.url, rel])].map(([u, rel]) => [u, changed(rel)]);
+// A shallow copy of the repository gives every page the same date. That says nothing, so the dates are left out then.
+const useDates = new Set(entries.map(([, d]) => d)).size > 1;
+write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.map(([u, d]) => `  <url><loc>${SITE}${u}</loc>${useDates && d ? `<lastmod>${d}</lastmod>` : ""}</url>`).join("\n")}\n</urlset>\n`);
 
 console.log(`Built ${sources.size + 2} pages into ${path.relative(process.cwd(), dist) || "dist"}`);

@@ -40,7 +40,7 @@ def test_nothing_is_reachable_before_setup_and_there_is_no_default_identity(appm
 
 def test_setup_requires_the_one_time_code_and_runs_once(appm):
     c = TestClient(appm.app, raise_server_exceptions=False)
-    body = {"setup_code": "not-the-right-code", "passphrase": PASSPHRASE, "username": "jules", "password": ADMIN_PASSWORD}
+    body = {"setup_code": "not-the-right-code", "passphrase": PASSPHRASE, "username": "morgan", "password": ADMIN_PASSWORD}
     assert c.post("/api/v1/setup", json=body).status_code == 403
     assert appm.SETUP_CODE_PATH.exists()
     assert c.post("/api/v1/setup", json={**body, "setup_code": SETUP_CODE}).status_code == 201
@@ -62,7 +62,7 @@ def test_setup_code_file_is_private(tmp_path: Path):
 
 def test_admin_must_set_up_two_factor_before_using_anything(appm):
     c = TestClient(appm.app, raise_server_exceptions=False)
-    r = c.post("/api/v1/setup", json={"setup_code": SETUP_CODE, "passphrase": PASSPHRASE, "username": "jules", "password": ADMIN_PASSWORD})
+    r = c.post("/api/v1/setup", json={"setup_code": SETUP_CODE, "passphrase": PASSPHRASE, "username": "morgan", "password": ADMIN_PASSWORD})
     assert r.json()["next"] == "enroll_mfa"
     assert c.get("/api/v1/accounts").status_code == 403
     assert c.get("/api/v1/admin/users").status_code == 403
@@ -87,7 +87,7 @@ def test_tightened_policy_applies_to_existing_sessions(appm, admin):
 def test_sign_in_with_password_and_authenticator_code(appm, admin):
     admin.post("/api/v1/auth/logout")
     c = TestClient(appm.app, raise_server_exceptions=False)
-    r = c.post("/api/v1/auth/login", json={"username": "JULES", "password": ADMIN_PASSWORD})
+    r = c.post("/api/v1/auth/login", json={"username": "MORGAN", "password": ADMIN_PASSWORD})
     assert r.json() == {"next": "mfa", "methods": ["totp", "recovery"]}
     assert c.get("/api/v1/accounts").status_code == 401  # password alone is not enough
     code = next_totp(admin.totp_secret)
@@ -95,13 +95,13 @@ def test_sign_in_with_password_and_authenticator_code(appm, admin):
     assert c.get("/api/v1/accounts").status_code == 200
     # The same code cannot be replayed in another sign-in.
     c2 = TestClient(appm.app, raise_server_exceptions=False)
-    c2.post("/api/v1/auth/login", json={"username": "jules", "password": ADMIN_PASSWORD})
+    c2.post("/api/v1/auth/login", json={"username": "morgan", "password": ADMIN_PASSWORD})
     assert c2.post("/api/v1/auth/mfa", json={"code": code}).status_code == 401
 
 
 def test_wrong_codes_end_the_sign_in_after_five_tries(appm, admin):
     c = TestClient(appm.app, raise_server_exceptions=False)
-    c.post("/api/v1/auth/login", json={"username": "jules", "password": ADMIN_PASSWORD})
+    c.post("/api/v1/auth/login", json={"username": "morgan", "password": ADMIN_PASSWORD})
     for _ in range(4):
         assert c.post("/api/v1/auth/mfa", json={"code": "000000"}).json()["detail"] == "That code is not correct"
     assert "Too many" in c.post("/api/v1/auth/mfa", json={"code": "000000"}).json()["detail"]
@@ -111,13 +111,13 @@ def test_wrong_codes_end_the_sign_in_after_five_tries(appm, admin):
 def test_unknown_user_and_wrong_password_look_the_same(appm, admin):
     c = TestClient(appm.app, raise_server_exceptions=False)
     a = c.post("/api/v1/auth/login", json={"username": "nobody", "password": "whatever-password-1"})
-    b = c.post("/api/v1/auth/login", json={"username": "jules", "password": "wrong-password-123"})
+    b = c.post("/api/v1/auth/login", json={"username": "morgan", "password": "wrong-password-123"})
     assert a.status_code == b.status_code == 401 and a.json() == b.json()
 
 
 def test_password_guessing_is_rate_limited(appm, admin):
     c = TestClient(appm.app, raise_server_exceptions=False)
-    codes = [c.post("/api/v1/auth/login", json={"username": "jules", "password": f"guess-{i:04d}-xx"}).status_code for i in range(12)]
+    codes = [c.post("/api/v1/auth/login", json={"username": "morgan", "password": f"guess-{i:04d}-xx"}).status_code for i in range(12)]
     assert 429 in codes and codes.count(401) <= 10
 
 
@@ -136,7 +136,7 @@ def test_session_cookie_is_new_on_every_sign_in_and_http_only(appm, admin):
 def test_cookies_are_secure_with_an_https_public_url(tmp_path: Path):
     m = load_app(tmp_path, ENVELIQ_PUBLIC_URL="https://enveliq.example.test", ENVELIQ_ALLOWED_HOSTS="enveliq.example.test")
     c = TestClient(m.app, base_url="https://enveliq.example.test", raise_server_exceptions=False)
-    r = c.post("/api/v1/setup", json={"setup_code": SETUP_CODE, "passphrase": PASSPHRASE, "username": "jules", "password": ADMIN_PASSWORD})
+    r = c.post("/api/v1/setup", json={"setup_code": SETUP_CODE, "passphrase": PASSPHRASE, "username": "morgan", "password": ADMIN_PASSWORD})
     assert r.status_code == 201
     assert "__Host-enveliq_session=" in r.headers["set-cookie"] and "Secure" in r.headers["set-cookie"]
     assert "Strict-Transport-Security" in r.headers
@@ -162,10 +162,10 @@ def test_plain_http_on_a_trusted_network_is_an_explicit_opt_in(tmp_path: Path):
 def test_recovery_codes_work_once(appm, admin):
     codes = admin.post("/api/v1/auth/recovery-codes").json()["recovery_codes"]
     c = TestClient(appm.app, raise_server_exceptions=False)
-    c.post("/api/v1/auth/login", json={"username": "jules", "password": ADMIN_PASSWORD})
+    c.post("/api/v1/auth/login", json={"username": "morgan", "password": ADMIN_PASSWORD})
     assert c.post("/api/v1/auth/mfa", json={"code": codes[0].upper()}).status_code == 200
     c2 = TestClient(appm.app, raise_server_exceptions=False)
-    c2.post("/api/v1/auth/login", json={"username": "jules", "password": ADMIN_PASSWORD})
+    c2.post("/api/v1/auth/login", json={"username": "morgan", "password": ADMIN_PASSWORD})
     assert c2.post("/api/v1/auth/mfa", json={"code": codes[0]}).status_code == 401
     me = admin.get("/api/v1/me").json()
     assert me["security"]["recovery_codes_left"] == 9
@@ -239,10 +239,10 @@ TINY_PNG = ("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwA
 def test_profile_details_are_all_optional_and_can_be_cleared(appm, admin):
     me = admin.get("/api/v1/me").json()
     assert me["email"] is None and me["about"] == ""
-    r = admin.patch("/api/v1/me/profile", json={"display_name": "Jules N", "email": "j@example.com", "about": "Hi there"})
+    r = admin.patch("/api/v1/me/profile", json={"display_name": "Morgan N", "email": "j@example.com", "about": "Hi there"})
     assert r.status_code == 200 and r.json()["email"] == "j@example.com" and r.json()["about"] == "Hi there"
     cleared = admin.patch("/api/v1/me/profile", json={"display_name": "", "email": "", "about": ""}).json()
-    assert cleared["display_name"] == "jules" and cleared["email"] is None and cleared["about"] == ""
+    assert cleared["display_name"] == "morgan" and cleared["email"] is None and cleared["about"] == ""
     assert admin.patch("/api/v1/me/profile", json={"email": "not an email"}).status_code == 400
     assert admin.patch("/api/v1/me/profile", json={}).status_code == 200
 
@@ -265,13 +265,13 @@ def test_other_people_only_ever_get_your_picture_never_your_details(appm, admin)
     admin.put("/api/v1/me/avatar", json={"image": TINY_PNG})
     create_user(admin, "beth")
     beth = sign_in(appm, "beth")
-    jules_id = admin.get("/api/v1/me").json()["id"]
-    assert beth.get(f"/api/v1/users/{jules_id}/avatar").status_code == 200
+    morgan_id = admin.get("/api/v1/me").json()["id"]
+    assert beth.get(f"/api/v1/users/{morgan_id}/avatar").status_code == 200
     assert beth.get("/api/v1/admin/users").status_code == 403
     assert "private@example.com" not in beth.get("/api/v1/me").text
     assert beth.patch("/api/v1/me/profile", json={"about": "mine"}).json()["about"] == "mine"
     assert admin.get("/api/v1/me").json()["about"] == "secret note"
-    assert TestClient(appm.app).get(f"/api/v1/users/{jules_id}/avatar").status_code == 401
+    assert TestClient(appm.app).get(f"/api/v1/users/{morgan_id}/avatar").status_code == 401
 
 
 # ---------- passkeys ----------
@@ -298,13 +298,13 @@ def test_passkey_registration_and_passwordless_sign_in(appm, admin):
     c, status = passkey_sign_in(appm, auth)
     assert status == 200
     me = c.get("/api/v1/me").json()
-    assert me["username"] == "jules" and me["session"]["method"] == "passkey"
+    assert me["username"] == "morgan" and me["session"]["method"] == "passkey"
     assert c.get("/api/v1/admin/users").status_code == 200  # passkey with user verification counts as two factors
 
 
 def test_passkey_is_enough_to_meet_the_two_factor_requirement(appm):
     c = TestClient(appm.app, raise_server_exceptions=False)
-    c.post("/api/v1/setup", json={"setup_code": SETUP_CODE, "passphrase": PASSPHRASE, "username": "jules", "password": ADMIN_PASSWORD})
+    c.post("/api/v1/setup", json={"setup_code": SETUP_CODE, "passphrase": PASSPHRASE, "username": "morgan", "password": ADMIN_PASSWORD})
     result = register_passkey(c, SoftAuthenticator())
     assert result["session"] == "full" and len(result["recovery_codes"]) == 10
     assert c.get("/api/v1/accounts").status_code == 200
@@ -334,7 +334,7 @@ def test_passkey_as_second_step_after_password(appm, admin):
     auth = SoftAuthenticator()
     register_passkey(admin, auth)
     c = TestClient(appm.app, raise_server_exceptions=False)
-    r = c.post("/api/v1/auth/login", json={"username": "jules", "password": ADMIN_PASSWORD})
+    r = c.post("/api/v1/auth/login", json={"username": "morgan", "password": ADMIN_PASSWORD})
     assert "passkey" in r.json()["methods"]
     options = c.post("/api/v1/auth/passkeys/options", json={"purpose": "mfa"}).json()
     assert len(options["allowCredentials"]) == 1
@@ -414,19 +414,19 @@ def test_sso_without_auto_create_needs_an_existing_link(appm, admin, provider):
 
 def test_sso_never_takes_over_an_account_by_matching_email(appm, admin, provider):
     configure_sso(admin, provider)
-    c, _ = sso_sign_in(appm, provider, {"sub": "attacker", "preferred_username": "jules",
-                                        "email": "jules@example.test", "email_verified": True})
+    c, _ = sso_sign_in(appm, provider, {"sub": "attacker", "preferred_username": "morgan",
+                                        "email": "morgan@example.test", "email_verified": True})
     me = c.get("/api/v1/me").json()
-    assert me["username"] != "jules" and me["role"] == "user"
+    assert me["username"] != "morgan" and me["role"] == "user"
 
 
 def test_user_links_sso_to_their_existing_account(appm, admin, provider):
     configure_sso(admin, provider)
-    _, done = sso_sign_in(appm, provider, {"sub": "ak-uid-jules", "preferred_username": "jules"}, client=admin, link=True)
+    _, done = sso_sign_in(appm, provider, {"sub": "ak-uid-morgan", "preferred_username": "morgan"}, client=admin, link=True)
     assert done.headers["location"] == "/account?linked=1"
-    c, _ = sso_sign_in(appm, provider, {"sub": "ak-uid-jules", "preferred_username": "jules"})
+    c, _ = sso_sign_in(appm, provider, {"sub": "ak-uid-morgan", "preferred_username": "morgan"})
     me = c.get("/api/v1/me").json()
-    assert me["username"] == "jules" and me["role"] == "admin" and me["session"]["method"] == "sso"
+    assert me["username"] == "morgan" and me["role"] == "admin" and me["session"]["method"] == "sso"
 
 
 @pytest.mark.parametrize("tamper,reason", [
@@ -490,7 +490,7 @@ def test_password_sign_in_can_be_limited_to_administrators(appm, admin):
     c = TestClient(appm.app, raise_server_exceptions=False)
     r = c.post("/api/v1/auth/login", json={"username": "beth", "password": USER_PASSWORD})
     assert r.status_code == 403 and "single sign-on" in r.json()["detail"]
-    r = c.post("/api/v1/auth/login", json={"username": "jules", "password": ADMIN_PASSWORD})
+    r = c.post("/api/v1/auth/login", json={"username": "morgan", "password": ADMIN_PASSWORD})
     assert r.json()["next"] == "mfa"  # administrators always keep password sign-in (break-glass)
 
 
@@ -556,7 +556,7 @@ def test_user_records_are_encrypted_at_rest(appm, admin, tmp_path):
     create_user(admin, "uniquebethname")
     secret = admin.totp_secret
     appm.vault.lock()
-    scan = appm.vault.plaintext_scan(["uniquebethname", secret, "Jules", '"username"', '"totp"'])
+    scan = appm.vault.plaintext_scan(["uniquebethname", secret, "Morgan", '"username"', '"totp"'])
     assert not any(scan.values()), scan
 
 
