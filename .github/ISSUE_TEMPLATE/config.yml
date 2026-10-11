@@ -1,5 +1,8 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
   - name: Report a security problem privately
     url: https://github.com/jlnau/enveliq/security/advisories/new
-    about: Please do not report security problems in a public issue.
+    about: Please do not report security problems in a public issue. This form is private.
+  - name: Look for your problem in Troubleshooting first
+    url: https://enveliq.app/docs/install/troubleshooting/
+    about: Most install problems, like a page that will not open or a forgotten setup code, are answered here.

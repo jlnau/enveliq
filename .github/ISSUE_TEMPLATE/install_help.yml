@@ -1,0 +1,71 @@
+name: I am stuck installing it
+description: A step in an install guide did not work, or you cannot get Enveliq to open.
+title: "[Install] "
+labels: ["install"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Installing is the hardest part, and we want it to be easy. Every report here helps make the guides clearer.
+
+        **Please do not paste passwords, setup codes or keys.** If you pasted one by accident, change it.
+  - type: dropdown
+    id: guide
+    attributes:
+      label: Which guide are you following?
+      options:
+        - Docker Desktop (Windows or Mac)
+        - Docker Compose on Linux
+        - Raspberry Pi
+        - Proxmox
+        - Arcane
+        - Portainer
+        - Dockge
+        - Synology
+        - Unraid
+        - TrueNAS
+        - None, I did it my own way
+    validations:
+      required: true
+  - type: input
+    id: step
+    attributes:
+      label: Which step were you on?
+      description: The step number or heading, for example "Step 4. Start Enveliq".
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened?
+      description: What did you do, and what did you see? Copy any error message exactly as it appears.
+    validations:
+      required: true
+  - type: input
+    id: computer
+    attributes:
+      label: What computer or system is it?
+      description: For example "Windows 11", "a Synology DS220+", "Raspberry Pi 5 with Raspberry Pi OS".
+    validations:
+      required: true
+  - type: textarea
+    id: ps
+    attributes:
+      label: What does Docker say is running?
+      description: In the folder with your install file, type `docker compose ps` and paste what it prints. Skip this if you cannot reach a command line.
+      render: shell
+  - type: textarea
+    id: logs
+    attributes:
+      label: Anything in the logs?
+      description: Type `docker compose logs --tail 80 enveliq`, read it through, remove anything private and paste it here. Skip it if you cannot.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: I looked at the [Troubleshooting page](https://enveliq.app/docs/install/troubleshooting/).
+          required: true
+        - label: I removed passwords, setup codes and keys from everything above.
+          required: true
