@@ -113,11 +113,11 @@ def test_a_reply_can_be_written_with_no_draft_and_the_model_reads_the_email_the_
 def test_an_existing_draft_is_checked_and_the_persons_own_instructions_are_used(env):
     _, client, bridge, model = env
     aid, mid = ask_ready(client, bridge)
-    client.put("/api/v1/me/write-help", json={"on": True, "instructions": "Always sign off with Cheers, Jules."})
+    client.put("/api/v1/me/write-help", json={"on": True, "instructions": "Always sign off with Cheers, Morgan."})
     assert client.get("/api/v1/me/write-help").json()["is_default"] is False
     client.post(f"/api/v1/accounts/{aid}/messages/{mid}/write-help", json={"draft": "thx will read soon"})
     sent = helper_requests(model)[-1]["messages"]
-    assert "Cheers, Jules" in sent[0]["content"] and "thx will read soon" in sent[-1]["content"]
+    assert "Cheers, Morgan" in sent[0]["content"] and "thx will read soon" in sent[-1]["content"]
     client.put("/api/v1/me/write-help", json={"on": True, "instructions": W.DEFAULT_INSTRUCTIONS})
     assert client.get("/api/v1/me/write-help").json()["is_default"] is True
 

@@ -27,7 +27,7 @@ try:
             if httpx.get("http://localhost:8798/api/v1/health").status_code == 200: break
         except Exception: time.sleep(0.3)
     c = httpx.Client(base_url="http://localhost:8798", headers={"Origin": "http://localhost:8798"})
-    r = c.post("/api/v1/setup", json={"setup_code": "e2e-setup-code-12345", "passphrase": "Correct Horse Battery Staple 2026!", "username": "jules", "password": "Admin password for tests 2026"}); assert r.status_code == 201, r.text
+    r = c.post("/api/v1/setup", json={"setup_code": "e2e-setup-code-12345", "passphrase": "Correct Horse Battery Staple 2026!", "username": "morgan", "password": "Admin password for tests 2026"}); assert r.status_code == 201, r.text
     secret = c.post("/api/v1/auth/totp/setup").json()["secret"]
     r = c.post("/api/v1/auth/totp/confirm", json={"code": totp.code_at(secret, totp.current_step())}); assert r.status_code == 200, r.text
     cookies = [{"name": k, "value": v, "url": "http://localhost:8798"} for k, v in c.cookies.items()]

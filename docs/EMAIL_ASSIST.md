@@ -37,7 +37,7 @@ These come from the project's non-negotiables and do not bend for convenience.
   - and, if any [brackets] are left: "There is still a gap in [brackets]."
   
   Buttons: **Send** and **Go back**. (Undo send still applies afterwards if the person has it on.)
-- **Settings → AI instructions** gets a second box: **Writing help instructions** ("Australian English, friendly and short, sign off with Cheers, Jules"). Up to 2,000 characters, personal to each person, added after the fixed rules so they can change style but never the safety rules.
+- **Settings → AI instructions** gets a second box: **Writing help instructions** ("Australian English, friendly and short, sign off with Cheers, Morgan"). Up to 2,000 characters, personal to each person, added after the fixed rules so they can change style but never the safety rules.
 - **Administration → Features** gets a *Writing help* on/off switch, and each person can switch it off for themselves, like the other optional features.
 
 ### How it is built

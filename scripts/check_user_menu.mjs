@@ -22,7 +22,7 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 
 function makeServer(role) {
   const calls = [];
-  const me = { id: "u1", username: "jln", display_name: "jln", email: null, about: "", show_in_people: true, role, avatar_v: null, security: { password_set: true, totp_enabled: false, recovery_codes_left: 0, passkeys: [], sso_linked: false },
+  const me = { id: "u1", username: "morgan", display_name: "morgan", email: null, about: "", show_in_people: true, role, avatar_v: null, security: { password_set: true, totp_enabled: false, recovery_codes_left: 0, passkeys: [], sso_linked: false },
     session: { state: "full", method: "password" }, policy: { require_mfa: "admins", password_login: "everyone", pw_min_length: 12, pw_min_digits: 0, pw_min_upper: 0, pw_min_lower: 0, pw_min_symbols: 0, pw_forbid_username: true }, sso: { enabled: false } };
   const policy = { ...me.policy };
   const handler = async (route) => {
@@ -41,7 +41,7 @@ function makeServer(role) {
     if (p === "/api/v1/me/preferences") return json(200, { keep_reviewed: true, keep_archived: true, keep_days: 7, max_days: 14, instructions: "", undo_send_seconds: 0 });
     if (p === "/api/v1/me/features") return json(200, { effective: features, admin: features, user: features, labels: { compose: "New email" } });
     if (p === "/api/v1/sync/status") return json(200, { enabled: true, minutes: 10, editable: true, now: Date.now() / 1000, accounts: {} });
-    if (p === "/api/v1/admin/users") return json(200, [{ id: "u1", username: "jln", display_name: "Jln", role: "admin", disabled: false, source: "local", security: { totp_enabled: true, passkeys: [] } }]);
+    if (p === "/api/v1/admin/users") return json(200, [{ id: "u1", username: "morgan", display_name: "Morgan", role: "admin", disabled: false, source: "local", security: { totp_enabled: true, passkeys: [] } }]);
     if (p === "/api/v1/admin/auth-policy") { if (req.method() === "PUT") { calls.push(["policy", body()]); Object.assign(policy, body()); } return json(200, policy); }
     if (p === "/api/v1/admin/sso") return json(200, { enabled: false, redirect_uri: ORIGIN + "/cb", label: "SSO", issuer: "", client_id: "", scopes: "openid", auto_create: true, allowed_groups: [], admin_groups: [], groups_claim: "groups", username_claim: "preferred_username", require_email_verified: false });
     return json(404, { detail: "not found" });
@@ -97,12 +97,12 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   const pf = host(page, "profile");
   check("the people-list switch starts on", (await host(page, "profile").locator("#pf_people").isChecked()));
   check("name, email and about start empty (name shows the username as a hint)", (await pf.locator("#pf_email").inputValue()) === "" && (await pf.locator("#pf_about").inputValue()) === "" && (await pf.locator("#pf_name").inputValue()) === "");
-  await pf.locator("#pf_name").fill("Jules N");
+  await pf.locator("#pf_name").fill("Morgan N");
   await pf.locator("#pf_email").fill("j@example.com");
   await pf.locator("#pf_about").fill("Hello");
   await pf.locator("button:has-text('Save profile')").click();
-  await page.waitForFunction(() => document.getElementById("userName").textContent === "Jules N");
-  check("saving sends the three details and the sidebar name updates", JSON.stringify(server.calls.find((c) => c[0] === "profile")[1]) === JSON.stringify({ display_name: "Jules N", email: "j@example.com", about: "Hello", show_in_people: true }));
+  await page.waitForFunction(() => document.getElementById("userName").textContent === "Morgan N");
+  check("saving sends the three details and the sidebar name updates", JSON.stringify(server.calls.find((c) => c[0] === "profile")[1]) === JSON.stringify({ display_name: "Morgan N", email: "j@example.com", about: "Hello", show_in_people: true }));
   await pf.locator("#pf_file").setInputFiles({ name: "me.png", mimeType: "image/png", buffer: PNG });
   await page.waitForFunction(() => document.querySelector("#avatar img"), null, { timeout: 15000 });
   const av = server.calls.find((c) => c[0] === "avatar");

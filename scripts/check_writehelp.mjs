@@ -26,7 +26,7 @@ function makeServer(opts = {}) {
     const body = () => { try { return JSON.parse(req.postData() || "{}"); } catch (e) { return {}; } };
     if (p === "/") return route.fulfill({ status: 200, contentType: "text/html", body: html });
     if (p === "/api/v1/status") return json(200, { cipher: "AES-256-GCM", kdf: "argon2id", initialized: true, unlocked: true, idle_lock_seconds: 900 });
-    if (p === "/api/v1/me") return json(200, { id: "u1", username: "jules", display_name: "Jules", role: "admin" });
+    if (p === "/api/v1/me") return json(200, { id: "u1", username: "morgan", display_name: "Morgan", role: "admin" });
     if (p === "/api/v1/accounts") return json(200, [{ id: "a1", provider: "proton", auth_method: "proton_bridge", owner_user_id: "u1", display_name: "Proton test", email_address: "me@example.invalid", server: "172.30.0.1", port: 1144, username: "u", settings: {} }]);
     if (p === "/api/v1/accounts/a1/messages") return json(200, [{ id: "m1", subject: "Can you make Tuesday?", sender_display: "Dana Whitlock", sender_address: "dana@example.invalid", summary: "Dana asks if you can make Tuesday.", priority: "normal", category: "Information", action_required: true, received_at: now - 600, reply_context: { reply_to: "dana@example.invalid", delivered_to: null, via_alias: null, message_id: "<m1@x>", references: [] } }]);
     if (p === "/api/v1/me/preferences") return json(200, { keep_reviewed: true, keep_archived: true, keep_days: 7, max_days: 14, instructions: "", undo_send_seconds: 0 });

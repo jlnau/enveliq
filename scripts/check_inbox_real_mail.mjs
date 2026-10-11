@@ -73,7 +73,7 @@ function makeServer({ withMailbox }) {
     const json = (status, body) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
     if (p === "/") return route.fulfill({ status: 200, contentType: "text/html", body: html });
     if (p === "/api/v1/status") return json(200, { cipher: "AES-256-GCM", kdf: "argon2id", initialized: true, unlocked: true, idle_lock_seconds: 900 });
-    if (p === "/api/v1/me") return json(200, { id: "u1", username: "jln", display_name: "Jln", role: "admin" });
+    if (p === "/api/v1/me") return json(200, { id: "u1", username: "morgan", display_name: "Morgan", role: "admin" });
     if (p === "/api/v1/accounts") return json(200, withMailbox ? [{ id: "a1", provider: "proton", auth_method: "proton_bridge", owner_user_id: "u1", display_name: "Proton test", email_address: "me@example.invalid", server: "172.30.0.1", port: 1144, username: "bridge", settings: { smtp_port: 1026, send_identities: ["alias@example.invalid"], ai_summaries: true } }] : []);
     if (p === "/api/v1/accounts/a1/messages") return json(200, messages());
     if (/\/messages\/[^/]+\/original$/.test(p)) return json(200, { subject: hostile, from: { name: "News", address: "news@example.invalid" }, to: [{ name: "", address: "me@example.invalid" }], date: "Tue, 06 Oct 2026 04:32:43 +0000", text: "Line one\n\nLine two " + hostile, truncated: false, attachments: [{ filename: "a.pdf", mime_type: "application/pdf", size_bytes: 12 }] });
