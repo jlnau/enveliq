@@ -5,6 +5,28 @@ Newest first. Each entry says what changed for people and which parts of the cod
 ## Unreleased
 
 **No flash of sample data when you refresh.** On a real Enveliq, pressing the browser's refresh button no longer shows the sample page (the sample name, counts and version) for a split second before your own page appears.
+
+- `prototype/index.html`: while the page starts up (`body.booting`), the frame (menu, buttons, logo, search) shows at once, but your name, role and initials, the greeting, the counts, the version label and the list stay hidden. If it takes more than half a second, a calm line says "Getting your inbox ready…". When there is no server behind the page (the demo or a hosted preview) it appears as soon as that is known, with no loading line, and if the server is slow to answer the page is shown anyway after six seconds.
+- Tests: `scripts/check_no_sample_flash.mjs` (new, added to `.github/workflows/ci.yml`: the frame is there while the answer is slow, nothing personal or sample shows, the loading line only appears after a moment, then the signed-in person's name, greeting and version appear; preview appears at once; a server that never answers does not leave the page half empty).
+
+**Install Enveliq as an app, open the exact email from a notification, and optional new-email alerts.** Reminders by browser push already existed; this makes them useful on a phone.
+
+- `backend/app.py`: `GET /manifest.webmanifest` (new, no sign-in, the same for everyone) lets Android, iOS and desktop browsers install Enveliq (name, icon, standalone window). `manifest-src 'self'` is added to the page policies. `brand/web/` gains `enveliq-icon-192.png`, `enveliq-icon-512.png` and a maskable `enveliq-icon-maskable-512.png`, made from the logo. `prototype/index.html` and `web/auth.html` link the manifest and set a theme colour.
+- `web/static/sw.js`: a tap on a notification now focuses an open Enveliq window and tells the inbox to move to the email (`postMessage`), navigates another open Enveliq page there, or opens a new window. Before, it only focused a window and never moved to the email. Only addresses on Enveliq's own origin are followed.
+- `prototype/index.html`: the inbox reads `/?open=<mailbox id>:<email id>` (taken off the address bar at once so a refresh does not repeat it), opens that email in the right list (inbox, Snoozed, Reviewed or Archived) and scrolls to it. If the email is not in the list it reads the list again once, then says "That email is no longer in your list." It also listens for the service worker's message while the page is open.
+- `backend/mail/mail_alerts.py` (new): `MailAlerts` builds and sends the new-email message. Settings `mail_on` (default off) and `mail_details` (default off) are added to each person's notification settings (`backend/mail/notify.py`, `notify_routes.py`). With details off the message says only how many emails arrived; with details on it adds the sender's display name and the subject (control characters removed, lengths cut). Never an address, never the summary, never email text. No message is sent during the person's quiet hours. One email opens that email; several open the inbox. High-priority mail is sent with high urgency.
+- `backend/mail/scheduler.py`: `AutoSync` compares the stored emails before and after each mailbox's pass and sends one alert per person per pass for what is new and unread. The first read of a brand-new, empty mailbox is not announced, and mail fetched by the Sync button is not announced (the person is looking at it). `backend/mail/extra_channels.py`: the browser channel carries `path` when there is no public address.
+- `web/static/auth.js`: Settings, Reminders gets **Tell me when new email arrives**, and, under *Nudges, quiet hours and privacy*, **Show who a new email is from and its subject**.
+- Tests: `tests/test_mail_alerts.py` (new: wording, privacy defaults, quiet hours, links, service worker, manifest), additions to `tests/test_auto_sync.py` (a pass announces only new mail, settings default off, manifest and icons are public, policy), `scripts/check_notification_link.mjs` (new browser check, in CI: link opens the exact email on desktop and phone, a message from the service worker moves the page, other sites and other messages are ignored, the two new switches).
+**A signature and saved replies.** The person's own text, kept for them, to reuse when they write.
+
+- `backend/mail/saved_writing.py` (new): `SavedWriting`, one encrypted vault record per person (`saved:<user id>`) with one signature (up to 1000 characters) and up to 30 saved replies (a name of up to 60 characters and text of up to 3000). Control characters are removed and line breaks are tidied.
+- `backend/mail/saved_writing_routes.py` (new): `GET /api/v1/me/saved`, `PUT /api/v1/me/saved/signature`, `POST /api/v1/me/saved/replies`, `PUT` and `DELETE /api/v1/me/saved/replies/{id}`. Signed-in people only, `no-store`, rate limited; one person never sees another's text.
+- `backend/export.py`: part of **Export my data** (`signature_and_saved_replies`). `backend/app.py`: forgotten when a person is removed.
+- `prototype/index.html`: the signature is put into the message box when New email or Reply opens, so it can be seen and changed (the cursor starts above it); a box with only the signature counts as empty (no "discard?" question, "Write your reply first"); a **Saved reply** chooser above the message inserts the text where the cursor is. The server sends exactly what is in the box and adds nothing of its own.
+- `web/static/auth.js`, `auth.css`: Settings, **Signature & saved replies** (`savedPage`): edit the signature; add, edit and remove saved replies.
+- Tests: `tests/test_saved_writing.py`, `scripts/check_saved_writing.mjs`.
+
 **Important people.** A short list, kept by each person for themselves, of senders whose mail is shown first.
 
 - `backend/mail/important.py` (new): `ImportantPeople`, one encrypted vault record per person (`important:<user id>`) holding addresses and optional names only, at most 200. Addresses are checked and lower-cased with the same rules as the address book.
@@ -16,8 +38,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 **A quick check before a new email goes.** A new email with no subject, or one that talks about an attachment when nothing is attached, now gets one calm question before it leaves.
 
-- `prototype/index.html`: while the page starts up (`body.booting`), the frame (menu, buttons, logo, search) shows at once, but your name, role and initials, the greeting, the counts, the version label and the list stay hidden. If it takes more than half a second, a calm line says "Getting your inbox ready…". When there is no server behind the page (the demo or a hosted preview) it appears as soon as that is known, with no loading line, and if the server is slow to answer the page is shown anyway after six seconds.
-- Tests: `scripts/check_no_sample_flash.mjs` (new, added to `.github/workflows/ci.yml`: the frame is there while the answer is slow, nothing personal or sample shows, the loading line only appears after a moment, then the signed-in person's name, greeting and version appear; preview appears at once; a server that never answers does not leave the page half empty).
+- `prototype/index.html`: `sendWarnings(subject, body, fileCount)` and the "Before you send" window. It runs in `sendNew()` before the writing-help check. **Go back** (the one with the focus) returns to the email with the cursor in the subject; **Send anyway** sends. Escape means Go back.
+- The attachment check looks for the words attach, attached, attaching, attachment, enclosed or enclosure in the message, ignoring lines that start with `>` (quoted text), and only when no file is attached.
+- Nothing is sent to the server for the check, so it needs no backend change and behaves the same for Gmail, Microsoft, Proton and every other mailbox. Replies are not checked: their subject comes from the email being answered and they cannot carry attachments.
+- Tests: `scripts/check_email_features.mjs` (no subject, Go back, Escape, Send anyway, attachment words with and without a file, a quoted line, an ordinary email).
 
 ## v0.80
 
