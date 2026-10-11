@@ -659,19 +659,35 @@ def health():
 
 @app.get("/api/v1/status")
 def status_endpoint():
-    # Unauthenticated: only what the sign-in screens need.
+    # Unauthenticated, so it says only what the sign-in, setup and unlock pages need to choose what to show.
+    # No version, no encryption settings and no public address: those are for signed-in people (/api/v1/system).
     try_auto_unlock()
     unlocked = vault.is_unlocked()
-    return {
-        **{**vault.status(), "idle_lock_seconds": 0 if AUTO_UNLOCK else vault.idle_lock_seconds},
-        "auto_unlock": AUTO_UNLOCK, "auto_unlock_problem": _auto["problem"] if AUTO_UNLOCK else None,
-        "setup_required": not vault.is_initialized(),
-        "public_url": PUBLIC_ORIGIN,
-        "version": VERSION,
-        "crypto": SecureVault.export_public_crypto_metadata(),
-        "attachments": {"raw_persistence": False, "preview_mode": "safe-derivative-in-ram"},
+    initialized = vault.is_initialized()
+    out: dict[str, Any] = {
+        "initialized": initialized, "unlocked": unlocked, "setup_required": not initialized,
         "sign_in": {"password": True, "passkeys": True, "sso": sso_public() if unlocked else {"enabled": False, "label": None}},
     }
+    if not unlocked:                      # only the setup and unlock pages ask, and only while the vault is closed
+        out["auto_unlock"] = AUTO_UNLOCK
+        out["auto_unlock_problem"] = _auto["problem"] if AUTO_UNLOCK else None
+    return out
+
+
+@app.get("/api/v1/system")
+def system_endpoint(session: Session = Depends(full_session)):
+    """What the inbox and the Security page show about this Enveliq. Signed-in people only; the technical
+    detail (encryption settings, public address, key-file unlock) is for administrators."""
+    out: dict[str, Any] = {
+        "version": VERSION,
+        "cipher": "AES-256-GCM", "kdf": "Argon2id",
+        "idle_lock_seconds": 0 if AUTO_UNLOCK else vault.idle_lock_seconds,
+        "raw_message_body_persistence": False, "raw_attachment_persistence": False,
+    }
+    if session.principal.is_admin:
+        out.update({"public_url": PUBLIC_ORIGIN, "auto_unlock": AUTO_UNLOCK, "crypto": SecureVault.export_public_crypto_metadata(),
+                    "attachments": {"raw_persistence": False, "preview_mode": "safe-derivative-in-ram"}})
+    return out
 
 
 @app.post("/api/v1/unlock")

@@ -33,7 +33,8 @@ function makeServer(opts = {}) {
     const req = route.request(), p = new URL(req.url()).pathname;
     const json = (status, body) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
     if (p === "/") return route.fulfill({ status: 200, contentType: "text/html", body: html });
-    if (p === "/api/v1/status") return json(200, { cipher: "AES-256-GCM", kdf: "argon2id", initialized: true, unlocked: true, idle_lock_seconds: 900 });
+    if (p === "/api/v1/status") return json(200, { initialized: true, unlocked: true, setup_required: false, sign_in: { password: true, passkeys: true, sso: { enabled: false, label: null } } });
+    if (p === "/api/v1/system") return json(200, { cipher: "AES-256-GCM", kdf: "Argon2id", idle_lock_seconds: 900 });
     if (p === "/api/v1/me") return json(200, { id: "u1", username: "morgan", display_name: "Morgan", role: "admin" });
     if (p === "/api/v1/accounts") return json(200, [{ id: "a1", provider: "proton", auth_method: "proton_bridge", owner_user_id: "u1", display_name: "Proton test", email_address: "me@example.invalid", server: "172.30.0.1", port: 1144, username: "u", settings: {} }]);
     if (p === "/api/v1/accounts/a1/messages") { const base = { id: "m1", subject: "Update on refund", sender_display: "Amazon", sender_address: "a@example.invalid", summary: "Your refund was processed.", priority: "normal", category: "Information", action_required: false, received_at: now - 600, reply_context: ctx("m1") }; return json(200, [base, { ...base, id: "m2", subject: "Second email" }, { ...base, id: "m3", subject: "Third email" }]); }

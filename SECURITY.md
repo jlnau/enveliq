@@ -102,6 +102,12 @@ These rules are architecture requirements, not UI preferences.
 - It is its own Cloudflare Pages project, separate from the website and from any Enveliq install. Its Content-Security-Policy forbids every network connection (`connect-src 'none'`, `default-src 'none'`) and allows only its own scripts, each by a fingerprint computed at build time. It cannot be framed and sends no referrer.
 - The build refuses to produce a page that loads a script from a file, so the fingerprints always cover everything that runs. A browser check fails if the demo asks for anything beyond its own page and pictures.
 
+## What the public status page says (v0.79)
+
+- Before anyone signs in, `GET /api/v1/status` says only whether Enveliq is set up and unlocked and which sign-in methods exist, plus (only while the vault is closed) whether it unlocks itself from a key file and why that failed. It never says the version, the encryption settings or the public address, so the page does not help someone choose a known weakness to try.
+- The version and technical detail are at `GET /api/v1/system` for signed-in people (administrators get the encryption settings, the public address and the key-file unlock state). Nothing about the vault key itself is ever returned.
+- Hiding these details is a small extra, not a protection on its own: the encryption is the same either way, and its settings are in this repository.
+
 ## Backup and restore, and Export my data (v0.75)
 
 - A backup is a copy of the vault file as it is stored, so it holds only ciphertext. It does not include the key file (which lives outside the data folder) and the passphrase is never written into it. Anyone who gets a backup still needs the passphrase or the key file. Files are written with owner-only permissions in a folder only the Enveliq user can open.

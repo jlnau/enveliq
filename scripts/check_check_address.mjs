@@ -31,7 +31,8 @@ const handler = async (route) => {
   if (p === "/") return route.fulfill({ status: 200, contentType: "text/html", body: html });
   if (p === "/static/auth.css") return route.fulfill({ status: 200, contentType: "text/css", body: css });
   if (p === "/embed.js") return route.fulfill({ status: 200, contentType: "text/javascript", body: embed });
-  if (p === "/api/v1/status") return json(200, { cipher: "AES-256-GCM", kdf: "argon2id", initialized: true, unlocked: true, idle_lock_seconds: 900 });
+  if (p === "/api/v1/status") return json(200, { initialized: true, unlocked: true, setup_required: false, sign_in: { password: true, passkeys: true, sso: { enabled: false, label: null } } });
+    if (p === "/api/v1/system") return json(200, { cipher: "AES-256-GCM", kdf: "Argon2id", idle_lock_seconds: 900 });
   if (p === "/api/v1/me") return json(200, { id: "u1", username: "morgan", display_name: "Morgan", role: "admin", session: { state: "full" }, security: { totp_enabled: true, passkeys: [] } });
   if (p === "/api/v1/accounts") return json(200, []);
   if (p === "/api/v1/admin/users") return json(200, [{ id: "u1", username: "morgan", display_name: "Morgan", role: "admin", source: "local", disabled: false, security: { totp_enabled: true, passkeys: [] } }]);

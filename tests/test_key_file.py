@@ -29,7 +29,7 @@ def test_setup_without_a_passphrase_makes_the_key_file_and_unlocks_itself_after_
     appm.vault.lock()                                              # a restart: key gone from memory
     appm2 = fresh(tmp_path)
     status = TestClient(appm2.app).get("/api/v1/status").json()
-    assert status["unlocked"] is True and status["auto_unlock_problem"] is None and status["idle_lock_seconds"] == 0
+    assert status["unlocked"] is True and "auto_unlock_problem" not in status and "idle_lock_seconds" not in status   # said only while the vault is closed
     assert key.read_text().strip() not in str(status)
 
 
@@ -159,7 +159,7 @@ def test_a_key_in_the_environment_unlocks_after_a_restart_and_the_file_wins_if_b
     again = load_app(tmp_path / "data", ENVELIQ_VAULT_KEY=key)
     from fastapi.testclient import TestClient
     st = TestClient(again.app).get("/api/v1/status").json()
-    assert st["unlocked"] is True and st["idle_lock_seconds"] == 0
+    assert st["unlocked"] is True and "idle_lock_seconds" not in st
     wrong = load_app(tmp_path / "data", ENVELIQ_VAULT_KEY="z" * 64)
     st = TestClient(wrong.app).get("/api/v1/status").json()
     assert st["unlocked"] is False and st["auto_unlock_problem"] == "wrong"
