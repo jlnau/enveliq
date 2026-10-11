@@ -49,6 +49,7 @@ const NAV = [
     ["docs/VAULT_KEY.md", "Unlock by itself"],
     ["docs/BACKUP.md", "Backup and restore"],
     ["docs/DEMO.md", "The demo"],
+    ["docs/UNDO.md", "Undo"],
     ["docs/WRITING_HELP.md", "Writing help"],
     ["docs/SCAM_WARNING.md", "The Be careful flag"],
     ["docs/SNOOZE.md", "Snooze"],

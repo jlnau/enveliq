@@ -2,6 +2,15 @@
 
 Newest first. Each entry says what changed for people and which parts of the code it touches. The history of earlier versions is in [VERSION_HISTORY.md](VERSION_HISTORY.md).
 
+## v0.80
+
+**Five seconds to undo Reviewed, Archive and Bin, everywhere.** The Undo that phones had now covers every screen and several emails at once.
+
+- `prototype/index.html`: `queueAction(list, status)` replaces the phone-only `phoneAction`. Every Reviewed, Archive and Bin (row buttons, an open email, the reading pane, the full-screen reader, swipes, keyboard shortcuts and the multi-select bar) hides the email(s) at once and sends the request to the mailbox only when `window.__undoMs` (5000 ms) is up. One bar per press ("Archived · 3 emails" for a multi-select); two quick presses give two waiting entries, the bar shows the newest, and Undo then shows the one before it.
+- When the page is closed or hidden, waiting actions are sent straight away, all at once, with `keepalive` so the browser finishes them (on a desktop only when the page is closed; on a phone also when it goes out of sight, because a phone may freeze it). If the mailbox cannot be reached the emails come back with the error message, as before. `resolveRealBulk` (the old, immediate multi-select path and its "Marking reviewed…" button state) is removed.
+- The Undo bar is centred and sized for any screen and sits above the "Undo send" bar when both show.
+- Tests: `scripts/check_inbox_real_mail.mjs` (desktop Undo, multi-select Undo, the page closing, two in a row; the old "working" button state is replaced), `scripts/check_demo.mjs` (the demo's sample mail gets it too). Docs: new `docs/UNDO.md`. No server change.
+
 ## v0.79
 
 **The public status page says less.** A read-only probe of the live site found that `GET /api/v1/status`, which needs no sign-in, told anyone the Enveliq version, the exact Argon2 settings, the public address and whether the vault unlocks itself from a key file.
