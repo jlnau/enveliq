@@ -12,7 +12,7 @@ const BRIDGE_ADVICE = {
     "Check the Bridge address and the two port numbers. With the standard Enveliq setup they are 172.30.0.1, 1144 and 1026.",
     "Check the forwarders are running: on the Bridge machine run  systemctl status proton-bridge-enveliq-imap  (and -smtp)."],
   certificate_mismatch: ["Enveliq only trusts the exact certificate you exported from Bridge, and Bridge is showing a different one (or the saved one has expired).",
-    "Export Bridge's certificate again (step 1 of the Proton Mail guide on GitHub), then restart Enveliq and try again.",
+    "Export Bridge's certificate again (step 1 of the Proton Mail guide on the Enveliq website), then restart Enveliq and try again.",
     "This also happens after reinstalling Bridge or resetting its settings."],
   no_certificate: ["Enveliq cannot find Bridge's certificate file inside its container.",
     "The file must exist at /opt/enveliq/proton-bridge.crt on the server before Enveliq starts. If Docker made a folder with that name instead, delete the folder, export the certificate, and recreate the container."],
