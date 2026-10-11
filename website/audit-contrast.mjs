@@ -6,7 +6,7 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "dist");
 const types = { ".html": "text/html", ".css": "text/css", ".png": "image/png", ".webp": "image/webp", ".ico": "image/x-icon" };
 const srv = http.createServer((q, r) => { let p = path.join(root, decodeURIComponent(q.url.split("?")[0])); if (fs.existsSync(p) && fs.statSync(p).isDirectory()) p = path.join(p, "index.html"); if (!fs.existsSync(p)) { r.statusCode = 404; return r.end(); } r.setHeader("content-type", types[path.extname(p)] || "text/plain"); r.end(fs.readFileSync(p)); }).listen(0);
 const port = srv.address().port;
-const pages = ["/", "/tour/", "/docs/scam-warning/", "/docs/snooze/", "/docs/search/", "/docs/subscriptions/", "/docs/trips/", "/docs/backup/", "/docs/demo/", "/docs/undo/", "/docs/", "/docs/install/docker-desktop/", "/docs/security/", "/404.html"];
+const pages = ["/", "/tour/", "/docs/scam-warning/", "/docs/snooze/", "/docs/search/", "/docs/subscriptions/", "/docs/trips/", "/docs/backup/", "/docs/demo/", "/docs/undo/", "/docs/send-checks/", "/docs/", "/docs/install/docker-desktop/", "/docs/security/", "/404.html"];
 const browser = await chromium.launch();
 let worst = 99, problems = 0;
 for (const scheme of ["dark", "light"]) for (const w of [1280, 390]) {

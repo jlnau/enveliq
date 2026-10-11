@@ -332,8 +332,9 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 .wh-text{white-space:pre-wrap;user-select:text;font:inherit;line-height:1.55;margin:0;background:var(--c-0b1016);border:1px solid var(--c-293241);border-radius:9px;padding:10px;max-height:240px;overflow:auto}
 .wh-notes{margin:0;padding-left:18px;font-size:12px;color:var(--muted);line-height:1.5}
 .wh-gap{font-size:12px;color:var(--c-ecd7a7)}
-#whCheck button,.wh .btn,.wh .primary{min-height:44px}
-#whCheck{width:min(520px,94vw);z-index:61}
+#whCheck button,#sendWarn button,.wh .btn,.wh .primary{min-height:44px}
+#whCheck,#sendWarn{width:min(520px,94vw);z-index:61}
+#sendWarn .compose-body p{margin:0;line-height:1.5}
 .wh-scrim{z-index:60}
 #whCheckText{white-space:pre-wrap;max-height:220px;overflow:auto;background:var(--c-0b1016);border:1px solid var(--c-293241);border-radius:9px;padding:10px;font:inherit;margin:0}
 #whCheck .compose-body p{margin:0;line-height:1.5}
@@ -1217,6 +1218,11 @@ body.on-ship #waitBars{display:none!important}
     <p class="wh-gap" id="whCheckGap" hidden>There is still a gap in [square brackets]. Check it before you send.</p>
   </div>
   <div class="compose-foot"><span></span><div class="modal-actions"><button class="btn" id="whCheckNo" type="button">Go back</button><button class="primary" id="whCheckYes" type="button">Yes, send it</button></div></div>
+</div>
+<div class="compose" id="sendWarn" role="dialog" aria-modal="true" aria-labelledby="sendWarnTitle">
+  <div class="compose-head"><div><h3 id="sendWarnTitle">Before you send</h3><p>A quick check. Nothing has been sent.</p></div></div>
+  <div class="compose-body" id="sendWarnList"></div>
+  <div class="compose-foot"><span></span><div class="modal-actions"><button class="primary" id="sendWarnNo" type="button">Go back</button><button class="btn" id="sendWarnYes" type="button">Send anyway</button></div></div>
 </div>
 <div class="compose-scrim" id="nmScrim"></div>
 <div class="compose" id="newMail" role="dialog" aria-modal="true" aria-labelledby="nmTitle">
@@ -4263,7 +4269,7 @@ function openNewMail(pre){
 }
 function closeNewMail(force){
   if(!force&&nmDirty()&&!nm.armed){nm.armed=true;$("nmCancel").textContent="Discard this email?";setTimeout(()=>{nm.armed=false;$("nmCancel").textContent="Cancel"},4000);return}
-  $("newMail").classList.remove("open");$("nmScrim").classList.remove("show");nm.files=[];nm.armed=false;
+  $("newMail").classList.remove("open");$("nmScrim").classList.remove("show");nm.files=[];nm.armed=false;nmWarned=false;
 }
 $("nmFile").addEventListener("change",async e=>{
   for(const f of [...e.target.files]){
@@ -4282,6 +4288,28 @@ function noteQueuedNew(r,aid,subject){
   outbox=outbox.filter(x=>x.id!==r.id).concat([{id:r.id,kind:"new",account_id:aid,message_id:null,state:"pending",send_at:r.send_at,from:r.from,to:r.to,subject,total:Math.max(1,r.send_at-r.now)}]);
   outboxFirst=false;paintOutbox();
 }
+// A gentle check before a new email leaves: no subject, or the words say there is an attachment but none is attached.
+// It runs in the page only, so it works the same for every mailbox. It never blocks: "Send anyway" always sends.
+function sendWarnings(subject,body,fileCount){
+  const out=[];
+  if(!subject.trim())out.push("This email has no subject.");
+  const own=body.split("\n").filter(l=>!/^\s*>/.test(l)).join("\n");
+  if(!fileCount&&/\b(attach(ed|ing|ment|ments)?|enclos(ed|ing|ure|ures))\b/i.test(own))out.push("You mention an attachment, but nothing is attached.");
+  return out;
+}
+let sendWarnResolve=null,nmWarned=false;
+function sendWarn(list){
+  $("sendWarnList").replaceChildren(...list.map(t=>{const p=document.createElement("p");p.textContent=t;return p}));
+  $("sendWarn").classList.add("open");$("whScrim").classList.add("show");
+  $("sendWarnNo").focus();setTimeout(()=>$("sendWarnNo").focus(),0);
+  return new Promise(res=>{sendWarnResolve=res});
+}
+function sendWarnDone(ok){
+  $("sendWarn").classList.remove("open");$("whScrim").classList.remove("show");
+  const r=sendWarnResolve;sendWarnResolve=null;if(r)r(ok);
+}
+$("sendWarnYes").onclick=()=>sendWarnDone(true);$("sendWarnNo").onclick=()=>sendWarnDone(false);
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("sendWarn").classList.contains("open")){e.stopPropagation();e.preventDefault();sendWarnDone(false)}},true);      // wherever the focus is, Escape closes only this window
 async function sendNew(){
   if(nm.busy)return;
   const f=nmFields();
@@ -4291,10 +4319,15 @@ async function sendNew(){
   const subject=$("nmSubject").value.trim(),body=$("nmText").value;
   if(!subject&&!body.trim()&&!nm.files.length){toast("Add a subject or a message first");return}
   const [aid,from]=$("nmFrom").value.split("|");
+  if(!nmWarned){
+    const warn=sendWarnings(subject,body,nm.files.length);
+    if(warn.length){sendWarn(warn).then(ok=>{if(ok){nmWarned=true;sendNew()}else $("nmSubject").focus()});return}
+  }
   if(!whPassed&&whNeedsCheck("new")){
-    whConfirm("new",[...to,...cc].join(", "),body).then(ok=>{if(ok){whPassed=true;try{sendNew()}finally{whPassed=false}}});
+    whConfirm("new",[...to,...cc].join(", "),body).then(ok=>{if(ok){whPassed=true;try{sendNew()}finally{whPassed=false}}else nmWarned=false});
     return;
   }
+  nmWarned=false;
   nm.busy=true;const btn=$("nmSend"),label=btn.textContent;btn.disabled=true;btn.textContent="Sending…";btn.classList.add("busy");
   try{
     const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/send`,{method:"POST",body:JSON.stringify({to,cc,bcc,subject,body,from_address:from,files:nm.files.map(x=>({name:x.name,type:x.type,data:x.data}))})});
