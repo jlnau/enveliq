@@ -5,6 +5,16 @@ Newest first. Each entry says what changed for people and which parts of the cod
 ## Unreleased
 
 **No flash of sample data when you refresh.** On a real Enveliq, pressing the browser's refresh button no longer shows the sample page (the sample name, counts and version) for a split second before your own page appears.
+**Important people.** A short list, kept by each person for themselves, of senders whose mail is shown first.
+
+- `backend/mail/important.py` (new): `ImportantPeople`, one encrypted vault record per person (`important:<user id>`) holding addresses and optional names only, at most 200. Addresses are checked and lower-cased with the same rules as the address book.
+- `backend/mail/important_routes.py` (new): `GET /api/v1/me/important`, `POST /api/v1/me/important` (add, or update the name), `POST /api/v1/me/important/remove`. Signed-in people only, `no-store`, rate limited, and each person only ever sees their own list.
+- `backend/export.py`: the list is part of **Export my data** (`important_people`). `backend/app.py`: the list is forgotten when a person is removed.
+- `prototype/index.html`: mail from an important person is sorted first with a stable sort, so the chosen order (newest first, and so on) is kept inside each group; a small "Important" label on the row; an **Important person** / **Not important** button inside an opened email; the same works in the demo, in memory only.
+- `web/static/auth.js`: Settings, **Important people** (`importantPage`): the list, remove, and add by address and optional name.
+- Tests: `tests/test_important_people.py` (add, update, remove, bad addresses, the limit, one person's list never visible to another, sign-in needed, encrypted storage, export, account removal), `scripts/check_important_people.mjs` (order, label, the button, the Settings page).
+
+**A quick check before a new email goes.** A new email with no subject, or one that talks about an attachment when nothing is attached, now gets one calm question before it leaves.
 
 - `prototype/index.html`: while the page starts up (`body.booting`), the frame (menu, buttons, logo, search) shows at once, but your name, role and initials, the greeting, the counts, the version label and the list stay hidden. If it takes more than half a second, a calm line says "Getting your inbox ready…". When there is no server behind the page (the demo or a hosted preview) it appears as soon as that is known, with no loading line, and if the server is slow to answer the page is shown anyway after six seconds.
 - Tests: `scripts/check_no_sample_flash.mjs` (new, added to `.github/workflows/ci.yml`: the frame is there while the answer is slow, nothing personal or sample shows, the loading line only appears after a moment, then the signed-in person's name, greeting and version appear; preview appears at once; a server that never answers does not leave the page half empty).
