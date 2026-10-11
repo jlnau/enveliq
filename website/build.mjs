@@ -49,6 +49,7 @@ const NAV = [
     ["docs/VAULT_KEY.md", "Unlock by itself"],
     ["docs/WRITING_HELP.md", "Writing help"],
     ["docs/SCAM_WARNING.md", "The Be careful flag"],
+    ["docs/SNOOZE.md", "Snooze"],
     ["docs/MESSAGES.md", "Messages between people"],
     ["docs/AGENT.md", "Hermes agent chat"],
   ] },

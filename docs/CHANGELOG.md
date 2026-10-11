@@ -2,6 +2,15 @@
 
 Newest first. Each entry says what changed for people and which parts of the code it touches. The history of earlier versions is in [VERSION_HISTORY.md](VERSION_HISTORY.md).
 
+## v0.71
+
+**Snooze.** Set an email aside until a time you choose.
+
+- `backend/models.py`: `snoozed_until` (a Unix time) on the stored message. `backend/mail/review.py`: a card kept after Reviewed or Archived drops it.
+- `backend/mail/routes.py`, `service.py`: `POST /api/v1/accounts/{id}/messages/{id}/snooze` with `{"until": <Unix time>}`, or `null` to bring it back now. Owner only (anyone else gets "not found"). The time must be at least 30 seconds ahead and at most 366 days away. Only inbox emails can be snoozed (not kept Reviewed/Archived cards or quiet "All emails" entries). Only the stored record changes: the real mailbox is not touched. Audited with ids only.
+- `prototype/index.html`: a **Snooze** button on each inbox email opens a small menu (Later today, Tomorrow, This weekend, Next week, Pick a date) with each time shown; the page works out the time in the person's own time zone. Snoozed emails are hidden from the inbox list and counts, listed under a new **Snoozed** entry (shown only while something is snoozed) with **Wake now**, and return at the top with *Back from snooze* when the time passes (a timer re-draws the list). On a phone the menu is a bottom panel with 44px choices.
+- Tests: `tests/test_snooze.py`, `scripts/check_snooze.mjs` (added to CI; uses a fixed clock and the Melbourne time zone; desktop and phone). Docs: new `docs/SNOOZE.md`, the tour and front page.
+
 ## v0.70
 
 **Forward to check.** Forward a suspicious email to a check address and get one line back.

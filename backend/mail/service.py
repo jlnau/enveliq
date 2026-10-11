@@ -682,6 +682,15 @@ class MailService:
         data["replied_at"] = time.time() if now is None else now
         vault.update_message(account_id, message_id, RetainedMessageCreate(**data).model_dump(mode="python"))
 
+    @staticmethod
+    def mark_snoozed(vault: Any, account_id: str, message_id: str, until: float | None) -> dict[str, Any]:
+        """Hide an email from the inbox list until `until` (a Unix time), or bring it back now with None. Only Enveliq's own record changes."""
+        stored = vault.get_message(account_id, message_id)
+        data = {k: v for k, v in stored.items() if k != "id"}
+        data["snoozed_until"] = until
+        vault.update_message(account_id, message_id, RetainedMessageCreate(**data).model_dump(mode="python"))
+        return {"snoozed_until": until}
+
     # ---------- resolve ----------
 
     def apply_outcome(self, account: dict[str, Any], message: dict[str, Any], outcome: str) -> None:

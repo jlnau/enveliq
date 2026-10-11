@@ -289,3 +289,5 @@ class RetainedMessageCreate(StrictModel):
     from_all_mail: bool = False
     # When you last replied to this email from Enveliq (a Unix timestamp).
     replied_at: float | None = Field(default=None, ge=0, le=4_102_444_800)
+    # Snoozed: kept out of the inbox list until this Unix time. Only Enveliq's own list changes; the real mailbox is left alone.
+    snoozed_until: float | None = Field(default=None, ge=0, le=4_102_444_800)

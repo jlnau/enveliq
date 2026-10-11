@@ -96,6 +96,11 @@ These rules are architecture requirements, not UI preferences.
 - "Confirmed" means the provider says the email passed its checks. It does not mean the email is safe, and the page never says it is. When the provider adds no result, the page says nothing.
 - A Reply-To on another website is shown but only flags an email from a well-known name, because small businesses often use a free mail address for replies.
 
+## Snooze (v0.71)
+
+- Snooze changes only Enveliq's own record of an email (a time stored with the other encrypted details). The real mailbox is not touched and nothing new is read from it.
+- The server answers only for the mailbox's owner (anyone else gets "not found"), accepts only a time between 30 seconds and 366 days ahead, and refuses to snooze an email that is not in the inbox. Each change is audited with ids and time, never email text.
+
 ## Forward to check (v0.70)
 
 - An administrator chooses one of their **own** mailboxes as the check address and lists who may use it. No other person's mailbox can be chosen. Only that administrator can change it. The check mailbox is not read as an inbox: it is not synced, nothing from it is kept for anyone, and it is hidden from the inbox page.

@@ -165,23 +165,24 @@ All the guides are listed, by what you want to do, in the [**documentation index
 [Calendar and to-do lists](docs/CALENDAR.md) ·
 [Reminders](docs/NOTIFICATIONS.md) ·
 [Writing help](docs/WRITING_HELP.md) ·
-[The Be careful flag](docs/SCAM_WARNING.md).
+[The Be careful flag](docs/SCAM_WARNING.md) ·
+[Snooze](docs/SNOOZE.md).
 
 ## Version history
 
 <details>
 <summary><b>What changed recently</b> (latest five versions)</summary>
 
+- **v0.71**: **Snooze.** Press **Snooze** on an email to set it aside until Later today, Tomorrow, This weekend, Next week or a date you pick. It leaves your inbox, shows under a new **Snoozed** entry in the left menu with a count, and comes back at the top at the time you chose. The time is worked out in your own time zone. Your real mailbox is left alone: only Enveliq's list changes. See [docs/SNOOZE.md](docs/SNOOZE.md).
 - **v0.70**: **Forward to check.** Got an email you are not sure about? Forward it, as an attachment, to your household's check address and get one line back: either *"Be careful:"* with what looks odd, or *"Nothing odd found. That does not prove it is safe."* An administrator chooses a mailbox made only for this (Administration, Forward to check) and lists the people who may use it. Only those people get an answer; everyone else is ignored. It is plain code, the AI is not involved, the forwarded email is read once and never kept, and the answer never says an email is safe. That mailbox is never shown as an inbox to anyone. See [docs/SCAM_WARNING.md](docs/SCAM_WARNING.md).
 - **v0.69**: **Unsubscribe is hidden on an email marked Be careful.** Unsubscribing from a scam only tells the sender your address is real, so on a flagged email there is no Unsubscribe button any more, on the card or in View original. One line says why. This replaces the earlier extra step with **Go anyway**. Ordinary newsletters keep their Unsubscribe button. See [docs/SCAM_WARNING.md](docs/SCAM_WARNING.md).
 - **v0.68**: **Where does this link go?** In **View original email**, a new **Links in this email** list shows the website each link really goes to, what the email calls it, and a plain note when something looks odd (for example a link that says one company but goes to another). A link opens only after you press **Open…** and see where it goes, and on an email marked Be careful the question is firmer (**Open anyway**). Links to a number address, a private address or an odd port are listed but cannot be opened from here. This is plain code; the AI is not involved, and Enveliq never opens a link for you. The list is worked out when you open the email and is never stored. See [docs/SCAM_WARNING.md](docs/SCAM_WARNING.md).
 - **v0.67**: **Is this really from them?** In **View original email**, a new **Sender** line says in plain words whether your email provider could confirm the email really came from that address, and says nothing when it cannot tell. When your provider says it could not confirm the sender, that also joins the **Be careful** flag. If replies would go to a different website from the sender, the Reply-To line says so, and when an email from a well-known name asks for replies somewhere else it joins the flag too. This is plain code that reads your own provider's result (SPF, DKIM and DMARC); the AI is not involved. No label does not mean safe. See [docs/SCAM_WARNING.md](docs/SCAM_WARNING.md).
-- **v0.66**: **A "Be careful" flag for emails that look like a scam.** When an email looks odd, such as a link that says paypal.com but goes somewhere else, a link to a number instead of a website name, a link that copies a well-known name, a sender called "PayPal" writing from an unrelated address, or a sender your email provider could not confirm, its row gets a small **Be careful** label and its card gets a calm note in plain words that lists exactly what looks odd. Nothing is blocked and nothing is judged for you. On a flagged email the **Unsubscribe** button asks once more first, because unsubscribing from a scam tells the sender your address is real. The checks are plain code, never the AI, and only website names are ever kept, never a whole link. Ordinary newsletters with tracking links are deliberately left alone. See [docs/SCAM_WARNING.md](docs/SCAM_WARNING.md).
 
 The full list is in [docs/VERSION_HISTORY.md](docs/VERSION_HISTORY.md), and a more technical one is in the [change log](docs/CHANGELOG.md).
 </details>
 
-Current version: **v0.70**
+Current version: **v0.71**
 
 ## For developers
 
