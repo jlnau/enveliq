@@ -14,6 +14,24 @@ Each channel has the same four steps: follow the short guide on its card, fill i
 
 Only the task title and a link back to Enveliq are sent, never the email text. If a send fails, Enveliq tries again after 5 minutes. A task that is done, removed or whose email was dealt with stops sending at once.
 
+## New email alerts
+
+Switch on **Tell me when new email arrives** in **Settings, Reminders** and Enveliq sends one short message each time it finds new email for you, to the places you chose under *Where to send reminders*. It is off until you switch it on.
+
+* By default the message only says how many emails arrived ("2 new emails"). Under *Nudges, quiet hours and privacy*, **Show who a new email is from and its subject** adds the sender's name and the subject. Services such as ntfy or a chat app can read what you send them, so leave this off if you would rather your lock screen and those services learn nothing about your mail. Your own device's browser push is encrypted end to end.
+* The email text, the sender's address and the summary are never sent.
+* Quiet hours apply: nothing is sent during them, and the emails wait in your inbox.
+* It speaks about mail Enveliq fetches by itself (Administration, Automatic sync). Mail you fetch by pressing **Sync mail** is not announced, because you are already looking at it, and neither is the first read of a mailbox you have just connected.
+* Tapping the message opens Enveliq at that email when there is one, or at your inbox when there are several.
+
+## Install Enveliq as an app
+
+On Android (Chrome or Edge) open Enveliq at its `https://` address, open the browser menu and choose **Install app** (or **Add to Home screen**). Enveliq then has its own icon and opens in its own window. On an iPhone or iPad use **Share, Add to Home Screen**; that is also what lets an iPhone receive browser notifications. On a computer, Chrome and Edge show an install icon in the address bar.
+
+Then, under **Where to send reminders**, press **Turn on for this device** on the phone. Tapping a notification opens Enveliq at the email it is about, even if the app was closed.
+
+Notifications and installing need the `https://` address you use for Enveliq (set in `ENVELIQ_PUBLIC_URL`); a plain `http://` address on your network is not enough. Phones can also use ntfy or Home Assistant instead, see the table below.
+
 ## Channels
 
 | Channel | You need | Notes |

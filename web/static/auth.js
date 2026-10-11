@@ -1257,24 +1257,26 @@ async function remindersPage(me) {
     box("rs_morning", s.morning_on, "Morning summary", "One message each morning saying what is due today."),
     field("Send it at", input("rs_morning_time", { type: "time", value: s.morning_time })),
     box("rs_due", s.due_on, "Remind me when something is due", "Sent once, when a task is due or when a new task for today appears."),
+    box("rs_mail", s.mail_on, "Tell me when new email arrives", "One short message each time Enveliq finds new email for you, to the places chosen below. Quiet hours apply: nothing is sent then, and the emails wait in your inbox."),
     more("Nudges, quiet hours and privacy",
       h("div", { class: "grid2" },
         field("Nudge again after (hours)", input("rs_hours", { type: "number", min: "1", max: "12", value: String(s.repeat_hours) }), "If a task is still open, Enveliq nudges you again after this long."),
         field("Nudge at most (times)", input("rs_max", { type: "number", min: "0", max: "5", value: String(s.repeat_max) }), "0 means one reminder and no nudges.")),
       box("rs_quiet", s.quiet_on, "Quiet hours", "Nothing is sent during these hours. What was held is sent when they end."),
       h("div", { class: "grid2" }, field("From", input("rs_from", { type: "time", value: s.quiet_from })), field("Until", input("rs_to", { type: "time", value: s.quiet_to }))),
-      box("rs_titles", s.show_titles, "Show task titles in reminders", "Switch this off for private mode: reminders only say that something is due, so nothing about your mail appears on a lock screen or in a chat service.")),
+      box("rs_titles", s.show_titles, "Show task titles in reminders", "Switch this off for private mode: reminders only say that something is due, so nothing about your mail appears on a lock screen or in a chat service."),
+      box("rs_maildetails", s.mail_details, "Show who a new email is from and its subject", "Off by default: the message only says how many emails arrived. Switch this on to see the sender's name and the subject on your lock screen or in a chat service.")),
     h("p", { class: "hint", text: `Times are in your time zone (${ov.tz}).` }),
     h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" })));
   onSubmit(form, async () => {
     const g = id => form.querySelector("#" + id);
     await api("/me/notifications/settings", { method: "PUT", body: { morning_on: g("rs_morning").checked, morning_time: g("rs_morning_time").value || "08:00", due_on: g("rs_due").checked,
-      repeat_hours: Number(g("rs_hours").value) || 2, repeat_max: Math.max(0, Number(g("rs_max").value) || 0), quiet_on: g("rs_quiet").checked, quiet_from: g("rs_from").value || "21:00", quiet_to: g("rs_to").value || "07:00", show_titles: g("rs_titles").checked } });
+      repeat_hours: Number(g("rs_hours").value) || 2, repeat_max: Math.max(0, Number(g("rs_max").value) || 0), quiet_on: g("rs_quiet").checked, quiet_from: g("rs_from").value || "21:00", quiet_to: g("rs_to").value || "07:00", show_titles: g("rs_titles").checked, mail_on: g("rs_mail").checked, mail_details: g("rs_maildetails").checked } });
     toast("Saved");
   });
   const mine = ov.channels.filter(c => c.allowed);
   show(...chrome(me, "reminders", h("h1", { text: "Reminders" }),
-    h("p", { class: "lead", text: "Your tasks always appear in Enveliq under Today. Add any of these if you also want a nudge on your phone or in a chat app. You can use several at once. Enveliq never sends the email itself, only the task." }),
+    h("p", { class: "lead", text: "Your tasks always appear in Enveliq under Today. Add any of these if you also want a nudge on your phone or in a chat app. You can use several at once. Enveliq never sends the email itself: only your tasks and, if you switch it on below, a short note that new email has arrived." }),
     guideNote("NOTIFICATIONS.md", "Step by step for each way of being reminded:", "Open the reminders guide"),
     h("section", { class: "section" }, h("h2", { text: "When to remind me" }), form),
     h("section", { class: "section" }, h("h2", { text: "Where to send reminders" }),
@@ -1533,6 +1535,52 @@ async function importantPage(me) {
   try { const r = await api("/me/important"); paint(r.items); } catch (er) { list.replaceChildren(alertBox("bad", er.message)); }
   show(...chrome(me, "important", h("h1", { text: "Important people" }), h("section", { class: "section" }, wrap)));
 }
+
+// ---------- signature and saved replies: the person's own text, to reuse when they write ----------
+async function savedPage(me) {
+  let state = { signature: "", replies: [], limits: { signature: 1000, replies: 30, title: 60, text: 3000 } };
+  let editing = null;
+  const sig = h("textarea", { id: "sv_sig", rows: "4", "aria-label": "Your signature" });
+  const sigSave = h("button", { class: "btn primary", type: "button", text: "Save signature" });
+  const list = h("div", { class: "ab-list" });
+  const title = h("input", { id: "sv_title", type: "text", placeholder: "A short name, for example \u201cRunning late\u201d", "aria-label": "Name of the saved reply", autocomplete: "off" });
+  const text = h("textarea", { id: "sv_text", rows: "4", placeholder: "The words to insert", "aria-label": "Text of the saved reply" });
+  const save = h("button", { class: "btn primary", type: "button", text: "Save reply" });
+  const cancel = h("button", { class: "btn", type: "button", text: "Cancel", hidden: true });
+  function paint() {
+    sig.value = state.signature; sig.maxLength = state.limits.signature; title.maxLength = state.limits.title; text.maxLength = state.limits.text;
+    list.replaceChildren(...(state.replies.length ? state.replies.map(r => h("div", { class: "ab-row" },
+      h("span", { class: "ab-who" }, h("strong", { text: r.title }), h("small", { text: r.text.length > 120 ? r.text.slice(0, 120) + "\u2026" : r.text })),
+      h("button", { class: "btn small", type: "button", text: "Edit", onclick: () => { editing = r.id; title.value = r.title; text.value = r.text; save.textContent = "Update reply"; cancel.hidden = false; title.focus(); } }),
+      h("button", { class: "ab-x", type: "button", "aria-label": `Remove ${r.title}`, text: "\u00d7", onclick: async () => {
+        try { state = await api(`/me/saved/replies/${r.id}`, { method: "DELETE" }); if (editing === r.id) reset(); paint(); toast("Removed"); } catch (er) { toast(er.message); }
+      } }))) : [h("p", { class: "hint", text: "No saved replies yet. Add one below." })]));
+  }
+  function reset() { editing = null; title.value = ""; text.value = ""; save.textContent = "Save reply"; cancel.hidden = true; }
+  cancel.addEventListener("click", reset);
+  sigSave.addEventListener("click", async () => {
+    try { state = await api("/me/saved/signature", { method: "PUT", body: { text: sig.value } }); paint(); toast(state.signature ? "Signature saved" : "Signature removed"); } catch (er) { toast(er.message); }
+  });
+  save.addEventListener("click", async () => {
+    try {
+      state = editing ? await api(`/me/saved/replies/${editing}`, { method: "PUT", body: { title: title.value, text: text.value } })
+        : await api("/me/saved/replies", { method: "POST", body: { title: title.value, text: text.value } });
+      reset(); paint(); toast("Saved");
+    } catch (er) { toast(er.message); }
+  });
+  try { state = await api("/me/saved"); } catch (er) { show(...chrome(me, "saved", h("h1", { text: "Signature & saved replies" }), alertBox("bad", er.message))); return; }
+  paint();
+  const wrap = h("div", {},
+    h("div", { class: "sv-block" },
+      h("h2", { text: "Your signature" }),
+      h("p", { class: "lead", text: "Put at the bottom of every new email and reply when you open the box. You can change or delete it in the message box before you send. Leave this empty for no signature." }),
+      sig, h("div", { class: "row" }, sigSave)),
+    h("div", { class: "sv-block" },
+      h("h2", { text: "Saved replies" }),
+      h("p", { class: "lead", text: "Short pieces of text you use often. In the message box, choose one from \u201cSaved reply\u201d and it is put in where your cursor is. Only you can see them." }),
+      list, title, text, h("div", { class: "row" }, save, cancel)));
+  show(...chrome(me, "saved", h("h1", { text: "Signature & saved replies" }), h("section", { class: "section" }, wrap)));
+}
 async function aiInstructionsPage(me) {
   const p = await api("/me/preferences");
   const form = h("form", {},
@@ -1707,4 +1755,4 @@ if (!window.ENVELIQ_EMBED) {
   if (!["/login", "/setup", "/unlock", "/terms", "/privacy", "/security", "/welcome"].includes(location.pathname) && !new URLSearchParams(location.search).has("enroll")) sendWatcher();
 }
 
-if (window.ENVELIQ_EMBED) window.EnveliqEmbed = { setMount, api, profilePage, mailboxesPage, accountPage, welcomePage, adminPage, generalPage, aiInstructionsPage, addressBookPage, importantPage, remindersPage, syncPage };
+if (window.ENVELIQ_EMBED) window.EnveliqEmbed = { setMount, api, profilePage, mailboxesPage, accountPage, welcomePage, adminPage, generalPage, aiInstructionsPage, addressBookPage, importantPage, savedPage, remindersPage, syncPage };
