@@ -33,6 +33,8 @@ from .mail.task_routes import build_task_router
 from .mail.shipping import ShipBook
 from .mail.important import ImportantPeople
 from .mail.important_routes import build_important_router
+from .mail.saved_writing import SavedWriting
+from .mail.saved_writing_routes import build_saved_writing_router
 from .mail.subscriptions import SubBook
 from .mail.subscriptions_routes import build_subscriptions_router
 from .mail.trips import TripBook
@@ -60,6 +62,7 @@ from .mail import extra_channels, marks
 from .mail.outbound import OutboundError
 from .mail.sync_routes import build_sync_router
 from .mail.gcal_routes import build_gcal_router
+from .mail.mail_alerts import MailAlerts
 from .mail.reminders import Reminders
 from .mail.outbox import Outbox
 from .version import VERSION
@@ -356,12 +359,12 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
 app.add_middleware(RequestGuardMiddleware, max_body_bytes=MAX_BODY_BYTES, allowed_origins=ALLOWED_ORIGINS)
 
 API_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
-PAGE_CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; "
+PAGE_CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; "
             "form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
 # The inbox page is still the single-file prototype with inline script and
 # styles; it gets a looser policy until it is split into bundled files.
 APP_CSP = ("default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; "
-           "connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
+           "connect-src 'self'; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
 
 
 @app.middleware("http")
@@ -458,6 +461,7 @@ def delete_user_data(user_id: str) -> None:
     messagebook.forget_user(user_id)
     writehelpbook.forget_user(user_id)
     importantbook.forget_user(user_id)
+    savedbook.forget_user(user_id)
     for account in vault.list_accounts():
         if account.get("owner_user_id") == user_id:
             preview_leases.purge_account(account["id"])
@@ -561,6 +565,7 @@ taskbook = TaskBook(vault)
 shipbook = ShipBook(vault)
 subbook = SubBook(vault, taskbook.timezone_of)
 importantbook = ImportantPeople(vault)
+savedbook = SavedWriting(vault)
 tripbook = TripBook(vault, taskbook.timezone_of)
 messagebook = MessageBook(vault, users)
 writehelpbook = WriteHelpBook(vault)
@@ -572,6 +577,7 @@ mail_service.waits = waitbook
 notifier = Notifier(vault)
 _click = "" if _pub.hostname in ("localhost", "127.0.0.1", "::1") else PUBLIC_ORIGIN
 reminders = Reminders(vault, taskbook, notifier, _click)
+auto_sync.mail_alerts = MailAlerts(notifier, _click, taskbook.timezone_of)
 reminders.subs = subbook
 sync = Sync(vault, taskbook, notifier, PUBLIC_ORIGIN)
 backups = BackupManager(vault, DATA_DIR / "backups")
@@ -607,7 +613,7 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, subscriptions=subbook, important=importantbook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, subscriptions=subbook, important=importantbook, saved_writing=savedbook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))
@@ -616,6 +622,7 @@ app.include_router(build_task_router(mail_ctx))
 app.include_router(build_shipping_router(mail_ctx))
 app.include_router(build_subscriptions_router(mail_ctx))
 app.include_router(build_important_router(mail_ctx))
+app.include_router(build_saved_writing_router(mail_ctx))
 app.include_router(build_trips_router(mail_ctx))
 app.include_router(build_waiting_router(mail_ctx))
 app.include_router(build_check_router(mail_ctx))
@@ -765,6 +772,23 @@ def service_worker():
     except OSError:
         raise HTTPException(status_code=404, detail="Not found")
     return Response(text, media_type="text/javascript", headers={"Cache-Control": "no-cache", "Service-Worker-Allowed": "/"})
+
+
+MANIFEST = {
+    "id": "/", "name": "Enveliq", "short_name": "Enveliq", "description": "Turn email into clarity.",
+    "start_url": "/", "scope": "/", "display": "standalone", "background_color": "#0d0f14", "theme_color": "#0d0f14",
+    "icons": [
+        {"src": "/brand/enveliq-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+        {"src": "/brand/enveliq-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+        {"src": "/brand/enveliq-icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+    ],
+}
+
+
+@app.get("/manifest.webmanifest", include_in_schema=False)
+def web_manifest():
+    """Lets a phone or computer install Enveliq as an app with its own icon. Same for everyone; holds nothing private."""
+    return JSONResponse(MANIFEST, media_type="application/manifest+json")
 
 
 @app.get("/embed.js", include_in_schema=False)

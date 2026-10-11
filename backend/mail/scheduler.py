@@ -45,6 +45,7 @@ class AutoSync:
         self._fails: dict[str, int] = {}
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
+        self.mail_alerts: Any = None                    # set by the application: new-email alerts (mail/mail_alerts.py)
         self.checker: Any = None                        # set by the application: answers forwarded emails (mail/checkbox.py)
 
     @staticmethod
@@ -112,6 +113,7 @@ class AutoSync:
             live = {a["id"] for a in accounts}
             for gone in [k for k in self.state if k not in live]:
                 self.state.pop(gone, None); self._next.pop(gone, None); self._fails.pop(gone, None)
+            arrived: dict[str, list[dict[str, Any]]] = {}      # person -> the emails that arrived in this pass
             for account in accounts:
                 if self._stop.is_set() or not self.vault.is_unlocked():
                     break
@@ -122,9 +124,33 @@ class AutoSync:
                 now = self.clock()
                 if now < self._next.get(account["id"], 0.0):
                     continue
+                before = self._known_ids(account) if self.mail_alerts is not None else None
+                first = account["id"] not in self.state
                 self._sync_one(account)
                 done += 1
+                if before is not None and account.get("owner_user_id") and not (first and not before):
+                    arrived.setdefault(account["owner_user_id"], []).extend(self._new_since(account, before))
+            if self.mail_alerts is not None:
+                for uid, new in arrived.items():
+                    if new:                                       # nothing arrived for this person: say nothing
+                        self.mail_alerts.send(uid, new)
         return done
+
+    def _known_ids(self, account: dict[str, Any]) -> set[str]:
+        try:
+            return {m["id"] for m in self.vault.list_messages(account["id"])}
+        except Exception:
+            return set()
+
+    def _new_since(self, account: dict[str, Any], before: set[str]) -> list[dict[str, Any]]:
+        """The unread emails stored since `before`, as the small facts an alert needs (no summary, no address)."""
+        try:
+            fresh = [m for m in self.vault.list_messages(account["id"])
+                     if m["id"] not in before and m.get("state", "unread") == "unread" and not m.get("from_all_mail")]
+        except Exception:
+            return []
+        fresh.sort(key=lambda m: m.get("received_at") or 0, reverse=True)
+        return [{"account_id": account["id"], "id": m["id"], "sender_display": m.get("sender_display"), "subject": m.get("subject"), "priority": m.get("priority")} for m in fresh]
 
     def _sync_one(self, account: dict[str, Any]) -> None:
         aid = account["id"]

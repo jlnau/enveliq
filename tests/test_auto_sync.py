@@ -138,3 +138,52 @@ def test_the_environment_wins_and_cannot_be_overwritten(tmp_path):
         assert client.put("/api/v1/sync/config", json={"minutes": 3}).status_code == 409
     finally:
         bridge.close()
+
+
+class Recorder:
+    def __init__(self):
+        self.calls = []
+
+    def send(self, user_id, new):
+        self.calls.append((user_id, new))
+        return 1
+
+
+def test_new_mail_found_by_a_pass_is_announced_but_mail_already_waiting_is_not(env):
+    appm, client, bridge, _ = env
+    aid = account(client, bridge, ai=False)
+    sync, clock = auto(appm)
+    sync.mail_alerts = rec = Recorder()
+    assert sync.run_once() == 1
+    assert len(listed(client, aid)) == 3 and rec.calls == []          # the first read of a new mailbox is not "new mail"
+    bridge.add(9, raw_email("Brand new", "Zed <zed@example.invalid>", MAILBOX, message_id="<new9@example.invalid>", body="Hi.\n"))
+    clock.now += 5 * 60 + 1
+    assert sync.run_once() == 1
+    assert len(rec.calls) == 1
+    uid, new = rec.calls[0]
+    assert uid == appm.vault.list_users()[0]["id"] and [m["subject"] for m in new] == ["Brand new"]
+    assert set(new[0]) == {"account_id", "id", "sender_display", "subject", "priority"}      # no address, no summary
+    assert new[0]["account_id"] == aid
+    clock.now += 5 * 60 + 1
+    sync.run_once()
+    assert len(rec.calls) == 1                                          # nothing new, nothing sent
+
+
+def test_the_alert_settings_start_off_and_are_saved(env):
+    appm, client, bridge, _ = env
+    s = client.get("/api/v1/me/notifications").json()["settings"]
+    assert s["mail_on"] is False and s["mail_details"] is False
+    r = client.put("/api/v1/me/notifications/settings", json={"mail_on": True})
+    assert r.status_code == 200 and r.json()["settings"]["mail_on"] is True and r.json()["settings"]["mail_details"] is False
+
+
+def test_the_install_manifest_is_public_and_its_icons_are_served(env):
+    appm, client, bridge, _ = env
+    r = client.get("/manifest.webmanifest")
+    assert r.status_code == 200 and r.headers["content-type"].startswith("application/manifest+json")
+    m = r.json()
+    assert m["name"] == "Enveliq" and m["display"] == "standalone"
+    for icon in m["icons"]:
+        got = client.get(icon["src"])
+        assert got.status_code == 200 and got.headers["content-type"] == "image/png" and got.content[:4] == b"\x89PNG"
+    assert "manifest-src 'self'" in client.get("/login").headers["content-security-policy"]

@@ -21,6 +21,7 @@ PLAIN_RECORDS = {
     "waiting_for_replies": "wait:",
     "writing_help": "writehelp:",
     "important_people": "important:",
+    "signature_and_saved_replies": "saved:",
     "assistant_chats": "agent:",
 }
 # Never copied out of a record, wherever they appear.
