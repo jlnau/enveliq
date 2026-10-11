@@ -1,0 +1,20 @@
+# Used by the "Generate release notes" button on GitHub's "Create a new release" page.
+# It lists the pull requests merged since the last release, grouped by the labels below.
+# A pull request with none of these labels still appears, under "Other changes".
+changelog:
+  exclude:
+    labels:
+      - skip-release-notes
+    authors:
+      - dependabot
+  categories:
+    - title: What's new
+      labels: [feat, enhancement]
+    - title: Fixes
+      labels: [fix, bug]
+    - title: Security
+      labels: [security]
+    - title: Documentation
+      labels: [docs]
+    - title: Other changes
+      labels: ["*"]

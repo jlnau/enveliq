@@ -34,6 +34,7 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 - [Undo for Reviewed, Archive and Bin](UNDO.md)
 - [Checks before sending](SEND_CHECKS.md) (a gentle question if a new email has no subject or a forgotten attachment)
 - [Important people](IMPORTANT_PEOPLE.md) (mail from people you choose is shown first)
+- [Signature and saved replies](SAVED_REPLIES.md) (your signature, and short texts you use often)
 - [Trips](TRIPS.md) (flights, stays and hire cars, put together and added to your calendar)
 - [Messages between people](MESSAGES.md)
 - [Chat with a Hermes agent](AGENT.md)
@@ -50,3 +51,4 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 
 - [Architecture](ARCHITECTURE.md)
 - [Change log](CHANGELOG.md) and [full version history](VERSION_HISTORY.md)
+- [Making a release](RELEASING.md) (for the maintainer)
