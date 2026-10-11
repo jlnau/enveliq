@@ -4,6 +4,17 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Mail rules.** "Archive new email from this sender", done for the person as mail arrives.
+
+- `backend/mail/rules.py` (new): `Rules`, one encrypted vault record per person (`rules:<user id>`), at most 50 rules. A rule has a sender (one address, or a whole website written `@example.com`), optional words the subject must contain, and an action: **archive** or **mark reviewed**. There is deliberately no action that bins mail.
+- `backend/mail/rules_routes.py` (new): `GET /api/v1/me/rules`, `POST /api/v1/me/rules`, `DELETE /api/v1/me/rules/{id}`. Signed-in people only, `no-store`, rate limited, one person never sees another's rules.
+- `backend/mail/service.py`: a sync now tells the application which emails have just arrived (id, sender, subject, nothing else) through `on_new`. `backend/app.py`: `apply_rules` checks the owner's rules for each, skips mail from the owner's important people, and runs the same `resolve_message` code the Reviewed and Archive buttons use (the mailbox is changed first, then a card is kept for a few days). A rule failing never fails a sync; if the mailbox cannot be changed the rest are left where they are. The audit entry for such a change says `by: rule`.
+- `backend/app.py`: the resolve endpoint's body moved into `resolve_message(...)` so the buttons and the rules share it. Behaviour of the buttons is unchanged.
+- `backend/export.py`: part of **Export my data** (`rules`). Forgotten when a person is removed.
+- `prototype/index.html`: an **Always archive these** button on an opened email (not for important people, not in the demo); `web/static/auth.js`: Settings, **Mail rules** (`rulesPage`).
+- Docs: `README.md` and `docs/EMAIL_SERVICES.md` no longer say Enveliq changes the mailbox only on a button press; they name rules.
+- Tests: `tests/test_rules.py` (the rules, limits, isolation, export, and applying them to a real sync: one sender, a whole website, subject words, reviewed, important people skipped, not applied to mail already there, other people's rules ignored), `scripts/check_rules.mjs`.
+
 **A signature and saved replies.** The person's own text, kept for them, to reuse when they write.
 
 - `backend/mail/saved_writing.py` (new): `SavedWriting`, one encrypted vault record per person (`saved:<user id>`) with one signature (up to 1000 characters) and up to 30 saved replies (a name of up to 60 characters and text of up to 3000). Control characters are removed and line breaks are tidied.
