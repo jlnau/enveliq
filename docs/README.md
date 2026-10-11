@@ -31,6 +31,7 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 - [Subscriptions and free trials](SUBSCRIPTIONS.md) (renewals followed from your email, with a reminder)
 - [Backup and restore, and Export my data](BACKUP.md)
 - [The demo](DEMO.md)
+- [Undo for Reviewed, Archive and Bin](UNDO.md)
 - [Trips](TRIPS.md) (flights, stays and hire cars, put together and added to your calendar)
 - [Messages between people](MESSAGES.md)
 - [Chat with a Hermes agent](AGENT.md)

@@ -47,6 +47,14 @@ for (const [name, vp] of [["desktop", { width: 1280, height: 800 }], ["phone", {
   ok(name + ": the made-up mail is there", text.includes("Skyline Air") && text.includes("Harbourview Strata"));
   await p.getByText("Your Skyline Air Travel Reminder").first().click(); await p.waitForTimeout(400);
   ok(name + ": opening a message shows it", /VA281|check.?in/i.test(await p.locator("body").innerText()));
+  // Reviewed, Archive and Bin wait five seconds, with Undo, here as everywhere
+  const rowsBefore = await p.locator("article.mail").count();
+  await p.locator("article.mail [data-status=archived]:visible").first().click();
+  await p.waitForSelector("#undoBar:not([hidden])");
+  ok(name + ": Archive leaves the list at once and an Undo bar appears", (await p.locator("article.mail").count()) === rowsBefore - 1 && /Archived/.test(await p.locator("#undoText").innerText()));
+  if (shots) await p.screenshot({ path: path.join(shots, `demo-undo-${name}.png`) });
+  await p.click("#undoBtn");
+  ok(name + ": Undo brings it back", (await p.locator("article.mail").count()) === rowsBefore && !(await p.locator("#undoBar").isVisible()));
   ok(name + ": it never asked for anything but the page and its pictures", seen.every((s) => /^GET \/(brand\/[\w.-]+)?$/.test(s)));
   ok(name + ": no outside requests", seen.every((s) => !/^[A-Z]+ https?:/.test(s)));
   ok(name + ": no script errors or Content-Security-Policy violations", problems.length === 0);
