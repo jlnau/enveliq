@@ -80,6 +80,58 @@ def event_lines(task: dict[str, Any], *, titles: bool, link: str, stamp: float, 
     return lines
 
 
+def _stamp(day: str, clock: str) -> str:
+    return day.replace("-", "") + "T" + clock.replace(":", "") + "00"
+
+
+def trip_span(b: dict[str, Any]) -> tuple[str, str, bool]:
+    """Start, end and whether they are clock times. Only a flight with a departure time is a timed event, with the clock
+    times as written in the email (no time zone is guessed). A stay or a hire car covers its days, a flight with no time its day."""
+    start = date.fromisoformat(b["start"])
+    end = date.fromisoformat(b["end"]) if b.get("end") else None
+    if b["kind"] == "flight" and b.get("start_time"):
+        stop_day = end or start
+        if b.get("end_time") and (stop_day, b["end_time"]) > (start, b["start_time"]):
+            return _stamp(start.isoformat(), b["start_time"]), _stamp(stop_day.isoformat(), b["end_time"]), True
+        later = datetime.combine(start, datetime.strptime(b["start_time"], "%H:%M").time()) + timedelta(hours=1)
+        return _stamp(start.isoformat(), b["start_time"]), later.strftime("%Y%m%dT%H%M00"), True
+    if b["kind"] == "stay":
+        last = end if end and end > start else start + timedelta(days=1)          # the check-out day is not a night
+    else:
+        last = (end or start) + timedelta(days=1)
+    return start.strftime("%Y%m%d"), last.strftime("%Y%m%d"), False
+
+
+def trip_event_lines(b: dict[str, Any], *, titles: bool, link: str, stamp: float, seq: int = 0) -> list[str]:
+    first, last, timed = trip_span(b)
+    lines = ["BEGIN:VEVENT", f"UID:{b['id']}@enveliq", "DTSTAMP:" + datetime.fromtimestamp(stamp, timezone.utc).strftime("%Y%m%dT%H%M%SZ")]
+    lines += [f"DTSTART:{first}", f"DTEND:{last}"] if timed else [f"DTSTART;VALUE=DATE:{first}", f"DTEND;VALUE=DATE:{last}"]
+    lines += [f"SEQUENCE:{seq}", "SUMMARY:" + esc(b["summary"] if titles else "Enveliq trip"), "TRANSP:TRANSPARENT", "CATEGORIES:Enveliq"]
+    if titles and b.get("description"):
+        lines.append("DESCRIPTION:" + esc(b["description"]))
+    if link:
+        lines.append("URL:" + _clean(link, 300))
+    lines.append("END:VEVENT")
+    return lines
+
+
+def trip_google_body(b: dict[str, Any], titles: bool, link: str) -> dict[str, Any]:
+    first, last, timed = trip_span(b)
+    iso = lambda v: f"{v[:4]}-{v[4:6]}-{v[6:8]}" + (f"T{v[9:11]}:{v[11:13]}:00" if timed else "")
+    key = "dateTime" if timed else "date"
+    body: dict[str, Any] = {"id": b["id"], "summary": b["summary"] if titles else "Enveliq trip", "status": "confirmed", "transparency": "transparent",
+                            "start": {key: iso(first)}, "end": {key: iso(last)}, "extendedProperties": {"private": {"enveliq": b["id"]}}}
+    if titles and b.get("description"):
+        body["description"] = _clean(b["description"], 1000)
+    if link:
+        body["source"] = {"title": "Enveliq", "url": link}
+    return body
+
+
+def trip_sig(b: dict[str, Any], titles: bool) -> str:
+    return _hash(f"{b['start']}|{b.get('end')}|{b.get('start_time')}|{b.get('end_time')}|{b['summary'] if titles else ''}|{b['description'] if titles else ''}")[:16]
+
+
 def calendar_text(events: list[list[str]], name: str = "Enveliq tasks") -> str:
     head = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Enveliq//Tasks//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
             "X-WR-CALNAME:" + esc(name), "REFRESH-INTERVAL;VALUE=DURATION:PT1H", "X-PUBLISHED-TTL:PT1H"]
@@ -112,6 +164,7 @@ class Sync:
         self._thread: threading.Thread | None = None
         self._last_full: dict[str, float] = {}
         self.google = gcal.Google(vault, clock)
+        self.trips: Any = None                      # set by the application: bookings that go in the calendar too (mail/trips.py)
         tasks.listeners.append(self._changed)
 
     # ---------- storage ----------
@@ -158,6 +211,14 @@ class Sync:
             self._save(uid, rec)
         self.mark(uid)
 
+    def _trip_map(self, uid: str) -> dict[str, dict[str, Any]]:
+        if self.trips is None:
+            return {}
+        try:
+            return {b["id"]: b for b in self.trips.calendar_items(uid)}
+        except Exception:
+            return {}
+
     # ---------- the private feed ----------
     def feed_new(self, uid: str) -> str:
         """Make (or replace) the person's feed address. Returns the address; only its hash is kept."""
@@ -196,6 +257,7 @@ class Sync:
         now = self.clock()
         events = [event_lines(t, titles=rec["titles"], link=self._link(), stamp=now) for t in self.tasks.snapshot(uid) if t["state"] == "open"]
         events.sort(key=lambda e: e[3])
+        events += [trip_event_lines(b, titles=rec["titles"], link=self._link(), stamp=now) for b in self._trip_map(uid).values()]
         return calendar_text(events)
 
     # ---------- CalDAV and To-do settings ----------
@@ -352,8 +414,9 @@ class Sync:
         pushed: dict[str, Any] = cd["pushed"]
         now = self.clock()
         open_tasks = {} if wipe else {t["id"]: t for t in self.tasks.snapshot(uid) if t["state"] == "open"}
+        trips = {} if wipe else self._trip_map(uid)
         for tid in list(pushed):
-            if tid not in open_tasks:
+            if tid not in open_tasks and tid not in trips:
                 status, _ = self._dav(cd, "DELETE", cd["url"] + f"enveliq-{tid}.ics")
                 if status not in (200, 202, 204, 404, 410):
                     raise OutboundError("error", f"The calendar refused to remove an event ({status}).")
@@ -371,6 +434,19 @@ class Sync:
             if status not in (200, 201, 204):
                 raise OutboundError("error", f"The calendar refused an event ({status}).")
             pushed[tid] = {"sig": sig, "seq": seq}
+        for bid, b in trips.items():
+            sig = trip_sig(b, rec["titles"])
+            cur = pushed.get(bid)
+            if cur and cur.get("sig") == sig:
+                continue
+            seq = (cur or {}).get("seq", -1) + 1
+            body = calendar_text([trip_event_lines(b, titles=rec["titles"], link=self._link(), stamp=now, seq=seq)]).replace("METHOD:PUBLISH\r\n", "")
+            status, _ = self._dav(cd, "PUT", cd["url"] + f"enveliq-{bid}.ics", body=body.encode("utf-8"), headers={"Content-Type": "text/calendar; charset=utf-8"})
+            if status == 404:
+                raise OutboundError("not_found", "That calendar address was not found.")
+            if status not in (200, 201, 204):
+                raise OutboundError("error", f"The calendar refused an event ({status}).")
+            pushed[bid] = {"sig": sig, "seq": seq}
 
     # ----- Google Calendar -----
     def _google(self, uid: str, rec: dict[str, Any], wipe: bool) -> None:
@@ -379,8 +455,9 @@ class Sync:
         rt, cal = g["refresh_token"], "/calendars/" + urllib.parse.quote(g["calendar_id"], safe="")
         now = self.clock()
         open_tasks = {} if wipe else {t["id"]: t for t in self.tasks.snapshot(uid) if t["state"] == "open"}
+        trips = {} if wipe else self._trip_map(uid)
         for tid in list(pushed):
-            if tid not in open_tasks:
+            if tid not in open_tasks and tid not in trips:
                 status, _ = self.google.call(uid, rt, "DELETE", f"{cal}/events/{tid}")
                 if status not in (200, 204, 404, 410):
                     raise OutboundError("error", f"Google refused to remove an event ({status}).")
@@ -410,6 +487,24 @@ class Sync:
             if status >= 400:
                 raise OutboundError("error", f"Google refused an event ({status}).")
             pushed[tid] = {"sig": sig}
+        for bid, b in trips.items():
+            sig = trip_sig(b, rec["titles"])
+            if pushed.get(bid, {}).get("sig") == sig:
+                continue
+            body = trip_google_body(b, rec["titles"], self._link())
+            if bid in pushed:
+                status, _ = self.google.call(uid, rt, "PUT", f"{cal}/events/{bid}", body)
+                if status == 404:
+                    status, _ = self.google.call(uid, rt, "POST", f"{cal}/events", body)
+            else:
+                status, _ = self.google.call(uid, rt, "POST", f"{cal}/events", body)
+                if status == 409:
+                    status, _ = self.google.call(uid, rt, "PUT", f"{cal}/events/{bid}", body)
+            if status == 404 and not pushed.get(bid):
+                raise OutboundError("not_found", "Google cannot find Enveliq's calendar. Connect Google Calendar again.")
+            if status >= 400:
+                raise OutboundError("error", f"Google refused an event ({status}).")
+            pushed[bid] = {"sig": sig}
 
     # ----- Home Assistant To-do -----
     def _ha(self, td: dict[str, Any], service: str, data: dict[str, Any], response: bool = False) -> Any:

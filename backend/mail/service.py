@@ -90,6 +90,7 @@ class MailService:
         self.summariser = summariser or Summariser()
         self.env_ai = self.summariser.config      # set by the server's environment
         self.microsoft: Any = None                # set by the application: gives access tokens for Microsoft mailboxes
+        self.trips: Any = None                    # set by the application: files bookings found in summaries (mail/trips.py)
         self.subscriptions: Any = None            # set by the application: files subscription facts found in summaries (mail/subscriptions.py)
         self.shipments: Any = None                # set by the application: files order facts found in summaries (mail/shipping.py)
         self.waits: Any = None                    # set by the application: notes for sent emails that wait on an answer (mail/waiting.py)
@@ -306,6 +307,7 @@ class MailService:
                     raise  # model unreachable or refusing: stop, nothing is lost
                 shipment = result.pop("shipment", None)
                 subscription = result.pop("subscription", None)
+                trips = result.pop("trips", None)
                 data = {k: v for k, v in m.items() if k != "id"}
                 data.update(result)
                 found = scamcheck.merge((m.get("scam_warning") or {}).get("reasons"), (warnings.get(m["id"]) or {}).get("reasons"))
@@ -327,6 +329,11 @@ class MailService:
                         self.subscriptions.observe(account.get("owner_user_id"), account_id, m["id"], m.get("received_at"), subscription,
                                                    subscriptions_mod.company_link(m.get("sender_address")))
                     except Exception:                  # a problem filing a subscription never loses the summary
+                        pass
+                if trips and self.trips is not None and not found:                      # an email with a "Be careful" flag never files anything
+                    try:
+                        self.trips.observe(account.get("owner_user_id"), account_id, m["id"], m.get("received_at"), trips)
+                    except Exception:                  # a problem filing a booking never loses the summary
                         pass
         finally:
             lock.release()

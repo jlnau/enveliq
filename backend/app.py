@@ -33,6 +33,8 @@ from .mail.task_routes import build_task_router
 from .mail.shipping import ShipBook
 from .mail.subscriptions import SubBook
 from .mail.subscriptions_routes import build_subscriptions_router
+from .mail.trips import TripBook
+from .mail.trips_routes import build_trips_router
 from .mail.messages import MessageBook
 from .mail.messages_routes import build_messages_router
 from .mail.writehelp import WriteHelpBook
@@ -549,10 +551,12 @@ auto_sync.checker = checkbox
 taskbook = TaskBook(vault)
 shipbook = ShipBook(vault)
 subbook = SubBook(vault, taskbook.timezone_of)
+tripbook = TripBook(vault, taskbook.timezone_of)
 messagebook = MessageBook(vault, users)
 writehelpbook = WriteHelpBook(vault)
 mail_service.shipments = shipbook
 mail_service.subscriptions = subbook
+mail_service.trips = tripbook
 waitbook = WaitBook(vault)
 mail_service.waits = waitbook
 notifier = Notifier(vault)
@@ -560,6 +564,8 @@ _click = "" if _pub.hostname in ("localhost", "127.0.0.1", "::1") else PUBLIC_OR
 reminders = Reminders(vault, taskbook, notifier, _click)
 reminders.subs = subbook
 sync = Sync(vault, taskbook, notifier, PUBLIC_ORIGIN)
+sync.trips = tripbook
+tripbook.changed = sync.mark
 notifier.origin = PUBLIC_ORIGIN
 mail_service.holds = taskbook.held
 
@@ -590,7 +596,7 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, subscriptions=subbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, subscriptions=subbook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))
@@ -598,6 +604,7 @@ app.include_router(build_extra_router(mail_ctx))          # after the main route
 app.include_router(build_task_router(mail_ctx))
 app.include_router(build_shipping_router(mail_ctx))
 app.include_router(build_subscriptions_router(mail_ctx))
+app.include_router(build_trips_router(mail_ctx))
 app.include_router(build_waiting_router(mail_ctx))
 app.include_router(build_check_router(mail_ctx))
 app.include_router(build_messages_router(mail_ctx))

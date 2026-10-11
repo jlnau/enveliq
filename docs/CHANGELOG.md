@@ -2,6 +2,19 @@
 
 Newest first. Each entry says what changed for people and which parts of the code it touches. The history of earlier versions is in [VERSION_HISTORY.md](VERSION_HISTORY.md).
 
+## v0.74
+
+**Trips.** Flights, stays and hire cars are followed from the emails about them, put together into trips, and added to the person's calendar.
+
+- `backend/mail/llm.py`: the summary may now carry `trips`, a list of at most six bookings (kind flight, stay or car; status booked, changed or cancelled; provider, reference, flight number or property name, places, start and end exactly as written). The prompt tells the model to copy, never to work out a date or time. Anything that is not a known kind with a start is dropped; every value is cut short.
+- `backend/mail/trips.py` (new): `TripBook` files each leg as one booking in an encrypted per-person record (`trips:<user id>`). Code does everything else: dates are read from the words, a clock time is read only when there is one, a change updates the same booking (a changed date does not make a new one), an older email never overwrites newer facts, a cancellation greys a booking out, and bookings are grouped into trips by date (two days apart or less) with a flight home from where an earlier flight went joining its trip (within 45 days). The trip is named from its first booking. A trip is forgotten three days after it ends and a cancelled booking after a week.
+- No email text, subject, sender address or link is kept. `backend/mail/service.py` files nothing from an email that carries a Be careful flag.
+- `backend/mail/calsync.py`: the three calendar routes (private feed, CalDAV, Google Calendar) now also carry the bookings, using the same rebuild-from-the-list approach as tasks, so a removed, cancelled or finished booking leaves the calendar. A flight with a departure time is a timed entry using the clock times as written (no time zone is guessed); a stay covers its nights (the check-out day is not a night); a hire car covers its days. With "Keep titles private" the entry says only "Enveliq trip". The Home Assistant To-do list is for tasks and does not carry trips.
+- `backend/mail/trips_routes.py` (new): `GET /api/v1/me/trips`, `PUT /me/trips/settings` (the calendar switch) and `POST /me/trips/{id}/remove`. Signed-in person only, rate limited, `no-store`, another person's id answers "not found".
+- `backend/mail/features.py`, `extra_routes.py`, `web/static/auth.js`: a new feature switch, `travel`, for the administrator and for each person.
+- `prototype/index.html`: the **Trips** menu entry (only when there is a trip), the Home card, the page and the calendar switch.
+- Tests: `tests/test_trips.py`, `scripts/check_trips.mjs` (added to CI; desktop and phone; hostile text stays text). Docs: new `docs/TRIPS.md`, `docs/CALENDAR.md`, the tour and the home page.
+
 ## v0.73
 
 **Subscriptions and free trials.** Renewals and free trials are followed from the emails about them, shown on Home and in a list, and announced a few days before.
