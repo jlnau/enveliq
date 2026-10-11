@@ -64,6 +64,8 @@ jobs:
         run: node scripts/check_email_features.mjs
       - name: Phone pop-ups (simulated server)
         run: node scripts/check_phone_overlays.mjs
+      - name: Shift to select a range (simulated server)
+        run: node scripts/check_shift_select.mjs
       - name: Hermes chat (simulated server)
         run: node scripts/check_agent.mjs
       - name: Unsubscribe button (simulated server)

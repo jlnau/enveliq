@@ -3481,8 +3481,16 @@ document.addEventListener("change",e=>{
     return;
   }
   if(e.target.matches("[data-task-date]")){if(e.target.value)taskAct(e.target.dataset.taskDate,"move",{to:"date",on:e.target.value});return}
-  if(e.target.matches("[data-select]")){const id=+e.target.dataset.select;e.target.checked?selected.add(id):selected.delete(id);render()}
+  if(e.target.matches("[data-select]")){
+    // Shift + tick: tick (or untick) every email between this one and the one ticked last, in the order shown.
+    const id=+e.target.dataset.select,on=e.target.checked,shown=[...document.querySelectorAll("[data-select]")].map(x=>+x.dataset.select);
+    const from=shown.indexOf(selAnchor),to=shown.indexOf(id);
+    if(selShift&&from>=0&&to>=0){for(const k of shown.slice(Math.min(from,to),Math.max(from,to)+1))on?selected.add(k):selected.delete(k)}
+    else on?selected.add(id):selected.delete(id);
+    selAnchor=id;selShift=false;render()}
 });
+let selAnchor=null,selShift=false;   // the email ticked last, and whether Shift was held for this tick
+document.addEventListener("click",e=>{if(e.target.matches&&e.target.matches("[data-select]"))selShift=e.shiftKey},true);
 document.addEventListener("click",e=>{
   const due=e.target.closest("[data-due-open]");if(due){const id=due.dataset.dueOpen;filter="all";query="";$("search").value="";expanded.add(`row-${id}`);{const dm=data.find(x=>String(x.id)===id);if(dm){paneId=dm.id;if(view.layout==="screen")readerOpen=true}}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();const el=document.querySelector(`[data-expand="row-${CSS.escape(id)}"]`);el&&el.closest("article").scrollIntoView({block:"nearest",behavior:"smooth"});return}
   const qrow=e.target.closest(".qrow");if(qrow&&!e.target.closest("button,input,a,label,select")){if(view.layout==="list"&&view.rows==="open")return;const t=qrow.querySelector("[data-expand],[data-pick]");if(t){t.click();return}}
@@ -3733,7 +3741,7 @@ $("search").addEventListener("input",e=>{query=e.target.value;render()});
 $("sortBy").addEventListener("change",e=>{sortMode=e.target.value;render()});
 $("filterBy").addEventListener("change",e=>{filter=e.target.value||"all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"&&filter==="all"));render()});
 $("mailboxFilter").addEventListener("change",e=>{mailboxSel=e.target.value;render()});
-$("clear").onclick=()=>{selected.clear();render()};
+$("clear").onclick=()=>{selected.clear();selAnchor=null;render()};
 $("settingsBtn").onclick=()=>openSettings("settings");$("adminBtn").onclick=()=>{if(authorizeAdmin())openSettings("admin")};$("closeSettings").onclick=closeSettings;$("cancelSettings").onclick=closeSettings;$("scrim").onclick=closeSettings;
 $("saveSettings").onclick=()=>{closeSettings();toast("Settings saved for this prototype")};
 $("testProvider").onclick=testConfig;
