@@ -13,6 +13,30 @@ Newest first. Each entry says what changed for people and which parts of the cod
 - `backend/mail/scheduler.py`: `AutoSync` compares the stored emails before and after each mailbox's pass and sends one alert per person per pass for what is new and unread. The first read of a brand-new, empty mailbox is not announced, and mail fetched by the Sync button is not announced (the person is looking at it). `backend/mail/extra_channels.py`: the browser channel carries `path` when there is no public address.
 - `web/static/auth.js`: Settings, Reminders gets **Tell me when new email arrives**, and, under *Nudges, quiet hours and privacy*, **Show who a new email is from and its subject**.
 - Tests: `tests/test_mail_alerts.py` (new: wording, privacy defaults, quiet hours, links, service worker, manifest), additions to `tests/test_auto_sync.py` (a pass announces only new mail, settings default off, manifest and icons are public, policy), `scripts/check_notification_link.mjs` (new browser check, in CI: link opens the exact email on desktop and phone, a message from the service worker moves the page, other sites and other messages are ignored, the two new switches).
+**A signature and saved replies.** The person's own text, kept for them, to reuse when they write.
+
+- `backend/mail/saved_writing.py` (new): `SavedWriting`, one encrypted vault record per person (`saved:<user id>`) with one signature (up to 1000 characters) and up to 30 saved replies (a name of up to 60 characters and text of up to 3000). Control characters are removed and line breaks are tidied.
+- `backend/mail/saved_writing_routes.py` (new): `GET /api/v1/me/saved`, `PUT /api/v1/me/saved/signature`, `POST /api/v1/me/saved/replies`, `PUT` and `DELETE /api/v1/me/saved/replies/{id}`. Signed-in people only, `no-store`, rate limited; one person never sees another's text.
+- `backend/export.py`: part of **Export my data** (`signature_and_saved_replies`). `backend/app.py`: forgotten when a person is removed.
+- `prototype/index.html`: the signature is put into the message box when New email or Reply opens, so it can be seen and changed (the cursor starts above it); a box with only the signature counts as empty (no "discard?" question, "Write your reply first"); a **Saved reply** chooser above the message inserts the text where the cursor is. The server sends exactly what is in the box and adds nothing of its own.
+- `web/static/auth.js`, `auth.css`: Settings, **Signature & saved replies** (`savedPage`): edit the signature; add, edit and remove saved replies.
+- Tests: `tests/test_saved_writing.py`, `scripts/check_saved_writing.mjs`.
+
+**Important people.** A short list, kept by each person for themselves, of senders whose mail is shown first.
+
+- `backend/mail/important.py` (new): `ImportantPeople`, one encrypted vault record per person (`important:<user id>`) holding addresses and optional names only, at most 200. Addresses are checked and lower-cased with the same rules as the address book.
+- `backend/mail/important_routes.py` (new): `GET /api/v1/me/important`, `POST /api/v1/me/important` (add, or update the name), `POST /api/v1/me/important/remove`. Signed-in people only, `no-store`, rate limited, and each person only ever sees their own list.
+- `backend/export.py`: the list is part of **Export my data** (`important_people`). `backend/app.py`: the list is forgotten when a person is removed.
+- `prototype/index.html`: mail from an important person is sorted first with a stable sort, so the chosen order (newest first, and so on) is kept inside each group; a small "Important" label on the row; an **Important person** / **Not important** button inside an opened email; the same works in the demo, in memory only.
+- `web/static/auth.js`: Settings, **Important people** (`importantPage`): the list, remove, and add by address and optional name.
+- Tests: `tests/test_important_people.py` (add, update, remove, bad addresses, the limit, one person's list never visible to another, sign-in needed, encrypted storage, export, account removal), `scripts/check_important_people.mjs` (order, label, the button, the Settings page).
+
+**A quick check before a new email goes.** A new email with no subject, or one that talks about an attachment when nothing is attached, now gets one calm question before it leaves.
+
+- `prototype/index.html`: `sendWarnings(subject, body, fileCount)` and the "Before you send" window. It runs in `sendNew()` before the writing-help check. **Go back** (the one with the focus) returns to the email with the cursor in the subject; **Send anyway** sends. Escape means Go back.
+- The attachment check looks for the words attach, attached, attaching, attachment, enclosed or enclosure in the message, ignoring lines that start with `>` (quoted text), and only when no file is attached.
+- Nothing is sent to the server for the check, so it needs no backend change and behaves the same for Gmail, Microsoft, Proton and every other mailbox. Replies are not checked: their subject comes from the email being answered and they cannot carry attachments.
+- Tests: `scripts/check_email_features.mjs` (no subject, Go back, Escape, Send anyway, attachment words with and without a file, a quoted line, an ordinary email).
 
 ## v0.80
 

@@ -543,3 +543,13 @@ A short list of the sender addresses a person wants to see first.
 - **What the server does with it.** Nothing. It never reads mail to apply it: the page sorts the person's own list on the person's own screen.
 - **Your data.** It is part of Export my data, and it is forgotten when the person is removed.
 - Requests are validated (`extra: forbid`, address pattern, length), rate limited and `no-store`.
+
+## Signature and saved replies
+
+A person's own signature and short pieces of text to reuse.
+
+- **What is kept.** Only text the person typed: one signature and up to 30 saved replies. One encrypted record per person (`saved:<user id>`) under the vault's master key. No email text is stored.
+- **Who can see it.** Only that person, from the signed-in session. Administrators have no route to it.
+- **What the server does with it.** Nothing. The page puts the signature and chosen replies into the message box; what is sent is exactly what the person sees in the box and presses Send on, through the same checks as every message. The AI is never given it unless the person asks for writing help on text that contains it.
+- **Your data.** It is part of Export my data and is forgotten when the person is removed.
+- Requests are validated (`extra: forbid`, length limits, id pattern), control characters are removed, requests are rate limited and `no-store`.
