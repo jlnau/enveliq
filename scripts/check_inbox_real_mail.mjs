@@ -215,6 +215,19 @@ async function open(server, { seen = true } = {}) {
   check("selecting two emails shows the bar between Filter and Sort without moving the list", barIn && listTop === listTop2 && (await page.locator("#bulk [data-bulk]").count()) === 3);
   await page.click("#clear");
   check("Clear removes the bar", !(await page.locator("#bulk.show").count()));
+  check("every Reviewed, Archive and Bin waits five seconds", (await page.evaluate(() => window.__undoMs)) === 5000);
+  {
+    // Several emails at once: the bar's Bin also waits, and Undo brings them all back
+    const cardsB = await page.locator("article.mail").count(), callsB = server.calls.length;
+    await page.locator("article.mail .check").nth(0).check();
+    await page.locator("article.mail .check").nth(1).check();
+    await page.click('#bulk [data-bulk="trashed"]');
+    await page.waitForSelector("#undoBar:not([hidden])");
+    check("desktop: Bin on two selected emails removes both at once and the bar says 2 emails", (await page.locator("article.mail").count()) === cardsB - 2 && (await page.locator("#undoText").innerText()).includes("2 emails") && (await page.locator("#undoText").innerText()).includes("Moved to Bin"));
+    check("desktop: nothing has been sent to the mailbox yet", server.calls.length === callsB);
+    await page.click("#undoBtn");
+    check("desktop: Undo brings both back and still nothing was sent", (await page.locator("article.mail").count()) === cardsB && !(await page.locator("#undoBar").isVisible()) && server.calls.length === callsB);
+  }
   check("a count of zero shows no blue number, other counts do", (await page.locator("#actionBadge").isHidden()) && (await page.locator("#attachBadge").isHidden()) && (await page.locator("#allBadge").isVisible()));
   await page.selectOption("#filterBy", "high");
   check("choosing a filter highlights the dropdown and un-highlights All", (await page.locator("#filterBy.active").count()) === 1 && (await page.locator('.chip[data-chip="all"].active').count()) === 0);
@@ -322,6 +335,7 @@ await page.click("#themeBtn");
   check("when the time is up the reply goes and the bar disappears", (await page.locator("#sendBar .sendrow").count()) === 0 && (await page.locator("article.mail", { hasText: "Older statement" }).locator(".qrow .time .replied").count()) === 1);
   server.setUndo(0);
 
+  await page.evaluate(() => { window.__undoMs = 400; });          // the real wait is five seconds (checked above); shortened so this check does not take minutes
   // A failed action keeps the item and says why
   server.failNext();
   await expand(page.locator("article.mail", { hasText: "Older statement" }));
@@ -330,20 +344,33 @@ await page.click("#themeBtn");
   check("failed archive keeps the item", (await page.locator("article.mail", { hasText: "Older statement" }).count()) === 1);
   server.recover();
 
-  // Feedback while the mailbox answers (it takes about a second)
-  server.slow(900);
+  // Undo on a desktop: the email goes at once, nothing is sent until the wait is over
   const older = page.locator("article.mail", { hasText: "Older statement" });
+  const callsU = server.calls.length;
   await older.locator('[data-status="archived"]').click();
-  check("the button says it is working straight away", (await older.locator('[data-status="archived"]').innerText()).includes("Archiving"));
-  check("the card is dimmed and its other buttons are off while it works", (await older.evaluate((e) => e.classList.contains("busy"))) && (await older.locator('[data-status="reviewed"]').isDisabled()));
+  await page.waitForSelector("#undoBar:not([hidden])");
+  check("desktop: the email leaves the list at once and an Undo bar names it", (await page.locator("article.mail").count()) === 2 && (await page.locator("#undoText").innerText()).includes("Archived") && (await page.locator("#undoText").innerText()).includes("Older statement") && server.calls.length === callsU);
+  await page.click("#undoBtn");
+  check("desktop: Undo brings it back and nothing was sent", (await page.locator("article.mail").count()) === 3 && server.calls.length === callsU);
+  await page.waitForTimeout(700);
+  check("desktop: …even after the wait would have been over", server.calls.length === callsU);
+  await expand(older);
+  await older.locator('[data-status="archived"]').click();
+  await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));       // closing the page sends what is waiting, straight away
+  await page.waitForFunction(() => document.getElementById("undoBar").hidden);
+  await page.waitForTimeout(300);
+  check("desktop: closing the page does not lose an archive that was waiting", server.calls.slice(callsU).some((c) => c[0] === "resolve" && c[2].outcome === "archived"));
   await page.waitForFunction(() => document.querySelectorAll("article.mail").length === 2);
-  server.slow(0);
   // The three outcomes
   await page.locator("article.mail", { hasText: "Weekly news" }).locator('[data-status="reviewed"]').click();
   await page.waitForFunction(() => document.querySelectorAll("article.mail").length === 1);
   await expand(page.locator("article.mail").first());
   await page.locator("article.mail").first().locator('[data-status="trashed"]').click();
   await page.waitForFunction(() => document.querySelectorAll("article.mail").length === 0);
+  check("desktop: two actions in a row each get their own Undo, the newest first", (await page.locator("#undoText").innerText()).includes("Moved to Bin"));
+  for (let i = 0; i < 60 && server.calls.filter((c) => c[0] === "resolve").length < 4; i++) await page.waitForTimeout(100);
+  await page.waitForFunction(() => document.getElementById("undoBar").hidden);
+  await page.waitForTimeout(300);
   const outcomes0 = server.calls.filter((c) => c[0] === "resolve").map((c) => c[2].outcome);
   check("archive, reviewed and bin map to archived, reviewed and binned", outcomes0.join(",") === "archived,archived,reviewed,binned");
   // Kept in the Status lists
@@ -482,7 +509,7 @@ await page.click("#themeBtn");
   check("hover preview is off in the reading-pane layouts", await page.locator("#peek").isHidden());
   const callsBefore = server.calls.length;
   await page.locator(".reading [data-status=reviewed]").click();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1500);
   check("Reviewed in the reading pane works and the pane moves on to another email", server.calls.slice(callsBefore).some((c) => c[0] === "resolve" && c[2].outcome === "reviewed") && (await page.locator(".reading .rhead h3").count()) === 1);
   // reading pane below
   await page.click('#viewPanel [data-view=layout][data-val=bottom]');

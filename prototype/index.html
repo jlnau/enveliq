@@ -532,14 +532,14 @@ body.vopen .vpanel{transform:none;visibility:visible;transition:transform .3s cu
 
 /* ---- Phone layout (up to 760px wide) ---- */
 .mtop,.menuscrim,.undobar{display:none}
-.undobar{position:fixed;left:14px;right:14px;bottom:16px;z-index:95;background:var(--c-232a36);border:1px solid var(--c-364055);border-radius:14px;padding:13px 16px;align-items:center;justify-content:space-between;gap:12px;font-size:14px;box-shadow:0 12px 30px rgba(0,0,0,.5);overflow:hidden}
+.undobar{position:fixed;left:50%;transform:translateX(-50%);width:min(420px,calc(100% - 28px));box-sizing:border-box;bottom:16px;z-index:95;background:var(--c-232a36);border:1px solid var(--c-364055);border-radius:14px;padding:13px 16px;align-items:center;justify-content:space-between;gap:12px;font-size:14px;box-shadow:0 12px 30px rgba(0,0,0,.5);overflow:hidden}
 .sendbar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:120;width:min(420px,calc(100% - 28px));display:grid;gap:8px}.sendbar[hidden]{display:none}
 .sendrow{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--c-232a36);border:1px solid var(--c-364055);border-radius:14px;padding:12px 16px;font-size:14px;box-shadow:0 12px 30px rgba(0,0,0,.35);position:relative;overflow:hidden}
 .sendrow button{border:0;background:transparent;color:var(--c-65c4ff);font-weight:700;font-size:15px;padding:6px 4px;cursor:pointer}
 .sendprog{position:absolute;left:0;bottom:0;height:3px;background:var(--brand);transition:width 1s linear}
 @media(max-width:760px){.sendbar{bottom:16px}}
 .primary.busy{opacity:.75;cursor:progress}
-.undobar:not([hidden]){display:flex}.undobar button{border:0;background:transparent;color:var(--c-65c4ff);font-weight:700;font-size:15px;padding:6px 4px}
+.undobar:not([hidden]){display:flex}.sendbar:not([hidden])~.undobar,.sumbar:not([hidden])~.undobar{bottom:84px}.undobar button{border:0;background:transparent;color:var(--c-65c4ff);font-weight:700;font-size:15px;padding:6px 4px}
 .undoprog{position:absolute;left:0;bottom:0;height:3px;background:var(--c-1f5fc4);width:100%;transform-origin:left;animation:undoRun 5s linear forwards}
 @keyframes undoRun{from{transform:scaleX(1)}to{transform:scaleX(0)}}
 .swipebg{position:absolute;inset:0;display:flex;align-items:center;padding:0 22px;gap:8px;font-weight:700;font-size:14px;color:#fff;pointer-events:none}
@@ -3493,8 +3493,8 @@ document.addEventListener("click",e=>{
     render();return;
   }
   const exp=e.target.closest("[data-expand]");if(exp){const key=exp.dataset.expand;expanded.has(key)?expanded.delete(key):expanded.add(key);render();return}
-  const a=e.target.closest("[data-status]");if(a){deckDir="act";const m=data.find(x=>x.id===+a.dataset.id&&x.owner===currentUser.id);if(m&&isPhone()&&["reviewed","archived","trashed"].includes(a.dataset.status)){phoneAction(m,a.dataset.status);return}if(m&&m.real){resolveRealOne(m,a.dataset.status,a);return}if(m){m.status=a.dataset.status;m.attachments=[];m.attachmentsPurged=true;closeAttachmentViewer();selected.delete(m.id);render();toast(m.status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${m.status} · attachment data purged`)}return}
-  const b=e.target.closest("[data-bulk]");if(b&&realMail&&[...selected].some(id=>data.find(x=>x.id===id)?.real)){resolveRealBulk(b.dataset.bulk);return}if(b){const n=selected.size;selected.forEach(id=>{const m=data.find(x=>x.id===id&&x.owner===currentUser.id);if(m){m.status=b.dataset.bulk;m.attachments=[];m.attachmentsPurged=true}});closeAttachmentViewer();selected.clear();render();toast(`${n} emails updated · attachment data purged`);return}
+  const a=e.target.closest("[data-status]");if(a){deckDir="act";const m=data.find(x=>x.id===+a.dataset.id&&x.owner===currentUser.id);if(m&&["reviewed","archived","trashed"].includes(a.dataset.status)){queueAction([m],a.dataset.status);return}if(m&&m.real){resolveRealOne(m,a.dataset.status,a);return}if(m){m.status=a.dataset.status;m.attachments=[];m.attachmentsPurged=true;closeAttachmentViewer();selected.delete(m.id);render();toast(m.status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${m.status} · attachment data purged`)}return}
+  const b=e.target.closest("[data-bulk]");if(b){queueAction([...selected].map(id=>data.find(x=>x.id===id&&x.owner===currentUser.id)),b.dataset.bulk);closeAttachmentViewer();return}
   if(e.target.closest("[data-need]")){filter="need";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();return}
   {const t=e.target.closest("[data-msg-open],[data-msg-new],[data-msg-back],[data-msg-send],[data-msg-mute],[data-msg-unsend],[data-msg-go]");
    if(t){
@@ -3878,47 +3878,26 @@ async function openRealEmail(m){
   }catch(er){toast(er.message,6000)}
 }
 const WORKING={reviewed:"Marking reviewed…",archived:"Archiving…",trashed:"Moving to Bin…",expired:"Removing…"};
-async function resolveRealOne(m,status,button){
+async function resolveRealOne(m,status,button,quiet){
   // Show something straight away: the mailbox takes about a second to answer.
   const card=button.closest(".mail"),label=button.textContent;
   card&&card.classList.add("busy");
   card&&card.querySelectorAll(".action").forEach(x=>{if(x!==button)x.disabled=true});
   button.disabled=true;button.classList.add("working");button.textContent=WORKING[status]||"Working…";
   try{
-    await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/resolve`,{method:"POST",body:JSON.stringify({outcome:resolveOutcome(status)})});
+    await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/resolve`,{method:"POST",keepalive:true,body:JSON.stringify({outcome:resolveOutcome(status)})});
     const keep=(status==="reviewed"&&realPrefs.keep_reviewed)||(status==="archived"&&realPrefs.keep_archived);
     if(keep){m.status=status;m.kept=true;m.keptUntil=new Date(Date.now()+realPrefs.keep_days*86400000).toLocaleDateString(undefined,{day:"numeric",month:"short"});m.attachments=[]}
     else{const ix=data.indexOf(m);if(ix>=0)data.splice(ix,1)}
-    selected.delete(m.id);closeAttachmentViewer();render();refreshTasks();
+    selected.delete(m.id);if(quiet)return true;closeAttachmentViewer();render();refreshTasks();
     toast(status==="trashed"?"Moved to Bin in your mailbox":status==="expired"?"Removed from this list":(status==="archived"?"Archived in your mailbox":"Marked read in your mailbox")+(keep?`. Kept in ${status==="archived"?"Archived":"Reviewed"} for ${realPrefs.keep_days} day${realPrefs.keep_days===1?"":"s"}`:""));
+    return true;
   }catch(er){
     button.disabled=false;button.classList.remove("working");button.textContent=label;
     card&&card.classList.remove("busy");card&&card.querySelectorAll(".action").forEach(x=>x.disabled=false);
     toast(er.message,6000);
+    return false;
   }
-}
-async function resolveRealBulk(status){
-  const ids=[...selected];let done=0,failed=null;
-  const buttons=[...document.querySelectorAll("[data-bulk]")];
-  const labels=buttons.map(b=>b.textContent);
-  buttons.forEach(b=>{b.disabled=true});
-  const mine=buttons.find(b=>b.dataset.bulk===status);
-  if(mine)mine.classList.add("working");
-  for(const id of ids){
-    const m=data.find(x=>x.id===id&&x.owner===currentUser.id);
-    if(!m||!m.real)continue;
-    if(mine)mine.textContent=WORKING[status]||"Working…";
-    try{
-      await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/resolve`,{method:"POST",body:JSON.stringify({outcome:resolveOutcome(status)})});
-      const keep=(status==="reviewed"&&realPrefs.keep_reviewed)||(status==="archived"&&realPrefs.keep_archived);
-      if(keep){m.status=status;m.kept=true;m.keptUntil=new Date(Date.now()+realPrefs.keep_days*86400000).toLocaleDateString(undefined,{day:"numeric",month:"short"});m.attachments=[]}
-      else data.splice(data.indexOf(m),1);
-      selected.delete(id);done++;
-    }catch(er){failed=er.message;break}
-  }
-  buttons.forEach((b,i)=>{b.disabled=false;b.classList.remove("working");b.textContent=labels[i]});
-  closeAttachmentViewer();render();refreshTasks();
-  toast(failed?`${done} updated, then stopped: ${failed}`:`${done} emails updated in your mailbox`,failed?6000:2500);
 }
 async function syncRealMail(me){
   const btn=$("syncBtn");btn.disabled=true;btn.textContent="Syncing…";$("mSyncBtn").classList.add("busy");
@@ -4759,36 +4738,53 @@ $("mSyncBtn").onclick=()=>$("syncBtn").click();
 phoneQuery.addEventListener("change",()=>{setMenu(false);document.body.classList.remove("msearch","scrolled");render()});
 function updateScrolled(){const h=document.querySelector("header.top");document.body.classList.toggle("scrolled",isPhone()&&h.getBoundingClientRect().bottom<60)}
 window.addEventListener("scroll",updateScrolled,{passive:true});window.addEventListener("resize",updateScrolled);
-// Undo: on a phone every Reviewed / Archive / Bin waits five seconds. The email
-// leaves the list at once; the real action only happens when the bar goes away.
+// Undo: every Reviewed / Archive / Bin, on any screen, for one email or several, waits five seconds.
+// The email(s) leave the list at once; the real action only happens when the bar goes away (or the page is closed).
 window.__undoMs=5000;
 const pendingActs=[];let undoEntry=null;
-function phoneAction(m,status){
-  if(m._pending)return;
-  m._pending=status;selected.delete(m.id);
-  const entry={m,status};pendingActs.push(entry);
-  entry.timer=setTimeout(()=>commitAction(entry),window.__undoMs);
-  undoEntry=entry;
-  const label={reviewed:"Marked reviewed",archived:"Archived",trashed:"Moved to Bin"}[status];
-  $("undoText").textContent=`${label} · ${m.subject}`;
-  const bar=$("undoBar"),pr=$("undoProg");bar.hidden=false;pr.style.animation="none";void pr.offsetWidth;pr.style.animation="";pr.style.animationDuration=window.__undoMs+"ms";
-  render();
+const UNDO_LABEL={reviewed:"Marked reviewed",archived:"Archived",trashed:"Moved to Bin"};
+function showUndo(entry){
+  undoEntry=entry;const n=entry.ms.length;
+  $("undoText").textContent=`${UNDO_LABEL[entry.status]} · ${n===1?entry.ms[0].subject:n+" emails"}`;
+  const bar=$("undoBar"),pr=$("undoProg");bar.hidden=false;pr.style.animation="none";void pr.offsetWidth;pr.style.animation="";pr.style.animationDuration=Math.max(0,entry.end-Date.now())+"ms";
 }
-async function commitAction(entry){
+function nextUndo(){            // after one goes away, the bar shows the one before it that is still waiting
+  const last=pendingActs[pendingActs.length-1];
+  if(last)showUndo(last);else{undoEntry=null;$("undoBar").hidden=true}
+}
+function queueAction(list,status){
+  const ms=list.filter(m=>m&&!m._pending&&!m.kept);
+  if(!ms.length)return;
+  ms.forEach(m=>{m._pending=status;selected.delete(m.id)});
+  const entry={ms,status,end:Date.now()+window.__undoMs};
+  pendingActs.push(entry);
+  entry.timer=setTimeout(()=>commitAction(entry),window.__undoMs);
+  showUndo(entry);render();
+}
+const phoneAction=(m,status)=>queueAction([m],status);       // the swipe code
+async function commitAction(entry,together){
   clearTimeout(entry.timer);const i=pendingActs.indexOf(entry);if(i<0)return;pendingActs.splice(i,1);
-  if(undoEntry===entry){undoEntry=null;$("undoBar").hidden=true}
-  const {m,status}=entry;
+  if(undoEntry===entry)nextUndo();
+  const {ms,status}=entry,many=ms.length>1;let done=0,failed=false;
+  const one=async m=>{
+    if(m.real){if(await resolveRealOne(m,status,document.createElement("button"),many))done++;else failed=true}
+    else{m.status=status;m.attachments=[];m.attachmentsPurged=true;selected.delete(m.id);done++}
+  };
   try{
-    if(m.real){await resolveRealOne(m,status,document.createElement("button"))}
-    else{m.status=status;m.attachments=[];m.attachmentsPurged=true;closeAttachmentViewer();toast(status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${status} · attachment data purged`)}
-  }finally{delete m._pending;render()}
+    if(together)await Promise.all(ms.map(one));            // the page is closing: send them all at once
+    else for(const m of ms){await one(m);if(failed)break}
+    closeAttachmentViewer();
+    if(!many&&!ms[0].real)toast(status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${status} · attachment data purged`);
+    if(many)toast(failed?`${done} updated, then stopped. The rest are back in your list.`:`${done} emails updated${ms.some(m=>m.real)?" in your mailbox":" · attachment data purged"}`,failed?6000:2500);
+    if(many&&ms.some(m=>m.real))refreshTasks();
+  }finally{ms.forEach(m=>{delete m._pending});render()}
 }
 $("undoBtn").onclick=()=>{
   const e=undoEntry;if(!e)return;clearTimeout(e.timer);const i=pendingActs.indexOf(e);if(i>=0)pendingActs.splice(i,1);
-  delete e.m._pending;undoEntry=null;$("undoBar").hidden=true;render();toast("Undone");
+  e.ms.forEach(m=>{delete m._pending});nextUndo();render();toast("Undone");
 };
-const flushActs=()=>{[...pendingActs].forEach(commitAction)};
-document.addEventListener("visibilitychange",()=>{if(document.hidden)flushActs()});window.addEventListener("pagehide",flushActs);
+const flushActs=()=>{[...pendingActs].forEach(e=>commitAction(e,true))};
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&isPhone())flushActs()});   // a phone may freeze a page that is out of sightwindow.addEventListener("pagehide",flushActs);
 // Swipe a row: right = Reviewed (short) or Archive (long), left = Bin.
 (function(){
   const list=$("list");let st=null,swiped=0;
