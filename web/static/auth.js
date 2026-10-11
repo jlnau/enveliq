@@ -1502,6 +1502,37 @@ async function addressBookPage(me) {
   show(...chrome(me, "addressbook", h("h1", { text: "Address book" }), h("section", { class: "section" }, wrap)));
   load();
 }
+
+// ---------- important people: a short list of people whose mail is always shown first ----------
+async function importantPage(me) {
+  const wrap = h("div", {});
+  const list = h("div", { class: "ab-list" }), note = h("p", { class: "hint" });
+  const addr = h("input", { id: "imp_addr", type: "email", placeholder: "name@example.com", "aria-label": "Their email address", autocomplete: "off", maxlength: 320 });
+  const nm = h("input", { id: "imp_name", type: "text", placeholder: "Their name (optional)", "aria-label": "Their name", autocomplete: "off", maxlength: 120 });
+  function paint(items) {
+    list.replaceChildren(...(items.length ? items.map(p => h("div", { class: "ab-row" },
+      h("span", { class: "ab-avatar", text: initials(personName(p.name, p.address)) }),
+      h("span", { class: "ab-who" }, h("strong", { text: personName(p.name, p.address) }), h("small", { text: p.address })),
+      h("button", { class: "ab-x", type: "button", "aria-label": `Remove ${p.address}`, text: "\u00d7", onclick: async () => {
+        try { const r = await api("/me/important/remove", { method: "POST", body: { address: p.address } }); paint(r.items); toast("Removed"); } catch (er) { toast(er.message); }
+      } }))) : [h("p", { class: "hint", text: "Nobody yet. Add someone below, or open an email in your inbox and press Important person." })]));
+    note.textContent = items.length ? `${items.length} ${items.length === 1 ? "person" : "people"}` : "";
+  }
+  async function add() {
+    const a = addr.value.trim();
+    if (!a) { toast("Type an email address first"); addr.focus(); return; }
+    try { const r = await api("/me/important", { method: "POST", body: { address: a, name: nm.value.trim() } }); addr.value = ""; nm.value = ""; paint(r.items); toast("Added"); }
+    catch (er) { toast(er.message); }
+  }
+  addr.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
+  nm.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
+  wrap.append(
+    h("p", { class: "lead", text: "Email from these people is shown at the top of your inbox, with a small \u201cImportant\u201d label, so family, the school or your doctor are never buried. Only their names and addresses are kept here, never email text. Nobody else can see this list." }),
+    list, note,
+    h("div", { class: "ab-tools" }, addr, nm, h("button", { class: "btn primary", type: "button", text: "Add", onclick: add })));
+  try { const r = await api("/me/important"); paint(r.items); } catch (er) { list.replaceChildren(alertBox("bad", er.message)); }
+  show(...chrome(me, "important", h("h1", { text: "Important people" }), h("section", { class: "section" }, wrap)));
+}
 async function aiInstructionsPage(me) {
   const p = await api("/me/preferences");
   const form = h("form", {},
@@ -1676,4 +1707,4 @@ if (!window.ENVELIQ_EMBED) {
   if (!["/login", "/setup", "/unlock", "/terms", "/privacy", "/security", "/welcome"].includes(location.pathname) && !new URLSearchParams(location.search).has("enroll")) sendWatcher();
 }
 
-if (window.ENVELIQ_EMBED) window.EnveliqEmbed = { setMount, api, profilePage, mailboxesPage, accountPage, welcomePage, adminPage, generalPage, aiInstructionsPage, addressBookPage, remindersPage, syncPage };
+if (window.ENVELIQ_EMBED) window.EnveliqEmbed = { setMount, api, profilePage, mailboxesPage, accountPage, welcomePage, adminPage, generalPage, aiInstructionsPage, addressBookPage, importantPage, remindersPage, syncPage };
