@@ -27,6 +27,7 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 - [Writing help](WRITING_HELP.md)
 - [The Be careful flag](SCAM_WARNING.md) (emails that look like a scam)
 - [Snooze](SNOOZE.md) (set an email aside until you need it)
+- [Search](SEARCH.md) (one search box for emails, tasks, orders and waiting notes)
 - [Messages between people](MESSAGES.md)
 - [Chat with a Hermes agent](AGENT.md)
 - [Unlock by itself after a restart (vault key)](VAULT_KEY.md)
