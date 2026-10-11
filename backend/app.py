@@ -33,6 +33,8 @@ from .mail.task_routes import build_task_router
 from .mail.shipping import ShipBook
 from .mail.important import ImportantPeople
 from .mail.important_routes import build_important_router
+from .mail.saved_writing import SavedWriting
+from .mail.saved_writing_routes import build_saved_writing_router
 from .mail.subscriptions import SubBook
 from .mail.subscriptions_routes import build_subscriptions_router
 from .mail.trips import TripBook
@@ -458,6 +460,7 @@ def delete_user_data(user_id: str) -> None:
     messagebook.forget_user(user_id)
     writehelpbook.forget_user(user_id)
     importantbook.forget_user(user_id)
+    savedbook.forget_user(user_id)
     for account in vault.list_accounts():
         if account.get("owner_user_id") == user_id:
             preview_leases.purge_account(account["id"])
@@ -561,6 +564,7 @@ taskbook = TaskBook(vault)
 shipbook = ShipBook(vault)
 subbook = SubBook(vault, taskbook.timezone_of)
 importantbook = ImportantPeople(vault)
+savedbook = SavedWriting(vault)
 tripbook = TripBook(vault, taskbook.timezone_of)
 messagebook = MessageBook(vault, users)
 writehelpbook = WriteHelpBook(vault)
@@ -607,7 +611,7 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, subscriptions=subbook, important=importantbook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, subscriptions=subbook, important=importantbook, saved_writing=savedbook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))
@@ -616,6 +620,7 @@ app.include_router(build_task_router(mail_ctx))
 app.include_router(build_shipping_router(mail_ctx))
 app.include_router(build_subscriptions_router(mail_ctx))
 app.include_router(build_important_router(mail_ctx))
+app.include_router(build_saved_writing_router(mail_ctx))
 app.include_router(build_trips_router(mail_ctx))
 app.include_router(build_waiting_router(mail_ctx))
 app.include_router(build_check_router(mail_ctx))
