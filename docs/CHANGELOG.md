@@ -2,6 +2,14 @@
 
 Newest first. Each entry says what changed for people and which parts of the code it touches. The history of earlier versions is in [VERSION_HISTORY.md](VERSION_HISTORY.md).
 
+## v0.78
+
+**Licence changed to AGPL-3.0.** From this version Enveliq is released under the GNU Affero General Public Licence, version 3, instead of MIT, before the repository goes public.
+
+- `LICENSE`: the MIT text is removed; the official AGPL-3.0 text is added from GitHub's licence template (so the wording is exactly the published licence).
+- `README.md`, `docs/TERMS.md` and the in-app Terms of use (`web/static/auth.js`): say AGPL-3.0 in plain words. Using, changing and sharing it stays free; a person who changes it and lets others use their version over a network must share their changes under the same licence. Running it for yourself, your household or friends asks nothing more.
+- No code behaviour changes.
+
 ## v0.77
 
 **Help links go to the Enveliq website.** The links from the app to the step-by-step guides no longer point at GitHub.
