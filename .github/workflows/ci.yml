@@ -86,6 +86,22 @@ jobs:
       - name: Setup guide against a fake Bridge and a fake AI model
         run: python scripts/welcome_e2e.py
 
+  website:
+    name: Website builds
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - run: npm install --no-package-lock --prefix website
+      - run: node website/build.mjs
+      - name: Every link and picture resolves, no scripts
+        run: node website/check.mjs
+
   docker:
     name: Docker image
     runs-on: ubuntu-24.04
