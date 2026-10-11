@@ -399,6 +399,8 @@ body.backend .preview-only,body.backend #vaultSetupBtn{display:none!important}
 .note a{color:var(--c-9fdcff)}
 a.user-option{text-decoration:none}
 body.booting #list,body.booting #dueBars,body.booting #shipBars,body.booting #subBars,body.booting #tripBars,body.booting #waitBars,body.booting .sample-banner{display:none!important}
+/* until the page knows who is signed in, show nothing of the sample people, counts or version (no flash on refresh) */
+body.booting .app{visibility:hidden}
 body.backend:not(.mail-ready) #list{visibility:hidden}
 body.backend:not(.mail-ready) #dueBars,body.backend:not(.mail-ready) #shipBars,body.backend:not(.mail-ready) #subBars,body.backend:not(.mail-ready) #tripBars,body.backend:not(.mail-ready) #waitBars,body.backend:not(.mail-ready) .sample-banner{display:none!important}
 .sample-banner{display:none;margin-bottom:12px}
@@ -4603,6 +4605,7 @@ $("nmBccBtn").onclick=()=>{$("nmBccRow").hidden=false;nmFields().bcc.input.focus
 $("sentRefresh").onclick=loadSent;
 $("sentBox").onchange=e=>{sentAcct=e.target.value;loadSent()};
 bootBackendMode().finally(()=>document.body.classList.remove("booting"));
+setTimeout(()=>document.body.classList.remove("booting"),6000);   // never leave the page blank if the server is slow to answer
 // ---------- Hermes chat ----------
 // Plain chat with the AI model the administrator set up. It sees only what is typed here. Chats are saved for this person
 // (a list to reopen, rename or delete). The words that come back are shown as text, never as page code. With no server

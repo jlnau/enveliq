@@ -4,12 +4,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-**A quick check before a new email goes.** A new email with no subject, or one that talks about an attachment when nothing is attached, now gets one calm question before it leaves.
+**No flash of sample data when you refresh.** On a real Enveliq, pressing the browser's refresh button no longer shows the sample page (the sample name, counts and version) for a split second before your own page appears.
 
-- `prototype/index.html`: `sendWarnings(subject, body, fileCount)` and the "Before you send" window. It runs in `sendNew()` before the writing-help check. **Go back** (the one with the focus) returns to the email with the cursor in the subject; **Send anyway** sends. Escape means Go back.
-- The attachment check looks for the words attach, attached, attaching, attachment, enclosed or enclosure in the message, ignoring lines that start with `>` (quoted text), and only when no file is attached.
-- Nothing is sent to the server for the check, so it needs no backend change and behaves the same for Gmail, Microsoft, Proton and every other mailbox. Replies are not checked: their subject comes from the email being answered and they cannot carry attachments.
-- Tests: `scripts/check_email_features.mjs` (no subject, Go back, Escape, Send anyway, attachment words with and without a file, a quoted line, an ordinary email).
+- `prototype/index.html`: while the page starts up (`body.booting`), the whole page stays hidden until the server has said who is signed in. When there is no server behind the page (the demo or a hosted preview) it appears as soon as that is known, and if the server is slow to answer the page appears anyway after six seconds, so it is never left blank.
+- Tests: `scripts/check_no_sample_flash.mjs` (new, added to `.github/workflows/ci.yml`: hidden while the answer is slow, then shows the signed-in person's name, greeting and version; appears at once in preview; appears after a few seconds if the server never answers).
 
 ## v0.80
 
