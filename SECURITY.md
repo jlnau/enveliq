@@ -96,6 +96,14 @@ These rules are architecture requirements, not UI preferences.
 - "Confirmed" means the provider says the email passed its checks. It does not mean the email is safe, and the page never says it is. When the provider adds no result, the page says nothing.
 - A Reply-To on another website is shown but only flags an email from a well-known name, because small businesses often use a free mail address for replies.
 
+## Where does this link go? (v0.68)
+
+- Plain code, no AI. The list is worked out from the whole email when View original is opened and is **not stored**; the stored message holds no link address.
+- Enveliq never fetches or follows a link. A link opens only when the person presses **Open…**, sees the website it goes to, and presses the second button. It is a plain anchor with `target="_blank"` and `rel="noopener noreferrer nofollow"`, so the other page cannot reach back into Enveliq and receives no referrer.
+- Only plain public web addresses can be opened (the same rule as the Unsubscribe link). Number addresses, private or internal names, odd ports, `user:password@` forms, `javascript:` and every other kind of link are listed with a reason, or left out, and have no way to open. The page checks the address again before it shows the button.
+- The page shows the website name and what the email calls the link, never the rest of the address (which can hold a personal token). The address is in the response only so the button can work; it is sent only to the signed-in owner of the message, with the rest of the original.
+- Opening a link tells the sender's website that someone opened it, the same as in any mail app. On an email marked Be careful the page says the email looked odd and asks again.
+
 ## Be careful flag (v0.66)
 
 - The flag is found by plain code in `backend/mail/scamcheck.py`. The AI is not asked and never decides: it only ever sees the email text, as before, and nothing it writes feeds the flag.
@@ -254,7 +262,7 @@ Notification payloads are constructed from validated application fields. Email c
 The retained record holds only the encrypted summary and metadata (invariant 4). "View email" fetches the original from the mailbox at the moment it is opened, using the encrypted `source_locator`, and discards it when the viewer closes.
 
 - The locator is encrypted at rest and stripped from every browser response.
-- The original is shown as text. HTML is never rendered as active content, remote images are never loaded (they are commonly used as tracking pixels), and links are shown as text, not clickable.
+- The original is shown as text. HTML is never rendered as active content, remote images are never loaded (they are commonly used as tracking pixels), and links are shown as text. A link opens only after the person chooses it and is shown where it goes (see Where does this link go?, v0.68).
 - When HTML rendering is added later, it must be sanitised server-side and shown in a sandboxed frame with no scripts, no forms and a CSP that blocks remote loads.
 - Nothing from the original is written to disk, logs or the vault.
 

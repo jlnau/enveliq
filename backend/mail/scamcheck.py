@@ -223,31 +223,35 @@ def header_reasons(msg: Message) -> list[dict[str, str]]:
     return found
 
 
+def link_reason(href: str, label: str = "") -> dict[str, str] | None:
+    """What one link gives away, or None. Only host names are used, never the rest of the address."""
+    host = _host_of(href) if href.lower().startswith(("http://", "https://")) else ""
+    if not host:
+        return None
+    domain = registrable(host)
+    shown = _HOSTLIKE.match(label.strip()) if label else None
+    shown_domain = registrable(shown.group(1).lower()) if shown else ""
+    if _is_ip(host):
+        return _reason("number_link", "A link goes to a number address instead of a website name.", "ip")
+    if host.startswith("xn--") or ".xn--" in host or not host.isascii():
+        return _reason("odd_letters", f"A link goes to {domain}, which is written with unusual letters that can pass for ordinary ones.", f"odd:{domain}")
+    if shown_domain and shown_domain != domain and _owner_of(shown_domain) and _owner_of(shown_domain) != _owner_of(domain):
+        return _reason("link_mismatch", f"A link says {shown_domain} but really goes to {domain}.", f"mismatch:{shown_domain}:{domain}")
+    if _copied_brand(domain):
+        return _reason("copied_name", f"A link goes to {domain}, which copies the name of a well-known company.", f"copy:{domain}")
+    return None
+
+
 def link_reasons(msg: Message) -> list[dict[str, str]]:
     """What the links give away. Needs the whole email, so it only runs when the email is already being read."""
     found: list[dict[str, str]] = []
     seen: set[str] = set()
     for href, label in _anchors(msg):
-        host = _host_of(href) if href.lower().startswith(("http://", "https://")) else ""
-        if not host:
+        reason = link_reason(href, label)
+        if not reason or reason["key"] in seen:
             continue
-        domain = registrable(host)
-        shown = _HOSTLIKE.match(label.strip()) if label else None
-        shown_domain = registrable(shown.group(1).lower()) if shown else ""
-        if _is_ip(host):
-            code, text, key = "number_link", "A link goes to a number address instead of a website name.", "ip"
-        elif host.startswith("xn--") or ".xn--" in host or not host.isascii():
-            code, text, key = "odd_letters", f"A link goes to {domain}, which is written with unusual letters that can pass for ordinary ones.", f"odd:{domain}"
-        elif shown_domain and shown_domain != domain and _owner_of(shown_domain) and _owner_of(shown_domain) != _owner_of(domain):
-            code, text, key = "link_mismatch", f"A link says {shown_domain} but really goes to {domain}.", f"mismatch:{shown_domain}:{domain}"
-        elif _copied_brand(domain):
-            code, text, key = "copied_name", f"A link goes to {domain}, which copies the name of a well-known company.", f"copy:{domain}"
-        else:
-            continue
-        if key in seen:
-            continue
-        seen.add(key)
-        found.append(_reason(code, text, key))
+        seen.add(reason["key"])
+        found.append(reason)
         if len(found) >= MAX_REASONS:
             break
     return found
