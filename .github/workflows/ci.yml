@@ -112,6 +112,8 @@ jobs:
         run: node scripts/check_waiting.mjs
       - name: All emails switch and Generate summary (simulated server)
         run: node scripts/check_all_mail.mjs
+      - name: Notification links, new-email alert switches and install manifest (simulated server)
+        run: node scripts/check_notification_link.mjs
       - name: Sign-in flow (setup, two-factor, passkeys)
         run: scripts/run_signin_e2e.sh
       - name: Mailboxes page against a fake Proton Bridge
