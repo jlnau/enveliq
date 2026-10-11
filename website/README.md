@@ -38,7 +38,7 @@ Each merge to `main` publishes again.
 
 ## Also in the build
 
-- `src/tour.html` is the screenshot tour at `/tour/`. Every screenshot uses made-up example mail.
+- `src/tour.html` is the screenshot tour at `/tour/`. Every screenshot uses made-up example mail. The "Be careful" pictures come from `TOUR=1 SHOTS=<dir> node scripts/check_scam_warning.mjs` (then saved as .webp).
 - `src/favicon.ico` and the icons in `src/images/` (`apple-touch-icon.png`, `icon-192.png`, `icon-512.png`) are for browsers and phone home screens.
 - `/.well-known/security.txt` points researchers at the private security report form. Its "Expires" date is set at each build, so publishing renews it.
 - `node audit-contrast.mjs` (needs Playwright) checks text colour against its background in dark and light, on desktop and phone.

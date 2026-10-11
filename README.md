@@ -47,6 +47,7 @@ Enveliq does that sorting for you, calmly and in plain words, and **it does it o
 | **Writing help** | Optional. The AI suggests a reply, or checks one you wrote. It only suggests: you decide what is sent. |
 | **Reminders** | Gentle nudges by browser notification, email or Home Assistant. |
 | **Messages** | A small private chat between the people in your household. |
+| **Be careful flag** | A calm note on an email that looks like a scam, in plain words, so you do not have to judge. |
 | **Unsubscribe** | One button to leave a mailing list, when the sender allows it. |
 | **Many mailboxes** | Gmail, Outlook and Microsoft 365, iCloud, Yahoo, Fastmail, Proton Mail (through Proton Bridge) and any other IMAP service. Replies work with alias services such as Proton Pass and SimpleLogin. |
 
@@ -163,23 +164,24 @@ All the guides are listed, by what you want to do, in the [**documentation index
 [Proton Mail](docs/PROTON_BRIDGE.md) ·
 [Calendar and to-do lists](docs/CALENDAR.md) ·
 [Reminders](docs/NOTIFICATIONS.md) ·
-[Writing help](docs/WRITING_HELP.md).
+[Writing help](docs/WRITING_HELP.md) ·
+[The Be careful flag](docs/SCAM_WARNING.md).
 
 ## Version history
 
 <details>
 <summary><b>What changed recently</b> (latest five versions)</summary>
 
+- **v0.66**: **A "Be careful" flag for emails that look like a scam.** When an email looks odd, such as a link that says paypal.com but goes somewhere else, a link to a number instead of a website name, a link that copies a well-known name, a sender called "PayPal" writing from an unrelated address, or a sender your email provider could not confirm, its row gets a small **Be careful** label and its card gets a calm note in plain words that lists exactly what looks odd. Nothing is blocked and nothing is judged for you. On a flagged email the **Unsubscribe** button asks once more first, because unsubscribing from a scam tells the sender your address is real. The checks are plain code, never the AI, and only website names are ever kept, never a whole link. Ordinary newsletters with tracking links are deliberately left alone. See [docs/SCAM_WARNING.md](docs/SCAM_WARNING.md).
 - **v0.65**: **Help is one click away.** Wherever Enveliq asks you to set something up, there is now a link to the step-by-step guide on GitHub, which opens in a new tab: first-time setup, unlocking, two-factor sign-in, adding people, the AI model, connecting a mailbox (Gmail, iCloud, Yahoo, Outlook and Microsoft 365, Proton Mail), Google Calendar and other calendars, reminders, the Hermes agent, reporting, single sign-on, writing help, and the warning that shows when a page is not encrypted. Pointers that used to say "see docs/... in the Enveliq folder" are now links. A setup code that is still the placeholder from the install file, or shorter than 16 characters, is ignored and a random one is made instead.
 - **v0.64**: **Writing help.** The reply box and the New email box get a button: **Write a reply for me** when the box is empty, **Check my reply** when you have written something. The AI reads your words and, for a reply, the email you are answering, and shows its suggestion in a separate box labelled **Suggested by AI** that says nothing in it is sent. **Accept** copies it into your box (with **Put my version back**), or you can select just the parts you like and copy them across; **Try again** and **Copy** are there too. What is in your own box is what gets sent. If you used writing help on a message, pressing Send first shows a short check with the exact text, and warns about any gap left in [square brackets]; ordinary replies are not slowed. It is **off until you turn it on** in **Settings, AI instructions**, where a box of plain, friendly default writing instructions is ready for you to keep, change or add to. **Administration, Features** has a Writing help switch. Nothing the AI sees or writes is stored or logged. See [docs/WRITING_HELP.md](docs/WRITING_HELP.md).
 - **v0.63**: **Administrators can edit saved shipping carriers.** In Shipping, under *Carriers Enveliq can link to*, an administrator now sees **Edit** next to each shared carrier and can fix its name or tracking-page address (the same address rules as when adding). Everyone else sees no change.
 - **v0.62**: **Shipping: Track all, Copy number and carriers you can add.** When two or more parcels are on their way, **Track all** opens each one in its carrier's own page (if only one opens, allow pop-ups for Enveliq). Every parcel with a tracking number has a **Copy number** button. The built-in carrier list grew (Couriers Please, TNT, DPD, Evri, Yodel), and when a parcel's carrier has no link, **Add this carrier** lets anyone teach Enveliq its tracking page: paste the address from the carrier's website with `{number}` where the tracking number goes (or type the parcel's number and Enveliq finds it). A carrier added by one person is available to everyone; the person who added it, or an administrator, can remove it. Enveliq still never contacts a carrier: your own browser opens the page.
-- **v0.61**: **Messages between people.** People who share one Enveliq can now write to each other: one to one, or in a small group (up to 8 people). **Messages** appears in the sidebar with a blue count when something is waiting, and Home shows a card such as "Beth and Sam left you 2 messages" with a **Read messages** button. On a phone the list and the conversation are two separate screens. Each conversation can be muted, and you can unsend your own message. Only the people in a conversation can open it; anyone else, an administrator included, is told "Not found". What other people see of you is your name and picture. **Profile** has a new switch, **Show me in the people list**, and **Administration, Features** has a Messages on/off switch (people can also switch it off for themselves). Plain text only, up to 2,000 characters. Not in this version yet: the shared board, keeping messages for a set time, and "tell me about new messages" reminders. See [docs/MESSAGES.md](docs/MESSAGES.md).
 
 The full list is in [docs/VERSION_HISTORY.md](docs/VERSION_HISTORY.md), and a more technical one is in the [change log](docs/CHANGELOG.md).
 </details>
 
-Current version: **v0.65**
+Current version: **v0.66**
 
 ## For developers
 

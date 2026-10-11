@@ -15,14 +15,14 @@ from html.parser import HTMLParser
 from typing import Any
 
 from ..models import ReplyContext
-from . import unsub
+from . import scamcheck, unsub
 
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _ANGLE_ID = re.compile(r"<[^<>\s]{1,994}>")
 _MAX_TEXT = 200_000
 
 HEADER_FIELDS = (
-    "FROM REPLY-TO TO CC DELIVERED-TO X-ORIGINAL-TO SUBJECT DATE MESSAGE-ID REFERENCES X-ENVELIQ-REMINDER LIST-UNSUBSCRIBE"
+    "FROM REPLY-TO TO CC DELIVERED-TO X-ORIGINAL-TO SUBJECT DATE MESSAGE-ID REFERENCES X-ENVELIQ-REMINDER LIST-UNSUBSCRIBE AUTHENTICATION-RESULTS"
 )
 
 # Domains used by alias / relay services. A reply to one of these goes to the
@@ -174,6 +174,7 @@ def summarise_headers(raw: bytes, identities: list[str]) -> dict[str, Any] | Non
         "received_at": _received_at(msg),
         "reminder_mark": clean(msg.get("X-Enveliq-Reminder"), 80) or None,
         "unsubscribe": unsub.from_header(msg),
+        "scam_warning": scamcheck.from_headers(msg),
     }
 
 
@@ -322,4 +323,5 @@ def render_original(raw: bytes) -> dict[str, Any]:
         "attachments": attachments,
         "remote_images": remote_image_count(msg),
         "unsubscribe": unsub.find(msg),
+        "warning": scamcheck.from_whole(msg),
     }
