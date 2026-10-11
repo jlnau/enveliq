@@ -279,6 +279,7 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 .safe-text{width:min(820px,100%);background:#f7f8fa;color:#222;padding:24px;border-radius:8px;white-space:pre-wrap;font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace}
 .summary-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start}.summary-row .summary{margin-bottom:10px}
 .view-email{margin-top:2px;white-space:nowrap}
+.email-head dd.ok{color:#1a6b34}.email-head dd.warn{color:#8a4b00;font-weight:600}
 .scam-note{margin:0 0 12px;padding:10px 14px;border:1px solid var(--amber);border-radius:10px;background:rgba(240,196,101,.1);color:var(--text);font-size:13.5px;line-height:1.5}.scam-note b{display:block;font-size:14px;margin-bottom:2px}.scam-note p{margin:0 0 6px}.scam-note ul{margin:0;padding-left:20px}.scam-note li{margin:2px 0}
 .email-doc .scam-note{background:#fff6dc;color:#4d3800;border-color:#d9a400}
 .scam-note{max-width:100%;overflow-wrap:anywhere}@media(max-width:640px){.scam-note{padding:9px 12px;font-size:13px}.scam-note b{font-size:13.5px}.scam-pill{margin:0 6px 0 0;font-size:11px;padding:0 7px}}
@@ -4281,11 +4282,13 @@ function presentOriginal(o,c){
   $("attachmentViewerControls").innerHTML=`<span>${c.sent?"Sent email":"Original email"} · plain text</span>`;
   $("viewerStrip").innerHTML="<span>Fetched from your mailbox on demand</span><span>Not stored by Enveliq</span><span>Scripts removed</span><span>Pictures from the internet not loaded</span><span>Links in the text not clickable</span>";
   const from=`${o.from.name?o.from.name+" ":""}<${o.from.address}>`;
-  const rows=[["From",from],c.replyTo&&c.replyTo!==o.from.address?["Reply-To",c.replyTo]:null,["To",(o.to||[]).map(t=>t.address).join(", ")||c.account||""],["Date",o.date||c.fallbackDate||""],["Subject",o.subject||c.title]].filter(Boolean);
+  const sc=(!c.sent&&o.sender_check)||{};
+  const senderRow=sc.result==="confirmed"?["Sender","Your email provider confirmed this came from that address.","ok"]:sc.result==="not_confirmed"?["Sender","Your email provider could not confirm this came from that address.","warn"]:null;
+  const rows=[["From",from],senderRow,c.replyTo&&c.replyTo!==o.from.address?["Reply-To",c.replyTo+(sc.reply_differs===true?" (a different website from the sender)":"")]:null,["To",(o.to||[]).map(t=>t.address).join(", ")||c.account||""],["Date",o.date||c.fallbackDate||""],["Subject",o.subject||c.title]].filter(Boolean);
   const remote=o.remote_images>0?`<div class="mail-notice">${o.remote_images} ${o.remote_images===1?"picture":"pictures"} from the internet ${o.remote_images===1?"is":"are"} not shown. They can tell the sender you opened this email.</div>`:"";
   const hasInline=feat.media&&(o.attachments||[]).some(a=>a.inline&&a.previewable);
   $("attachmentViewer").innerHTML=`<article class="email-doc">
-    <dl class="email-head">${rows.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+    <dl class="email-head">${rows.map(([k,v,t])=>`<dt>${esc(k)}</dt><dd${t==="ok"||t==="warn"?` class="${t}"`:""}>${esc(v)}</dd>`).join("")}</dl>
     <h4>${esc(o.subject||c.title)}</h4>${scamHtml(o.warning||c.scam)}${remote}${hasInline?'<div class="pics" data-inline></div>':""}
     <pre class="email-text">${esc(o.text||"(no text content)")}</pre>${o.truncated?'<p class="hint">Shortened for display.</p>':""}${attachmentsHtml(o,c)}
   </article>`;

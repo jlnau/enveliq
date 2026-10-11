@@ -8,7 +8,8 @@ whether something is a scam. The checks are:
   * a link goes to a bare number (an IP address) instead of a website name;
   * a link goes to a website that copies a well-known name (``paypa1.example``, or a name written with look-alike letters);
   * the sender's name says "PayPal" but the address it came from is somewhere else;
-  * the person's own mail provider says it could not confirm who sent the email (a failed DMARC check).
+  * the email comes from a well-known name but replies would go to a different site (any other difference is only shown, not flagged);
+  * the person's own mail provider says it could not confirm who sent the email (a failed DMARC, or failed SPF and DKIM, check).
 
 Only host names are ever kept (never a whole link, which can carry a private token), and never any of the email's text.
 Words shown to people are plain and never say "this is a scam": they say what looks odd and let the person decide.
@@ -47,7 +48,7 @@ BRANDS: dict[str, tuple[str, ...]] = {
 _LOOKALIKE = str.maketrans({"0": "o", "1": "l", "3": "e", "5": "s", "$": "s", "@": "a"})
 _SECOND_LEVEL = {"co", "com", "org", "net", "gov", "edu", "ac", "or", "ne", "go"}
 _HOSTLIKE = re.compile(r"^(?:https?://)?(?:www\.)?([a-z0-9][a-z0-9\-]*(?:\.[a-z0-9][a-z0-9\-]*)+)(?::\d+)?(?:[/?#]\S*)?$", re.I)
-_DMARC_FAIL = re.compile(r"\bdmarc\s*=\s*fail\b", re.I)
+_RESULT = re.compile(r"\b(spf|dkim|dmarc)\s*=\s*([a-z]+)", re.I)
 
 
 def registrable(host: str) -> str:
@@ -162,25 +163,62 @@ def _reason(code: str, text: str, key: str) -> dict[str, str]:
     return {"code": code, "text": text[:300], "key": key[:300]}
 
 
+def sender_check(msg: Message) -> dict[str, Any]:
+    """What the person's own mail provider says about who really sent this: ``confirmed``, ``not_confirmed`` or ``unknown``.
+
+    Only the first Authentication-Results header is read. The receiving server adds its own at the top, and anything the sender wrote
+    sits below it, so a sender cannot talk its way into "confirmed". With no such header (some providers add none) the answer is
+    "unknown" and nothing is said about it. DMARC decides when it is there; without it, SPF and DKIM must both pass."""
+    try:
+        first = str((msg.get_all("Authentication-Results", []) or [""])[0])[:4000]
+    except Exception:
+        first = ""
+    seen: dict[str, list[str]] = {"spf": [], "dkim": [], "dmarc": []}
+    for name, value in _RESULT.findall(first):
+        seen[name.lower()].append(value.lower())
+    dmarc = seen["dmarc"][0] if seen["dmarc"] else ""
+    spf = seen["spf"][0] if seen["spf"] else ""
+    dkim_pass = "pass" in seen["dkim"]
+    if dmarc == "pass":
+        result = "confirmed"
+    elif dmarc == "fail":
+        result = "not_confirmed"
+    elif not dmarc and spf == "pass" and dkim_pass:
+        result = "confirmed"
+    elif not dmarc and spf in ("fail", "softfail") and not dkim_pass:
+        result = "not_confirmed"
+    else:
+        result = "unknown"
+    try:
+        from .parse import _addresses, alias_service
+        sender, reply = (_addresses(msg, "From") or [("", "")])[0][1], (_addresses(msg, "Reply-To") or [("", "")])[0][1]
+        a, b = (registrable(x.rsplit("@", 1)[1].lower()) if "@" in x else "" for x in (sender, reply))
+        differs = bool(a and b and a != b and not alias_service(sender) and not alias_service(reply) and not (_owner_of(a) and _owner_of(a) == _owner_of(b)))
+    except Exception:
+        differs = False
+    detail = ", ".join(f"{k}={'pass' if (k == 'dkim' and dkim_pass) else (seen[k][0] if seen[k] else 'none')}" for k in ("spf", "dkim", "dmarc") if seen[k])
+    return {"result": result, "detail": detail[:80], "reply_differs": differs}
+
+
 def header_reasons(msg: Message) -> list[dict[str, str]]:
-    """What the headers alone give away: a name that does not match its address, and a failed sender check."""
+    """What the headers alone give away: a name that does not match its address, replies that go somewhere else, and a failed sender check."""
     found: list[dict[str, str]] = []
     try:
-        from .parse import _addresses
+        from .parse import _addresses, alias_service
         sender = (_addresses(msg, "From") or [("", "")])[0]
+        reply = (_addresses(msg, "Reply-To") or [("", "")])[0]
     except Exception:
-        sender = ("", "")
+        sender, reply, alias_service = ("", ""), ("", ""), (lambda _a: None)
     display, address = sender
     brand = _brand_in_name(display)
-    if brand and "@" in address:
-        domain = registrable(address.rsplit("@", 1)[1].lower())
-        if _owner_of(domain) != brand:
-            found.append(_reason("name_mismatch", f"The sender's name says {brand.capitalize() if brand not in ('dhl', 'ups', 'usps', 'dpd') else brand.upper()}, but the email came from {domain}.", f"name:{brand}:{domain}"))
-    try:
-        results = " ".join(str(h) for h in (msg.get_all("Authentication-Results", []) or []))[:4000]
-    except Exception:
-        results = ""
-    if _DMARC_FAIL.search(results):
+    from_domain = registrable(address.rsplit("@", 1)[1].lower()) if "@" in address else ""
+    if brand and from_domain and _owner_of(from_domain) != brand:
+        found.append(_reason("name_mismatch", f"The sender's name says {brand.capitalize() if brand not in ('dhl', 'ups', 'usps', 'dpd') else brand.upper()}, but the email came from {from_domain}.", f"name:{brand}:{from_domain}"))
+    reply_domain = registrable(reply[1].rsplit("@", 1)[1].lower()) if "@" in reply[1] else ""
+    if (from_domain and reply_domain and reply_domain != from_domain and not alias_service(address) and not alias_service(reply[1])
+            and _owner_of(from_domain) and _owner_of(reply_domain) != _owner_of(from_domain)):
+        found.append(_reason("reply_elsewhere", f"If you reply, it would go to {reply_domain}, not to the sender's own address.", f"reply:{reply_domain}"))
+    if sender_check(msg)["result"] == "not_confirmed":
         found.append(_reason("not_confirmed", "Your email provider could not confirm who really sent this.", "dmarc"))
     return found
 

@@ -324,4 +324,5 @@ def render_original(raw: bytes) -> dict[str, Any]:
         "remote_images": remote_image_count(msg),
         "unsubscribe": unsub.find(msg),
         "warning": scamcheck.from_whole(msg),
+        "sender_check": scamcheck.sender_check(msg),
     }
