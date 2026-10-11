@@ -51,6 +51,7 @@ const NAV = [
     ["docs/SCAM_WARNING.md", "The Be careful flag"],
     ["docs/SNOOZE.md", "Snooze"],
     ["docs/SEARCH.md", "Search"],
+    ["docs/SUBSCRIPTIONS.md", "Subscriptions"],
     ["docs/MESSAGES.md", "Messages between people"],
     ["docs/AGENT.md", "Hermes agent chat"],
   ] },

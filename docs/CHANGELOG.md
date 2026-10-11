@@ -2,6 +2,19 @@
 
 Newest first. Each entry says what changed for people and which parts of the code it touches. The history of earlier versions is in [VERSION_HISTORY.md](VERSION_HISTORY.md).
 
+## v0.73
+
+**Subscriptions and free trials.** Renewals and free trials are followed from the emails about them, shown on Home and in a list, and announced a few days before.
+
+- `backend/mail/llm.py`: the summary may now carry a `subscription` (kind, service, amount as written, period, renewal date as written, trial end as written, trial length in days). The prompt tells the model to copy, never to work out a date. Every value is cut to a short length and anything else is dropped.
+- `backend/mail/subscriptions.py` (new): `SubBook` files the facts under one subscription per service in an encrypted per-person record (`subs:<user id>`). Code, not the model, does every date: a trial length is counted from the email's own date, a passed renewal is rolled forward by the billing period (month ends are kept), a receipt with no date gives an estimate one period on and says so, and an older email never overwrites newer facts. Dates far from the email are ignored. The day is the person's own, from their time zone.
+- No email text, subject or sender address is kept. The one link is the home page of the sender's own domain, only when it is a plain public address and not a mail or payment service (`company_link`). `backend/mail/service.py` files nothing from an email that carries a Be careful flag.
+- `backend/mail/subscriptions_routes.py` (new): `GET /api/v1/me/subscriptions`, `PUT /me/subscriptions/settings` (1 to 14 days) and `POST /me/subscriptions/{id}/{not_subscription|cancelled|keep}`. Signed-in person only, rate limited, `no-store`, another person's id answers "not found".
+- `backend/mail/reminders.py`: one message per person for what is inside their number of days, sent once per coming date, after the morning time, never during quiet hours, with the service name left out when titles are private.
+- `backend/mail/features.py`, `extra_routes.py`, `web/static/auth.js`: a new feature switch, `subscriptions`, for the administrator and for each person.
+- `prototype/index.html`: the **Subscriptions** menu entry (only when there is something to follow), the Home **Coming up** card, the page, and the days setting.
+- Tests: `tests/test_subscriptions.py`, new cases in `tests/test_notify.py`, `scripts/check_subscriptions.mjs` (added to CI; desktop and phone; hostile text stays text). Docs: new `docs/SUBSCRIPTIONS.md`, the tour and the home page.
+
 ## v0.72
 
 **Search everywhere.** One search box that also reports what it finds in the other places Enveliq keeps things for this person.

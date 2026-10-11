@@ -340,3 +340,58 @@ def test_nothing_goes_when_no_channel_is_on(due):
     appm, client, uid, tid, sent, at = due
     client.delete("/api/v1/me/notifications/channels/ntfy")
     assert at(9, 0) == 0 and sent == []
+
+
+# ---------- subscriptions coming up ----------
+
+def _subscription(appm, uid, clock, **kw):
+    raw = {"kind": "renewal_notice", "service": "Streamly", "amount": "$12.99", "period": "monthly", "renews_on": "12 Oct 2026", "trial_ends_on": None, "trial_days": None, **kw}
+    appm.subbook.clock = lambda: clock
+    assert appm.subbook.observe(uid, "a1", "m-sub", clock - 3600, raw)
+
+
+def test_a_renewal_is_announced_once_when_it_is_inside_the_days_before(due):
+    appm, client, uid, tid, sent, at = due
+    _subscription(appm, uid, datetime(2026, 10, 9, 6, 0, tzinfo=SYD).timestamp())              # renews on the 12th: three days away
+    at(7, 30)
+    assert not [n for n in sent if "Streamly" in n["title"]]                                    # not before the morning time
+    at(8, 1)
+    notes = [n for n in sent if "Streamly" in n["title"]]
+    assert len(notes) == 1 and notes[0]["title"] == "Streamly renews in 3 days" and "$12.99" not in notes[0]["title"]
+    at(8, 5), at(10, 30), at(14, 0)
+    assert len([n for n in sent if "Streamly" in n["title"]]) == 1                              # never twice for the same date
+
+
+def test_a_renewal_further_away_than_the_persons_number_of_days_waits(due):
+    appm, client, uid, tid, sent, at = due
+    _subscription(appm, uid, datetime(2026, 10, 9, 6, 0, tzinfo=SYD).timestamp(), renews_on="20 Oct 2026")
+    at(8, 1)
+    assert not [n for n in sent if "Streamly" in n["title"]]
+    assert client.put("/api/v1/me/subscriptions/settings", json={"nudge_days": 14}).status_code == 200
+    at(8, 10)
+    assert [n["title"] for n in sent if "Streamly" in n["title"]] == ["Streamly renews in 11 days"]
+
+
+def test_a_free_trial_is_announced_in_its_own_words(due):
+    appm, client, uid, tid, sent, at = due
+    _subscription(appm, uid, datetime(2026, 10, 9, 6, 0, tzinfo=SYD).timestamp(), kind="trial_started", renews_on=None, trial_ends_on="10 Oct 2026")
+    at(8, 1)
+    assert "Streamly free trial ends tomorrow" in [n["title"] for n in sent]
+
+
+def test_private_mode_keeps_the_service_name_out(due):
+    appm, client, uid, tid, sent, at = due
+    client.put("/api/v1/me/notifications/settings", json={"show_titles": False})
+    _subscription(appm, uid, datetime(2026, 10, 9, 6, 0, tzinfo=SYD).timestamp())
+    at(8, 1)
+    private = [n for n in sent if "subscription" in n["body"]]
+    assert len(private) == 1 and private[0]["title"] == "Enveliq" and "Streamly" not in private[0]["body"] and "Open Enveliq" in private[0]["body"]
+
+
+def test_a_cancelled_subscription_is_not_announced(due):
+    appm, client, uid, tid, sent, at = due
+    _subscription(appm, uid, datetime(2026, 10, 9, 6, 0, tzinfo=SYD).timestamp())
+    sid = appm.subbook.view(uid)["items"][0]["id"]
+    appm.subbook.act(uid, sid, "cancelled")
+    at(8, 1)
+    assert not [n for n in sent if "Streamly" in n["title"]]

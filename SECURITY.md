@@ -96,6 +96,15 @@ These rules are architecture requirements, not UI preferences.
 - "Confirmed" means the provider says the email passed its checks. It does not mean the email is safe, and the page never says it is. When the provider adds no result, the page says nothing.
 - A Reply-To on another website is shown but only flags an email from a well-known name, because small businesses often use a free mail address for replies.
 
+## Subscriptions and free trials (v0.73)
+
+- The AI reads each email once, with the same instructions and limits as every summary, and only copies what the email says. It is told not to work out any date, and Enveliq does not use any date it did not work out itself. Nothing the AI returns is trusted: every value is cut to a short length, control characters are removed, only known kinds and billing periods are accepted, and a date far from the email's own date is ignored.
+- What is kept, per person, inside the encrypted vault: the service name, the price as written, the billing period, the renewal and trial dates, whether it was cancelled, one web address and a mark for each email already filed. **No email text, subject or sender address is kept.** The server answers only for the signed-in person; another person's record answers "not found". Administrators cannot read it.
+- An email that carries a Be careful flag is never filed, so a fake renewal notice cannot put a card on Home or send a reminder.
+- The only link is the home page of the domain the email came from, and only when it is a plain public address (the same rule as the Unsubscribe link) that is not a mail or payment service. It is shown with the website's name and opens as a plain link in a new tab with `noopener noreferrer nofollow`. Enveliq never contacts the company.
+- Reminders use the person's own reminder channels. With "Keep titles private" on, the message holds only a count. The service name is otherwise sent only to the channels the person set up.
+- An administrator can switch the feature off for everyone, and each person for themselves; while it is off nothing is filed.
+
 ## Search everywhere (v0.72)
 
 - The search runs in the page, over the cards, tasks, orders and notes that the server already sent to the signed-in person. Nothing new is asked of the server or stored, no mailbox is read, and email text is never searched. Another person's data is never in the page, so it cannot be found.
