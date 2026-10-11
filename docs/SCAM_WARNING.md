@@ -86,3 +86,29 @@ On a phone the list wraps and the buttons stay in reach:
 ![The same list on a phone. Each link shows its website and a note, and the question and button fit the screen.](images/link-check-phone.png)
 
 Enveliq never opens a link for you and never fetches one. The list is worked out when you open the email and is not stored. It is plain code; the AI is not involved. A link that raises no note is not a promise that it is safe.
+
+## Forward to check
+
+Not sure about an email? Forward it to your household's check address and get one line back.
+
+**Using it.** Forward the email *as an attachment* (in most mail apps: Forward, then choose **Forward as attachment**) to the check address. In a few minutes you get a reply with one line:
+
+- *"Be careful:"* followed by what looks odd, for example *"A link says paypal.com but really goes to evil.example."*
+- *"Nothing odd found. That does not prove it is safe."* A scammer can send a clean-looking email, so Enveliq never says an email is safe.
+
+If you forward it as plain text instead of an attachment, Enveliq can only look at the links, and the answer says it could not see who sent it.
+
+**Setting it up (administrators).** Make a new mailbox that is only for this and add it to Enveliq as usual. Then open **Settings, Administration, Forward to check**, choose that mailbox and list the people who may use it, one email address per line, and press **Save**. Automatic checking (Administration, Automatic sync) must be on.
+
+![Administration, Forward to check. A mailbox can be chosen, a list of people who may use it, and a Save button.](images/check-address.png)
+
+On a phone the form fits the screen:
+
+![The same section on a phone.](images/check-address-phone.png)
+
+**What keeps it harmless.**
+
+- Only the people you list get an answer. Everyone else is ignored, so the address cannot be used to send mail at strangers. An email whose sender your provider says was forged is ignored too.
+- It ignores mailing lists, bulk mail and other automatic replies, and each answer is marked automatic, so two robots cannot start a loop. Each person gets up to 10 answers a day.
+- The forwarded email is read once and never saved. The AI is not involved: these are the same plain checks as the Be careful label.
+- The check mailbox is never shown as an inbox, to you or to anyone else. Enveliq only reads recent unread mail in it.

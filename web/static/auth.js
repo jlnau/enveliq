@@ -811,7 +811,7 @@ function microsoftSection(m, redraw) {
 let adminOnly = null;
 async function adminPage(me, only) {
   adminOnly = only || null;
-  // `only` (users | ai | instr | keep | sync | reporting | signin) shows one part, for the Administration pop-up.
+  // `only` (users | ai | instr | keep | sync | check | reporting | signin) shows one part, for the Administration pop-up.
   const [list, policy, sso] = await Promise.all([api("/admin/users"), api("/admin/auth-policy"), api("/admin/sso")]);
 
   const aiPanel = h("div", {}, h("p", { class: "hint", text: "Loading…" }));
@@ -976,6 +976,24 @@ async function adminPage(me, only) {
     if (gForm.querySelector("#gc_secret").value) body.client_secret = gForm.querySelector("#gc_secret").value;
     await api("/admin/google", { method: "PUT", body }); toast("Saved");
   });
+  const ck = (!only || only === "check") ? await api("/admin/check-address").catch(() => null) : null;
+  const ckForm = ck ? h("form", {},
+    h("p", { class: "lead", text: "Lets people forward a suspicious email to one address of yours and get a one-line answer back, for example “Be careful: a link says paypal.com but really goes to evil.example.” It uses the same plain checks as the Be careful label. The AI is not involved, nothing is saved, and the answer never says an email is safe." }),
+    ck.set_elsewhere ? alertBox("warn", "Another administrator chose the check address. Only they can change it.") : null,
+    field("Check mailbox", h("select", { id: "ck_account", disabled: ck.set_elsewhere },
+      h("option", { value: "", text: "Off" }),
+      ...ck.accounts.map(a => h("option", { value: a.id, selected: a.id === ck.account_id, text: a.email || a.name }))),
+      "One of your own mailboxes that can also send. Use a mailbox made only for this: it is never shown as an inbox, and Enveliq reads only recent unread mail in it."),
+    field("People who may use it", h("textarea", { id: "ck_allowed", rows: 4, spellcheck: "false", autocapitalize: "none", disabled: ck.set_elsewhere, placeholder: "alex@example.com\nsam@example.com" }, (ck.allowed || []).join("\n")),
+      "One email address per line. Only these people get an answer; everyone else is ignored. Each person gets up to 10 answers a day."),
+    ck.automatic_sync_on ? null : alertBox("warn", "Automatic checking is off (see Automatic sync), so forwarded emails are not looked at."),
+    ck.last ? h("p", { class: "hint", text: ck.last.ok ? `Last look: ${new Date(ck.last.at * 1000).toLocaleString()}, ${ck.last.answered} answered.` : "The last look did not work. Check that the mailbox can log in and send." }) : null,
+    ck.set_elsewhere ? null : h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" }))) : null;
+  if (ckForm && !ck.set_elsewhere) onSubmit(ckForm, async () => {
+    const account_id = ckForm.querySelector("#ck_account").value || null;
+    const allowed = ckForm.querySelector("#ck_allowed").value.split(/[\n,;]+/).map(x => x.trim()).filter(Boolean);
+    await api("/admin/check-address", { method: "PUT", body: { account_id, allowed } }); toast("Saved"); adminPage(me, only);
+  });
   const rp = (!only || only === "reporting") ? await api("/admin/reporting").catch(() => null) : null;
   const msConf = (!only || only === "microsoft") ? await api("/admin/microsoft").catch(() => null) : null;
   const numField = (id, label, value, min, max, hint) => field(label, input(id, { type: "number", min: String(min), max: String(max), value: String(value) }), hint);
@@ -1045,6 +1063,7 @@ async function adminPage(me, only) {
     features: featForm ? h("section", { class: "section" }, h("h2", { text: "Features" }), featForm) : null,
     agent: agForm ? h("section", { class: "section" }, h("h2", { text: "Agent chat" }), guideNote("AGENT.md", "", "How to connect a Hermes agent"), agForm) : null,
     reminders: remForm ? h("section", { class: "section" }, h("h2", { text: "Reminders" }), guideNote("NOTIFICATIONS.md", "", "How to set up reminders"), remForm, gForm ? h("h2", { text: "Google Calendar" }) : null, gForm ? guideNote("CALENDAR.md", "Every click, step by step:", "Google Calendar guide") : null, gForm) : null,
+    check: ckForm ? h("section", { class: "section" }, h("h2", { text: "Forward to check" }), guideNote("SCAM_WARNING.md#forward-to-check", "", "How Forward to check works"), ckForm) : null,
     reporting: rp ? h("section", { class: "section" }, h("h2", { text: "Reporting" }), guideNote("REPORTING.md", "", "How to send reports to Grafana and other tools"), reportingSection(rp, () => adminPage(me, only))) : null,
     instr: instrForm ? h("section", { class: "section" }, h("h2", { text: "AI instructions" }), promptPanel, h("h3", { text: "Extra instructions" }), instrForm) : null,
     signin: [h("section", { class: "section" }, h("h2", { text: "Sign-in rules" }), pol),
@@ -1055,7 +1074,7 @@ async function adminPage(me, only) {
           h("p", { class: "hint", text: "Create an OAuth2/OpenID application in your provider (confidential client, authorization code flow with PKCE), then fill in the details below." }), ssoForm))],
   };
   if (only) return show(...chrome(me, "admin", ...[].concat(parts[only]).filter(Boolean)));
-  show(...chrome(me, "admin", h("h1", { text: "Administration" }), parts.users, parts.ai, parts.instr, parts.keep, parts.features, parts.agent, parts.reminders, parts.sync, parts.microsoft, parts.reporting, ...parts.signin));
+  show(...chrome(me, "admin", h("h1", { text: "Administration" }), parts.users, parts.ai, parts.instr, parts.keep, parts.features, parts.agent, parts.reminders, parts.check, parts.sync, parts.microsoft, parts.reporting, ...parts.signin));
 }
 // ---------- general settings and AI instructions (everyone) ----------
 const FEATURE_HINTS = {

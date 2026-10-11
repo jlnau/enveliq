@@ -92,6 +92,7 @@ class MailService:
         self.shipments: Any = None                # set by the application: files order facts found in summaries (mail/shipping.py)
         self.waits: Any = None                    # set by the application: notes for sent emails that wait on an answer (mail/waiting.py)
         self.holds: Any = None                    # set by the application: (account, message) pairs that have an open task and must not be removed
+        self.check_id: Any = None                 # set by the application: the id of the mailbox that is the check address (mail/checkbox.py)
         self.on_people: Any = None                # set by the application: told which senders were seen, to build the address book
         self.ai_source = "environment" if self.env_ai.enabled else "none"
         self.locks = AccountLocks()
@@ -118,8 +119,20 @@ class MailService:
 
     # ---------- sync ----------
 
+    def is_check_address(self, account: dict[str, Any]) -> bool:
+        try:
+            return bool(self.check_id and account.get("id") == self.check_id())
+        except Exception:
+            return False
+
+    def _not_check_address(self, account: dict[str, Any]) -> None:
+        """The check address is for forwarded emails only. Nothing in it is ever listed or kept for anyone."""
+        if self.is_check_address(account):
+            raise BridgeError("check_address", "This mailbox is the check address, so it is not read as an inbox.")
+
     def sync(self, vault: Any, account: dict[str, Any], **kw: Any) -> dict[str, int]:
         """Sync one mailbox and report how it went (counts and timing only)."""
+        self._not_check_address(account)
         started = time.monotonic()
         try:
             result = self._sync(vault, account, **kw)
@@ -319,6 +332,7 @@ class MailService:
         """Add the last 14 days of the inbox (newest 100) to the list as quiet entries: sender, subject and date only,
         read from the headers. Mail already listed is left alone. Entries older than 14 days are dropped. Nothing is
         summarised here: that only happens when the person presses Generate summary."""
+        self._not_check_address(account)
         target = self.target(account)
         identities = sending_identities(account)
         account_id = account["id"]
