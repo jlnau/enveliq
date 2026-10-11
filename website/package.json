@@ -1,0 +1,13 @@
+{
+  "name": "enveliq-website",
+  "private": true,
+  "type": "module",
+  "description": "The Enveliq website: a front page and the guides from ../docs, built into plain files. No scripts run in the visitor's browser.",
+  "scripts": {
+    "build": "node build.mjs",
+    "check": "node check.mjs"
+  },
+  "dependencies": {
+    "marked": "18.0.10"
+  }
+}
