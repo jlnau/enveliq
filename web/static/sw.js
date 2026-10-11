@@ -15,8 +15,15 @@ self.addEventListener("notificationclick", (event) => {
     const u = new URL((event.notification.data && event.notification.data.url) || "/", self.location.origin);
     if (u.origin === self.location.origin) target = u.href;
   } catch (e) { /* keep the default */ }
-  event.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
-    for (const c of list) { if ("focus" in c) { return c.focus(); } }
-    return self.clients.openWindow(target);
-  }));
+  event.waitUntil((async () => {
+    const list = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const c of list) {
+      let path = "";
+      try { const cu = new URL(c.url); if (cu.origin !== self.location.origin) continue; path = cu.pathname; } catch (e) { continue; }
+      try { await c.focus(); } catch (e) { /* the browser may refuse; carry on */ }
+      if (path === "/") { c.postMessage({ type: "enveliq-open", url: target }); return; }   // the inbox is open: it moves to the email itself
+      try { await c.navigate(target); return; } catch (e) { /* try the next window, then open a new one */ }
+    }
+    await self.clients.openWindow(target);
+  })());
 });
