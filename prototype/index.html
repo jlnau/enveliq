@@ -3344,8 +3344,11 @@ async function detectVaultMode(){
   if(vaultMode)return vaultMode;
   try{
     const st=await secureBackendRequest("/api/v1/status",{method:"GET",headers:{}});
-    vaultMode=(st&&st.cipher&&st.kdf&&"initialized" in st)?"backend":"preview";
-    if(st&&typeof st.version==="string"&&/^[0-9.]{1,12}$/.test(st.version))$("brandVer").textContent="Version "+st.version;
+    vaultMode=(st&&typeof st==="object"&&"initialized" in st&&"setup_required" in st&&"sign_in" in st)?"backend":"preview";
+    if(vaultMode==="backend"){      // the version is for signed-in people only (the public status page does not say)
+      try{const sys=await secureBackendRequest("/api/v1/system",{method:"GET",headers:{}});
+        if(sys&&typeof sys.version==="string"&&/^[0-9.]{1,12}$/.test(sys.version))$("brandVer").textContent="Version "+sys.version}catch{}
+    }
   }catch{vaultMode="preview"}
   return vaultMode;
 }
@@ -3364,10 +3367,11 @@ async function refreshSecurityStatus(){
   if(mode==="backend"){
     try{
       const st=await secureBackendRequest("/api/v1/status",{method:"GET",headers:{}});
+      let sys={};try{sys=await secureBackendRequest("/api/v1/system",{method:"GET",headers:{}})||{}}catch{}
       $("vaultInitState").textContent=st.initialized?"Initialized":"Not initialized";
       $("vaultLockState").textContent=st.unlocked?"Unlocked":"Locked";
       note.className="note good";
-      note.textContent=`Enveliq ${st.version?"v"+st.version+" · ":""}Secure backend connected · ${st.cipher} · ${st.kdf} · ${st.idle_lock_seconds?`idle lock ${Math.round(st.idle_lock_seconds/60)} min`:'unlocks itself from a key file, no idle lock'} · raw body persistence disabled`;
+      note.textContent=`Enveliq ${sys.version?"v"+sys.version+" · ":""}Secure backend connected · ${sys.cipher||"AES-256-GCM"} · ${sys.kdf||"Argon2id"} · ${sys.idle_lock_seconds?`idle lock ${Math.round(sys.idle_lock_seconds/60)} min`:'unlocks itself from a key file, no idle lock'} · raw body persistence disabled`;
     }catch(err){
       $("vaultInitState").textContent="Unknown";$("vaultLockState").textContent="Backend error";
       note.className="note warn";note.textContent=`The secure backend stopped responding: ${err.message}`;

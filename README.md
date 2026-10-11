@@ -180,16 +180,16 @@ All the guides are listed, by what you want to do, in the [**documentation index
 <details>
 <summary><b>What changed recently</b> (latest five versions)</summary>
 
+- **v0.79**: **The public status page says less.** Before anyone signs in, Enveliq's status page now says only what the sign-in, setup and unlock pages need. It no longer shows the version, the encryption settings or the public address, and it says whether Enveliq unlocks itself from a key file only while the vault is closed. Signed-in people see the version in the inbox; administrators see the technical detail. This came from a read-only security probe of the live site.
 - **v0.78**: **Licence changed to AGPL-3.0.** Enveliq is now released under the GNU Affero General Public Licence, version 3, instead of MIT. Using, changing and sharing it stays free. The one new rule: if you change it and let other people use your version over a network, you share your changes under the same licence. The Terms of use page says so in plain words.
 - **v0.77**: **Help links go to the Enveliq website.** The "Open the guide" links in Settings, Administration, the setup guide and the plain-http warning now open the guides on the Enveliq website (enveliq.app) instead of the project's GitHub pages, so they are easier to read and need no GitHub account.
 - **v0.76**: **A demo you can try without installing anything.** There is now a made-up copy of the Enveliq inbox at demo.enveliq.app. Every person, email and number in it is invented, a banner on every screen says so, nothing you do is saved, and it cannot connect to anything. It is built from the same page as the real inbox, so it always looks like the real thing. See [docs/DEMO.md](docs/DEMO.md).
-- **v0.75**: **Backup and restore, and Export my data.** Administrators can now save a backup of everything Enveliq holds (still locked, and never including the key file), download it, switch on a daily backup that keeps the last few days, and restore one. Restoring asks for your password again and the word RESTORE, saves a copy of today first, and signs everyone out. Everyone can press **Export my data** in Settings, General, to download one readable file with their own information: no passwords or keys, and nothing of anyone else's. See [docs/BACKUP.md](docs/BACKUP.md).
 - **v0.72**: **Search everywhere.** The search box now also tells you what it found in the other places Enveliq keeps things for you: emails in Reviewed, Archived and Snoozed, your tasks, the orders you are following and your waiting notes. A box called **Also found elsewhere** shows a few matches, each saying where it is, and pressing one takes you there. It uses only what Enveliq already keeps for you, so nothing new is saved. Also fixed: your tasks now show as soon as the page opens, not a minute later. See [docs/SEARCH.md](docs/SEARCH.md).
 
 The full list is in [docs/VERSION_HISTORY.md](docs/VERSION_HISTORY.md), and a more technical one is in the [change log](docs/CHANGELOG.md).
 </details>
 
-Current version: **v0.78**
+Current version: **v0.79**
 
 ## For developers
 
