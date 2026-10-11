@@ -96,6 +96,12 @@ These rules are architecture requirements, not UI preferences.
 - "Confirmed" means the provider says the email passed its checks. It does not mean the email is safe, and the page never says it is. When the provider adds no result, the page says nothing.
 - A Reply-To on another website is shown but only flags an email from a well-known name, because small businesses often use a free mail address for replies.
 
+## The demo (v0.76)
+
+- The demo is a static copy of the inbox page with invented sample mail. It has no server, no sign-in, no mailbox, no AI and no storage of its own, and it holds no real data of any kind.
+- It is its own Cloudflare Pages project, separate from the website and from any Enveliq install. Its Content-Security-Policy forbids every network connection (`connect-src 'none'`, `default-src 'none'`) and allows only its own scripts, each by a fingerprint computed at build time. It cannot be framed and sends no referrer.
+- The build refuses to produce a page that loads a script from a file, so the fingerprints always cover everything that runs. A browser check fails if the demo asks for anything beyond its own page and pictures.
+
 ## Backup and restore, and Export my data (v0.75)
 
 - A backup is a copy of the vault file as it is stored, so it holds only ciphertext. It does not include the key file (which lives outside the data folder) and the passphrase is never written into it. Anyone who gets a backup still needs the passphrase or the key file. Files are written with owner-only permissions in a folder only the Enveliq user can open.

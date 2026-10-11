@@ -2,6 +2,16 @@
 
 Newest first. Each entry says what changed for people and which parts of the code it touches. The history of earlier versions is in [VERSION_HISTORY.md](VERSION_HISTORY.md).
 
+## v0.76
+
+**The demo.** A made-up copy of the inbox that anyone can open, published separately from the website.
+
+- `demo/build.mjs` (new): reads `prototype/index.html` and makes three small changes: a banner saying the mail is made up and nothing is saved, the title "Enveliq demo", and the page's mode set to "preview" from the start so it never looks for a server. It writes `demo/dist` (the page and `brand/`) and a `_headers` file.
+- `_headers` carries the demo's own strict rules: `connect-src 'none'`, `default-src 'none'`, scripts allowed only by their SHA-256 fingerprints (computed at build, so a changed script can never be forgotten), no framing, no referrer, `nosniff`, a locked-down Permissions-Policy.
+- Built as its own Cloudflare Pages project (root `demo`, command `node build.mjs`, output `dist`, domain `demo.enveliq.app`), separate from the website, with no server, no sign-in and no data of any kind. Nothing in the running app changes.
+- `website/src/home.html`: a "Try the demo" button.
+- Tests: `scripts/check_demo.mjs` (added to CI; desktop and phone). Docs: new `docs/DEMO.md`.
+
 ## v0.75
 
 **Backup and restore, and Export my data.** Administrators can back up, download and restore the vault; everyone can export their own data.
