@@ -49,5 +49,6 @@ Run `docker compose exec -it enveliq python -m backend.vault_key use-passphrase`
 
 - There is no idle lock and the Lock button is disabled (it would only unlock again).
 - Automatic sync keeps working after restarts.
+- Administrators can offer "Keep me signed in on this device" (Administration, Sign-in rules, up to 14 days). It needs this key file or key: with a typed passphrase Enveliq still locks itself after a while with nobody using it, which signs everyone out. Restarting Enveliq signs everyone out too.
 - If the key is wrong, missing or too short, Enveliq stays locked and the unlock page says which. You can still type the key on that page.
 - The key is never logged, shown or sent anywhere.
