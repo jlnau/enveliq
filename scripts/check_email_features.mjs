@@ -167,6 +167,56 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.close();
 }
 
+// ---- A gentle check before a new email leaves: no subject, forgotten attachment ----
+{
+  const server = makeServer();
+  const { page, errors } = await open(server);
+  const fill = async (subject, text) => {
+    await page.click("#newMailBtn");
+    await page.locator("#nmTo input").fill("beth@example.invalid"); await page.keyboard.press("Enter");
+    await page.fill("#nmSubject", subject); await page.fill("#nmText", text);
+  };
+  const sends = () => server.calls.filter((c) => c[0] === "send").length;
+  await fill("", "Hi, are you free on Saturday?");
+  await page.click("#nmSend");
+  await page.waitForSelector("#sendWarn.open");
+  check("no subject: a calm check appears and nothing has been sent", (await page.locator("#sendWarnList").innerText()).includes("no subject") && sends() === 0);
+  await page.waitForFunction(() => document.activeElement && document.activeElement.id === "sendWarnNo");
+  check("the safe button, Go back, has the focus", await page.evaluate(() => document.activeElement && document.activeElement.id === "sendWarnNo"));
+  await shot(page, "send-warning");
+  await page.click("#sendWarnNo");
+  check("Go back keeps the email open and puts the cursor in the subject", (await page.locator("#newMail").evaluate((e) => e.classList.contains("open"))) && !(await page.locator("#sendWarn").evaluate((e) => e.classList.contains("open"))) && await page.evaluate(() => document.activeElement.id === "nmSubject"));
+  await page.click("#nmSend"); await page.waitForSelector("#sendWarn.open");
+  await page.keyboard.press("Escape");
+  check("Escape closes the check and does not close the email", !(await page.locator("#sendWarn").evaluate((e) => e.classList.contains("open"))) && (await page.locator("#newMail").evaluate((e) => e.classList.contains("open"))) && sends() === 0);
+  await page.click("#nmSend"); await page.waitForSelector("#sendWarn.open");
+  await page.click("#sendWarnYes");
+  await page.waitForFunction(() => !document.getElementById("newMail").classList.contains("open"));
+  check("Send anyway sends it, once", sends() === 1 && server.calls.find((c) => c[0] === "send")[1].subject === "");
+
+  await fill("Photos", "I have attached the photos.");
+  await page.click("#nmSend"); await page.waitForSelector("#sendWarn.open");
+  check("mentioning an attachment with none attached gets a check", (await page.locator("#sendWarnList").innerText()).includes("nothing is attached") && sends() === 1);
+  await page.click("#sendWarnNo");
+  await page.setInputFiles("#nmFile", { name: "photos.png", mimeType: "image/png", buffer: PNG });
+  await page.waitForFunction(() => document.querySelector("#nmFiles")?.innerText.includes("photos.png"), null, { timeout: 5000 });
+  await page.click("#nmSend");
+  await page.waitForFunction(() => !document.getElementById("newMail").classList.contains("open"));
+  check("with the file attached it sends with no check", sends() === 2);
+
+  await fill("Photos", "Here you go.\n> the attached one is old\nSee you soon.");
+  await page.click("#nmSend");
+  await page.waitForFunction(() => !document.getElementById("newMail").classList.contains("open"));
+  check("a quoted line that says 'attached' does not count", sends() === 3);
+
+  await fill("Hello", "Just checking in.");
+  await page.click("#nmSend");
+  await page.waitForFunction(() => !document.getElementById("newMail").classList.contains("open"));
+  check("an ordinary email sends with no check", sends() === 4);
+  check("no script errors", errors.length === 0);
+  await page.close();
+}
+
 // ---- Undo send for a new email ----
 {
   const server = makeServer({ undo: 20 });

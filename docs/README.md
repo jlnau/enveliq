@@ -32,6 +32,7 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 - [Backup and restore, and Export my data](BACKUP.md)
 - [The demo](DEMO.md)
 - [Undo for Reviewed, Archive and Bin](UNDO.md)
+- [Checks before sending](SEND_CHECKS.md) (a gentle question if a new email has no subject or a forgotten attachment)
 - [Trips](TRIPS.md) (flights, stays and hire cars, put together and added to your calendar)
 - [Messages between people](MESSAGES.md)
 - [Chat with a Hermes agent](AGENT.md)
