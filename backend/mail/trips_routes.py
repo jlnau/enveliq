@@ -5,6 +5,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi import Path as PathParam
+from pydantic import StrictBool
 
 from ..models import StrictModel
 from ..security import Session
@@ -14,7 +15,7 @@ BookingId = Annotated[str, PathParam(pattern=r"^v[0-9a-f]{23}$")]
 
 
 class SettingsBody(StrictModel):
-    calendar: bool
+    calendar: StrictBool
 
 
 def build_trips_router(ctx: Any) -> APIRouter:
