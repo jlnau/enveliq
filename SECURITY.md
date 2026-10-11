@@ -526,3 +526,13 @@ New email, the address book, Sent and attachment previews are each optional. The
 - **Address book.** Names and email addresses only, one encrypted record per person (`contacts:<user id>`) under the vault's master key, never shared between people, at most 5,000 entries, addresses validated and names stripped of control characters and angle brackets. Entries come from senders Enveliq has read, people written to, and an imported vCard that the browser parses and previews before anything is sent to the server. Remembering automatically can be switched off by the person. Deleting one person or the whole book is always allowed, even when the feature is switched off.
 - **Sent.** A read-only view of the Sent folder (opened with EXAMINE, never changed), limited to the last 14 days and the newest 100, fetched when the page is opened, returned with `Cache-Control: no-store` and never stored. The folder is found by its special-use flag or usual names; Proton Bridge uses `Sent`. Whether a sent email appears there depends on the mail provider saving a copy.
 - **Pictures and attachments.** The email is fetched from the mailbox for each request and the bytes are returned from memory with `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`. Only PNG, JPEG, GIF and WebP can be previewed, and only when the request asks for a preview; SVG, PDF and everything else is sent as a download (`application/octet-stream`, `Content-Disposition: attachment`) and never rendered by the page. The page's policy allows `img-src blob:` for these previews and nothing else new. Pictures loaded from the internet are still never loaded (tracking pixels, server-side request risk); the page only says how many were left out. Pictures that are part of the message itself show automatically when previews are on, up to six small ones.
+
+## Important people
+
+A short list of the sender addresses a person wants to see first.
+
+- **What is kept.** Email addresses and optional names that the person typed or chose, nothing from any email. One encrypted record per person (`important:<user id>`) under the vault's master key, at most 200 entries.
+- **Who can see it.** Only that person. The server takes the person from the signed-in session, never from the page; one person's list is never returned to another. Administrators have no route to it.
+- **What the server does with it.** Nothing. It never reads mail to apply it: the page sorts the person's own list on the person's own screen.
+- **Your data.** It is part of Export my data, and it is forgotten when the person is removed.
+- Requests are validated (`extra: forbid`, address pattern, length), rate limited and `no-store`.

@@ -20,6 +20,7 @@ PLAIN_RECORDS = {
     "trips": "trips:",
     "waiting_for_replies": "wait:",
     "writing_help": "writehelp:",
+    "important_people": "important:",
     "assistant_chats": "agent:",
 }
 # Never copied out of a record, wherever they appear.

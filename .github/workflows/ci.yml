@@ -84,6 +84,8 @@ jobs:
         run: node scripts/check_backup.mjs
       - name: The demo (made-up mail, no server)
         run: node scripts/check_demo.mjs
+      - name: Important people (simulated server)
+        run: node scripts/check_important_people.mjs
       - name: Trips page and Home card (simulated server)
         run: node scripts/check_trips.mjs
       - name: Subscriptions page and Home card (simulated server)
