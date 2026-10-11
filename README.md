@@ -180,6 +180,7 @@ All the guides are listed, by what you want to do, in the [**documentation index
 <details>
 <summary><b>What changed recently</b> (latest five versions)</summary>
 
+- **v0.85**: **Install Enveliq on your phone, and hear about new email.** Android's browser (and others) can now offer **Install app**: Enveliq gets its own icon and opens like an app. Tapping a notification from Enveliq now opens Enveliq at that exact email, even if the app was closed. A new, optional **Tell me when new email arrives** switch in Settings, Reminders sends one short message when Enveliq finds new email for you, to the places you already chose for reminders. It is off until you switch it on, it only says how many emails arrived unless you also allow the sender's name and the subject, and it stays quiet during your quiet hours. See [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md).
 - **v0.79**: **The public status page says less.** Before anyone signs in, Enveliq's status page now says only what the sign-in, setup and unlock pages need. It no longer shows the version, the encryption settings or the public address, and it says whether Enveliq unlocks itself from a key file only while the vault is closed. Signed-in people see the version in the inbox; administrators see the technical detail. This came from a read-only security probe of the live site.
 - **v0.78**: **Licence changed to AGPL-3.0.** Enveliq is now released under the GNU Affero General Public Licence, version 3, instead of MIT. Using, changing and sharing it stays free. The one new rule: if you change it and let other people use your version over a network, you share your changes under the same licence. The Terms of use page says so in plain words.
 - **v0.77**: **Help links go to the Enveliq website.** The "Open the guide" links in Settings, Administration, the setup guide and the plain-http warning now open the guides on the Enveliq website (enveliq.app) instead of the project's GitHub pages, so they are easier to read and need no GitHub account.
@@ -189,7 +190,7 @@ All the guides are listed, by what you want to do, in the [**documentation index
 The full list is in [docs/VERSION_HISTORY.md](docs/VERSION_HISTORY.md), and a more technical one is in the [change log](docs/CHANGELOG.md).
 </details>
 
-Current version: **v0.79**
+Current version: **v0.85**
 
 ## For developers
 

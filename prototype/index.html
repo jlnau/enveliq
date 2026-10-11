@@ -6,6 +6,8 @@
 <title>Enveliq</title>
 <link rel="icon" type="image/webp" href="/brand/enveliq-icon-128.webp">
 <link rel="apple-touch-icon" href="/brand/enveliq-icon-256.webp">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0d0f14">
 <script>try{var t=localStorage.getItem("enveliq-theme");if(t==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}</script>
 <style>
 :root{
@@ -1471,6 +1473,31 @@ function syncHash(){
   const h=wantedHash();
   if((location.hash||"")===h||/^#google-calendar=/.test(location.hash||""))return;
   try{history.replaceState(history.state,"",location.pathname+location.search+h)}catch{}
+}
+// A notification (or a link) can name one email: /?open=<mailbox id>:<email id>. The page moves to that email.
+function openFromLink(raw,fromAddress,quiet){
+  let u;try{u=new URL(raw,location.href)}catch{return false}
+  if(u.origin!==location.origin||u.pathname!=="/")return false;
+  const want=u.searchParams.get("open");if(!want)return false;
+  if(fromAddress){try{history.replaceState(history.state,"",location.pathname+location.hash)}catch{}}
+  const i=want.indexOf(":");if(i<1)return false;
+  const acct=want.slice(0,i),mid=want.slice(i+1);
+  const m=data.find(x=>x.real&&x.real.accountId===acct&&x.real.messageId===mid&&x.owner===currentUser.id);
+  if(!m){if(!quiet)toast("That email is no longer in your list.",4000);return false}
+  query="";$("search").value="";document.body.classList.remove("msearch");
+  filter=isSnoozed(m)?"snoozed":m.status==="inbox"?"all":m.status;
+  document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));
+  expanded.add(`row-${m.id}`);paneId=m.id;if(view.layout==="screen")readerOpen=true;
+  render();
+  const el=document.querySelector(`[data-expand="row-${m.id}"],[data-pick="${m.id}"]`);if(el&&el.scrollIntoView)el.scrollIntoView({block:"center"});
+  return true;
+}
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.addEventListener("message",async e=>{
+    const d=e.data;if(!d||d.type!=="enveliq-open"||typeof d.url!=="string"||!stateReady||!window.__me)return;
+    let found=openFromLink(d.url,false,true);
+    if(!found){try{await loadRealMail(window.__me)}catch{}found=openFromLink(d.url)}   // the email may have arrived since the list was last read
+  });
 }
 function restorePage(){
   const m=/^#\/(settings|admin)\/([a-z]*)$/.exec(location.hash||""),p=/^#\/([a-z]+)$/.exec(location.hash||"");
@@ -3971,7 +3998,7 @@ async function bootBackendMode(){
   menu.append(label,out);$("menuSep").hidden=false;
   render();
   try{
-    window.__me=me;if(await loadRealMail(me)){restoreOpen();restorePage();stateReady=true;$("syncBtn").onclick=()=>syncRealMail(me);render();startAutoRefresh(me);pollOutbox();pollSummaries(true)}
+    window.__me=me;if(await loadRealMail(me)){restoreOpen();restorePage();openFromLink(location.href,true);stateReady=true;$("syncBtn").onclick=()=>syncRealMail(me);render();startAutoRefresh(me);pollOutbox();pollSummaries(true)}
     else{stateReady=true;
       // A brand-new install: show the setup guide once, in this browser.
       let first=false;

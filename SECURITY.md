@@ -102,6 +102,13 @@ These rules are architecture requirements, not UI preferences.
 - It is its own Cloudflare Pages project, separate from the website and from any Enveliq install. Its Content-Security-Policy forbids every network connection (`connect-src 'none'`, `default-src 'none'`) and allows only its own scripts, each by a fingerprint computed at build time. It cannot be framed and sends no referrer.
 - The build refuses to produce a page that loads a script from a file, so the fingerprints always cover everything that runs. A browser check fails if the demo asks for anything beyond its own page and pictures.
 
+## Install as an app and new-email alerts (v0.85)
+
+- `/manifest.webmanifest` and the three icons are public and the same for everyone (name, colours, icon addresses). They hold nothing about any person or mailbox. The page policies allow a manifest only from Enveliq itself (`manifest-src 'self'`).
+- A notification can name one email (`/?open=<mailbox id>:<email id>`). Both ids are random and mean nothing without a signed-in session; the server still decides what the person may see, and an email that belongs to someone else, or is gone, answers "not found" and the page says it is no longer in the list. The service worker follows only addresses on Enveliq's own origin, and the page ignores a message that names another website.
+- New-email alerts are off until each person switches them on. They go only to the channels that person set up, through the same outgoing-request rules as reminders. By default the message holds only a count. If the person also allows details, it holds the sender's display name and the subject (control characters removed, length cut), never the sender's address, the summary or any email text. Services such as ntfy or a chat app can read what is sent, so that second switch says so. Browser push is encrypted before it leaves Enveliq.
+- Nothing is sent during the person's quiet hours, only while the vault is unlocked, and at most one message per person per automatic sync pass. A failed send never stops a sync. Nothing about the alert is stored, and the report feed gets no new fields.
+
 ## What the public status page says (v0.79)
 
 - Before anyone signs in, `GET /api/v1/status` says only whether Enveliq is set up and unlocked and which sign-in methods exist, plus (only while the vault is closed) whether it unlocks itself from a key file and why that failed. It never says the version, the encryption settings or the public address, so the page does not help someone choose a known weakness to try.
