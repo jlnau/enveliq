@@ -159,7 +159,7 @@ def keep_record(message: dict[str, Any], state: str, now: float | None = None) -
     """The stored card for a resolved item: no mailbox link, no attachment details."""
     data = {k: v for k, v in message.items() if k != "id"}
     data.update(state=state, resolved_at=now if now is not None else time.time(),
-                source_locator=None, attachments=[], attachment_summaries=[], from_all_mail=False)
+                source_locator=None, attachments=[], attachment_summaries=[], from_all_mail=False, snoozed_until=None)
     return data
 
 

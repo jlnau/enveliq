@@ -80,6 +80,13 @@ class ReplyBody(StrictModel):
         return header_safe(value)
 
 
+MAX_SNOOZE_DAYS = 366
+
+
+class SnoozeBody(StrictModel):
+    until: float | None = Field(default=None, ge=0, le=4_102_444_800)
+
+
 def fail(err: BridgeError) -> HTTPException:
     return HTTPException(status_code=HTTP_STATUS.get(err.code, 502), detail={"code": err.code, "message": err.message})
 
@@ -95,6 +102,7 @@ def build_mail_router(ctx: Any) -> APIRouter:
     view_limit = SlidingWindowLimiter(max_events=60, window=60)
     ai_limit = SlidingWindowLimiter(max_events=12, window=60)
     send_limit = SlidingWindowLimiter(max_events=20, window=600)
+    snooze_limit = SlidingWindowLimiter(max_events=120, window=60)
     send_total = SlidingWindowLimiter(max_events=200, window=3600, max_keys=1)
     ctx.send_limit, ctx.send_total = send_limit, send_total          # new email shares these limits with replies
 
@@ -327,6 +335,27 @@ def build_mail_router(ctx: Any) -> APIRouter:
         vault.audit({"event": "reply_sent", "actor_user_id": user, "account_id": account_id,
                      "message_id": message_id, "at": time.time()})
         return {"sent": True, "from": sent_from}
+
+    @router.post("/accounts/{account_id}/messages/{message_id}/snooze")
+    def snooze(body: SnoozeBody, account_id: AccountId, message_id: MessageId, response: Response, session: Session = Depends(session_dep)):
+        """Keep an email out of the inbox list until a time the person picked (or bring it back now). The mailbox itself is not touched."""
+        response.headers["Cache-Control"] = "no-store"
+        user = session.principal.user_id
+        owned(account_id, session, "snooze this email")
+        stored = message_of(account_id, message_id)
+        if not snooze_limit.allow(f"snooze:{user}"):
+            raise HTTPException(status_code=429, detail="Too many changes. Wait a minute.")
+        now = time.time()
+        until = body.until
+        if until is not None:
+            if until < now + 30 or until > now + MAX_SNOOZE_DAYS * 86400:
+                raise HTTPException(status_code=422, detail=f"Pick a time between now and {MAX_SNOOZE_DAYS} days away.")
+            if stored.get("state", "unread") != "unread" or stored.get("from_all_mail"):
+                raise HTTPException(status_code=409, detail="Only emails in your inbox can be snoozed.")
+        out = service.mark_snoozed(vault, account_id, message_id, until)
+        vault.audit({"event": "message_snoozed" if until is not None else "message_unsnoozed", "actor_user_id": user, "account_id": account_id,
+                     "message_id": message_id, "at": now})
+        return out
 
     @router.get("/me/outbox")
     def my_outbox(response: Response, session: Session = Depends(session_dep)):
