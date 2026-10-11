@@ -36,7 +36,7 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install -r requirements-dev.txt
-      - run: python -m pytest -q
+      - run: python -m pytest -q 2>&1 | tail -40 | sed 's/^/::error::/'; exit 1
 
   browser:
     name: Browser checks
