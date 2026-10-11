@@ -96,6 +96,13 @@ These rules are architecture requirements, not UI preferences.
 - "Confirmed" means the provider says the email passed its checks. It does not mean the email is safe, and the page never says it is. When the provider adds no result, the page says nothing.
 - A Reply-To on another website is shown but only flags an email from a well-known name, because small businesses often use a free mail address for replies.
 
+## Forward to check (v0.70)
+
+- An administrator chooses one of their **own** mailboxes as the check address and lists who may use it. No other person's mailbox can be chosen. Only that administrator can change it. The check mailbox is not read as an inbox: it is not synced, nothing from it is kept for anyone, and it is hidden from the inbox page.
+- **Only an exactly listed address is answered.** Everyone else is ignored and never answered, so the address cannot be used to send mail at strangers. A sender the provider says was forged (`dmarc=fail`) is ignored too. Mailing lists, bulk mail, other auto-replies and robot senders are ignored, and every answer is marked automatic (`Auto-Submitted`), so two robots cannot start a loop. Limits: 10 answers a day per person, 60 a day for the address. The message is marked read before it is answered, so it is never answered twice.
+- The forwarded email is read once, in memory, and **never stored or logged**. The answer is a fixed sentence or the reasons the Be careful flag uses (host names, never the rest of a link). Plain code, no AI. The answer never says an email is safe: "Nothing odd found" is not a promise.
+- Reading and answering use the mailbox's own login, the same as any mailbox in Enveliq. The settings change is written to the audit log without any address.
+
 ## Unsubscribe hidden on flagged emails (v0.69)
 
 - On an email marked Be careful the page does not offer Unsubscribe at all, so a person cannot reveal the sender's address-check link by accident. This changes only what the page offers; the stored unsubscribe address and the rules that decide which address is safe to open (v0.5x, `unsub.safe_url`) are unchanged.

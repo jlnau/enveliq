@@ -30,6 +30,7 @@ HTTP_STATUS = {
     "too_large": 413,
     "not_found": 404,
     "busy": 409,
+    "check_address": 409,
     "conflict": 409,
     "ai_not_configured": 400,
     "ai_disabled": 400,

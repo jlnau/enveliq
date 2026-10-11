@@ -1088,6 +1088,7 @@ body.on-ship #waitBars{display:none!important}
       <section data-settings-panel="aiinstr" hidden></section>
       <section data-settings-panel="adminaiinstr" hidden></section>
       <section data-settings-panel="adminkeep" hidden></section>
+      <section data-settings-panel="admincheck" hidden></section>
       <section data-settings-panel="adminreport" hidden></section>
       <section data-settings-panel="adminms" hidden></section>
       <section data-settings-panel="adminfeatures" hidden></section>
@@ -2957,6 +2958,7 @@ function buildSettingsNav(mode){
     ["","sso","Sign-in rules & SSO"],
     ["Mail","sync","Automatic sync"],
     ["","adminkeep","Reviewed & archived"],
+    ["","admincheck","Forward to check"],
     ["","adminms","Microsoft sign-in"],
     ["","adminfeatures","Features"],
     ["","adminreminders","Reminders"],
@@ -2994,7 +2996,7 @@ function buildSettingsNav(mode){
 // ---- The real pages, shown inside the pop-ups ----
 // auth.css and the page scripts are loaded once, as one module so their names cannot clash with this page's.
 // Each page lives in its own shadow root, so its styles stay inside it.
-const EMBED_IDS=["profile","accounts","signin","setup","general","aiinstr","users","sso","llm","sync","adminaiinstr","adminkeep","adminreport","adminms","adminfeatures","adminagent","adminreminders","reminders","calendar","addressbook"];
+const EMBED_IDS=["profile","accounts","signin","setup","general","aiinstr","users","sso","llm","sync","adminaiinstr","adminkeep","admincheck","adminreport","adminms","adminfeatures","adminagent","adminreminders","reminders","calendar","addressbook"];
 let embedLoad=null,embedCss="";
 function loadEmbedAssets(){
   if(embedLoad)return embedLoad;
@@ -3037,7 +3039,7 @@ async function openEmbedNow(id){
     host._mount.replaceChildren();
     const me=await E.api("/me"),P=new URLSearchParams();
     const pages={profile:()=>E.profilePage(me),accounts:()=>E.mailboxesPage(me),signin:()=>E.accountPage(me,P),setup:()=>E.welcomePage(me,P),
-      general:()=>E.generalPage(me),aiinstr:()=>E.aiInstructionsPage(me),adminaiinstr:()=>E.adminPage(me,"instr"),adminkeep:()=>E.adminPage(me,"keep"),adminreport:()=>E.adminPage(me,"reporting"),adminms:()=>E.adminPage(me,"microsoft"),adminfeatures:()=>E.adminPage(me,"features"),adminagent:()=>E.adminPage(me,"agent"),adminreminders:()=>E.adminPage(me,"reminders"),reminders:()=>E.remindersPage(me),calendar:()=>E.syncPage(me),addressbook:()=>E.addressBookPage(me),users:()=>E.adminPage(me,"users"),sso:()=>E.adminPage(me,"signin"),llm:()=>E.adminPage(me,"ai"),sync:()=>E.adminPage(me,"sync")};
+      general:()=>E.generalPage(me),aiinstr:()=>E.aiInstructionsPage(me),adminaiinstr:()=>E.adminPage(me,"instr"),adminkeep:()=>E.adminPage(me,"keep"),admincheck:()=>E.adminPage(me,"check"),adminreport:()=>E.adminPage(me,"reporting"),adminms:()=>E.adminPage(me,"microsoft"),adminfeatures:()=>E.adminPage(me,"features"),adminagent:()=>E.adminPage(me,"agent"),adminreminders:()=>E.adminPage(me,"reminders"),reminders:()=>E.remindersPage(me),calendar:()=>E.syncPage(me),addressbook:()=>E.addressBookPage(me),users:()=>E.adminPage(me,"users"),sso:()=>E.adminPage(me,"signin"),llm:()=>E.adminPage(me,"ai"),sync:()=>E.adminPage(me,"sync")};
     await pages[id]();
   }catch(er){host.textContent=er.message}
 }
@@ -3421,7 +3423,7 @@ document.addEventListener("click",e=>{
   const p=e.target.closest("[data-provider]");if(p){if(!authorizeAdmin())return;provider=p.dataset.provider;document.querySelectorAll(".provider").forEach(x=>x.classList.toggle("active",x===p));providerFields();return}
   const tab=e.target.closest("[data-settings-tab]");if(tab){
     const id=tab.dataset.settingsTab;
-    const adminOnly=["users","sso","llm","sync","adminkeep","adminms","adminfeatures","adminreminders","adminaiinstr","adminagent","adminreport","processing","providers","automation","privacy","security","system"].includes(id);
+    const adminOnly=["users","sso","llm","sync","adminkeep","admincheck","adminms","adminfeatures","adminreminders","adminaiinstr","adminagent","adminreport","processing","providers","automation","privacy","security","system"].includes(id);
     if(adminOnly&&!authorizeAdmin())return;
     document.querySelectorAll("[data-settings-tab]").forEach(x=>x.classList.toggle("active",x===tab));try{tab.scrollIntoView({inline:"center",block:"nearest"})}catch(_){}
     document.querySelectorAll("[data-settings-panel]").forEach(x=>x.hidden=x.dataset.settingsPanel!==id);
@@ -3518,7 +3520,7 @@ function realTime(sec){
 const realIds=new Map();let realNextId=1;
 async function loadRealMail(me){
   const list=await secureBackendRequest("/api/v1/accounts",{method:"GET",headers:{}});
-  const bridges=list.filter(a=>(a.auth_method==="proton_bridge"||a.auth_method==="imap")&&a.owner_user_id===me.id);
+  const bridges=list.filter(a=>!a.check_address&&(a.auth_method==="proton_bridge"||a.auth_method==="imap")&&a.owner_user_id===me.id);
   if(!bridges.length)return false;
   const items=[];
   const accts=[];

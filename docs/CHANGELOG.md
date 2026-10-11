@@ -2,6 +2,17 @@
 
 Newest first. Each entry says what changed for people and which parts of the code it touches. The history of earlier versions is in [VERSION_HISTORY.md](VERSION_HISTORY.md).
 
+## v0.70
+
+**Forward to check.** Forward a suspicious email to a check address and get one line back.
+
+- `backend/mail/checkbox.py` (new): `CheckBox` looks at one mailbox an administrator chose (recent unread mail only, at most 8 per pass, every 2 minutes while automatic checking is on). For an email from a listed person it reads the attached email (`message/rfc822`) once in memory and answers with `verdict()`: `Be careful: ` plus up to four reasons from the same plain rules as the Be careful flag, or `Nothing odd found. That does not prove it is safe.` An email that was not attached is judged by its links only, and the answer says it could not see the sender. An email with nothing to check gets a short how-to. Nothing from the forwarded email is stored or logged, and no AI is used.
+- Safety rules in `eligible()`: only an exactly listed address is answered (anyone else is ignored, never answered); no answer when the provider's own result says the sender was forged (`dmarc=fail`); no answer to mailing lists, bulk mail, `Auto-Submitted`, auto-responders, `mailer-daemon`/`noreply` senders or the check address itself; every answer is sent as `Auto-Submitted: auto-replied` with `Precedence: bulk`; 10 answers a day per person and 60 a day for the address; the message is marked read before it is answered, so it can never be answered twice.
+- `backend/mail/check_routes.py` (new): `GET/PUT /api/v1/admin/check-address`, administrators only. Only the administrator's own mailboxes can be chosen (anything else answers "not found"), only the administrator who chose it can change it, addresses are validated and de-duplicated (at most 50), and the change is audited without any address.
+- `backend/mail/service.py`, `scheduler.py`, `backend/app.py`: the check mailbox is never read as an inbox. Sync and "All emails" refuse it (`check_address`, 409), automatic sync skips it, and the mailbox list marks it (`check_address`) so the page leaves it out.
+- `web/static/auth.js`, `prototype/index.html`: Administration, **Forward to check** (mailbox, people who may use it, last look, a warning when automatic checking is off).
+- Tests: `tests/test_checkbox.py`, `scripts/check_check_address.mjs` (added to CI; desktop and phone). Docs: `docs/SCAM_WARNING.md`, `SECURITY.md`, the tour and front page.
+
 ## v0.69
 
 **Unsubscribe is hidden on an email marked Be careful.**
