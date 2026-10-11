@@ -51,6 +51,7 @@ const NAV = [
     ["docs/DEMO.md", "The demo"],
     ["docs/UNDO.md", "Undo"],
     ["docs/SEND_CHECKS.md", "Checks before sending"],
+    ["docs/IMPORTANT_PEOPLE.md", "Important people"],
     ["docs/WRITING_HELP.md", "Writing help"],
     ["docs/SCAM_WARNING.md", "The Be careful flag"],
     ["docs/SNOOZE.md", "Snooze"],
