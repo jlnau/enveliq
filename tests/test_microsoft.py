@@ -95,22 +95,22 @@ def accounts(client):
 
 def test_outlook_is_unavailable_until_an_administrator_sets_up_microsoft_sign_in(env):
     appm, admin, _, _ = env
-    create_user(admin, "beth")
-    beth = sign_in(appm, "beth")
+    create_user(admin, "cara")
+    cara = sign_in(appm, "cara")
     by_id = lambda c: {p["id"]: p for p in c.get("/api/v1/mail/providers").json()}
     assert by_id(admin)["outlook"]["status"] == "unavailable" and "Administration" in by_id(admin)["outlook"]["unavailable_reason"]
-    assert "Ask an administrator" in by_id(beth)["outlook"]["unavailable_reason"]
+    assert "Ask an administrator" in by_id(cara)["outlook"]["unavailable_reason"]
     assert configure(admin).status_code == 200
-    for c in (admin, beth):
+    for c in (admin, cara):
         outlook = by_id(c)["outlook"]
         assert outlook["status"] == "ready" and outlook["oauth"] == "microsoft" and outlook["steps"]
 
 
 def test_settings_are_for_administrators_are_checked_and_the_secret_is_never_returned(env):
     appm, admin, _, _ = env
-    create_user(admin, "beth")
-    beth = sign_in(appm, "beth")
-    assert beth.get("/api/v1/admin/microsoft").status_code == 403 and beth.put("/api/v1/admin/microsoft", json={"enabled": True, "client_id": CLIENT_ID}).status_code == 403
+    create_user(admin, "cara")
+    cara = sign_in(appm, "cara")
+    assert cara.get("/api/v1/admin/microsoft").status_code == 403 and cara.put("/api/v1/admin/microsoft", json={"enabled": True, "client_id": CLIENT_ID}).status_code == 403
     assert configure(admin, client_id="not-a-guid").status_code == 400
     assert configure(admin, client_id="").status_code == 400
     assert configure(admin, tenant="bad tenant!").status_code == 400
@@ -261,13 +261,13 @@ def test_a_mailbox_that_refuses_the_connection_is_not_kept(env):
 def test_someone_elses_browser_cannot_finish_my_sign_in(env):
     appm, admin, _, _ = env
     configure(admin)
-    create_user(admin, "beth")
-    beth = sign_in(appm, "beth")
+    create_user(admin, "cara")
+    cara = sign_in(appm, "cara")
     started = admin.post("/api/v1/mail/microsoft/start", json={"display_name": "Outlook"}).json()["url"]
     state = parse_qs(urlsplit(started).query)["state"][0]
-    beth.cookies.set("enveliq_flow", admin.cookies.get("enveliq_flow") or "")
-    done = beth.get(f"/api/v1/mail/microsoft/callback?code=x&state={state}", follow_redirects=False)
-    assert "ms_expired" in done.headers["location"] and accounts(beth) == []
+    cara.cookies.set("enveliq_flow", admin.cookies.get("enveliq_flow") or "")
+    done = cara.get(f"/api/v1/mail/microsoft/callback?code=x&state={state}", follow_redirects=False)
+    assert "ms_expired" in done.headers["location"] and accounts(cara) == []
 
 
 def test_a_locked_vault_forgets_the_access_tokens_and_signed_out_people_cannot_start(env):

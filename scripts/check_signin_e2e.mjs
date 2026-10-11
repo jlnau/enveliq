@@ -84,8 +84,8 @@ await (async () => {
   await p.fill('#code', totp(secret, 1)); await p.click('text=Verify'); await p.waitForURL(BASE + '/'); step('password + authenticator code sign-in works');
 
   await p.goto(BASE + '/admin'); await p.waitForSelector('text=Add a person');
-  await p.fill('#nu_username', 'beth'); await p.fill('#nu_name', 'Beth'); await p.fill('#nu_password', 'Temporary pw 2026 e2e');
-  await p.click('text=Add user'); await p.waitForSelector('td >> text=beth'); step('admin added user beth');
+  await p.fill('#nu_username', 'cara'); await p.fill('#nu_name', 'Cara'); await p.fill('#nu_password', 'Temporary pw 2026 e2e');
+  await p.click('text=Add user'); await p.waitForSelector('td >> text=cara'); step('admin added user cara');
   await p.click('summary:has-text("Set up single sign-on")');
   await p.fill('#sso_issuer', 'https://auth.example.com/application/o/enveliq/'); await p.fill('#sso_client_id', 'enveliq');
   await p.screenshot({ path: `${process.env.ENVELIQ_E2E_SHOTS || '.'}/e2e-admin.png`, fullPage: true });
