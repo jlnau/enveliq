@@ -1257,24 +1257,26 @@ async function remindersPage(me) {
     box("rs_morning", s.morning_on, "Morning summary", "One message each morning saying what is due today."),
     field("Send it at", input("rs_morning_time", { type: "time", value: s.morning_time })),
     box("rs_due", s.due_on, "Remind me when something is due", "Sent once, when a task is due or when a new task for today appears."),
+    box("rs_mail", s.mail_on, "Tell me when new email arrives", "One short message each time Enveliq finds new email for you, to the places chosen below. Quiet hours apply: nothing is sent then, and the emails wait in your inbox."),
     more("Nudges, quiet hours and privacy",
       h("div", { class: "grid2" },
         field("Nudge again after (hours)", input("rs_hours", { type: "number", min: "1", max: "12", value: String(s.repeat_hours) }), "If a task is still open, Enveliq nudges you again after this long."),
         field("Nudge at most (times)", input("rs_max", { type: "number", min: "0", max: "5", value: String(s.repeat_max) }), "0 means one reminder and no nudges.")),
       box("rs_quiet", s.quiet_on, "Quiet hours", "Nothing is sent during these hours. What was held is sent when they end."),
       h("div", { class: "grid2" }, field("From", input("rs_from", { type: "time", value: s.quiet_from })), field("Until", input("rs_to", { type: "time", value: s.quiet_to }))),
-      box("rs_titles", s.show_titles, "Show task titles in reminders", "Switch this off for private mode: reminders only say that something is due, so nothing about your mail appears on a lock screen or in a chat service.")),
+      box("rs_titles", s.show_titles, "Show task titles in reminders", "Switch this off for private mode: reminders only say that something is due, so nothing about your mail appears on a lock screen or in a chat service."),
+      box("rs_maildetails", s.mail_details, "Show who a new email is from and its subject", "Off by default: the message only says how many emails arrived. Switch this on to see the sender's name and the subject on your lock screen or in a chat service.")),
     h("p", { class: "hint", text: `Times are in your time zone (${ov.tz}).` }),
     h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" })));
   onSubmit(form, async () => {
     const g = id => form.querySelector("#" + id);
     await api("/me/notifications/settings", { method: "PUT", body: { morning_on: g("rs_morning").checked, morning_time: g("rs_morning_time").value || "08:00", due_on: g("rs_due").checked,
-      repeat_hours: Number(g("rs_hours").value) || 2, repeat_max: Math.max(0, Number(g("rs_max").value) || 0), quiet_on: g("rs_quiet").checked, quiet_from: g("rs_from").value || "21:00", quiet_to: g("rs_to").value || "07:00", show_titles: g("rs_titles").checked } });
+      repeat_hours: Number(g("rs_hours").value) || 2, repeat_max: Math.max(0, Number(g("rs_max").value) || 0), quiet_on: g("rs_quiet").checked, quiet_from: g("rs_from").value || "21:00", quiet_to: g("rs_to").value || "07:00", show_titles: g("rs_titles").checked, mail_on: g("rs_mail").checked, mail_details: g("rs_maildetails").checked } });
     toast("Saved");
   });
   const mine = ov.channels.filter(c => c.allowed);
   show(...chrome(me, "reminders", h("h1", { text: "Reminders" }),
-    h("p", { class: "lead", text: "Your tasks always appear in Enveliq under Today. Add any of these if you also want a nudge on your phone or in a chat app. You can use several at once. Enveliq never sends the email itself, only the task." }),
+    h("p", { class: "lead", text: "Your tasks always appear in Enveliq under Today. Add any of these if you also want a nudge on your phone or in a chat app. You can use several at once. Enveliq never sends the email itself: only your tasks and, if you switch it on below, a short note that new email has arrived." }),
     guideNote("NOTIFICATIONS.md", "Step by step for each way of being reminded:", "Open the reminders guide"),
     h("section", { class: "section" }, h("h2", { text: "When to remind me" }), form),
     h("section", { class: "section" }, h("h2", { text: "Where to send reminders" }),

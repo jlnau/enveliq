@@ -148,7 +148,7 @@ def _send_browser(values: dict[str, Any], note: dict[str, Any], ctx: dict[str, A
     user_id, vault = ctx["user_id"], ctx["vault"]
     key = vapid_key(vault)
     origin = getattr(notifier, "origin", "")
-    payload = json.dumps({"title": note["title"], "body": note["body"], "url": note.get("url") or "/"}, ensure_ascii=False).encode()
+    payload = json.dumps({"title": note["title"], "body": note["body"], "url": note.get("url") or note.get("path") or "/"}, ensure_ascii=False).encode()
     stored = notifier.get_values(user_id, "browser")
     sent, last, dead = 0, None, []
     for d in devices(stored):
