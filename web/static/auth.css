@@ -202,3 +202,10 @@ ol.guide-steps li > p{margin:2px 0 0}
 .avatar-edit{display:flex;gap:16px;align-items:center}
 .avatar-lg{width:72px;height:72px;border-radius:50%;object-fit:cover;flex:none;background:var(--panel2);border:1px solid var(--line)}
 .avatar-lg.initials{display:grid;place-items:center;font-weight:800;font-size:22px;color:var(--text)}
+
+.bklist{list-style:none;margin:16px 0;padding:0;display:grid;gap:10px}
+.bkrow{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+.bkrow .help{grid-column:1 / -1;margin:0}
+.bkact{display:flex;gap:8px;flex-wrap:wrap}
+@media (max-width:560px){.bkrow{grid-template-columns:1fr}}
+a.btn{text-decoration:none}

@@ -2,6 +2,17 @@
 
 Newest first. Each entry says what changed for people and which parts of the code it touches. The history of earlier versions is in [VERSION_HISTORY.md](VERSION_HISTORY.md).
 
+## v0.75
+
+**Backup and restore, and Export my data.** Administrators can back up, download and restore the vault; everyone can export their own data.
+
+- `backend/backup.py` (new): `BackupManager` copies the vault with SQLite's own backup call into `backups/` in the data folder, as `enveliq-<date>-<time>-<manual|auto|before-restore>.sqlite3`, written as a private (mode 0600) `.partial` file, checked (`integrity_check` and a vault row) and then renamed. It never includes the key file. A background check every ten minutes makes the daily backup (once a day, only while the vault is unlocked), and old automatic ones are pruned (1 to 60 days, default 7); manual and before-restore copies are never pruned. At most 20 manual copies.
+- Restore replaces `global_records`, `accounts`, `messages` and `users` from a backup inside one transaction. It first proves the backup belongs to this vault (its verifier decrypts with the master key in memory), refuses it if the restoring administrator is not in it, and saves a `before-restore` copy. `vault_meta` (the passphrase wrapping) and the audit events are left alone.
+- `backend/backup_routes.py` (new): administrators only. `GET/POST /api/v1/admin/backups`, `PUT /admin/backups/settings`, `GET /admin/backups/{name}/download`, `DELETE /admin/backups/{name}`, `POST /admin/backups/{name}/restore` (the person's own password again through the sign-in limiter, plus the typed word; every session is ended afterwards). Names must match the exact pattern the manager writes, so a path can never be steered. Everything is audited without content; responses are `no-store`.
+- `backend/export.py` (new) and `GET /api/v1/me/export`: one JSON download of the signed-in person's own data, chosen by the session, rate limited and audited. Secret fields are stripped by name as well as left out by design.
+- `web/static/auth.js`, `auth.css`, `prototype/index.html`: Administration, Backup and restore (System group) and a **Your data** section in Settings, General.
+- Tests: `tests/test_backup.py`, `scripts/check_backup.mjs` (added to CI; desktop and phone). Docs: new `docs/BACKUP.md`.
+
 ## v0.74
 
 **Trips.** Flights, stays and hire cars are followed from the emails about them, put together into trips, and added to the person's calendar.

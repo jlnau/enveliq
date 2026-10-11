@@ -96,6 +96,14 @@ These rules are architecture requirements, not UI preferences.
 - "Confirmed" means the provider says the email passed its checks. It does not mean the email is safe, and the page never says it is. When the provider adds no result, the page says nothing.
 - A Reply-To on another website is shown but only flags an email from a well-known name, because small businesses often use a free mail address for replies.
 
+## Backup and restore, and Export my data (v0.75)
+
+- A backup is a copy of the vault file as it is stored, so it holds only ciphertext. It does not include the key file (which lives outside the data folder) and the passphrase is never written into it. Anyone who gets a backup still needs the passphrase or the key file. Files are written with owner-only permissions in a folder only the Enveliq user can open.
+- Only administrators can make, list, download, delete or restore backups. Names are checked against the exact pattern Enveliq writes, so no other file can be named. Download is audited.
+- Restoring needs the vault unlocked, the administrator's own password again (through the sign-in rate limit) and a typed confirmation. A backup from a different vault is refused, and so is one that does not contain the administrator doing it. A copy of the current vault is saved first, the sign-in history is kept, and every session is ended afterwards.
+- A backup holds everyone's data in locked form. Whoever has a backup and the passphrase or key file can read it, so keep downloaded copies as carefully as the key itself. Making a backup does not give administrators any way to read other people's mail or messages through Enveliq.
+- Export my data gives a person only their own records, chosen by the signed-in session on the server. It never includes passwords, tokens, API keys, authenticator or passkey secrets, the calendar link, or another person's mail, and the export is audited without its content.
+
 ## Trips (v0.74)
 
 - The AI reads each email once, with the same instructions and limits as every summary, and only copies what the email says. It is told not to work out any date or time, and Enveliq does not use a date it did not read from the email's words and check itself. Nothing the AI returns is trusted: every value is cut to a short length, control characters are removed, only known kinds and statuses are accepted, at most six bookings are taken from one email and a date far from the email's own date is ignored.
