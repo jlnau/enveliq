@@ -1,5 +1,11 @@
 # Automated checks for every push and pull request.
 # Actions are pinned to full commit hashes; Dependabot proposes updates.
+#
+# Where the checks run: on GitHub's own machines by default. To use your own machine instead (for example while the
+# repository is private and the free minutes run low), add a repository VARIABLE (Settings, Secrets and variables,
+# Actions, Variables) named RUNNER_LABELS with the value ["self-hosted","linux","x64"]. Delete the variable to go back.
+# On your own machine, install the browser libraries once: sudo npx playwright@1.56.0 install-deps chromium
+# Never leave it set on a public repository: strangers' pull requests could then run code on your machine.
 name: Checks
 
 on:
@@ -18,7 +24,7 @@ concurrency:
 jobs:
   tests:
     name: Backend tests
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS || '["ubuntu-24.04"]') }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -32,7 +38,7 @@ jobs:
 
   browser:
     name: Browser checks
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS || '["ubuntu-24.04"]') }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -46,7 +52,8 @@ jobs:
           node-version: "22"
       - run: pip install -r requirements.txt
       - run: npm install --no-save --no-package-lock playwright@1.56.0
-      - run: npx playwright install --with-deps chromium
+      # --with-deps needs administrator rights. On GitHub's machines that is automatic; on your own machine install the libraries once yourself.
+      - run: npx playwright install ${{ vars.RUNNER_LABELS == '' && '--with-deps' || '' }} chromium
       - name: Prototype escaping check
         run: node scripts/check_prototype_injection.mjs
       - name: Inbox page with real mail (simulated server)
@@ -88,7 +95,7 @@ jobs:
 
   website:
     name: Website builds
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS || '["ubuntu-24.04"]') }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -104,7 +111,7 @@ jobs:
 
   docker:
     name: Docker image
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS || '["ubuntu-24.04"]') }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -161,7 +168,7 @@ jobs:
 
   audit:
     name: Dependency scan
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS || '["ubuntu-24.04"]') }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -193,7 +200,7 @@ jobs:
     name: Publish images
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [tests, browser, docker, audit]
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS || '["ubuntu-24.04"]') }}
     timeout-minutes: 20
     permissions:
       contents: read
