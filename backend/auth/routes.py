@@ -8,7 +8,7 @@ from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, StrictInt
 
 from ..crypto_vault import InvalidPassphrase, VaultAlreadyInitialized
 from ..models import StrictModel, validate_host
@@ -89,7 +89,7 @@ class AvatarBody(StrictModel):
 class PolicyBody(StrictModel):
     require_mfa: Literal["off", "admins", "everyone"] | None = None
     password_login: Literal["everyone", "admins"] | None = None
-    remember_days: int | None = Field(default=None, ge=0, le=14)
+    remember_days: StrictInt | None = Field(default=None, ge=0, le=14)
     pw_min_length: int | None = Field(default=None, ge=8, le=128)
     pw_min_digits: int | None = Field(default=None, ge=0, le=32)
     pw_min_upper: int | None = Field(default=None, ge=0, le=32)
