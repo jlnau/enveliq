@@ -117,6 +117,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # GitHub's own machines are new for every job, but your own runner is not. Clear anything an earlier or cancelled run left behind
+      # (a container with the same name stops the next run), and do it again at the end.
+      - name: Clear anything left from an earlier run
+        run: |
+          docker rm -f enveliq-ci enveliq-render-ci >/dev/null 2>&1 || true
+          docker network rm enveliq-render-ci-net >/dev/null 2>&1 || true
+          docker volume rm enveliq-ci-data >/dev/null 2>&1 || true
       - run: docker build -t enveliq:ci .
       - name: Start hardened container
         run: |
@@ -165,6 +172,12 @@ jobs:
       - name: Viewer log
         if: always()
         run: docker logs enveliq-render-ci || true
+      - name: Clean up
+        if: always()
+        run: |
+          docker rm -f enveliq-ci enveliq-render-ci >/dev/null 2>&1 || true
+          docker network rm enveliq-render-ci-net >/dev/null 2>&1 || true
+          docker volume rm enveliq-ci-data >/dev/null 2>&1 || true
 
   audit:
     name: Dependency scan
