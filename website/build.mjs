@@ -50,6 +50,7 @@ const NAV = [
     ["docs/WRITING_HELP.md", "Writing help"],
     ["docs/SCAM_WARNING.md", "The Be careful flag"],
     ["docs/SNOOZE.md", "Snooze"],
+    ["docs/SEARCH.md", "Search"],
     ["docs/MESSAGES.md", "Messages between people"],
     ["docs/AGENT.md", "Hermes agent chat"],
   ] },
