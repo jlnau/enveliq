@@ -179,6 +179,12 @@ Passwords are write-only and stored encrypted. Google Calendar has its own conne
 
 New tasks are added with their due date. Done, replied-to and dealt-with tasks are ticked off; removed tasks are deleted. Ticking an item in Home Assistant finishes the task in Enveliq too. If you delete an item in Home Assistant, Enveliq leaves it deleted.
 
+## Trips in your calendar
+
+If you use Trips (see [Trips](TRIPS.md)), your flights, stays and hire cars go in the same calendar as your tasks, through the calendar link, Google Calendar or CalDAV, whichever you set up. They are not added to a Home Assistant To-do list, which is for tasks.
+
+A flight with a departure time is a timed entry. The times are the clock times written in the email, for the place they are for, because Enveliq does not guess a time zone. A stay covers its nights, and a hire car covers its days. If you turn on **Keep titles private**, each entry says only *Enveliq trip*. Switch **Put my trips in my calendar** off on the Trips page to take them out again.
+
 ## Home networks
 
 Enveliq will not call an address on your own network unless an administrator allows it (**Administration, Reminders, Allowed addresses**, or `ENVELIQ_NOTIFY_ALLOWED_HOSTS` in the compose file). This applies to CalDAV and Home Assistant too. See [NOTIFICATIONS.md](NOTIFICATIONS.md).

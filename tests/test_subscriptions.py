@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -267,11 +267,12 @@ def test_the_prompt_asks_for_the_facts_and_forbids_working_out_dates():
 # ---------- through the app ----------
 
 SYD = ZoneInfo("Australia/Sydney")
+SOON = (date.today() + timedelta(days=5)).isoformat()          # the app runs on the real day, so these dates follow it
 
 
 @pytest.fixture
 def env(tmp_path):
-    reply = {**GOOD, "task": None, "action_required": False, "subscription": sub("renewal_notice", renews_on="Fri 16 Oct 2026")}
+    reply = {**GOOD, "task": None, "action_required": False, "subscription": sub("renewal_notice", renews_on=SOON)}
     model = FakeModel(reply=json.dumps(reply))
     appm, client, bridge = start(tmp_path, model)
     yield appm, client, bridge, model
@@ -295,7 +296,7 @@ def test_a_summary_makes_a_subscription_and_the_routes_work(env):
     body = r.json()
     assert body["enabled"] and len(body["items"]) == 1                              # three emails, one subscription
     s = body["items"][0]
-    assert s["service"] == "Streamly" and s["next"]["on"] == "2026-10-16" and s["link"]["host"] == "example.invalid"
+    assert s["service"] == "Streamly" and s["next"]["on"] == SOON and s["link"]["host"] == "example.invalid"
     assert client.put("/api/v1/me/subscriptions/settings", json={"nudge_days": 5}).json()["nudge_days"] == 5
     assert client.put("/api/v1/me/subscriptions/settings", json={"nudge_days": 0}).status_code == 422
     assert client.put("/api/v1/me/subscriptions/settings", json={"nudge_days": 3, "x": 1}).status_code == 422
@@ -352,7 +353,7 @@ def test_an_email_with_a_be_careful_flag_files_nothing(tmp_path):
     bridge = FakeBridge(tmp_path)
     bridge.add(1, raw_email("Your subscription renews", '"PayPal" <help@gmail.example>', "me@example.invalid", message_id="<s1@example.invalid>",
                             extra="Authentication-Results: mx.example; dmarc=fail\r\n"))
-    model = FakeModel(reply=json.dumps({**GOOD, "task": None, "action_required": False, "subscription": sub("renewal_notice", renews_on="Fri 16 Oct 2026")}))
+    model = FakeModel(reply=json.dumps({**GOOD, "task": None, "action_required": False, "subscription": sub("renewal_notice", renews_on=SOON)}))
     (tmp_path / "data").mkdir()
     appm = load_app(tmp_path / "data", ENVELIQ_BRIDGE_CA_FILE=str(bridge.cert_path), ENVELIQ_LLM_URL=model.url, ENVELIQ_LLM_MODEL="test-model")
     client, _ = setup_admin(appm)

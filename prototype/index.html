@@ -361,7 +361,7 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 #newMail .compose-foot small{flex:1;text-align:right}
 .sentview{display:none}
 body.in-sent .sentview{display:block}
-body.in-sent header.top,body.in-sent .filters,body.in-sent #list,body.in-sent .sample-banner,body.in-sent #dueBars,body.in-sent #shipBars,body.in-sent #subBars,body.in-sent #waitBars,body.in-sent #mTitleSub,body.in-sent #peek{display:none!important}
+body.in-sent header.top,body.in-sent .filters,body.in-sent #list,body.in-sent .sample-banner,body.in-sent #dueBars,body.in-sent #shipBars,body.in-sent #subBars,body.in-sent #tripBars,body.in-sent #waitBars,body.in-sent #mTitleSub,body.in-sent #peek{display:none!important}
 .sent-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:6px 0 12px}.sent-top h2{margin:0;font-size:22px}
 .sent-tools{display:flex;gap:8px;align-items:center}
 .sent-note{border:1px solid var(--c-1f3f75);background:var(--c-0c1626);color:var(--c-bfe3ff);border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:12px}
@@ -397,9 +397,9 @@ body.backend .backend-only{display:block}
 body.backend .preview-only,body.backend #vaultSetupBtn{display:none!important}
 .note a{color:var(--c-9fdcff)}
 a.user-option{text-decoration:none}
-body.booting #list,body.booting #dueBars,body.booting #shipBars,body.booting #subBars,body.booting #waitBars,body.booting .sample-banner{display:none!important}
+body.booting #list,body.booting #dueBars,body.booting #shipBars,body.booting #subBars,body.booting #tripBars,body.booting #waitBars,body.booting .sample-banner{display:none!important}
 body.backend:not(.mail-ready) #list{visibility:hidden}
-body.backend:not(.mail-ready) #dueBars,body.backend:not(.mail-ready) #shipBars,body.backend:not(.mail-ready) #subBars,body.backend:not(.mail-ready) #waitBars,body.backend:not(.mail-ready) .sample-banner{display:none!important}
+body.backend:not(.mail-ready) #dueBars,body.backend:not(.mail-ready) #shipBars,body.backend:not(.mail-ready) #subBars,body.backend:not(.mail-ready) #tripBars,body.backend:not(.mail-ready) #waitBars,body.backend:not(.mail-ready) .sample-banner{display:none!important}
 .sample-banner{display:none;margin-bottom:12px}
 body.backend .sample-banner{display:block}
 body.real-mail .sample-banner{display:none}
@@ -627,7 +627,7 @@ body.reader-open{overflow:hidden}
 .tmore{border:0;background:transparent;color:var(--accent);font-size:13px;padding:6px 6px 2px}
 #tasksPage{display:none;padding-top:14px}body.on-tasks #tasksPage{display:block}body.on-tasks .filters,body.on-tasks #list,body.on-tasks .sample-banner{display:none!important}
 
-#shipPage{display:none;padding-top:14px}body.on-ship #shipPage{display:block}body.on-ship .filters,body.on-ship #list,body.on-ship .sample-banner,body.on-ship #dueBars,body.on-ship #shipBars,body.on-ship #subBars,body.on-ship #waitBars{display:none!important}
+#shipPage{display:none;padding-top:14px}body.on-ship #shipPage{display:block}body.on-ship .filters,body.on-ship #list,body.on-ship .sample-banner,body.on-ship #dueBars,body.on-ship #shipBars,body.on-ship #subBars,body.on-ship #tripBars,body.on-ship #waitBars{display:none!important}
 .sp-sub{color:var(--muted);margin:-6px 0 14px;max-width:660px}
 .ocard{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px 16px;margin-bottom:12px;display:grid;gap:10px}
 .ocard.arrive{background:#0f2429;border-color:#1f5560}.ocard.unsure{border-style:dashed;border-color:var(--faint)}
@@ -646,7 +646,7 @@ body.reader-open{overflow:hidden}
 .olinkmail{border:0;background:transparent;color:var(--accent);font:inherit;font-weight:600;text-decoration:underline;text-underline-offset:3px;padding:0;text-align:left;cursor:pointer}.olinkmail:hover{filter:brightness(1.2)}
 .oevents{margin:0;padding:0;list-style:none;border-top:1px solid var(--line)}.oevents li{padding:8px 0;border-bottom:1px solid var(--line);color:var(--muted);font-size:13px}.oevents b{color:var(--text);font-weight:600}
 
-#msgPage{display:none;padding-top:14px}body.on-msg #msgPage{display:block}body.on-msg .filters,body.on-msg #list,body.on-msg .sample-banner,body.on-msg #dueBars,body.on-msg #shipBars,body.on-msg #subBars,body.on-msg #waitBars,body.on-msg #msgBars{display:none!important}
+#msgPage{display:none;padding-top:14px}body.on-msg #msgPage{display:block}body.on-msg .filters,body.on-msg #list,body.on-msg .sample-banner,body.on-msg #dueBars,body.on-msg #shipBars,body.on-msg #subBars,body.on-msg #tripBars,body.on-msg #waitBars,body.on-msg #msgBars{display:none!important}
 body.booting #msgBars,body.backend:not(.mail-ready) #msgBars,body.in-sent #msgBars{display:none!important}
 .mg{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden;min-height:480px;height:calc(100dvh - 250px);max-height:760px}
 .mgl{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}.mgr{display:flex;flex-direction:column;min-width:0;min-height:0}
@@ -679,7 +679,7 @@ body.booting #msgBars,body.backend:not(.mail-ready) #msgBars,body.in-sent #msgBa
 .shipcard .thead b{color:#35c2b0}.shiprow{display:flex;gap:10px 12px;flex-wrap:wrap;align-items:center;padding:8px 0;border-top:1px solid #1f5560}.shiprow:first-of-type{border-top:0}
 .shiprow .who{flex:1 1 200px;min-width:0}.shiprow .who b{display:block}.shiprow .who span{color:#bfe0dc;font-size:13px}
 
-#waitPage{display:none;padding-top:14px}body.on-wait #waitPage{display:block}body.on-wait .filters,body.on-wait #list,body.on-wait .sample-banner,body.on-wait #dueBars,body.on-wait #shipBars,body.on-wait #subBars,body.on-wait #waitBars{display:none!important}
+#waitPage{display:none;padding-top:14px}body.on-wait #waitPage{display:block}body.on-wait .filters,body.on-wait #list,body.on-wait .sample-banner,body.on-wait #dueBars,body.on-wait #shipBars,body.on-wait #subBars,body.on-wait #tripBars,body.on-wait #waitBars{display:none!important}
 body.on-ship #waitBars{display:none!important}
 .wcard{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px 16px;margin-bottom:12px;display:grid;gap:8px}
 .wcard.due{background:#241d10;border:1px dashed #6a5220}.wcard.closed{opacity:.78}
@@ -687,7 +687,7 @@ body.on-ship #waitBars{display:none!important}
 .wbtn{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:9px;padding:9px 14px;min-height:44px}.wbtn.amber{background:#f0b24a;border-color:#f0b24a;color:#241d10;font-weight:700}
 .wgroup{margin:18px 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .wset{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:14px;flex-wrap:wrap;margin:0 0 14px}.wset select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:40px}
-#subPage{display:none;padding-top:14px}body.on-sub #subPage{display:block}body.on-sub .filters,body.on-sub #list,body.on-sub .sample-banner,body.on-sub #dueBars,body.on-sub #shipBars,body.on-sub #waitBars,body.on-sub #subBars{display:none!important}
+#subPage{display:none;padding-top:14px}body.on-sub #subPage{display:block}body.on-sub .filters,body.on-sub #list,body.on-sub .sample-banner,body.on-sub #dueBars,body.on-sub #shipBars,body.on-sub #waitBars,body.on-sub #subBars,body.on-sub #tripBars{display:none!important}
 .subcard{border:1px solid #5a4a1c;background:#241f10;border-radius:14px;padding:12px 14px;margin-bottom:12px}
 .subcard .thead b{color:#f0c14a}.subrow{display:flex;gap:10px 12px;flex-wrap:wrap;align-items:center;padding:8px 0;border-top:1px solid #5a4a1c}.subrow:first-of-type{border-top:0}
 .subrow .who{flex:1 1 200px;min-width:0}.subrow .who b{display:block}.subrow .who span{color:#e0d3a8;font-size:13px}
@@ -696,6 +696,17 @@ body.on-ship #waitBars{display:none!important}
 .subhead{display:flex;gap:6px 14px;flex-wrap:wrap;align-items:baseline}.subhead b{font-size:17px}.subhead .amt{color:var(--muted)}
 .subwhen{font-weight:600}.subitem.soon .subwhen{color:#f0c14a}.subsmall{color:var(--muted);font-size:13px}
 .subact{display:flex;gap:8px 10px;flex-wrap:wrap;align-items:center}
+#tripPage{display:none;padding-top:14px}body.on-trip #tripPage{display:block}body.on-trip .filters,body.on-trip #list,body.on-trip .sample-banner,body.on-trip #dueBars,body.on-trip #shipBars,body.on-trip #waitBars,body.on-trip #subBars,body.on-trip #tripBars{display:none!important}
+.tripcard{border:1px solid #1f3f66;background:#0e1c30;border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.tripcard .thead b{color:#6fb3ff}.triprow{display:flex;gap:10px 12px;flex-wrap:wrap;align-items:center;padding:8px 0;border-top:1px solid #1f3f66}.triprow:first-of-type{border-top:0}
+.triprow .who{flex:1 1 200px;min-width:0}.triprow .who b{display:block}.triprow .who span{color:#b8cbe6;font-size:13px}
+.tripitem{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px 16px;margin-bottom:12px;display:grid;gap:10px}
+.tripitem.now{border-color:#1f3f66;background:#0e1c30}.tripitem.done{opacity:.72}
+.triphead{display:flex;gap:6px 14px;flex-wrap:wrap;align-items:baseline}.triphead b{font-size:18px}.tripdates{color:var(--muted)}
+.tripbook{display:grid;gap:2px;padding:10px 0;border-top:1px solid var(--line)}.tripbook:first-of-type{border-top:0}
+.tripkind{font-weight:700;color:#6fb3ff;font-size:13px}.tripmain{font-weight:600}.tripsmall{color:var(--muted);font-size:13px}.tripbook.cancelled .tripmain{text-decoration:line-through;color:var(--muted)}
+.tripact{display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.tripcal{display:flex;gap:10px;align-items:flex-start;margin:0 0 14px;max-width:660px;color:var(--text)}.tripcal input{margin-top:4px;width:18px;height:18px}.tripcal .hint{color:var(--muted);font-size:13px}
 .waitcard{border:1px dashed #6a5220;background:#241d10;border-radius:14px;padding:12px 14px;margin-bottom:12px}
 .waitcard .thead b{color:#f0b24a}.waitrow{display:grid;gap:6px;padding:10px 0;border-top:1px solid #4a3a18}.waitrow:first-of-type{border-top:0}
 .waitrow .wb{display:flex;gap:8px;flex-wrap:wrap}
@@ -755,6 +766,7 @@ body.on-ship #waitBars{display:none!important}
     <button class="nav" data-filter="waiting" id="waitNav" title="Waiting for reply" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="nav-label">Waiting for reply</span><span class="badge" id="waitBadge"></span></button>
     <button class="nav" data-filter="shipping" id="shipNav" title="Shipping" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg><span class="nav-label">Shipping</span><span class="badge" id="shipBadge"></span></button>
     <button class="nav" data-filter="subscriptions" id="subNav" title="Subscriptions" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3l3 3-3 3"/><path d="M4 11V9a3 3 0 0 1 3-3h13"/><path d="M7 21l-3-3 3-3"/><path d="M20 13v2a3 3 0 0 1-3 3H4"/></svg><span class="nav-label">Subscriptions</span><span class="badge" id="subBadge"></span></button>
+    <button class="nav" data-filter="trips" id="tripNav" title="Trips" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5a2 2 0 0 0-2.8-2.8L13.2 8.2 5 6.4 3.6 7.8l6.4 3.7-3.2 3.2-2.7-.5L3 15.2l3.5 1.4 1.4 3.5 1.2-1.1-.5-2.7 3.2-3.2 3.7 6.4z"/></svg><span class="nav-label">Trips</span><span class="badge" id="tripBadge"></span></button>
     <div class="label" id="peopleLabel" hidden>People</div>
     <button class="nav" data-filter="messages" id="msgNav" title="Messages" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><span class="nav-label">Messages</span><span class="badge" id="msgBadge" hidden></span></button>
     <div class="label">Status</div>
@@ -797,6 +809,7 @@ body.on-ship #waitBars{display:none!important}
   <div id="dueBars" class="duebars" role="region" aria-label="Today's tasks" hidden></div>
   <div id="shipBars" class="duebars" role="region" aria-label="Deliveries to confirm" hidden></div>
   <div id="subBars" class="duebars" role="region" aria-label="Subscriptions coming up" hidden></div>
+  <div id="tripBars" class="duebars" role="region" aria-label="Trips coming up" hidden></div>
   <div id="waitBars" class="duebars" role="region" aria-label="Waiting on others" hidden></div>
   <div id="msgBars" class="duebars" role="region" aria-label="New messages" hidden></div>
   <div class="filters">
@@ -836,6 +849,7 @@ body.on-ship #waitBars{display:none!important}
   <section id="tasksPage" aria-label="Tasks"></section>
   <section id="shipPage" aria-label="Shipping"></section>
   <section id="subPage" aria-label="Subscriptions"></section>
+  <section id="tripPage" aria-label="Trips"></section>
   <section id="waitPage" aria-label="Waiting for reply"></section>
   <section id="msgPage" aria-label="Messages"></section>
   <div class="allfoot" id="allFoot" hidden>Last 14 days, 100 emails max.</div>
@@ -1427,7 +1441,7 @@ const emailDetails={
 for(const m of data)Object.assign(m,emailDetails[m.id]||{});
 
 let selected=new Set(),filter="all",query="",provider="compatible";
-let feat={compose:false,address_book:false,sent:false,media:false,all_mail:false,shipping:false,subscriptions:false,waiting:false,messages:false,write_help:false};
+let feat={compose:false,address_book:false,sent:false,media:false,all_mail:false,shipping:false,subscriptions:false,travel:false,waiting:false,messages:false,write_help:false};
 let allMail=false,recentAt=0,sq={items:[],waiting:0,writing:0},sqTimer=null,sqDoneSeen=new Set();
 try{allMail=localStorage.getItem("enveliq-all-mail")==="1"}catch{}
 let manageTabsScrollLeft=0;
@@ -1436,7 +1450,7 @@ let vaultMode=null; // "backend" | "preview"
 const previewVault={initialized:false,unlocked:false,salt:null,verifier:null};
 const expanded=new Set();
 // A refresh keeps you where you are: the page (in the address bar after #/) and which emails are open (this tab only).
-const PAGES=["all","action","tasks","attachments","reviewed","archived","sent","shipping","subscriptions","waiting","messages"];
+const PAGES=["all","action","tasks","attachments","reviewed","archived","sent","shipping","subscriptions","trips","waiting","messages"];
 let stateReady=false;
 const rowKeyOf=id=>{const m=data.find(x=>String(x.id)===String(id));return m&&m.real?m.real.accountId+":"+m.real.messageId:null};
 function saveOpen(){
@@ -1460,7 +1474,7 @@ function syncHash(){
 function restorePage(){
   const m=/^#\/(settings|admin)\/([a-z]*)$/.exec(location.hash||""),p=/^#\/([a-z]+)$/.exec(location.hash||"");
   if(p&&PAGES.includes(p[1])){
-    const want=p[1],ok={sent:feat.sent,shipping:feat.shipping,subscriptions:feat.subscriptions,waiting:feat.waiting,messages:feat.messages}[want];
+    const want=p[1],ok={sent:feat.sent,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,messages:feat.messages}[want];
     if(want!=="all"&&ok!==false){
       filter=want;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===want));
       if(want==="sent")loadSent();
@@ -1542,7 +1556,7 @@ function snoozeOptions(now){
 // ---- Search everywhere: the one search box also looks in the other places Enveliq keeps things for this person ----
 // Reviewed, Archived and Snoozed emails, tasks, orders and waiting notes. It uses only what this page already holds for the signed-in person
 // (kept summaries and results): nothing new is stored and nothing extra is asked of the server. Matches are shown as text, a few at a time.
-const SEARCH_PAGES=["tasks","sent","shipping","subscriptions","waiting","messages"],SEARCH_EACH=4;
+const SEARCH_PAGES=["tasks","sent","shipping","subscriptions","trips","waiting","messages"],SEARCH_EACH=4;
 function searchMore(rows){
   const q=String(query||"").trim().toLowerCase();
   if(q.length<2||SEARCH_PAGES.includes(filter))return "";
@@ -1957,9 +1971,60 @@ function renderSubHome(){
 function subNavSync(){
   const on=realMail&&accounts.length>0,show=on&&subOn()&&((subData.items||[]).length>0||filter==="subscriptions");
   $("subNav").hidden=!show;
-  $("trackLabel").hidden=!(on&&(feat.shipping||feat.waiting||show));
+  const tshow=on&&tripOn()&&((tripData.trips||[]).length>0||filter==="trips");
+  $("tripNav").hidden=!tshow;
+  $("trackLabel").hidden=!(on&&(feat.shipping||feat.waiting||show||tshow));
+  {const tb=$("tripBadge"),n=tripOn()?(tripData.trips||[]).filter(t=>!t.cancelled&&t.state!=="past").length:0;if(tb){tb.textContent=n;tb.hidden=!n}}
   const b=$("subBadge"),soon=subOn()?(subData.items||[]).filter(s=>s.soon&&s.next).length:0;
   if(b){b.textContent=soon;b.hidden=!soon;b.classList.toggle("hot",soon>0)}
+}
+// ---- Trips: flights, stays and hire cars, followed from the emails about them ----
+// The AI only copied what each email said. Every date, night count and grouping into trips was worked out by the server.
+let tripData={enabled:false,trips:[],calendar:true};
+const tripOn=()=>realMail&&!!feat.travel&&tripData.enabled;
+async function fetchTrips(){
+  if(!realMail||!feat.travel){tripData={enabled:false,trips:[],calendar:true};return}
+  try{const r=await secureBackendRequest("/api/v1/me/trips",{method:"GET",headers:{}});if(r&&Array.isArray(r.trips))tripData=r}catch{}
+}
+async function refreshTrips(){const a=document.activeElement;if(a&&a.matches&&a.matches("#tripPage input"))return;await fetchTrips();render()}
+setInterval(()=>{if(realMail&&feat.travel&&!document.hidden)refreshTrips()},300000);
+async function tripRemove(id){
+  try{const r=await secureBackendRequest(`/api/v1/me/trips/${encodeURIComponent(id)}/remove`,{method:"POST",body:"{}"});if(r&&Array.isArray(r.trips))tripData=r}catch(er){toast(er.message,5000);await fetchTrips()}
+  render();
+}
+document.addEventListener("change",async e=>{const c=e.target.closest&&e.target.closest("#tripCal");if(!c)return;try{const r=await secureBackendRequest("/api/v1/me/trips/settings",{method:"PUT",body:JSON.stringify({calendar:!!c.checked})});if(r&&Array.isArray(r.trips))tripData=r}catch(er){toast(er.message,5000)}render()});
+const tripDay=iso=>{const d=new Date(iso+"T00:00:00");return isNaN(d)?"":d.toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short"})};
+const tripIn=n=>n<=0?"today":n===1?"tomorrow":`in ${n} days`;
+const tripKind=k=>({flight:"Flight",stay:"Stay",car:"Hire car"}[k]||"Booking");
+function tripLine(b){
+  if(b.kind==="flight"){const route=b.from&&b.to?`${b.from} → ${b.to}`:(b.to||b.from||"");return [route,b.detail,b.provider].filter(Boolean).join(" · ")||"Flight"}
+  if(b.kind==="stay")return [b.provider,b.to].filter(Boolean).join(", ")||"Stay";
+  return [b.provider,b.from?"pick-up "+b.from:""].filter(Boolean).join(", ")||"Hire car";
+}
+function tripWhen(b){
+  const a=tripDay(b.start),z=b.end&&b.end!==b.start?tripDay(b.end):"";
+  if(b.kind==="flight")return a+(b.start_time?", "+b.start_time:"")+(z||b.end_time?` → ${z||a}${b.end_time?", "+b.end_time:""}`:"");
+  return a+(z?` → ${z}`:"")+(b.nights?` (${b.nights} ${b.nights===1?"night":"nights"})`:"");
+}
+function tripBooking(b){
+  const gone=b.status==="cancelled";
+  return `<div class="tripbook${gone?" cancelled":""}"><span class="tripkind">${esc(tripKind(b.kind))}${gone?" · Cancelled":""}</span><span class="tripmain">${esc(tripLine(b))}</span><span class="tripsmall">${esc(tripWhen(b))}${b.reference?" · Booking reference "+esc(b.reference):""}</span><div class="tripact"><button class="olink" type="button" data-trip-remove="${esc(b.id)}">This is not my booking</button></div></div>`;
+}
+function tripCard(t){
+  const when=t.state==="now"?`Under way · until ${tripDay(t.end)}`:`${tripDay(t.start)}${t.end!==t.start?" – "+tripDay(t.end):""} · ${tripIn(t.days_to_start)}`;
+  return `<article class="tripitem${t.state==="now"?" now":""}${t.cancelled?" done":""}"><div class="triphead"><b>${esc(t.title)}</b><span class="tripdates">${esc(when)}</span></div>${t.bookings.map(tripBooking).join("")}</article>`;
+}
+function renderTripPage(){
+  const box=$("tripPage"),list=tripData.trips||[];
+  const head=`<div class="tp-head"><h3>Trips</h3></div><p class="sp-sub">Flights, stays and hire cars, found in the emails you get. The AI copies what each email says. Enveliq works out the dates and puts the bookings together into trips.</p><label class="tripcal"><input type="checkbox" id="tripCal"${tripData.calendar?" checked":""}><span><b>Put my trips in my calendar</b><div class="hint">Uses the calendar you set up for tasks, if you have one (Settings, Calendar &amp; to-do). Times are the clock times written in the emails, for the place they are for.</div></span></label>`;
+  if(!list.length){box.innerHTML=head+'<div class="focus-card"><div class="focus-big">No trips to show</div><div class="focus-sub">When an email is a booking for a flight, a stay or a hire car, it shows up here by itself.</div></div>';return}
+  box.innerHTML=head+list.map(tripCard).join("")+'<p class="sp-sub">A trip is forgotten three days after it ends. Enveliq never contacts an airline, a hotel or a rental company.</p>';
+}
+function renderTripHome(){
+  const box=$("tripBars"),near=tripOn()?(tripData.trips||[]).filter(t=>!t.cancelled&&(t.state==="now"||(t.state==="soon"&&t.days_to_start<=7))):[];
+  if(!near.length||filter==="trips"||filter==="sent"){box.hidden=true;box.replaceChildren();return}
+  box.innerHTML=`<div class="tripcard"><div class="thead"><b>Trips</b><button class="linkbtn" type="button" data-trip-go>Open Trips</button></div>${near.slice(0,3).map(t=>`<div class="triprow"><div class="who"><b>${esc(t.title)}</b><span>${esc(t.state==="now"?`Under way · until ${tripDay(t.end)}`:`Starts ${tripIn(t.days_to_start)} · ${tripDay(t.start)}`)}</span></div></div>`).join("")}${near.length>3?`<button class="tmore" type="button" data-trip-go>+${near.length-3} more</button>`:""}</div>`;
+  box.hidden=false;
 }
 // ---- Messages: short notes between the people who share this Enveliq ----
 // The server decides who may open a conversation; this page only shows what it is sent and keeps nothing after you leave. Plain text only.
@@ -2095,7 +2160,7 @@ function renderWaitPage(){
 }
 function renderWaitHome(){
   const box=$("waitBars"),due=waitOn()?(waitData.notes||[]).filter(n=>n.due):[];
-  if(!due.length||filter==="waiting"||filter==="sent"||filter==="shipping"||filter==="subscriptions"){box.hidden=true;box.replaceChildren();return}
+  if(!due.length||filter==="waiting"||filter==="sent"||filter==="shipping"||filter==="subscriptions"||filter==="trips"){box.hidden=true;box.replaceChildren();return}
   const btn=(n,a,t)=>`<button class="wbtn" type="button" data-wait="${a}" data-wait-id="${esc(n.id)}">${t}</button>`;
   box.innerHTML=`<div class="waitcard"><div class="thead"><b>Waiting on others · ${due.length}</b><button class="linkbtn" type="button" data-wait-go>Open</button></div>${due.slice(0,3).map(n=>`<div class="waitrow"><div><span class="wto">${esc(waitTo(n))}</span> <span class="wsub">· ${esc(n.subject||"")}</span></div><div class="wage">${esc(waitAge(n))}. No reply yet.${n.ask?" "+esc(n.ask):""}</div><div class="wb"><button class="wbtn amber" type="button" data-wait-nudge="${esc(n.id)}">Write a nudge</button>${btn(n,"got_reply","Got a reply")}${btn(n,"later","Ask again in "+waitData.days+(waitData.days===1?" day":" days"))}${btn(n,"not_needed","Not needed")}</div></div>`).join("")}${due.length>3?`<button class="tmore" type="button" data-wait-go>+${due.length-3} more</button>`:""}</div>`;
   box.hidden=false;
@@ -2155,16 +2220,17 @@ $("allSwitch").onclick=async()=>{
 };
 function render(){
   window.__hidePeek&&window.__hidePeek();
-  document.body.classList.toggle("in-sent",filter==="sent");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="sent"?"Sent":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
+  document.body.classList.toggle("in-sent",filter==="sent");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="sent"?"Sent":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
   const mine=userMessages().filter(m=>!m.extra);          // the quiet "All emails" entries are never counted
   if(!realMail)syncDemoTasks();else settleTasks();
   document.body.classList.toggle("on-tasks",filter==="tasks");
   document.body.classList.toggle("on-ship",filter==="shipping");
   document.body.classList.toggle("on-sub",filter==="subscriptions");
+  document.body.classList.toggle("on-trip",filter==="trips");
   document.body.classList.toggle("on-wait",filter==="waiting");
   document.body.classList.toggle("on-msg",filter==="messages");
   saveOpen();syncHash();
-  renderToday();renderShipHome();renderSubHome();renderWaitHome();renderMsgHome();if(filter==="messages")renderMsgPage();if(filter==="waiting")renderWaitPage();if(filter==="tasks")renderTasksPage();if(filter==="shipping")renderShipPage();if(filter==="subscriptions")renderSubPage();subNavSync();
+  renderToday();renderShipHome();renderSubHome();renderTripHome();renderWaitHome();renderMsgHome();if(filter==="messages")renderMsgPage();if(filter==="waiting")renderWaitPage();if(filter==="tasks")renderTasksPage();if(filter==="shipping")renderShipPage();if(filter==="subscriptions")renderSubPage();if(filter==="trips")renderTripPage();subNavSync();
   // The number is how many are being followed; it turns blue when one needs you (an order to confirm, a reply nobody has sent).
   {const os=shipOn()?(shipData.orders||[]).filter(o=>!(o.delivered_at&&o.ack)):[];const sb=$("shipBadge");if(sb){sb.textContent=os.length;sb.hidden=!os.length;sb.classList.toggle("hot",os.some(o=>o.needs_confirm||o.unsure))}}
   {const mb=$("msgBadge");if(mb){const n=msgOn()?msgSum.unread:0;mb.textContent=n;mb.hidden=!n;mb.classList.toggle("hot",n>0)}}
@@ -2190,7 +2256,7 @@ function render(){
     sender:(a,b)=>String(a.sender).localeCompare(String(b.sender),undefined,{sensitivity:"base"})||(b.received||0)-(a.received||0)}[sortMode];
   if(cmp)rows.sort(cmp);
   scheduleWake();
-  {const b=$("expandAll"),can=view.layout==="list"&&!["tasks","sent","shipping","subscriptions","waiting","messages"].includes(filter)&&rows.length>0;
+  {const b=$("expandAll"),can=view.layout==="list"&&!["tasks","sent","shipping","subscriptions","trips","waiting","messages"].includes(filter)&&rows.length>0;
    b.hidden=!can||selected.size>1;if(can){const all=view.rows==="open"||rows.every(m=>expanded.has(`row-${m.id}`));b.textContent=all?"Collapse all":"Expand all";b.dataset.mode=all?"collapse":"expand"}}
 const ICON_SNOOZE=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`,ICON_OK=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,ICON_ARCH=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg>`,ICON_BIN=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>`,ICON_REPLY=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 6 6v3"/></svg>`;
   const quiet=(m,mode)=>{
@@ -3440,6 +3506,8 @@ document.addEventListener("click",e=>{
   const wn=e.target.closest("[data-wait-nudge]");if(wn){waitNudge(wn.dataset.waitNudge);return}
   if(e.target.closest("[data-wait-go]")){filter="waiting";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="waiting"));render();return}
   const wc=e.target.closest("[data-wait-check]");if(wc){wc.disabled=true;wc.textContent="Checking…";secureBackendRequest("/api/v1/me/waiting/check",{method:"POST",body:"{}"}).then(r=>{if(r&&Array.isArray(r.notes))waitData=r}).catch(er=>toast(er.message,6000)).finally(render);return}
+  const tr=e.target.closest("[data-trip-remove]");if(tr){tripRemove(tr.dataset.tripRemove);return}
+  if(e.target.closest("[data-trip-go]")){filter="trips";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="trips"));render();return}
   const sb=e.target.closest("[data-sub]");if(sb){subAct(sb.dataset.subId,sb.dataset.sub);return}
   if(e.target.closest("[data-sub-go]")){filter="subscriptions";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="subscriptions"));render();return}
   const sh=e.target.closest("[data-ship]");if(sh){shipAct(sh.dataset.shipId,sh.dataset.ship);return}
@@ -3746,7 +3814,7 @@ async function loadRealMail(me){
     box.value=keep;box.hidden=false;
   }else{mailboxSel="";box.hidden=true}
   selected.clear();realMail=true;applyFeatures();
-  await fetchTasks();await fetchShipping();await fetchSubs();await fetchWaiting();      // after realMail is set, so the first load already has the person's tasks
+  await fetchTasks();await fetchShipping();await fetchSubs();await fetchTrips();await fetchWaiting();      // after realMail is set, so the first load already has the person's tasks
   document.body.classList.add("real-mail");
   $("syncBtn").hidden=false;
   return true;
@@ -3979,6 +4047,7 @@ function applyFeatures(){
   $("sentNav").hidden=!(on&&feat.sent);
   $("shipNav").hidden=!(on&&feat.shipping);$("waitNav").hidden=!(on&&feat.waiting);subNavSync();
   if(filter==="waiting"&&!(on&&feat.waiting)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
+  if(filter==="trips"&&!(on&&feat.travel)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   if(filter==="subscriptions"&&!(on&&feat.subscriptions)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   if(filter==="shipping"&&!(on&&feat.shipping)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   {const mo=realMail&&!!feat.messages;$("msgNav").hidden=$("peopleLabel").hidden=!mo;

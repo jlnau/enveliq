@@ -29,6 +29,7 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 - [Snooze](SNOOZE.md) (set an email aside until you need it)
 - [Search](SEARCH.md) (one search box for emails, tasks, orders and waiting notes)
 - [Subscriptions and free trials](SUBSCRIPTIONS.md) (renewals followed from your email, with a reminder)
+- [Trips](TRIPS.md) (flights, stays and hire cars, put together and added to your calendar)
 - [Messages between people](MESSAGES.md)
 - [Chat with a Hermes agent](AGENT.md)
 - [Unlock by itself after a restart (vault key)](VAULT_KEY.md)

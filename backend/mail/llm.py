@@ -79,7 +79,18 @@ FIXED_PROMPT = (
     "renews_on: the next renewal or charge date exactly as written, or null; "
     "trial_ends_on: the date the free trial ends exactly as written, or null; "
     "trial_days: the length of the free trial as a whole number of days when the email gives only a length such as '30 days' or '2 weeks' (14 for 2 weeks), otherwise null. "
-    "Do not work out any date yourself. Never guess a price or a date that is not in the email)."
+    "Do not work out any date yourself. Never guess a price or a date that is not in the email), "
+    "trips (an empty list, unless the email is a booking, change or cancellation for a flight, a hotel or other stay, or a hire car; then a list of at most six objects, one for each flight leg, stay or car hire, with "
+    "kind: one of flight, stay, car; "
+    "status: one of booked, changed, cancelled; "
+    "provider: the airline, hotel or rental company; "
+    "reference: the booking or confirmation number exactly as written, or null; "
+    "detail: the flight number for a flight, or the room or property name for a stay, or null; "
+    "from: for a flight the place it leaves from, for a car the pick-up place, otherwise null; "
+    "to: for a flight the place it arrives at, for a stay the town or city, for a car the place it is returned to, or null; "
+    "start: the departure, check-in or pick-up date and time exactly as written; "
+    "end: the arrival, check-out or return date and time exactly as written, or null. "
+    "Do not work out any date or time yourself. Never guess a number, a place or a date that is not in the email)."
 )
 PROMPT_MIN = 40
 PROMPT_MAX = 4000
@@ -165,6 +176,29 @@ def _subscription(raw: Any) -> dict[str, Any] | None:
             "renews_on": _text(raw.get("renews_on"), 60) or None, "trial_ends_on": _text(raw.get("trial_ends_on"), 60) or None, "trial_days": days}
 
 
+TRIP_KINDS = ("flight", "stay", "car")
+TRIP_STATUS = ("booked", "changed", "cancelled")
+MAX_TRIPS_PER_EMAIL = 6
+
+
+def _trips(raw: Any) -> list[dict[str, Any]]:
+    """The bookings the model found, each cut to short plain text. Anything that is not a known kind with a start is dropped."""
+    out: list[dict[str, Any]] = []
+    for item in raw[:MAX_TRIPS_PER_EMAIL] if isinstance(raw, list) else []:
+        if not isinstance(item, dict):
+            continue
+        kind = _text(item.get("kind"), 20).lower()
+        status = _text(item.get("status"), 20).lower() or "booked"
+        start = _text(item.get("start"), 60)
+        if kind not in TRIP_KINDS or status not in TRIP_STATUS or not start:
+            continue
+        got = {"kind": kind, "status": status, "start": start}
+        for key, limit in (("provider", 60), ("reference", 30), ("detail", 60), ("from", 60), ("to", 60), ("end", 60)):
+            got[key] = _text(item.get(key), limit) or None
+        out.append(got)
+    return out
+
+
 def parse_reply(content: Any) -> dict[str, Any]:
     """Turn the model's answer into the few safe fields Enveliq keeps."""
     bad = BridgeError("ai_bad_reply", "The AI model did not return a usable summary for this email.")
@@ -205,6 +239,9 @@ def parse_reply(content: Any) -> dict[str, Any]:
     sub = _subscription(data.get("subscription"))
     if sub:
         out["subscription"] = sub
+    trips = _trips(data.get("trips"))
+    if trips:
+        out["trips"] = trips
     return out
 
 
