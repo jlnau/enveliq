@@ -209,3 +209,5 @@ ol.guide-steps li > p{margin:2px 0 0}
 .bkact{display:flex;gap:8px;flex-wrap:wrap}
 @media (max-width:560px){.bkrow{grid-template-columns:1fr}}
 a.btn{text-decoration:none}
+.sv-block{margin-top:26px}.sv-block:first-child{margin-top:0}
+.sv-block>textarea,.sv-block>input,.sv-block>.row,.sv-block>.ab-list{margin-top:12px}
