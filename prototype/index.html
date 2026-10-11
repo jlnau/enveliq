@@ -284,6 +284,10 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 .email-doc .scam-note{background:#fff6dc;color:#4d3800;border-color:#d9a400}
 .link-list{display:flex;flex-direction:column;gap:6px;margin:6px 0}.link-row{border:1px solid #d5dae2;border-radius:10px;padding:8px 12px}.link-line{display:flex;align-items:center;justify-content:space-between;gap:10px}.link-name{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere}.link-name small{font-size:12.5px;opacity:.8}.link-note.warn{color:#8a5a00;opacity:1}.link-sure{margin-top:8px;padding-top:8px;border-top:1px dashed #d5dae2;font-size:13.5px;line-height:1.5;overflow-wrap:anywhere}.link-sure[hidden]{display:none}.link-row button{border:1px solid #c9d0dc;background:#f4f6fa;color:#20242b;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer}.link-row .att-only{color:#7c8490;font-size:12px}.link-sure a.unsub{margin-left:4px;color:#20242b;background:#f4f6fa;border:1px solid #9aa4b5;font-weight:600;white-space:nowrap}
 @media(max-width:640px){.link-line{flex-wrap:wrap}.link-row{padding:8px 10px}}
+.srch-more{margin:0 0 14px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.srch-more>b{display:block;font-size:13.5px;margin-bottom:6px}.srch-more>b span{color:var(--muted);font-weight:500;margin-left:4px}
+.srch-group h4{margin:10px 0 2px;font-size:12px;font-weight:700;color:var(--muted)}.srch-hit{display:flex;width:100%;justify-content:space-between;align-items:baseline;gap:12px;border:0;background:transparent;color:var(--text);text-align:left;padding:8px 8px;margin:0 -8px;border-radius:8px;font-size:14px;width:calc(100% + 16px);min-height:40px}.srch-hit:hover,.srch-hit:focus-visible{background:var(--panel2)}
+.srch-t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.srch-w{color:var(--muted);font-size:12px;white-space:nowrap;flex:none;max-width:45%;overflow:hidden;text-overflow:ellipsis}.srch-more-n{color:var(--muted);font-size:12px;padding:2px 0}
+@media(max-width:640px){.srch-hit{flex-direction:column;gap:2px;align-items:flex-start;min-height:44px}.srch-w{max-width:100%}}
 .snz{display:block;color:var(--amber);font-size:11px;font-weight:600;line-height:1.3}.snz.back{color:var(--c-72df9f)}
 .snz-menu{position:fixed;z-index:60;width:min(280px,calc(100vw - 24px));padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);box-shadow:var(--shadow)}.snz-menu[hidden]{display:none}
 .snz-title{padding:6px 10px 4px;font-size:12px;font-weight:700;color:var(--muted)}.snz-menu button[data-snooze-pick]{display:flex;width:100%;justify-content:space-between;align-items:baseline;gap:12px;border:0;background:transparent;color:var(--text);padding:10px;border-radius:8px;font-size:14px;text-align:left;min-height:44px}.snz-menu button[data-snooze-pick]:hover,.snz-menu button[data-snooze-pick]:focus-visible{background:var(--panel2)}.snz-menu small{color:var(--muted);font-size:12px;white-space:nowrap}
@@ -1523,6 +1527,38 @@ function snoozeOptions(now){
   out.push(["Next week",at(now,(8-day)%7||7,8)]);
   return out;
 }
+// ---- Search everywhere: the one search box also looks in the other places Enveliq keeps things for this person ----
+// Reviewed, Archived and Snoozed emails, tasks, orders and waiting notes. It uses only what this page already holds for the signed-in person
+// (kept summaries and results): nothing new is stored and nothing extra is asked of the server. Matches are shown as text, a few at a time.
+const SEARCH_PAGES=["tasks","sent","shipping","waiting","messages"],SEARCH_EACH=4;
+function searchMore(rows){
+  const q=String(query||"").trim().toLowerCase();
+  if(q.length<2||SEARCH_PAGES.includes(filter))return "";
+  const has=s=>String(s||"").toLowerCase().includes(q),shown=new Set(rows.map(m=>m.id)),groups=[];
+  const place=m=>isSnoozed(m)?"Snoozed":m.status==="inbox"?"Inbox":m.status==="reviewed"?"Reviewed":"Archived";
+  const mails=data.filter(m=>m.owner===currentUser.id&&!m._pending&&!m.extra&&!shown.has(m.id)&&!(mailboxSel&&m.account!==mailboxSel)&&has(`${m.sender} ${m.address} ${m.subject} ${m.summary}`));
+  if(mails.length)groups.push(["Emails",mails.map(m=>[`data-search-open="${esc(m.id)}"`,m.subject,`${place(m)} · ${m.sender}`])]);
+  const tasks=(tasksData.tasks||[]).filter(t=>has(`${t.title} ${t.sender||""}`));
+  if(tasks.length)groups.push(["Tasks",tasks.map(t=>{const m=taskMsg(t);return [m?`data-search-open="${esc(m.id)}"`:'data-search-go="tasks"',t.title,t.state==="open"?taskWhen(t):"Done"]})]);
+  const orders=shipOn()?(shipData.orders||[]).filter(o=>has(`${o.shop} ${o.order_number||""} ${o.items||""} ${o.carrier||""}`)):[];
+  if(orders.length)groups.push(["Orders",orders.map(o=>['data-search-go="shipping"',(o.shop||"An order")+(o.order_number?" · "+o.order_number:""),shipStatus(o)])]);
+  const notes=waitOn()?(waitData.notes||[]).filter(n=>has(`${waitTo(n)} ${n.subject||""} ${n.ask||""}`)):[];
+  if(notes.length)groups.push(["Waiting for a reply",notes.map(n=>['data-search-go="waiting"',n.subject||"(no subject)","To "+waitTo(n)])]);
+  if(!groups.length)return "";
+  const total=groups.reduce((a,[,l])=>a+l.length,0);
+  return `<section class="srch-more" aria-label="Also found elsewhere"><b>Also found elsewhere <span>${total}</span></b>${groups.map(([name,list])=>`<div class="srch-group"><h4>${esc(name)}</h4>${list.slice(0,SEARCH_EACH).map(([attr,title,sub])=>`<button type="button" class="srch-hit" ${attr}><span class="srch-t">${esc(String(title).slice(0,120))}</span><span class="srch-w">${esc(String(sub).slice(0,120))}</span></button>`).join("")}${list.length>SEARCH_EACH?`<div class="srch-more-n">and ${list.length-SEARCH_EACH} more</div>`:""}</div>`).join("")}</section>`;
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest&&e.target.closest("[data-search-open],[data-search-go]");
+  if(!b)return;
+  query="";$("search").value="";document.body.classList.remove("msearch");
+  const m=b.dataset.searchOpen?data.find(x=>x.id===+b.dataset.searchOpen&&x.owner===currentUser.id):null;
+  filter=m?(isSnoozed(m)?"snoozed":m.status==="inbox"?"all":m.status):b.dataset.searchGo;
+  document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));
+  if(m){expanded.add(`row-${m.id}`);paneId=m.id;if(view.layout==="screen")readerOpen=true}
+  render();
+  if(m){const el=document.querySelector(`[data-expand="row-${m.id}"],[data-pick="${m.id}"]`);if(el&&el.scrollIntoView)el.scrollIntoView({block:"center"})}
+});
 let snoozeFor=null,wakeTimer=0;
 function closeSnoozeMenu(){const m=$("snoozeMenu");if(m)m.hidden=true;snoozeFor=null}
 function openSnoozeMenu(btn,id){
@@ -2115,7 +2151,7 @@ const ICON_SNOOZE=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" s
   let listHtml;
   const prevScroll=document.getElementById("paneList"),prevTop=prevScroll?prevScroll.scrollTop:0,prevRead=document.querySelector(".reading"),prevReadTop=prevRead?prevRead.scrollTop:0;
   lastRowIds=rows.map(m=>m.id);
-  if(!rows.length){listHtml=`<div class="empty">${filter==="snoozed"?"Nothing is snoozed. Use Snooze on an email to set it aside until you need it.":realMail&&!data.some(m=>m.status==="inbox")?"You're all caught up. Press <strong>Sync mail</strong> to look for new unread email.":`Nothing in this view for ${esc(currentUser.name)}.`}</div>`}
+  if(!rows.length){listHtml=`<div class="empty">${query&&String(query).trim().length>=2&&filter!=="snoozed"?"Nothing in this view matches your search.":filter==="snoozed"?"Nothing is snoozed. Use Snooze on an email to set it aside until you need it.":realMail&&!data.some(m=>m.status==="inbox")?"You're all caught up. Press <strong>Sync mail</strong> to look for new unread email.":`Nothing in this view for ${esc(currentUser.name)}.`}</div>`}
   else if(view.layout==="list"){listHtml=`<div class="quiet-list">${rows.map(m=>quiet(m)).join("")}</div>`}
   else{
     let idx=rows.findIndex(m=>m.id===paneId);
@@ -2142,7 +2178,7 @@ const ICON_SNOOZE=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" s
       listHtml=`<div class="panes ${esc(view.layout)}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div><section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div></header>${quiet(cur,"detail")}</section></div>`;
     }
   }
-  $("list").innerHTML=listHtml;
+  $("list").innerHTML=searchMore(rows)+listHtml;
   document.body.classList.toggle("reader-open",view.layout==="screen"&&readerOpen&&rows.length>0);
   if(!rows.length)readerOpen=false;
   syncMobileBar(inbox.length,needN);
@@ -3629,7 +3665,6 @@ async function loadRealMail(me){
   // Items with no address to reply to get no Reply button, as in Mailboxes.
   data.length=0;data.push(...items);
   accounts=accts;realAccounts=bridges.map(a=>a.id);
-  await fetchTasks();
   realAi=Object.fromEntries(bridges.map(a=>[a.id,!!(a.settings&&a.settings.ai_summaries)]));
   const box=$("mailboxFilter");
   if(bridges.length>1){
@@ -3638,7 +3673,7 @@ async function loadRealMail(me){
     box.value=keep;box.hidden=false;
   }else{mailboxSel="";box.hidden=true}
   selected.clear();realMail=true;applyFeatures();
-  await fetchShipping();await fetchWaiting();
+  await fetchTasks();await fetchShipping();await fetchWaiting();      // after realMail is set, so the first load already has the person's tasks
   document.body.classList.add("real-mail");
   $("syncBtn").hidden=false;
   return true;

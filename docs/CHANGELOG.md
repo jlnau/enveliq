@@ -2,6 +2,15 @@
 
 Newest first. Each entry says what changed for people and which parts of the code it touches. The history of earlier versions is in [VERSION_HISTORY.md](VERSION_HISTORY.md).
 
+## v0.72
+
+**Search everywhere.** One search box that also reports what it finds in the other places Enveliq keeps things for this person.
+
+- `prototype/index.html`: `searchMore()` builds an **Also found elsewhere** box above the list when the search has at least two letters. It looks in the emails the page already holds (Reviewed, Archived, Snoozed, or the inbox when another list is open), the person's tasks, orders and waiting notes, shows up to four of each, and says where each one is. A match opens the list or page it belongs to and clears the search. Everything is shown as text. Not shown on the Tasks, Sent, Shipping, Waiting and Messages pages, which are not email lists.
+- Nothing new is stored and nothing new is asked of the server: it uses the cards, tasks, orders and notes the page already loaded for the signed-in person, and never looks at a mailbox or at email text. The empty list now says "Nothing in this view matches your search." when a search is on.
+- Fix: the person's tasks were fetched before the page knew it was showing real mail, so they only appeared after the first minute. They are fetched after that now.
+- Tests: `scripts/check_search_everywhere.mjs` (added to CI; desktop and phone; hostile text stays text). Docs: new `docs/SEARCH.md`, the tour.
+
 ## v0.71
 
 **Snooze.** Set an email aside until a time you choose.

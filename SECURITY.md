@@ -96,6 +96,11 @@ These rules are architecture requirements, not UI preferences.
 - "Confirmed" means the provider says the email passed its checks. It does not mean the email is safe, and the page never says it is. When the provider adds no result, the page says nothing.
 - A Reply-To on another website is shown but only flags an email from a well-known name, because small businesses often use a free mail address for replies.
 
+## Search everywhere (v0.72)
+
+- The search runs in the page, over the cards, tasks, orders and notes that the server already sent to the signed-in person. Nothing new is asked of the server or stored, no mailbox is read, and email text is never searched. Another person's data is never in the page, so it cannot be found.
+- Matches are drawn as text (escaped), never as page code.
+
 ## Snooze (v0.71)
 
 - Snooze changes only Enveliq's own record of an email (a time stored with the other encrypted details). The real mailbox is not touched and nothing new is read from it.
