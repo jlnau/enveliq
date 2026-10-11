@@ -2,6 +2,15 @@
 
 Newest first. Each entry says what changed for people and which parts of the code it touches. The history of earlier versions is in [VERSION_HISTORY.md](VERSION_HISTORY.md).
 
+## v0.77
+
+**Help links go to the Enveliq website.** The links from the app to the step-by-step guides no longer point at GitHub.
+
+- `web/static/auth.js`: guide links are now built by `guideUrl()` from the guide's file name (`AI_SUMMARIES.md`, `install/after-install.md#heading`) to its website address (`https://enveliq.app/docs/ai-summaries/`, `.../install/after-install/#heading`), using the same rule as `website/build.mjs`. They still open in a new tab, with `noopener noreferrer`, and only load when clicked. Three lines of wording that said "on GitHub" now say "on the Enveliq website" (`auth.js`, `welcome.js`).
+- `prototype/index.html`: the plain-http warning's link to the access guide.
+- `scripts/check_guide_links.mjs`: checks the new base address, that no page still links to GitHub (apart from the website's own GitHub button), that the file-name rule matches the website's rule, and that every guide and heading a link names exists.
+- No data, sign-in or privacy behaviour changes. The 18 addresses were also checked against the built website.
+
 ## v0.76
 
 **The demo.** A made-up copy of the inbox that anyone can open, published separately from the website.
