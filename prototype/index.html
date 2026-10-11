@@ -294,6 +294,8 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 .snz-date{padding:8px 10px 6px;border-top:1px solid var(--line);margin-top:4px;font-size:13px}.snz-date label{display:block;margin-bottom:6px;color:var(--muted);font-size:12px;font-weight:700}.snz-date span{display:flex;gap:8px}.snz-date input{flex:1;min-width:0;min-height:40px;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:6px 8px;font:inherit}.snz-date button{min-height:40px;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:0 14px;font:inherit;font-weight:600}
 @media(max-width:640px){.snz-menu{left:12px!important;right:12px;top:auto!important;bottom:12px;width:auto}}
 .scam-note{max-width:100%;overflow-wrap:anywhere}@media(max-width:640px){.scam-note{padding:9px 12px;font-size:13px}.scam-note b{font-size:13.5px}.scam-pill{margin:0 6px 0 0;font-size:11px;padding:0 7px}}
+.imp-pill{display:inline-block;flex:none;margin:0 8px 0 0;padding:0 8px;border:1px solid var(--accent);border-radius:99px;color:var(--accent);font-size:11.5px;font-weight:600;line-height:18px;vertical-align:middle}
+@media(max-width:640px){.imp-pill{margin:0 6px 0 0;font-size:11px;padding:0 7px}}
 .scam-pill{display:inline-block;flex:none;margin:0 8px 0 0;padding:0 8px;border:1px solid var(--amber);border-radius:99px;color:var(--amber);font-size:11.5px;font-weight:600;line-height:18px;vertical-align:middle}
 .unsub[hidden]{display:none}.unsub-sure{font-size:13px;color:var(--text)}.unsub-sure[hidden]{display:none}.unsub-sure a{font-weight:600}
 .qleft{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -1134,6 +1136,7 @@ body.on-ship #waitBars{display:none!important}
       <section data-settings-panel="adminagent" hidden></section>
       <section data-settings-panel="adminreminders" hidden></section>
       <section data-settings-panel="addressbook" hidden></section>
+      <section data-settings-panel="important" hidden></section>
 
       <section data-settings-panel="system" hidden>
         <div class="role-demo">Administrator only</div>
@@ -2137,6 +2140,25 @@ async function fetchWaiting(){
   try{const r=await secureBackendRequest("/api/v1/me/waiting",{method:"GET",headers:{}});if(r&&Array.isArray(r.notes))waitData=r}catch{}
 }
 async function refreshWaiting(){await fetchWaiting();render()}
+// ---- Important people: mail from these people is shown first, with a small label. The list is the person's own and is kept encrypted on the server. ----
+let impSet=new Set();
+const impKey=a=>String(a||"").trim().toLowerCase();
+const isImp=m=>!m.kept&&m.status==="inbox"&&impSet.has(impKey(m.address));
+function setImpList(items){impSet=new Set((items||[]).map(p=>impKey(p.address)))}
+async function fetchImportant(){
+  if(!realMail){return}
+  try{const r=await secureBackendRequest("/api/v1/me/important",{method:"GET",headers:{}});if(r&&Array.isArray(r.items))setImpList(r.items)}catch{}
+}
+async function setImportant(m,on){
+  const addr=impKey(m.address),who=m.sender||addr;
+  if(!realMail){if(on)impSet.add(addr);else impSet.delete(addr);render();toast(on?`${who} is now an important person`:`${who} is no longer marked important`);return}
+  try{
+    const r=await secureBackendRequest(on?"/api/v1/me/important":"/api/v1/me/important/remove",{method:"POST",body:JSON.stringify(on?{address:addr,name:m.sender||""}:{address:addr})});
+    if(r&&Array.isArray(r.items))setImpList(r.items);
+    toast(on?`${who} is now an important person`:`${who} is no longer marked important`);
+  }catch(er){toast(er.message,5000)}
+  render();
+}
 setInterval(()=>{if(realMail&&feat.waiting&&!document.hidden)refreshWaiting()},60000);
 async function waitAct(id,action){
   try{const r=await secureBackendRequest(`/api/v1/me/waiting/${encodeURIComponent(id)}/${action}`,{method:"POST",body:"{}"});if(r&&Array.isArray(r.notes))waitData=r}catch(er){toast(er.message,5000);await fetchWaiting()}
@@ -2262,6 +2284,7 @@ function render(){
     priority:(a,b)=>(rank[a.priority]??1)-(rank[b.priority]??1)||(b.received||0)-(a.received||0)||a.id-b.id,
     sender:(a,b)=>String(a.sender).localeCompare(String(b.sender),undefined,{sensitivity:"base"})||(b.received||0)-(a.received||0)}[sortMode];
   if(cmp)rows.sort(cmp);
+  if(impSet.size)rows.sort((a,b)=>isImp(b)-isImp(a));          // a stable sort: important people first, the chosen order kept inside each group
   scheduleWake();
   {const b=$("expandAll"),can=view.layout==="list"&&!["tasks","sent","shipping","subscriptions","trips","waiting","messages"].includes(filter)&&rows.length>0;
    b.hidden=!can||selected.size>1;if(can){const all=view.rows==="open"||rows.every(m=>expanded.has(`row-${m.id}`));b.textContent=all?"Collapse all":"Expand all";b.dataset.mode=all?"collapse":"expand"}}
@@ -2278,7 +2301,7 @@ const ICON_SNOOZE=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" s
     const replyBtn=(m.replyTo?`<button class="subtle" data-reply="${esc(m.id)}">${ICON_REPLY}Reply</button>`:"")+(m.kept?"":isSnoozed(m)?`<button class="subtle" data-unsnooze="${esc(m.id)}">${ICON_SNOOZE}Wake now</button>`:`<button class="subtle" data-snooze="${esc(m.id)}" aria-haspopup="menu">${ICON_SNOOZE}Snooze</button>`)||"<span></span>";
     const detail=m.kept
       ?`<div class="qdetail"><div class="qfrom"><span class="addr">&lt;${esc(m.address)}&gt;</span></div><div class="qsummary">${esc(m.summary)}</div>${taskHtml}${attachmentHtml}<div class="kept-note">${m.status==="archived"?"Archived":"Marked reviewed"} in your mailbox. Kept here until ${esc(m.keptUntil)}.${m.replied?` You replied ${esc(m.repliedAt||"just now")}.`:""}</div><div class="actions">${m.replyTo?`<button class="action reply" data-reply="${esc(m.id)}">↩ Reply</button>`:""}<button class="action trash" data-id="${esc(m.id)}" data-status="expired">Remove from this list</button></div></div>`
-      :`<div class="qdetail split"><div class="qmainc">${scamHtml(m.scam)}${m.ungen&&m.real&&feat.all_mail&&allMail?genBlock(m):`<div class="qsummary">${esc(m.summary)}</div>`}${taskHtml}${attachmentHtml}<div class="qfill"></div><div class="qfoot"><span class="qleft">${replyBtn}${unsubHtml(m.unsub,!!m.scam)}</span><button class="linkbtn view-email" data-open-email="${esc(m.id)}">View original email</button></div></div>
+      :`<div class="qdetail split"><div class="qmainc">${scamHtml(m.scam)}${m.ungen&&m.real&&feat.all_mail&&allMail?genBlock(m):`<div class="qsummary">${esc(m.summary)}</div>`}${taskHtml}${attachmentHtml}<div class="qfill"></div><div class="qfoot"><span class="qleft">${replyBtn}${m.kept||!m.address?"":`<button class="subtle" data-important="${esc(m.id)}" aria-pressed="${isImp(m)}">&#9733; ${isImp(m)?"Not important":"Important person"}</button>`}${unsubHtml(m.unsub,!!m.scam)}</span><button class="linkbtn view-email" data-open-email="${esc(m.id)}">View original email</button></div></div>
         <aside class="qside" aria-label="Email details"><div class="qkv"><span>From</span><span class="addr">${esc(m.address)}</span></div><div class="qkv"><span>Received</span><span>${esc(m.time)}</span></div>${m.replied?`<div class="qkv replied-kv"><span>Replied</span><span>${esc(m.repliedAt||"Just now")}</span></div>`:""}<div class="qkv"><span>Category</span><span>${esc(category)}</span></div><div class="qkv"><span>Attachments</span><span>${esc(attCount)}</span></div>
         <div class="qbtns"><button class="action reviewed" data-id="${esc(m.id)}" data-status="reviewed">${ICON_OK}Reviewed</button><div class="two"><button class="action archive" data-id="${esc(m.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(m.id)}" data-status="trashed">${ICON_BIN}Bin</button></div></div></aside></div>`;
     if(mode==="detail")return detail;
@@ -2286,7 +2309,7 @@ const ICON_SNOOZE=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" s
     return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(mode==="pane"&&view.layout!=="screen"&&m.id===paneId?"current":"")}"><div class="qrow">
       ${lead}
       <div class="sender">${flag}${esc(m.sender)}</div>
-      <div class="qmain">${m.scam?'<span class="scam-pill" title="Something about this email looks odd. Open it to see what.">Be careful</span>':""}<span class="subject">${esc(m.subject)}</span></div>
+      <div class="qmain">${isImp(m)?'<span class="imp-pill" title="You marked this person as important">&#9733; Important</span>':""}${m.scam?'<span class="scam-pill" title="Something about this email looks odd. Open it to see what.">Be careful</span>':""}<span class="subject">${esc(m.subject)}</span></div>
       <div class="time">${esc(m.time)}${m.replied?'<span class="replied">↩ Replied</span>':""}${isSnoozed(m)?`<span class="snz">Snoozed until ${esc(snoozeWhen(m.snoozeUntil))}</span>`:wokeBack(m)?'<span class="snz back">↺ Back from snooze</span>':""}</div>
       ${open?"<span></span>":quick}
       ${tog}
@@ -3196,6 +3219,7 @@ function buildSettingsNav(mode){
     ["","signin","Sign-in & security"],
     ["Your mail","accounts","Email accounts"],
     ...(feat.address_book?[["","addressbook","Address book"]]:[]),
+    ["","important","Important people"],
     ["","calendar","Calendar & to-do"],
     ["How it works for you","general","General"],
     ["","reminders","Reminders"],
@@ -3251,7 +3275,7 @@ function buildSettingsNav(mode){
 // ---- The real pages, shown inside the pop-ups ----
 // auth.css and the page scripts are loaded once, as one module so their names cannot clash with this page's.
 // Each page lives in its own shadow root, so its styles stay inside it.
-const EMBED_IDS=["profile","accounts","signin","setup","general","aiinstr","users","sso","llm","sync","adminaiinstr","adminkeep","admincheck","adminbackup","adminreport","adminms","adminfeatures","adminagent","adminreminders","reminders","calendar","addressbook"];
+const EMBED_IDS=["profile","accounts","signin","setup","general","aiinstr","users","sso","llm","sync","adminaiinstr","adminkeep","admincheck","adminbackup","adminreport","adminms","adminfeatures","adminagent","adminreminders","reminders","calendar","addressbook","important"];
 let embedLoad=null,embedCss="";
 function loadEmbedAssets(){
   if(embedLoad)return embedLoad;
@@ -3294,7 +3318,7 @@ async function openEmbedNow(id){
     host._mount.replaceChildren();
     const me=await E.api("/me"),P=new URLSearchParams();
     const pages={profile:()=>E.profilePage(me),accounts:()=>E.mailboxesPage(me),signin:()=>E.accountPage(me,P),setup:()=>E.welcomePage(me,P),
-      general:()=>E.generalPage(me),aiinstr:()=>E.aiInstructionsPage(me),adminaiinstr:()=>E.adminPage(me,"instr"),adminkeep:()=>E.adminPage(me,"keep"),admincheck:()=>E.adminPage(me,"check"),adminbackup:()=>E.adminPage(me,"backup"),adminreport:()=>E.adminPage(me,"reporting"),adminms:()=>E.adminPage(me,"microsoft"),adminfeatures:()=>E.adminPage(me,"features"),adminagent:()=>E.adminPage(me,"agent"),adminreminders:()=>E.adminPage(me,"reminders"),reminders:()=>E.remindersPage(me),calendar:()=>E.syncPage(me),addressbook:()=>E.addressBookPage(me),users:()=>E.adminPage(me,"users"),sso:()=>E.adminPage(me,"signin"),llm:()=>E.adminPage(me,"ai"),sync:()=>E.adminPage(me,"sync")};
+      general:()=>E.generalPage(me),aiinstr:()=>E.aiInstructionsPage(me),adminaiinstr:()=>E.adminPage(me,"instr"),adminkeep:()=>E.adminPage(me,"keep"),admincheck:()=>E.adminPage(me,"check"),adminbackup:()=>E.adminPage(me,"backup"),adminreport:()=>E.adminPage(me,"reporting"),adminms:()=>E.adminPage(me,"microsoft"),adminfeatures:()=>E.adminPage(me,"features"),adminagent:()=>E.adminPage(me,"agent"),adminreminders:()=>E.adminPage(me,"reminders"),reminders:()=>E.remindersPage(me),calendar:()=>E.syncPage(me),addressbook:()=>E.addressBookPage(me),important:()=>E.importantPage(me),users:()=>E.adminPage(me,"users"),sso:()=>E.adminPage(me,"signin"),llm:()=>E.adminPage(me,"ai"),sync:()=>E.adminPage(me,"sync")};
     await pages[id]();
   }catch(er){host.textContent=er.message}
 }
@@ -3491,6 +3515,7 @@ document.addEventListener("click",e=>{
   const pk=e.target.closest("[data-pick]");if(pk){if(view.layout==="screen")readerOpen=true;const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;render();return}
   const openAtt=e.target.closest("[data-open-attachment]");if(openAtt){openAttachmentViewer(openAtt.dataset.openAttachment);return}
   const openEmail=e.target.closest("[data-open-email]");if(openEmail){openEmailViewer(openEmail.dataset.openEmail);return}
+  const impBtn=e.target.closest("[data-important]");if(impBtn){const m=data.find(x=>x.id===Number(impBtn.dataset.important)&&x.owner===currentUser.id);if(m)setImportant(m,!isImp(m));return}
   const replyBtn=e.target.closest("[data-reply]");if(replyBtn){openComposer(replyBtn.dataset.reply);return}
   if(e.target.closest("#expandAll")){
     const b=$("expandAll");
@@ -3826,7 +3851,7 @@ async function loadRealMail(me){
     box.value=keep;box.hidden=false;
   }else{mailboxSel="";box.hidden=true}
   selected.clear();realMail=true;applyFeatures();
-  await fetchTasks();await fetchShipping();await fetchSubs();await fetchTrips();await fetchWaiting();      // after realMail is set, so the first load already has the person's tasks
+  await fetchTasks();await fetchShipping();await fetchSubs();await fetchTrips();await fetchWaiting();await fetchImportant();      // after realMail is set, so the first load already has the person's tasks
   document.body.classList.add("real-mail");
   $("syncBtn").hidden=false;
   return true;
