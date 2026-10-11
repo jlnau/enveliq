@@ -244,6 +244,20 @@ class Unsubscribe(StrictModel):
     source: Literal["header", "body"] = "header"
 
 
+class ScamReason(StrictModel):
+    """One plain-words thing that looks odd about an email (see mail/scamcheck.py). Only host names appear in it, never a whole link."""
+
+    code: str = Field(max_length=40)
+    text: str = Field(max_length=300)
+    key: str = Field(max_length=300)
+
+
+class ScamWarning(StrictModel):
+    """A calm "be careful" flag found by plain code (never by the AI)."""
+
+    reasons: list[ScamReason] = Field(min_length=1, max_length=4)
+
+
 class RetainedMessageCreate(StrictModel):
     # Intentionally no raw body / HTML / binary attachment fields.
     subject: str = Field(max_length=998)
@@ -265,6 +279,7 @@ class RetainedMessageCreate(StrictModel):
     # Gmail/Graph message id): encrypted at rest, never sent to the browser.
     reply_context: ReplyContext | None = None
     unsubscribe: Unsubscribe | None = None
+    scam_warning: ScamWarning | None = None
     source_locator: str | None = Field(default=None, min_length=1, max_length=2048)
     # "unread" = in the inbox list; "reviewed" / "archived" = a card kept for a
     # few days after the item was handled (see backend/mail/review.py).
