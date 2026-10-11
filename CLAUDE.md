@@ -17,14 +17,16 @@ Project: **Enveliq** ("Turn email into clarity."), a private, self-hosted email-
 - Wording for normal users is plain and kind, with no jargon. Administration may be more technical. Long or rarely used options fold away behind a "Show" fold.
 
 ## Working rules
-- Every change that people can see gets a version bump (`backend/version.py` and "Current version" in `README.md`), a README entry, a `docs/CHANGELOG.md` entry, and a `SECURITY.md` entry when it touches data, sign-in or privacy. Update the matching `docs/*.md` guide.
+- Do not change the version number. Leave `backend/version.py` and "Current version" in `README.md` alone, and do not put a version number in pull request titles. The maintainer bumps the version once, right before a release.
+- Every change that people can see gets a README entry, a `docs/CHANGELOG.md` entry under the "Unreleased" heading at the top (create it if missing), and a `SECURITY.md` entry when it touches data, sign-in or privacy. Update the matching `docs/*.md` guide.
 - Write backend tests for backend changes (`tests/`). Write or update a browser check (`scripts/check_*.mjs`) for page changes, and add new ones to `.github/workflows/ci.yml`.
 - Do not invent requirements, options or behaviour that was not asked for. Do not remove features while tidying; move or fold them.
 
 ## Branches and pull requests
 - Never push to `main`. Work on a feature branch (`feat/...`, `fix/...`, `docs/...`, `chore/...`) and open a pull request into `main`. The maintainer reviews and merges.
 - One topic per pull request. The description says what changed, why, and what to check, in plain words.
-- Images are built and published only from `main`, after every check passes.
+- Merging into `main` publishes nothing. Images are built and published only when the maintainer publishes a GitHub Release whose tag (for example `v0.86`) matches `backend/version.py`, and only after every check passes.
+- When asked to prepare a release: set `backend/version.py` and "Current version" in `README.md` to the new number, and rename the "Unreleased" heading in `docs/CHANGELOG.md` to that version and today's date. Nothing else.
 
 ## Before opening a pull request, run and pass
 - `python -m pytest -q` (needs `requirements-dev.txt`)
