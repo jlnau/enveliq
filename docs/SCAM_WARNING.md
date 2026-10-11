@@ -6,11 +6,19 @@ It is **on for everyone and needs no setup**. It does not block, hide or delete 
 
 ## What people see
 
-- A small **Be careful** label next to the sender in your list.
+- A small **Be careful** label next to the subject in your list.
 - A note on the email's card, and at the top of **View original email**, that says what looks odd, for example: *"A link says paypal.com but really goes to evil.example."*
 - On a flagged email, **Unsubscribe** asks once more first. Unsubscribing from a scam tells the sender your address is real, so the button first says why, then offers **Go anyway**.
 
 If you are unsure about an email with this label, the safest thing is to type the company's own website address yourself instead of using a link in the email.
+
+![The inbox with an email from Parcel Service, subject Your parcel is on hold, marked with a small Be careful label. A note under it says something looks odd and lists two reasons: the sender's name says Royal Mail but the email came from parcel-help.example, and a link says royalmail.com but really goes to parcel-help.example.](images/scam-warning.png)
+
+On a phone the note stays short and the buttons keep their room:
+
+![Enveliq on a phone showing the same email with a Be careful label and a short note listing what looks odd. The note and buttons fit the screen with room to spare.](images/scam-warning-phone.png)
+
+*The pictures use made-up example data.*
 
 ## What it looks for
 
