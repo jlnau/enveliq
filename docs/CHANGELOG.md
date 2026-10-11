@@ -4,6 +4,15 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**A signature and saved replies.** The person's own text, kept for them, to reuse when they write.
+
+- `backend/mail/saved_writing.py` (new): `SavedWriting`, one encrypted vault record per person (`saved:<user id>`) with one signature (up to 1000 characters) and up to 30 saved replies (a name of up to 60 characters and text of up to 3000). Control characters are removed and line breaks are tidied.
+- `backend/mail/saved_writing_routes.py` (new): `GET /api/v1/me/saved`, `PUT /api/v1/me/saved/signature`, `POST /api/v1/me/saved/replies`, `PUT` and `DELETE /api/v1/me/saved/replies/{id}`. Signed-in people only, `no-store`, rate limited; one person never sees another's text.
+- `backend/export.py`: part of **Export my data** (`signature_and_saved_replies`). `backend/app.py`: forgotten when a person is removed.
+- `prototype/index.html`: the signature is put into the message box when New email or Reply opens, so it can be seen and changed (the cursor starts above it); a box with only the signature counts as empty (no "discard?" question, "Write your reply first"); a **Saved reply** chooser above the message inserts the text where the cursor is. The server sends exactly what is in the box and adds nothing of its own.
+- `web/static/auth.js`, `auth.css`: Settings, **Signature & saved replies** (`savedPage`): edit the signature; add, edit and remove saved replies.
+- Tests: `tests/test_saved_writing.py`, `scripts/check_saved_writing.mjs`.
+
 **Important people.** A short list, kept by each person for themselves, of senders whose mail is shown first.
 
 - `backend/mail/important.py` (new): `ImportantPeople`, one encrypted vault record per person (`important:<user id>`) holding addresses and optional names only, at most 200. Addresses are checked and lower-cased with the same rules as the address book.
