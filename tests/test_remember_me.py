@@ -17,8 +17,9 @@ DAY = 86400
 
 
 def max_age(resp) -> int | None:
-    m = re.search(r"Max-Age=(\d+)", resp.headers.get("set-cookie", ""))
-    return int(m.group(1)) if m else None
+    # A response can carry several cookies (the second step also clears the temporary sign-in cookie, Max-Age=0): the session's is the longest.
+    ages = [int(a) for a in re.findall(r"Max-Age=(\d+)", ", ".join(resp.headers.get_list("set-cookie")))]
+    return max(ages) if ages else None
 
 
 def login(appm, username="sam", remember=None):
