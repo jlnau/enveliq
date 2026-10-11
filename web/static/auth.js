@@ -994,6 +994,57 @@ async function adminPage(me, only) {
     const allowed = ckForm.querySelector("#ck_allowed").value.split(/[\n,;]+/).map(x => x.trim()).filter(Boolean);
     await api("/admin/check-address", { method: "PUT", body: { account_id, allowed } }); toast("Saved"); adminPage(me, only);
   });
+  const bk = (!only || only === "backup") ? await api("/admin/backups").catch(() => null) : null;
+  const bkSection = bk ? (() => {
+    const kindText = { manual: "Saved by you", auto: "Daily backup", "before-restore": "Saved just before a restore" };
+    const sizeText = n => n < 1048576 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1048576).toFixed(1)} MB`;
+    const reload = () => adminPage(me, only);
+    const settings = h("form", {},
+      chkBox("bk_daily", bk.settings.daily, "Make a backup every day", "A new copy is saved in the backups folder once a day. Older daily copies are removed after the number of days below. Copies you save yourself are never removed automatically."),
+      field("Keep daily backups for (days)", input("bk_days", { type: "number", min: "1", max: String(bk.max_keep_days), value: String(bk.settings.keep_days) })),
+      h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" })));
+    onSubmit(settings, async () => {
+      await api("/admin/backups/settings", { method: "PUT", body: { daily: settings.querySelector("#bk_daily").checked, keep_days: Number(settings.querySelector("#bk_days").value) || 7 } });
+      toast("Saved"); reload();
+    });
+    const makeBtn = h("button", { class: "btn primary", type: "button", text: "Make a backup now", onclick: async () => {
+      makeBtn.disabled = true;
+      try { await api("/admin/backups", { method: "POST" }); toast("Backup saved"); reload(); }
+      catch (err) { toast(err.message); makeBtn.disabled = false; }
+    } });
+    const row = b => {
+      const when = new Date(b.at * 1000).toLocaleString();
+      const pw = input(`bk_pw_${b.name}`, { type: "password", autocomplete: "current-password" });
+      const word = input(`bk_word_${b.name}`, { autocomplete: "off", spellcheck: "false", placeholder: bk.confirm_word });
+      const restoreForm = h("form", {},
+        alertBox("warn", "Restoring replaces the mail summaries, people and settings with the ones in this backup. Anything added since is lost. A copy of today is saved first, and everyone will need to sign in again."),
+        field("Your password", pw), field(`Type ${bk.confirm_word} to confirm`, word),
+        h("div", {}, h("button", { class: "btn danger", type: "submit", text: "Restore this backup" })));
+      onSubmit(restoreForm, async () => {
+        await api(`/admin/backups/${b.name}/restore`, { method: "POST", body: { password: pw.value, confirm: word.value } });
+        show(...chrome(me, "admin", h("h1", { text: "Restored" }), alertBox("ok", "The backup is restored. A copy of how things were before is in the backups folder. Everyone needs to sign in again."),
+          h("p", {}, h("a", { class: "btn primary", href: "/login", text: "Sign in again" }))));
+      });
+      return h("li", { class: "bkrow" },
+        h("div", {}, h("strong", { text: when }), h("div", { class: "hint", text: `${kindText[b.kind] || "Backup"} · ${sizeText(b.bytes)}` })),
+        h("div", { class: "bkact" },
+          h("a", { class: "btn", href: `${API}/admin/backups/${b.name}/download`, download: b.name, text: "Download" }),
+          h("button", { class: "btn", type: "button", text: "Delete", onclick: async e => {
+            const b2 = e.target;
+            if (b2.dataset.sure !== "1") { b2.dataset.sure = "1"; b2.textContent = "Really delete?"; setTimeout(() => { b2.dataset.sure = ""; b2.textContent = "Delete"; }, 4000); return; }
+            b2.disabled = true;
+            try { await api(`/admin/backups/${b.name}`, { method: "DELETE" }); toast("Deleted"); reload(); } catch (err) { toast(err.message); b2.disabled = false; }
+          } })),
+        more("Restore this backup", restoreForm));
+    };
+    return [
+      h("p", { class: "lead", text: "A backup is a copy of everything Enveliq keeps, still locked. It can only be opened with your vault passphrase or key file, which are never part of a backup. Download copies and keep them somewhere other than this computer." }),
+      bk.last_error ? alertBox("bad", "The last backup did not work. Check the free space on the disk.") : null,
+      h("div", {}, makeBtn),
+      bk.backups.length ? h("ul", { class: "bklist" }, ...bk.backups.map(row)) : h("p", { class: "hint", text: "No backups yet." }),
+      h("h3", { text: "Daily backup" }), settings,
+    ];
+  })() : null;
   const rp = (!only || only === "reporting") ? await api("/admin/reporting").catch(() => null) : null;
   const msConf = (!only || only === "microsoft") ? await api("/admin/microsoft").catch(() => null) : null;
   const numField = (id, label, value, min, max, hint) => field(label, input(id, { type: "number", min: String(min), max: String(max), value: String(value) }), hint);
@@ -1064,6 +1115,7 @@ async function adminPage(me, only) {
     agent: agForm ? h("section", { class: "section" }, h("h2", { text: "Agent chat" }), guideNote("AGENT.md", "", "How to connect a Hermes agent"), agForm) : null,
     reminders: remForm ? h("section", { class: "section" }, h("h2", { text: "Reminders" }), guideNote("NOTIFICATIONS.md", "", "How to set up reminders"), remForm, gForm ? h("h2", { text: "Google Calendar" }) : null, gForm ? guideNote("CALENDAR.md", "Every click, step by step:", "Google Calendar guide") : null, gForm) : null,
     check: ckForm ? h("section", { class: "section" }, h("h2", { text: "Forward to check" }), guideNote("SCAM_WARNING.md#forward-to-check", "", "How Forward to check works"), ckForm) : null,
+    backup: bkSection ? h("section", { class: "section" }, h("h2", { text: "Backup and restore" }), guideNote("BACKUP.md", "", "How backup and restore work"), ...bkSection) : null,
     reporting: rp ? h("section", { class: "section" }, h("h2", { text: "Reporting" }), guideNote("REPORTING.md", "", "How to send reports to Grafana and other tools"), reportingSection(rp, () => adminPage(me, only))) : null,
     instr: instrForm ? h("section", { class: "section" }, h("h2", { text: "AI instructions" }), promptPanel, h("h3", { text: "Extra instructions" }), instrForm) : null,
     signin: [h("section", { class: "section" }, h("h2", { text: "Sign-in rules" }), pol),
@@ -1074,7 +1126,7 @@ async function adminPage(me, only) {
           h("p", { class: "hint", text: "Create an OAuth2/OpenID application in your provider (confidential client, authorization code flow with PKCE), then fill in the details below." }), ssoForm))],
   };
   if (only) return show(...chrome(me, "admin", ...[].concat(parts[only]).filter(Boolean)));
-  show(...chrome(me, "admin", h("h1", { text: "Administration" }), parts.users, parts.ai, parts.instr, parts.keep, parts.features, parts.agent, parts.reminders, parts.check, parts.sync, parts.microsoft, parts.reporting, ...parts.signin));
+  show(...chrome(me, "admin", h("h1", { text: "Administration" }), parts.users, parts.ai, parts.instr, parts.keep, parts.features, parts.agent, parts.reminders, parts.check, parts.sync, parts.microsoft, parts.backup, parts.reporting, ...parts.signin));
 }
 // ---------- general settings and AI instructions (everyone) ----------
 const FEATURE_HINTS = {
@@ -1113,7 +1165,10 @@ async function generalPage(me) {
     toast("Saved. Your inbox updates the next time it refreshes.");
   });
   const featSection = fx ? featuresSection(me, fx) : null;
-  show(...chrome(me, "general", h("h1", { text: "General" }), h("p", { class: "lead", text: "The everyday choices. The defaults work well, so you can leave everything here as it is." }), h("section", { class: "section" }, form), featSection));
+  const exportSection = h("section", { class: "section" }, h("h2", { text: "Your data" }),
+    h("p", { class: "lead", text: "Download everything Enveliq keeps about you as one file you can read: your lists, summaries, people and settings. It never holds passwords or keys, or anyone else's mail." }),
+    h("div", {}, h("a", { class: "btn", href: `${API}/me/export`, download: "", text: "Export my data" })));
+  show(...chrome(me, "general", h("h1", { text: "General" }), h("p", { class: "lead", text: "The everyday choices. The defaults work well, so you can leave everything here as it is." }), h("section", { class: "section" }, form), featSection, exportSection));
 }
 // ---------- reminders (everyone) ----------
 function ago(ts) {
