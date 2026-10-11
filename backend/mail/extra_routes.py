@@ -31,6 +31,7 @@ class FeaturesBody(StrictModel):
     media: bool | None = None
     all_mail: bool | None = None
     shipping: bool | None = None
+    subscriptions: bool | None = None
     waiting: bool | None = None
     messages: bool | None = None
     write_help: bool | None = None

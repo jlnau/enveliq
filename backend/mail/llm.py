@@ -70,7 +70,16 @@ FIXED_PROMPT = (
     "given), up to three products separated by commas and then 'and N more', at most 25 words; look at the order lines, "
     "the subject and any description of the parcel's contents; null if the email does not say; "
     "total: the order total with its currency symbol as written, or null. "
-    "Never guess a number or a product that is not in the email)."
+    "Never guess a number or a product that is not in the email), "
+    "subscription (null, unless the email is about a paid subscription, membership or free trial that the reader has; then an object with "
+    "kind: one of started, trial_started, renewal_notice, receipt, cancelled; "
+    "service: the name of the service; "
+    "amount: the price with its currency symbol as written, or null; "
+    "period: one of weekly, fortnightly, monthly, quarterly, yearly, or null; "
+    "renews_on: the next renewal or charge date exactly as written, or null; "
+    "trial_ends_on: the date the free trial ends exactly as written, or null; "
+    "trial_days: the length of the free trial as a whole number of days when the email gives only a length such as '30 days' or '2 weeks' (14 for 2 weeks), otherwise null. "
+    "Do not work out any date yourself. Never guess a price or a date that is not in the email)."
 )
 PROMPT_MIN = 40
 PROMPT_MAX = 4000
@@ -133,6 +142,29 @@ def _shipment(raw: Any) -> dict[str, Any] | None:
     return out if (out["shop"] or out["order_number"] or out["tracking_number"]) else None
 
 
+SUBSCRIPTION_KINDS = ("started", "trial_started", "renewal_notice", "receipt", "cancelled")
+SUBSCRIPTION_PERIODS = ("weekly", "fortnightly", "monthly", "quarterly", "yearly")
+_PERIOD_WORDS = {"week": "weekly", "weekly": "weekly", "fortnight": "fortnightly", "fortnightly": "fortnightly", "month": "monthly", "monthly": "monthly",
+                 "quarter": "quarterly", "quarterly": "quarterly", "year": "yearly", "yearly": "yearly", "annual": "yearly", "annually": "yearly"}
+
+
+def _subscription(raw: Any) -> dict[str, Any] | None:
+    """The subscription facts the model found, cut to short plain text, or None when the email is not about one."""
+    if not isinstance(raw, dict):
+        return None
+    kind = _text(raw.get("kind"), 30).lower().replace(" ", "_").replace("-", "_")
+    if kind not in SUBSCRIPTION_KINDS:
+        return None
+    service = _text(raw.get("service"), 60)
+    if not service:
+        return None
+    period = _text(raw.get("period"), 20).lower()
+    days = raw.get("trial_days")
+    days = days if isinstance(days, int) and not isinstance(days, bool) and 1 <= days <= 400 else None
+    return {"kind": kind, "service": service, "amount": _text(raw.get("amount"), 30) or None, "period": _PERIOD_WORDS.get(period),
+            "renews_on": _text(raw.get("renews_on"), 60) or None, "trial_ends_on": _text(raw.get("trial_ends_on"), 60) or None, "trial_days": days}
+
+
 def parse_reply(content: Any) -> dict[str, Any]:
     """Turn the model's answer into the few safe fields Enveliq keeps."""
     bad = BridgeError("ai_bad_reply", "The AI model did not return a usable summary for this email.")
@@ -170,6 +202,9 @@ def parse_reply(content: Any) -> dict[str, Any]:
     ship = _shipment(data.get("shipment"))
     if ship:
         out["shipment"] = ship
+    sub = _subscription(data.get("subscription"))
+    if sub:
+        out["subscription"] = sub
     return out
 
 

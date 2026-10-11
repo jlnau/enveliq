@@ -361,7 +361,7 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 #newMail .compose-foot small{flex:1;text-align:right}
 .sentview{display:none}
 body.in-sent .sentview{display:block}
-body.in-sent header.top,body.in-sent .filters,body.in-sent #list,body.in-sent .sample-banner,body.in-sent #dueBars,body.in-sent #shipBars,body.in-sent #waitBars,body.in-sent #mTitleSub,body.in-sent #peek{display:none!important}
+body.in-sent header.top,body.in-sent .filters,body.in-sent #list,body.in-sent .sample-banner,body.in-sent #dueBars,body.in-sent #shipBars,body.in-sent #subBars,body.in-sent #waitBars,body.in-sent #mTitleSub,body.in-sent #peek{display:none!important}
 .sent-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:6px 0 12px}.sent-top h2{margin:0;font-size:22px}
 .sent-tools{display:flex;gap:8px;align-items:center}
 .sent-note{border:1px solid var(--c-1f3f75);background:var(--c-0c1626);color:var(--c-bfe3ff);border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:12px}
@@ -397,9 +397,9 @@ body.backend .backend-only{display:block}
 body.backend .preview-only,body.backend #vaultSetupBtn{display:none!important}
 .note a{color:var(--c-9fdcff)}
 a.user-option{text-decoration:none}
-body.booting #list,body.booting #dueBars,body.booting #shipBars,body.booting #waitBars,body.booting .sample-banner{display:none!important}
+body.booting #list,body.booting #dueBars,body.booting #shipBars,body.booting #subBars,body.booting #waitBars,body.booting .sample-banner{display:none!important}
 body.backend:not(.mail-ready) #list{visibility:hidden}
-body.backend:not(.mail-ready) #dueBars,body.backend:not(.mail-ready) #shipBars,body.backend:not(.mail-ready) #waitBars,body.backend:not(.mail-ready) .sample-banner{display:none!important}
+body.backend:not(.mail-ready) #dueBars,body.backend:not(.mail-ready) #shipBars,body.backend:not(.mail-ready) #subBars,body.backend:not(.mail-ready) #waitBars,body.backend:not(.mail-ready) .sample-banner{display:none!important}
 .sample-banner{display:none;margin-bottom:12px}
 body.backend .sample-banner{display:block}
 body.real-mail .sample-banner{display:none}
@@ -627,7 +627,7 @@ body.reader-open{overflow:hidden}
 .tmore{border:0;background:transparent;color:var(--accent);font-size:13px;padding:6px 6px 2px}
 #tasksPage{display:none;padding-top:14px}body.on-tasks #tasksPage{display:block}body.on-tasks .filters,body.on-tasks #list,body.on-tasks .sample-banner{display:none!important}
 
-#shipPage{display:none;padding-top:14px}body.on-ship #shipPage{display:block}body.on-ship .filters,body.on-ship #list,body.on-ship .sample-banner,body.on-ship #dueBars,body.on-ship #shipBars,body.on-ship #waitBars{display:none!important}
+#shipPage{display:none;padding-top:14px}body.on-ship #shipPage{display:block}body.on-ship .filters,body.on-ship #list,body.on-ship .sample-banner,body.on-ship #dueBars,body.on-ship #shipBars,body.on-ship #subBars,body.on-ship #waitBars{display:none!important}
 .sp-sub{color:var(--muted);margin:-6px 0 14px;max-width:660px}
 .ocard{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px 16px;margin-bottom:12px;display:grid;gap:10px}
 .ocard.arrive{background:#0f2429;border-color:#1f5560}.ocard.unsure{border-style:dashed;border-color:var(--faint)}
@@ -646,7 +646,7 @@ body.reader-open{overflow:hidden}
 .olinkmail{border:0;background:transparent;color:var(--accent);font:inherit;font-weight:600;text-decoration:underline;text-underline-offset:3px;padding:0;text-align:left;cursor:pointer}.olinkmail:hover{filter:brightness(1.2)}
 .oevents{margin:0;padding:0;list-style:none;border-top:1px solid var(--line)}.oevents li{padding:8px 0;border-bottom:1px solid var(--line);color:var(--muted);font-size:13px}.oevents b{color:var(--text);font-weight:600}
 
-#msgPage{display:none;padding-top:14px}body.on-msg #msgPage{display:block}body.on-msg .filters,body.on-msg #list,body.on-msg .sample-banner,body.on-msg #dueBars,body.on-msg #shipBars,body.on-msg #waitBars,body.on-msg #msgBars{display:none!important}
+#msgPage{display:none;padding-top:14px}body.on-msg #msgPage{display:block}body.on-msg .filters,body.on-msg #list,body.on-msg .sample-banner,body.on-msg #dueBars,body.on-msg #shipBars,body.on-msg #subBars,body.on-msg #waitBars,body.on-msg #msgBars{display:none!important}
 body.booting #msgBars,body.backend:not(.mail-ready) #msgBars,body.in-sent #msgBars{display:none!important}
 .mg{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden;min-height:480px;height:calc(100dvh - 250px);max-height:760px}
 .mgl{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}.mgr{display:flex;flex-direction:column;min-width:0;min-height:0}
@@ -679,7 +679,7 @@ body.booting #msgBars,body.backend:not(.mail-ready) #msgBars,body.in-sent #msgBa
 .shipcard .thead b{color:#35c2b0}.shiprow{display:flex;gap:10px 12px;flex-wrap:wrap;align-items:center;padding:8px 0;border-top:1px solid #1f5560}.shiprow:first-of-type{border-top:0}
 .shiprow .who{flex:1 1 200px;min-width:0}.shiprow .who b{display:block}.shiprow .who span{color:#bfe0dc;font-size:13px}
 
-#waitPage{display:none;padding-top:14px}body.on-wait #waitPage{display:block}body.on-wait .filters,body.on-wait #list,body.on-wait .sample-banner,body.on-wait #dueBars,body.on-wait #shipBars,body.on-wait #waitBars{display:none!important}
+#waitPage{display:none;padding-top:14px}body.on-wait #waitPage{display:block}body.on-wait .filters,body.on-wait #list,body.on-wait .sample-banner,body.on-wait #dueBars,body.on-wait #shipBars,body.on-wait #subBars,body.on-wait #waitBars{display:none!important}
 body.on-ship #waitBars{display:none!important}
 .wcard{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px 16px;margin-bottom:12px;display:grid;gap:8px}
 .wcard.due{background:#241d10;border:1px dashed #6a5220}.wcard.closed{opacity:.78}
@@ -687,6 +687,15 @@ body.on-ship #waitBars{display:none!important}
 .wbtn{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:9px;padding:9px 14px;min-height:44px}.wbtn.amber{background:#f0b24a;border-color:#f0b24a;color:#241d10;font-weight:700}
 .wgroup{margin:18px 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .wset{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:14px;flex-wrap:wrap;margin:0 0 14px}.wset select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:40px}
+#subPage{display:none;padding-top:14px}body.on-sub #subPage{display:block}body.on-sub .filters,body.on-sub #list,body.on-sub .sample-banner,body.on-sub #dueBars,body.on-sub #shipBars,body.on-sub #waitBars,body.on-sub #subBars{display:none!important}
+.subcard{border:1px solid #5a4a1c;background:#241f10;border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.subcard .thead b{color:#f0c14a}.subrow{display:flex;gap:10px 12px;flex-wrap:wrap;align-items:center;padding:8px 0;border-top:1px solid #5a4a1c}.subrow:first-of-type{border-top:0}
+.subrow .who{flex:1 1 200px;min-width:0}.subrow .who b{display:block}.subrow .who span{color:#e0d3a8;font-size:13px}
+.subitem{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px 16px;margin-bottom:12px;display:grid;gap:8px}
+.subitem.soon{border-color:#5a4a1c;background:#241f10}.subitem.done{opacity:.72}
+.subhead{display:flex;gap:6px 14px;flex-wrap:wrap;align-items:baseline}.subhead b{font-size:17px}.subhead .amt{color:var(--muted)}
+.subwhen{font-weight:600}.subitem.soon .subwhen{color:#f0c14a}.subsmall{color:var(--muted);font-size:13px}
+.subact{display:flex;gap:8px 10px;flex-wrap:wrap;align-items:center}
 .waitcard{border:1px dashed #6a5220;background:#241d10;border-radius:14px;padding:12px 14px;margin-bottom:12px}
 .waitcard .thead b{color:#f0b24a}.waitrow{display:grid;gap:6px;padding:10px 0;border-top:1px solid #4a3a18}.waitrow:first-of-type{border-top:0}
 .waitrow .wb{display:flex;gap:8px;flex-wrap:wrap}
@@ -745,6 +754,7 @@ body.on-ship #waitBars{display:none!important}
     <div class="label" id="trackLabel" hidden>Tracking</div>
     <button class="nav" data-filter="waiting" id="waitNav" title="Waiting for reply" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="nav-label">Waiting for reply</span><span class="badge" id="waitBadge"></span></button>
     <button class="nav" data-filter="shipping" id="shipNav" title="Shipping" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg><span class="nav-label">Shipping</span><span class="badge" id="shipBadge"></span></button>
+    <button class="nav" data-filter="subscriptions" id="subNav" title="Subscriptions" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3l3 3-3 3"/><path d="M4 11V9a3 3 0 0 1 3-3h13"/><path d="M7 21l-3-3 3-3"/><path d="M20 13v2a3 3 0 0 1-3 3H4"/></svg><span class="nav-label">Subscriptions</span><span class="badge" id="subBadge"></span></button>
     <div class="label" id="peopleLabel" hidden>People</div>
     <button class="nav" data-filter="messages" id="msgNav" title="Messages" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><span class="nav-label">Messages</span><span class="badge" id="msgBadge" hidden></span></button>
     <div class="label">Status</div>
@@ -786,6 +796,7 @@ body.on-ship #waitBars{display:none!important}
   <div class="note warn sample-banner"><strong>Welcome to Enveliq.</strong> These are sample emails. <a href="/welcome">Set up your mailbox</a> to see your own mail with summaries. The guide takes about five minutes.</div>
   <div id="dueBars" class="duebars" role="region" aria-label="Today's tasks" hidden></div>
   <div id="shipBars" class="duebars" role="region" aria-label="Deliveries to confirm" hidden></div>
+  <div id="subBars" class="duebars" role="region" aria-label="Subscriptions coming up" hidden></div>
   <div id="waitBars" class="duebars" role="region" aria-label="Waiting on others" hidden></div>
   <div id="msgBars" class="duebars" role="region" aria-label="New messages" hidden></div>
   <div class="filters">
@@ -824,6 +835,7 @@ body.on-ship #waitBars{display:none!important}
   <div id="list"></div>
   <section id="tasksPage" aria-label="Tasks"></section>
   <section id="shipPage" aria-label="Shipping"></section>
+  <section id="subPage" aria-label="Subscriptions"></section>
   <section id="waitPage" aria-label="Waiting for reply"></section>
   <section id="msgPage" aria-label="Messages"></section>
   <div class="allfoot" id="allFoot" hidden>Last 14 days, 100 emails max.</div>
@@ -1415,7 +1427,7 @@ const emailDetails={
 for(const m of data)Object.assign(m,emailDetails[m.id]||{});
 
 let selected=new Set(),filter="all",query="",provider="compatible";
-let feat={compose:false,address_book:false,sent:false,media:false,all_mail:false,shipping:false,waiting:false,messages:false,write_help:false};
+let feat={compose:false,address_book:false,sent:false,media:false,all_mail:false,shipping:false,subscriptions:false,waiting:false,messages:false,write_help:false};
 let allMail=false,recentAt=0,sq={items:[],waiting:0,writing:0},sqTimer=null,sqDoneSeen=new Set();
 try{allMail=localStorage.getItem("enveliq-all-mail")==="1"}catch{}
 let manageTabsScrollLeft=0;
@@ -1424,7 +1436,7 @@ let vaultMode=null; // "backend" | "preview"
 const previewVault={initialized:false,unlocked:false,salt:null,verifier:null};
 const expanded=new Set();
 // A refresh keeps you where you are: the page (in the address bar after #/) and which emails are open (this tab only).
-const PAGES=["all","action","tasks","attachments","reviewed","archived","sent","shipping","waiting","messages"];
+const PAGES=["all","action","tasks","attachments","reviewed","archived","sent","shipping","subscriptions","waiting","messages"];
 let stateReady=false;
 const rowKeyOf=id=>{const m=data.find(x=>String(x.id)===String(id));return m&&m.real?m.real.accountId+":"+m.real.messageId:null};
 function saveOpen(){
@@ -1448,7 +1460,7 @@ function syncHash(){
 function restorePage(){
   const m=/^#\/(settings|admin)\/([a-z]*)$/.exec(location.hash||""),p=/^#\/([a-z]+)$/.exec(location.hash||"");
   if(p&&PAGES.includes(p[1])){
-    const want=p[1],ok={sent:feat.sent,shipping:feat.shipping,waiting:feat.waiting,messages:feat.messages}[want];
+    const want=p[1],ok={sent:feat.sent,shipping:feat.shipping,subscriptions:feat.subscriptions,waiting:feat.waiting,messages:feat.messages}[want];
     if(want!=="all"&&ok!==false){
       filter=want;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===want));
       if(want==="sent")loadSent();
@@ -1530,7 +1542,7 @@ function snoozeOptions(now){
 // ---- Search everywhere: the one search box also looks in the other places Enveliq keeps things for this person ----
 // Reviewed, Archived and Snoozed emails, tasks, orders and waiting notes. It uses only what this page already holds for the signed-in person
 // (kept summaries and results): nothing new is stored and nothing extra is asked of the server. Matches are shown as text, a few at a time.
-const SEARCH_PAGES=["tasks","sent","shipping","waiting","messages"],SEARCH_EACH=4;
+const SEARCH_PAGES=["tasks","sent","shipping","subscriptions","waiting","messages"],SEARCH_EACH=4;
 function searchMore(rows){
   const q=String(query||"").trim().toLowerCase();
   if(q.length<2||SEARCH_PAGES.includes(filter))return "";
@@ -1891,6 +1903,64 @@ function renderShipHome(){
   box.innerHTML=`<div class="shipcard"><div class="thead"><b>Delivered · did it arrive?</b><button class="linkbtn" type="button" data-ship-go>Open Shipping</button></div>${due.slice(0,3).map(o=>`<div class="shiprow"><div class="who"><b>${esc(o.shop||"An order")}${o.order_number?" · "+esc(o.order_number):""}</b><span>${esc(o.items||"")}${o.delivered_at?(o.items?" · ":"")+esc(shipWhen(o.delivered_at)):""}</span></div><button class="obtn teal" type="button" data-ship="confirm" data-ship-id="${esc(o.id)}">Yes, I've got it</button><button class="obtn" type="button" data-ship="not_yet" data-ship-id="${esc(o.id)}">Not yet</button></div>`).join("")}${due.length>3?`<button class="tmore" type="button" data-ship-go>+${due.length-3} more</button>`:""}</div>`;
   box.hidden=false;
 }
+// ---- Subscriptions: renewals and free trials, followed from the emails about them ----
+// The AI only copied what each email said. Every date and count shown here was worked out by the server. Nothing is stored in this page.
+let subData={enabled:false,items:[],nudge_days:3};
+const subOn=()=>realMail&&!!feat.subscriptions&&subData.enabled;
+async function fetchSubs(){
+  if(!realMail||!feat.subscriptions){subData={enabled:false,items:[],nudge_days:3};return}
+  try{const r=await secureBackendRequest("/api/v1/me/subscriptions",{method:"GET",headers:{}});if(r&&Array.isArray(r.items))subData=r}catch{}
+}
+async function refreshSubs(){const a=document.activeElement;if(a&&a.matches&&a.matches("#subPage select"))return;await fetchSubs();render()}
+setInterval(()=>{if(realMail&&feat.subscriptions&&!document.hidden)refreshSubs()},300000);
+async function subAct(id,action){
+  try{const r=await secureBackendRequest(`/api/v1/me/subscriptions/${encodeURIComponent(id)}/${action}`,{method:"POST",body:"{}"});if(r&&Array.isArray(r.items))subData=r}catch(er){toast(er.message,5000);await fetchSubs()}
+  render();
+}
+document.addEventListener("change",async e=>{const d=e.target.closest&&e.target.closest("#subDays");if(!d)return;try{const r=await secureBackendRequest("/api/v1/me/subscriptions/settings",{method:"PUT",body:JSON.stringify({nudge_days:Number(d.value)})});if(r&&Array.isArray(r.items))subData=r}catch(er){toast(er.message,5000)}render()});
+const subNth=n=>n+(n%100>=11&&n%100<=13?"th":({1:"st",2:"nd",3:"rd"}[n%10]||"th"));
+const subDayLong=iso=>{const d=new Date(iso+"T00:00:00");return isNaN(d)?"":d.toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short"})};
+const subPer=p=>({weekly:"a week",fortnightly:"a fortnight",monthly:"a month",quarterly:"every 3 months",yearly:"a year"}[p]||"");
+const subMoney=s=>s.amount?s.amount+(subPer(s.period)?" "+subPer(s.period):""):"";
+function subIn(n){return n===0?"today":n===1?"tomorrow":`in ${n} days`}
+function subWhenText(s){const nx=s.next;if(!nx)return "";const d=new Date(nx.on+"T00:00:00");return nx.days<=1?subIn(nx.days):nx.days<=14&&!isNaN(d)?`on the ${subNth(d.getDate())}`:`on ${subDayLong(nx.on)}`}
+function subHeadline(s){
+  const nx=s.next;
+  if(!nx)return s.status==="cancelled"?"Cancelled":s.trial_over?"Free trial has ended":"No date yet";
+  return nx.kind==="trial_ends"?`Free trial ends ${subWhenText(s)}`:`${s.estimated?"Probably renews":"Renews"} ${subWhenText(s)}`;
+}
+function subCard(s){
+  const nx=s.next,soon=!!s.soon&&!!nx,gone=s.status==="cancelled"||!nx;
+  const money=subMoney(s);
+  const when=nx?(nx.days>=2?`${subDayLong(nx.on)} · ${subIn(nx.days)}`:subDayLong(nx.on)):"";
+  const small=s.estimated?`<div class="subsmall">Enveliq worked this date out from the last receipt. It may be a day or two out.</div>`:s.trial_over?`<div class="subsmall">If you kept it, it is now being charged.</div>`:"";
+  const link=s.link&&s.link.url&&/^https:\/\//.test(s.link.url)?`<a class="olink" href="${esc(s.link.url)}" target="_blank" rel="noopener noreferrer nofollow">Visit ${esc(s.link.host)}</a>`:"";
+  const acts=s.status==="cancelled"
+    ?`<button class="obtn" type="button" data-sub="keep" data-sub-id="${esc(s.id)}">I still have it</button>`
+    :`<button class="obtn" type="button" data-sub="cancelled" data-sub-id="${esc(s.id)}">I've cancelled it</button>`;
+  return `<article class="subitem${soon?" soon":""}${gone?" done":""}"><div class="subhead"><b>${esc(s.service||"A subscription")}</b>${money?`<span class="amt">${esc(money)}</span>`:""}</div><div class="subwhen">${esc(subHeadline(s))}${when?` <span class="subsmall">· ${esc(when)}</span>`:""}</div>${small}<div class="subact">${acts}<button class="olink" type="button" data-sub="not_subscription" data-sub-id="${esc(s.id)}">This is not a subscription</button>${link}</div></article>`;
+}
+function renderSubPage(){
+  const box=$("subPage"),items=subData.items||[];
+  const opts=Array.from({length:14},(_,i)=>i+1).map(n=>`<option value="${n}"${n===subData.nudge_days?" selected":""}>${n}</option>`).join("");
+  const head=`<div class="tp-head"><h3>Subscriptions</h3></div><p class="sp-sub">Renewals and free trials, found in the emails you get. The AI copies what each email says. Enveliq works out every date itself.</p><label class="wset">Remind me <select id="subDays" aria-label="Days before a renewal">${opts}</select> days before</label>`;
+  if(!items.length){box.innerHTML=head+'<div class="focus-card"><div class="focus-big">No subscriptions to follow</div><div class="focus-sub">When an email is about a subscription or a free trial, it shows up here by itself.</div></div>';return}
+  box.innerHTML=head+items.map(subCard).join("")+'<p class="sp-sub">"Visit" opens the company\'s own website in a new tab, and shows the name of the website first. Enveliq never contacts the company. Cancelled ones are forgotten after 30 days.</p>';
+}
+function renderSubHome(){
+  const box=$("subBars"),due=subOn()?(subData.items||[]).filter(s=>s.soon&&s.next):[];
+  if(!due.length||filter==="subscriptions"||filter==="sent"){box.hidden=true;box.replaceChildren();return}
+  box.innerHTML=`<div class="subcard"><div class="thead"><b>Coming up</b><button class="linkbtn" type="button" data-sub-go>Open Subscriptions</button></div>${due.slice(0,3).map(s=>`<div class="subrow"><div class="who"><b>${esc(s.service||"A subscription")} ${s.next.kind==="trial_ends"?"free trial ends":s.estimated?"probably renews":"renews"} ${esc(subWhenText(s))}</b><span>${esc([subMoney(s),subDayLong(s.next.on)].filter(Boolean).join(" · "))}</span></div></div>`).join("")}${due.length>3?`<button class="tmore" type="button" data-sub-go>+${due.length-3} more</button>`:""}</div>`;
+  box.hidden=false;
+}
+// The menu entry shows only when there is something to follow (or you are on the page).
+function subNavSync(){
+  const on=realMail&&accounts.length>0,show=on&&subOn()&&((subData.items||[]).length>0||filter==="subscriptions");
+  $("subNav").hidden=!show;
+  $("trackLabel").hidden=!(on&&(feat.shipping||feat.waiting||show));
+  const b=$("subBadge"),soon=subOn()?(subData.items||[]).filter(s=>s.soon&&s.next).length:0;
+  if(b){b.textContent=soon;b.hidden=!soon;b.classList.toggle("hot",soon>0)}
+}
 // ---- Messages: short notes between the people who share this Enveliq ----
 // The server decides who may open a conversation; this page only shows what it is sent and keeps nothing after you leave. Plain text only.
 let msgSum={enabled:false,unread:0,conversations:0,latest:[]},msgS={threads:[],people:[],cur:null,mode:"list",draft:"",sig:"",busy:false};
@@ -2025,7 +2095,7 @@ function renderWaitPage(){
 }
 function renderWaitHome(){
   const box=$("waitBars"),due=waitOn()?(waitData.notes||[]).filter(n=>n.due):[];
-  if(!due.length||filter==="waiting"||filter==="sent"||filter==="shipping"){box.hidden=true;box.replaceChildren();return}
+  if(!due.length||filter==="waiting"||filter==="sent"||filter==="shipping"||filter==="subscriptions"){box.hidden=true;box.replaceChildren();return}
   const btn=(n,a,t)=>`<button class="wbtn" type="button" data-wait="${a}" data-wait-id="${esc(n.id)}">${t}</button>`;
   box.innerHTML=`<div class="waitcard"><div class="thead"><b>Waiting on others · ${due.length}</b><button class="linkbtn" type="button" data-wait-go>Open</button></div>${due.slice(0,3).map(n=>`<div class="waitrow"><div><span class="wto">${esc(waitTo(n))}</span> <span class="wsub">· ${esc(n.subject||"")}</span></div><div class="wage">${esc(waitAge(n))}. No reply yet.${n.ask?" "+esc(n.ask):""}</div><div class="wb"><button class="wbtn amber" type="button" data-wait-nudge="${esc(n.id)}">Write a nudge</button>${btn(n,"got_reply","Got a reply")}${btn(n,"later","Ask again in "+waitData.days+(waitData.days===1?" day":" days"))}${btn(n,"not_needed","Not needed")}</div></div>`).join("")}${due.length>3?`<button class="tmore" type="button" data-wait-go>+${due.length-3} more</button>`:""}</div>`;
   box.hidden=false;
@@ -2085,15 +2155,16 @@ $("allSwitch").onclick=async()=>{
 };
 function render(){
   window.__hidePeek&&window.__hidePeek();
-  document.body.classList.toggle("in-sent",filter==="sent");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="sent"?"Sent":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
+  document.body.classList.toggle("in-sent",filter==="sent");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="sent"?"Sent":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
   const mine=userMessages().filter(m=>!m.extra);          // the quiet "All emails" entries are never counted
   if(!realMail)syncDemoTasks();else settleTasks();
   document.body.classList.toggle("on-tasks",filter==="tasks");
   document.body.classList.toggle("on-ship",filter==="shipping");
+  document.body.classList.toggle("on-sub",filter==="subscriptions");
   document.body.classList.toggle("on-wait",filter==="waiting");
   document.body.classList.toggle("on-msg",filter==="messages");
   saveOpen();syncHash();
-  renderToday();renderShipHome();renderWaitHome();renderMsgHome();if(filter==="messages")renderMsgPage();if(filter==="waiting")renderWaitPage();if(filter==="tasks")renderTasksPage();if(filter==="shipping")renderShipPage();
+  renderToday();renderShipHome();renderSubHome();renderWaitHome();renderMsgHome();if(filter==="messages")renderMsgPage();if(filter==="waiting")renderWaitPage();if(filter==="tasks")renderTasksPage();if(filter==="shipping")renderShipPage();if(filter==="subscriptions")renderSubPage();subNavSync();
   // The number is how many are being followed; it turns blue when one needs you (an order to confirm, a reply nobody has sent).
   {const os=shipOn()?(shipData.orders||[]).filter(o=>!(o.delivered_at&&o.ack)):[];const sb=$("shipBadge");if(sb){sb.textContent=os.length;sb.hidden=!os.length;sb.classList.toggle("hot",os.some(o=>o.needs_confirm||o.unsure))}}
   {const mb=$("msgBadge");if(mb){const n=msgOn()?msgSum.unread:0;mb.textContent=n;mb.hidden=!n;mb.classList.toggle("hot",n>0)}}
@@ -2119,7 +2190,7 @@ function render(){
     sender:(a,b)=>String(a.sender).localeCompare(String(b.sender),undefined,{sensitivity:"base"})||(b.received||0)-(a.received||0)}[sortMode];
   if(cmp)rows.sort(cmp);
   scheduleWake();
-  {const b=$("expandAll"),can=view.layout==="list"&&!["tasks","sent","shipping","waiting","messages"].includes(filter)&&rows.length>0;
+  {const b=$("expandAll"),can=view.layout==="list"&&!["tasks","sent","shipping","subscriptions","waiting","messages"].includes(filter)&&rows.length>0;
    b.hidden=!can||selected.size>1;if(can){const all=view.rows==="open"||rows.every(m=>expanded.has(`row-${m.id}`));b.textContent=all?"Collapse all":"Expand all";b.dataset.mode=all?"collapse":"expand"}}
 const ICON_SNOOZE=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`,ICON_OK=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,ICON_ARCH=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg>`,ICON_BIN=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>`,ICON_REPLY=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 6 6v3"/></svg>`;
   const quiet=(m,mode)=>{
@@ -3369,6 +3440,8 @@ document.addEventListener("click",e=>{
   const wn=e.target.closest("[data-wait-nudge]");if(wn){waitNudge(wn.dataset.waitNudge);return}
   if(e.target.closest("[data-wait-go]")){filter="waiting";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="waiting"));render();return}
   const wc=e.target.closest("[data-wait-check]");if(wc){wc.disabled=true;wc.textContent="Checking…";secureBackendRequest("/api/v1/me/waiting/check",{method:"POST",body:"{}"}).then(r=>{if(r&&Array.isArray(r.notes))waitData=r}).catch(er=>toast(er.message,6000)).finally(render);return}
+  const sb=e.target.closest("[data-sub]");if(sb){subAct(sb.dataset.subId,sb.dataset.sub);return}
+  if(e.target.closest("[data-sub-go]")){filter="subscriptions";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="subscriptions"));render();return}
   const sh=e.target.closest("[data-ship]");if(sh){shipAct(sh.dataset.shipId,sh.dataset.ship);return}
   {const t=e.target.closest("[data-ship-copy],[data-ship-trackall],[data-carrier-add],[data-carriers-toggle],[data-carrier-save],[data-carrier-remove],[data-carrier-edit],[data-carrier-cancel]");
    if(t){
@@ -3673,7 +3746,7 @@ async function loadRealMail(me){
     box.value=keep;box.hidden=false;
   }else{mailboxSel="";box.hidden=true}
   selected.clear();realMail=true;applyFeatures();
-  await fetchTasks();await fetchShipping();await fetchWaiting();      // after realMail is set, so the first load already has the person's tasks
+  await fetchTasks();await fetchShipping();await fetchSubs();await fetchWaiting();      // after realMail is set, so the first load already has the person's tasks
   document.body.classList.add("real-mail");
   $("syncBtn").hidden=false;
   return true;
@@ -3904,8 +3977,9 @@ function applyFeatures(){
   const on=realMail&&accounts.length>0;
   $("newMailBtn").hidden=$("mNewBtn").hidden=!(on&&feat.compose);
   $("sentNav").hidden=!(on&&feat.sent);
-  $("shipNav").hidden=!(on&&feat.shipping);$("waitNav").hidden=!(on&&feat.waiting);$("trackLabel").hidden=!(on&&(feat.shipping||feat.waiting));
+  $("shipNav").hidden=!(on&&feat.shipping);$("waitNav").hidden=!(on&&feat.waiting);subNavSync();
   if(filter==="waiting"&&!(on&&feat.waiting)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
+  if(filter==="subscriptions"&&!(on&&feat.subscriptions)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   if(filter==="shipping"&&!(on&&feat.shipping)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   {const mo=realMail&&!!feat.messages;$("msgNav").hidden=$("peopleLabel").hidden=!mo;
    if(filter==="messages"&&!mo){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
