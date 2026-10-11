@@ -79,6 +79,51 @@ def test_a_very_large_or_broken_email_does_not_break_the_check():
     assert scamcheck.registrable("a.b.example.co.uk") == "example.co.uk" and scamcheck.registrable("example.com") == "example.com"
 
 
+# ---------- is this really from them? ----------
+
+def check(extra: str = "", sender: str = "Shop <a@shop.example>", reply_to: str | None = None):
+    m = msg("hi", sender=sender, extra=(f"Reply-To: {reply_to}\r\n" if reply_to else "") + extra)
+    return scamcheck.sender_check(m), [r["code"] for r in scamcheck.header_reasons(m)]
+
+
+def results(line: str) -> str:
+    return f"Authentication-Results: mx.example; {line}\r\n"
+
+
+def test_dmarc_decides_when_it_is_there():
+    assert check(results("spf=pass; dkim=pass; dmarc=pass"))[0]["result"] == "confirmed"
+    assert check(results("spf=pass; dkim=pass; dmarc=fail (p=reject)"))[0]["result"] == "not_confirmed"
+    assert check(results("dmarc=fail"))[1] == ["not_confirmed"]
+
+
+def test_without_dmarc_spf_and_dkim_must_both_pass():
+    assert check(results("spf=pass; dkim=pass"))[0]["result"] == "confirmed"
+    assert check(results("spf=pass; dkim=none"))[0]["result"] == "unknown"
+    assert check(results("spf=softfail; dkim=none"))[0]["result"] == "not_confirmed"
+    assert check(results("spf=fail; dkim=pass"))[0]["result"] == "unknown"      # a good signature outweighs a failed path (forwarding breaks SPF)
+
+
+def test_no_header_or_an_odd_one_says_nothing():
+    assert check()[0] == {"result": "unknown", "detail": "", "reply_differs": False}
+    assert check("Authentication-Results: mx.example; auth=pass\r\n")[0]["result"] == "unknown"
+
+
+def test_only_the_first_header_counts_so_a_sender_cannot_vouch_for_itself():
+    """The receiving server adds its own header at the top. Anything the sender wrote sits below it."""
+    assert check(results("dmarc=fail") + results("dmarc=pass"))[0]["result"] == "not_confirmed"
+    assert check(results("dmarc=pass") + results("dmarc=fail"))[0]["result"] == "confirmed"
+
+
+def test_replies_that_go_elsewhere_are_pointed_out_and_flagged_only_for_a_well_known_name():
+    info, found = check(sender="PayPal <service@paypal.com>", reply_to="help@mailbox.example")
+    assert info["reply_differs"] is True and found == ["reply_elsewhere"]
+    info, found = check(sender="Shop <a@shop.example>", reply_to="owner@gmail.com")
+    assert info["reply_differs"] is True and found == []                                 # shown, never flagged: small shops do this
+    assert check(sender="Amazon <a@amazon.com>", reply_to="x@amazon.co.uk") == ({"result": "unknown", "detail": "", "reply_differs": False}, [])
+    assert check(sender="Shop <a@shop.example>", reply_to="a@shop.example")[0]["reply_differs"] is False
+    assert check(sender="Shop <a@shop.example>", reply_to="abc123@slmail.me")[0]["reply_differs"] is False   # an alias service
+
+
 # ---------- sync, summaries and View original ----------
 
 @pytest.fixture
@@ -122,6 +167,9 @@ def test_view_original_adds_what_the_links_give_away(env):
     assert "pay?id=77" not in json.dumps(shown["warning"])
     calm = client.get(f"/api/v1/accounts/{aid}/messages/{got['Dinner on Friday']['id']}/original").json()
     assert calm["warning"] is None
+    assert calm["sender_check"]["result"] == "unknown"
+    unconfirmed = client.get(f"/api/v1/accounts/{aid}/messages/{got['Account problem']['id']}/original").json()
+    assert unconfirmed["sender_check"]["result"] == "not_confirmed"
 
 
 def test_summarising_keeps_the_flag_found_in_the_links(env):

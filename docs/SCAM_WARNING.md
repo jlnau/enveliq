@@ -20,13 +20,32 @@ On a phone the note stays short and the buttons keep their room:
 
 *The pictures use made-up example data.*
 
+## Is this really from them?
+
+In **View original email**, a **Sender** line says whether your own email provider could confirm that the email really came from that address:
+
+- *"Your email provider confirmed this came from that address."* (green)
+- *"Your email provider could not confirm this came from that address."* (amber). This also adds a line to the Be careful note.
+- Nothing at all when your provider gave no answer. Some providers add none.
+
+If an email asks you to reply to a different website from the one it came from, the **Reply-To** line says so. When an email from a well-known name does this, it also gets the Be careful note.
+
+![The original of an email from Parcel Service. The Sender line says your email provider could not confirm the email came from that address, the Reply-To is on a different website, and a Be careful note lists what looks odd.](images/sender-check.png)
+
+On a phone the lines wrap and nothing runs off the screen:
+
+![The same email on a phone. The Sender and Reply-To lines wrap neatly inside the email.](images/sender-check-phone.png)
+
+The answer comes from the result your own provider writes into the email when it arrives (the SPF, DKIM and DMARC checks). Enveliq only reads it. It reads the provider's own line, never one the sender wrote. **Confirmed does not mean safe**: a scammer can use a real address of their own.
+
 ## What it looks for
 
 - A link that names a well-known website but really goes to another one.
 - A link that goes to a number (such as `203.0.113.9`) instead of a website name.
 - A link to a website that copies a well-known name, such as `paypa1` or `dhl-parcel`, or one written with unusual letters that pass for ordinary ones.
 - A sender whose name says one thing and whose address says another, such as "PayPal" writing from an unrelated address.
-- A sender your own email provider could not confirm (it reports a failed DMARC check).
+- A sender your own email provider could not confirm (it reports a failed DMARC check, or failed SPF and DKIM checks).
+- An email from a well-known name that asks for replies at another website.
 
 All of this is plain code that compares what an email says with what it does. **The AI is not asked and never decides.**
 

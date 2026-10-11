@@ -89,6 +89,13 @@ These rules are architecture requirements, not UI preferences.
 - Only the checked address, its host name and where it was found are stored with the encrypted message summary (from the List-Unsubscribe header at sync time). A link found in the text of a message is worked out when View original is opened, and is not stored.
 - Opening the sender's page tells the sender that the address is live. That is the same as pressing the link in any mail app.
 
+## Is this really from them? (v0.67)
+
+- The sender result is read from the **first** `Authentication-Results` header only, which is the one the person's own provider adds on arrival. A sender can write its own header lines, but they sit below it, so they are ignored. Nothing the sender wrote can make an email show "confirmed".
+- Plain code, no AI. Nothing new is stored: the result is worked out from the headers when View original is opened, and the existing Be careful flag keeps only a fixed sentence and a host name (see Be careful flag, v0.66).
+- "Confirmed" means the provider says the email passed its checks. It does not mean the email is safe, and the page never says it is. When the provider adds no result, the page says nothing.
+- A Reply-To on another website is shown but only flags an email from a well-known name, because small businesses often use a free mail address for replies.
+
 ## Be careful flag (v0.66)
 
 - The flag is found by plain code in `backend/mail/scamcheck.py`. The AI is not asked and never decides: it only ever sees the email text, as before, and nothing it writes feeds the flag.
