@@ -1137,6 +1137,7 @@ body.on-ship #waitBars{display:none!important}
       <section data-settings-panel="adminreminders" hidden></section>
       <section data-settings-panel="addressbook" hidden></section>
       <section data-settings-panel="important" hidden></section>
+      <section data-settings-panel="saved" hidden></section>
 
       <section data-settings-panel="system" hidden>
         <div class="role-demo">Administrator only</div>
@@ -1202,6 +1203,7 @@ body.on-ship #waitBars{display:none!important}
     <div><label for="composeFrom">From</label><select id="composeFrom"></select><div class="compose-hint" id="composeFromHint"></div></div>
     <div><label for="composeTo">To</label><input id="composeTo" readonly><div class="compose-hint" id="composeToHint"></div></div>
     <div><label for="composeSubject">Subject</label><input id="composeSubject"></div>
+    <div class="saved-row" id="composeSavedRow" hidden><label for="composeSaved">Saved reply</label><select id="composeSaved"></select></div>
     <div><label for="composeText">Message</label><textarea id="composeText" placeholder="Write your reply"></textarea></div>
     <div class="wh" id="composeWh" hidden></div>
     <details><summary>Original message (quoted below your reply)</summary><pre id="composeQuote"></pre></details>
@@ -1239,6 +1241,7 @@ body.on-ship #waitBars{display:none!important}
     <div id="nmCcRow" hidden><label>Cc</label><div class="chips" id="nmCc" data-label="Cc"></div></div>
     <div id="nmBccRow" hidden><label>Bcc</label><div class="chips" id="nmBcc" data-label="Bcc"></div></div>
     <div><label for="nmSubject">Subject</label><input id="nmSubject" maxlength="900"></div>
+    <div class="saved-row" id="nmSavedRow" hidden><label for="nmSaved">Saved reply</label><select id="nmSaved"></select></div>
     <div><label for="nmText">Message</label><textarea id="nmText" maxlength="100000"></textarea></div>
     <div class="wh" id="nmWh" hidden></div>
     <div class="nm-files" id="nmFiles"></div>
@@ -2149,6 +2152,27 @@ async function fetchImportant(){
   if(!realMail){return}
   try{const r=await secureBackendRequest("/api/v1/me/important",{method:"GET",headers:{}});if(r&&Array.isArray(r.items))setImpList(r.items)}catch{}
 }
+// ---- Signature and saved replies: the person's own text, kept encrypted on the server. The signature is put in the box when a message is opened, so it can be seen and changed. ----
+let saved={signature:"",replies:[]};
+async function fetchSaved(){
+  if(!realMail)return;
+  try{const r=await secureBackendRequest("/api/v1/me/saved",{method:"GET",headers:{}});if(r&&Array.isArray(r.replies))saved=r}catch{}
+}
+const sigText=()=>String(saved.signature||"");
+const withSig=t=>{const g=sigText();return g?(t?t+"\n\n"+g:"\n\n"+g):(t||"")};
+const isBare=t=>{const x=String(t||"").trim();return !x||(!!sigText()&&x===sigText().trim())};
+function paintSaved(selId,rowId){
+  const sel=$(selId),row=$(rowId),on=realMail&&saved.replies.length>0;
+  row.hidden=!on;if(!on)return;
+  sel.replaceChildren(new Option("Insert a saved reply\u2026",""),...saved.replies.map(r=>new Option(r.title,r.id)));sel.value="";
+}
+function insertSaved(sel,ta){
+  const r=saved.replies.find(x=>x.id===sel.value);sel.value="";if(!r)return;
+  const s=typeof ta.selectionStart==="number"?ta.selectionStart:ta.value.length,e=typeof ta.selectionEnd==="number"?ta.selectionEnd:s;
+  const before=ta.value.slice(0,s),after=ta.value.slice(e);
+  ta.value=before+r.text+after;const pos=(before+r.text).length;
+  ta.focus();ta.setSelectionRange(pos,pos);ta.dispatchEvent(new Event("input",{bubbles:true}));
+}
 async function setImportant(m,on){
   const addr=impKey(m.address),who=m.sender||addr;
   if(!realMail){if(on)impSet.add(addr);else impSet.delete(addr);render();toast(on?`${who} is now an important person`:`${who} is no longer marked important`);return}
@@ -2477,11 +2501,11 @@ function openComposer(id){
   th.textContent=plan.noReply?`${plan.toHint} This looks like an address that doesn't accept replies, so your message may not be read.`:plan.toHint;
   th.className="compose-hint"+(plan.noReply?" warn":m.viaAlias?" alias":"");
   $("composeSubject").value=/^re:/i.test(m.subject)?m.subject:`Re: ${m.subject}`;
-  $("composeText").value="";whReset("reply");
+  $("composeText").value=withSig("");whReset("reply");paintSaved("composeSaved","composeSavedRow");
   $("composeQuote").textContent=m.real?`On ${m.date||m.time}, ${m.sender} <${m.address}> wrote. Open "View email" to read the original.`:`On ${m.date||m.time}, ${m.sender} <${m.address}> wrote:\n`+(m.body||[m.summary]).map(par=>par.split("\n").map(l=>"> "+l).join("\n")).join("\n>\n");
   closeAttachmentViewer();
   $("compose").classList.add("open");$("composeScrim").classList.add("show");
-  setTimeout(()=>$("composeText").focus(),0);
+  setTimeout(()=>{const t=$("composeText");t.focus();t.setSelectionRange(0,0)},0);
 }
 function closeComposer(){
   $("compose").classList.remove("open");$("composeScrim").classList.remove("show");composing=null;
@@ -2490,7 +2514,7 @@ let sendingReply=false,whPassed=false;
 function sendReply(){
   if(!composing)return;
   const text=$("composeText").value.trim();
-  if(!text){toast("Write your reply first");$("composeText").focus();return}
+  if(isBare(text)){toast("Write your reply first");$("composeText").focus();return}
   const {m,plan}=composing;
   const from=$("composeFrom").value;
   if(!plan.identities.includes(from)){toast("Choose one of your sending addresses");return}
@@ -3220,6 +3244,7 @@ function buildSettingsNav(mode){
     ["Your mail","accounts","Email accounts"],
     ...(feat.address_book?[["","addressbook","Address book"]]:[]),
     ["","important","Important people"],
+    ["","saved","Signature & saved replies"],
     ["","calendar","Calendar & to-do"],
     ["How it works for you","general","General"],
     ["","reminders","Reminders"],
@@ -3275,7 +3300,7 @@ function buildSettingsNav(mode){
 // ---- The real pages, shown inside the pop-ups ----
 // auth.css and the page scripts are loaded once, as one module so their names cannot clash with this page's.
 // Each page lives in its own shadow root, so its styles stay inside it.
-const EMBED_IDS=["profile","accounts","signin","setup","general","aiinstr","users","sso","llm","sync","adminaiinstr","adminkeep","admincheck","adminbackup","adminreport","adminms","adminfeatures","adminagent","adminreminders","reminders","calendar","addressbook","important"];
+const EMBED_IDS=["profile","accounts","signin","setup","general","aiinstr","users","sso","llm","sync","adminaiinstr","adminkeep","admincheck","adminbackup","adminreport","adminms","adminfeatures","adminagent","adminreminders","reminders","calendar","addressbook","important","saved"];
 let embedLoad=null,embedCss="";
 function loadEmbedAssets(){
   if(embedLoad)return embedLoad;
@@ -3318,7 +3343,7 @@ async function openEmbedNow(id){
     host._mount.replaceChildren();
     const me=await E.api("/me"),P=new URLSearchParams();
     const pages={profile:()=>E.profilePage(me),accounts:()=>E.mailboxesPage(me),signin:()=>E.accountPage(me,P),setup:()=>E.welcomePage(me,P),
-      general:()=>E.generalPage(me),aiinstr:()=>E.aiInstructionsPage(me),adminaiinstr:()=>E.adminPage(me,"instr"),adminkeep:()=>E.adminPage(me,"keep"),admincheck:()=>E.adminPage(me,"check"),adminbackup:()=>E.adminPage(me,"backup"),adminreport:()=>E.adminPage(me,"reporting"),adminms:()=>E.adminPage(me,"microsoft"),adminfeatures:()=>E.adminPage(me,"features"),adminagent:()=>E.adminPage(me,"agent"),adminreminders:()=>E.adminPage(me,"reminders"),reminders:()=>E.remindersPage(me),calendar:()=>E.syncPage(me),addressbook:()=>E.addressBookPage(me),important:()=>E.importantPage(me),users:()=>E.adminPage(me,"users"),sso:()=>E.adminPage(me,"signin"),llm:()=>E.adminPage(me,"ai"),sync:()=>E.adminPage(me,"sync")};
+      general:()=>E.generalPage(me),aiinstr:()=>E.aiInstructionsPage(me),adminaiinstr:()=>E.adminPage(me,"instr"),adminkeep:()=>E.adminPage(me,"keep"),admincheck:()=>E.adminPage(me,"check"),adminbackup:()=>E.adminPage(me,"backup"),adminreport:()=>E.adminPage(me,"reporting"),adminms:()=>E.adminPage(me,"microsoft"),adminfeatures:()=>E.adminPage(me,"features"),adminagent:()=>E.adminPage(me,"agent"),adminreminders:()=>E.adminPage(me,"reminders"),reminders:()=>E.remindersPage(me),calendar:()=>E.syncPage(me),addressbook:()=>E.addressBookPage(me),important:()=>E.importantPage(me),saved:()=>E.savedPage(me),users:()=>E.adminPage(me,"users"),sso:()=>E.adminPage(me,"signin"),llm:()=>E.adminPage(me,"ai"),sync:()=>E.adminPage(me,"sync")};
     await pages[id]();
   }catch(er){host.textContent=er.message}
 }
@@ -3851,7 +3876,7 @@ async function loadRealMail(me){
     box.value=keep;box.hidden=false;
   }else{mailboxSel="";box.hidden=true}
   selected.clear();realMail=true;applyFeatures();
-  await fetchTasks();await fetchShipping();await fetchSubs();await fetchTrips();await fetchWaiting();await fetchImportant();      // after realMail is set, so the first load already has the person's tasks
+  await fetchTasks();await fetchShipping();await fetchSubs();await fetchTrips();await fetchWaiting();await fetchImportant();await fetchSaved();      // after realMail is set, so the first load already has the person's tasks
   document.body.classList.add("real-mail");
   $("syncBtn").hidden=false;
   return true;
@@ -4257,13 +4282,14 @@ function whDone(ok){
 }
 $("whCheckYes").onclick=()=>whDone(true);$("whCheckNo").onclick=()=>whDone(false);$("whScrim").onclick=()=>whDone(false);
 $("whCheck").addEventListener("keydown",e=>{if(e.key==="Escape"){e.stopPropagation();whDone(false)}});
+$("composeSaved").onchange=()=>insertSaved($("composeSaved"),$("composeText"));$("nmSaved").onchange=()=>insertSaved($("nmSaved"),$("nmText"));
 $("composeText").addEventListener("input",()=>whLabel("reply"));
 $("nmText").addEventListener("input",()=>whLabel("new"));
 
 // ---- New email ----
 const nm={files:[],busy:false,armed:false,fields:null};
 function nmFields(){if(!nm.fields)nm.fields={to:chipField($("nmTo")),cc:chipField($("nmCc")),bcc:chipField($("nmBcc"))};return nm.fields}
-const nmDirty=()=>{const f=nmFields();return !!($("nmText").value.trim()||$("nmSubject").value.trim()||f.to.items.length||f.cc.items.length||f.bcc.items.length||f.to.input.value||nm.files.length)};
+const nmDirty=()=>{const f=nmFields();return !!(!isBare($("nmText").value)||$("nmSubject").value.trim()||f.to.items.length||f.cc.items.length||f.bcc.items.length||f.to.input.value||nm.files.length)};
 function paintNmFiles(){
   $("nmFiles").replaceChildren(...nm.files.map((f,i)=>{
     const s=document.createElement("span");s.className="nm-file";
@@ -4286,7 +4312,7 @@ function openNewMail(pre){
   if(want&&opts.some(o=>o.value===want))$("nmFrom").value=want;
   f.to.set(pre&&pre.to);f.cc.set(pre&&pre.cc);f.bcc.set(pre&&pre.bcc);
   $("nmCcRow").hidden=!(pre&&pre.cc&&pre.cc.length);$("nmBccRow").hidden=!(pre&&pre.bcc&&pre.bcc.length);
-  $("nmSubject").value=(pre&&pre.subject)||"";$("nmText").value=(pre&&pre.body)||"";whReset("new");
+  $("nmSubject").value=(pre&&pre.subject)||"";$("nmText").value=(pre&&pre.body)?pre.body:withSig("");whReset("new");paintSaved("nmSaved","nmSavedRow");
   const n=realPrefs.undo_send_seconds||0;
   $("nmHint").textContent=n>0?`Held for ${n} ${n===1?"second":"seconds"} so you can undo`:"Sent as soon as you press Send";
   $("newMail").classList.add("open");$("nmScrim").classList.add("show");
@@ -4342,7 +4368,7 @@ async function sendNew(){
   const to=f.to.items.map(addrText),cc=f.cc.items.map(addrText),bcc=f.bcc.items.map(addrText);
   if(!to.length&&!cc.length&&!bcc.length){toast("Add at least one person to send this to");f.to.input.focus();return}
   const subject=$("nmSubject").value.trim(),body=$("nmText").value;
-  if(!subject&&!body.trim()&&!nm.files.length){toast("Add a subject or a message first");return}
+  if(!subject&&isBare(body)&&!nm.files.length){toast("Add a subject or a message first");return}
   const [aid,from]=$("nmFrom").value.split("|");
   if(!nmWarned){
     const warn=sendWarnings(subject,body,nm.files.length);
