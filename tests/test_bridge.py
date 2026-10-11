@@ -404,8 +404,8 @@ def test_expired_is_local_only(env):
 def test_other_users_and_other_providers(env):
     appm, admin, bridge, _ = env
     aid, m = synced(admin, bridge)
-    create_user(admin, "beth")
-    beth = sign_in(appm, "beth")
+    create_user(admin, "cara")
+    cara = sign_in(appm, "cara")
     mid = m["Quarterly update"]["id"]
     for method, url, body in (
         ("post", f"/api/v1/accounts/{aid}/sync", {}),
@@ -413,7 +413,7 @@ def test_other_users_and_other_providers(env):
         ("get", f"/api/v1/accounts/{aid}/messages/{mid}/original", None),
         ("post", f"/api/v1/accounts/{aid}/messages/{mid}/reply", {"body": "hi"}),
     ):
-        r = getattr(beth, method)(url, **({"json": body} if body is not None else {}))
+        r = getattr(cara, method)(url, **({"json": body} if body is not None else {}))
         assert r.status_code == 404, (url, r.status_code)       # same as a mailbox that does not exist
     imap_acct = admin.post("/api/v1/accounts", json={
         "provider": "IMAP", "display_name": "Other", "email_address": "o@example.invalid", "auth_method": "imap",

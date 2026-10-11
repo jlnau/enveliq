@@ -85,15 +85,15 @@ def test_a_model_that_is_down_or_wrong_is_explained(env):
 
 def test_only_administrators_change_it(env):
     appm, admin, model, _ = env
-    create_user(admin, "beth")
-    beth = sign_in(appm, "beth")
-    assert beth.get("/api/v1/ai/status").status_code == 200
-    assert beth.get("/api/v1/ai/config").status_code == 403
-    assert beth.put("/api/v1/ai/config", json=body(model)).status_code == 403
-    assert beth.delete("/api/v1/ai/config").status_code == 403
-    assert beth.post("/api/v1/ai/test", json=body(model)).status_code == 403
+    create_user(admin, "cara")
+    cara = sign_in(appm, "cara")
+    assert cara.get("/api/v1/ai/status").status_code == 200
+    assert cara.get("/api/v1/ai/config").status_code == 403
+    assert cara.put("/api/v1/ai/config", json=body(model)).status_code == 403
+    assert cara.delete("/api/v1/ai/config").status_code == 403
+    assert cara.post("/api/v1/ai/test", json=body(model)).status_code == 403
     admin.put("/api/v1/ai/config", json=body(model))
-    assert beth.post("/api/v1/ai/test").status_code == 200                      # anyone may test what is saved
+    assert cara.post("/api/v1/ai/test").status_code == 200                      # anyone may test what is saved
 
 
 def test_clearing_turns_it_off(env):

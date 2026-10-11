@@ -52,7 +52,7 @@ const result = await page.evaluate(async () => {
     renderManageAccount(ac.id, pane); await sleep(40);
   }
   renderAccounts(); await sleep(50);
-  users.beth.name = evil("user.name");
+  users.cara.name = evil("user.name");
   currentUser.name = evil("currentUser");
   renderEmailProviderPicker(); emailConnectionForm("proton"); openOAuth("gmail"); await sleep(80);
   return window.__pwn || [];

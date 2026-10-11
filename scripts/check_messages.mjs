@@ -15,7 +15,7 @@ const check = (label, good) => { console.log((good ? "✓ " : "✗ ") + label); 
 for (const ev of ["uncaughtException", "unhandledRejection"]) process.on(ev, (e) => { console.log("::error::" + String((e && e.message) || e).split("\n").slice(0, 3).join(" | ")); process.exit(1); });
 const now = Math.floor(Date.now() / 1000);
 const ctx = (id) => ({ reply_to: "dana@example.invalid", delivered_to: null, via_alias: null, message_id: `<${id}@x>`, references: [] });
-const PEOPLE = { u2: { id: "u2", name: "Beth", avatar_v: null }, u3: { id: "u3", name: "Sam", avatar_v: "v1" } };
+const PEOPLE = { u2: { id: "u2", name: "Cara", avatar_v: null }, u3: { id: "u3", name: "Sam", avatar_v: "v1" } };
 const ME = "u1";
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
 
@@ -113,7 +113,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("the Messages entry is in the sidebar", await page.locator("#msgNav").isVisible());
   check("the count shows 2 unread messages and is highlighted", (await page.locator("#msgBadge").innerText()).trim() === "2" && (await page.locator("#msgBadge.hot").count()) === 1);
   const card = await page.locator("#msgBars").innerText();
-  check("Home says who left you how many messages", card.includes("Beth and Sam left you 2 messages") && card.includes("Dinner at 7"));
+  check("Home says who left you how many messages", card.includes("Cara and Sam left you 2 messages") && card.includes("Dinner at 7"));
   await shot(page, "messages-home");
 
   await page.click("#msgBars [data-msg-go]");
@@ -121,7 +121,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.waitForSelector("#mgMsgs .mgmsg");
   check("the page replaces the email list", await page.locator("#list").isHidden() && await page.locator("#msgBars").isHidden());
   check("both conversations are listed", (await page.locator("#msgPage .mgrow").count()) === 2);
-  check("the conversation with something new opens by itself and says who can see it", (await page.locator("#msgPage .mgh b").innerText()).trim() === "Beth" && (await page.locator("#msgPage").innerText()).includes("Only you and Beth can see this conversation"));
+  check("the conversation with something new opens by itself and says who can see it", (await page.locator("#msgPage .mgh b").innerText()).trim() === "Cara" && (await page.locator("#msgPage").innerText()).includes("Only you and Cara can see this conversation"));
   check("opening it marks it read: the count drops to 1", (await page.locator("#msgBadge").innerText()).trim() === "1" && server.calls.some((c) => c[0] === "read"));
   check("a picture shows when someone has one", (await page.locator("#msgPage .mgav img").count()) >= 1);
 
@@ -158,12 +158,12 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.click("[data-msg-send]");
   await page.waitForFunction(() => document.getElementById("toast").textContent.includes("Choose who"));
   check("a message with nobody chosen is not sent", !server.calls.some((c) => c[0] === "start"));
-  await page.locator('[data-msg-pick][aria-label="Beth"]').check();
+  await page.locator('[data-msg-pick][aria-label="Cara"]').check();
   await page.locator('[data-msg-pick][aria-label="Sam"]').check();
   await shot(page, "messages-new");
   await page.click("[data-msg-send]");
   await page.waitForFunction(() => document.querySelector("#msgPage .mgh b")?.textContent.includes("and you"));
-  check("choosing two people starts a group, titled with their names", (await page.locator("#msgPage .mgh b").innerText()).trim() === "Beth, Sam and you" && (await page.locator("#msgPage").innerText()).includes("Only the 3 people in this conversation can see it"));
+  check("choosing two people starts a group, titled with their names", (await page.locator("#msgPage .mgh b").innerText()).trim() === "Cara, Sam and you" && (await page.locator("#msgPage").innerText()).includes("Only the 3 people in this conversation can see it"));
 
   check("nothing was blocked by the page's security rules and nothing crashed", csp.length === 0 && errors.length === 0);
   if (csp.length || errors.length) console.log("::error::" + [...csp, ...errors].join(" | ").slice(0, 400));
