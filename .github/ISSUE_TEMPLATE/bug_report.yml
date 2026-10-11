@@ -1,0 +1,102 @@
+name: Something is not working
+description: Enveliq does the wrong thing, shows an error, or behaves in a way that surprised you.
+title: "[Problem] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time. The more you tell us, the faster it can be fixed.
+
+        **Please do not paste real email, passwords, setup codes, API keys or tokens**, in the text boxes or in screenshots. Blur or cover them first. If it is a **security** problem, do not use this form; use [the private security form](https://github.com/jlnau/enveliq/security/advisories/new).
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where did it go wrong?
+      options:
+        - Signing in or setting up two-factor
+        - Connecting a mailbox or syncing email
+        - Summaries or the AI model
+        - Needs action, Tasks or Waiting for reply
+        - Shipping and parcels
+        - Writing help or sending email
+        - Calendar or to-do lists
+        - Messages between people
+        - Settings or Administration
+        - Opening Enveliq from my phone or another computer
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened?
+      description: Describe it in your own words. What did you see, and what did you expect to see instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we make it happen again?
+      description: The steps you took, one per line. If you do not know, say so. That is fine.
+      placeholder: |
+        1. I opened Settings
+        2. I pressed ...
+        3. It said ...
+  - type: input
+    id: version
+    attributes:
+      label: Enveliq version
+      description: Shown under the Enveliq logo at the top left, for example "Version 0.65".
+      placeholder: "0.65"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install Enveliq?
+      options:
+        - Docker Desktop (Windows or Mac)
+        - Docker Compose on Linux
+        - Raspberry Pi
+        - Proxmox
+        - Arcane
+        - Portainer
+        - Dockge
+        - Synology
+        - Unraid
+        - TrueNAS
+        - Something else
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Which browser and device are you using?
+      description: For example "Safari on an iPhone" or "Firefox on Windows".
+  - type: input
+    id: provider
+    attributes:
+      label: Which email service and AI service are involved, if any?
+      description: For example "Gmail, and OpenAI" or "Proton Mail through Bridge, and a model on my own network". Do not include addresses or keys.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Anything in the logs?
+      description: |
+        Optional, but very helpful for problems that are not just on the page. In the folder with your install file, type `docker compose logs --tail 80 enveliq`. Read it through and remove anything private before pasting.
+      render: shell
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Drag a picture into this box. Cover anything private first.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: I looked at the [Troubleshooting page](https://enveliq.app/docs/install/troubleshooting/).
+          required: true
+        - label: I removed real email, passwords, keys and addresses from everything above.
+          required: true
