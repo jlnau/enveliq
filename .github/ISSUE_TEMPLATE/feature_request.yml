@@ -1,0 +1,43 @@
+name: I have an idea
+description: Suggest a new feature or a change to how something works.
+title: "[Idea] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas are welcome. Enveliq is meant to stay calm and simple, and it keeps a few promises (raw email and attachments are never stored, one person's mail is never visible to another, and the AI never decides for you), so a suggestion is easiest to accept when it fits with those. Say what you need and we will work out how.
+
+        Please check the [open ideas](https://github.com/jlnau/enveliq/issues?q=is%3Aissue+label%3Aenhancement) first. If yours is there, add a thumbs-up or a comment instead of a new one.
+  - type: textarea
+    id: need
+    attributes:
+      label: What are you trying to do?
+      description: Describe the situation, not the solution. For example "I miss bills that arrive on the weekend" says more than "add a weekend filter".
+    validations:
+      required: true
+  - type: textarea
+    id: today
+    attributes:
+      label: What happens today?
+      description: How do you handle this now, and what is annoying about it?
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like Enveliq to do?
+      description: Your idea, in your own words. Pictures or sketches are welcome.
+  - type: dropdown
+    id: importance
+    attributes:
+      label: How much would this help you?
+      options:
+        - A small nice-to-have
+        - It would make Enveliq much better for me
+        - I cannot use Enveliq well without it
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: I did not include real email, passwords, keys or addresses.
+          required: true

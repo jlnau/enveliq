@@ -1,0 +1,29 @@
+name: A guide is confusing or wrong
+description: Something in the website, a guide or the wording in the app was unclear, missing or out of date.
+title: "[Guide] "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If you hesitated, re-read something or had to guess, that is exactly what we want to hear about, even when nothing broke.
+  - type: input
+    id: where
+    attributes:
+      label: Which page or screen?
+      description: Paste the address of the page, or say which screen in Enveliq.
+      placeholder: https://enveliq.app/docs/install/docker-desktop/
+    validations:
+      required: true
+  - type: textarea
+    id: unclear
+    attributes:
+      label: What was confusing, missing or wrong?
+      description: Quote the sentence or step if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: better
+    attributes:
+      label: What would have helped?
+      description: Optional. A different word, an extra picture, a missing step, anything you think of.
