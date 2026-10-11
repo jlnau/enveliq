@@ -35,3 +35,16 @@ Each merge to `main` publishes again.
 - Long titles are shortened in `SHORT_TITLE`. Descriptions are cut at a sentence or word, at most 160 characters.
 - The sitemap adds "last changed" dates when the repository has real history. A shallow copy gives every page the same date, so the dates are left out then.
 - `npm run check` fails if a page loses its title, description, canonical address, share tags or heading, or if the sitemap lists a hidden page.
+
+## Also in the build
+
+- `src/tour.html` is the screenshot tour at `/tour/`. Every screenshot uses made-up example mail.
+- `src/favicon.ico` and the icons in `src/images/` (`apple-touch-icon.png`, `icon-192.png`, `icon-512.png`) are for browsers and phone home screens.
+- `/.well-known/security.txt` points researchers at the private security report form. Its "Expires" date is set at each build, so publishing renews it.
+- `node audit-contrast.mjs` (needs Playwright) checks text colour against its background in dark and light, on desktop and phone.
+
+## Cloudflare settings that are not in the repository
+
+- **www:** redirect `www.enveliq.app` to `enveliq.app` (Rules, then Redirect Rules, or a Bulk Redirect).
+- **Visitor numbers:** use the domain's own Analytics page. Do not switch on "Web Analytics" for the Pages project, because it adds a script to every page, which this site's security policy blocks.
+- **Search engines:** add the site to Google Search Console and Bing Webmaster Tools, verify with a DNS record, and submit `https://enveliq.app/sitemap.xml`.
