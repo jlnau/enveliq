@@ -38,6 +38,8 @@ from .mail.writehelp_routes import build_writehelp_router
 from .mail.shipping_routes import build_shipping_router
 from .mail.waiting import WaitBook
 from .mail.waiting_routes import build_waiting_router
+from .mail.check_routes import build_check_router
+from .mail.checkbox import CheckBox
 from .mail.tasks import TaskBook
 from .mail.notify import Notifier
 from .mail.notify_routes import build_notify_router
@@ -507,6 +509,7 @@ def public_account(account: dict[str, Any], principal: Principal) -> dict[str, A
         out = {k: account.get(k) for k in OWNER_ACCOUNT_FIELDS if k in account}
         out["password_set"] = bool(account.get("password"))
         out["oauth_connected"] = bool(account.get("oauth_refresh_token"))
+        out["check_address"] = checkbox.account_id() == account.get("id")      # the forwarding-only mailbox is not read as an inbox
         return out
     out = {k: account.get(k) for k in SHARED_ACCOUNT_FIELDS if k in account}
     out["privacy"] = {"visibility": (account.get("privacy") or {}).get("visibility", "private")}
@@ -538,6 +541,9 @@ mail_service.microsoft = microsoft
 MICROSOFT_REDIRECT_URI = f"{PUBLIC_ORIGIN}/api/v1/mail/microsoft/callback"
 outbox = Outbox(vault, mail_service)
 auto_sync = AutoSync(vault, mail_service, int(os.environ["ENVELIQ_SYNC_MINUTES"]) if os.environ.get("ENVELIQ_SYNC_MINUTES", "").strip().lstrip("-").isdigit() else None)
+checkbox = CheckBox(vault, mail_service)
+mail_service.check_id = checkbox.account_id
+auto_sync.checker = checkbox
 taskbook = TaskBook(vault)
 shipbook = ShipBook(vault)
 messagebook = MessageBook(vault, users)
@@ -578,6 +584,7 @@ class _Mailer:
 
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
+    checkbox=checkbox,
     agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
@@ -586,6 +593,7 @@ app.include_router(build_extra_router(mail_ctx))          # after the main route
 app.include_router(build_task_router(mail_ctx))
 app.include_router(build_shipping_router(mail_ctx))
 app.include_router(build_waiting_router(mail_ctx))
+app.include_router(build_check_router(mail_ctx))
 app.include_router(build_messages_router(mail_ctx))
 app.include_router(build_writehelp_router(mail_ctx))
 app.include_router(build_notify_router(mail_ctx))

@@ -72,6 +72,8 @@ jobs:
         run: node scripts/check_sender_check.mjs
       - name: Links list in View original (simulated server)
         run: node scripts/check_link_check.mjs
+      - name: Forward to check in Administration (simulated server)
+        run: node scripts/check_check_address.mjs
       - name: Shipping page and Home card (simulated server)
         run: node scripts/check_shipping.mjs
       - name: Refresh keeps your place, Expand all (simulated server)

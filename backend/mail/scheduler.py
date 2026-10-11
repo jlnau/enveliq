@@ -45,6 +45,7 @@ class AutoSync:
         self._fails: dict[str, int] = {}
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
+        self.checker: Any = None                        # set by the application: answers forwarded emails (mail/checkbox.py)
 
     @staticmethod
     def clean(minutes: int) -> int:
@@ -98,6 +99,11 @@ class AutoSync:
             except Exception:
                 return 0
             self.service.refresh_ai(self.vault)
+            if self.checker is not None:
+                try:
+                    self.checker.poll()
+                except Exception:
+                    log.info("check address pass failed")
             for account in accounts:
                 try:
                     review.purge_expired(self.vault, account)
@@ -109,7 +115,7 @@ class AutoSync:
             for account in accounts:
                 if self._stop.is_set() or not self.vault.is_unlocked():
                     break
-                if account.get("auth_method") not in MAIL_METHODS:
+                if account.get("auth_method") not in MAIL_METHODS or self.service.is_check_address(account):
                     continue
                 if (account.get("settings") or {}).get("auto_sync") is False:
                     continue
