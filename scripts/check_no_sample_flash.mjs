@@ -1,6 +1,7 @@
 // Browser check: on a real Enveliq server, a refresh never flashes the sample people, counts or version before the
-// signed-in person's own page appears. The page stays hidden until the server has said who is signed in; in preview
-// mode (no server behind it) it appears at once, and a server that never answers does not leave the page blank.
+// signed-in person's own page appears. Meanwhile the frame (menu, buttons, logo) is shown with nothing personal in it,
+// and a calm line appears if it takes more than a moment. In preview mode (no server behind it) the page appears at
+// once, and a server that never answers does not leave the page half empty for ever.
 // The pages are served from the real files; the server is pretended (Playwright intercepts requests).
 //
 // Usage (needs Playwright and a Chromium build):
@@ -55,34 +56,47 @@ async function open(mode, meDelay) {
 }
 const shellVisible = (page) => page.evaluate(() => getComputedStyle(document.querySelector(".app")).visibility === "visible");
 
-// ---- a real server whose answer is slow: nothing of the sample page shows meanwhile ----
+const settled = (page) => page.evaluate(() => !document.body.classList.contains("booting"));
+const shown = (page, sel) => page.locator(sel).first().evaluate((el) => {
+  const c = getComputedStyle(el);
+  return c.display !== "none" && c.visibility !== "hidden" && Number(c.opacity) > 0.5 && el.getBoundingClientRect().height > 0;
+}).catch(() => false);
+
+// ---- a real server whose answer is slow: the frame shows, nothing personal or sample does ----
 {
-  const page = await open("real", 1500);
-  await sleep(700);
-  check("while the server has not said who is signed in, the page is hidden", !(await shellVisible(page)));
-  check("the sample name Morgan cannot be seen in that time", !(await page.locator("#userName").isVisible()));
-  await page.waitForFunction(() => getComputedStyle(document.querySelector(".app")).visibility === "visible", null, { timeout: 8000 });
-  check("then the page appears with the signed-in person's own name", (await page.locator("#userName").innerText()) === "Riley Example");
+  const page = await open("real", 2500);
+  check("while the server has not said who is signed in, the menu frame is already there (not a blank page)", await shown(page, 'button[data-filter="all"]'));
+  check("the sample name Morgan, the sample role and initials cannot be seen", !(await shown(page, "#userName")) && !(await shown(page, "#userRole")) && !(await shown(page, "#avatar")));
+  check("no greeting, no counts and no version label show yet", !(await shown(page, ".top-left h2")) && !(await shown(page, ".badge")) && !(await shown(page, "#brandVer")));
+  check("no sample emails or notices show", !(await shown(page, "article.mail")) && !(await shown(page, ".sample-banner")));
+  check("a quick load shows no loading line", !(await shown(page, "#bootNote")));
+  await sleep(1000);
+  check("if it takes longer, a calm line says the inbox is getting ready", (await shown(page, "#bootNote")) && /Getting your inbox ready/.test(await page.locator("#bootNote").innerText()));
+  if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, "starting-up.png") });
+  await page.waitForFunction(() => !document.body.classList.contains("booting"), null, { timeout: 8000 });
+  check("then the signed-in person's own name appears", (await page.locator("#userName").innerText()) === "Riley Example" && (await shown(page, "#userName")));
   check("and a greeting that names them, not the sample person", /Riley/.test(await page.locator(".top-left h2").innerText()) && !/Morgan/.test(await page.locator(".top-left h2").innerText()));
   check("and the real version, not a sample one", /Version 9\.9/.test(await page.locator("#brandVer").innerText()));
+  check("and the loading line is gone", !(await shown(page, "#bootNote")));
   await page.context().close();
 }
 
-// ---- no server behind the page (a hosted preview or the demo): it appears at once ----
+// ---- no server behind the page (a hosted preview or the demo): it appears at once, with no loading line ----
 {
   const page = await open("preview", 0);
-  await page.waitForFunction(() => getComputedStyle(document.querySelector(".app")).visibility === "visible", null, { timeout: 3000 });
-  check("with no server behind it, the preview page appears straight away", (await page.locator("#userName").innerText()) === "Morgan");
+  await page.waitForFunction(() => !document.body.classList.contains("booting"), null, { timeout: 3000 });
+  check("with no server behind it, the preview page appears straight away", (await page.locator("#userName").innerText()) === "Morgan" && (await shown(page, "#userName")));
+  check("and shows no loading line", !(await shown(page, "#bootNote")));
   await page.context().close();
 }
 
-// ---- a server that never answers: the page is not left blank ----
+// ---- a server that never answers: the page does not stay half empty ----
 {
   const page = await open("hang", 0);
   await sleep(1000);
-  check("while waiting, the page is hidden", !(await shellVisible(page)));
-  await page.waitForFunction(() => getComputedStyle(document.querySelector(".app")).visibility === "visible", null, { timeout: 9000 });
-  check("after a few seconds it appears anyway, so the page is never left blank", true);
+  check("while waiting, nothing personal shows", !(await shown(page, "#userName")) && !(await shown(page, ".top-left h2")));
+  await page.waitForFunction(() => !document.body.classList.contains("booting"), null, { timeout: 9000 });
+  check("after a few seconds the page appears anyway", await settled(page));
   await page.context().close();
 }
 
