@@ -279,6 +279,10 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 .safe-text{width:min(820px,100%);background:#f7f8fa;color:#222;padding:24px;border-radius:8px;white-space:pre-wrap;font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace}
 .summary-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start}.summary-row .summary{margin-bottom:10px}
 .view-email{margin-top:2px;white-space:nowrap}
+.scam-note{margin:0 0 12px;padding:10px 14px;border:1px solid var(--amber);border-radius:10px;background:rgba(240,196,101,.1);color:var(--text);font-size:13.5px;line-height:1.5}.scam-note b{display:block;font-size:14px;margin-bottom:2px}.scam-note p{margin:0 0 6px}.scam-note ul{margin:0;padding-left:20px}.scam-note li{margin:2px 0}
+.email-doc .scam-note{background:#fff6dc;color:#4d3800;border-color:#d9a400}
+.scam-pill{display:inline-block;margin:0 8px;padding:0 8px;border:1px solid var(--amber);border-radius:99px;color:var(--amber);font-size:11.5px;font-weight:600;line-height:18px;vertical-align:middle}
+.unsub[hidden]{display:none}.unsub-sure{font-size:13px;color:var(--text)}.unsub-sure[hidden]{display:none}.unsub-sure a{font-weight:600}
 .qleft{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .unsub{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:10px;padding:7px 12px;min-height:36px;font-size:13px;font-weight:600;color:var(--text);text-decoration:none;background:transparent}.unsub:hover{border-color:var(--muted)}.unsub:focus-visible{outline:2px solid var(--accent,#4da3ff);outline-offset:2px}
 .action.reply{color:var(--c-cfe3ff)}
@@ -2015,14 +2019,14 @@ const ICON_OK=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" strok
     const replyBtn=m.replyTo?`<button class="subtle" data-reply="${esc(m.id)}">${ICON_REPLY}Reply</button>`:"<span></span>";
     const detail=m.kept
       ?`<div class="qdetail"><div class="qfrom"><span class="addr">&lt;${esc(m.address)}&gt;</span></div><div class="qsummary">${esc(m.summary)}</div>${taskHtml}${attachmentHtml}<div class="kept-note">${m.status==="archived"?"Archived":"Marked reviewed"} in your mailbox. Kept here until ${esc(m.keptUntil)}.${m.replied?` You replied ${esc(m.repliedAt||"just now")}.`:""}</div><div class="actions">${m.replyTo?`<button class="action reply" data-reply="${esc(m.id)}">↩ Reply</button>`:""}<button class="action trash" data-id="${esc(m.id)}" data-status="expired">Remove from this list</button></div></div>`
-      :`<div class="qdetail split"><div class="qmainc">${m.ungen&&m.real&&feat.all_mail&&allMail?genBlock(m):`<div class="qsummary">${esc(m.summary)}</div>`}${taskHtml}${attachmentHtml}<div class="qfill"></div><div class="qfoot"><span class="qleft">${replyBtn}${unsubHtml(m.unsub)}</span><button class="linkbtn view-email" data-open-email="${esc(m.id)}">View original email</button></div></div>
+      :`<div class="qdetail split"><div class="qmainc">${scamHtml(m.scam)}${m.ungen&&m.real&&feat.all_mail&&allMail?genBlock(m):`<div class="qsummary">${esc(m.summary)}</div>`}${taskHtml}${attachmentHtml}<div class="qfill"></div><div class="qfoot"><span class="qleft">${replyBtn}${unsubHtml(m.unsub,!!m.scam)}</span><button class="linkbtn view-email" data-open-email="${esc(m.id)}">View original email</button></div></div>
         <aside class="qside" aria-label="Email details"><div class="qkv"><span>From</span><span class="addr">${esc(m.address)}</span></div><div class="qkv"><span>Received</span><span>${esc(m.time)}</span></div>${m.replied?`<div class="qkv replied-kv"><span>Replied</span><span>${esc(m.repliedAt||"Just now")}</span></div>`:""}<div class="qkv"><span>Category</span><span>${esc(category)}</span></div><div class="qkv"><span>Attachments</span><span>${esc(attCount)}</span></div>
         <div class="qbtns"><button class="action reviewed" data-id="${esc(m.id)}" data-status="reviewed">${ICON_OK}Reviewed</button><div class="two"><button class="action archive" data-id="${esc(m.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(m.id)}" data-status="trashed">${ICON_BIN}Bin</button></div></div></aside></div>`;
     if(mode==="detail")return detail;
     const tog=mode==="pane"?`<button class="qtoggle" data-pick="${esc(m.id)}" aria-label="Show this email">Show email</button>`:view.rows==="open"?"":`<button class="qtoggle" data-expand="row-${esc(m.id)}" aria-expanded="${esc(open)}" aria-label="${open?"Hide":"Show"} the full email summary and actions">${open?"Hide":"Show"} details</button>`;
     return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(mode==="pane"&&view.layout!=="screen"&&m.id===paneId?"current":"")}"><div class="qrow">
       ${lead}
-      <div class="sender">${flag}${esc(m.sender)}</div>
+      <div class="sender">${flag}${esc(m.sender)}${m.scam?'<span class="scam-pill" title="Something about this email looks odd. Open it to see what.">Be careful</span>':""}</div>
       <div class="qmain"><span class="subject">${esc(m.subject)}</span></div>
       <div class="time">${esc(m.time)}${m.replied?'<span class="replied">↩ Replied</span>':""}</div>
       ${open?"<span></span>":quick}
@@ -3536,7 +3540,7 @@ async function loadRealMail(me){
         subject:r.subject,time:realTime(r.received_at),date:r.received_at?new Date(r.received_at*1000).toLocaleString():"",received:r.received_at||0,
         summary:r.summary,priority:r.priority||"normal",category:r.category||"Email",action:!!r.action_required,status:r.state==="reviewed"||r.state==="archived"?r.state:"inbox",kept:r.state==="reviewed"||r.state==="archived",keptUntil:r.resolved_at?new Date((r.resolved_at+realPrefs.keep_days*86400)*1000).toLocaleDateString(undefined,{day:"numeric",month:"short"}):"",
         task:r.suggested_task&&r.suggested_task.title?{title:r.suggested_task.title,due:r.suggested_task.due||"",detail:r.suggested_task.detail||""}:null,attachments:[],
-        replyTo:ctx.reply_to||null,deliveredTo:ctx.delivered_to||null,viaAlias:ctx.via_alias||null,unsub:r.unsubscribe||null,real:{accountId:a.id,messageId:r.id},extra:!!r.from_all_mail,ungen:String(r.summary||"").startsWith("Not summarised yet"),replied:!!r.replied_at,repliedAt:r.replied_at?realTime(r.replied_at):""});
+        replyTo:ctx.reply_to||null,deliveredTo:ctx.delivered_to||null,viaAlias:ctx.via_alias||null,unsub:r.unsubscribe||null,scam:r.scam_warning||null,real:{accountId:a.id,messageId:r.id},extra:!!r.from_all_mail,ungen:String(r.summary||"").startsWith("Not summarised yet"),replied:!!r.replied_at,repliedAt:r.replied_at?realTime(r.replied_at):""});
     }
   }
   items.sort((x,y)=>y.received-x.received);
@@ -3608,7 +3612,7 @@ async function openRealEmail(m){
   try{
     const base=`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}`;
     const o=await secureBackendRequest(base+"/original",{method:"GET",headers:{}});
-    presentOriginal(o,{title:m.subject,context:`${m.sender} · ${m.date||m.time}`,attach:base+"/attachments",replyTo:m.replyTo,account:m.account,fallbackDate:m.date||m.time,replyId:m.replyTo?m.id:null,unsub:m.unsub});
+    presentOriginal(o,{title:m.subject,context:`${m.sender} · ${m.date||m.time}`,attach:base+"/attachments",replyTo:m.replyTo,account:m.account,fallbackDate:m.date||m.time,replyId:m.replyTo?m.id:null,unsub:m.unsub,scam:m.scam});
   }catch(er){toast(er.message,6000)}
 }
 const WORKING={reviewed:"Marking reviewed…",archived:"Archiving…",trashed:"Moving to Bin…",expired:"Removing…"};
@@ -4206,14 +4210,35 @@ $("docSave").onclick=()=>{if(dv.a)saveAttachment(dv.base,dv.a)};
 // The one link Enveliq shows from an email: the newsletter's own "unsubscribe" address. The server already checked that it is a plain
 // public http(s) link (backend/mail/unsub.py); it is checked again here, and it opens in a new tab from the person's own browser.
 // Enveliq never fetches it, and the browser sends no referrer.
-function unsubHtml(u){
+// A calm "be careful" note for an email that looks odd. The server finds the reasons with plain code (backend/mail/scamcheck.py), never
+// the AI, and they are shown here as text only. It never says "scam": it says what looks odd and lets the person decide.
+function scamHtml(w){
+  if(!w||typeof w!=="object"||!Array.isArray(w.reasons))return "";
+  const items=w.reasons.filter(r=>r&&typeof r.text==="string"&&r.text).slice(0,4);
+  if(!items.length)return "";
+  return `<div class="scam-note" role="note"><b>Be careful with this one</b><p>Something about this email looks odd. Before you click anything or share details, check another way, such as typing the company's own website address yourself.</p><ul>${items.map(r=>`<li>${esc(r.text.slice(0,300))}</li>`).join("")}</ul></div>`;
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest&&e.target.closest("[data-careful]");
+  if(!b)return;
+  const sure=b.parentElement&&b.parentElement.querySelector(".unsub-sure");
+  if(sure){sure.hidden=false;b.hidden=true;const a=sure.querySelector("a");if(a)a.focus()}
+});
+function unsubHtml(u,careful){
+  if(!careful)return unsubPlain(u);
+  const link=unsubPlain(u,"Go anyway");
+  if(!link)return "";
+  return `<span class="unsub-careful"><button type="button" class="unsub" data-careful>Unsubscribe</button><span class="unsub-sure" hidden>This email looks odd, so unsubscribing could tell the sender your address is real. ${link}</span></span>`;
+}
+function unsubPlain(u,word){
+  word=word||"Unsubscribe";
   if(!u||typeof u!=="object")return "";
   const host=esc(String(u.host||"").slice(0,255));
   if(typeof u.url==="string"&&/^https?:\/\/[^\s"'<>\\]{4,2000}$/.test(u.url))
-    return `<a class="unsub" href="${esc(u.url)}" target="_blank" rel="noopener noreferrer nofollow" title="Opens ${host} in a new tab. Enveliq does not open it for you.">Unsubscribe</a>`;
+    return `<a class="unsub" href="${esc(u.url)}" target="_blank" rel="noopener noreferrer nofollow" title="Opens ${host} in a new tab. Enveliq does not open it for you.">${word}</a>`;
   if(typeof u.mailto==="string"&&/^[A-Za-z0-9._%+\-]{1,64}@[A-Za-z0-9.\-]{1,253}\.[A-Za-z]{2,63}$/.test(u.mailto)){
     const subject=typeof u.subject==="string"&&u.subject?"?subject="+encodeURIComponent(u.subject.slice(0,200)):"";
-    return `<a class="unsub" href="mailto:${esc(u.mailto)}${esc(subject)}" rel="noopener noreferrer" title="Opens an email to ${host} in your mail app that asks to be taken off the list.">Unsubscribe</a>`;
+    return `<a class="unsub" href="mailto:${esc(u.mailto)}${esc(subject)}" rel="noopener noreferrer" title="Opens an email to ${host} in your mail app that asks to be taken off the list.">${word}</a>`;
   }
   return "";
 }
@@ -4260,14 +4285,14 @@ function presentOriginal(o,c){
   const hasInline=feat.media&&(o.attachments||[]).some(a=>a.inline&&a.previewable);
   $("attachmentViewer").innerHTML=`<article class="email-doc">
     <dl class="email-head">${rows.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
-    <h4>${esc(o.subject||c.title)}</h4>${remote}${hasInline?'<div class="pics" data-inline></div>':""}
+    <h4>${esc(o.subject||c.title)}</h4>${scamHtml(o.warning||c.scam)}${remote}${hasInline?'<div class="pics" data-inline></div>':""}
     <pre class="email-text">${esc(o.text||"(no text content)")}</pre>${o.truncated?'<p class="hint">Shortened for display.</p>':""}${attachmentsHtml(o,c)}
   </article>`;
   wireAttachments($("attachmentViewer"),o,c);
   $("attachmentViewer").scrollTop=0;
   $("attachmentModalSummary").textContent="";
   $("viewerNote").textContent=c.sent?"This is a read-only copy from your Sent folder. Enveliq does not keep it.":"Enveliq keeps only the encrypted summary. The full email stays in your mailbox and is shown here without saving it.";
-  $("viewerActions").innerHTML=(c.sent?"":unsubHtml(o.unsubscribe||c.unsub))+(c.replyId?`<button class="primary" data-reply="${esc(c.replyId)}">↩ Reply</button>`:"");
+  $("viewerActions").innerHTML=(c.sent?"":unsubHtml(o.unsubscribe||c.unsub,!!(o.warning||c.scam)))+(c.replyId?`<button class="primary" data-reply="${esc(c.replyId)}">↩ Reply</button>`:"");
   $("attachmentModal").classList.add("open");
   $("attachmentScrim").classList.add("show");viewerPush();
 }

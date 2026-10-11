@@ -89,6 +89,16 @@ These rules are architecture requirements, not UI preferences.
 - Only the checked address, its host name and where it was found are stored with the encrypted message summary (from the List-Unsubscribe header at sync time). A link found in the text of a message is worked out when View original is opened, and is not stored.
 - Opening the sender's page tells the sender that the address is live. That is the same as pressing the link in any mail app.
 
+## Be careful flag (v0.66)
+
+- The flag is found by plain code in `backend/mail/scamcheck.py`. The AI is not asked and never decides: it only ever sees the email text, as before, and nothing it writes feeds the flag.
+- The flag does not block, delete or hide anything. It adds a note in plain words and a second step on **Unsubscribe**. A flag can be wrong in either direction; the wording says what looks odd and does not say that an email is a scam.
+- Only host names (such as `evil.example`) and a fixed sentence are stored, inside the encrypted message record, at most four per email. A whole link is never stored, because it can carry a private token. The email's text is not stored.
+- Header checks run at sync from the headers already read, plus `Authentication-Results` (added to the fields fetched). Link checks run only when the email is already being read (summarising or View original); View original returns them without storing them.
+- The reasons are shown as text in the page, never as markup. A reason that contains `<img onerror=...>` is shown as words and runs nothing (`scripts/check_scam_warning.mjs`).
+- Enveliq still never opens, fetches or follows any link in an email. The only link it shows is the newsletter's own Unsubscribe link, behind the checks described under Unsubscribe button (v0.50).
+- Not covered: a scam that uses only ordinary-looking links to a site that is not a well-known name, or text asking for money. This is a helper, not a guarantee.
+
 ## Shipping (v0.51)
 
 - **What is kept.** One encrypted record per person (`ship:<user id>`): shop, order number, tracking number, carrier, a few words about the items, status, expected date, and the date and subject of each email that belonged to the order. No email text, no addresses, no attachments, and no message or mailbox ids (an email is remembered only as a short one-way hash, so the same email is not filed twice). Arrived orders are forgotten after 14 days, quiet ones after 90, and "Not an order" answers after 90.

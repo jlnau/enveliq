@@ -23,6 +23,7 @@ from ..reporting import NULL, Reporter
 
 AI_CONFIG_RECORD = "ai_config"
 MAIL_METHODS = ("proton_bridge", "imap")   # account types that sync
+from . import scamcheck
 from .parse import _addresses, clean, parse_headers, received_at_of, render_original, sending_identities, summarise_headers
 
 PLACEHOLDER_SUMMARY = "Not summarised yet."
@@ -169,6 +170,7 @@ class MailService:
                         summary=PLACEHOLDER_SUMMARY,
                         reply_context=info["reply_context"],
                         unsubscribe=info["unsubscribe"],
+                        scam_warning=info["scam_warning"],
                         received_at=info["received_at"],
                         source_locator=locator(validity, uid),
                     )
@@ -251,6 +253,7 @@ class MailService:
         account_id = account["id"]
         target = self.target(account)
         texts: dict[str, str] = {}
+        warnings: dict[str, Any] = {}
         failed = 0
         instructions = review.instructions_for(vault, account.get("owner_user_id"))
         prompt = review.active_prompt(vault)
@@ -264,7 +267,9 @@ class MailService:
                         found_validity, uid = parse_locator(m["source_locator"])
                         if found_validity != validity:
                             raise BridgeError("not_found", "mailbox reset")
-                        texts[m["id"]] = render_original(s.original(uid))["text"][: self.summariser.config.max_chars]
+                        shown = render_original(s.original(uid))
+                        texts[m["id"]] = shown["text"][: self.summariser.config.max_chars]
+                        warnings[m["id"]] = shown.get("warning")
                     except BridgeError:
                         failed += 1
             done = 0
@@ -287,6 +292,8 @@ class MailService:
                 shipment = result.pop("shipment", None)
                 data = {k: v for k, v in m.items() if k != "id"}
                 data.update(result)
+                found = scamcheck.merge((m.get("scam_warning") or {}).get("reasons"), (warnings.get(m["id"]) or {}).get("reasons"))
+                data["scam_warning"] = {"reasons": found} if found else None
                 try:
                     stored = RetainedMessageCreate(**data).model_dump(mode="python")
                     vault.update_message(account_id, m["id"], stored)
@@ -333,7 +340,7 @@ class MailService:
                     if info["received_at"] and info["received_at"] < cutoff:
                         continue
                     body = RetainedMessageCreate(subject=info["subject"], sender_display=info["sender_display"], sender_address=info["sender_address"],
-                                                 summary=PLACEHOLDER_SUMMARY, reply_context=info["reply_context"], unsubscribe=info["unsubscribe"], received_at=info["received_at"],
+                                                 summary=PLACEHOLDER_SUMMARY, reply_context=info["reply_context"], unsubscribe=info["unsubscribe"], scam_warning=info["scam_warning"], received_at=info["received_at"],
                                                  source_locator=locator(validity, uid), from_all_mail=True)
                     vault.create_message(account_id, body.model_dump(mode="python"))
                     if info["message_id"]:
