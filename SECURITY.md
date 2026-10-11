@@ -96,6 +96,10 @@ These rules are architecture requirements, not UI preferences.
 - "Confirmed" means the provider says the email passed its checks. It does not mean the email is safe, and the page never says it is. When the provider adds no result, the page says nothing.
 - A Reply-To on another website is shown but only flags an email from a well-known name, because small businesses often use a free mail address for replies.
 
+## Unsubscribe hidden on flagged emails (v0.69)
+
+- On an email marked Be careful the page does not offer Unsubscribe at all, so a person cannot reveal the sender's address-check link by accident. This changes only what the page offers; the stored unsubscribe address and the rules that decide which address is safe to open (v0.5x, `unsub.safe_url`) are unchanged.
+
 ## Where does this link go? (v0.68)
 
 - Plain code, no AI. The list is worked out from the whole email when View original is opened and is **not stored**; the stored message holds no link address.

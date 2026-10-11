@@ -2,6 +2,14 @@
 
 Newest first. Each entry says what changed for people and which parts of the code it touches. The history of earlier versions is in [VERSION_HISTORY.md](VERSION_HISTORY.md).
 
+## v0.69
+
+**Unsubscribe is hidden on an email marked Be careful.**
+
+- `prototype/index.html`: `unsubHtml()` no longer offers the Unsubscribe button (or the old **Go anyway** step) when the email is flagged, on the card or in View original. One line says why. The click handler and extra step are removed. Ordinary emails are unchanged.
+- `scripts/check_scam_warning.mjs`: checks that a flagged email has no Unsubscribe button or link at all, on the card and in View original, and that an ordinary newsletter keeps its button.
+- Docs: `docs/SCAM_WARNING.md`, `SECURITY.md`.
+
 ## v0.68
 
 **Where does this link go?** A list of the links in an email, with the website each one really goes to.
