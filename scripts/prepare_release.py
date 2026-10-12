@@ -21,6 +21,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("version", help="New version, e.g. 0.82 or v0.82")
     parser.add_argument("--date", help="Release date YYYY-MM-DD (default: today)")
+    parser.add_argument("--notes-file", type=pathlib.Path, help="Merged PR notes from GitHub, only when Unreleased is empty")
     args = parser.parse_args()
     from datetime import date
     version = args.version.removeprefix("v")
@@ -56,7 +57,16 @@ def main() -> int:
     end = start + next_release.start()
     notes = changelog[start:end].strip()
     if not notes or notes == "No changes recorded yet.":
-        parser.error("Unreleased section has no release notes")
+        if args.notes_file is None:
+            parser.error("Unreleased has no notes; use --notes-file for merged PR notes")
+        try:
+            generated = args.notes_file.read_text(encoding="utf-8").strip()
+        except OSError as exc:
+            parser.error(f"Cannot read release notes: {exc}")
+        if not re.search(r"(?m)^\* .+(?:\(#[0-9]+\)|/pull/[0-9]+)", generated):
+            parser.error("No merged pull requests found since the previous release")
+        notes = generated
+        print("Using GitHub-generated merged pull request notes")
     new_version = ver.replace(f'VERSION = "{current}"', f'VERSION = "{version}"', 1)
     new_readme = readme.replace(f"Current version: **v{current}**", f"Current version: **v{version}**", 1)
     new_changelog = (changelog[:start] + "\nNo changes recorded yet.\n\n" +
