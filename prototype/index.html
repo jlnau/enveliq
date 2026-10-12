@@ -553,6 +553,15 @@ body.vopen .vpanel{transform:none;visibility:visible;transition:transform .3s cu
 .undobar{display:flex}.undobar span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.undobar button{flex:none}.sendbar:not([hidden])~.undostack,.sumbar:not([hidden])~.undostack{bottom:84px}.undobar button{border:0;background:transparent;color:var(--c-65c4ff);font-weight:700;font-size:15px;padding:6px 4px}
 /* On a computer, the Reviewed / Archive / Bin buttons on a closed row show only while the mouse is over it (or a button has the keyboard), in the place of the date. Phones swipe instead. */
 @media(hover:hover) and (min-width:761px){body:not(.layout-right) .mail.quiet:not(.open) .qrow{grid-template-columns:22px 170px minmax(0,1fr) 120px}body:not(.layout-right) .mail.quiet:not(.open) .qpair{position:absolute;right:14px;top:50%;transform:translateY(-50%);opacity:0;transition:opacity .15s;gap:6px}body:not(.layout-right) .mail.quiet:not(.open):hover .qpair,body:not(.layout-right) .mail.quiet:not(.open):focus-within .qpair{opacity:1}body:not(.layout-right) .mail.quiet:not(.open) .time{transition:opacity .15s}body:not(.layout-right) .mail.quiet:not(.open):hover .time,body:not(.layout-right) .mail.quiet:not(.open):focus-within .time{opacity:0}body:not(.layout-right) .mail.quiet:not(.open) .qic{width:32px;height:30px}body:not(.layout-right) .mail.quiet:not(.open) .qic svg{width:15px;height:15px}}
+/* An email waiting out its five seconds stays where it is, slightly greyed and gently pulsing, with a thin line that runs across its bottom */
+.mail.quiet.leaving,.deckcard.leaving{position:relative;pointer-events:none;user-select:none}
+.mail.quiet.leaving .qpair,.mail.quiet.leaving .check{visibility:hidden}
+.mail.quiet.leaving>*,.deckcard.leaving>*{animation:leavePulse 2.4s ease-in-out infinite}
+.mail.quiet.leaving::after,.deckcard.leaving::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--leavec);transform-origin:left;transform:scaleX(0);animation:leaveRun var(--leave-ms,5s) var(--leave-delay,0s) linear forwards}
+.leaving.to-reviewed{--leavec:var(--green)}.leaving.to-archived{--leavec:var(--accent)}.leaving.to-trashed{--leavec:var(--red)}
+@keyframes leavePulse{0%,100%{opacity:.62}50%{opacity:.34}}
+@keyframes leaveRun{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media(prefers-reduced-motion:reduce){.mail.quiet.leaving>*,.deckcard.leaving>*{animation:none;opacity:.5}}
 .undoprog{position:absolute;left:0;bottom:0;height:3px;background:var(--c-1f5fc4);width:100%;transform-origin:left;animation:undoRun 5s linear forwards}
 @keyframes undoRun{from{transform:scaleX(1)}to{transform:scaleX(0)}}
 .swipebg{position:absolute;inset:0;display:flex;align-items:center;padding:0 22px;gap:8px;font-weight:700;font-size:14px;color:#fff;pointer-events:none}
@@ -1576,7 +1585,7 @@ function applyView(){
   $("vOpen").disabled=$("vPeek").disabled=!classic;$("vOpenL").classList.toggle("off",!classic);$("vPeekL").classList.toggle("off",!classic);
 }
 function visible(m){
-  if(m.owner!==currentUser.id||m._pending||filter==="sent"||filter==="tasks")return false;
+  if(m.owner!==currentUser.id||filter==="sent"||filter==="tasks")return false;
   if(mailboxSel&&m.account!==mailboxSel)return false;
   if(filter==="snoozed"){if(!isSnoozed(m))return false}else if(isSnoozed(m))return false;      // a snoozed email waits out of sight until its time
   if(query&&!(`${m.sender} ${m.address} ${m.subject} ${m.summary} ${m.category}`.toLowerCase().includes(query.toLowerCase())))return false;
@@ -2365,6 +2374,10 @@ function render(){
   {const b=$("expandAll"),can=view.layout==="list"&&!["tasks","sent","shipping","subscriptions","trips","waiting","messages"].includes(filter)&&rows.length>0;
    b.hidden=!can||selected.size>1;if(can){const all=view.rows==="open"||rows.every(m=>expanded.has(`row-${m.id}`));b.textContent=all?"Collapse all":"Expand all";b.dataset.mode=all?"collapse":"expand"}}
 const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5l-7.6 7.6a5 5 0 0 1-7-7l8-8a3.4 3.4 0 0 1 4.8 4.8l-8 8a1.8 1.8 0 0 1-2.5-2.5L14 7.2"/></svg>`,ICON_SNOOZE=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`,ICON_OK=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,ICON_ARCH=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg>`,ICON_BIN=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>`,ICON_REPLY=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 6 6v3"/></svg>`;
+  const leaveStyle=m=>{          // an email waiting out its Undo: the line along its bottom runs for the time that is left
+    if(!m._pending)return "";const e=pendingActs.find(x=>x.ms.includes(m));if(!e)return "";
+    return ` style="--leave-ms:${e.total}ms;--leave-delay:-${Math.max(0,e.total-Math.max(0,e.end-Date.now()))}ms"`;
+  };
   const quiet=(m,mode)=>{
     const open=mode==="pane"?false:(view.rows==="open"||expanded.has(`row-${m.id}`));
     const tk=taskFor(m),taskHtml=tk?taskLine(tk):"";
@@ -2382,7 +2395,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
         <div class="qbtns"><button class="action reviewed" data-id="${esc(m.id)}" data-status="reviewed">${ICON_OK}Reviewed</button><div class="two"><button class="action archive" data-id="${esc(m.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(m.id)}" data-status="trashed">${ICON_BIN}Bin</button></div></div></aside></div>`;
     if(mode==="detail")return detail;
     const tog=mode==="pane"?`<button class="qtoggle" data-pick="${esc(m.id)}" aria-label="Show this email">Show email</button>`:view.rows==="open"?"":`<button class="qtoggle" data-expand="row-${esc(m.id)}" aria-expanded="${esc(open)}" aria-label="${open?"Hide":"Show"} the full email summary and actions">${open?"Hide":"Show"} details</button>`;
-    return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(mode==="pane"&&view.layout!=="screen"&&m.id===paneId?"current":"")}"><div class="qrow">
+    return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(m._pending?"leaving to-"+m._pending:"")} ${esc(mode==="pane"&&view.layout!=="screen"&&m.id===paneId?"current":"")}"${leaveStyle(m)}><div class="qrow">
       ${lead}
       <div class="sender">${flag}${esc(m.sender)}</div>
       <div class="qmain">${isImp(m)?'<span class="imp-pill" title="You marked this person as important">&#9733; Important</span>':""}${m.scam?'<span class="scam-pill" title="Something about this email looks odd. Open it to see what.">Be careful</span>':""}<span class="subject">${esc(m.subject)}</span></div>
@@ -2414,7 +2427,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
       const act=cur.kept?"":`<div class="deckact"><button class="action reviewed" data-id="${esc(cur.id)}" data-status="reviewed">${ICON_OK}Reviewed</button><button class="action archive" data-id="${esc(cur.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(cur.id)}" data-status="trashed">${ICON_BIN}Bin</button></div>`;
       listHtml=`<div class="deck"><div class="deckbar"><span class="deckcount">${idx+1} of ${rows.length}</span><span>← → to move · R reviewed · A archive</span></div>
         <div class="deckstage"><button class="decknav prev" type="button" ${prev?`data-pick="${esc(prev.id)}"`:"disabled"} aria-label="Previous email">‹</button>
-        <div class="deckmid rest${rest}"><article class="deckcard${enter}"><div class="dchead"><span class="dcav" aria-hidden="true">${esc(String(cur.sender||"?").trim().charAt(0).toUpperCase())}</span><div><div class="dcfrom">${esc(cur.sender)}</div><div class="dcsub">${esc(cur.address)} · ${esc(cur.time)}</div></div></div><h3 class="dctitle">${esc(cur.subject)}</h3>${quiet(cur,"detail")}</article></div>
+        <div class="deckmid rest${rest}"><article class="deckcard${enter}${cur._pending?" leaving to-"+cur._pending:""}"${leaveStyle(cur)}><div class="dchead"><span class="dcav" aria-hidden="true">${esc(String(cur.sender||"?").trim().charAt(0).toUpperCase())}</span><div><div class="dcfrom">${esc(cur.sender)}</div><div class="dcsub">${esc(cur.address)} · ${esc(cur.time)}</div></div></div><h3 class="dctitle">${esc(cur.subject)}</h3>${quiet(cur,"detail")}</article></div>
         <button class="decknav next" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">›</button></div>
         ${act}<div class="deckdots" aria-hidden="true">${dots}</div></div>`;
     }else{
@@ -4975,7 +4988,7 @@ document.addEventListener("visibilitychange",()=>{if(document.hidden&&isPhone())
     const s=st;st=null;if(!s.on)return;swiped=Date.now();
     const k=e.type==="pointercancel"?"":kindFor(s.dx,s.w),row=s.art.querySelector(".qrow");
     s.art.classList.add("swipeout");
-    if(k){row.style.transform=`translateX(${s.dx>0?s.w:-s.w}px)`;setTimeout(()=>phoneAction(s.m,SW_STATUS[k]),180)}
+    if(k){row.style.transform="";setTimeout(()=>phoneAction(s.m,SW_STATUS[k]),180)}          // the email springs back and waits in place, pulsing, until Undo runs out
     else{row.style.transform="";setTimeout(()=>{s.bg.remove();s.art.classList.remove("swiping","swipeout")},180)}
   };
   list.addEventListener("pointerup",end);list.addEventListener("pointercancel",end);
