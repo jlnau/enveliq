@@ -192,6 +192,7 @@ class MailService:
                         unsubscribe=info["unsubscribe"],
                         scam_warning=info["scam_warning"],
                         received_at=info["received_at"],
+                        has_attachments=info["has_attachments"],
                         source_locator=locator(validity, uid),
                     )
                     new_id = vault.create_message(account_id, body.model_dump(mode="python"))
@@ -280,6 +281,7 @@ class MailService:
         target = self.target(account)
         texts: dict[str, str] = {}
         warnings: dict[str, Any] = {}
+        counts: dict[str, int] = {}
         failed = 0
         instructions = review.instructions_for(vault, account.get("owner_user_id"))
         prompt = review.active_prompt(vault)
@@ -296,6 +298,7 @@ class MailService:
                         shown = render_original(s.original(uid))
                         texts[m["id"]] = shown["text"][: self.summariser.config.max_chars]
                         warnings[m["id"]] = shown.get("warning")
+                        counts[m["id"]] = int(shown.get("file_count") or 0)
                     except BridgeError:
                         failed += 1
             done = 0
@@ -320,6 +323,9 @@ class MailService:
                 trips = result.pop("trips", None)
                 data = {k: v for k, v in m.items() if k != "id"}
                 data.update(result)
+                if m["id"] in counts:                  # the whole email has been read now: the exact number replaces the guess
+                    data["attachment_count"] = counts[m["id"]]
+                    data["has_attachments"] = counts[m["id"]] > 0
                 found = scamcheck.merge((m.get("scam_warning") or {}).get("reasons"), (warnings.get(m["id"]) or {}).get("reasons"))
                 data["scam_warning"] = {"reasons": found} if found else None
                 try:
@@ -381,7 +387,7 @@ class MailService:
                         continue
                     body = RetainedMessageCreate(subject=info["subject"], sender_display=info["sender_display"], sender_address=info["sender_address"],
                                                  summary=PLACEHOLDER_SUMMARY, reply_context=info["reply_context"], unsubscribe=info["unsubscribe"], scam_warning=info["scam_warning"], received_at=info["received_at"],
-                                                 source_locator=locator(validity, uid), from_all_mail=True)
+                                                 source_locator=locator(validity, uid), from_all_mail=True, has_attachments=info["has_attachments"])
                     vault.create_message(account_id, body.model_dump(mode="python"))
                     if info["message_id"]:
                         known_ids.add(info["message_id"])

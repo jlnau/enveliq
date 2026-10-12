@@ -278,6 +278,10 @@ class RetainedMessageCreate(StrictModel):
     suggested_task: SuggestedTask | None = None
     attachments: list[RetainedAttachmentRef] = Field(default_factory=list, max_length=100)
     attachment_summaries: list[AttachmentSummary] = Field(default_factory=list, max_length=100)
+    # Whether the email has attached files, for the paperclip in the list. Only a yes/no and a number: never a name or any content.
+    # `attachment_count` stays None until the whole email has been read once (when its summary is made); before that it is a guess from the headers.
+    has_attachments: bool = False
+    attachment_count: int | None = Field(default=None, ge=0, le=100)
     # Needed for "View email" (fetch the original on demand, never stored)
     # and "Reply". The locator is an opaque provider id (IMAP UID + folder,
     # Gmail/Graph message id): encrypted at rest, never sent to the browser.

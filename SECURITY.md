@@ -117,6 +117,12 @@ These rules are architecture requirements, not UI preferences.
 - New-email alerts are off until each person switches them on. They go only to the channels that person set up, through the same outgoing-request rules as reminders. By default the message holds only a count. If the person also allows details, it holds the sender's display name and the subject (control characters removed, length cut), never the sender's address, the summary or any email text. Services such as ntfy or a chat app can read what is sent, so that second switch says so. Browser push is encrypted before it leaves Enveliq.
 - Nothing is sent during the person's quiet hours, only while the vault is unlocked, and at most one message per person per automatic sync pass. A failed send never stops a sync. Nothing about the alert is stored, and the report feed gets no new fields.
 
+## The paperclip
+
+- **What is kept.** Two small facts per email, inside the encrypted vault with the rest of the record: whether it has attached files (yes or no) and, once known, how many. Never a file name, never a type, never any content. The raw-attachment rules above are unchanged.
+- **How it is found.** When mail is first fetched, only its headers are read, so the yes or no is a guess from the email's own `Content-Type` (a "mixed" email, or one that is a file itself). It can be wrong. When the AI summary is made the whole email is already being read in memory, so the exact count (not counting pictures that are part of the text) replaces the guess; nothing extra is fetched and nothing else is kept.
+- **Who sees it.** Only the person whose mailbox it is, like the rest of the record. An email with no known files shows no paperclip.
+
 ## What the public status page says (v0.79)
 
 - Before anyone signs in, `GET /api/v1/status` says only whether Enveliq is set up and unlocked and which sign-in methods exist, plus (only while the vault is closed) whether it unlocks itself from a key file and why that failed. It never says the version, the encryption settings or the public address, so the page does not help someone choose a known weakness to try.
