@@ -132,6 +132,14 @@ These rules are architecture requirements, not UI preferences.
 - **Who sees it.** Only the person whose mailbox it is. Administrators cannot read file summaries. A record you may not open answers "not found".
 - **If the email is handled meanwhile** (marked Reviewed, archived or deleted), the work stops and writes nothing more.
 
+## The AI queue and mail held until ready
+
+- **What is held.** A new unread email of a mailbox that uses AI summaries is stored with a flag, `ai_pending`, inside the encrypted vault, and the list endpoint leaves it out until its summary and its files' summaries are done (or have failed for good). The server decides this from the stored record, never the page. Mail that has been handled (reviewed, archived, binned or archived by a rule) is never hidden by it.
+- **What the line holds.** The queue holds only ids (mailbox, email, person) and a plain failure reason. It never holds email text, file text or summaries; the text is read, summarised and dropped inside the job. It lives in server memory, and one person's jobs are listed only to that person. New-mail jobs are not counted against the 50-waiting limit for the Generate summary button, because nobody pressed anything.
+- **Never hidden for good.** Failed jobs release their email after a few tries, a switched-off AI or mailbox releases everything waiting, and a restart re-queues what was waiting at the next sync or inbox view.
+- **Alerts.** A new-mail alert for held mail is sent only when the mail is ready, to the same channels and under the same rules as before, with one message for the whole batch. It still holds only a count (or sender name and subject if the person allowed it).
+- **Interactive AI.** Write help and the Agent chat are not queued; the page only shows that an answer is on its way. Nothing about them is stored by this change.
+
 ## What the public status page says (v0.79)
 
 - Before anyone signs in, `GET /api/v1/status` says only whether Enveliq is set up and unlocked and which sign-in methods exist, plus (only while the vault is closed) whether it unlocks itself from a key file and why that failed. It never says the version, the encryption settings or the public address, so the page does not help someone choose a known weakness to try.

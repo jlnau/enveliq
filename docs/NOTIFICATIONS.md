@@ -18,6 +18,8 @@ Only the task title and a link back to Enveliq are sent, never the email text. I
 
 Switch on **Tell me when new email arrives** in **Settings, Reminders** and Enveliq sends one short message each time it finds new email for you, to the places you chose under *Where to send reminders*. It is off until you switch it on.
 
+When the mailbox uses AI summaries, the alert is sent once the new email is ready to read in your inbox (after its summary and its files' summaries), so it never points at an email you cannot see yet. Mail that arrives together is announced in one message.
+
 * By default the message only says how many emails arrived ("2 new emails"). Under *Nudges, quiet hours and privacy*, **Show who a new email is from and its subject** adds the sender's name and the subject. Services such as ntfy or a chat app can read what you send them, so leave this off if you would rather your lock screen and those services learn nothing about your mail. Your own device's browser push is encrypted end to end.
 * The email text, the sender's address and the summary are never sent.
 * Quiet hours apply: nothing is sent during them, and the emails wait in your inbox.

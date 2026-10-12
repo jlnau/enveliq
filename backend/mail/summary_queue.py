@@ -1,6 +1,6 @@
-"""Generate summary: a line of requests, one at a time, kept on the server.
+"""The AI queue: a line of summary jobs, one at a time, kept on the server.
 
-Pressing Generate summary on an email adds it here. A single background worker takes them in the
+New mail waits here for its summary (and the summaries of its files) before it shows in the inbox. Pressing Generate summary on an email adds it here too. A single background worker takes them in the
 order they were pressed, so a person can press it on many emails without anything breaking, and the
 line is still there after a refresh, on another device, or after leaving the page. It lives in the
 server's memory only: a server restart empties it. It holds ids, never email text.
@@ -28,6 +28,7 @@ class Job:
     state: str = "waiting"        # waiting, writing, failed, done
     error: str = ""
     at: float = 0.0
+    auto: bool = False            # new mail waiting to be shown (nobody pressed anything); not counted against the person's limit
 
 
 class SummaryQueue:
@@ -40,17 +41,17 @@ class SummaryQueue:
         self._wake = threading.Event()
         self._thread: threading.Thread | None = None
 
-    def add(self, user_id: str, account_id: str, message_id: str) -> Job:
+    def add(self, user_id: str, account_id: str, message_id: str, auto: bool = False) -> Job:
         key = (account_id, message_id)
         with self._lock:
             self._forget_old()
             job = self._jobs.get(key)
             if job is not None and job.user_id == user_id and job.state in ("waiting", "writing"):
                 return job
-            if sum(1 for j in self._jobs.values() if j.user_id == user_id and j.state in ("waiting", "writing")) >= MAX_WAITING:
+            if not auto and sum(1 for j in self._jobs.values() if j.user_id == user_id and not j.auto and j.state in ("waiting", "writing")) >= MAX_WAITING:
                 raise BridgeError("busy", f"You already have {MAX_WAITING} summaries waiting. Wait for some to finish.")
             self._jobs.pop(key, None)                  # a retry goes to the back of the line
-            job = Job(user_id, account_id, message_id, at=self._clock())
+            job = Job(user_id, account_id, message_id, at=self._clock(), auto=auto)
             self._jobs[key] = job
         self._start()
         self._wake.set()
@@ -74,9 +75,10 @@ class SummaryQueue:
                 if j.state in ("waiting", "writing"):
                     ahead += 1
                 if j.user_id == user_id:
-                    items.append({"account_id": j.account_id, "message_id": j.message_id, "state": j.state, "error": j.error,
+                    items.append({"account_id": j.account_id, "message_id": j.message_id, "state": j.state, "error": j.error, "auto": j.auto,
                                   "position": ahead if j.state in ("waiting", "writing") else 0})
-            return {"items": items, "waiting": sum(1 for j in mine if j.state == "waiting"), "writing": sum(1 for j in mine if j.state == "writing")}
+            return {"items": items, "waiting": sum(1 for j in mine if j.state == "waiting"), "writing": sum(1 for j in mine if j.state == "writing"),
+                    "new_mail": sum(1 for j in mine if j.auto and j.state in ("waiting", "writing"))}
 
     def _forget_old(self) -> None:
         now = self._clock()

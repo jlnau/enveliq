@@ -112,9 +112,9 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.waitForSelector(".nosum .gprog");
   await page.locator("article.mail.extra").nth(1).locator(".subject").click();
   await page.locator("article.mail.extra.open [data-gen]").first().click();
-  await page.waitForFunction(() => /writing 1, waiting 1/.test(document.querySelector("#sumBar")?.innerText || ""));
+  await page.waitForFunction(() => /1 being written, 1 waiting/.test(document.querySelector("#sumBar")?.innerText || ""));
   const bar = await page.locator("#sumBar").innerText();
-  check("the bar shows writing 1, waiting 1", /writing 1, waiting 1/.test(bar));
+  check("the bar shows 1 being written, 1 waiting", /1 being written, 1 waiting/.test(bar));
   check("the second one says it is waiting in line", (await page.locator("article.mail.extra.open .nosum").nth(1).innerText()).includes("Waiting in line"));
   await shot(page, "queued");
 
@@ -126,7 +126,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("after a refresh the line is still there (or has finished)", server.calls.some((c) => c[0] === "queue"));
   // The pretend model finishes the first, then the second; the page notices on its own
   server.step();
-  await again.page.waitForFunction(() => /writing 1, waiting 0/.test(document.querySelector("#sumBar")?.innerText || ""), null, { timeout: 15000 });
+  await again.page.waitForFunction(() => /1 being written\b(?!, \d+ waiting)/.test(document.querySelector("#sumBar")?.innerText || ""), null, { timeout: 15000 });
   check("when the first finishes the bar moves on to the second", true);
   server.step();
   await again.page.waitForFunction(() => document.querySelector("#sumBar").hidden, null, { timeout: 15000 });
@@ -163,9 +163,9 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.locator("article.mail.extra.open [data-gen]").first().click();
   await page.locator("article.mail.extra").nth(2).locator(".subject").click();
   await page.locator("article.mail.extra.open [data-gen]").first().click();
-  await page.waitForFunction(() => /waiting 2/.test(document.querySelector("#sumBar").innerText));
+  await page.waitForFunction(() => /2 waiting/.test(document.querySelector("#sumBar").innerText));
   await page.locator("article.mail.extra.open .nosum").nth(2).locator("[data-gencancel]").click();
-  await page.waitForFunction(() => /waiting 1/.test(document.querySelector("#sumBar").innerText));
+  await page.waitForFunction(() => /1 waiting/.test(document.querySelector("#sumBar").innerText));
   check("a waiting summary can be cancelled", server.calls.some((c) => c[0] === "cancel"));
   await shot(page, "queued-light");
   await page.close(); await context.close();

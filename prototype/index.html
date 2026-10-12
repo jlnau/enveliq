@@ -118,7 +118,7 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 .nosum .gprog{width:90px;height:4px;border-radius:4px;background:var(--line);overflow:hidden}.nosum .gprog i{display:block;height:100%;width:40%;background:var(--accent);animation:gslide 1.2s ease-in-out infinite}@keyframes gslide{0%{margin-left:-40%}100%{margin-left:100%}}
 .nosum-note{color:var(--faint);font-size:12px;margin:6px 0 0}
 .sumbar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:119;width:min(420px,calc(100% - 28px))}.sumbar[hidden]{display:none}.sendbar:not([hidden])~.sumbar{bottom:84px}
-.sumbar .sumrow{display:flex;align-items:center;gap:12px;background:var(--c-232a36);border:1px solid var(--c-364055);border-radius:14px;padding:11px 16px;font-size:14px;box-shadow:0 12px 30px rgba(0,0,0,.35)}.sumrow .grow{flex:1}.sumrow .gprog{width:70px;height:4px;border-radius:4px;background:var(--line);overflow:hidden}.sumrow .gprog i{display:block;height:100%;width:40%;background:var(--accent);animation:gslide 1.2s ease-in-out infinite}
+.sumnote{color:var(--muted);font-size:12.5px}.sumbar .sumrow{display:flex;align-items:center;gap:12px;background:var(--c-232a36);border:1px solid var(--c-364055);border-radius:14px;padding:11px 16px;font-size:14px;box-shadow:0 12px 30px rgba(0,0,0,.35)}.sumrow .grow{flex:1}.sumrow .gprog{width:70px;height:4px;border-radius:4px;background:var(--line);overflow:hidden}.sumrow .gprog i{display:block;height:100%;width:40%;background:var(--accent);animation:gslide 1.2s ease-in-out infinite}
 .qic{display:grid;place-items:center;width:42px;height:34px;padding:0}.qic svg{width:17px;height:17px}.qpair{display:flex;gap:6px}.qic.reviewed{background:var(--c-122219);border-color:var(--c-315644)}.qic.archive{background:var(--c-0c1626);border-color:var(--c-1f3f75)}.qic.trash{background:var(--c-2d1a20);border-color:var(--c-58343b)}.qfrom{color:var(--muted);font-size:13px}.qsummary{color:var(--c-d7dbe5);font-size:15px;line-height:1.55;max-width:860px;margin:6px 0 4px}.qdetail .actions{margin-top:14px}.mail.quiet.open{background:linear-gradient(180deg,var(--panel2),var(--panel))}.flag{display:inline-block;width:8px;height:8px;border-radius:999px;background:var(--c-e7d39a);margin-right:8px;vertical-align:1px}
 @media (max-width:760px){.qdetail.split{flex-direction:column;padding:6px 16px 18px}.qside{width:auto;align-self:stretch}.qrow{grid-template-columns:22px minmax(0,1fr) auto}.qrow .sender,.qrow .time{display:none}.mail.quiet .summary{display:none}}
 .empty{border:1px dashed var(--c-333b4b);border-radius:14px;padding:60px 20px;text-align:center;color:var(--muted)}
@@ -2310,23 +2310,29 @@ function genBlock(m){
   else if(it&&it.state==="failed"){text=`Could not summarise (${it.error||"try again"})`;btn=`<button type="button" class="gen" data-gen="${esc(m.id)}">Try again</button>`}
   return `<div class="qsummary"><div class="nosum"><span class="${dot}" aria-hidden="true"></span><span>${esc(text)}</span>${btn}</div><p class="nosum-note">${esc(note)}</p></div>`;
 }
+let aiLive=0,sqWasBusy=false;
 function paintSumBar(){
-  const box=$("sumBar"),w=sq.waiting,r=sq.writing;
-  box.hidden=!(w||r);
+  const box=$("sumBar"),w=sq.waiting||0,r=sq.writing||0,n=sq.new_mail||0;
+  box.hidden=!(w||r||aiLive);
   if(box.hidden){box.replaceChildren();return}
   const row=document.createElement("div");row.className="sumrow";
-  const t=document.createElement("span");t.innerHTML="<b>Summaries:</b> ";t.append(`writing ${r}, waiting ${w}`);
+  const t=document.createElement("span");
+  const bits=[];if(r)bits.push(`${r} being written`);if(w)bits.push(`${w} waiting`);if(aiLive)bits.push("an AI answer is on its way");
+  const head=document.createElement("b");head.textContent="AI queue: ";t.append(head,bits.join(", "));
+  if(n){const note=document.createElement("small");note.className="sumnote";note.textContent=`${n===1?"1 new email appears":n+" new emails appear"} in your inbox when its summary and files are ready.`;t.append(document.createElement("br"),note)}
   const g=document.createElement("span");g.className="grow";const p=document.createElement("span");p.className="gprog";p.append(document.createElement("i"));
   row.append(t,g,p);box.replaceChildren(row);
 }
+setInterval(()=>{if(realMail&&!document.hidden&&!sqTimer)pollSummaries(false)},15000);   // new mail is queued by the server, so look now and then even when nothing was pressed
 async function pollSummaries(first){
   let r;try{r=await secureBackendRequest("/api/v1/me/summary-queue",{method:"GET",headers:{}})}catch{return}
   sq=r;paintSumBar();
   let finished=false;
-  for(const it of r.items){const k=it.account_id+":"+it.message_id+":"+it.state;if(it.state==="done"&&!sqDoneSeen.has(k)){sqDoneSeen.add(k);if(!first)finished=true}}
-  if(finished&&realMail){try{await loadRealMail(currentUser)}catch{}}
-  if(realMail)render();
+  for(const it of r.items){const k=it.account_id+":"+it.message_id+":"+it.state;if((it.state==="done"||it.state==="failed")&&!sqDoneSeen.has(k)){sqDoneSeen.add(k);if(!first)finished=true}}
   const busy=r.waiting||r.writing;
+  if((finished||(sqWasBusy&&!busy))&&realMail){try{await loadRealMail(currentUser)}catch{}}   // a finished job may have just shown a new email
+  sqWasBusy=!!busy;
+  if(realMail)render();
   if(busy&&!sqTimer)sqTimer=setInterval(()=>pollSummaries(false),2500);
   if(!busy&&sqTimer){clearInterval(sqTimer);sqTimer=null}
 }
@@ -3472,7 +3478,13 @@ Model/entity: ${model}
 Production path:
 Signed-in user → Enveliq server (administrator check) → isolated AI pipeline → LLM`;
 }
+const AI_LIVE=/\/(write-help(\/new)?|me\/agent\/messages)$/;
 async function secureBackendRequest(path, options={}){
+  const live=options.method==="POST"&&AI_LIVE.test(path.split("?")[0]);
+  if(live){aiLive++;if(typeof paintSumBar==="function")paintSumBar()}
+  try{return await secureBackendRequestNow(path,options)}finally{if(live){aiLive--;if(typeof paintSumBar==="function")paintSumBar()}}
+}
+async function secureBackendRequestNow(path, options={}){
   const headers={"Content-Type":"application/json", ...(options.headers||{})};
   // Signed-in sessions are HttpOnly cookies the browser sends by itself.
   const response=await fetch(path,{...options,headers,credentials:"same-origin"});

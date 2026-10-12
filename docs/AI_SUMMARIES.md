@@ -21,6 +21,35 @@ address unless the administrator allows it).
   are not counted). The **Attachments** entry in the left menu follows the same
   number. What is kept about each file is described below.
 
+## The AI queue
+
+Everything Enveliq asks the AI to do by itself goes through one line on the
+server, one job at a time, oldest first. For new mail a job is one email: its
+summary, then its files, then it is shown.
+
+- **New mail waits out of the inbox.** When mail arrives for a mailbox that has
+  AI summaries switched on, it is kept out of your inbox list until its summary
+  and its files' summaries are done. Emails with and without attachments work
+  the same way. It does not matter how long a long file takes: the email appears
+  when it is ready.
+- **The queue bar.** At the bottom of the page a small bar says what is being
+  written and what is waiting, for example *1 being written, 2 waiting*, and for
+  new mail *3 new emails appear in your inbox when its summary and files are
+  ready*. It goes away when the line is empty. It also shows while an answer you
+  asked for (Write help or the Agent chat) is on its way. Those two run straight
+  away, because you are waiting for them, and are not put behind other work.
+- **If it fails.** A bad answer from the AI gets up to two more tries. If it
+  still fails, or the AI cannot be reached, the email is shown anyway, marked
+  **Could not summarise** with the reason and a **Try again** button, so mail is
+  never hidden for good. A file that cannot be read (a scan, a picture, a damaged
+  file) does not hold its email back: that file is marked **Not summarised**.
+- **If the AI is switched off** (or the mailbox no longer uses AI summaries) the
+  waiting emails are shown as they are.
+- **After a restart.** The line lives in the server's memory. Emails that were
+  waiting are put back in it at the next sync, or when you next open the inbox.
+- **New-mail alerts** for mail that had to wait are sent when it is ready, one
+  message for the whole batch, not when it first arrived.
+
 ### Summaries of attached files
 
 When an email is summarised, each attached file is read in memory and summarised
@@ -38,9 +67,11 @@ says **Summary written by AI** and **The file itself is not stored**.
   parts. The practical limits are stated rather than hidden: a file up to 25 MB,
   up to 20 files per email, and about 25 minutes per file. If a file is longer
   than that, the summary says **covers the first N of M sections** (or pages).
-- **While it works.** A row says **Reading…** until its summary is ready, and the
-  page fills in by itself. If the AI could not be reached the row says **Not
-  summarised** with a **Try again** button.
+- **While it works.** New mail is not shown in your inbox until its summary and
+  the summaries of its files are ready (see **The AI queue** below), so you meet
+  an email finished. A file that could not be summarised says **Not summarised**
+  and, if the AI could not be reached, offers **Try again**. Pressing **Try
+  again** shows **Reading…** on that file until it is done.
 - **Who may turn it on.** With an AI server on your own network it is on by
   default, because nothing leaves your network. With a cloud service it is **off**
   until an administrator turns it on under Administration, AI model, **Summarise

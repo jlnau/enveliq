@@ -946,7 +946,11 @@ def list_retained_messages_endpoint(account_id: AccountId, session: Session = De
     account = load_account(account_id, session.principal, owner_only=False)
     if account_owned_by(account, session.principal):
         review.purge_expired(vault, account)
-    return [public_message(m) for m in vault.list_messages(account_id)]
+    stored = vault.list_messages(account_id)
+    if account_owned_by(account, session.principal) and any(m.get("ai_pending") for m in stored):
+        mail_service.enqueue_held(vault, account)          # after a restart the line is empty: put the waiting mail back in it
+    # New mail stays out of the list until its summary and the summaries of its files are ready.
+    return [public_message(m) for m in stored if not (m.get("ai_pending") and m.get("state", "unread") == "unread")]
 
 
 @app.post("/api/v1/accounts/{account_id}/messages/{message_id}/resolve", status_code=204)
