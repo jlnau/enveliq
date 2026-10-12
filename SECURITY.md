@@ -102,6 +102,14 @@ These rules are architecture requirements, not UI preferences.
 - It is its own Cloudflare Pages project, separate from the website and from any Enveliq install. Its Content-Security-Policy forbids every network connection (`connect-src 'none'`, `default-src 'none'`) and allows only its own scripts, each by a fingerprint computed at build time. It cannot be framed and sends no referrer.
 - The build refuses to produce a page that loads a script from a file, so the fingerprints always cover everything that runs. A browser check fails if the demo asks for anything beyond its own page and pictures.
 
+## New-version notice
+
+- About once a day, while the vault is unlocked and an administrator has opened Enveliq, the **server** asks GitHub for the newest published release (`https://api.github.com/repos/jlnau/enveliq/releases/latest`). No browser makes this request. It carries no cookie, token, user, mailbox, install or version information beyond a fixed `User-Agent`, and has an 8-second timeout and a 200 KB size limit.
+- Only a version number made of digits and dots, and a link that starts with `https://github.com/jlnau/enveliq/releases/` and uses only plain URL characters, are accepted from the answer, and the page checks both again before showing them. Drafts and pre-releases are ignored. Everything else is discarded, so nothing from the answer can put other text or links in a page.
+- The result is kept in memory only. A failed check is silent and is retried after an hour.
+- Only administrators receive it (in `/api/v1/system`); nobody else does, and the public status page does not mention it. An administrator can switch it off (`PUT /api/v1/admin/update-notice`, audited as `update_notice_changed`), after which no request is made. It is on by default.
+- This replaces the earlier statement that Enveliq makes no update check. The privacy notes, the privacy pop-up and the README now say so. Tests never contact GitHub.
+
 ## Install as an app and new-email alerts
 
 - `/manifest.webmanifest` and the three icons are public and the same for everyone (name, colours, icon addresses). They hold nothing about any person or mailbox. The page policies allow a manifest only from Enveliq itself (`manifest-src 'self'`).

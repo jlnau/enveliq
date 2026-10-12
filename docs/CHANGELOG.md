@@ -4,6 +4,19 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**A notice when a new version is out.** Administrators now see a small card in the left panel when a newer Enveliq release has been published, with a link to the release notes on GitHub. Enveliq's server checks about once a day (never the browser); nothing about you is sent. It is on by default and an administrator can switch it off under Administration, Updates. This replaces the earlier statement that Enveliq makes no update check, so the privacy notes, the privacy pop-up and the README now mention it.
+- `backend/update_check.py` (new): asks `api.github.com` for the latest published release in the background (8 second timeout, 200 KB limit, once a day, an hour's wait after a failure), accepts only a plain version number and a link under `https://github.com/jlnau/enveliq/releases/`, ignores drafts and pre-releases, compares versions as numbers and keeps the result in memory.
+- `backend/app.py`, `backend/models.py`: `/api/v1/system` includes `update` for administrators only; `GET`/`PUT /api/v1/admin/update-notice` read and switch it (admin only, stored in the vault, audited as `update_notice_changed`). When it is off, no request is made.
+- `prototype/index.html`, `web/static/auth.js`: the card above the line over Agent (a small icon when the panel is collapsed), which re-checks that the link is Enveliq's own releases page, and Administration, Updates with the switch.
+- Docs: `docs/UPDATES.md` (new), `docs/PRIVACY.md`, `README.md`, the privacy pop-up, the website home page and `SECURITY.md` now describe the check.
+- Tests: `tests/test_update_notice.py` (version comparison, what is accepted and refused, administrators only, off means no request, a failed check is quiet, audit), `tests/conftest.py` (no test ever contacts GitHub), `scripts/check_update_notice.mjs` (the card, its link, bad links ignored, the collapsed icon, the switch).
+
+**Undo bars stack.** Each Reviewed, Archive or Bin now gets its own Undo bar, so you can still take back an earlier one after doing another. Several emails done together are still one bar.
+
+- `prototype/index.html`: the single Undo bar is now a stack (`#undoBar` holds one `.undobar` per waiting action, newest at the bottom, drawn by `drawUndos()`). Each bar has its own Undo button and its own countdown line, which carries on from where it was when another bar is added. At most three show: a fourth action sends the oldest one straight away.
+- Tests: `scripts/check_stacked_undo.mjs` (new; three in a row, newest at the bottom, no overlap on desktop or phone, Undo on the middle one, several emails as one bar, the three-bar limit, bars leaving one by one). `check_demo.mjs` and `check_inbox_real_mail.mjs` now look at the newest bar.
+- Docs: `docs/UNDO.md`.
+
 **The version number moves to the bottom of the left panel.** The version is now a small grey line under Terms, Privacy and Security instead of under the logo and tagline at the top. It is hidden when the panel is collapsed, like those links.
 
 - `prototype/index.html`: `#brandVer` moves from the logo block into the bottom block of the left panel (`.side-foot`), styled as `.ver`. It is still filled from the signed-in `/api/v1/system` answer, and stays empty and hidden in the demo.
