@@ -59,6 +59,13 @@ for (const [f, html] of htmlOf) {
     if (hash && target.endsWith(".html") && !idsOf.get(target)?.has(hash)) bad(`${rel}: ${u} has no such heading on that page`);
   }
 }
+{
+  const guide = path.join(dist, "docs/install/docker-compose/index.html");
+  const html = fs.existsSync(guide) ? fs.readFileSync(guide, "utf8") : "";
+  const file = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "install", "docker-compose.yml"), "utf8");
+  if (!html.includes("ENVELIQ_SETUP_CODE") || !html.includes("image: ghcr.io/jlnau/enveliq") || html.indexOf("The install file") > html.indexOf("What is a")) bad("the Docker Compose guide does not show the install file first");
+  if (!html.includes("enveliq-render:8766") || !file.includes("enveliq-render:8766")) bad("the Docker Compose guide's install file is out of step with install/docker-compose.yml");
+}
 for (const need of ["_headers", "robots.txt", "sitemap.xml", "404.html", "downloads/docker-compose.yml"]) if (!fs.existsSync(path.join(dist, need))) bad(`missing ${need}`);
 // the sitemap lists real pages, and none that are hidden from search
 const sitemap = fs.readFileSync(path.join(dist, "sitemap.xml"), "utf8");
