@@ -233,3 +233,177 @@ def view(data: bytes, name: str, ctype: str) -> dict[str, Any]:
     if kind in ("text", "csv"):
         return render_text(data, kind, ctype, name)
     return {"kind": "none", "reason": "This kind of file cannot be shown here. Use Save to my device."}
+
+
+# ---------- reading the words of an attachment, so it can be summarised ----------
+#
+# Only the text is taken out, in memory. A PDF is read by poppler's `pdftotext` in the same locked-down way as drawing
+# (in the render container when ENVELIQ_RENDER_URL is set). A Word file is a zip of XML, read here with plain string
+# matching (no XML parser, so nothing in it can expand or fetch anything) and hard size limits. Plain text is decoded.
+# Pictures, spreadsheets and other types are not read.
+
+READ_PDF_BYTES = 25 * 1024 * 1024
+READ_DOCX_BYTES = 25 * 1024 * 1024
+READ_TEXT_BYTES = 25 * 1024 * 1024
+READ_MAX_CHARS = 3_000_000          # about 1,000 pages of text; more than that is cut and the summary says so
+READ_PDF_SECONDS = 180              # all the page batches of one PDF together
+PAGE_BATCH = 25
+DOCX_PART_LIMIT = 40 * 1024 * 1024  # the most that one part of a Word file may unpack to
+
+DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+_W_PARA = re.compile(rb"</w:p>|<w:br\s*/>|<w:tab\s*/>")
+_W_TEXT = re.compile(rb"<w:t(?:\s[^>]*)?>([^<]*)</w:t>")
+_W_TAG = re.compile(rb"<[^>]*>")
+_ENTITIES = {b"&amp;": "&", b"&lt;": "<", b"&gt;": ">", b"&quot;": '"', b"&apos;": "'"}
+
+
+def text_tools_available() -> bool:
+    return bool(shutil.which("pdfinfo") and shutil.which("pdftotext"))
+
+
+def read_kind(name: str, ctype: str, data: bytes) -> str:
+    """'pdf', 'docx', 'text' or 'none' (a kind that is not read)."""
+    ext = os.path.splitext(name.lower())[1]
+    if ctype == "application/pdf" or (ext == ".pdf" and ctype == "application/octet-stream"):
+        return "pdf" if b"%PDF-" in data[:1024] else "none"
+    if ctype == DOCX_TYPE or (ext == ".docx" and ctype == "application/octet-stream"):
+        return "docx" if data[:2] == b"PK" else "none"
+    if ctype in TEXT_TYPES or (ext in TEXT_EXTENSIONS and ctype in ("application/octet-stream", "text/plain")):
+        return "text"
+    return "none"
+
+
+def _clean_text(text: str) -> str:
+    return re.sub(r"\n{3,}", "\n\n", _CONTROL.sub("", text.replace("\r\n", "\n").replace("\r", "\n"))).strip()
+
+
+def _page_count(data: bytes) -> tuple[int, str]:
+    """(pages, '') or (0, a plain reason)."""
+    try:
+        info = _run(["pdfinfo", "-"], data, 64 * 1024).decode("utf-8", "replace")
+    except TimeoutError:
+        return 0, "This PDF took too long to open."
+    except Exception:
+        return 0, "This PDF could not be opened."
+    if re.search(r"^Encrypted:\s+yes", info, re.M):
+        return 0, "This PDF is password protected."
+    m = re.search(r"^Pages:\s+(\d+)", info, re.M)
+    pages = int(m.group(1)) if m else 0
+    return pages, ("" if pages else "This PDF has no pages.")
+
+
+def pdf_text_here(data: bytes) -> dict[str, Any]:
+    """The words of a PDF, in a limited child process of this program. This is what the render container runs for /text."""
+    if len(data) > READ_PDF_BYTES:
+        return {"kind": "none", "reason": "This PDF is larger than 25 MB."}
+    if not text_tools_available():
+        return {"kind": "none", "reason": "Reading PDFs is not set up on this server (the PDF viewer container is missing)."}
+    pages, reason = _page_count(data)
+    if not pages:
+        return {"kind": "none", "reason": reason}
+    import time
+    started = time.monotonic()
+    out: list[str] = []
+    size = 0
+    read = 0
+    for first in range(1, pages + 1, PAGE_BATCH):
+        last = min(pages, first + PAGE_BATCH - 1)
+        if time.monotonic() - started > READ_PDF_SECONDS or size >= READ_MAX_CHARS:
+            break
+        if not _slots.acquire(timeout=WALL_SECONDS):
+            break
+        try:
+            chunk = _run(["pdftotext", "-q", "-enc", "UTF-8", "-f", str(first), "-l", str(last), "-", "-"], data, 8 * 1024 * 1024)
+        except Exception:
+            break
+        finally:
+            _slots.release()
+        piece = _clean_text(chunk.decode("utf-8", "replace"))
+        out.append(piece)
+        size += len(piece)
+        read = last
+    text = "\n\n".join(p for p in out if p)[:READ_MAX_CHARS]
+    if not read:
+        return {"kind": "none", "reason": "This PDF could not be read."}
+    if not text.strip():
+        return {"kind": "none", "reason": "This PDF has no text to read. It may be scanned pages or pictures."}
+    return {"kind": "text", "text": text, "pages": pages, "read_pages": read}
+
+
+def _remote_pdf_text(data: bytes, url: str) -> dict[str, Any]:
+    try:
+        request = urllib.request.Request(url + "/text", data=data, method="POST", headers={"Content-Type": "application/pdf"})
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open(request, timeout=READ_PDF_SECONDS + 60) as reply:
+            raw = reply.read(READ_MAX_CHARS * 4 + 4096)
+    except Exception:
+        return {"kind": "none", "reason": "The PDF viewer service could not be reached."}
+    try:
+        out = json.loads(raw)
+        if out.get("kind") == "none":
+            return {"kind": "none", "reason": str(out.get("reason") or "This PDF could not be read.")[:200]}
+        text, pages, read = out["text"], int(out["pages"]), int(out["read_pages"])
+        if out.get("kind") != "text" or not isinstance(text, str) or len(text) > READ_MAX_CHARS or not 1 <= read <= pages <= 1_000_000:
+            raise ValueError("shape")
+        return {"kind": "text", "text": _clean_text(text), "pages": pages, "read_pages": read}
+    except Exception:
+        return {"kind": "none", "reason": "The PDF viewer service gave an answer that could not be used."}
+
+
+def pdf_text(data: bytes) -> dict[str, Any]:
+    url = render_url()
+    return _remote_pdf_text(data, url) if url else pdf_text_here(data)
+
+
+def docx_text(data: bytes) -> dict[str, Any]:
+    """The words of a Word (.docx) file: the body, then footnotes, headers and footers are left out."""
+    import zipfile
+    if len(data) > READ_DOCX_BYTES:
+        return {"kind": "none", "reason": "This Word file is larger than 25 MB."}
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as z:
+            info = z.getinfo("word/document.xml")
+            if info.file_size > DOCX_PART_LIMIT:
+                return {"kind": "none", "reason": "This Word file is too large to read."}
+            xml = bytearray()
+            with z.open(info) as part:
+                while True:
+                    block = part.read(1 << 20)
+                    if not block:
+                        break
+                    xml += block
+                    if len(xml) > DOCX_PART_LIMIT:
+                        return {"kind": "none", "reason": "This Word file is too large to read."}
+    except (zipfile.BadZipFile, KeyError, OSError, ValueError, RuntimeError):
+        return {"kind": "none", "reason": "This Word file could not be read. It may be damaged or password protected."}
+    paragraphs: list[str] = []
+    for chunk in _W_PARA.split(bytes(xml)):
+        words = b"".join(_W_TEXT.findall(chunk))
+        if words:
+            text = _W_TAG.sub(b"", words).decode("utf-8", "replace")
+            for ent, ch in _ENTITIES.items():
+                text = text.replace(ent.decode(), ch)
+            paragraphs.append(text)
+        if sum(len(p) for p in paragraphs) > READ_MAX_CHARS:
+            break
+    text = _clean_text("\n".join(paragraphs))[:READ_MAX_CHARS]
+    if not text:
+        return {"kind": "none", "reason": "This Word file has no text to read."}
+    return {"kind": "text", "text": text, "pages": None, "read_pages": None}
+
+
+def read_text(data: bytes, name: str, ctype: str) -> dict[str, Any]:
+    """The words of an attachment, in memory: {'kind': 'text', 'text', 'pages', 'read_pages'} or {'kind': 'none', 'reason'}."""
+    kind = read_kind(name, ctype, data)
+    if kind == "pdf":
+        return pdf_text(data)
+    if kind == "docx":
+        return docx_text(data)
+    if kind == "text":
+        if len(data) > READ_TEXT_BYTES:
+            return {"kind": "none", "reason": "This file is larger than 25 MB."}
+        text = _clean_text(data[:READ_MAX_CHARS * 2].decode("utf-8", "replace"))[:READ_MAX_CHARS]
+        return {"kind": "text", "text": text, "pages": None, "read_pages": None} if text else {"kind": "none", "reason": "This file is empty."}
+    if ctype.startswith("image/"):
+        return {"kind": "none", "reason": "This is a picture. Reading the words in pictures is not supported yet."}
+    return {"kind": "none", "reason": "Enveliq cannot read this kind of file yet. Use View or save it."}

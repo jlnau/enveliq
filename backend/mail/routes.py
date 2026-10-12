@@ -7,13 +7,13 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi import Path as PathParam
-from pydantic import Field, field_validator
+from pydantic import Field, StrictBool, field_validator
 
 from ..models import StrictModel, header_safe
 from ..security import Session
 from .errors import HTTP_STATUS, BridgeError
 from .limits import SlidingWindowLimiter
-from . import llm_providers, providers, review
+from . import attach_service, llm_providers, providers, review
 from . import microsoft as ms
 from .llm import LlmConfig, Summariser, run_sample
 from .service import AI_CONFIG_RECORD, MailService, target_for
@@ -54,6 +54,12 @@ class ReviewSettingsBody(StrictModel):
 class PromptBody(StrictModel):
     prompt: str = Field(default="", max_length=review.PROMPT_MAX)
     acknowledged: bool = False
+
+
+class AttachmentAiBody(StrictModel):
+    """Whether attached files are read and summarised. For a cloud AI service, `acknowledged` says the administrator understands the text of the files leaves the network."""
+    enabled: StrictBool
+    acknowledged: StrictBool = False
 
 
 class AiConfigBody(StrictModel):
@@ -299,6 +305,46 @@ def build_mail_router(ctx: Any) -> APIRouter:
         vault.audit({"event": "mailbox_summarised", "actor_user_id": session.principal.user_id, "account_id": account_id,
                      "summarised": result["summarised"], "failed": result["failed"], "at": time.time()})
         return result
+
+    @router.get("/admin/attachment-ai")
+    def attachment_ai(session: Session = Depends(admin_dep)):
+        service.refresh_ai(vault)
+        return attach_service.status(vault, service.summariser)
+
+    @router.put("/admin/attachment-ai")
+    def attachment_ai_save(body: AttachmentAiBody, session: Session = Depends(admin_dep)):
+        service.refresh_ai(vault)
+        known = llm_providers.get(service.summariser.config.provider)
+        if body.enabled and known.cloud and service.summariser.enabled and not body.acknowledged:
+            raise HTTPException(status_code=400, detail=f"Confirm that you understand the text of attached files will be sent to {known.company or known.label}.")
+        vault.set_global(attach_service.RECORD, {"enabled": body.enabled})
+        vault.audit({"event": "attachment_ai_changed", "actor_user_id": session.principal.user_id, "enabled": body.enabled, "cloud": bool(known.cloud and service.summariser.enabled), "at": time.time()})
+        return attach_service.status(vault, service.summariser)
+
+    @router.post("/accounts/{account_id}/messages/{message_id}/attachments/summarise", status_code=202)
+    def attachments_summarise(account_id: AccountId, message_id: MessageId, session: Session = Depends(session_dep)):
+        """Try again for the files of one email whose summaries did not finish. The work goes on in the background."""
+        account = owned(account_id, session, "summarise attached files")
+        message = message_of(account_id, message_id)
+        if not view_limit.allow(f"attsum:{session.principal.user_id}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        service.refresh_ai(vault)
+        if not service.summariser.enabled:
+            raise HTTPException(status_code=409, detail={"code": "ai_not_configured", "message": "No AI model is set up yet. An administrator can add one under Administration, AI model."})
+        if not (account.get("settings") or {}).get("ai_summaries"):
+            raise HTTPException(status_code=400, detail={"code": "ai_disabled", "message": "AI summaries are switched off for this mailbox."})
+        if not attach_service.allowed(vault, service.summariser):
+            raise HTTPException(status_code=409, detail={"code": "attachments_off", "message": "Summarising attached files is switched off. An administrator can turn it on under Administration, AI model."})
+        try:
+            raw = service.original_raw(account, message)
+        except BridgeError as err:
+            raise fail(err) from None
+        if len(raw) > attach_service.MAX_RAW:
+            raise HTTPException(status_code=413, detail="This email is too large to read the files of.")
+        instructions = review.instructions_for(vault, account.get("owner_user_id"))
+        if not attach_service.run_in_background(vault, account_id, message_id, raw, service.summariser, instructions):
+            raise HTTPException(status_code=409, detail="This email's files are already being read.")
+        return {"started": True}
 
     @router.get("/accounts/{account_id}/messages/{message_id}/original")
     def original(account_id: AccountId, message_id: MessageId, response: Response, session: Session = Depends(session_dep)):

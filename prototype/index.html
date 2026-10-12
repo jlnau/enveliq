@@ -257,6 +257,25 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 @media(max-width:800px){.kpi-grid{grid-template-columns:1fr 1fr}.inline-fields{grid-template-columns:1fr}.checkbox-list{grid-template-columns:1fr}.folder-grid{grid-template-columns:1fr}.account-manage-head{flex-direction:column}.manage-top-actions{justify-content:flex-start}.rule-row{grid-template-columns:1fr}.email-provider-grid{grid-template-columns:1fr}}
 
 
+
+.ad-block{margin:14px 0 4px;border:1px solid var(--c-232a36);border-radius:12px;background:var(--c-10141b);overflow:hidden}
+.ad-title{padding:9px 14px 7px;font-size:12px;font-weight:650;color:var(--muted)}
+.ad-row{border-top:1px solid var(--c-232a36)}
+.ad-head{display:grid;grid-template-columns:18px auto minmax(0,1fr) auto auto 16px;gap:9px;align-items:center;padding:10px 14px;cursor:pointer}
+.ad-head:hover{background:var(--c-141922)}
+.ad-ic{color:var(--faint);line-height:0}.ad-name{font-weight:650;white-space:nowrap}.ad-meta{color:var(--faint);font-size:11.5px;white-space:nowrap}
+.ad-line{color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;grid-column:3}
+.ad-head .ad-meta{grid-column:4;grid-row:1}.ad-head .attachment-view{grid-column:5}.ad-chev{color:var(--faint);transition:transform .15s}
+.ad-row.open .ad-chev{transform:rotate(180deg)}
+.ad-detail{display:none;padding:2px 16px 14px 41px}.ad-row.open .ad-detail{display:block}
+.ad-sum h5{margin:10px 0 3px;font-size:12px;color:var(--c-b8c1d2);font-weight:650}.ad-sum p{margin:0 0 6px;line-height:1.6;color:var(--text);font-size:14px}
+.ad-by{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.ad-by span{font-size:10.5px;color:var(--c-8f9aac);border:1px solid var(--c-303847);border-radius:999px;padding:3px 8px}
+.ad-by .aibadge{color:var(--c-9fdcff);border-color:var(--c-1f4f9c);background:var(--c-0c1a33)}
+.ad-wait{display:flex;gap:9px;align-items:center;color:var(--muted);font-size:13px;padding:6px 0}.ad-wait .subtle{white-space:nowrap;flex:none}
+.ad-spin{width:12px;height:12px;border-radius:50%;border:2px solid var(--c-303847);border-top-color:var(--accent);animation:adspin 1s linear infinite}
+@keyframes adspin{to{transform:rotate(360deg)}}
+@media(max-width:760px){.ad-head{grid-template-columns:18px minmax(0,1fr) auto 16px;row-gap:2px}.ad-name{grid-column:2;white-space:normal}.ad-head .ad-meta{grid-column:2;grid-row:2}.ad-head .ad-line{grid-column:2;grid-row:3}.ad-line{grid-column:2;grid-row:3;white-space:normal}.ad-head .attachment-view{grid-column:3;grid-row:1}.ad-chev{grid-column:4;grid-row:1}.ad-detail{padding-left:16px}}
+@media(prefers-reduced-motion:reduce){.ad-spin{animation:none}}
 .attachment-row{margin-top:11px;border-top:1px solid var(--c-232a36);padding-top:9px}
 .attachment-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:8px;align-items:center}
 .attachment-name{font-weight:720;white-space:nowrap}
@@ -1559,6 +1578,7 @@ if(isPlainHttp(location.protocol,location.hostname)){const b=document.getElement
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
 
 function toast(t,ms=1500){$("toast").textContent=t;$("toast").classList.add("show");setTimeout(()=>$("toast").classList.remove("show"),ms)}
+const fmtBytes=n=>!n?"":n<1024?n+" B":n<1048576?Math.round(n/1024)+" KB":(n/1048576).toFixed(1)+" MB";
 const fileN=m=>m.attachments.length||(m.hasFiles?(m.fileCount||1):0);          // real mail keeps only a count, never the files themselves
 const clipWords=m=>{const n=fileN(m),sure=m.attachments.length||m.fileCount!=null;return n===1?(sure?"Has an attachment":"May have an attachment"):`Has ${n} attachments`};
 function userMessages(){return data.filter(m=>m.owner===currentUser.id&&!m._pending)}
@@ -1699,21 +1719,23 @@ function disclosure(key,label,preview,body){
     <span class="disclosure-label">${esc(label)}</span><span class="disclosure-preview">${preview||""}</span><span class="chev">⌄</span>
   </button><div class="disclosure-body">${body}</div></div>`;
 }
+const attachmentsBlock=m=>m.attachments.length?`<section class="ad-block" aria-label="Attachments"><div class="ad-title">${m.attachments.length===1?"1 attachment":m.attachments.length+" attachments"}</div>${m.attachments.map((a,i)=>attachmentDisclosure(m,a,i)).join("")}</section>`:"";
 function attachmentDisclosure(m,a,i){
-  const key=`att-${m.id}-${i}`;
-  const open=expanded.has(key);
-  return `<div class="attachment-row ${esc(open?"open":"")}">
-    <div class="attachment-head">
-      <span class="attachment-name">📎 ${esc(a.name)}</span>
-      <span class="attachment-preview-line">${esc(a.summary)}</span>
+  const key=`att-${m.id}-${i}`,open=expanded.has(key),st=a.state||"done";
+  const kindOf=x=>/wordprocessingml/.test(x)?"Word":/pdf/.test(x)?"PDF":/csv/.test(x)?"CSV":/^text\//.test(x)?"Text":/^image\//.test(x)?"Picture":"",meta=[kindOf(a.mime||""),a.pages?`${a.pages} pages`:"",a.size].filter(Boolean).join(" · ");
+  const body=st==="working"?`<div class="ad-wait"><i class="ad-spin"></i>Reading this file. ${esc(a.progress||"This can take a minute for a long file.")}</div>`
+    :st==="failed"||st==="skipped"?`<div class="ad-wait">${esc(a.reason||"Enveliq could not read this file.")} You can still open it with View.${st==="failed"&&m.real?` <button class="subtle" type="button" data-att-retry="${esc(m.id)}">Try again</button>`:""}</div>`
+    :`<div class="ad-sum">${(a.parts||[{text:a.detail||a.summary}]).map(p=>`${p.title?`<h5>${esc(p.title)}</h5>`:""}<p>${esc(p.text)}</p>`).join("")}</div><div class="ad-by"><span class="aibadge">Summary written by AI</span>${a.note?`<span>${esc(a.note)}</span>`:""}${a.pages>8&&!a.note?`<span>Long file, summarised in ${a.parts?a.parts.length:3} parts</span>`:""}<span>The file itself is not stored</span></div>`;
+  return `<div class="ad-row ${esc(open?"open":"")} ${esc(st)}">
+    <div class="ad-head" data-expand="${esc(key)}" role="button" tabindex="0" aria-expanded="${esc(open)}">
+      <span class="ad-ic"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5l-7.6 7.6a5 5 0 0 1-7-7l8-8a3.4 3.4 0 0 1 4.8 4.8l-8 8a1.8 1.8 0 0 1-2.5-2.5L14 7.2"/></svg></span>
+      <span class="ad-name">${esc(a.name)}</span>
+      <span class="ad-meta">${esc(meta)}</span>
+      <span class="ad-line">${st==="working"?"Reading…":st==="failed"||st==="skipped"?"Not summarised":esc(a.summary)}</span>
       <button class="attachment-view" data-open-attachment="${esc(m.id)}:${esc(i)}">View</button>
-      <button class="attachment-toggle" data-expand="${esc(key)}" aria-label="Expand attachment summary">⌄</button>
+      <span class="ad-chev" aria-hidden="true">⌄</span>
     </div>
-    <div class="attachment-detail">
-      <div class="detail-text">${esc(a.detail)}</div>
-      <div class="attachment-meta-line"><span>${esc(a.mime||"Attachment")}</span><span>${esc(a.size||"Size unknown")}</span><span>Source mailbox</span><span>RAM-only preview</span></div>
-      <div class="attachment-purge-note">The original file is not stored by Enveliq. This attachment reference and summary are purged when the review item is resolved.</div>
-    </div>
+    <div class="ad-detail">${body}</div>
   </div>`;
 }
 const MON3=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"],DOW3=["sun","mon","tue","wed","thu","fri","sat"];
@@ -2381,7 +2403,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
   const quiet=(m,mode)=>{
     const open=mode==="pane"?false:(view.rows==="open"||expanded.has(`row-${m.id}`));
     const tk=taskFor(m),taskHtml=tk?taskLine(tk):"";
-    const attachmentHtml=m.attachments.map((a,i)=>attachmentDisclosure(m,a,i)).join("");
+    
     const flag=!m.kept&&(m.action||m.priority==="high")?`<span class="flag" title="Needs action" aria-label="Needs action"></span>`:"";
     const lead=m.kept?"<span></span>":`<input class="check" type="checkbox" data-select="${esc(m.id)}" aria-label="Select ${esc(m.subject)}" ${esc(selected.has(m.id)?"checked":"")}>`;
     const quick=m.kept?"<span></span>":`<span class="qpair"><button class="action reviewed qic" data-id="${esc(m.id)}" data-status="reviewed" aria-label="Mark reviewed" title="Mark reviewed">${ICON_OK}</button><button class="action archive qic" data-id="${esc(m.id)}" data-status="archived" aria-label="Archive" title="Archive">${ICON_ARCH}</button><button class="action trash qic" data-id="${esc(m.id)}" data-status="trashed" aria-label="Bin" title="Bin">${ICON_BIN}</button></span>`;
@@ -2389,8 +2411,8 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
     const attCount=fileN(m)?`${fileN(m)} ${fileN(m)===1?"file":"files"}`:"None";
     const replyBtn=(m.replyTo?`<button class="subtle" data-reply="${esc(m.id)}">${ICON_REPLY}Reply</button>`:"")+(m.kept?"":isSnoozed(m)?`<button class="subtle" data-unsnooze="${esc(m.id)}">${ICON_SNOOZE}Wake now</button>`:`<button class="subtle" data-snooze="${esc(m.id)}" aria-haspopup="menu">${ICON_SNOOZE}Snooze</button>`)||"<span></span>";
     const detail=m.kept
-      ?`<div class="qdetail"><div class="qfrom"><span class="addr">&lt;${esc(m.address)}&gt;</span></div><div class="qsummary">${esc(m.summary)}</div>${taskHtml}${attachmentHtml}<div class="kept-note">${m.status==="archived"?"Archived":"Marked reviewed"} in your mailbox. Kept here until ${esc(m.keptUntil)}.${m.replied?` You replied ${esc(m.repliedAt||"just now")}.`:""}</div><div class="actions">${m.replyTo?`<button class="action reply" data-reply="${esc(m.id)}">↩ Reply</button>`:""}<button class="action trash" data-id="${esc(m.id)}" data-status="expired">Remove from this list</button></div></div>`
-      :`<div class="qdetail split"><div class="qmainc">${scamHtml(m.scam)}${m.ungen&&m.real&&feat.all_mail&&allMail?genBlock(m):`<div class="qsummary">${esc(m.summary)}</div>`}${taskHtml}${attachmentHtml}<div class="qfill"></div><div class="qfoot"><span class="qleft">${replyBtn}${m.kept||!m.address?"":`<button class="subtle" data-important="${esc(m.id)}" aria-pressed="${isImp(m)}">&#9733; ${isImp(m)?"Not important":"Important person"}</button>`}${m.kept||!m.address||!realMail||isImp(m)?"":`<button class="subtle" data-rule="${esc(m.id)}">Always archive these</button>`}${unsubHtml(m.unsub,!!m.scam)}</span><button class="linkbtn view-email" data-open-email="${esc(m.id)}">View original email</button></div></div>
+      ?`<div class="qdetail"><div class="qfrom"><span class="addr">&lt;${esc(m.address)}&gt;</span></div><div class="qsummary">${esc(m.summary)}</div>${taskHtml}${attachmentsBlock(m)}<div class="kept-note">${m.status==="archived"?"Archived":"Marked reviewed"} in your mailbox. Kept here until ${esc(m.keptUntil)}.${m.replied?` You replied ${esc(m.repliedAt||"just now")}.`:""}</div><div class="actions">${m.replyTo?`<button class="action reply" data-reply="${esc(m.id)}">↩ Reply</button>`:""}<button class="action trash" data-id="${esc(m.id)}" data-status="expired">Remove from this list</button></div></div>`
+      :`<div class="qdetail split"><div class="qmainc">${scamHtml(m.scam)}${m.ungen&&m.real&&feat.all_mail&&allMail?genBlock(m):`<div class="qsummary">${esc(m.summary)}</div>`}${attachmentsBlock(m)}${taskHtml}<div class="qfill"></div><div class="qfoot"><span class="qleft">${replyBtn}${m.kept||!m.address?"":`<button class="subtle" data-important="${esc(m.id)}" aria-pressed="${isImp(m)}">&#9733; ${isImp(m)?"Not important":"Important person"}</button>`}${m.kept||!m.address||!realMail||isImp(m)?"":`<button class="subtle" data-rule="${esc(m.id)}">Always archive these</button>`}${unsubHtml(m.unsub,!!m.scam)}</span><button class="linkbtn view-email" data-open-email="${esc(m.id)}">View original email</button></div></div>
         <aside class="qside" aria-label="Email details"><div class="qkv"><span>From</span><span class="addr">${esc(m.address)}</span></div><div class="qkv"><span>Received</span><span>${esc(m.time)}</span></div>${m.replied?`<div class="qkv replied-kv"><span>Replied</span><span>${esc(m.repliedAt||"Just now")}</span></div>`:""}<div class="qkv"><span>Category</span><span>${esc(category)}</span></div><div class="qkv"><span>Attachments</span><span>${esc(attCount)}</span></div>
         <div class="qbtns"><button class="action reviewed" data-id="${esc(m.id)}" data-status="reviewed">${ICON_OK}Reviewed</button><div class="two"><button class="action archive" data-id="${esc(m.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(m.id)}" data-status="trashed">${ICON_BIN}Bin</button></div></div></aside></div>`;
     if(mode==="detail")return detail;
@@ -2446,6 +2468,7 @@ let currentAttachmentView=null;
 function openAttachmentViewer(spec){
   const [messageIdRaw,indexRaw]=spec.split(":");
   const m=data.find(x=>x.id===Number(messageIdRaw)&&x.owner===currentUser.id);
+  if(m&&m.real){openRealEmail(m);return}          // a real email: its files are previewed or saved from the original-email view
   const a=m?.attachments?.[Number(indexRaw)];
   if(!m||!a){toast("Attachment is no longer available in this review item");return}
   currentAttachmentView={message:m,attachment:a,page:1};
@@ -3607,12 +3630,14 @@ document.addEventListener("change",e=>{
 });
 let selAnchor=null,selShift=false;   // the email ticked last, and whether Shift was held for this tick
 document.addEventListener("click",e=>{if(e.target.matches&&e.target.matches("[data-select]"))selShift=e.shiftKey},true);
+document.addEventListener("keydown",e=>{const h=e.target&&e.target.closest&&e.target.closest(".ad-head");if(h&&e.target===h&&(e.key==="Enter"||e.key===" ")&&!e.isComposing){e.preventDefault();h.click()}});          // an attachment row opens from the keyboard
 document.addEventListener("click",e=>{
   const due=e.target.closest("[data-due-open]");if(due){const id=due.dataset.dueOpen;filter="all";query="";$("search").value="";expanded.add(`row-${id}`);{const dm=data.find(x=>String(x.id)===id);if(dm){paneId=dm.id;if(view.layout==="screen")readerOpen=true}}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();const el=document.querySelector(`[data-expand="row-${CSS.escape(id)}"]`);el&&el.closest("article").scrollIntoView({block:"nearest",behavior:"smooth"});return}
   const qrow=e.target.closest(".qrow");if(qrow&&!e.target.closest("button,input,a,label,select")){if(view.layout==="list"&&view.rows==="open")return;const t=qrow.querySelector("[data-expand],[data-pick]");if(t){t.click();return}}
   if(e.target.closest("[data-reader-close]")){readerOpen=false;render();return}
   const dt=e.target.closest("[data-due-toggle]");if(dt){dueOpen=!dueOpen;render();return}
   const pk=e.target.closest("[data-pick]");if(pk){if(view.layout==="screen")readerOpen=true;const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;render();return}
+  const retryAtt=e.target.closest("[data-att-retry]");if(retryAtt){const m=data.find(x=>x.id===+retryAtt.dataset.attRetry&&x.owner===currentUser.id);if(m&&m.real){retryAtt.disabled=true;secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/attachments/summarise`,{method:"POST",body:"{}"}).then(()=>{toast("Reading the files again. This can take a minute.",4000);m.attachments.forEach(a=>{if(a.state==="failed")a.state="working"});render()}).catch(er=>{retryAtt.disabled=false;toast(er.message,6000)})}return}
   const openAtt=e.target.closest("[data-open-attachment]");if(openAtt){openAttachmentViewer(openAtt.dataset.openAttachment);return}
   const openEmail=e.target.closest("[data-open-email]");if(openEmail){openEmailViewer(openEmail.dataset.openEmail);return}
   const ruleBtn=e.target.closest("[data-rule]");if(ruleBtn){const m=data.find(x=>x.id===Number(ruleBtn.dataset.rule)&&x.owner===currentUser.id);if(m)addRuleFor(m,ruleBtn);return}
@@ -3934,7 +3959,7 @@ async function loadRealMail(me){
       items.push({id:0,owner:me.id,account:a.display_name,sender:r.sender_display||r.sender_address||"Unknown sender",address:r.sender_address||"",
         subject:r.subject,time:realTime(r.received_at),date:r.received_at?new Date(r.received_at*1000).toLocaleString():"",received:r.received_at||0,
         summary:r.summary,priority:r.priority||"normal",category:r.category||"Email",action:!!r.action_required,status:r.state==="reviewed"||r.state==="archived"?r.state:"inbox",kept:r.state==="reviewed"||r.state==="archived",keptUntil:r.resolved_at?new Date((r.resolved_at+realPrefs.keep_days*86400)*1000).toLocaleDateString(undefined,{day:"numeric",month:"short"}):"",
-        task:r.suggested_task&&r.suggested_task.title?{title:r.suggested_task.title,due:r.suggested_task.due||"",detail:r.suggested_task.detail||""}:null,attachments:[],hasFiles:!!r.has_attachments,fileCount:Number.isInteger(r.attachment_count)?r.attachment_count:null,
+        task:r.suggested_task&&r.suggested_task.title?{title:r.suggested_task.title,due:r.suggested_task.due||"",detail:r.suggested_task.detail||""}:null,attachments:(r.attachment_summaries||[]).map(a=>({name:a.filename,mime:a.mime_type||"",size:fmtBytes(a.size_bytes),pages:a.pages||0,index:a.index,state:a.state==="reading"?"working":a.state||"done",summary:a.summary||"",parts:(a.parts||[]).map(p=>({title:p.title||"",text:p.text})),note:a.note||"",reason:a.reason||"",real:true})),hasFiles:!!r.has_attachments,fileCount:Number.isInteger(r.attachment_count)?r.attachment_count:null,
         replyTo:ctx.reply_to||null,deliveredTo:ctx.delivered_to||null,viaAlias:ctx.via_alias||null,unsub:r.unsubscribe||null,scam:r.scam_warning||null,real:{accountId:a.id,messageId:r.id},extra:!!r.from_all_mail,ungen:String(r.summary||"").startsWith("Not summarised yet"),snoozeUntil:r.snoozed_until?r.snoozed_until*1000:0,replied:!!r.replied_at,repliedAt:r.replied_at?realTime(r.replied_at):""});
     }
   }
