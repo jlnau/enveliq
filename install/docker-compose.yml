@@ -37,9 +37,9 @@ services:
       # Keep this as it is: it connects Enveliq to the PDF drawing program below.
       ENVELIQ_RENDER_URL: http://enveliq-render:8766
     ports:
-      # "127.0.0.1:8765:8765" = only this computer can open it (safest).
-      # Change it to "8765:8765" to open it from other devices on your home network (see the guide).
-      - "127.0.0.1:8765:8765"          # <-- CHANGE THIS only if you want other devices to reach it
+      # "8765:8765" opens Enveliq to other devices on your network (the address in ENVELIQ_PUBLIC_URL decides who can sign in).
+      # To let only this computer open it, use "127.0.0.1:8765:8765" instead. Never forward this port on your router.
+      - "8765:8765"
     volumes:
       - enveliq-data:/data
     read_only: true
