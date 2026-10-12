@@ -208,3 +208,31 @@ def test_only_administrators_can_see_or_change_the_switch_and_it_is_saved(env):
     sam = sign_in(appm, "sam")
     assert sam.get("/api/v1/admin/attachment-ai").status_code == 403
     assert sam.put("/api/v1/admin/attachment-ai", json={"enabled": True}).status_code == 403
+
+
+# --- never silent: a count of files always has rows that say what happened --------------------------------------------
+
+def test_files_left_alone_are_listed_with_the_reason_and_nothing_is_read():
+    v = FakeVault()
+    raw = mail_with(("rates.pdf", "application/pdf", b"SECRET-WORDS"), ("p.png", "image/png", b"\x89PNG"))
+    attach_service.mark_unread(v, "a1", "m1", raw, "Summarising attached files is switched off.", "skipped")
+    rows = v.msg["attachment_summaries"]
+    assert [r["filename"] for r in rows] == ["rates.pdf", "p.png"] and {r["state"] for r in rows} == {"skipped"}
+    assert rows[0]["reason"] == "Summarising attached files is switched off." and v.msg["attachment_count"] == 2
+    assert "SECRET-WORDS" not in json.dumps(v.saved)
+
+
+def test_an_email_that_cannot_be_opened_still_gets_a_row_per_file():
+    v = FakeVault()
+    attach_service.mark_unread(v, "a1", "m1", None, "Too large.", "skipped", 3)
+    assert [r["filename"] for r in v.msg["attachment_summaries"]] == ["Attachment 1", "Attachment 2", "Attachment 3"]
+
+
+def test_a_problem_opening_the_files_is_saved_as_failed_so_try_again_shows(monkeypatch):
+    v = FakeVault()
+    def boom(raw):
+        raise RuntimeError("bad")
+    monkeypatch.setattr(attach_service, "files_in", boom)
+    attach_service.run(v, "a1", "m1", mail_with(("a.txt", "text/plain", b"one")), FakeAi())
+    rows = v.msg["attachment_summaries"]
+    assert [r["state"] for r in rows] == ["failed"] and "Try again" in rows[0]["reason"]

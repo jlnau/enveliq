@@ -83,6 +83,32 @@ def files_in(raw: bytes) -> list[dict[str, Any]]:
     return out
 
 
+def listing(raw: bytes, reason: str, state: str = "skipped") -> list[dict[str, Any]]:
+    """The files of an email as rows that say why they were not read: names and sizes only, nothing is read or sent anywhere."""
+    msg = email.message_from_bytes(raw, policy=policy.default)
+    out: list[dict[str, Any]] = []
+    for index, part in enumerate(list_parts(msg)):
+        if _inline(part):
+            continue
+        ctype = (part.get_content_type() or "application/octet-stream")[:127]
+        name = (part.get_filename() or ("picture" if ctype.startswith("image/") else "attachment"))[:255]
+        name = "".join(ch for ch in name if ch >= " " and ch != "\x7f").strip() or "attachment"
+        try:
+            size = len(part.get_payload(decode=True) or b"")
+        except Exception:
+            size = 0
+        out.append({"index": index, "filename": name, "mime_type": ctype, "size_bytes": size, "pages": None, "state": state, "reason": reason, "read_note": None})
+        if len(out) >= MAX_FILES + 5:
+            break
+    return out
+
+
+def placeholders(count: int, reason: str, state: str = "skipped") -> list[dict[str, Any]]:
+    """When the email cannot even be opened: one row per file, with no names, so the card still says what happened."""
+    return [{"index": i, "filename": f"Attachment {i + 1}", "mime_type": None, "size_bytes": None, "pages": None, "state": state, "reason": reason, "read_note": None}
+            for i in range(min(count, 100))]
+
+
 def _row(f: dict[str, Any]) -> dict[str, Any]:
     return {"filename": f["filename"], "index": f["index"], "mime_type": f["mime_type"], "size_bytes": f["size_bytes"], "pages": f["pages"],
             "state": f["state"], "reason": f.get("reason"), "note": f.get("note") or f.get("read_note"), "summary": f.get("summary") or "", "parts": f.get("parts") or []}
@@ -107,11 +133,35 @@ def _store(vault: Any, account_id: str, message_id: str, files: list[dict[str, A
     return True
 
 
+def mark_unread(vault: Any, account_id: str, message_id: str, raw: bytes | None, reason: str, state: str = "skipped", count: int = 0) -> None:
+    """Make sure the email's card shows its files with the reason they were not read, instead of a count with nothing beside it."""
+    rows: list[dict[str, Any]] = []
+    if raw is not None and len(raw) <= MAX_RAW:
+        try:
+            rows = listing(raw, reason, state)
+        except Exception:
+            rows = []
+    if not rows and count:
+        rows = placeholders(count, reason, state)
+    if rows:
+        _store(vault, account_id, message_id, rows)
+
+
 def run(vault: Any, account_id: str, message_id: str, raw: bytes, summariser: Any, instructions: str = "") -> None:
     """Read the files of this email and summarise them one after another, saving after each so the page can follow."""
-    files = files_in(raw)
+    try:
+        files = files_in(raw)
+    except Exception as exc:
+        log.warning("files of %s not read: the email could not be opened (%s)", message_id, type(exc).__name__)
+        mark_unread(vault, account_id, message_id, raw, "Enveliq could not open this email's files. Try again in a minute.", "failed")
+        return
+    if not files:
+        log.warning("files of %s not read: the email says it has files but none were found", message_id)
+        mark_unread(vault, account_id, message_id, raw, "Enveliq could not find the files in this email. You can still open them with View original email.", "failed")
+        return
     del raw
-    if not files or not _store(vault, account_id, message_id, files):
+    if not _store(vault, account_id, message_id, files):
+        log.info("files of %s not saved: the email is gone or has been handled", message_id)
         return
     section = max(6000, summariser.config.max_chars * 2)
     for f in files:

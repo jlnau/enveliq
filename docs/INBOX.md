@@ -26,6 +26,7 @@ Enveliq never keeps your attachments. It keeps whether an email has files and ho
 Open an email and its files are listed under the summary, above the task: one row per file with its name, kind, size and a one-line summary. Press a row to read a longer summary in parts. **View** opens the file itself. Every summary is labelled **Summary written by AI**, and the file itself is not stored.
 
 - A file that could not be summarised says **Not summarised** and, if the AI could not be reached, offers **Try again**.
+- An email is never shown with a number of files and nothing beside it. If its files were left alone (the attachment switch is off, the email is too large) each file is listed as **Not summarised** with the reason. If Enveliq has not read the files at all, the email says so and offers **Read the files again**. The server log has one line saying why (`files of … not read`).
 - PDF (with text), Word (.docx), text and CSV files are read, however long. Scans and pictures are not read yet.
 - Administrators control this under Administration, AI model. See [the AI guide](AI_SUMMARIES.md#summaries-of-attached-files) for the limits and the cloud-service rule.
 
