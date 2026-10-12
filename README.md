@@ -185,7 +185,10 @@ All the guides are listed, by what you want to do, in the [**documentation index
 <details>
 <summary><b>What changed recently</b> (latest five versions)</summary>
 - **Unreleased**: **The version number moves to the bottom of the left panel.** The version number is now a small line at the bottom of the left panel, under Terms, Privacy and Security.
+- **Unreleased**: **Row buttons show when you point at an email.** On a computer, the Reviewed, Archive and Bin buttons on a row show only when the mouse is over it, in place of the date. Phones are unchanged.
+- **Unreleased**: **A paperclip on emails with attachments.** Emails that have an attachment show a small paperclip under the date and time in the list.
 
+- **Unreleased**: **Notifications show the Enveliq mark.** The small icon on an Enveliq notification on Android is now Enveliq's own mark instead of the browser's logo.
 - **Unreleased**: **Undo bars stack.** Doing Reviewed, Archive or Bin on one email after another now shows one Undo bar for each (up to three), so you can still take back an earlier one. Several emails done together are still a single bar.
 - **Unreleased**: **Mail rules.** Tell Enveliq to archive, or mark as reviewed, new email from a sender you choose, such as a shop's weekly offers. Press **Always archive these** on an opened email, or add a rule in Settings, Mail rules. A rule only acts on new email as it arrives, never on mail already in your inbox or from your important people, and no rule can delete anything. See [docs/MAIL_RULES.md](docs/MAIL_RULES.md).
 - **Unreleased**: **"Keep me signed in on this device".** An administrator can let people stay signed in for up to 14 days with a tick-box on the sign-in page (off by default; needs a vault key file). Restarting Enveliq still signs everyone out.
