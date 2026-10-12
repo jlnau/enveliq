@@ -430,7 +430,7 @@ body.booting .boot-note{display:block;animation:bootnote 0s linear .5s forwards}
 @keyframes bootnote{to{opacity:1}}
 body.backend:not(.mail-ready) #list{visibility:hidden}
 body.backend:not(.mail-ready) #dueBars,body.backend:not(.mail-ready) #shipBars,body.backend:not(.mail-ready) #subBars,body.backend:not(.mail-ready) #tripBars,body.backend:not(.mail-ready) #waitBars,body.backend:not(.mail-ready) .sample-banner{display:none!important}
-.sample-banner{display:none;margin-bottom:12px}
+.sample-banner{display:none;margin-bottom:12px}.sample-banner .sb-real{display:none}body.backend .sample-banner .sb-demo{display:none}body.backend .sample-banner .sb-real{display:inline}
 body.backend .sample-banner{display:block}
 body.real-mail .sample-banner{display:none}
 .email-text{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0 0 6px}
@@ -862,7 +862,7 @@ body.on-ship #waitBars{display:none!important}
 <section class="content">
   <div class="boot-note" id="bootNote" role="status">Getting your inbox ready…</div>
   <div class="note warn" id="httpBanner" role="note" hidden><strong>This page is not encrypted.</strong> You opened Enveliq over plain http, so passwords and your sign-in can be read by anyone on the network, and passkeys and Outlook (Microsoft) sign-in will not work. Open it over https instead: <a href="https://enveliq.app/docs/access/" target="_blank" rel="noopener noreferrer">step-by-step guide</a>.</div>
-  <div class="note warn sample-banner"><strong>Welcome to Enveliq.</strong> These are sample emails. <a href="/welcome">Set up your mailbox</a> to see your own mail with summaries. The guide takes about five minutes.</div>
+  <div class="note warn sample-banner"><strong>Welcome to Enveliq.</strong> <span class="sb-demo">These are sample emails. </span><span class="sb-real">Your inbox is empty because no mailbox is connected yet. </span><a href="/welcome">Set up your mailbox</a> to see your own mail with summaries. The guide takes about five minutes.</div>
   <div id="dueBars" class="duebars" role="region" aria-label="Today's tasks" hidden></div>
   <div id="shipBars" class="duebars" role="region" aria-label="Deliveries to confirm" hidden></div>
   <div id="subBars" class="duebars" role="region" aria-label="Subscriptions coming up" hidden></div>
@@ -2402,7 +2402,7 @@ function render(){
   const greeting=(hr<12?"Good morning":hr<18?"Good afternoon":"Good evening")+(first?`, ${first}`:"");
   document.querySelector(".top-left h2").textContent=greeting;
   $("todayDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"});
-  $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(calmOn()?(inbox.length?"Take it one at a time. Nothing here is urgent.":"Nothing waiting. Enjoy the quiet."):inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:"All caught up");
+  $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(calmOn()?(inbox.length?"Take it one at a time. Nothing here is urgent.":"Nothing waiting. Enjoy the quiet."):inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:(document.body.classList.contains("backend")&&!realMail?"No mailbox is connected yet":"All caught up"));
 
   const rows=data.filter(visible);
   const rank={high:0,normal:1,low:2};
@@ -2449,7 +2449,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
   let listHtml;
   const prevScroll=document.getElementById("paneList"),prevTop=prevScroll?prevScroll.scrollTop:0,prevRead=document.querySelector(".reading"),prevReadTop=prevRead?prevRead.scrollTop:0;
   lastRowIds=rows.map(m=>m.id);
-  if(!rows.length){listHtml=`<div class="empty">${query&&String(query).trim().length>=2&&filter!=="snoozed"?"Nothing in this view matches your search.":filter==="snoozed"?"Nothing is snoozed. Use Snooze on an email to set it aside until you need it.":realMail&&!data.some(m=>m.status==="inbox")?"You're all caught up. Press <strong>Sync mail</strong> to look for new unread email.":`Nothing in this view for ${esc(currentUser.name)}.`}</div>`}
+  if(!rows.length){listHtml=`<div class="empty">${query&&String(query).trim().length>=2&&filter!=="snoozed"?"Nothing in this view matches your search.":filter==="snoozed"?"Nothing is snoozed. Use Snooze on an email to set it aside until you need it.":realMail&&!data.some(m=>m.status==="inbox")?"You're all caught up. Press <strong>Sync mail</strong> to look for new unread email.":document.body.classList.contains("backend")&&!realMail?`Your mail will appear here once a mailbox is connected. <a href="/welcome">Set up your mailbox</a>`:`Nothing in this view for ${esc(currentUser.name)}.`}</div>`}
   else if(view.layout==="list"){listHtml=`<div class="quiet-list">${rows.map(m=>quiet(m)).join("")}</div>`}
   else{
     let idx=rows.findIndex(m=>m.id===paneId);
@@ -4118,9 +4118,9 @@ async function bootBackendMode(){
   const name=me.display_name||me.username;
   const initials=name.split(/\s+/).map(w=>w[0]||"").join("").slice(0,2).toUpperCase()||"?";
   currentUser={id:me.id,name,initials,is_admin:me.role==="admin",avatar:me.avatar_v?`/api/v1/users/${me.id}/avatar?v=${me.avatar_v}`:""};
-  // Sample data stands in for this person's mail until sync is connected.
-  for(const m of data)if(m.owner==="ha_user_morgan")m.owner=me.id;
-  for(const a of accounts)if(a.owner==="ha_user_morgan")a.owner=me.id;
+  // On a real server there is no sample data at all: a person with no mailbox yet sees an empty inbox and a way to set one up.
+  // (The made-up mail is only for the hosted demo and the preview, which have no server.)
+  data.length=0;accounts.length=0;
   document.body.classList.add("backend");
   prepareEmbedPanels();
   const menu=$("userMenu");

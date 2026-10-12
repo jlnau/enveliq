@@ -37,8 +37,11 @@ await (async () => {
   await p.screenshot({ path: `${process.env.ENVELIQ_E2E_SHOTS || '.'}/e2e-recovery.png`, fullPage: true });
   await p.click('#continue'); await p.waitForURL(BASE + '/welcome'); await p.waitForSelector('text=Step 1: connect your email');
   step('a brand-new install opens the setup guide after first sign-in');
-  await p.goto(BASE + '/'); await p.waitForSelector('.mail');
-  step('inbox loads after enrolment: ' + await p.title());
+  await p.goto(BASE + '/');
+  await p.waitForFunction(() => document.body.classList.contains('mail-ready'));
+  if (await p.locator('article.mail:visible').count()) throw new Error('fresh install unexpectedly shows sample emails');
+  await p.waitForSelector('.sample-banner .sb-real:visible');
+  step('blank inbox loads after enrolment without sample mail: ' + await p.title());
 
   await p.goto(BASE + '/account'); await p.fill('#pk_name', 'Virtual laptop key'); await p.click('text=Add a passkey');
   await p.waitForSelector('text=Virtual laptop key'); step('passkey registered through the browser');
