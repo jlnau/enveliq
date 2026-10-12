@@ -4,6 +4,12 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**The version number moves to the bottom of the left panel.** The version is now a small grey line under Terms, Privacy and Security instead of under the logo and tagline at the top. It is hidden when the panel is collapsed, like those links.
+
+- `prototype/index.html`: `#brandVer` moves from the logo block into the bottom block of the left panel (`.side-foot`), styled as `.ver`. It is still filled from the signed-in `/api/v1/system` answer, and stays empty and hidden in the demo.
+- Tests: `scripts/check_version_footer.mjs` (new; the version shows, sits under the links and the person's name, is gone from the top, hidden when collapsed, nothing left in the demo). `check_no_sample_flash.mjs` still passes.
+
+
 **Row buttons show when you point at an email.** On a computer, the Reviewed, Archive and Bin buttons on an email in the list now appear only while the mouse is over that email, in the place of its date, and go away again when the mouse leaves. The list is calmer to look at. Tabbing to a button shows them too. Phones are unchanged (they swipe), and an opened email keeps its own buttons.
 
 - `prototype/index.html`: for a mouse (`hover:hover`) on a screen wider than a phone, a closed row's `.qpair` is hidden until the row is hovered or has focus inside it. It is smaller (32 by 30) and fades in over the date, which fades out. The buttons stay in the page and keep working for the keyboard. The reading-pane layout and phones are left as they were.

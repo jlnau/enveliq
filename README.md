@@ -184,6 +184,7 @@ All the guides are listed, by what you want to do, in the [**documentation index
 
 <details>
 <summary><b>What changed recently</b> (latest five versions)</summary>
+- **Unreleased**: **The version number moves to the bottom of the left panel.** The version number is now a small line at the bottom of the left panel, under Terms, Privacy and Security.
 - **Unreleased**: **Row buttons show when you point at an email.** On a computer, the Reviewed, Archive and Bin buttons on a row show only when the mouse is over it, in place of the date. Phones are unchanged.
 - **Unreleased**: **A paperclip on emails with attachments.** Emails that have an attachment show a small paperclip under the date and time in the list.
 
