@@ -102,6 +102,7 @@ class MailService:
         self.on_new: Any = None                   # set by the application: told which emails just arrived (sender and subject), to apply the person's rules
         self.ai_source = "environment" if self.env_ai.enabled else "none"
         self.locks = AccountLocks()
+        self.problems: dict[str, str] = {}        # why the last attempt on an email failed, in plain words (message id -> reason); never email content
 
     def _held(self, account: dict[str, Any]) -> set[tuple[str, str]]:
         try:
@@ -311,8 +312,9 @@ class MailService:
                         texts[m["id"]] = body
                         warnings[m["id"]] = shown.get("warning")
                         counts[m["id"]] = int(shown.get("file_count") or 0)
-                    except BridgeError:
+                    except BridgeError as err:
                         failed += 1
+                        self.problems[m["id"]] = f"The email could not be read from your mailbox ({err.message})."
             done = 0
             for m in batch:
                 if m["id"] not in texts:
@@ -334,6 +336,7 @@ class MailService:
                     self.reporter.event("ai_request_failed", provider=provider, cloud=cloud, ok=False, code=err.code, duration_ms=(time.monotonic() - asked) * 1000)
                     if err.code == "ai_bad_reply":
                         failed += 1
+                        self.problems[m["id"]] = "The AI model answered, but not in a form Enveliq could use as a summary."
                         continue
                     raise  # model unreachable or refusing: stop, nothing is lost
                 shipment = result.pop("shipment", None)
@@ -349,10 +352,12 @@ class MailService:
                 try:
                     stored = RetainedMessageCreate(**data).model_dump(mode="python")
                     vault.update_message(account_id, m["id"], stored)
-                except (ValueError, KeyError):
+                except (ValueError, KeyError) as err:
                     failed += 1
+                    self.problems[m["id"]] = f"The summary could not be saved ({type(err).__name__})."
                     continue
                 done += 1
+                self.problems.pop(m["id"], None)
                 summarised.add(m["id"])
                 if shipment and self.shipments is not None:
                     try:
@@ -444,9 +449,10 @@ class MailService:
             raise BridgeError("not_found", "That email is no longer in your list.") from None
         if not message.get("source_locator"):
             raise BridgeError("not_found", "That email is no longer in your mailbox.")
+        self.problems.pop(message_id, None)
         done, _failed = self._summarise_batch(vault, account, [message])
         if not done:
-            raise BridgeError("ai_bad_reply", "The email could not be read or the model gave no usable summary.")
+            raise BridgeError("ai_bad_reply", self.problems.pop(message_id, None) or "The email could not be read or the model gave no usable summary.")
 
     def target(self, account: dict[str, Any]) -> Target:
         return target_for(account, self.microsoft)
