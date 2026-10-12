@@ -197,9 +197,9 @@ async function open(server, { seen = true } = {}) {
   check("resting on the sender shows the summary with no buttons", peekText.trim().length > 0 && (await page.locator("#peek button, #peek a, #peek input").count()) === 0);
   await page.mouse.move(5, 5);
   check("moving away closes the peek", (await page.locator("#peek:not([hidden])").count()) === 0);
-  await page.locator("article.mail .qrow").first().hover();
+  await page.locator("article.mail .qrow .check").first().hover();
   await page.waitForTimeout(500);
-  check("resting on the time does not open a peek", (await page.locator("#peek:not([hidden])").count()) === 0);
+  check("resting on the row checkbox does not open a peek", (await page.locator("#peek:not([hidden])").count()) === 0);
   await page.locator("article.mail .qrow .subject").first().hover();
   await page.waitForSelector("#peek:not([hidden])", { timeout: 3000 });
   await page.locator("article.mail .qrow .subject").first().click();
