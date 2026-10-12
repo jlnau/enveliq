@@ -2,7 +2,7 @@
   "name": "enveliq-website",
   "private": true,
   "type": "module",
-  "description": "The Enveliq website: a front page and the guides from ../docs, built into plain files. No scripts run in the visitor's browser.",
+  "description": "The Enveliq website: a front page and the guides from ../docs, built into plain files. The only script is the guide search, which runs in the visitor's browser and sends nothing anywhere.",
   "scripts": {
     "build": "node build.mjs",
     "check": "node check.mjs"

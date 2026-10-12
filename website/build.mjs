@@ -227,6 +227,7 @@ const head = ({ title, description, canonical, home, noindex, ld }) => `<!doctyp
       <a href="/tour/">Tour</a>
       <a href="/docs/install/">Install</a>
       <a href="/docs/">Guides</a>
+      <a href="/search/">Search</a>
       <a href="/docs/security/">Security</a>
       <a class="gh" href="${REPO}" rel="noopener noreferrer">GitHub</a>
     </nav>
@@ -238,7 +239,7 @@ const foot = () => `
   <div class="foot-in">
     <p><strong>Enveliq</strong> turns email into clarity. Free to use, and it runs on your own computer.</p>
     <p class="links"><a href="/tour/">Tour</a> <a href="/docs/install/">Install</a> <a href="/docs/">Guides</a> <a href="/docs/privacy/">Privacy</a> <a href="/docs/terms/">Terms</a> <a href="${REPO}" rel="noopener noreferrer">Source code</a></p>
-    <p class="small">This website sets no cookies, runs no scripts and loads nothing from other sites.</p>
+    <p class="small">This website sets no cookies and loads nothing from other sites. The only script is the small search on the guides page, which runs in your browser and sends nothing anywhere.</p>
   </div>
 </footer>
 </body>
@@ -253,15 +254,23 @@ function navHtml(currentUrl) {
   }).join("")}</ul></div>`).join("");
 }
 
+// ---------- search of the guides ----------
+// A search box is a plain form that works without scripts (it opens /search/?q=...). With scripts on, /search/ reads
+// /search-index.json (built here from the guides, served from this site) and lists the matches. Nothing is sent anywhere.
+const searchIndex = [];
+const plainText = (h) => h.replace(/<pre[\s\S]*?<\/pre>/g, " ").replace(/<[^>]+>/g, " ").replace(/&(amp|lt|gt|quot|#39|apos);/g, (_, e) => ({ amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'", apos: "'" })[e]).replace(/\s+/g, " ").trim();
+const searchBox = (id, big = false) => `<form class="sbox${big ? " big" : ""}" action="/search/" method="get" role="search"><label class="sr" for="${id}">Search the guides</label><input id="${id}" name="q" type="search" placeholder="${big ? "For example: backup, passkey, Microsoft" : "Search the guides"}" autocomplete="off"><button type="submit">Search</button></form>`;
 function docsPage(rel) {
   const { html, title, description } = render(rel);
   const url = urlFor(rel);
   const menu = navHtml(url);
   const editPath = rel;
+  const box = searchBox("q");
+  if (!NOINDEX.has(rel)) searchIndex.push({ u: url, t: title, d: description, b: plainText(html).slice(0, 30000) });
   const body = `<main id="main" class="docs">
-  <aside class="side" aria-label="Guides">${menu}</aside>
+  <aside class="side" aria-label="Guides">${box}${menu}</aside>
   <div class="doc-col">
-    <details class="mnav"><summary>All guides</summary><div class="mnav-in">${menu}</div></details>
+    <details class="mnav"><summary>All guides</summary><div class="mnav-in">${searchBox("q2")}${menu}</div></details>
     <article class="doc">
 ${html}
       <p class="edit"><a href="${REPO}/edit/main/${editPath}" rel="noopener noreferrer">Suggest a change to this page</a></p>
@@ -305,6 +314,13 @@ write("tour/index.html", head({
 write("404.html", head({ title: "Page not found - Enveliq", description: "That page is not here.", canonical: "/404.html", noindex: true }) +
   `<main id="main" class="doc-col narrow"><article class="doc"><h1>That page is not here</h1><p>It may have moved. Try the <a href="/docs/">list of guides</a>, or go back to the <a href="/">front page</a>.</p></article></main>` + foot());
 
+write("search-index.json", JSON.stringify(searchIndex));
+copy(path.join(here, "src", "search.js"), "search.js");
+write("search/index.html", head({ title: "Search the guides - Enveliq", description: "Search every Enveliq guide for a word or a question.", canonical: "/search/", noindex: true }) +
+  `<main id="main" class="doc-col narrow"><article class="doc"><h1>Search the guides</h1>
+${searchBox("q", true)}
+<div id="results" aria-live="polite"><noscript><p>Searching needs JavaScript. You can still browse the <a href="/docs/">list of guides</a>.</p></noscript></div>
+</article></main><script src="/search.js" defer></script>` + foot());
 copy(path.join(here, "src", "style.css"), "style.css");
 copy(path.join(here, "src", "favicon.ico"), "favicon.ico");
 for (const f of fs.readdirSync(path.join(here, "src", "images"))) copy(path.join(here, "src", "images", f), "images/" + f);
@@ -312,7 +328,7 @@ for (const [from, to] of assets) copy(path.join(root, from), to.slice(1));
 for (const [from, to] of downloads) copy(path.join(root, from), to.slice(1));
 
 write("_headers", `/*
-  Content-Security-Policy: default-src 'none'; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
