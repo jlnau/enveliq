@@ -51,12 +51,30 @@ jobs:
           fi
           echo "RELEASE_BRANCH=$branch" >> "$GITHUB_ENV"
 
+      - name: Generate notes from merged PRs since previous release
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          previous_version=$(python3 -c 'from backend.version import VERSION; print(VERSION)')
+          previous_tag="v${previous_version}"
+          if ! git ls-remote --exit-code --tags origin "refs/tags/$previous_tag" >/dev/null; then
+            echo "::error::Previous release tag $previous_tag is missing. Cannot determine release changes."
+            exit 1
+          fi
+          gh api --method POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
+            -f "tag_name=v$RELEASE_VERSION" \
+            -f "previous_tag_name=$previous_tag" \
+            -f "target_commitish=main" \
+            --jq '.body' > "$RUNNER_TEMP/merged-pr-notes.md"
+
       - name: Prepare version, README, and changelog
         env:
           RELEASE_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          python3 scripts/prepare_release.py "$RELEASE_VERSION"
+          python3 scripts/prepare_release.py "$RELEASE_VERSION" --notes-file "$RUNNER_TEMP/merged-pr-notes.md"
           git diff --check
           git diff -- backend/version.py README.md docs/CHANGELOG.md
 
