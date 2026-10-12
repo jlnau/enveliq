@@ -63,7 +63,7 @@ def main() -> int:
             generated = args.notes_file.read_text(encoding="utf-8").strip()
         except OSError as exc:
             parser.error(f"Cannot read release notes: {exc}")
-        if not re.search(r"(?m)^\* .+\(#[0-9]+\)", generated):
+        if not re.search(r"(?m)^\* .+(?:\(#[0-9]+\)|/pull/[0-9]+)", generated):
             parser.error("No merged pull requests found since the previous release")
         notes = generated
         print("Using GitHub-generated merged pull request notes")
