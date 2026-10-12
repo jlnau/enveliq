@@ -4,6 +4,12 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Shift + tick selects a whole range of emails.** Tick one email's box, then hold Shift and tick another one a few emails up or down the list, and every email between them is ticked too. Shift + untick clears the range the same way. Ticking without Shift works as before.
+
+- `prototype/index.html`: the tick handler remembers the email ticked last and, when Shift is held, ticks or unticks every email between that one and the new one, in the order shown (so it follows any sorting or filter). **Clear selection** forgets the starting point, so a Shift + tick after it acts like a plain tick.
+- Tests: `scripts/check_shift_select.mjs` (new, added to `.github/workflows/ci.yml`: down, up, carrying on, unticking a range, no earlier tick, and the bulk bar).
+
+
 **Sample names and the publishing notes.** No change to how Enveliq works.
 
 - The made-up second person in the preview, the tests and the guides is now called Cara (she was Beth), and the sample script list in the version history no longer names real-looking people.
