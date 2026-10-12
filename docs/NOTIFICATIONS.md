@@ -30,6 +30,8 @@ On Android (Chrome or Edge) open Enveliq at its `https://` address, open the bro
 
 Then, under **Where to send reminders**, press **Turn on for this device** on the phone. Tapping a notification opens Enveliq at the email it is about, even if the app was closed.
 
+On Android, a notification shows two icons. The small one (in the status bar and the notification's top line) is Enveliq's own mark. The large round one on the left is the browser's own app icon: it only becomes Enveliq's logo if Enveliq is installed as an app, as above.
+
 Notifications and installing need the `https://` address you use for Enveliq (set in `ENVELIQ_PUBLIC_URL`); a plain `http://` address on your network is not enough. Phones can also use ntfy or Home Assistant instead, see the table below.
 
 ## Channels
