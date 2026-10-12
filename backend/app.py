@@ -458,6 +458,20 @@ def sso_public() -> dict[str, Any]:
     return {"enabled": bool(settings), "label": settings.label if settings else None}
 
 
+def remember_seconds() -> int:
+    """How long a "keep me signed in on this device" sign-in lasts, in seconds, or 0 when it is off.
+
+    It is off until an administrator sets a number of days (at most 14), and it only works while Enveliq opens its own
+    vault from a key file: otherwise the vault locks itself when idle and signs everyone out, whatever the number says."""
+    if not AUTO_UNLOCK:
+        return 0
+    try:
+        days = users.policy().get("remember_days", 0)
+    except VaultLocked:
+        return 0
+    return int(days) * 86400 if isinstance(days, int) and not isinstance(days, bool) and 0 < days <= 14 else 0
+
+
 def delete_user_data(user_id: str) -> None:
     """Remove every mailbox a user owns, with its messages and previews, and the person's own messages to other people."""
     messagebook.forget_user(user_id)
@@ -479,6 +493,7 @@ ctx = SimpleNamespace(
     peek_full_session=peek_full_session, sso_settings=sso_settings, sso_public=sso_public,
     sso_redirect_uri=SSO_REDIRECT_URI, check_setup_code=check_setup_code, setup_completed=setup_completed,
     delete_user_data=delete_user_data, vault_key_for_setup=vault_key_for_setup,
+    remember_seconds=remember_seconds, remember_possible=AUTO_UNLOCK,
 )
 app.include_router(build_router(ctx))
 
@@ -702,7 +717,8 @@ def status_endpoint():
     initialized = vault.is_initialized()
     out: dict[str, Any] = {
         "initialized": initialized, "unlocked": unlocked, "setup_required": not initialized,
-        "sign_in": {"password": True, "passkeys": True, "sso": sso_public() if unlocked else {"enabled": False, "label": None}},
+        "sign_in": {"password": True, "passkeys": True, "sso": sso_public() if unlocked else {"enabled": False, "label": None},
+                    "remember": bool(unlocked and remember_seconds())},
     }
     if not unlocked:                      # only the setup and unlock pages ask, and only while the vault is closed
         out["auto_unlock"] = AUTO_UNLOCK

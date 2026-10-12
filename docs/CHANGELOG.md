@@ -14,6 +14,13 @@ Newest first. Each entry says what changed for people and which parts of the cod
 - `prototype/index.html`: an **Always archive these** button on an opened email (not for important people, not in the demo); `web/static/auth.js`: Settings, **Mail rules** (`rulesPage`).
 - Docs: `README.md` and `docs/EMAIL_SERVICES.md` no longer say Enveliq changes the mailbox only on a button press; they name rules.
 - Tests: `tests/test_rules.py` (the rules, limits, isolation, export, and applying them to a real sync: one sender, a whole website, subject words, reviewed, important people skipped, not applied to mail already there, other people's rules ignored), `scripts/check_rules.mjs`.
+**"Keep me signed in on this device".** The sign-in page can now show a tick-box that keeps a person signed in for days instead of 30 minutes. An administrator decides whether it is offered and for how long (0 to 14 days, off by default) under Administration, Sign-in rules. It only works when Enveliq opens its own vault from a key file, because otherwise Enveliq locks itself after a while and signs everyone out anyway.
+
+- `backend/security.py`: a session can carry its own `remember_seconds`; a remembered session lasts exactly that long from sign-in (no 30-minute idle timeout, no 12-hour cap). Only a fully signed-in session can be remembered, never one still waiting for a second factor or for setup.
+- `backend/auth/users.py`, `backend/auth/routes.py`: new sign-in rule `remember_days` (0 to 14, checked on the server). The choice is carried through two-factor, passkey and single sign-on sign-ins, and the cookie lasts as long as the session.
+- `backend/app.py`: `remember_seconds()` is 0 unless a vault key file or key is in use. `GET /api/v1/status` says only whether the tick-box is offered (`sign_in.remember`).
+- `web/static/auth.js`: the tick-box on the sign-in page and a "Keep me signed in (days)" field in Sign-in rules, with a link to the vault key guide when no key file is set up.
+- Tests: `tests/test_remember_me.py`, `scripts/check_remember_me.mjs`.
 
 **No flash of sample data when you refresh.** On a real Enveliq, pressing the browser's refresh button no longer shows the sample page (the sample name, counts and version) for a split second before your own page appears.
 

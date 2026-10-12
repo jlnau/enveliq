@@ -51,6 +51,9 @@ class Session:
     state: str = "full"
     auth_method: str = "password"
     pending: dict = field(default_factory=dict)  # in-progress TOTP/passkey enrolment
+    # A "keep me signed in on this device" session lasts its own, longer time (set by the administrator, at most
+    # 14 days). 0 means the manager's normal idle time and 12-hour limit apply.
+    remember_seconds: int = 0
 
 
 class SessionManager:
@@ -77,11 +80,20 @@ class SessionManager:
         self._sessions: dict[str, Session] = {}
         self._lock = threading.RLock()
 
-    def create(self, principal: Principal, *, state: str = "full", auth_method: str = "password") -> Session:
+    def life_of(self, session: Session) -> int:
+        """The longest this session may last from sign-in, in seconds."""
+        return session.remember_seconds or self.max_lifetime_seconds
+
+    def idle_of(self, session: Session) -> int:
+        """How long it may sit unused. A remembered session may be left for its whole time."""
+        return session.remember_seconds or self.ttl_seconds
+
+    def create(self, principal: Principal, *, state: str = "full", auth_method: str = "password", remember_seconds: int = 0) -> Session:
         now = time.monotonic()
         token = secrets.token_urlsafe(48)
-        session = Session(token=token, principal=principal, expires_at=now + self.ttl_seconds, created_at=now,
-                          state=state, auth_method=auth_method)
+        remember = int(remember_seconds) if state == "full" and remember_seconds and remember_seconds > 0 else 0
+        session = Session(token=token, principal=principal, expires_at=now + (remember or self.ttl_seconds), created_at=now,
+                          state=state, auth_method=auth_method, remember_seconds=remember)
         with self._lock:
             self._prune_locked(now)
             while len(self._sessions) >= self.max_sessions:
@@ -95,7 +107,7 @@ class SessionManager:
             self._sessions.pop(key, None)
 
     def _expired(self, session: Session, now: float) -> bool:
-        return session.expires_at < now or (now - session.created_at) > self.max_lifetime_seconds
+        return session.expires_at < now or (now - session.created_at) > self.life_of(session)
 
     def revoke_all(self) -> None:
         with self._lock:
@@ -144,7 +156,7 @@ class SessionManager:
             raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="Vault is locked") from exc
         with self._lock:
             if token in self._sessions:
-                session.expires_at = time.monotonic() + self.ttl_seconds
+                session.expires_at = time.monotonic() + self.idle_of(session)
         return session
 
 

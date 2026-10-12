@@ -117,12 +117,12 @@ function credentialJSON(c) {
 }
 const passkeysSupported = () => !!(window.PublicKeyCredential && navigator.credentials);
 
-async function passkeyGet(purpose) {
+async function passkeyGet(purpose, remember = false) {
   const options = await api("/auth/passkeys/options", { method: "POST", body: { purpose } });
   let cred;
   try { cred = await navigator.credentials.get({ publicKey: requestOptions(options) }); }
   catch (err) { throw new Error(err.name === "NotAllowedError" ? "Passkey sign-in was cancelled or timed out." : `Passkey error: ${err.message}`); }
-  return api("/auth/passkeys/verify", { method: "POST", body: { credential: credentialJSON(cred) } });
+  return api("/auth/passkeys/verify", { method: "POST", body: { credential: credentialJSON(cred), ...(remember ? { remember: true } : {}) } });
 }
 async function passkeyCreate(name) {
   const options = await api("/auth/passkeys/register/options", { method: "POST", body: {} });
@@ -217,18 +217,22 @@ function loginPage(status, params) {
   const passwordForm = h("form", {},
     field("Username", input("username", { autocomplete: "username webauthn", required: true, autocapitalize: "none", spellcheck: "false" })),
     field("Password", input("password", { type: "password", autocomplete: "current-password", required: true })),
+    // Only offered when an administrator has allowed it (and Enveliq keeps itself unlocked). It applies to every way of signing in below.
+    status.sign_in.remember ? chkBox("remember", false, "Keep me signed in on this device", "Only on a computer or phone that is yours.") : null,
     h("button", { class: "btn primary full", type: "submit", text: "Sign in" }));
+  const wantsRemember = () => !!(passwordForm.querySelector("#remember") || {}).checked;
   onSubmit(passwordForm, async () => {
-    const out = await api("/auth/login", { method: "POST", body: { username: passwordForm.querySelector("#username").value.trim(), password: passwordForm.querySelector("#password").value } });
+    const out = await api("/auth/login", { method: "POST", body: { username: passwordForm.querySelector("#username").value.trim(), password: passwordForm.querySelector("#password").value, ...(wantsRemember() ? { remember: true } : {}) } });
     if (out.next === "mfa") return mfaStep(out.methods);
     location.replace(out.next === "enroll_mfa" ? "/account?enroll=1" : "/");
   });
   const passkeyBtn = passkeysSupported() ? h("button", { class: "btn full", type: "button", text: "Sign in with a passkey", onclick: async e => {
     e.target.disabled = true;
-    try { const out = await passkeyGet("login"); location.replace(out.next === "enroll_mfa" ? "/account?enroll=1" : "/"); }
+    try { const out = await passkeyGet("login", wantsRemember()); location.replace(out.next === "enroll_mfa" ? "/account?enroll=1" : "/"); }
     catch (er) { toast(er.message); } finally { e.target.disabled = false; }
   } }) : null;
   const ssoBtn = sso && sso.enabled ? h("a", { class: "btn full", href: "/api/v1/auth/sso/start", text: sso.label || "Sign in with single sign-on", role: "button" }) : null;
+  if (ssoBtn) ssoBtn.addEventListener("click", () => { ssoBtn.href = "/api/v1/auth/sso/start" + (wantsRemember() ? "?remember=1" : ""); });
   const page = brandCard(
     h("h1", { text: "Sign in" }),
     err ? alertBox("bad", SSO_ERRORS[err] || "Sign-in failed. Try again.") : null,
@@ -1059,6 +1063,10 @@ async function adminPage(me, only) {
     field("Two-factor sign-in", sel("pol_mfa", policy.require_mfa, [["admins", "Required for administrators"], ["everyone", "Required for everyone"], ["off", "Optional"]])),
     field("Password sign-in", sel("pol_pw", policy.password_login, [["everyone", "Everyone"], ["admins", "Administrators only (others use single sign-on)"]]),
       "Administrators can always sign in with a password, so a broken sign-in provider can't lock you out.")),
+    h("div", { class: "grid2" },
+      numField("pol_remember", "Keep me signed in (days)", policy.remember_days || 0, 0, 14,
+        "Adds a \"Keep me signed in on this device\" tick-box to the sign-in page. People who tick it stay signed in for this many days, 14 at most. 0 turns the tick-box off.")),
+    policy.remember_possible ? null : h("p", { class: "hint" }, "This only works when Enveliq opens its own vault from a key file. Without one, Enveliq locks itself after a while with nobody using it and signs everyone out, whatever number is set here. ", guide("VAULT_KEY.md", "How to set up a vault key")),
     h("details", { class: "help" }, h("summary", { text: "Password requirements" }), h("div", { class: "help-body" },
       h("p", { class: "hint", text: "What a new password has to contain. These apply when someone sets, changes or resets a password; passwords already in use keep working until they are next changed." }),
       h("div", { class: "grid2" },
@@ -1073,7 +1081,7 @@ async function adminPage(me, only) {
   const pwNum = id => Number(pol.querySelector("#" + id).value) || 0;
   const pwRulesNow = () => ({ pw_min_length: Math.max(8, pwNum("pw_len")), pw_min_digits: pwNum("pw_dig"), pw_min_upper: pwNum("pw_up"), pw_min_lower: pwNum("pw_low"), pw_min_symbols: pwNum("pw_sym"), pw_forbid_username: pol.querySelector("#pw_nouser").checked });
   pol.addEventListener("input", () => { pol.querySelector("#pw_preview").textContent = "Passwords must be: " + passwordRulesText(pwRulesNow()); });
-  onSubmit(pol, async () => { await api("/admin/auth-policy", { method: "PUT", body: { require_mfa: pol.querySelector("#pol_mfa").value, password_login: pol.querySelector("#pol_pw").value, ...pwRulesNow() } }); toast("Sign-in rules saved"); });
+  onSubmit(pol, async () => { await api("/admin/auth-policy", { method: "PUT", body: { require_mfa: pol.querySelector("#pol_mfa").value, password_login: pol.querySelector("#pol_pw").value, remember_days: Math.min(14, Math.max(0, Math.round(pwNum("pol_remember")))), ...pwRulesNow() } }); toast("Sign-in rules saved"); });
 
   // SSO
   const chk = (id, checked, title, hint) => h("label", { class: "check", for: id }, h("input", { id, type: "checkbox", checked }), h("span", {}, h("strong", { text: title }), hint ? h("div", { class: "hint", text: hint }) : null));
