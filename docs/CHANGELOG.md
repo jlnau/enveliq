@@ -4,7 +4,12 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**Notifications show the Enveliq mark.** On Android, the small icon on an Enveliq notification (in the status bar and the notification's top line) is now Enveliq's own mark instead of the browser's logo. The large browser icon on the left of a notification is the browser's own and only changes if Enveliq is installed as an app.
+
+- `web/static/sw.js`: notifications now name a `badge`, `/brand/enveliq-badge-96.png`.
+- `brand/web/enveliq-badge-96.png` (new): the Enveliq mark in one colour on a clear background, 96 by 96, as Android expects for a status-bar icon.
+- Tests: `tests/test_push.py` (the service worker names the small icon, and it is a 96 by 96 PNG with a clear background).
+- Docs: `docs/NOTIFICATIONS.md`.
 
 ## v0.81 (2026-10-12)
 
