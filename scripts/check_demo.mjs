@@ -51,9 +51,9 @@ for (const [name, vp] of [["desktop", { width: 1280, height: 800 }], ["phone", {
   const rowsBefore = await p.locator("article.mail").count();
   await p.locator("article.mail [data-status=archived]:visible").first().click();
   await p.waitForSelector("#undoBar:not([hidden])");
-  ok(name + ": Archive leaves the list at once and an Undo bar appears", (await p.locator("article.mail").count()) === rowsBefore - 1 && /Archived/.test(await p.locator("#undoText").innerText()));
+  ok(name + ": Archive leaves the list at once and an Undo bar appears", (await p.locator("article.mail").count()) === rowsBefore - 1 && /Archived/.test(await p.locator("#undoBar .undobar:last-child span").innerText()));
   if (shots) await p.screenshot({ path: path.join(shots, `demo-undo-${name}.png`) });
-  await p.click("#undoBtn");
+  await p.click("#undoBar .undobar:last-child button");
   ok(name + ": Undo brings it back", (await p.locator("article.mail").count()) === rowsBefore && !(await p.locator("#undoBar").isVisible()));
   ok(name + ": it never asked for anything but the page and its pictures", seen.every((s) => /^GET \/(brand\/[\w.-]+)?$/.test(s)));
   ok(name + ": no outside requests", seen.every((s) => !/^[A-Z]+ https?:/.test(s)));
