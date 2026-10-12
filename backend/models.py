@@ -166,10 +166,25 @@ class SuggestedTask(StrictModel):
     due: str | None = Field(default=None, max_length=64)
 
 
+class AttachmentPart(StrictModel):
+    """One headed part of the summary of a long file."""
+    title: str = Field(default="", max_length=120)
+    text: str = Field(max_length=2500)
+
+
 class AttachmentSummary(StrictModel):
+    """What Enveliq keeps about one attached file: its name and what the AI wrote about it. Never the file or its text."""
     attachment_id: str | None = Field(default=None, max_length=128)
     filename: str = Field(min_length=1, max_length=512)
-    summary: str = Field(max_length=10_000)
+    summary: str = Field(default="", max_length=10_000)           # the one-line summary
+    index: int | None = Field(default=None, ge=0, le=999)          # the file's place in the email, so View opens the right one
+    mime_type: str | None = Field(default=None, max_length=255)
+    size_bytes: int | None = Field(default=None, ge=0, le=1_000_000_000)
+    pages: int | None = Field(default=None, ge=0, le=1_000_000)
+    state: Literal["reading", "done", "failed", "skipped"] = "done"
+    reason: str | None = Field(default=None, max_length=300)       # plain words for a file that was not summarised
+    note: str | None = Field(default=None, max_length=300)         # for example that only the first pages were read
+    parts: list[AttachmentPart] = Field(default_factory=list, max_length=8)
 
 
 _HEADER_UNSAFE = re.compile(r"[\r\n\x00]")

@@ -41,6 +41,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send(404, {"detail": "not found"})
 
     def do_POST(self) -> None:
+        if self.path == "/text":
+            return self._post_text()
         if self.path != "/render":
             return self._send(404, {"detail": "not found"})
         try:
@@ -53,6 +55,19 @@ class Handler(BaseHTTPRequestHandler):
         if len(data) != length:
             return self._send(400, {"detail": "short body"})
         self._send(200, render.draw_pdf_here(data))
+
+    def _post_text(self) -> None:
+        """POST /text with a PDF: the words in it (for the summary), never a picture."""
+        try:
+            length = int(self.headers.get("Content-Length", ""))
+        except ValueError:
+            return self._send(411, {"detail": "length required"})
+        if not 0 < length <= render.READ_PDF_BYTES:
+            return self._send(413, {"kind": "none", "reason": "This PDF is larger than 25 MB."})
+        data = self.rfile.read(length)
+        if len(data) != length:
+            return self._send(400, {"detail": "short body"})
+        self._send(200, render.pdf_text_here(data))
 
 
 class Server(socketserver.ThreadingMixIn, HTTPServer):

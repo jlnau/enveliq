@@ -382,6 +382,28 @@ class Summariser:
             raise BridgeError("ai_bad_reply", "The AI server did not answer in the expected format.") from None
         return parse_reply(content)
 
+    def complete(self, system: str, user: str, max_tokens: int = 900, timeout: float | None = None) -> str:
+        """One question, one answer: the model's text. Used for attachment summaries (backend/mail/attach_ai.py)."""
+        provider = llm_providers.get(self.config.provider)
+        cap = min(max_tokens, provider.max_tokens)
+        if provider.style == "anthropic":
+            reply = self._post({"model": self.config.model, "system": system, "messages": [{"role": "user", "content": user}],
+                                "temperature": 0.1, "max_tokens": cap}, timeout)
+        else:
+            payload: dict[str, Any] = {"model": self.config.model, "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
+                                       provider.max_tokens_param: cap, "stream": False}
+            if provider.send_temperature:
+                payload["temperature"] = 0.1
+            reply = self._post(payload, timeout)
+        try:
+            if provider.style == "anthropic":
+                content = "".join(b.get("text", "") for b in reply["content"] if isinstance(b, dict) and b.get("type") == "text")
+            else:
+                content = reply["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError, AttributeError):
+            raise BridgeError("ai_bad_reply", "The AI server did not answer in the expected format.") from None
+        return content if isinstance(content, str) else ""
+
     def judge_sent(self, subject: str, to: str, text: str) -> dict[str, Any]:
         """Does this email the user sent wait on an answer? Reads the one email; nothing is kept."""
         provider = llm_providers.get(self.config.provider)

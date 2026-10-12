@@ -119,9 +119,18 @@ These rules are architecture requirements, not UI preferences.
 
 ## The paperclip
 
-- **What is kept.** Two small facts per email, inside the encrypted vault with the rest of the record: whether it has attached files (yes or no) and, once known, how many. Never a file name, never a type, never any content. The raw-attachment rules above are unchanged.
+- **What is kept.** Two small facts per email, inside the encrypted vault with the rest of the record: whether it has attached files (yes or no) and, once known, how many. The raw-attachment rules above are unchanged. What else is kept about files is in the next section.
 - **How it is found.** When mail is first fetched, only its headers are read, so the yes or no is a guess from the email's own `Content-Type` (a "mixed" email, or one that is a file itself). It can be wrong. When the AI summary is made the whole email is already being read in memory, so the exact count (not counting pictures that are part of the text) replaces the guess; nothing extra is fetched and nothing else is kept.
 - **Who sees it.** Only the person whose mailbox it is, like the rest of the record. An email with no known files shows no paperclip.
+
+## Summaries of attached files
+
+- **What is kept.** For each file of an email, inside the encrypted vault with the rest of the record: its name, kind, size, page count and the AI's summary (a one-line summary and a few headed parts). The file, its text and the model's raw answers are never stored or logged. The raw-attachment rules above are unchanged. A file name can itself say something private, so it is kept only inside the vault and shown only to the person whose mailbox it is.
+- **How it is done.** The email is fetched once in memory, each file is read (PDFs by the isolated render service when one is set up, otherwise by a resource-limited child process; Word files by reading the document text directly with no macros run), the text is summarised, and everything but the summary is dropped. Limits: 25 MB per file, 20 files per email, 60 MB per email, about 25 minutes per file; when a file is longer, the summary says how far it got.
+- **Untrusted text.** A file's words are passed to the AI as data between markers, with the same rules as email text: the AI is told never to follow anything written in it, has no tools, and does not calculate or decide. Every summary is labelled as written by the AI.
+- **Cloud AI.** With a cloud AI service this feature is **off** until an administrator turns it on and ticks a box confirming that the words of attached files will be sent to that company. A local AI server runs it by default. The choice and who made it are written to the audit log, and an administrator can turn it off at any time.
+- **Who sees it.** Only the person whose mailbox it is. Administrators cannot read file summaries. A record you may not open answers "not found".
+- **If the email is handled meanwhile** (marked Reviewed, archived or deleted), the work stops and writes nothing more.
 
 ## What the public status page says (v0.79)
 

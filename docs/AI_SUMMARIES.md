@@ -17,8 +17,39 @@ address unless the administrator allows it).
   email is summarised, Enveliq only has its headers, so a paperclip is a
   careful guess ("this email may have an attachment"). When the summary is made,
   Enveliq counts the attached files exactly (pictures that are part of the text
-  are not counted) and keeps just that number, never a file name or content. The
-  **Attachments** entry in the left menu follows the same number.
+  are not counted). The **Attachments** entry in the left menu follows the same
+  number. What is kept about each file is described below.
+
+### Summaries of attached files
+
+When an email is summarised, each attached file is read in memory and summarised
+by the same AI model. The summaries are listed under the email's own summary
+(above the task), one row per file with its name, kind, size and a one-line
+summary. Press a row to read the longer summary in short headed parts. Each one
+says **Summary written by AI** and **The file itself is not stored**.
+
+- **Which files.** PDF files that contain text, Word (.docx), plain text and CSV.
+  Scans and pictures are listed but marked **Not summarised** for now. Other kinds
+  of file are listed the same way. You can always open a file with **View**.
+- **Long files.** There is no page limit. A long file is cut into sections at
+  paragraph breaks, each section is summarised, and those short summaries are
+  combined (again and again for a very long file) into one summary with headed
+  parts. The practical limits are stated rather than hidden: a file up to 25 MB,
+  up to 20 files per email, and about 25 minutes per file. If a file is longer
+  than that, the summary says **covers the first N of M sections** (or pages).
+- **While it works.** A row says **Reading…** until its summary is ready, and the
+  page fills in by itself. If the AI could not be reached the row says **Not
+  summarised** with a **Try again** button.
+- **Who may turn it on.** With an AI server on your own network it is on by
+  default, because nothing leaves your network. With a cloud service it is **off**
+  until an administrator turns it on under Administration, AI model, **Summarise
+  the files attached to emails**, and ticks a box confirming the text of attached
+  files will be sent to that company. Administrators can switch it off at any time.
+- **What is kept.** Each file's name, kind, size, page count and the summary,
+  encrypted with the email's record. The file and its words are never stored or
+  logged.
+- **Old emails.** Emails summarised before this existed have no file summaries
+  until they are summarised again or you press **Try again**.
 
 ## 1. Choose the model server
 
@@ -38,7 +69,7 @@ curl -s http://MODEL_HOST:PORT/v1/models
 In the app an administrator first picks an **AI service**:
 
 - **On my own network:** Ollama, LM Studio, llama.cpp server, vLLM or any other OpenAI-compatible server. Your mail stays at home.
-- **Cloud services:** OpenAI, Anthropic, Google Gemini, OpenRouter, Groq, Mistral, xAI (Grok), DeepSeek and Together AI. These need an access key from the company (API use is billed separately from any chat subscription) and **send the text of each new email to that company** over the internet: the sender, the subject and the first part of the plain text (about 6,000 characters), never attachments, images, links or passwords. Their terms decide how long it is kept and whether it may be used for training, so read them first. The administrator must tick a box confirming this before a cloud service can be saved, and the server refuses to save without it.
+- **Cloud services:** OpenAI, Anthropic, Google Gemini, OpenRouter, Groq, Mistral, xAI (Grok), DeepSeek and Together AI. These need an access key from the company (API use is billed separately from any chat subscription) and **send the text of each new email to that company** over the internet: the sender, the subject and the first part of the plain text (about 6,000 characters), never images, links or passwords. Attached files are sent only if the administrator has also turned on [summaries of attached files](#summaries-of-attached-files) (off by default for a cloud service). Their terms decide how long it is kept and whether it may be used for training, so read them first. The administrator must tick a box confirming this before a cloud service can be saved, and the server refuses to save without it.
 - A cloud service is only ever contacted at its one fixed https address, which the app shows. If the server's administrator limits hosts with `ENVELIQ_LLM_ALLOWED_HOSTS`, the service's host must be on that list too.
 - Anthropic is reached through its own Messages API, not the OpenAI-style compatibility layer that Anthropic says is not meant for production.
 - Pick a small, fast model: summaries do not need the largest one. Each service's models page is linked in the app.

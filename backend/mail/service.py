@@ -17,7 +17,7 @@ from typing import Any
 from ..models import RetainedMessageCreate
 from .bridge import Bridge, Target, locator, parse_locator
 from .errors import BridgeError
-from . import llm_providers, marks, review
+from . import attach_service, llm_providers, marks, review
 from . import microsoft as ms
 from .llm import LlmConfig, Summariser
 from ..reporting import NULL, Reporter
@@ -282,6 +282,9 @@ class MailService:
         texts: dict[str, str] = {}
         warnings: dict[str, Any] = {}
         counts: dict[str, int] = {}
+        raws: dict[str, bytes] = {}
+        summarised: set[str] = set()
+        files_on = attach_service.allowed(vault, self.summariser)
         failed = 0
         instructions = review.instructions_for(vault, account.get("owner_user_id"))
         prompt = review.active_prompt(vault)
@@ -295,7 +298,12 @@ class MailService:
                         found_validity, uid = parse_locator(m["source_locator"])
                         if found_validity != validity:
                             raise BridgeError("not_found", "mailbox reset")
-                        shown = render_original(s.original(uid))
+                        raw = s.original(uid)
+                        shown = render_original(raw)
+                        if files_on and shown.get("file_count") and len(raw) <= attach_service.MAX_RAW \
+                                and sum(len(b) for b in raws.values()) + len(raw) <= attach_service.MAX_RAW_TOTAL:
+                            raws[m["id"]] = raw             # kept in memory only until its files have been read
+                        del raw
                         texts[m["id"]] = shown["text"][: self.summariser.config.max_chars]
                         warnings[m["id"]] = shown.get("warning")
                         counts[m["id"]] = int(shown.get("file_count") or 0)
@@ -335,6 +343,7 @@ class MailService:
                     failed += 1
                     continue
                 done += 1
+                summarised.add(m["id"])
                 if shipment and self.shipments is not None:
                     try:
                         self.shipments.observe(account.get("owner_user_id"), account_id, m["id"], m.get("subject") or "", m.get("received_at"), shipment)
@@ -353,6 +362,15 @@ class MailService:
                         pass
         finally:
             lock.release()
+        # The files are read after the mailbox is free again, so a long document never holds up Reviewed, Archive or a sync.
+        for message_id, raw in raws.items():
+            if message_id not in summarised:
+                continue
+            try:
+                attach_service.run(vault, account_id, message_id, raw, self.summariser, instructions)
+            except Exception as exc:                 # a problem with a file never loses the email's own summary
+                log.warning("attachment summaries failed: %s", type(exc).__name__)
+        raws.clear()
         return done, failed
 
     # ---------- all emails (recent mail that is not in the unread list) ----------

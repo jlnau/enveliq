@@ -826,7 +826,34 @@ async function adminPage(me, only) {
   const [list, policy, sso] = await Promise.all([api("/admin/users"), api("/admin/auth-policy"), api("/admin/sso")]);
 
   const aiPanel = h("div", {}, h("p", { class: "hint", text: "Loading…" }));
-  const drawAi = async () => { try { aiPanel.replaceChildren(await aiSetupPanel(me, drawAi)); } catch (er) { aiPanel.replaceChildren(alertBox("bad", er.message)); } };
+  const drawAi = async () => { try { aiPanel.replaceChildren(await aiSetupPanel(me, drawAi)); } catch (er) { aiPanel.replaceChildren(alertBox("bad", er.message)); } drawAttach(); };
+  // Summaries of attached files: automatic with a local model; a cloud service needs the administrator's explicit yes.
+  const attPanel = h("div", {});
+  const drawAttach = async () => {
+    let st;
+    try { st = await api("/admin/attachment-ai"); } catch (er) { attPanel.replaceChildren(); return; }
+    const on = h("input", { id: "att_on", type: "checkbox", checked: !!st.enabled });
+    const ack = h("input", { id: "att_ack", type: "checkbox" });
+    const ackRow = st.cloud ? h("label", { class: "check", for: "att_ack" }, ack,
+      h("span", {}, h("strong", { text: `I understand the text of attached files will be sent to ${st.company || "the AI service"}` }),
+        h("div", { class: "hint", text: "Your AI model is a cloud service. A summary needs the words of the file, so they leave your computer. The file itself is never stored." }))) : null;
+    const form = h("form", {},
+      h("h3", { text: "Summaries of attached files" }),
+      h("p", { class: "lead", text: st.cloud
+        ? "Off until you turn it on, because your AI model is a cloud service."
+        : "On by default, because your AI model runs on your own network and nothing leaves it." }),
+      h("label", { class: "check", for: "att_on" }, on,
+        h("span", {}, h("strong", { text: "Summarise the files attached to emails" }),
+          h("div", { class: "hint", text: "When an email arrives, each PDF, Word (.docx), text or CSV file is read and summarised by the AI, and the summary is shown under the email's own summary. Long files are read in sections and combined. Files up to 25 MB are read; scans and pictures are not read yet. The file itself is never stored, only its name, size and the summary." }))),
+      ackRow,
+      h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" })));
+    onSubmit(form, async () => {
+      await api("/admin/attachment-ai", { method: "PUT", body: { enabled: on.checked, acknowledged: ack.checked } });
+      toast(on.checked ? "Saved. New emails will have their files summarised." : "Saved. Attached files will not be summarised.");
+      drawAttach();
+    });
+    attPanel.replaceChildren(form);
+  };
   drawAi();
 
   // Users
@@ -1133,7 +1160,7 @@ async function adminPage(me, only) {
         guideNote("install/after-install.md#step-7-add-the-rest-of-your-household", "", "Adding the people in your home"))),
     ai: h("section", { class: "section" }, h("h2", { text: "AI model" }),
       h("p", { class: "lead", text: "The AI that writes the summaries. It runs on your own network. The first-time guide explains each field: Setup guide, step 2." }),
-      guideNote("AI_SUMMARIES.md", "Choosing a model, or not sure what to type?", "Open the AI guide"), aiPanel),
+      guideNote("AI_SUMMARIES.md", "Choosing a model, or not sure what to type?", "Open the AI guide"), aiPanel, attPanel),
     sync: syncForm ? h("section", { class: "section" }, h("h2", { text: "Automatic sync" }), syncForm) : null,
     keep: keepForm ? h("section", { class: "section" }, h("h2", { text: "Reviewed and Archived" }), keepForm) : null,
     microsoft: msConf ? h("section", { class: "section" }, h("h2", { text: "Microsoft sign-in (Outlook, Hotmail, Microsoft 365)" }), guideNote("MICROSOFT.md", "A longer guide with pictures of each step is on the Enveliq website.", "Open the Microsoft guide"), microsoftSection(msConf, () => adminPage(me, only))) : null,
