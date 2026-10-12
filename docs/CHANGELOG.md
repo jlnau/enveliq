@@ -6,6 +6,17 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 No changes recorded yet.
 
+## v0.84 (2026-10-12)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+### Other changes
+* Summarise attached files and list them under each email by @jlnau in https://github.com/jlnau/enveliq/pull/58
+
+
+**Full Changelog**: https://github.com/jlnau/enveliq/compare/v0.83...v0.84
+
 ## v0.83 (2026-10-12)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
