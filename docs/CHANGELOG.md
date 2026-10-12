@@ -6,6 +6,17 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 No changes recorded yet.
 
+## v0.85 (2026-10-12)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+### Other changes
+* One AI queue: new mail waits for its summary and files by @jlnau in https://github.com/jlnau/enveliq/pull/62
+
+
+**Full Changelog**: https://github.com/jlnau/enveliq/compare/v0.84...v0.85
+
 ## v0.84 (2026-10-12)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
