@@ -12,7 +12,7 @@ Open [Choose your settings](choose-settings.md), decide your answers, and come b
 
 1. Open <https://github.com/jlnau/enveliq/blob/main/install/docker-compose.yml> on your computer and press **Copy raw file**.
 2. Paste it into a plain text editor (Notepad, TextEdit in plain text mode, or any code editor) so you can edit it comfortably. TrueNAS is strict about indentation, so do not change the spaces at the start of lines.
-3. Change the lines marked `<-- CHANGE THIS` to your answers. **On TrueNAS you will normally change the port line** to `- "8765:8765"`, as in the "port line" part of the settings page.
+3. Change the lines marked `<-- CHANGE THIS` to your answers. The port line already says `- "8765:8765"`, so other devices on your network can open Enveliq.
 
 ## Step 3. Install it as a custom app
 

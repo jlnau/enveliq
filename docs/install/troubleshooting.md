@@ -22,7 +22,7 @@ Work down this list.
 1. **Is it running?** Type `docker compose ps` in the folder with your install file (or look in your control panel). Both `enveliq` and `enveliq-render` should say `Up` or `running`. If not, type `docker compose up -d`, then `docker compose logs enveliq` to see why.
 2. **Is Docker running?** On Windows and Mac, Docker Desktop must be open and show **Engine running**.
 3. **Are you using the exact address from setting 1?** `http://localhost:8765` and `http://127.0.0.1:8765` are different addresses to Enveliq. Use exactly what you set in `ENVELIQ_PUBLIC_URL`. See [It says "Invalid host header"](#it-says-invalid-host-header).
-4. **Are you on the right computer?** `localhost` always means the computer you are typing on. To open Enveliq from another device, you need address B or C in [Choose your settings](choose-settings.md), and the port line changed to `- "8765:8765"`.
+4. **Are you on the right computer?** `localhost` always means the computer you are typing on. To open Enveliq from another device, you need address B or C in [Choose your settings](choose-settings.md). The install file's port line must say `- "8765:8765"` (not `127.0.0.1:8765:8765`).
 5. **A firewall?** On Linux with `ufw`, allow the port: `sudo ufw allow from 192.168.1.0/24 to any port 8765` (change the network to match yours). Do not open it to the whole internet.
 
 ## It says "Invalid host header"

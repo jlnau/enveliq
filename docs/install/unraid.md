@@ -20,7 +20,7 @@ Open [Choose your settings](choose-settings.md), decide your answers, and come b
 2. Type the name `enveliq` and press **OK**.
 3. Click the **cog** beside `enveliq` and choose **Edit Stack**.
 4. Open <https://github.com/jlnau/enveliq/blob/main/install/docker-compose.yml> on your computer and press **Copy raw file**. Paste it into the editor.
-5. Change the lines marked `<-- CHANGE THIS` to your answers. **On Unraid you will normally change the port line** to `- "8765:8765"`, as in the "port line" part of the settings page.
+5. Change the lines marked `<-- CHANGE THIS` to your answers. The port line already says `- "8765:8765"`, so other devices on your network can open Enveliq.
 6. Press **Save Changes**.
 
 ## Step 4. Start it
