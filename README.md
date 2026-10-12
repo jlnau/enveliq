@@ -184,6 +184,7 @@ All the guides are listed, by what you want to do, in the [**documentation index
 
 <details>
 <summary><b>What changed recently</b> (latest five versions)</summary>
+- **Unreleased**: **A paperclip on emails with attachments.** Emails that have an attachment show a small paperclip under the date and time in the list.
 
 - **Unreleased**: **Notifications show the Enveliq mark.** The small icon on an Enveliq notification on Android is now Enveliq's own mark instead of the browser's logo.
 - **Unreleased**: **Undo bars stack.** Doing Reviewed, Archive or Bin on one email after another now shows one Undo bar for each (up to three), so you can still take back an earlier one. Several emails done together are still a single bar.
