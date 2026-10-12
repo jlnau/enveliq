@@ -8,7 +8,7 @@ Enveliq is self-hosted. The author of the software never receives your email, yo
 
 ## What the author collects
 
-Nothing. There is no telemetry, analytics, advertising, tracking, crash reporting or update check, and the pages load no fonts, scripts or images from other sites.
+Nothing. There is no telemetry, analytics, advertising, tracking or crash reporting, and the pages load no fonts, scripts or images from other sites. The one optional thing is the new-version notice: about once a day your server asks GitHub for the number of the newest release, so administrators can be told when an update is out. It sends nothing about you or your mail, the author does not receive it, and an administrator can switch it off (see [New versions](UPDATES.md)).
 
 ## What your server stores
 
@@ -25,7 +25,7 @@ One session cookie to keep you signed in. Your browser's local storage keeps you
 
 ## Where data can leave your server
 
-Only where the operator switches it on: your mail provider (to read and act on your mail), a single sign-on provider, an AI service (email text is sent to it, so choose one you trust; a local server keeps it on your network), and reporting outputs such as Grafana, which carry counts and timings but never email content.
+Only where the operator switches it on: your mail provider (to read and act on your mail), a single sign-on provider, an AI service (email text is sent to it, so choose one you trust; a local server keeps it on your network), GitHub (a once-a-day check for the newest release number, which an administrator can switch off; nothing about you is sent), and reporting outputs such as Grafana, which carry counts and timings but never email content.
 
 ## Deleting data
 

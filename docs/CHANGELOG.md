@@ -4,7 +4,13 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**A notice when a new version is out.** Administrators now see a small card in the left panel when a newer Enveliq release has been published, with a link to the release notes on GitHub. Enveliq's server checks about once a day (never the browser); nothing about you is sent. It is on by default and an administrator can switch it off under Administration, Updates. This replaces the earlier statement that Enveliq makes no update check, so the privacy notes, the privacy pop-up and the README now mention it.
+
+- `backend/update_check.py` (new): asks `api.github.com` for the latest published release in the background (8 second timeout, 200 KB limit, once a day, an hour's wait after a failure), accepts only a plain version number and a link under `https://github.com/jlnau/enveliq/releases/`, ignores drafts and pre-releases, compares versions as numbers and keeps the result in memory.
+- `backend/app.py`, `backend/models.py`: `/api/v1/system` includes `update` for administrators only; `GET`/`PUT /api/v1/admin/update-notice` read and switch it (admin only, stored in the vault, audited as `update_notice_changed`). When it is off, no request is made.
+- `prototype/index.html`, `web/static/auth.js`: the card above the line over Agent (a small icon when the panel is collapsed), which re-checks that the link is Enveliq's own releases page, and Administration, Updates with the switch.
+- Docs: `docs/UPDATES.md` (new), `docs/PRIVACY.md`, `README.md`, the privacy pop-up, the website home page and `SECURITY.md` now describe the check.
+- Tests: `tests/test_update_notice.py` (version comparison, what is accepted and refused, administrators only, off means no request, a failed check is quiet, audit), `tests/conftest.py` (no test ever contacts GitHub), `scripts/check_update_notice.mjs` (the card, its link, bad links ignored, the collapsed icon, the switch).
 
 ## v0.81 (2026-10-12)
 

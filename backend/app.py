@@ -68,6 +68,7 @@ from .mail.mail_alerts import MailAlerts
 from .mail.reminders import Reminders
 from .mail.outbox import Outbox
 from .version import VERSION
+from .update_check import UpdateChecker
 from .mail.scheduler import AutoSync
 from .mail import review
 from .mail.service import MailService
@@ -89,6 +90,7 @@ from .models import (
     ResolveMessageRequest,
     RetainedMessageCreate,
     UnlockRequest,
+    UpdateNoticeBody,
 )
 from .security import (
     FlowStore,
@@ -726,6 +728,34 @@ def status_endpoint():
     return out
 
 
+update_checker = UpdateChecker(VERSION)
+
+
+def update_notice_enabled() -> bool:
+    """On unless an administrator switched it off (Administration, Updates). Needs the vault open to be read."""
+    try:
+        return bool((vault.get_global("update-notice") or {}).get("enabled", True))
+    except VaultLocked:
+        return False
+
+
+@app.get("/api/v1/admin/update-notice")
+def get_update_notice(session: Session = Depends(admin_session)):
+    enabled = update_notice_enabled()
+    if enabled:
+        update_checker.maybe_refresh()
+    return {"enabled": enabled, "current": VERSION, "update": update_checker.newer() if enabled else None}
+
+
+@app.put("/api/v1/admin/update-notice")
+def put_update_notice(body: UpdateNoticeBody, session: Session = Depends(admin_session)):
+    vault.set_global("update-notice", {"enabled": body.enabled})
+    vault.audit({"event": "update_notice_changed", "actor_user_id": session.principal.user_id, "enabled": body.enabled, "at": time.time()})
+    if body.enabled:
+        update_checker.maybe_refresh()
+    return {"enabled": body.enabled, "current": VERSION, "update": update_checker.newer() if body.enabled else None}
+
+
 @app.get("/api/v1/system")
 def system_endpoint(session: Session = Depends(full_session)):
     """What the inbox and the Security page show about this Enveliq. Signed-in people only; the technical
@@ -736,6 +766,11 @@ def system_endpoint(session: Session = Depends(full_session)):
         "idle_lock_seconds": 0 if AUTO_UNLOCK else vault.idle_lock_seconds,
         "raw_message_body_persistence": False, "raw_attachment_persistence": False,
     }
+    if session.principal.is_admin and update_notice_enabled():
+        update_checker.maybe_refresh()            # at most once a day, in the background
+        update = update_checker.newer()
+        if update:
+            out["update"] = update                # administrators only: they are the ones who update Enveliq
     if session.principal.is_admin:
         out.update({"public_url": PUBLIC_ORIGIN, "auto_unlock": AUTO_UNLOCK, "crypto": SecureVault.export_public_crypto_metadata(),
                     "attachments": {"raw_persistence": False, "preview_mode": "safe-derivative-in-ram"}})

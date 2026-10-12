@@ -309,10 +309,10 @@ const termsPage = () => notesPage("Terms of use", "Plain-language terms for free
 
 const privacyPage = () => notesPage("Privacy", "How personal information is treated. A general summary, not legal advice.", [
   ["The short version", "Enveliq is self-hosted. The author never receives your email, settings or usage. The person who runs this copy (the operator) holds the data on their own server, so questions about it go to them."],
-  ["What the author collects", "Nothing. There is no telemetry, analytics, advertising, tracking, crash reporting or update check, and these pages load nothing from other sites."],
+  ["What the author collects", "Nothing. There is no telemetry, analytics, advertising, tracking or crash reporting, and these pages load nothing from other sites. The one optional thing is the new-version notice: about once a day this server asks GitHub for the newest release number, so administrators can be told when an update is out. Nothing about you is sent, and an administrator can switch it off."],
   ["What this server stores", "Account details (user name, a password hash, two-factor and passkey details, role); for each connected mailbox, its connection details and encrypted summaries and tasks; encrypted audit events and settings. Email bodies and attachments are not stored. If the All emails switch is on, the sender, subject and date of your last 14 days of mail are also kept, encrypted, and a summary is written only for emails you press Generate summary on (that sends the email's text to your AI model). An original email, its pictures and attachments, and your Sent mail are fetched from your mail provider only when you ask to view them, and are not kept. If the address book is on, it keeps names and email addresses (never email text), encrypted, visible only to you, and you can export or delete it at any time."],
   ["Your browser", "One session cookie keeps you signed in. Your browser's local storage keeps your light or dark choice and view layout. None of it is sent to the author."],
-  ["Where data can leave this server", "Only where the operator switches it on: your mail provider, a single sign-on provider, an AI service (email text is sent to it; a local server keeps it on your network), and reporting outputs such as Grafana, which carry counts and timings but never email content."],
+  ["Where data can leave this server", "Only where the operator switches it on: your mail provider, a single sign-on provider, an AI service (email text is sent to it; a local server keeps it on your network), GitHub (a once-a-day check for the newest release number, which an administrator can switch off; nothing about you is sent), and reporting outputs such as Grafana, which carry counts and timings but never email content."],
   ["Deleting data", "Disconnecting a mailbox deletes the data kept for it. An administrator can remove a user. Resolving an item clears what was kept for it according to the outcome chosen."],
   ["Australian law", "The author is an individual in Australia and does not collect personal information through Enveliq. The Privacy Act 1988 (Cth) applies mainly to larger organisations and some others. If you run Enveliq for a business or organisation, check whether it applies to you."],
 ], "The full text is in docs/PRIVACY.md in the project.");
@@ -822,7 +822,7 @@ function microsoftSection(m, redraw) {
 let adminOnly = null;
 async function adminPage(me, only) {
   adminOnly = only || null;
-  // `only` (users | ai | instr | keep | sync | check | reporting | signin) shows one part, for the Administration pop-up.
+  // `only` (users | ai | instr | keep | sync | check | reporting | signin | updates) shows one part, for the Administration pop-up.
   const [list, policy, sso] = await Promise.all([api("/admin/users"), api("/admin/auth-policy"), api("/admin/sso")]);
 
   const aiPanel = h("div", {}, h("p", { class: "hint", text: "Loading…" }));
@@ -1056,6 +1056,17 @@ async function adminPage(me, only) {
       h("h3", { text: "Daily backup" }), settings,
     ];
   })() : null;
+  const up = (!only || only === "updates") ? await api("/admin/update-notice").catch(() => null) : null;
+  const updForm = up ? (() => {
+    const f = h("form", {},
+      chkBox("up_on", up.enabled, "Tell me when a new version is out", "About once a day, Enveliq's server asks GitHub for the number of the newest release and compares it with this one. Nothing about you, your mail or this install is sent. Only administrators see the notice: a card in the left panel that links to the release notes."),
+      h("p", { class: "hint" }, up.update
+        ? ["Version ", up.update.version, " is out (this is version ", up.current, "). ", h("a", { href: up.update.url, target: "_blank", rel: "noopener noreferrer", text: "See what's new" })]
+        : `This is version ${up.current}. ${up.enabled ? "No newer version is known." : "The check is off."}`),
+      h("div", { class: "row" }, h("button", { class: "btn primary", type: "submit", text: "Save" })));
+    onSubmit(f, async () => { await api("/admin/update-notice", { method: "PUT", body: { enabled: f.querySelector("#up_on").checked } }); toast("Saved"); adminPage(me, only); });
+    return f;
+  })() : null;
   const rp = (!only || only === "reporting") ? await api("/admin/reporting").catch(() => null) : null;
   const msConf = (!only || only === "microsoft") ? await api("/admin/microsoft").catch(() => null) : null;
   const numField = (id, label, value, min, max, hint) => field(label, input(id, { type: "number", min: String(min), max: String(max), value: String(value) }), hint);
@@ -1131,6 +1142,7 @@ async function adminPage(me, only) {
     reminders: remForm ? h("section", { class: "section" }, h("h2", { text: "Reminders" }), guideNote("NOTIFICATIONS.md", "", "How to set up reminders"), remForm, gForm ? h("h2", { text: "Google Calendar" }) : null, gForm ? guideNote("CALENDAR.md", "Every click, step by step:", "Google Calendar guide") : null, gForm) : null,
     check: ckForm ? h("section", { class: "section" }, h("h2", { text: "Forward to check" }), guideNote("SCAM_WARNING.md#forward-to-check", "", "How Forward to check works"), ckForm) : null,
     backup: bkSection ? h("section", { class: "section" }, h("h2", { text: "Backup and restore" }), guideNote("BACKUP.md", "", "How backup and restore work"), ...bkSection) : null,
+    updates: updForm ? h("section", { class: "section" }, h("h2", { text: "Updates" }), guideNote("UPDATES.md", "", "How the new-version notice works"), updForm) : null,
     reporting: rp ? h("section", { class: "section" }, h("h2", { text: "Reporting" }), guideNote("REPORTING.md", "", "How to send reports to Grafana and other tools"), reportingSection(rp, () => adminPage(me, only))) : null,
     instr: instrForm ? h("section", { class: "section" }, h("h2", { text: "AI instructions" }), promptPanel, h("h3", { text: "Extra instructions" }), instrForm) : null,
     signin: [h("section", { class: "section" }, h("h2", { text: "Sign-in rules" }), pol),
@@ -1141,7 +1153,7 @@ async function adminPage(me, only) {
           h("p", { class: "hint", text: "Create an OAuth2/OpenID application in your provider (confidential client, authorization code flow with PKCE), then fill in the details below." }), ssoForm))],
   };
   if (only) return show(...chrome(me, "admin", ...[].concat(parts[only]).filter(Boolean)));
-  show(...chrome(me, "admin", h("h1", { text: "Administration" }), parts.users, parts.ai, parts.instr, parts.keep, parts.features, parts.agent, parts.reminders, parts.check, parts.sync, parts.microsoft, parts.backup, parts.reporting, ...parts.signin));
+  show(...chrome(me, "admin", h("h1", { text: "Administration" }), parts.users, parts.ai, parts.instr, parts.keep, parts.features, parts.agent, parts.reminders, parts.check, parts.sync, parts.microsoft, parts.backup, parts.updates, parts.reporting, ...parts.signin));
 }
 // ---------- general settings and AI instructions (everyone) ----------
 const FEATURE_HINTS = {

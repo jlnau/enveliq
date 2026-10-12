@@ -103,7 +103,7 @@ Not sure? Start at [**Install Enveliq**](docs/install/README.md), which also lis
 - **One person's mail is never visible to another person**, and administrators run Enveliq without reading anyone's mail.
 - **Email is treated as untrusted.** The AI is told that email text is only data, is given no tools, and never decides or calculates anything. Anything the AI wrote is labelled as AI.
 - **Strong sign-in.** Passwords use Argon2id, with authenticator-app and passkey two-factor, recovery codes and single sign-on (Authentik, Authelia, Keycloak or any OpenID Connect service).
-- **No telemetry, no third-party requests.** The pages load nothing from other websites, and the author receives no data.
+- **No telemetry, no third-party requests.** The pages load nothing from other websites, and the author receives no data. The one optional exception is a once-a-day check, made by your server (not your browser), for the number of the newest release, so administrators can be told when a new version is out. Nothing about you is sent, and an administrator can switch it off.
 
 The full details are in [SECURITY.md](SECURITY.md) and the plain-language [privacy notes](docs/PRIVACY.md).
 
@@ -173,6 +173,7 @@ All the guides are listed, by what you want to do, in the [**documentation index
 [Subscriptions](docs/SUBSCRIPTIONS.md) ·
 [Trips](docs/TRIPS.md) ·
 [Backup and restore](docs/BACKUP.md) ·
+[New versions](docs/UPDATES.md) ·
 [The demo](docs/DEMO.md) ·
 [Undo](docs/UNDO.md) ·
 [Checks before sending](docs/SEND_CHECKS.md) ·
@@ -185,6 +186,7 @@ All the guides are listed, by what you want to do, in the [**documentation index
 <details>
 <summary><b>What changed recently</b> (latest five versions)</summary>
 
+- **Unreleased**: **A notice when a new version is out.** Administrators are told, with a card in the left panel linking to the release notes, when a newer version is out. Your server checks about once a day; nothing about you is sent, and an administrator can switch it off.
 - **Unreleased**: **Mail rules.** Tell Enveliq to archive, or mark as reviewed, new email from a sender you choose, such as a shop's weekly offers. Press **Always archive these** on an opened email, or add a rule in Settings, Mail rules. A rule only acts on new email as it arrives, never on mail already in your inbox or from your important people, and no rule can delete anything. See [docs/MAIL_RULES.md](docs/MAIL_RULES.md).
 - **Unreleased**: **"Keep me signed in on this device".** An administrator can let people stay signed in for up to 14 days with a tick-box on the sign-in page (off by default; needs a vault key file). Restarting Enveliq still signs everyone out.
 
