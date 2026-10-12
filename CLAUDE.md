@@ -18,13 +18,18 @@ Project: **Enveliq** ("Turn email into clarity."), a private, self-hosted email-
 
 ## Working rules
 - Do not change the version number. Leave `backend/version.py` and "Current version" in `README.md` alone, and do not put a version number in pull request titles. The maintainer bumps the version once, right before a release.
-- Every change that people can see gets a README entry, a `docs/CHANGELOG.md` entry under the "Unreleased" heading at the top (create it if missing), and a `SECURITY.md` entry when it touches data, sign-in or privacy. Update the matching `docs/*.md` guide.
+- Every change people can see must be documented in the matching `docs/*.md` guide, and in `SECURITY.md` when it touches data, sign-in or privacy. Describe the user-visible change clearly in the pull request so release notes can be generated from merged pull requests. Do not edit the README recent-changes list or the shared `docs/CHANGELOG.md` Unreleased section in ordinary feature pull requests. Those shared release summaries are updated together when preparing a release. Update other README sections only when needed to keep existing instructions factually correct.
 - Write backend tests for backend changes (`tests/`). Write or update a browser check (`scripts/check_*.mjs`) for page changes, and add new ones to `.github/workflows/ci.yml`.
 - Do not invent requirements, options or behaviour that was not asked for. Do not remove features while tidying; move or fold them.
 
 ## Branches and pull requests
 - Never push to `main`. Work on a feature branch (`feat/...`, `fix/...`, `docs/...`, `chore/...`) and open a pull request into `main`. The maintainer reviews and merges.
 - One topic per pull request. The description says what changed, why, and what to check, in plain words.
+- When the maintainer requests several independent changes, create one independent branch and pull request per change. Fetch the latest remote `main` before creating EACH branch, and base each branch directly on that commit; never branch from another feature branch unless the maintainer explicitly asks for dependent changes. Do not mix the changes into one branch.
+- Parallel pull requests are expected. Keep each PR limited to files needed for that feature and its targeted tests and guide. Shared application files may legitimately overlap; do not suppress necessary changes just to avoid conflicts. Before declaring a PR ready, fetch the latest `main`, check whether the PR is mergeable, and update it safely if required. Never force-push, discard others' changes or blindly accept one side of a conflict.
+- A passing CI result alone does not establish merge readiness. Check that the PR is conflict-free, its required checks are passing against the current base, and any merge-queue requirements are satisfied. After another PR merges, remaining open PRs may need a fresh check or safe integration with the new `main`.
+- If more than one PR changes the same code, coordinate their integration and rerun all relevant tests; some semantic conflicts cannot be prevented by documentation conventions or automation.
+
 - Merging into `main` publishes nothing. Images are built and published only when the maintainer publishes a GitHub Release whose tag (for example `v0.86`) matches `backend/version.py`, and only after every check passes.
 - When asked to prepare a release: set `backend/version.py` and "Current version" in `README.md` to the new number, and rename the "Unreleased" heading in `docs/CHANGELOG.md` to that version and today's date. Nothing else.
 

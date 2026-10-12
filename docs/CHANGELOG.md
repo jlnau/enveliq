@@ -9,6 +9,12 @@ Newest first. Each entry says what changed for people and which parts of the cod
 - `prototype/index.html`: `#brandVer` moves from the logo block into the bottom block of the left panel (`.side-foot`), styled as `.ver`. It is still filled from the signed-in `/api/v1/system` answer, and stays empty and hidden in the demo.
 - Tests: `scripts/check_version_footer.mjs` (new; the version shows, sits under the links and the person's name, is gone from the top, hidden when collapsed, nothing left in the demo). `check_no_sample_flash.mjs` still passes.
 
+**Undo bars stack.** Each Reviewed, Archive or Bin now gets its own Undo bar, so you can still take back an earlier one after doing another. Several emails done together are still one bar.
+
+- `prototype/index.html`: the single Undo bar is now a stack (`#undoBar` holds one `.undobar` per waiting action, newest at the bottom, drawn by `drawUndos()`). Each bar has its own Undo button and its own countdown line, which carries on from where it was when another bar is added. At most three show: a fourth action sends the oldest one straight away.
+- Tests: `scripts/check_stacked_undo.mjs` (new; three in a row, newest at the bottom, no overlap on desktop or phone, Undo on the middle one, several emails as one bar, the three-bar limit, bars leaving one by one). `check_demo.mjs` and `check_inbox_real_mail.mjs` now look at the newest bar.
+- Docs: `docs/UNDO.md`.
+
 ## v0.81 (2026-10-12)
 
 **Mail rules.** "Archive new email from this sender", done for the person as mail arrives.
