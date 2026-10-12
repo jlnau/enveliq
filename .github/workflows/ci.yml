@@ -96,6 +96,8 @@ jobs:
         run: node scripts/check_attachment_clip.mjs
       - name: Row buttons on hover (made-up mail, no server)
         run: node scripts/check_hover_actions.mjs
+      - name: Version number in the left panel (simulated server)
+        run: node scripts/check_version_footer.mjs
       - name: The demo (made-up mail, no server)
         run: node scripts/check_demo.mjs
       - name: Important people (simulated server)
