@@ -141,6 +141,18 @@ def test_the_service_worker_is_served_from_the_top(env):
     assert "showNotification" in r.text
 
 
+def test_the_notification_has_its_own_small_icon(env):
+    """The small icon in the status bar is Enveliq's own mark (one colour on clear), not the browser's logo."""
+    import struct
+    _, client, _ = env
+    assert 'badge: "/brand/enveliq-badge-96.png"' in client.get("/sw.js").text
+    r = client.get("/brand/enveliq-badge-96.png")
+    assert r.status_code == 200 and r.headers["content-type"] == "image/png"
+    assert r.content[:8] == b"\x89PNG\r\n\x1a\n"
+    width, height, depth, colour = struct.unpack(">IIBB", r.content[16:26])
+    assert (width, height, colour) == (96, 96, 6)                    # 96 by 96, with a transparent background
+
+
 # ---------- Email ----------
 
 def test_email_goes_only_to_the_persons_own_mailbox_and_is_not_made_into_a_task(env):
