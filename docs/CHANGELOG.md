@@ -4,7 +4,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**A paperclip on emails with attachments.** An email that has an attachment now shows a small paperclip under its date and time in the list, on a phone and on a computer.
+
+- `prototype/index.html`: the row's date and time block gets a small paperclip (`.clip`) when the email has attachments. It says "Has an attachment", or "Has 2 attachments", to a screen reader and as a tooltip. Emails without attachments look as before.
+- Tests: `scripts/check_attachment_clip.mjs` (new; paperclip present and absent, its label, under the date and lined up on the right, no sideways scrolling, on desktop and phone).
 
 ## v0.81 (2026-10-12)
 
