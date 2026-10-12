@@ -96,6 +96,8 @@ jobs:
         run: node scripts/check_undo_stays.mjs
       - name: Paperclip on emails with attachments (made-up mail, no server)
         run: node scripts/check_attachment_clip.mjs
+      - name: Files listed under an email, with their summaries (made-up mail, no server)
+        run: node scripts/check_attachment_summaries.mjs
       - name: Row buttons on hover (made-up mail, no server)
         run: node scripts/check_hover_actions.mjs
       - name: Version number in the left panel (simulated server)

@@ -10,12 +10,20 @@ The small things that make the inbox calm to use.
 
 ### The paperclip
 
-Enveliq never keeps your attachments, and it never keeps their names either. It keeps only whether an email has files and how many, encrypted, with the rest of that email's record.
+Enveliq never keeps your attachments. It keeps whether an email has files and how many, encrypted, with the rest of that email's record. Once the files have been summarised it also keeps each file's name, size and summary (see below).
 
 - When an email first arrives only its headers have been read, so the paperclip is a careful guess. Its tooltip then says **May have an attachment**, because a few newsletters are built the same way as emails with files.
 - When the AI summary is made, Enveliq counts the files exactly (pictures that are part of the text are not counted) and the paperclip becomes certain, for example **Has 2 attachments**.
 - Emails fetched before this existed show a paperclip once they are fetched again or summarised.
 - The **Attachments** entry in the left menu, its number and its filter use the same count.
+
+### Attached files, summarised
+
+Open an email and its files are listed under the summary, above the task: one row per file with its name, kind, size and a one-line summary. Press a row to read a longer summary in parts. **View** opens the file itself. Every summary is labelled **Summary written by AI**, and the file itself is not stored.
+
+- A file still being read says **Reading…**. A file that could not be summarised says **Not summarised** and, if the AI could not be reached, offers **Try again**.
+- PDF (with text), Word (.docx), text and CSV files are read, however long. Scans and pictures are not read yet.
+- Administrators control this under Administration, AI model. See [the AI guide](AI_SUMMARIES.md#summaries-of-attached-files) for the limits and the cloud-service rule.
 
 ## Reviewed, Archive and Bin
 

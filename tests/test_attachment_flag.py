@@ -1,4 +1,4 @@
-"""The paperclip: Enveliq keeps only whether an email has attached files, and how many. Never a name, never content."""
+"""The paperclip: Enveliq keeps whether an email has attached files, and how many. Never any file content."""
 from __future__ import annotations
 
 import json
@@ -67,11 +67,11 @@ def test_summarising_replaces_the_guess_with_the_exact_count(env):
     assert (m["Picture inside"]["has_attachments"], m["Picture inside"]["attachment_count"]) == (False, 0)      # ...and is put right here
 
 
-def test_no_file_name_or_content_is_ever_kept(env):
+def test_no_file_content_is_ever_kept_and_names_only_inside_the_vault(env):
     appm, client, bridge, _ = env
     aid = account(client, bridge)
     client.post(f"/api/v1/accounts/{aid}/sync", json={})
     client.post(f"/api/v1/accounts/{aid}/summarise", json={})
     text = json.dumps(messages(client, aid))
-    assert "report.pdf" not in text and "SGVsbG8" not in text
+    assert "SGVsbG8" not in text           # the file's content is never kept (its name now is, once the files have been summarised, only inside the vault)
     assert appm.vault.plaintext_scan(["report.pdf", "SGVsbG8="]) == {"report.pdf": False, "SGVsbG8=": False}
