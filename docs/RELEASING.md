@@ -7,7 +7,7 @@ GitHub has no built-in "release template" that pre-fills the form. What it does 
 ## Before you click "Create a new release"
 
 1. Everything you want in this release is merged, and the checks on `main` are green.
-2. Ask Claude: "prepare release v0.86" (use the next number). It opens a pull request that does only three things: sets `backend/version.py`, sets "Current version" in `README.md`, and renames "Unreleased" in `docs/CHANGELOG.md` to that version and today's date.
+2. On a new branch created from current `main`, run `python3 scripts/prepare_release.py 0.82` (replace `0.82` with your chosen next version). This single command updates `backend/version.py`, the README current version, and moves the existing Unreleased notes into the dated version section of `docs/CHANGELOG.md`. It refuses mismatched or already prepared versions, rather than silently overwriting release notes. Open a pull request for these three version changes.
 3. You review and merge that pull request. The version in `backend/version.py` is now the number you will tag.
 
 ## Create the release
@@ -37,6 +37,10 @@ Copy this above the generated list and fill in the brackets.
 ```
 
 The longer, plain-words version of each change is in `docs/CHANGELOG.md` under the same version number.
+
+## Important: preparing a version is not publishing it
+
+The preparation script changes files locally only. Commit the three changes in a pull request and merge it before creating a tag. A release tag captures a particular commit: updating `main` after creating the tag does not change the existing release. If a release was already published using the wrong version, do not simply rerun its failed workflow. First prepare and merge the version changes, then deliberately replace the incorrect tag and release, or publish a newly numbered release, after reviewing the impact on users and images.
 
 ## If something goes wrong
 
