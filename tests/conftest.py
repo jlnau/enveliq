@@ -18,9 +18,13 @@ def no_real_update_check(monkeypatch):
     monkeypatch.setattr(update_check, "fetch_latest", lambda: None)
 
 
-def pytest_runtest_logreport(report):
+
+def pytest_terminal_summary(terminalreporter):
     """On GitHub, show each failing test and the end of its error as an annotation, so a failure can be read without opening the log."""
     import os
-    if report.failed and os.environ.get("GITHUB_ACTIONS"):
-        text = (getattr(report, "longreprtext", "") or "")[-900:].replace("%", "%25").replace("\r", "").replace("\n", "%0A")
-        print(f"::error title={report.nodeid} ({report.when})::{text}", flush=True)
+    if not os.environ.get("GITHUB_ACTIONS"):
+        return
+    for kind in ("failed", "error"):
+        for report in terminalreporter.stats.get(kind, []):
+            text = (getattr(report, "longreprtext", "") or "")[-900:].replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+            terminalreporter.write_line(f"::error title={report.nodeid}::{text}")
