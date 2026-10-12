@@ -10,6 +10,7 @@ address unless the administrator allows it).
 
 - The plain text of one email at a time (first 6,000 characters), with its
   sender and subject, goes to your model. Nothing is marked read.
+- An email with no written text (only attached files) is sent as a short note saying so and how many files it has, never their names, so the AI can still write a summary. If the AI answers badly once, Enveliq asks again one time before marking the email "Could not summarise".
 - Enveliq keeps only the short result, encrypted. The email text and the
   model's raw answer are discarded and never logged.
 

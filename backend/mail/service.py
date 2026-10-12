@@ -304,7 +304,11 @@ class MailService:
                                 and sum(len(b) for b in raws.values()) + len(raw) <= attach_service.MAX_RAW_TOTAL:
                             raws[m["id"]] = raw             # kept in memory only until its files have been read
                         del raw
-                        texts[m["id"]] = shown["text"][: self.summariser.config.max_chars]
+                        body = shown["text"][: self.summariser.config.max_chars]
+                        if not body.strip():             # an email that is only files: say so, rather than send the model an empty box
+                            n = int(shown.get("file_count") or 0)
+                            body = "(This email has no written text." + (f" It has {n} attached {'file' if n == 1 else 'files'}.)" if n else ")")
+                        texts[m["id"]] = body
                         warnings[m["id"]] = shown.get("warning")
                         counts[m["id"]] = int(shown.get("file_count") or 0)
                     except BridgeError:
@@ -318,7 +322,13 @@ class MailService:
                 provider = self.summariser.config.provider or "custom"
                 cloud = llm_providers.get(provider).cloud
                 try:
-                    result = self.summariser.summarise(m.get("subject") or "", sender, texts.pop(m["id"]), instructions, prompt)
+                    text = texts.pop(m["id"])
+                    try:
+                        result = self.summariser.summarise(m.get("subject") or "", sender, text, instructions, prompt)
+                    except BridgeError as first:
+                        if first.code != "ai_bad_reply":
+                            raise
+                        result = self.summariser.summarise(m.get("subject") or "", sender, text, instructions, prompt)    # a small model sometimes answers badly once
                     self.reporter.event("ai_request", provider=provider, cloud=cloud, ok=True, duration_ms=(time.monotonic() - asked) * 1000)
                 except BridgeError as err:
                     self.reporter.event("ai_request_failed", provider=provider, cloud=cloud, ok=False, code=err.code, duration_ms=(time.monotonic() - asked) * 1000)
