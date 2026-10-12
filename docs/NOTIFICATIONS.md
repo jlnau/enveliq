@@ -1,6 +1,8 @@
 # Reminders and notifications
 
-Enveliq makes a task for every email that needs you (see **Tasks** in the inbox). Tasks always show in Enveliq under **Today**. If you also want a nudge on your phone or in a chat app, add one or more channels under **Settings, Reminders**.
+In Settings this page is called **Notifications** (it used to be called Reminders). It has two steps: **1. Where should notifications go?** (your phone, a chat app, email and so on) and **2. What should I tell you about?** (the morning summary, things that are due, and new email). A line at the top says where notifications reach you right now.
+
+Enveliq makes a task for every email that needs you (see **Tasks** in the inbox). Tasks always show in Enveliq under **Today**. If you also want a nudge on your phone or in a chat app, add one or more channels under **Settings, Notifications**.
 
 Each channel has the same four steps: follow the short guide on its card, fill in the fields, press **Save and send a test**, and check that the test arrived. A card shows **Working** after a send succeeds and **Last send failed** with the reason if it does not.
 
@@ -16,11 +18,11 @@ Only the task title and a link back to Enveliq are sent, never the email text. I
 
 ## New email alerts
 
-Switch on **Tell me when new email arrives** in **Settings, Reminders** and Enveliq sends one short message each time it finds new email for you, to the places you chose under *Where to send reminders*. It is off until you switch it on.
+Switch on **Tell me when new email arrives** in **Settings, Notifications** and Enveliq sends one short message each time it finds new email for you, to the places you chose under *Where to send reminders*. It is off until you switch it on.
 
 When the mailbox uses AI summaries, the alert is sent once the new email is ready to read in your inbox (after its summary and its files' summaries), so it never points at an email you cannot see yet. Mail that arrives together is announced in one message.
 
-* By default the message only says how many emails arrived ("2 new emails"). Under *Nudges, quiet hours and privacy*, **Show who a new email is from and its subject** adds the sender's name and the subject. Services such as ntfy or a chat app can read what you send them, so leave this off if you would rather your lock screen and those services learn nothing about your mail. Your own device's browser push is encrypted end to end.
+* By default the message only says how many emails arrived ("2 new emails"). Under *Repeats, quiet hours and privacy*, **Show who a new email is from and its subject** adds the sender's name and the subject. Services such as ntfy or a chat app can read what you send them, so leave this off if you would rather your lock screen and those services learn nothing about your mail. Your own device's browser push is encrypted end to end.
 * The email text, the sender's address and the summary are never sent.
 * Quiet hours apply: nothing is sent during them, and the emails wait in your inbox.
 * It speaks about mail Enveliq fetches by itself (Administration, Automatic sync). Mail you fetch by pressing **Sync mail** is not announced, because you are already looking at it, and neither is the first read of a mailbox you have just connected.

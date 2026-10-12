@@ -131,7 +131,7 @@ const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll
   await page.click('[data-settings-tab="reminders"]');
   await page.waitForTimeout(800);
   const text = await page.evaluate(() => { return [...document.querySelectorAll("#settings *")].map((e) => e.shadowRoot ? e.shadowRoot.textContent : "").join(" "); });
-  check("Settings > Reminders offers the new-email switch, off to begin with", /Tell me when new email arrives/.test(text));
+  check("Settings > Notifications offers the new-email switch, off to begin with", /When new email arrives/.test(text));
   check("it also offers the sender and subject switch, in the privacy section", /Show who a new email is from and its subject/.test(text));
   const state = await page.evaluate(() => {
     const roots = [...document.querySelectorAll("#settings *")].filter((e) => e.shadowRoot).map((e) => e.shadowRoot);
@@ -140,6 +140,7 @@ const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll
   });
   check("both start switched off", state.mail === false && state.details === false);
   await shot(page, "reminders-settings");
+  check("the tab and page are called Notifications", /Notifications/.test(await page.locator("[data-settings-tab=reminders]").innerText()) && !/Reminders/.test(await page.locator("[data-settings-tab=reminders]").innerText()));
   await page.evaluate(() => {
     const roots = [...document.querySelectorAll("#settings *")].filter((e) => e.shadowRoot).map((e) => e.shadowRoot);
     for (const r of roots) { const el = r.querySelector("#rs_mail"); if (el) { el.click(); r.querySelector("form button[type=submit]").click(); } }
