@@ -887,7 +887,7 @@ body.on-ship #waitBars{display:none!important}
   <div class="menu-sep" id="menuSep"></div>
   <div class="menu-label" data-preview-only>Preview: switch person</div>
   <button class="user-option" data-preview-only data-switch-user="morgan"><span><strong>Morgan</strong><br><small>Administrator</small></span><span>MO</span></button>
-  <button class="user-option" data-preview-only data-switch-user="beth"><span><strong>Beth</strong><br><small>User</small></span><span>BE</span></button>
+  <button class="user-option" data-preview-only data-switch-user="cara"><span><strong>Cara</strong><br><small>User</small></span><span>CA</span></button>
 </div>
 
 <button class="vtab" id="viewTab" type="button" aria-expanded="false" aria-controls="viewPanel" title="Change how the inbox looks" aria-label="Change how the inbox looks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
@@ -1094,7 +1094,7 @@ body.on-ship #waitBars{display:none!important}
           <h4>Users</h4>
           <p>People with an Enveliq account. Administrators manage settings; they can't read other people's mail.</p>
           <div class="account-card"><div><strong>Morgan</strong><small>morgan · Local account · Two-factor on</small></div><div class="account-actions"><span class="admin-badge">Administrator</span></div></div>
-          <div class="account-card"><div><strong>Beth</strong><small>beth · Created by single sign-on (Authentik) · Two-factor at Authentik</small></div><div class="account-actions"><button class="btn" data-preview-only>Make admin</button><button class="btn" data-preview-only>Disable</button><button class="btn" data-preview-only>Reset 2FA</button></div></div>
+          <div class="account-card"><div><strong>Cara</strong><small>cara · Created by single sign-on (Authentik) · Two-factor at Authentik</small></div><div class="account-actions"><button class="btn" data-preview-only>Make admin</button><button class="btn" data-preview-only>Disable</button><button class="btn" data-preview-only>Reset 2FA</button></div></div>
           <button class="add-account" data-preview-only>+ Add a person</button>
         </div>
       </section>
@@ -1293,7 +1293,7 @@ body.on-ship #waitBars{display:none!important}
 <script>
 const users={
   morgan:{id:"ha_user_morgan",name:"Morgan",initials:"MO",is_admin:true},
-  beth:{id:"ha_user_beth",name:"Beth",initials:"BE",is_admin:false}
+  cara:{id:"ha_user_cara",name:"Cara",initials:"CA",is_admin:false}
 };
 let currentUser=users.morgan;
 
@@ -1341,8 +1341,8 @@ let accounts=[
     settings:defaultAccountSettings()
   },
   {
-    id:"acct_beth_gmail",providerId:"gmail",owner:"ha_user_beth",provider:"Gmail",method:"OAuth 2.0",
-    name:"Beth Gmail",address:"beth@example.com",status:"Connected",visibility:"private",
+    id:"acct_cara_gmail",providerId:"gmail",owner:"ha_user_cara",provider:"Gmail",method:"OAuth 2.0",
+    name:"Cara Gmail",address:"cara@example.com",status:"Connected",visibility:"private",
     lastSync:"1 minute ago",lastSuccess:"Today 23:36",connectedAt:"7 Oct 2026",processed:64,
     scopes:["Read mail","Modify mail","Basic profile"],
     settings:defaultAccountSettings()
@@ -1351,13 +1351,13 @@ let accounts=[
 accounts[0].settings.notifications.deliveryType="script";
 accounts[0].settings.notifications.target="script.notify_morgan";
 accounts[1].settings.notifications.deliveryType="script";
-accounts[1].settings.notifications.target="script.notify_beth";
+accounts[1].settings.notifications.target="script.notify_cara";
 // Addresses each mailbox can SEND from. Proton custom-domain addresses count;
 // forwarding aliases (Proton Pass / SimpleLogin style) do not - replies to
 // those go to the alias service's reverse-alias address instead.
 accounts[0].identities=["morgan@proton.example","travel@morgan-mail.example"];
 accounts[0].aliasService="Proton Pass aliases";
-accounts[1].identities=["beth@example.com"];
+accounts[1].identities=["cara@example.com"];
 
 const emailProviders={
   gmail:{
@@ -1424,7 +1424,7 @@ const data=[
   ]
 }]},
 {id:2,owner:"ha_user_morgan",account:"Morgan Proton",sender:"Harbourview Strata",address:"manager@harbourview-strata.example",subject:"Vote required: balcony repair levy",time:"Wed 16:42",summary:"The strata manager needs your yes or no vote on the proposed special levy for balcony repairs before Thursday's general meeting.",priority:"high",category:"Admin",action:true,status:"inbox",task:{title:"Send your vote on the balcony repair levy",due:"Thu 8 Oct",detail:"Reply to the strata manager with a yes or no vote on the special levy before the general meeting on Thursday."},attachments:[]},
-{id:3,owner:"ha_user_beth",account:"Beth Gmail",sender:"Canberra Imaging",address:"appointments@example.com",subject:"Appointment confirmation",time:"Wed 15:21",summary:"Imaging appointment confirmed for Monday at 10:40 AM. Arrive 15 minutes early and bring the referral.",priority:"normal",category:"Health",action:true,status:"inbox",task:{title:"Attend imaging appointment",due:"Mon 12 Oct",detail:"Attend the imaging appointment at 10:40 AM and arrive 15 minutes early with the referral."},attachments:[{
+{id:3,owner:"ha_user_cara",account:"Cara Gmail",sender:"Canberra Imaging",address:"appointments@example.com",subject:"Appointment confirmation",time:"Wed 15:21",summary:"Imaging appointment confirmed for Monday at 10:40 AM. Arrive 15 minutes early and bring the referral.",priority:"normal",category:"Health",action:true,status:"inbox",task:{title:"Attend imaging appointment",due:"Mon 12 Oct",detail:"Attend the imaging appointment at 10:40 AM and arrive 15 minutes early with the referral."},attachments:[{
   id:"att-imaging",name:"appointment-details.pdf",mime:"application/pdf",size:"146 KB",pages:2,previewKind:"pdf",
   summary:"Appointment details, location and preparation instructions.",
   detail:"The attachment contains the appointment address, arrival instructions, preparation requirements and contact details.",
@@ -1434,7 +1434,7 @@ const data=[
     {title:"Preparation instructions",subtitle:"Please read before your appointment",lines:["Wear comfortable clothing","Follow any fasting instructions supplied by your clinician","Allow extra time for registration"],body:"These instructions are simulated and exist only to demonstrate the multi-page prototype viewer."}
   ]
 }]},
-{id:4,owner:"ha_user_beth",account:"Beth Gmail",sender:"School Portal",address:"notifications@school.example",subject:"Permission required: excursion",time:"Wed 11:18",summary:"Permission for the upcoming school excursion is due by Friday. The online consent form needs to be completed.",priority:"high",category:"School",action:true,status:"inbox",task:{title:"Complete school excursion permission form",due:"Fri 9 Oct",detail:"Complete the online permission form for the upcoming school excursion before Friday."},attachments:[{
+{id:4,owner:"ha_user_cara",account:"Cara Gmail",sender:"School Portal",address:"notifications@school.example",subject:"Permission required: excursion",time:"Wed 11:18",summary:"Permission for the upcoming school excursion is due by Friday. The online consent form needs to be completed.",priority:"high",category:"School",action:true,status:"inbox",task:{title:"Complete school excursion permission form",due:"Fri 9 Oct",detail:"Complete the online permission form for the upcoming school excursion before Friday."},attachments:[{
   id:"att-excursion",name:"excursion-info.pdf",mime:"application/pdf",size:"342 KB",pages:4,previewKind:"pdf",
   summary:"Excursion schedule, transport details and required equipment.",
   detail:"The attachment lists the excursion schedule, transport arrangements, clothing and equipment students should bring.",
@@ -1455,9 +1455,9 @@ const emailDetails={
      body:["Hi Morgan,","Your trip is coming up. Here are the details for your flight.","Flight VA281\nMelbourne (MEL) to Canberra (CBR)\nDeparts Friday 9 October at 5:05 pm\nSeat 5A","Online check-in is now open. Check in online up to 90 minutes before departure to choose your seat and get your boarding pass.","Bag drop closes 60 minutes before departure. Please allow extra time for security screening, especially at peak times.","Travelling with sporting equipment or oversized items? These may need to be booked in advance. Check your booking for your included baggage allowance.","Your e-ticket is attached to this email. You can also find your booking in the app.","Have a great trip,\nThe Skyline Air team","This is an automated message. Replies to this address are not monitored."]},
   2:{deliveredTo:"strata.k7q2@alias.example",replyTo:"manager_at_harbourview-strata_example_q9x4k2@reverse.alias.example",viaAlias:"Proton Pass alias",messageId:"<levy-vote-2209@harbourview-strata.example>",date:"Wed 7 Oct 2026, 4:42 pm",
      body:["Dear owner,","The committee has proposed a special levy to fund repairs to the balconies on levels 2 to 6, following the engineer's report circulated last month.","Before Thursday's general meeting we need a yes or no vote from each lot owner. You can reply to this email with your vote, or vote in person at the meeting.","Summary of the proposal:\n- Total cost: as quoted in the engineer's report\n- Levy split by unit entitlement\n- Payable in two instalments\n- Works expected to start next quarter","If you have questions about the quotes or the payment schedule, reply to this email and I will answer before the meeting.","Kind regards,\nStrata Manager\nHarbourview Strata"]},
-  3:{deliveredTo:"beth@example.com",replyTo:null,viaAlias:null,messageId:"<appt-55120@imaging.example>",date:"Wed 7 Oct 2026, 3:21 pm",
-     body:["Hello Beth,","Your imaging appointment is confirmed for Monday at 10:40 am. Please arrive 15 minutes early and bring your referral and Medicare card.","If you need to change your appointment, reply to this email or call the clinic.","Canberra Imaging"]},
-  4:{deliveredTo:"beth@example.com",replyTo:null,viaAlias:null,messageId:"<excursion-882@school.example>",date:"Wed 7 Oct 2026, 11:18 am",
+  3:{deliveredTo:"cara@example.com",replyTo:null,viaAlias:null,messageId:"<appt-55120@imaging.example>",date:"Wed 7 Oct 2026, 3:21 pm",
+     body:["Hello Cara,","Your imaging appointment is confirmed for Monday at 10:40 am. Please arrive 15 minutes early and bring your referral and Medicare card.","If you need to change your appointment, reply to this email or call the clinic.","Canberra Imaging"]},
+  4:{deliveredTo:"cara@example.com",replyTo:null,viaAlias:null,messageId:"<excursion-882@school.example>",date:"Wed 7 Oct 2026, 11:18 am",
      body:["Dear parent or carer,","Permission for the upcoming excursion is due by Friday. Please complete the online consent form in the school portal.","This mailbox is not monitored. Please do not reply to this email."]}
 };
 for(const m of data)Object.assign(m,emailDetails[m.id]||{});
@@ -2959,7 +2959,7 @@ function manageActions(a){
 
 function notificationTargetFields(deliveryType,n){
   if(deliveryType==="script"){
-    const scripts=["script.notify_morgan","script.notify_beth","script.notify_both"];
+    const scripts=["script.notify_morgan","script.notify_cara","script.notify_both"];
     return `
       <div class="notification-target-box">
         <h6>Home Assistant script target</h6>
@@ -2987,7 +2987,7 @@ data:
   }
 
   if(deliveryType==="notify"){
-    const targets=["Home Assistant default","notify.mobile_app_morgan_phone","notify.mobile_app_beth_phone"];
+    const targets=["Home Assistant default","notify.mobile_app_morgan_phone","notify.mobile_app_cara_phone"];
     return `
       <div class="notification-target-box">
         <h6>Home Assistant notification service</h6>
@@ -3564,8 +3564,16 @@ document.addEventListener("change",e=>{
     return;
   }
   if(e.target.matches("[data-task-date]")){if(e.target.value)taskAct(e.target.dataset.taskDate,"move",{to:"date",on:e.target.value});return}
-  if(e.target.matches("[data-select]")){const id=+e.target.dataset.select;e.target.checked?selected.add(id):selected.delete(id);render()}
+  if(e.target.matches("[data-select]")){
+    // Shift + tick: tick (or untick) every email between this one and the one ticked last, in the order shown.
+    const id=+e.target.dataset.select,on=e.target.checked,shown=[...document.querySelectorAll("[data-select]")].map(x=>+x.dataset.select);
+    const from=shown.indexOf(selAnchor),to=shown.indexOf(id);
+    if(selShift&&from>=0&&to>=0){for(const k of shown.slice(Math.min(from,to),Math.max(from,to)+1))on?selected.add(k):selected.delete(k)}
+    else on?selected.add(id):selected.delete(id);
+    selAnchor=id;selShift=false;render()}
 });
+let selAnchor=null,selShift=false;   // the email ticked last, and whether Shift was held for this tick
+document.addEventListener("click",e=>{if(e.target.matches&&e.target.matches("[data-select]"))selShift=e.shiftKey},true);
 document.addEventListener("click",e=>{
   const due=e.target.closest("[data-due-open]");if(due){const id=due.dataset.dueOpen;filter="all";query="";$("search").value="";expanded.add(`row-${id}`);{const dm=data.find(x=>String(x.id)===id);if(dm){paneId=dm.id;if(view.layout==="screen")readerOpen=true}}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();const el=document.querySelector(`[data-expand="row-${CSS.escape(id)}"]`);el&&el.closest("article").scrollIntoView({block:"nearest",behavior:"smooth"});return}
   const qrow=e.target.closest(".qrow");if(qrow&&!e.target.closest("button,input,a,label,select")){if(view.layout==="list"&&view.rows==="open")return;const t=qrow.querySelector("[data-expand],[data-pick]");if(t){t.click();return}}
@@ -3817,7 +3825,7 @@ $("search").addEventListener("input",e=>{query=e.target.value;render()});
 $("sortBy").addEventListener("change",e=>{sortMode=e.target.value;render()});
 $("filterBy").addEventListener("change",e=>{filter=e.target.value||"all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"&&filter==="all"));render()});
 $("mailboxFilter").addEventListener("change",e=>{mailboxSel=e.target.value;render()});
-$("clear").onclick=()=>{selected.clear();render()};
+$("clear").onclick=()=>{selected.clear();selAnchor=null;render()};
 $("settingsBtn").onclick=()=>openSettings("settings");$("adminBtn").onclick=()=>{if(authorizeAdmin())openSettings("admin")};$("closeSettings").onclick=closeSettings;$("cancelSettings").onclick=closeSettings;$("scrim").onclick=closeSettings;
 $("saveSettings").onclick=()=>{closeSettings();toast("Settings saved for this prototype")};
 $("testProvider").onclick=testConfig;

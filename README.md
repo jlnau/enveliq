@@ -185,6 +185,7 @@ All the guides are listed, by what you want to do, in the [**documentation index
 <summary><b>What changed recently</b> (latest five versions)</summary>
 
 - **Unreleased**: **No flash of sample data when you refresh.** Pressing refresh no longer shows the sample page (a sample name, counts and version) for a split second before your own page appears.
+- **Unreleased**: **Shift + tick selects a range of emails.** Tick one email, hold Shift and tick another a few emails away, and every email between them is ticked too, up or down the list.
 - **Unreleased**: **A quick check before a new email goes.** If a new email has no subject, or the words say something is attached but nothing is, Enveliq now asks once before sending. It never blocks you: **Send anyway** always sends. The check happens in the page, so it works the same for every mailbox. See [docs/SEND_CHECKS.md](docs/SEND_CHECKS.md).
 - **Unreleased**: **Important people.** Pick the people whose email you never want buried, such as family, the school or your doctor. Their email is shown at the top of your inbox with a small **Important** label. Press **Important person** on an opened email, or manage the list in Settings, Important people. See [docs/IMPORTANT_PEOPLE.md](docs/IMPORTANT_PEOPLE.md).
 - **Unreleased**: **Install Enveliq as an app, open the exact email from a notification, and optional new-email alerts.** Reminders by browser push already existed; this makes them useful on a phone.
