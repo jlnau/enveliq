@@ -2,6 +2,10 @@
 
 The small things that make the inbox calm to use.
 
+## When new mail appears
+
+If the mailbox uses AI summaries, a new email is not shown in your inbox until its summary, and the summaries of any attached files, are ready. A small bar at the bottom of the page shows the AI queue (*1 being written, 2 waiting*). If a summary fails after a few tries, the email is shown anyway with **Could not summarise** and a **Try again** button. [The AI guide](AI_SUMMARIES.md#the-ai-queue) has the details.
+
 ## What each email shows
 
 - **Sender, subject and a short summary.** Anything the AI wrote is labelled as such.
@@ -21,7 +25,7 @@ Enveliq never keeps your attachments. It keeps whether an email has files and ho
 
 Open an email and its files are listed under the summary, above the task: one row per file with its name, kind, size and a one-line summary. Press a row to read a longer summary in parts. **View** opens the file itself. Every summary is labelled **Summary written by AI**, and the file itself is not stored.
 
-- A file still being read says **Reading…**. A file that could not be summarised says **Not summarised** and, if the AI could not be reached, offers **Try again**.
+- A file that could not be summarised says **Not summarised** and, if the AI could not be reached, offers **Try again**.
 - PDF (with text), Word (.docx), text and CSV files are read, however long. Scans and pictures are not read yet.
 - Administrators control this under Administration, AI model. See [the AI guide](AI_SUMMARIES.md#summaries-of-attached-files) for the limits and the cloud-service rule.
 

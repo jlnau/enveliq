@@ -98,6 +98,8 @@ jobs:
         run: node scripts/check_attachment_clip.mjs
       - name: Files listed under an email, with their summaries (made-up mail, no server)
         run: node scripts/check_attachment_summaries.mjs
+      - name: AI queue bar at the bottom of the page (made-up mail, no server)
+        run: node scripts/check_ai_queue.mjs
       - name: Row buttons on hover (made-up mail, no server)
         run: node scripts/check_hover_actions.mjs
       - name: Version number in the left panel (simulated server)

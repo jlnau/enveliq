@@ -1,6 +1,8 @@
 """Optional features: feature switches, New email, the address book, Sent (read-only) and attachment previews."""
 from __future__ import annotations
 
+import logging
+import threading
 import time
 from email.utils import parseaddr
 from typing import Annotated, Any
@@ -18,6 +20,8 @@ from .summary_queue import SummaryQueue
 from .render import view as render_view
 from .parse import PREVIEW_IMAGE_TYPES, attachment_bytes, render_original, sending_identities
 from .routes import AccountId, MessageId, fail
+
+log = logging.getLogger("enveliq.queue")
 
 Validity = Annotated[int, PathParam(ge=0, le=2**63 - 1)]
 Uid = Annotated[int, PathParam(ge=1, le=2**63 - 1)]
@@ -163,20 +167,51 @@ def build_extra_router(ctx: Any) -> APIRouter:
 
     # ---------- all emails: the last 14 days of the inbox, and Generate summary ----------
 
+    ready_alerts: dict[str, list[dict[str, Any]]] = {}      # new-mail facts per person, sent together when their line of work is empty
+    ready_lock = threading.Lock()
+
+    def announce(account: dict[str, Any], items: list[dict[str, Any]]) -> None:
+        user = account.get("owner_user_id")
+        if not user:
+            return
+        with ready_lock:
+            ready_alerts.setdefault(user, []).extend(items)
+            if queue.listing(user)["waiting"]:
+                return                                   # more are on the way: one message for the lot
+            out = ready_alerts.pop(user, [])
+        alerts = getattr(ctx.auto_sync, "mail_alerts", None)
+        if out and alerts is not None:
+            try:
+                alerts.send(user, out)
+            except Exception:
+                log.info("new-mail alert failed")
+
     def run_summary(account_id: str, message_id: str) -> None:
+        """Summarise one email and its files. A bad answer or a busy mailbox gets a few more tries; whatever happens, the email is
+        shown at the end (with its summary, or marked that it could not be summarised)."""
         account = vault.get_account(account_id)
         service.refresh_ai(vault)
-        for attempt in range(5):
-            try:
-                service.summarise_one(vault, account, message_id)
-                return
-            except BridgeError as err:
-                if err.code != "busy" or attempt == 4:
-                    raise
-                time.sleep(3)
+        busy = bad = 0
+        try:
+            while True:
+                try:
+                    service.summarise_one(vault, account, message_id, release=False)
+                    return
+                except BridgeError as err:
+                    if err.code == "busy" and busy < 4:
+                        busy += 1
+                        time.sleep(3)
+                    elif err.code in ("ai_bad_reply", "ai_unreachable") and bad < 2 and service.hold_new_mail:
+                        bad += 1
+                        time.sleep(5 * bad)
+                    else:
+                        raise
+        finally:
+            announce(account, service.release(vault, account, [message_id]))
 
     queue = SummaryQueue(run_summary)
     ctx.summary_queue = queue
+    service.on_pending = lambda account, ids: [queue.add(account["owner_user_id"], account["id"], i, auto=True) for i in ids if account.get("owner_user_id")]
     list_limit = SlidingWindowLimiter(max_events=20, window=60)
     queue_limit = SlidingWindowLimiter(max_events=120, window=60)
 

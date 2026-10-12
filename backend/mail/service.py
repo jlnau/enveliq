@@ -102,6 +102,9 @@ class MailService:
         self.on_new: Any = None                   # set by the application: told which emails just arrived (sender and subject), to apply the person's rules
         self.ai_source = "environment" if self.env_ai.enabled else "none"
         self.locks = AccountLocks()
+        self.hold_new_mail = True                 # new mail waits out of the inbox list until its summary and files are ready
+        self.on_pending: Any = None               # set by the application: (account, [message ids]) put in the AI queue
+        self.problems: dict[str, str] = {}        # why the last attempt on an email failed, in plain words (message id -> reason); never email content
 
     def _held(self, account: dict[str, Any]) -> set[tuple[str, str]]:
         try:
@@ -150,7 +153,55 @@ class MailService:
             self.reporter.event("sync_failed", mailbox=account["id"], code="error", duration_ms=(time.monotonic() - started) * 1000)
             raise
         self.reporter.event("sync_completed", mailbox=account["id"], added=result["added"], removed=result["removed"], duration_ms=(time.monotonic() - started) * 1000)
+        self.enqueue_held(vault, account)
         return result
+
+    # ---------- the AI queue: new mail waits for its summary ----------
+
+    def _holds(self, account: dict[str, Any]) -> bool:
+        """Does new mail of this mailbox wait out of the inbox until the AI has read it? Only when there is a queue to do the reading."""
+        return bool(self.hold_new_mail and self.on_pending is not None and self.summariser.enabled and (account.get("settings") or {}).get("ai_summaries"))
+
+    def held_ids(self, vault: Any, account_id: str) -> list[str]:
+        return [m["id"] for m in vault.list_messages(account_id) if m.get("ai_pending") and m.get("state", "unread") == "unread"]
+
+    def enqueue_held(self, vault: Any, account: dict[str, Any]) -> int:
+        """Put every held email of this mailbox in the AI queue (already queued ones stay where they are). If the AI is no longer
+        available, or the mailbox no longer wants summaries, nothing is kept waiting: they are shown as they are."""
+        ids = self.held_ids(vault, account["id"])
+        if not ids:
+            return 0
+        if not self._holds(account):
+            self.release(vault, account, ids)
+            return 0
+        try:
+            self.on_pending(account, ids)
+        except Exception:
+            log.warning("could not queue held mail", exc_info=True)
+            self.release(vault, account, ids)
+            return 0
+        return len(ids)
+
+    def release(self, vault: Any, account: dict[str, Any], ids: list[str]) -> list[dict[str, Any]]:
+        """Show these emails in the inbox now (their summary is ready, or has failed for good). Returns the small facts a new-mail alert needs."""
+        ready: list[dict[str, Any]] = []
+        for message_id in ids:
+            try:
+                current = vault.get_message(account["id"], message_id)
+            except KeyError:
+                continue
+            if not current.get("ai_pending"):
+                continue
+            data = {k: v for k, v in current.items() if k != "id"}
+            data["ai_pending"] = False
+            try:
+                vault.update_message(account["id"], message_id, RetainedMessageCreate(**data).model_dump(mode="python"))
+            except (ValueError, KeyError):
+                continue
+            if current.get("state", "unread") == "unread" and not current.get("from_all_mail"):
+                ready.append({"account_id": account["id"], "id": message_id, "sender_display": current.get("sender_display"),
+                              "subject": current.get("subject"), "priority": current.get("priority")})
+        return ready
 
     def _sync(self, vault: Any, account: dict[str, Any], *, since_days: int = 14, limit: int = 50) -> dict[str, int]:
         """Pull new unread mail from the inbox. Only headers are read; the
@@ -163,6 +214,7 @@ class MailService:
         known_ids: set[str] = set()
         people: list[tuple[str, str]] = []
         arrived: list[dict[str, Any]] = []
+        hold = self._holds(account)
         stored_all = vault.list_messages(account_id)
         for stored in stored_all:
             if stored.get("source_locator"):
@@ -194,6 +246,7 @@ class MailService:
                         received_at=info["received_at"],
                         has_attachments=info["has_attachments"],
                         source_locator=locator(validity, uid),
+                        ai_pending=hold,
                     )
                     new_id = vault.create_message(account_id, body.model_dump(mode="python"))
                     arrived.append({"id": new_id, "sender_address": info["sender_address"], "subject": info["subject"]})
@@ -275,7 +328,7 @@ class MailService:
             self.reporter.event("summaries_completed", summarised=done, failed=failed)
         return {"summarised": done, "failed": failed, "remaining": max(0, len(pending) - done - failed)}
 
-    def _summarise_batch(self, vault: Any, account: dict[str, Any], batch: list[dict[str, Any]]) -> tuple[int, int]:
+    def _summarise_batch(self, vault: Any, account: dict[str, Any], batch: list[dict[str, Any]], release: bool = True) -> tuple[int, int]:
         """Read these emails' text, have the model summarise each, store the summaries and forget the text. Returns (done, failed)."""
         account_id = account["id"]
         target = self.target(account)
@@ -304,11 +357,16 @@ class MailService:
                                 and sum(len(b) for b in raws.values()) + len(raw) <= attach_service.MAX_RAW_TOTAL:
                             raws[m["id"]] = raw             # kept in memory only until its files have been read
                         del raw
-                        texts[m["id"]] = shown["text"][: self.summariser.config.max_chars]
+                        body = shown["text"][: self.summariser.config.max_chars]
+                        if not body.strip():             # an email that is only files: say so, rather than send the model an empty box
+                            n = int(shown.get("file_count") or 0)
+                            body = "(This email has no written text." + (f" It has {n} attached {'file' if n == 1 else 'files'}.)" if n else ")")
+                        texts[m["id"]] = body
                         warnings[m["id"]] = shown.get("warning")
                         counts[m["id"]] = int(shown.get("file_count") or 0)
-                    except BridgeError:
+                    except BridgeError as err:
                         failed += 1
+                        self.problems[m["id"]] = f"The email could not be read from your mailbox ({err.message})."
             done = 0
             for m in batch:
                 if m["id"] not in texts:
@@ -318,12 +376,19 @@ class MailService:
                 provider = self.summariser.config.provider or "custom"
                 cloud = llm_providers.get(provider).cloud
                 try:
-                    result = self.summariser.summarise(m.get("subject") or "", sender, texts.pop(m["id"]), instructions, prompt)
+                    text = texts.pop(m["id"])
+                    try:
+                        result = self.summariser.summarise(m.get("subject") or "", sender, text, instructions, prompt)
+                    except BridgeError as first:
+                        if first.code != "ai_bad_reply":
+                            raise
+                        result = self.summariser.summarise(m.get("subject") or "", sender, text, instructions, prompt)    # a small model sometimes answers badly once
                     self.reporter.event("ai_request", provider=provider, cloud=cloud, ok=True, duration_ms=(time.monotonic() - asked) * 1000)
                 except BridgeError as err:
                     self.reporter.event("ai_request_failed", provider=provider, cloud=cloud, ok=False, code=err.code, duration_ms=(time.monotonic() - asked) * 1000)
                     if err.code == "ai_bad_reply":
                         failed += 1
+                        self.problems[m["id"]] = "The AI model answered, but not in a form Enveliq could use as a summary."
                         continue
                     raise  # model unreachable or refusing: stop, nothing is lost
                 shipment = result.pop("shipment", None)
@@ -339,10 +404,12 @@ class MailService:
                 try:
                     stored = RetainedMessageCreate(**data).model_dump(mode="python")
                     vault.update_message(account_id, m["id"], stored)
-                except (ValueError, KeyError):
+                except (ValueError, KeyError) as err:
                     failed += 1
+                    self.problems[m["id"]] = f"The summary could not be saved ({type(err).__name__})."
                     continue
                 done += 1
+                self.problems.pop(m["id"], None)
                 summarised.add(m["id"])
                 if shipment and self.shipments is not None:
                     try:
@@ -371,6 +438,8 @@ class MailService:
             except Exception as exc:                 # a problem with a file never loses the email's own summary
                 log.warning("attachment summaries failed: %s", type(exc).__name__)
         raws.clear()
+        if release:                              # summary and files are as ready as they will get: show the emails
+            self.release(vault, account, [m["id"] for m in batch])
         return done, failed
 
     # ---------- all emails (recent mail that is not in the unread list) ----------
@@ -423,7 +492,7 @@ class MailService:
                 removed += 1
         return {"added": added, "removed": removed}
 
-    def summarise_one(self, vault: Any, account: dict[str, Any], message_id: str) -> None:
+    def summarise_one(self, vault: Any, account: dict[str, Any], message_id: str, release: bool = True) -> None:
         """Summarise one listed email now (the person pressed Generate summary). Raises BridgeError with a plain reason."""
         if not self.summariser.enabled:
             raise BridgeError("ai_not_configured", "No AI model is set up yet. An administrator can add one under Administration, AI model.")
@@ -434,9 +503,10 @@ class MailService:
             raise BridgeError("not_found", "That email is no longer in your list.") from None
         if not message.get("source_locator"):
             raise BridgeError("not_found", "That email is no longer in your mailbox.")
-        done, _failed = self._summarise_batch(vault, account, [message])
+        self.problems.pop(message_id, None)
+        done, _failed = self._summarise_batch(vault, account, [message], release)
         if not done:
-            raise BridgeError("ai_bad_reply", "The email could not be read or the model gave no usable summary.")
+            raise BridgeError("ai_bad_reply", self.problems.pop(message_id, None) or "The email could not be read or the model gave no usable summary.")
 
     def target(self, account: dict[str, Any]) -> Target:
         return target_for(account, self.microsoft)

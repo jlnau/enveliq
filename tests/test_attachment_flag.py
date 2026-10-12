@@ -75,3 +75,58 @@ def test_no_file_content_is_ever_kept_and_names_only_inside_the_vault(env):
     text = json.dumps(messages(client, aid))
     assert "SGVsbG8" not in text           # the file's content is never kept (its name now is, once the files have been summarised, only inside the vault)
     assert appm.vault.plaintext_scan(["report.pdf", "SGVsbG8="]) == {"report.pdf": False, "SGVsbG8=": False}
+
+
+FILES_ONLY = (b"From: Fay <fay@example.invalid>\r\nTo: me@example.invalid\r\nSubject: Just files\r\nMessage-ID: <o1@example.invalid>\r\nMIME-Version: 1.0\r\n"
+              b'Content-Type: multipart/mixed; boundary="Y"\r\n\r\n--Y\r\nContent-Type: application/pdf; name="a.pdf"\r\nContent-Disposition: attachment; filename="a.pdf"\r\n'
+              b"Content-Transfer-Encoding: base64\r\n\r\nSGVsbG8=\r\n--Y\r\nContent-Type: application/pdf; name=\"b.pdf\"\r\nContent-Disposition: attachment; filename=\"b.pdf\"\r\n"
+              b"Content-Transfer-Encoding: base64\r\n\r\nSGVsbG8=\r\n--Y--\r\n")
+
+
+def test_an_email_that_is_only_files_still_gets_a_summary_and_the_model_is_told_so(env):
+    _, client, bridge, model = env
+    for uid in list(bridge.messages):
+        del bridge.messages[uid]
+    bridge.add(21, FILES_ONLY)
+    aid = account(client, bridge)
+    client.post(f"/api/v1/accounts/{aid}/sync", json={})
+    r = client.post(f"/api/v1/accounts/{aid}/summarise", json={})
+    assert r.status_code == 200 and r.json()["summarised"] == 1 and r.json()["failed"] == 0
+    asked = [q["messages"][-1]["content"] for q in model.requests if "Just files" in q["messages"][-1]["content"]]
+    assert asked and "no written text. It has 2 attached files." in asked[0]
+    assert "a.pdf" not in asked[0]                   # only the number is sent, never a file name
+
+
+def test_one_bad_answer_from_the_model_is_retried_once(tmp_path):
+    from test_llm import GOOD
+    answers = iter(["not json", json.dumps(GOOD)])
+    model = FakeModel(reply=lambda body: next(answers))
+    appm, client, bridge = start(tmp_path, model)
+    try:
+        for uid in list(bridge.messages):
+            del bridge.messages[uid]
+        bridge.add(31, PLAIN)
+        aid = account(client, bridge)
+        client.post(f"/api/v1/accounts/{aid}/sync", json={})
+        r = client.post(f"/api/v1/accounts/{aid}/summarise", json={})
+        assert r.json()["summarised"] == 1 and r.json()["failed"] == 0 and len(model.requests) == 2
+    finally:
+        bridge.close()
+        model.close()
+
+
+def test_when_a_summary_fails_the_reason_is_specific_and_holds_no_email_text(tmp_path):
+    model = FakeModel(reply="I cannot help with that.")
+    appm, client, bridge = start(tmp_path, model)
+    try:
+        for uid in list(bridge.messages):
+            del bridge.messages[uid]
+        bridge.add(41, PLAIN)
+        aid = account(client, bridge)
+        client.post(f"/api/v1/accounts/{aid}/sync", json={})
+        assert client.post(f"/api/v1/accounts/{aid}/summarise", json={}).json()["failed"] == 1
+        reasons = list(appm.mail_service.problems.values())
+        assert len(reasons) == 1 and "answered, but not in a form" in reasons[0] and "Hello" not in reasons[0]
+    finally:
+        bridge.close()
+        model.close()
