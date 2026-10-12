@@ -209,11 +209,11 @@ These rules are architecture requirements, not UI preferences.
 - **Replies.** The inbox is read for headers only (`In-Reply-To`, `References`) over the last 14 days. No inbox text is read or kept.
 - **Who can see it.** Only the signed-in person, over session routes with a rate limit and `Cache-Control: no-store`. Note ids are random and checked against a fixed pattern; another person's note is a 404. Everything shown is plain text.
 
-## Published images (v0.49)
+## Published images
 
-- **When and what.** A job in the GitHub Actions workflow builds and publishes the two images only for a push to `main`, and only after the tests, browser checks, hardened-container check and dependency scan have all passed. Pull requests never publish.
+- **When and what.** A job in the GitHub Actions workflow builds and publishes the two images (`enveliq` and `enveliq-render`) only when the maintainer publishes a **GitHub Release**, and only after the tests, browser checks, hardened-container check and dependency scan have all passed. The release tag must match the version in `backend/version.py`, or the job stops. Merging into `main` and opening pull requests never publish.
 - **Credentials.** The job signs in with the run's own temporary `GITHUB_TOKEN`, with `packages: write` granted to that one job and nowhere else (the workflow default stays read-only). No long-lived publishing secret exists.
-- **Who can pull.** The images are labelled with the repository they come from, so the packages are private like the repository. The server needs a separate, read-only token (`read:packages` only), which is stored in the person's own Arcane settings and never in this repository.
+- **Who can pull.** The images are labelled with the repository they come from. Whether a person can pull them depends on the package's visibility on GitHub. If the packages are public, no sign-in is needed. If a package is private, the server needs a separate, read-only token (`read:packages` only), which is stored in the person's own control-panel settings (for example Arcane) and never in this repository.
 - **Nothing secret in the image.** The images contain only the code that is in the repository; the vault key, setup code and all data come in at run time.
 
 ## Hermes chat (v0.46)

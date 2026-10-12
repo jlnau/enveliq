@@ -70,7 +70,7 @@ def test_a_handled_email_loses_its_snooze_and_cannot_be_snoozed(env):
 def test_nobody_else_can_snooze_my_mail(env):
     appm, client, _, aid = env
     mail = by_state(client, aid)["unread"]["Weekly news"]
-    create_user(client, "beth")
-    other = sign_in(appm, "beth")
+    create_user(client, "cara")
+    other = sign_in(appm, "cara")
     assert snooze(other, aid, mail["id"], time.time() + HOUR).status_code in (403, 404)
     assert by_state(client, aid)["unread"]["Weekly news"]["snoozed_until"] is None

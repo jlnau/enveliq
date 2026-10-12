@@ -158,12 +158,12 @@ def test_secret_fields_never_echo_to_browser(tmp_path: Path):
 def test_non_admin_cannot_modify_global_ai_settings(tmp_path: Path):
     appm = load_app(tmp_path)
     admin, _ = setup_admin(appm)
-    create_user(admin, "beth")
-    beth = sign_in(appm, "beth")
-    r = beth.put("/api/v1/admin/global-settings", json={"llm_provider": "openai", "api_key": "sk-beth-should-not-set"})
+    create_user(admin, "cara")
+    cara = sign_in(appm, "cara")
+    r = cara.put("/api/v1/admin/global-settings", json={"llm_provider": "openai", "api_key": "sk-cara-should-not-set"})
     assert r.status_code == 403
     # And setup cannot be run again to take over the instance.
-    assert beth.post("/api/v1/setup", json={"setup_code": "x" * 10, "passphrase": "p" * 12, "username": "beth2",
+    assert cara.post("/api/v1/setup", json={"setup_code": "x" * 10, "passphrase": "p" * 12, "username": "cara2",
                                             "password": "q" * 12}).status_code == 409
 
 
