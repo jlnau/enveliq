@@ -403,6 +403,12 @@ body.backend .preview-only,body.backend #vaultSetupBtn{display:none!important}
 .note a{color:var(--c-9fdcff)}
 a.user-option{text-decoration:none}
 body.booting #list,body.booting #dueBars,body.booting #shipBars,body.booting #subBars,body.booting #tripBars,body.booting #waitBars,body.booting .sample-banner{display:none!important}
+/* While the page starts up, the frame (menu, buttons, logo) is shown, but nothing personal or sample: no name, greeting,
+   counts, version or list. A calm line appears only if this takes more than a moment. */
+body.booting .badge,body.booting #avatar,body.booting .user-copy,body.booting .top-left,body.booting #brandVer,body.booting #syncAgo,body.booting .filters,body.booting #mTitle{visibility:hidden}
+.boot-note{display:none;margin:18px 2px;color:var(--muted);font-size:14px;opacity:0}
+body.booting .boot-note{display:block;animation:bootnote 0s linear .5s forwards}
+@keyframes bootnote{to{opacity:1}}
 body.backend:not(.mail-ready) #list{visibility:hidden}
 body.backend:not(.mail-ready) #dueBars,body.backend:not(.mail-ready) #shipBars,body.backend:not(.mail-ready) #subBars,body.backend:not(.mail-ready) #tripBars,body.backend:not(.mail-ready) #waitBars,body.backend:not(.mail-ready) .sample-banner{display:none!important}
 .sample-banner{display:none;margin-bottom:12px}
@@ -809,6 +815,7 @@ body.on-ship #waitBars{display:none!important}
 </header>
 
 <section class="content">
+  <div class="boot-note" id="bootNote" role="status">Getting your inbox ready…</div>
   <div class="note warn" id="httpBanner" role="note" hidden><strong>This page is not encrypted.</strong> You opened Enveliq over plain http, so passwords and your sign-in can be read by anyone on the network, and passkeys and Outlook (Microsoft) sign-in will not work. Open it over https instead: <a href="https://enveliq.app/docs/access/" target="_blank" rel="noopener noreferrer">step-by-step guide</a>.</div>
   <div class="note warn sample-banner"><strong>Welcome to Enveliq.</strong> These are sample emails. <a href="/welcome">Set up your mailbox</a> to see your own mail with summaries. The guide takes about five minutes.</div>
   <div id="dueBars" class="duebars" role="region" aria-label="Today's tasks" hidden></div>
@@ -4689,6 +4696,7 @@ $("nmBccBtn").onclick=()=>{$("nmBccRow").hidden=false;nmFields().bcc.input.focus
 $("sentRefresh").onclick=loadSent;
 $("sentBox").onchange=e=>{sentAcct=e.target.value;loadSent()};
 bootBackendMode().finally(()=>document.body.classList.remove("booting"));
+setTimeout(()=>document.body.classList.remove("booting"),6000);   // never leave the page blank if the server is slow to answer
 // ---------- Hermes chat ----------
 // Plain chat with the AI model the administrator set up. It sees only what is typed here. Chats are saved for this person
 // (a list to reopen, rename or delete). The words that come back are shown as text, never as page code. With no server
