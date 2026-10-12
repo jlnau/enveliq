@@ -6,6 +6,21 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 No changes recorded yet.
 
+## v0.83 (2026-10-12)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+### Other changes
+* The paperclip shows on real mail by @jlnau in https://github.com/jlnau/enveliq/pull/53
+* An email waiting out Undo stays in the list, greyed and pulsing by @jlnau in https://github.com/jlnau/enveliq/pull/52
+* A guide for the inbox day to day, and the documentation gaps filled by @jlnau in https://github.com/jlnau/enveliq/pull/54
+* Retake the website and guide pictures by @jlnau in https://github.com/jlnau/enveliq/pull/55
+* Fix Prepare Release to collect merged PR notes automatically by @jlnau in https://github.com/jlnau/enveliq/pull/56
+
+
+**Full Changelog**: https://github.com/jlnau/enveliq/compare/v0.82...v0.83
+
 ## v0.82 (2026-10-12)
 
 **A notice when a new version is out.** Administrators now see a small card in the left panel when a newer Enveliq release has been published, with a link to the release notes on GitHub. Enveliq's server checks about once a day (never the browser); nothing about you is sent. It is on by default and an administrator can switch it off under Administration, Updates. This replaces the earlier statement that Enveliq makes no update check, so the privacy notes, the privacy pop-up and the README now mention it.
