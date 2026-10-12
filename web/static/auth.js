@@ -1589,6 +1589,38 @@ async function savedPage(me) {
       list, title, text, h("div", { class: "row" }, save, cancel)));
   show(...chrome(me, "saved", h("h1", { text: "Signature & saved replies" }), h("section", { class: "section" }, wrap)));
 }
+
+// ---------- mail rules: "archive (or mark reviewed) new mail from this sender" ----------
+async function rulesPage(me) {
+  let state = { rules: [], actions: { archived: "Archive it", reviewed: "Mark it reviewed" }, max: 50 };
+  const list = h("div", { class: "ab-list" });
+  const sender = h("input", { id: "ru_sender", type: "text", placeholder: "name@example.com, or @example.com for a whole website", "aria-label": "Mail from", autocomplete: "off", maxlength: 320 });
+  const words = h("input", { id: "ru_subject", type: "text", placeholder: "Only if the subject has these words (optional)", "aria-label": "Subject contains", autocomplete: "off", maxlength: 80 });
+  const action = h("select", { id: "ru_action", "aria-label": "What to do" });
+  const who = r => r.sender.startsWith("@") ? `everyone at ${r.sender.slice(1)}` : r.sender;
+  function paint() {
+    action.replaceChildren(...Object.entries(state.actions).map(([k, v]) => h("option", { value: k, text: v })));
+    list.replaceChildren(...(state.rules.length ? state.rules.map(r => h("div", { class: "ab-row" },
+      h("span", { class: "ab-who" }, h("strong", { text: `${state.actions[r.action] || r.action}` }), h("small", { text: `New mail from ${who(r)}${r.subject ? ` with \u201c${r.subject}\u201d in the subject` : ""}` })),
+      h("button", { class: "ab-x", type: "button", "aria-label": `Remove the rule for ${who(r)}`, text: "\u00d7", onclick: async () => {
+        try { state = await api(`/me/rules/${r.id}`, { method: "DELETE" }); paint(); toast("Rule removed"); } catch (er) { toast(er.message); }
+      } }))) : [h("p", { class: "hint", text: "No rules yet. Add one below, or open an email in your inbox and press Always archive these." })]));
+  }
+  async function add() {
+    if (!sender.value.trim()) { toast("Type who the email is from first"); sender.focus(); return; }
+    try { state = await api("/me/rules", { method: "POST", body: { sender: sender.value, subject: words.value, action: action.value } }); sender.value = ""; words.value = ""; paint(); toast("Rule added"); }
+    catch (er) { toast(er.message); }
+  }
+  sender.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
+  words.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
+  try { state = await api("/me/rules"); } catch (er) { show(...chrome(me, "rules", h("h1", { text: "Mail rules" }), alertBox("bad", er.message))); return; }
+  paint();
+  const wrap = h("div", {},
+    h("p", { class: "lead", text: "Enveliq can tidy new email for you. Choose who it is from and what to do with it. A rule acts only on new email as it arrives, never on what is already in your inbox, and never on email from your important people. No rule can delete email. Archived email is kept in Enveliq for a few days, as usual, and stays in your mailbox\u2019s Archive folder." }),
+    list,
+    h("div", { class: "sv-block" }, sender, words, action, h("div", { class: "row" }, h("button", { class: "btn primary", type: "button", text: "Add rule", onclick: add }))));
+  show(...chrome(me, "rules", h("h1", { text: "Mail rules" }), h("section", { class: "section" }, wrap)));
+}
 async function aiInstructionsPage(me) {
   const p = await api("/me/preferences");
   const form = h("form", {},
@@ -1763,4 +1795,4 @@ if (!window.ENVELIQ_EMBED) {
   if (!["/login", "/setup", "/unlock", "/terms", "/privacy", "/security", "/welcome"].includes(location.pathname) && !new URLSearchParams(location.search).has("enroll")) sendWatcher();
 }
 
-if (window.ENVELIQ_EMBED) window.EnveliqEmbed = { setMount, api, profilePage, mailboxesPage, accountPage, welcomePage, adminPage, generalPage, aiInstructionsPage, addressBookPage, importantPage, savedPage, remindersPage, syncPage };
+if (window.ENVELIQ_EMBED) window.EnveliqEmbed = { setMount, api, profilePage, mailboxesPage, accountPage, welcomePage, adminPage, generalPage, aiInstructionsPage, addressBookPage, importantPage, savedPage, rulesPage, remindersPage, syncPage };

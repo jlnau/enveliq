@@ -33,6 +33,8 @@ from .mail.task_routes import build_task_router
 from .mail.shipping import ShipBook
 from .mail.important import ImportantPeople
 from .mail.important_routes import build_important_router
+from .mail.rules import Rules
+from .mail.rules_routes import build_rules_router
 from .mail.saved_writing import SavedWriting
 from .mail.saved_writing_routes import build_saved_writing_router
 from .mail.subscriptions import SubBook
@@ -476,6 +478,7 @@ def delete_user_data(user_id: str) -> None:
     writehelpbook.forget_user(user_id)
     importantbook.forget_user(user_id)
     savedbook.forget_user(user_id)
+    rulebook.forget_user(user_id)
     for account in vault.list_accounts():
         if account.get("owner_user_id") == user_id:
             preview_leases.purge_account(account["id"])
@@ -581,6 +584,7 @@ shipbook = ShipBook(vault)
 subbook = SubBook(vault, taskbook.timezone_of)
 importantbook = ImportantPeople(vault)
 savedbook = SavedWriting(vault)
+rulebook = Rules(vault)
 tripbook = TripBook(vault, taskbook.timezone_of)
 messagebook = MessageBook(vault, users)
 writehelpbook = WriteHelpBook(vault)
@@ -628,7 +632,7 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, subscriptions=subbook, important=importantbook, saved_writing=savedbook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, subscriptions=subbook, important=importantbook, saved_writing=savedbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))
@@ -638,9 +642,29 @@ app.include_router(build_shipping_router(mail_ctx))
 app.include_router(build_subscriptions_router(mail_ctx))
 app.include_router(build_important_router(mail_ctx))
 app.include_router(build_saved_writing_router(mail_ctx))
+app.include_router(build_rules_router(mail_ctx))
 app.include_router(build_trips_router(mail_ctx))
 app.include_router(build_waiting_router(mail_ctx))
 app.include_router(build_check_router(mail_ctx))
+def apply_rules(account: dict, arrived: list) -> None:
+    """Mail that has just arrived: apply the owner's rules (archive it, or mark it reviewed). Nothing else about the
+    email is read. Mail from the owner's important people is never touched, and a rule never bins anything."""
+    user = account.get("owner_user_id")
+    if not user:
+        return
+    for item in arrived:
+        rule = rulebook.match(user, item["sender_address"], item["subject"])
+        if not rule or importantbook.contains(user, item["sender_address"]):
+            continue
+        try:
+            resolve_message(account["id"], item["id"], rule["action"], user, by="rule")
+        except BridgeError:
+            break                              # the mailbox cannot be changed right now: leave the rest where they are
+        except KeyError:
+            continue
+
+
+mail_service.on_new = apply_rules
 exporter = build_exporter(
     vault, users, public_account=public_account, public_message=public_message, principal_of=users.principal,
     prefs=lambda uid: review.user_prefs(vault, uid),
@@ -905,34 +929,43 @@ def resolve_message_endpoint(
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Message not found") from exc
 
-    # Archive/bin/mark-read happens at the mail provider first. Only after that
-    # succeeds do we purge local retained metadata/summaries and any temporary
-    # safe preview leases, so a failed action leaves the item in place.
     try:
-        account = vault.get_account(account_id)
-        mail_service.apply_outcome(account, vault.get_message(account_id, message_id), body.outcome)
+        resolve_message(account_id, message_id, body.outcome, session.principal.user_id)
     except BridgeError as err:
         raise HTTPException(status_code=BRIDGE_HTTP_STATUS.get(err.code, 502),
                             detail={"code": err.code, "message": err.message}) from None
+    return Response(status_code=204)
+
+
+def resolve_message(account_id: str, message_id: str, outcome: str, user_id: str, *, by: str | None = None) -> None:
+    """Reviewed, archived, binned or expired, for one message. Shared by the buttons and by a person's rules.
+
+    Archive/bin/mark-read happens at the mail provider first. Only after that succeeds do we purge local
+    retained metadata/summaries and any temporary safe preview leases, so a failed action leaves the item
+    in place. Raises BridgeError when the mailbox cannot be changed, and KeyError when the message is gone."""
+    account = vault.get_account(account_id)
+    mail_service.apply_outcome(account, vault.get_message(account_id, message_id), outcome)
     preview_leases.purge_message(account_id, message_id)
-    kept = review.kept_state_for(vault, session.principal.user_id, body.outcome)
-    if body.outcome != "expired":
-        taskbook.close_message(session.principal.user_id, account_id, message_id, "handled")
+    kept = review.kept_state_for(vault, user_id, outcome)
+    if outcome != "expired":
+        taskbook.close_message(user_id, account_id, message_id, "handled")
     if kept:
         # The mailbox has been changed already. Keep a trimmed card for a few days.
         vault.update_message(account_id, message_id, review.keep_record(vault.get_message(account_id, message_id), kept))
     else:
         vault.delete_message(account_id, message_id)
-    vault.audit({
+    event = {
         "event": "message_resolved",
-        "outcome": body.outcome,
+        "outcome": outcome,
         "kept": bool(kept),
-        "actor_user_id": session.principal.user_id,
+        "actor_user_id": user_id,
         "account_id": account_id,
         "message_id": message_id,
         "at": time.time(),
-    })
-    return Response(status_code=204)
+    }
+    if by:
+        event["by"] = by
+    vault.audit(event)
 
 
 # ---------- Administration ----------

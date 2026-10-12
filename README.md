@@ -130,7 +130,7 @@ The AI you choose reads an email in order to write its summary. With a cloud AI 
 <details>
 <summary><b>Can it send or delete my email?</b></summary>
 
-It can send a reply, but only when you press Send. It never sends, deletes or changes anything on its own, and the AI cannot do any of those things.
+It can send a reply, but only when you press Send. It never sends or deletes anything on its own, and the AI cannot do either. The one thing it does by itself is a [rule you set yourself](docs/MAIL_RULES.md), such as archiving new email from one sender, and a rule can never delete.
 </details>
 
 <details>
@@ -177,13 +177,15 @@ All the guides are listed, by what you want to do, in the [**documentation index
 [Undo](docs/UNDO.md) ·
 [Checks before sending](docs/SEND_CHECKS.md) ·
 [Important people](docs/IMPORTANT_PEOPLE.md) ·
-[Signature and saved replies](docs/SAVED_REPLIES.md).
+[Signature and saved replies](docs/SAVED_REPLIES.md) ·
+[Mail rules](docs/MAIL_RULES.md).
 
 ## Version history
 
 <details>
 <summary><b>What changed recently</b> (latest five versions)</summary>
 
+- **Unreleased**: **Mail rules.** Tell Enveliq to archive, or mark as reviewed, new email from a sender you choose, such as a shop's weekly offers. Press **Always archive these** on an opened email, or add a rule in Settings, Mail rules. A rule only acts on new email as it arrives, never on mail already in your inbox or from your important people, and no rule can delete anything. See [docs/MAIL_RULES.md](docs/MAIL_RULES.md).
 - **Unreleased**: **"Keep me signed in on this device".** An administrator can let people stay signed in for up to 14 days with a tick-box on the sign-in page (off by default; needs a vault key file). Restarting Enveliq still signs everyone out.
 
 - **Unreleased**: **No flash of sample data when you refresh.** Pressing refresh no longer shows the sample page (a sample name, counts and version) for a split second before your own page appears.

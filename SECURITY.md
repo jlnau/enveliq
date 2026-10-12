@@ -553,3 +553,14 @@ A person's own signature and short pieces of text to reuse.
 - **What the server does with it.** Nothing. The page puts the signature and chosen replies into the message box; what is sent is exactly what the person sees in the box and presses Send on, through the same checks as every message. The AI is never given it unless the person asks for writing help on text that contains it.
 - **Your data.** It is part of Export my data and is forgotten when the person is removed.
 - Requests are validated (`extra: forbid`, length limits, id pattern), control characters are removed, requests are rate limited and `no-store`.
+
+## Mail rules
+
+Rules are the first thing Enveliq does to a mailbox by itself, so they are deliberately small.
+
+- **What a rule can do.** Archive, or mark as reviewed. Nothing else. No rule can bin, delete, send or forward anything.
+- **What it looks at.** Only the sender address and subject of mail that has just arrived, the same two fields Enveliq already reads to build its list. It never reads an email body.
+- **What it never touches.** Mail already in the inbox (a rule is applied only to mail that arrives after the rule exists), and mail from the person's own important people. A rule belongs to one person and applies only to that person's mailboxes.
+- **How it acts.** Through the same code as the Reviewed and Archive buttons: the mailbox is changed first, and only if that works is a card kept for a few days (the person's usual setting). If the mailbox cannot be changed the email simply stays in the inbox. The audit log notes `by: rule`.
+- **What is kept.** Senders and subject words the person chose, one encrypted record per person (`rules:<user id>`), at most 50. Part of Export my data; forgotten when the person is removed. Only that person can read or change them.
+- Requests are validated (`extra: forbid`, address and website patterns, length limits, id pattern), rate limited and `no-store`.

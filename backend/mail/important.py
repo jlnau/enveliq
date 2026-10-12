@@ -52,6 +52,10 @@ class ImportantPeople:
             self._save(user_id, people)
         return self.listing(user_id)
 
+    def contains(self, user_id: str, address: Any) -> bool:
+        addr = clean_address(address)
+        return bool(addr) and addr in self._load(user_id)
+
     def remove(self, user_id: str, address: str) -> bool:
         addr = clean_address(address)
         with _LOCK:

@@ -28,9 +28,10 @@ It is free and takes about five minutes: see `MICROSOFT.md` for every step.
 
 Same as for Bridge: it reads only the sender, subject and date of unread mail,
 fetches the full email only when you press View email (plain text, never saved),
-and changes your mailbox only when you press Reviewed, Archive or Bin. Archive
-moves to the folder the service marks as archive (Gmail: All Mail) and Bin to its
-trash folder.
+and changes your mailbox only when you press Reviewed, Archive or Bin, or when a
+[rule you made](MAIL_RULES.md) archives or marks as reviewed new mail from a sender you
+chose. Archive moves to the folder the service marks as archive (Gmail: All Mail) and
+Bin to its trash folder. No rule can bin anything.
 
 ## Administrator notes
 
