@@ -122,7 +122,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   const again = await open(server, { ctxObj: context });
   await again.page.waitForSelector("#sumBar .sumrow, article.mail.extra");
   check("after a refresh the choice to show All emails is remembered", (await again.page.locator("article.mail").count()) === 4);
-  await again.page.waitForFunction(() => /Summar(y|ies)/i.test(document.body.innerText));
+  await again.page.waitForFunction(() => /AI queue|Summar(y|ies)/i.test(document.body.innerText));
   check("after a refresh the line is still there (or has finished)", server.calls.some((c) => c[0] === "queue"));
   // The pretend model finishes the first, then the second; the page notices on its own
   server.step();
