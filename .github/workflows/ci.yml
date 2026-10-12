@@ -86,6 +86,10 @@ jobs:
         run: node scripts/check_snooze.mjs
       - name: Search everywhere (simulated server)
         run: node scripts/check_search_everywhere.mjs
+      - name: A blank install shows no sample mail (simulated server)
+        run: node scripts/check_blank_install.mjs
+      - name: Calm mode (made-up mail, no server)
+        run: node scripts/check_calm_mode.mjs
       - name: Backup and restore, Export my data (simulated server)
         run: node scripts/check_backup.mjs
       - name: Microsoft sign-in help (simulated server)
@@ -162,8 +166,12 @@ jobs:
           node-version: "22"
       - run: npm install --no-package-lock --prefix website
       - run: node website/build.mjs
-      - name: Every link and picture resolves, no scripts
+      - name: Every link and picture resolves, only the search runs a script
         run: node website/check.mjs
+      - run: npm install --no-save --no-package-lock playwright@1.56.0
+      - run: npx playwright install ${{ vars.RUNNER_LABELS == '' && '--with-deps' || '' }} chromium
+      - name: Search the guides (browser)
+        run: node scripts/check_site_search.mjs
 
   docker:
     name: Docker image
