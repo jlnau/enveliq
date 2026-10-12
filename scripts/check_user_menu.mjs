@@ -72,7 +72,7 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   const server = makeServer("admin");
   const { page, errors, csp } = await open(server);
   check("the page names its tab icon", (await page.locator('head link[rel="icon"]').getAttribute("href")) === "/brand/enveliq-icon-128.webp");
-  check("the sidebar footer keeps only Agent", (await page.locator(".side-foot .nav").allInnerTexts()).join("|").trim() === "Agent");
+  check("the sidebar footer keeps only Calm mode and Agent", (await page.locator(".side-foot .nav").allInnerTexts()).map((t) => t.trim()).join("|") === "Calm mode|Agent");
   check("the menu is closed to begin with", await page.locator("#userMenu").isHidden());
   await page.click("#userPill");
   await shot(page, "menu");
