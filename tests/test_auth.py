@@ -591,3 +591,13 @@ def test_usable_setup_code_rules(appm):
     assert appm.usable_setup_code("short-code") == ""
     assert appm.usable_setup_code("please-CHANGE-ME-now-1234567890") == ""
     assert appm.usable_setup_code("  9f2c1e7a4b6d03885c2e1f77a9b04d6e  ") == "9f2c1e7a4b6d03885c2e1f77a9b04d6e"
+
+
+def test_the_authenticator_qr_code_is_an_svg_a_browser_can_show_as_a_picture():
+    """The page shows the code as an <img> with a data: address. A browser only draws an SVG there when it names its namespace."""
+    import xml.etree.ElementTree as ET
+    from backend.auth import totp
+    svg = totp.qr_svg(totp.provisioning_uri("JBSWY3DPEHPK3PXP", "sam@example.invalid"))
+    root = ET.fromstring(svg)
+    assert root.tag == "{http://www.w3.org/2000/svg}svg"
+    assert 'xmlns="http://www.w3.org/2000/svg"' in svg and not svg.lstrip().startswith("<?xml")
