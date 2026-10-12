@@ -22,7 +22,7 @@ _ANGLE_ID = re.compile(r"<[^<>\s]{1,994}>")
 _MAX_TEXT = 200_000
 
 HEADER_FIELDS = (
-    "FROM REPLY-TO TO CC DELIVERED-TO X-ORIGINAL-TO SUBJECT DATE MESSAGE-ID REFERENCES X-ENVELIQ-REMINDER LIST-UNSUBSCRIBE AUTHENTICATION-RESULTS"
+    "FROM REPLY-TO TO CC DELIVERED-TO X-ORIGINAL-TO SUBJECT DATE MESSAGE-ID REFERENCES CONTENT-TYPE X-ENVELIQ-REMINDER LIST-UNSUBSCRIBE AUTHENTICATION-RESULTS"
 )
 
 # Domains used by alias / relay services. A reply to one of these goes to the
@@ -121,6 +121,26 @@ def received_at_of(raw: bytes) -> float | None:
     return _received_at(parse_headers(raw))
 
 
+def likely_has_files(msg: Message) -> bool:
+    """A first guess from the headers alone, before the whole email has been read: a "mixed" email, or one that is a file itself,
+    usually carries something. It can be wrong (some newsletters are "mixed" too); the exact count replaces it later."""
+    try:
+        ctype = msg.get_content_type()
+    except Exception:
+        return False
+    return ctype == "multipart/mixed" or ctype.startswith(("application/", "image/", "audio/", "video/"))
+
+
+def file_count(msg: Message) -> int:
+    """How many attached files an email has, not counting pictures that are part of the text. Only a number is kept, never a name or content."""
+    n = 0
+    for part in list_parts(msg):
+        inline = bool(part.get("Content-ID")) and (part.get_content_disposition() or "inline") != "attachment"
+        if not inline:
+            n += 1
+    return n
+
+
 def summarise_headers(raw: bytes, identities: list[str]) -> dict[str, Any] | None:
     """What Enveliq keeps about an incoming email: who, what subject, and what
     a reply will need. Returns None when there is nobody to reply to *and*
@@ -175,6 +195,7 @@ def summarise_headers(raw: bytes, identities: list[str]) -> dict[str, Any] | Non
         "reminder_mark": clean(msg.get("X-Enveliq-Reminder"), 80) or None,
         "unsubscribe": unsub.from_header(msg),
         "scam_warning": scamcheck.from_headers(msg),
+        "has_attachments": likely_has_files(msg),
     }
 
 
@@ -321,6 +342,7 @@ def render_original(raw: bytes) -> dict[str, Any]:
         "text": text[:_MAX_TEXT],
         "truncated": truncated,
         "attachments": attachments,
+        "file_count": file_count(msg),
         "remote_images": remote_image_count(msg),
         "unsubscribe": unsub.find(msg),
         "links": links.find(msg),

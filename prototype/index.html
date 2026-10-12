@@ -1559,6 +1559,8 @@ if(isPlainHttp(location.protocol,location.hostname)){const b=document.getElement
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
 
 function toast(t,ms=1500){$("toast").textContent=t;$("toast").classList.add("show");setTimeout(()=>$("toast").classList.remove("show"),ms)}
+const fileN=m=>m.attachments.length||(m.hasFiles?(m.fileCount||1):0);          // real mail keeps only a count, never the files themselves
+const clipWords=m=>{const n=fileN(m),sure=m.attachments.length||m.fileCount!=null;return n===1?(sure?"Has an attachment":"May have an attachment"):`Has ${n} attachments`};
 function userMessages(){return data.filter(m=>m.owner===currentUser.id&&!m._pending)}
 let sortMode="newest",mailboxSel="";
 // ---- View options (saved in this browser) ----
@@ -1591,7 +1593,7 @@ function visible(m){
   if(filter==="action"&&!(m.status==="inbox"&&m.action))return false;
   if(filter==="need"&&!(m.status==="inbox"&&(m.action||m.priority==="high")))return false;
   if(filter==="high"&&!(m.status==="inbox"&&m.priority==="high"))return false;
-  if(filter==="attachments"&&!(m.status==="inbox"&&m.attachments.length))return false;
+  if(filter==="attachments"&&!(m.status==="inbox"&&fileN(m)))return false;
   if(filter==="reviewed"&&m.status!=="reviewed")return false;
   if(filter==="archived"&&m.status!=="archived")return false;
   if(filter==="snoozed"&&m.status!=="inbox")return false;
@@ -2348,7 +2350,7 @@ function render(){
   {const mb=$("msgBadge");if(mb){const n=msgOn()?msgSum.unread:0;mb.textContent=n;mb.hidden=!n;mb.classList.toggle("hot",n>0)}}
   {const ns=waitOn()?(waitData.notes||[]).filter(n=>n.state==="waiting"):[];const wb=$("waitBadge");if(wb){wb.textContent=ns.length;wb.hidden=!ns.length;wb.classList.toggle("hot",ns.some(n=>n.due))}}
   const asleep=mine.filter(isSnoozed);{const sn=$("snoozeNav"),sb=$("snoozeBadge");sn.hidden=!asleep.length&&filter!=="snoozed";sb.textContent=asleep.length;sb.hidden=!asleep.length}
-  for(const [id,n] of [["allBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)).length],["actionBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)&&m.action).length],["attachBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)&&m.attachments.length).length],["taskBadge",openTasks().length]]){const el=$(id);el.textContent=n;el.hidden=n===0}
+  for(const [id,n] of [["allBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)).length],["actionBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)&&m.action).length],["attachBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)&&fileN(m)).length],["taskBadge",openTasks().length]]){const el=$(id);el.textContent=n;el.hidden=n===0}
   $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent");
   document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",filter==="all"));{const fb=$("filterBy"),pick=["action","need","high","attachments"].includes(filter)?filter:"";fb.value=pick;fb.classList.toggle("active",!!pick)}
   $("selectedCount").textContent=selected.size;$("bulk").classList.toggle("show",selected.size>1);
@@ -2384,7 +2386,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
     const lead=m.kept?"<span></span>":`<input class="check" type="checkbox" data-select="${esc(m.id)}" aria-label="Select ${esc(m.subject)}" ${esc(selected.has(m.id)?"checked":"")}>`;
     const quick=m.kept?"<span></span>":`<span class="qpair"><button class="action reviewed qic" data-id="${esc(m.id)}" data-status="reviewed" aria-label="Mark reviewed" title="Mark reviewed">${ICON_OK}</button><button class="action archive qic" data-id="${esc(m.id)}" data-status="archived" aria-label="Archive" title="Archive">${ICON_ARCH}</button><button class="action trash qic" data-id="${esc(m.id)}" data-status="trashed" aria-label="Bin" title="Bin">${ICON_BIN}</button></span>`;
     const category=m.action?"Needs action":m.priority==="high"?"High priority":"Information";
-    const attCount=m.attachments.length?`${m.attachments.length} ${m.attachments.length===1?"file":"files"}`:"None";
+    const attCount=fileN(m)?`${fileN(m)} ${fileN(m)===1?"file":"files"}`:"None";
     const replyBtn=(m.replyTo?`<button class="subtle" data-reply="${esc(m.id)}">${ICON_REPLY}Reply</button>`:"")+(m.kept?"":isSnoozed(m)?`<button class="subtle" data-unsnooze="${esc(m.id)}">${ICON_SNOOZE}Wake now</button>`:`<button class="subtle" data-snooze="${esc(m.id)}" aria-haspopup="menu">${ICON_SNOOZE}Snooze</button>`)||"<span></span>";
     const detail=m.kept
       ?`<div class="qdetail"><div class="qfrom"><span class="addr">&lt;${esc(m.address)}&gt;</span></div><div class="qsummary">${esc(m.summary)}</div>${taskHtml}${attachmentHtml}<div class="kept-note">${m.status==="archived"?"Archived":"Marked reviewed"} in your mailbox. Kept here until ${esc(m.keptUntil)}.${m.replied?` You replied ${esc(m.repliedAt||"just now")}.`:""}</div><div class="actions">${m.replyTo?`<button class="action reply" data-reply="${esc(m.id)}">↩ Reply</button>`:""}<button class="action trash" data-id="${esc(m.id)}" data-status="expired">Remove from this list</button></div></div>`
@@ -2397,7 +2399,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
       ${lead}
       <div class="sender">${flag}${esc(m.sender)}</div>
       <div class="qmain">${isImp(m)?'<span class="imp-pill" title="You marked this person as important">&#9733; Important</span>':""}${m.scam?'<span class="scam-pill" title="Something about this email looks odd. Open it to see what.">Be careful</span>':""}<span class="subject">${esc(m.subject)}</span></div>
-      <div class="time">${esc(m.time)}${m.attachments.length?`<span class="clip" role="img" aria-label="${m.attachments.length===1?"Has an attachment":"Has "+m.attachments.length+" attachments"}" title="${m.attachments.length===1?"Has an attachment":m.attachments.length+" attachments"}">${ICON_CLIP}</span>`:""}${m.replied?'<span class="replied">↩ Replied</span>':""}${isSnoozed(m)?`<span class="snz">Snoozed until ${esc(snoozeWhen(m.snoozeUntil))}</span>`:wokeBack(m)?'<span class="snz back">↺ Back from snooze</span>':""}</div>
+      <div class="time">${esc(m.time)}${fileN(m)?`<span class="clip" role="img" aria-label="${esc(clipWords(m))}" title="${esc(clipWords(m))}">${ICON_CLIP}</span>`:""}${m.replied?'<span class="replied">↩ Replied</span>':""}${isSnoozed(m)?`<span class="snz">Snoozed until ${esc(snoozeWhen(m.snoozeUntil))}</span>`:wokeBack(m)?'<span class="snz back">↺ Back from snooze</span>':""}</div>
       ${open?"<span></span>":quick}
       ${tog}
     </div>${open?detail:""}</article>`;
@@ -3932,7 +3934,7 @@ async function loadRealMail(me){
       items.push({id:0,owner:me.id,account:a.display_name,sender:r.sender_display||r.sender_address||"Unknown sender",address:r.sender_address||"",
         subject:r.subject,time:realTime(r.received_at),date:r.received_at?new Date(r.received_at*1000).toLocaleString():"",received:r.received_at||0,
         summary:r.summary,priority:r.priority||"normal",category:r.category||"Email",action:!!r.action_required,status:r.state==="reviewed"||r.state==="archived"?r.state:"inbox",kept:r.state==="reviewed"||r.state==="archived",keptUntil:r.resolved_at?new Date((r.resolved_at+realPrefs.keep_days*86400)*1000).toLocaleDateString(undefined,{day:"numeric",month:"short"}):"",
-        task:r.suggested_task&&r.suggested_task.title?{title:r.suggested_task.title,due:r.suggested_task.due||"",detail:r.suggested_task.detail||""}:null,attachments:[],
+        task:r.suggested_task&&r.suggested_task.title?{title:r.suggested_task.title,due:r.suggested_task.due||"",detail:r.suggested_task.detail||""}:null,attachments:[],hasFiles:!!r.has_attachments,fileCount:Number.isInteger(r.attachment_count)?r.attachment_count:null,
         replyTo:ctx.reply_to||null,deliveredTo:ctx.delivered_to||null,viaAlias:ctx.via_alias||null,unsub:r.unsubscribe||null,scam:r.scam_warning||null,real:{accountId:a.id,messageId:r.id},extra:!!r.from_all_mail,ungen:String(r.summary||"").startsWith("Not summarised yet"),snoozeUntil:r.snoozed_until?r.snoozed_until*1000:0,replied:!!r.replied_at,repliedAt:r.replied_at?realTime(r.replied_at):""});
     }
   }

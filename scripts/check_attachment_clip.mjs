@@ -43,5 +43,27 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 760 }], ["phone", {
   check(name + ": no script errors", errors.length === 0);
   await p.close();
 }
+// Real mail keeps only a count (never the files): the clip, its words, the filter and the badge all follow it
+{
+  const p = await b.newPage({ viewport: { width: 1180, height: 760 } });
+  await p.goto(url); await p.waitForTimeout(600);
+  await p.evaluate(() => {
+    const base = data.find((x) => x.status === "inbox" && x.owner === currentUser.id);
+    data.forEach((m) => { m.attachments = []; });
+    data.push({ ...base, id: 9101, subject: "Guess only", attachments: [], hasFiles: true, fileCount: null });
+    data.push({ ...base, id: 9102, subject: "Counted three", attachments: [], hasFiles: true, fileCount: 3 });
+    data.push({ ...base, id: 9103, subject: "Counted none", attachments: [], hasFiles: false, fileCount: 0 });
+    render();
+  });
+  const row = (t) => p.locator("article.mail", { hasText: t });
+  check("real mail: a count shows the paperclip", (await row("Counted three").locator(".clip").getAttribute("aria-label")) === "Has 3 attachments");
+  check("real mail: a guess from the headers says it only may have one", (await row("Guess only").locator(".clip").getAttribute("aria-label")) === "May have an attachment");
+  check("real mail: no files, no paperclip", (await row("Counted none").locator(".clip").count()) === 0);
+  check("real mail: the Attachments badge counts them", (await p.locator("#attachBadge").innerText()) === "2");
+  await p.evaluate(() => { filter = "attachments"; render(); });
+  check("real mail: the Attachments filter lists them", (await p.locator("article.mail").count()) === 2);
+  if (shots) await p.screenshot({ path: path.join(shots, "attachment-clip-real-mail.png") });
+  await p.close();
+}
 await b.close(); srv.close();
 process.exit(failed ? 1 : 0);
