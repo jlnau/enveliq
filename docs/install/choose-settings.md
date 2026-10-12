@@ -19,8 +19,8 @@ Pick **one** row. If you are not sure, pick **A**.
 | | Who can open it | What you put | The other two lines |
 |---|---|---|---|
 | **A. Only this computer** | Just you, on the computer that runs Enveliq. The safest. | `http://localhost:8765` | Leave both as they are. |
-| **B. My home Wi-Fi** | Any phone or computer on your home network. | `http://` + your computer's number + `:8765`, for example `http://192.168.1.50:8765`. [How to find the number.](#how-to-find-your-computers-number) | Setting 3 = `1`, and change the port line (below). |
-| **C. Anywhere, privately (recommended for families)** | Only your own devices, even away from home, with a padlock (https). Needs a free Tailscale account. | The `https://...ts.net` address Tailscale gives you. | Leave setting 3 as `""`. Keep the port line as it is. |
+| **B. My home Wi-Fi** | Any phone or computer on your home network. | `http://` + your computer's number + `:8765`, for example `http://192.168.1.50:8765`. [How to find the number.](#how-to-find-your-computers-number) | Setting 3 = `1`. |
+| **C. Anywhere, privately (recommended for families)** | Only your own devices, even away from home, with a padlock (https). Needs a free Tailscale account. | The `https://...ts.net` address Tailscale gives you. | Leave setting 3 as `""`. |
 | **D. My own web address** | Anyone you allow, with a padlock (https). Needs a domain name and a reverse proxy. | `https://enveliq.example.com` | Leave setting 3 as `""`. |
 
 For **C** and **D**, follow [How should I open Enveliq?](../ACCESS.md). It has step-by-step guides for Tailscale, Nginx Proxy Manager, Cloudflare Tunnel, Caddy, Traefik and Nginx.
@@ -65,12 +65,12 @@ In the file this is `ENVELIQ_ALLOW_INSECURE_PUBLIC_URL`.
 
 ## The port line
 
-In the file this is the line `- "127.0.0.1:8765:8765"`.
+In the file this is the line `- "8765:8765"`. You do not need to change it.
 
-- Address **A**, **C** (Tailscale on the same computer): leave it as it is. Only that computer can reach Enveliq's door.
-- Address **B**, or a reverse proxy on another machine: change it to `- "8765:8765"`. Now other devices on your network can reach it.
+- It lets other devices on your network open Enveliq (address **B**, or a reverse proxy on another machine). Address **A** and **C** work with it too.
+- To let **only the computer Enveliq runs on** open it, change it to `- "127.0.0.1:8765:8765"`.
 
-If you pick B, **do not** forward port 8765 on your router. That would open it to the whole internet.
+Whichever you choose, **do not** forward port 8765 on your router. That would open it to the whole internet.
 
 ## Optional: let Enveliq unlock itself after a restart
 

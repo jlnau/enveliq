@@ -48,6 +48,7 @@ const NAV = [
     ["docs/SSO.md", "Single sign-on"],
     ["docs/VAULT_KEY.md", "Unlock by itself"],
     ["docs/BACKUP.md", "Backup and restore"],
+    ["docs/ENVIRONMENT.md", "Settings reference"],
     ["docs/UPDATES.md", "New versions"],
     ["docs/DEMO.md", "The demo"],
     ["docs/UNDO.md", "Undo"],
@@ -179,7 +180,9 @@ function render(rel) {
       },
     },
   });
-  let html = marked.parse(read(rel));
+  // `<!-- include: path -->` puts that repo file, as a code block, in the page, so a guide can show the real install file and never drift from it.
+  const source = read(rel).replace(/<!-- include: (\S+) -->/g, (_, f) => "```" + (f.endsWith(".yml") ? "yaml" : "") + "\n" + read(f).replace(/\s+$/, "") + "\n```");
+  let html = marked.parse(source);
   html = html.replace(/<table>/g, '<div class="tbl"><table>').replace(/<\/table>/g, "</table></div>");
   const para = html.match(/<p>([\s\S]*?)<\/p>/);
   return { html, title: SHORT_TITLE[rel] || title || rel, description: para ? tidy(stripTags(para[1]).replace(/\s+/g, " ")) : "" };
