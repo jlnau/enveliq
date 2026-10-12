@@ -1,0 +1,97 @@
+name: Prepare Release
+
+# Run manually from Actions after all feature PRs are merged.
+# This creates a reviewable PR; it never merges, tags, publishes, or deploys.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Next version without v, e.g. 0.83'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: prepare-release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Create release preparation PR
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out latest main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Validate version and branch availability
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+            echo "::error::Enter a version such as 0.83 (without the v)."
+            exit 1
+          fi
+          branch="release/v${RELEASE_VERSION}"
+          if git ls-remote --exit-code --heads origin "refs/heads/$branch" >/dev/null 2>&1; then
+            echo "::error::Branch $branch already exists. Review its PR before trying again."
+            exit 1
+          fi
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v$RELEASE_VERSION" >/dev/null 2>&1; then
+            echo "::error::Tag v$RELEASE_VERSION already exists; do not prepare a duplicate release."
+            exit 1
+          fi
+          echo "RELEASE_BRANCH=$branch" >> "$GITHUB_ENV"
+
+      - name: Prepare version, README, and changelog
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          python3 scripts/prepare_release.py "$RELEASE_VERSION"
+          git diff --check
+          git diff -- backend/version.py README.md docs/CHANGELOG.md
+
+      - name: Commit and push preparation branch
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$RELEASE_BRANCH"
+          git add -- backend/version.py README.md docs/CHANGELOG.md
+          git diff --cached --quiet && { echo "::error::No release preparation changes."; exit 1; }
+          git commit -m "Prepare Enveliq v$RELEASE_VERSION release"
+          git push --set-upstream origin "$RELEASE_BRANCH"
+
+      - name: Open release preparation pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          gh pr create \
+            --base main \
+            --head "$RELEASE_BRANCH" \
+            --title "Prepare Enveliq v$RELEASE_VERSION release" \
+            --body "Automatically prepared with scripts/prepare_release.py. Changes only backend/version.py, README.md, and docs/CHANGELOG.md. Review all three files, wait for the five required checks, and merge this PR before creating a GitHub Release with tag v$RELEASE_VERSION. This workflow does not publish anything."
+          echo "Release preparation PR created. Merge only after checks pass." >> "$GITHUB_STEP_SUMMARY"
+
+      # Events made using GITHUB_TOKEN do not automatically start normal push/PR workflows.
+      # Explicitly dispatch the existing Checks workflow on this new branch instead.
+      - name: Trigger required checks on preparation commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run ci.yml --ref "$RELEASE_BRANCH"
+          echo "Dispatched Checks on $RELEASE_BRANCH." >> "$GITHUB_STEP_SUMMARY"
