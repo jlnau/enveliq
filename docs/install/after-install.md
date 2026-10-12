@@ -27,6 +27,8 @@ Administrators must use a second step when they sign in. This stops anyone who g
 
 If you opened Enveliq with an `https://` address you can add a **passkey** (fingerprint or face unlock) as well.
 
+Want to stay signed in on your own phone or computer? An administrator can offer **Keep me signed in on this device** under Administration, Sign-in rules. It needs the [vault key](../VAULT_KEY.md). See [Your inbox, day to day](../INBOX.md#staying-signed-in).
+
 ## Step 4. Connect your email
 
 After sign-in, Enveliq's **Welcome** page walks you through three short steps. Step 1 is connecting your email. Pick your provider and follow the instructions on screen. For more detail:
