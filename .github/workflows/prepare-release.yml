@@ -61,6 +61,8 @@ jobs:
           git diff -- backend/version.py README.md docs/CHANGELOG.md
 
       - name: Commit and push preparation branch
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -68,7 +70,7 @@ jobs:
           git switch -c "$RELEASE_BRANCH"
           git add -- backend/version.py README.md docs/CHANGELOG.md
           git diff --cached --quiet && { echo "::error::No release preparation changes."; exit 1; }
-          git commit -m "Prepare Enveliq v${{ inputs.version }} release"
+          git commit -m "Prepare Enveliq v$RELEASE_VERSION release"
           git push --set-upstream origin "$RELEASE_BRANCH"
 
       - name: Open release preparation pull request
