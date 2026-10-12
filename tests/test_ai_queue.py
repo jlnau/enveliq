@@ -121,7 +121,7 @@ def test_a_summary_that_keeps_failing_still_shows_the_email_and_says_why(tmp_pat
 def test_handled_mail_is_not_hidden(held):
     appm, client, bridge, model = held
     aid = account(client, bridge)
-    body = RetainedMessageCreate(subject="Archived by a rule", summary="Not summarised yet.", ai_pending=True, state="archived")
+    body = RetainedMessageCreate(subject="Archived by a rule", summary="Not summarised yet.", ai_pending=True, state="archived", resolved_at=time.time())
     appm.vault.create_message(aid, body.model_dump(mode="python"))
     assert [m["subject"] for m in listing(client, aid)] == ["Archived by a rule"]
 
