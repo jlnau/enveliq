@@ -3,15 +3,18 @@
 Microsoft no longer lets other apps sign in to a mailbox with a password or an
 app password. Instead the person signs in on **Microsoft's own page**, and Microsoft
 hands Enveliq a token. That needs a small **app registration**. Enveliq does not ship
-one and keeps nobody else's: you make your own, once, in a few minutes. It is free.
+one and keeps nobody else's: you make your own, once, in a few minutes. The registration
+itself is free, but Microsoft now needs it to live in a **directory** (see Part 1).
 
 The same registration serves every mailbox and every person on your Enveliq: personal
 Outlook.com and Hotmail addresses, and work or school (Microsoft 365) addresses.
 
 ## What you need
 
-* A Microsoft account to make the registration with (any: a personal Outlook.com or
-  Hotmail address works). No subscription, no card.
+* A Microsoft account to make the registration with. A personal Outlook.com or Hotmail address
+  works, but Microsoft no longer lets a personal account register an app on its own: it needs a
+  **directory** (a free Microsoft Entra tenant). Part 1 shows how to get one. Microsoft may ask
+  for a card to confirm who you are when you sign up. Read what Microsoft's sign-up page says about charges before you continue.
 * Enveliq reachable at the https address in `ENVELIQ_PUBLIC_URL` (or `http://localhost`).
   Microsoft sends the *person's own browser* back to that address, so an address that
   only works on your home network is fine.
@@ -20,7 +23,11 @@ Outlook.com and Hotmail addresses, and work or school (Microsoft 365) addresses.
 ## Part 1: make the registration at Microsoft
 
 1. Open **App registrations**: <https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade>
-   and sign in. If Azure offers to create a free directory for a personal account, accept.
+   and sign in.
+   * **If you see "The ability to create applications outside of a directory has been
+     deprecated"**, your account has no directory yet. Press **Signing up for Azure** in that
+     message, finish the sign-up (this creates a *Default Directory* for you), then come back to
+     this link. A work or school account already has a directory and skips this.
 2. Press **+ New registration**.
    * **Name:** `Enveliq` (anything you like).
    * **Supported account types:** *Accounts in any organizational directory (Any Microsoft
@@ -113,3 +120,12 @@ expire, and Enveliq cannot warn you when yours does.
   <https://account.microsoft.com/privacy/app-access> (personal accounts) or
   <https://myapps.microsoft.com> (work or school). Deleting the app registration stops every
   Microsoft mailbox at once.
+
+## Troubleshooting: "The ability to create applications outside of a directory has been deprecated"
+
+Microsoft shows this on the App registrations page when a personal account has no directory.
+Nothing is wrong with Enveliq or with your account. Create a directory by signing up for Azure
+(the link in Microsoft's message), or join the Microsoft 365 Developer Program if you qualify,
+then open App registrations again and carry on from Part 1, step 2. Microsoft changes this
+sign-up from time to time, so if the screens differ, follow Microsoft's prompts to get a
+directory and return here.

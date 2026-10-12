@@ -781,7 +781,7 @@ function microsoftSection(m, redraw) {
     alertBox(m.ready ? "good" : "info", m.ready ? "Microsoft sign-in is on. People can add Outlook, Hotmail and Microsoft 365 mailboxes." : "Microsoft sign-in is off. Follow the steps below, then fill in the form and switch it on."),
     h("h3", { text: "What to do at Microsoft" }),
     h("ol", { class: "guide-steps" },
-      step("Open App registrations at Microsoft", "Sign in with any Microsoft account. No subscription or card is needed. If Microsoft offers to create a directory for a personal account, accept.",
+      step("Open App registrations at Microsoft", "Sign in with any Microsoft account. If Microsoft says \"The ability to create applications outside of a directory has been deprecated\", your account has no directory yet: use its \"Signing up for Azure\" link first (Microsoft may ask for a card to confirm who you are). The guide has the steps.",
         h("a", { class: "btn small", href: "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade", target: "_blank", rel: "noopener noreferrer", text: "Open App registrations ↗" })),
       step("Press + New registration", "Name: Enveliq.",
         "Supported account types: choose the one that says Accounts in any organizational directory and personal Microsoft accounts. Choose the single-organisation option only if every mailbox is in your own work or school directory."),
