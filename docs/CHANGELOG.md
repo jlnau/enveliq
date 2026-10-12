@@ -4,7 +4,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**The version number moves to the bottom of the left panel.** The version is now a small grey line under Terms, Privacy and Security instead of under the logo and tagline at the top. It is hidden when the panel is collapsed, like those links.
+
+- `prototype/index.html`: `#brandVer` moves from the logo block into the bottom block of the left panel (`.side-foot`), styled as `.ver`. It is still filled from the signed-in `/api/v1/system` answer, and stays empty and hidden in the demo.
+- Tests: `scripts/check_version_footer.mjs` (new; the version shows, sits under the links and the person's name, is gone from the top, hidden when collapsed, nothing left in the demo). `check_no_sample_flash.mjs` still passes.
 
 ## v0.81 (2026-10-12)
 

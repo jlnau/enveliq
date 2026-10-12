@@ -185,6 +185,7 @@ All the guides are listed, by what you want to do, in the [**documentation index
 <details>
 <summary><b>What changed recently</b> (latest five versions)</summary>
 
+- **Unreleased**: **The version number moves to the bottom of the left panel.** The version number is now a small line at the bottom of the left panel, under Terms, Privacy and Security.
 - **Unreleased**: **Mail rules.** Tell Enveliq to archive, or mark as reviewed, new email from a sender you choose, such as a shop's weekly offers. Press **Always archive these** on an opened email, or add a rule in Settings, Mail rules. A rule only acts on new email as it arrives, never on mail already in your inbox or from your important people, and no rule can delete anything. See [docs/MAIL_RULES.md](docs/MAIL_RULES.md).
 - **Unreleased**: **"Keep me signed in on this device".** An administrator can let people stay signed in for up to 14 days with a tick-box on the sign-in page (off by default; needs a vault key file). Restarting Enveliq still signs everyone out.
 
