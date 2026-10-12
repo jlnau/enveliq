@@ -92,6 +92,8 @@ jobs:
         run: node scripts/check_remember_me.mjs
       - name: Stacked Undo bars (made-up mail, no server)
         run: node scripts/check_stacked_undo.mjs
+      - name: Paperclip on emails with attachments (made-up mail, no server)
+        run: node scripts/check_attachment_clip.mjs
       - name: The demo (made-up mail, no server)
         run: node scripts/check_demo.mjs
       - name: Important people (simulated server)
