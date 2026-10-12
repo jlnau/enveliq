@@ -6,7 +6,7 @@ self.addEventListener("push", (event) => {
   const title = String(data.title || "Enveliq").slice(0, 120);
   const body = String(data.body || "").slice(0, 300);
   const url = typeof data.url === "string" ? data.url : "/";
-  event.waitUntil(self.registration.showNotification(title, { body, data: { url }, icon: "/brand/enveliq-icon-128.webp" }));
+  event.waitUntil(self.registration.showNotification(title, { body, data: { url }, icon: "/brand/enveliq-icon-128.webp", badge: "/brand/enveliq-badge-96.png" }));
 });
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();

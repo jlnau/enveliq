@@ -11,6 +11,9 @@ Every time you press **Reviewed**, **Archive** or **Bin**, Enveliq waits five se
 
 ## Where it works
 
+On a computer, the three small buttons on a row in the list only show while the mouse is over that email, in the place of its date, so the list stays calm. Tabbing to one shows them too. An opened email always shows its own buttons, and a phone uses swiping instead.
+
+
 Everywhere you can use those three buttons: the buttons on a row, the buttons inside an opened email, the reading pane, the full-screen reader and the swipe actions on a phone, the keyboard shortcuts, and the **Reviewed, Archive and Bin** buttons that appear when you tick several emails. With several ticked, one bar covers all of them ("Archived · 3 emails") and one press of Undo brings them all back.
 
 If you do two things quickly, each one gets its own bar. The bars sit on top of each other with the newest at the bottom, and each has its own Undo button and its own countdown, so you can still take back an earlier one. At most three bars show at once: if you do a fourth thing within five seconds, the oldest one goes through to your mailbox straight away and its bar goes. Several emails done together (ticked, then Reviewed, Archive or Bin) are one action, so they have one bar and one Undo.
