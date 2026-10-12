@@ -13,6 +13,13 @@ address unless the administrator allows it).
 - Enveliq keeps only the short result, encrypted. The email text and the
   model's raw answer are discarded and never logged.
 
+- The paperclip next to an email's date comes from the same step. Before an
+  email is summarised, Enveliq only has its headers, so a paperclip is a
+  careful guess ("this email may have an attachment"). When the summary is made,
+  Enveliq counts the attached files exactly (pictures that are part of the text
+  are not counted) and keeps just that number, never a file name or content. The
+  **Attachments** entry in the left menu follows the same number.
+
 ## 1. Choose the model server
 
 Enveliq needs an address that accepts OpenAI-style chat requests
