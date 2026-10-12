@@ -4,6 +4,12 @@ For a Linux computer or server (Ubuntu, Debian, Fedora and others), or a virtual
 
 **You need:** a Linux computer with internet, about 2 GB of free memory, and about 20 minutes. You need to be able to type commands on it, either by sitting at it or from another computer using SSH.
 
+## The install file
+
+This is the whole file. Copy it, or [download it](../../install/docker-compose.yml). [Step 3](#step-3-change-the-three-lines) shows the lines to change. The steps below start from nothing and put it on your computer.
+
+<!-- include: install/docker-compose.yml -->
+
 ## What is a "terminal"?
 
 A terminal is a window where you type commands. Everything in this guide that is in a grey box is a command: type it (or copy and paste it) and press **Enter**.
