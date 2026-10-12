@@ -361,6 +361,9 @@ await page.click("#themeBtn");
   await page.waitForTimeout(300);
   check("desktop: closing the page does not lose an archive that was waiting", server.calls.slice(callsU).some((c) => c[0] === "resolve" && c[2].outcome === "archived"));
   await page.waitForFunction(() => document.querySelectorAll("article.mail:not(.leaving)").length === 2);
+  // Give consecutive Undo actions enough time to coexist while Playwright waits for the leaving rows to render.
+  // The normal five-second setting was verified above; earlier fast-path tests use a 400 ms override.
+  await page.evaluate(() => { window.__undoMs = 2000; });
   // The three outcomes
   await page.locator("article.mail", { hasText: "Weekly news" }).locator('[data-status="reviewed"]').click();
   await page.waitForFunction(() => document.querySelectorAll("article.mail:not(.leaving)").length === 1);
@@ -373,6 +376,7 @@ await page.click("#themeBtn");
   await page.waitForTimeout(300);
   const outcomes0 = server.calls.filter((c) => c[0] === "resolve").map((c) => c[2].outcome);
   check("archive, reviewed and bin map to archived, reviewed and binned", outcomes0.join(",") === "archived,archived,reviewed,binned");
+  await page.evaluate(() => { window.__undoMs = 400; });
   // Kept in the Status lists
   await page.click('.nav[data-filter="reviewed"]');
   await expand(page.locator("article.mail").first());
