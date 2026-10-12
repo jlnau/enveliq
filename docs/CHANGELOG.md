@@ -4,6 +4,14 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**"Keep me signed in on this device".** The sign-in page can now show a tick-box that keeps a person signed in for days instead of 30 minutes. An administrator decides whether it is offered and for how long (0 to 14 days, off by default) under Administration, Sign-in rules. It only works when Enveliq opens its own vault from a key file, because otherwise Enveliq locks itself after a while and signs everyone out anyway.
+
+- `backend/security.py`: a session can carry its own `remember_seconds`; a remembered session lasts exactly that long from sign-in (no 30-minute idle timeout, no 12-hour cap). Only a fully signed-in session can be remembered, never one still waiting for a second factor or for setup.
+- `backend/auth/users.py`, `backend/auth/routes.py`: new sign-in rule `remember_days` (0 to 14, checked on the server). The choice is carried through two-factor, passkey and single sign-on sign-ins, and the cookie lasts as long as the session.
+- `backend/app.py`: `remember_seconds()` is 0 unless a vault key file or key is in use. `GET /api/v1/status` says only whether the tick-box is offered (`sign_in.remember`).
+- `web/static/auth.js`: the tick-box on the sign-in page and a "Keep me signed in (days)" field in Sign-in rules, with a link to the vault key guide when no key file is set up.
+- Tests: `tests/test_remember_me.py`, `scripts/check_remember_me.mjs`.
+
 **No flash of sample data when you refresh.** On a real Enveliq, pressing the browser's refresh button no longer shows the sample page (the sample name, counts and version) for a split second before your own page appears.
 
 - `prototype/index.html`: while the page starts up (`body.booting`), the frame (menu, buttons, logo, search) shows at once, but your name, role and initials, the greeting, the counts, the version label and the list stay hidden. If it takes more than half a second, a calm line says "Getting your inbox ready…". When there is no server behind the page (the demo or a hosted preview) it appears as soon as that is known, with no loading line, and if the server is slow to answer the page is shown anyway after six seconds.
