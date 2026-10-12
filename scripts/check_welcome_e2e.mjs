@@ -103,7 +103,7 @@ await page.click("#settingsBtn");
 await page.click("[data-settings-tab=accounts]");
 await page.waitForSelector("#settings.open .embed-host >> text=Connected", { timeout: 15000 }).catch(() => {});
 await page.waitForSelector("#settings.open .embed-host >> text=Add a mailbox", { timeout: 15000 });
-check("Settings has only personal sections", (await page.locator("#settingsNav button").allInnerTexts()).join("|") === "Profile|Sign-in & security|Email accounts|Address book|Important people|Signature & saved replies|Mail rules|Calendar & to-do|General|Reminders|AI instructions|Setup guide");
+check("Settings has only personal sections", (await page.locator("#settingsNav button").allInnerTexts()).join("|") === "Profile|Sign-in & security|Email accounts|Address book|Important people|Signature & saved replies|Mail rules|Calendar & to-do|General|Notifications|AI instructions|Setup guide");
 check("Settings > My email accounts shows both mailboxes and the add form", (await page.locator("#settings .embed-host >> .provider").count()) >= 7 && (await page.locator("#settings .embed-host >> text=Check connection").count()) === 2);
 await page.click("[data-settings-tab=signin]");
 await page.waitForSelector("#settings .embed-host >> text=Authenticator app");
@@ -203,10 +203,10 @@ const f1 = await page.evaluate(async () => (await fetch("/api/v1/me/features")).
 check("a person can switch off a feature the administrator left on", f1.user.sent === false && f1.admin.sent === true && f1.effective.sent === false && f1.effective.compose === true);
 const sentBlocked = await page.evaluate(async () => { const a = (await (await fetch("/api/v1/accounts")).json())[0].id; return (await fetch(`/api/v1/accounts/${a}/sent`)).status; });
 check("the server then refuses Sent for that person", sentBlocked === 403);
-// Reminders: set up a channel, secrets stay write-only
+// Notifications: set up a channel, secrets stay write-only
 await page.click("[data-settings-tab=reminders]");
 await page.waitForSelector("#settings .embed-host >> summary:has-text('Gotify')");
-check("Reminders lists In Enveliq (always on) and the channels", (await page.locator("#settings .embed-host >> details.chan").count()) >= 8 && await page.locator("#settings .embed-host >> text=Always on").count() === 1);
+check("Notifications lists In Enveliq (always on) and the channels", (await page.locator("#settings .embed-host >> details.chan").count()) >= 8 && await page.locator("#settings .embed-host >> text=Always on").count() === 1);
 await page.locator("#settings .embed-host >> summary:has-text('Gotify')").click();
 await page.locator("#settings .embed-host >> #ch_gotify_server").fill("http://192.168.1.20:8080");
 await page.locator("#settings .embed-host >> #ch_gotify_token").fill("sample-token-not-real");
