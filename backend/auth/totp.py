@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
+import io
 import secrets
 import struct
 import time
@@ -65,4 +66,8 @@ def provisioning_uri(secret: str, account_name: str, issuer: str = "Enveliq") ->
 def qr_svg(uri: str) -> str:
     """Inline SVG QR code for the provisioning URI (rendered server-side so
     the secret never goes to a third-party QR service)."""
-    return segno.make(uri, error="m").svg_inline(scale=5, border=2, dark="#0b0f16", light="#ffffff")
+    # Not `svg_inline`: that leaves out the SVG namespace, and the page shows this as an <img> (a data: address), where a
+    # browser only draws an SVG that carries `xmlns`. Without it the picture is a broken-image icon.
+    out = io.BytesIO()
+    segno.make(uri, error="m").save(out, kind="svg", scale=5, border=2, dark="#0b0f16", light="#ffffff", xmldecl=False, svgns=True, nl=False)
+    return out.getvalue().decode("utf-8")
