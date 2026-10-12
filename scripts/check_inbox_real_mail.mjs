@@ -367,8 +367,8 @@ await page.click("#themeBtn");
   // The three outcomes
   await page.locator("article.mail", { hasText: "Weekly news" }).locator('[data-status="reviewed"]').click();
   await page.waitForFunction(() => document.querySelectorAll("article.mail:not(.leaving)").length === 1);
-  await expand(page.locator("article.mail").first());
-  await page.locator("article.mail").first().locator('[data-status="trashed"]').click();
+  await expand(page.locator("article.mail:not(.leaving)").first());
+  await page.locator("article.mail:not(.leaving)").first().locator('[data-status="trashed"]').click();
   await page.waitForFunction(() => document.querySelectorAll("article.mail:not(.leaving)").length === 0);
   check("desktop: two actions in a row each get their own Undo bar, the newest at the bottom", (await page.locator("#undoBar .undobar").count()) === 2 && (await page.locator("#undoBar .undobar").first().innerText()).includes("Marked reviewed") && (await page.locator("#undoBar .undobar").last().innerText()).includes("Moved to Bin"));
   for (let i = 0; i < 60 && server.calls.filter((c) => c[0] === "resolve").length < 4; i++) await page.waitForTimeout(100);
