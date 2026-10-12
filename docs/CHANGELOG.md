@@ -4,6 +4,19 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Row buttons show when you point at an email.** On a computer, the Reviewed, Archive and Bin buttons on an email in the list now appear only while the mouse is over that email, in the place of its date, and go away again when the mouse leaves. The list is calmer to look at. Tabbing to a button shows them too. Phones are unchanged (they swipe), and an opened email keeps its own buttons.
+
+- `prototype/index.html`: for a mouse (`hover:hover`) on a screen wider than a phone, a closed row's `.qpair` is hidden until the row is hovered or has focus inside it. It is smaller (32 by 30) and fades in over the date, which fades out. The buttons stay in the page and keep working for the keyboard. The reading-pane layout and phones are left as they were.
+- Tests: `scripts/check_hover_actions.mjs` (new; hidden by default, shown only for the row under the mouse, in the place of the date, inside the row, a button works, keyboard focus shows them, an opened email keeps its buttons, phones unchanged). `check_demo.mjs` and `check_inbox_real_mail.mjs` still pass.
+- Docs: `docs/UNDO.md`.
+
+**Undo bars stack.** Each Reviewed, Archive or Bin now gets its own Undo bar, so you can still take back an earlier one after doing another. Several emails done together are still one bar.
+
+- `prototype/index.html`: the single Undo bar is now a stack (`#undoBar` holds one `.undobar` per waiting action, newest at the bottom, drawn by `drawUndos()`). Each bar has its own Undo button and its own countdown line, which carries on from where it was when another bar is added. At most three show: a fourth action sends the oldest one straight away.
+- Tests: `scripts/check_stacked_undo.mjs` (new; three in a row, newest at the bottom, no overlap on desktop or phone, Undo on the middle one, several emails as one bar, the three-bar limit, bars leaving one by one). `check_demo.mjs` and `check_inbox_real_mail.mjs` now look at the newest bar.
+- Docs: `docs/UNDO.md`.
+
+
 **A paperclip on emails with attachments.** An email that has an attachment now shows a small paperclip under its date and time in the list, on a phone and on a computer.
 
 - `prototype/index.html`: the row's date and time block gets a small paperclip (`.clip`) when the email has attachments. It says "Has an attachment", or "Has 2 attachments", to a screen reader and as a tooltip. Emails without attachments look as before.
