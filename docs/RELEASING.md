@@ -6,9 +6,12 @@ GitHub has no built-in "release template" that pre-fills the form. What it does 
 
 ## Before you click "Create a new release"
 
-1. Everything you want in this release is merged, and the checks on `main` are green.
-2. On a new branch created from current `main`, run `python3 scripts/prepare_release.py 0.82` (replace `0.82` with your chosen next version). This single command updates `backend/version.py`, the README current version, and moves the existing Unreleased notes into the dated version section of `docs/CHANGELOG.md`. It refuses mismatched or already prepared versions, rather than silently overwriting release notes. Open a pull request for these three version changes.
-3. You review and merge that pull request. The version in `backend/version.py` is now the number you will tag.
+1. Merge the feature pull requests for this release and wait for the required checks on `main` to pass.
+2. Open **Actions → Prepare Release → Run workflow**, leave the branch on `main`, enter the next number without `v` (for example `0.83`), and click **Run workflow**.
+3. The workflow generates release notes from PRs merged since the previous released tag when the Unreleased changelog section is empty. If that section already contains manually prepared notes, those are preserved instead. It then uses `scripts/prepare_release.py` to update `backend/version.py`, the README and the changelog and creates a PR.
+4. Review and merge the preparation PR once all required checks pass. Only then create the GitHub Release tag. Do not run Prepare Release again for an already prepared version.
+
+No terminal commands or manual changelog edits are needed for the normal release process. The workflow stops safely if the previous release tag is missing, there are no new merged PRs, or the new release branch or tag already exists.
 
 ## Create the release
 
