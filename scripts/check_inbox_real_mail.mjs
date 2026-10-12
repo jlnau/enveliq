@@ -184,7 +184,7 @@ async function open(server, { seen = true } = {}) {
   check("a closed row shows only the subject, not the start of the summary", (await page.locator("article.mail .qrow .summary").count()) === 0);
   await page.locator("article.mail .qrow .subject").first().click();
   check("clicking anywhere on a row opens it, showing a details panel with Reviewed, Archive and Bin, a quiet Reply and a View original email link", (await page.locator("article.mail [data-open-email]").count()) === 1 && (await page.locator("article.mail .qside").count()) === 1 && (await page.locator("article.mail [data-open-email]").innerText()) === "View original email" && (await page.locator("article.mail .qdetail [data-reply]").count()) <= 1 && (await page.locator("article.mail .qdetail [data-status=archived]").count()) === 1 && (await page.locator("article.mail .qdetail [data-status=trashed]").count()) === 1);
-  await page.locator("article.mail .qrow .time").first().click();
+  await page.locator("article.mail .qrow .subject").first().click();
   check("clicking the row again closes it", (await page.locator("article.mail .qdetail").count()) === 0);
   // Hover peek: resting on the sender or subject for a second shows the summary only
   const firstRowSender = page.locator("article.mail .qrow .sender").first();
@@ -197,15 +197,15 @@ async function open(server, { seen = true } = {}) {
   check("resting on the sender shows the summary with no buttons", peekText.trim().length > 0 && (await page.locator("#peek button, #peek a, #peek input").count()) === 0);
   await page.mouse.move(5, 5);
   check("moving away closes the peek", (await page.locator("#peek:not([hidden])").count()) === 0);
-  await page.locator("article.mail .qrow .time").first().hover();
+  await page.locator("article.mail .qrow .check").first().hover();
   await page.waitForTimeout(500);
-  check("resting on the time does not open a peek", (await page.locator("#peek:not([hidden])").count()) === 0);
+  check("resting on the row checkbox does not open a peek", (await page.locator("#peek:not([hidden])").count()) === 0);
   await page.locator("article.mail .qrow .subject").first().hover();
   await page.waitForSelector("#peek:not([hidden])", { timeout: 3000 });
   await page.locator("article.mail .qrow .subject").first().click();
   check("clicking the row closes the peek and opens the email", (await page.locator("#peek:not([hidden])").count()) === 0 && (await page.locator("article.mail.open").count()) >= 1);
   await page.mouse.move(5, 5);
-  await page.locator("article.mail .qrow .time").first().click();
+  await page.locator("article.mail .qrow .subject").first().click();
   // Filter dropdown and the selection bar share the row with Sort and do not push the list down
   const listTop = await page.locator("#list").evaluate((e) => Math.round(e.getBoundingClientRect().top));
   await page.locator("article.mail .check").nth(0).check();

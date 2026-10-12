@@ -184,6 +184,7 @@ All the guides are listed, by what you want to do, in the [**documentation index
 
 <details>
 <summary><b>What changed recently</b> (latest five versions)</summary>
+- **Unreleased**: **Row buttons show when you point at an email.** On a computer, the Reviewed, Archive and Bin buttons on a row show only when the mouse is over it, in place of the date. Phones are unchanged.
 - **Unreleased**: **A paperclip on emails with attachments.** Emails that have an attachment show a small paperclip under the date and time in the list.
 
 - **Unreleased**: **Notifications show the Enveliq mark.** The small icon on an Enveliq notification on Android is now Enveliq's own mark instead of the browser's logo.
