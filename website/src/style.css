@@ -194,7 +194,7 @@ details p { margin: 0 0 16px; color: var(--muted); max-width: 40em; }
   .top a:not(.gh) { padding: 8px 8px; }
 }
 @media (max-width: 560px) {
-  .top a:nth-child(1), .top a:nth-child(4) { display: none; }
+  .top a:nth-child(1), .top a:nth-child(2), .top a:nth-child(4) { display: none; }
   .btn { width: 100%; text-align: center; }
   .cta { flex-direction: column; }
 }
@@ -207,3 +207,16 @@ details p { margin: 0 0 16px; color: var(--muted); max-width: 40em; }
 .row-shot.phone-shot { justify-self: center; width: min(300px, 100%); border-radius: 28px; }
 .row-shot.phone-shot figcaption { text-align: center; }
 .row-shot img { display: block; width: 100%; height: auto; }
+
+/* search of the guides */
+.sr { position: absolute; left: -9999px; }
+.sbox { display: flex; gap: 6px; margin: 0 0 16px; }
+.sbox input { flex: 1; min-width: 0; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font: inherit; font-size: 15px; }
+.sbox button { padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+.sbox input:focus-visible, .sbox button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.sbox.big input { font-size: 17px; padding: 12px 14px; }
+.hits { list-style: none; padding: 0; margin: 12px 0 0; }
+.hits li { padding: 14px 0; border-top: 1px solid var(--line); }
+.hits li a { font-weight: 700; font-size: 18px; }
+.hits li p { margin: 6px 0 0; color: var(--muted); }
+.count { color: var(--muted); }

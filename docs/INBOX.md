@@ -49,3 +49,17 @@ The Enveliq version is a small grey line at the bottom of the left panel, above 
 ## Staying signed in
 
 Normally Enveliq signs you out after 30 minutes without use. If an administrator has turned on **Keep me signed in on this device** (Administration, Sign-in rules, from 1 to 14 days), the sign-in page shows a tick-box for it. Tick it only on a device that is yours. It needs Enveliq to unlock itself from a key file (see [Unlock by itself after a restart](VAULT_KEY.md)); restarting Enveliq still signs everyone out.
+
+## Calm mode
+
+For days when numbers make everything feel urgent. At the bottom of the menu, just above **Agent**, press **Calm mode** to turn it on (press it again to turn it off). It is remembered in that browser, and each person chooses for themselves.
+
+When it is on:
+
+- The numbers beside My inbox, Needs action, Tasks and Attachments are hidden, and so are the counts in the greeting ("2 emails to look at, 2 need you") and the AI queue bar.
+- The greeting says "Take it one at a time. Nothing here is urgent."
+- The Today card is headed **Start here** and shows one task. The rest wait under **Later**, without a count.
+- "Waiting since Thu" becomes "When you can", and the amber needs-action dots turn grey.
+- Movement on the page is turned off.
+
+Nothing is hidden for good: every email, task and list is still there, and **Needs action** still works.

@@ -22,7 +22,7 @@ of services.
 **Outlook, Hotmail and Microsoft 365** do not accept passwords or app passwords from
 other apps. People sign in on Microsoft's own page instead, which needs a small app
 registration that you make once and enter under Administration, Microsoft sign-in.
-It is free and takes about five minutes: see `MICROSOFT.md` for every step.
+The registration is free and takes about five minutes, once Microsoft has given you a directory to put it in: see `MICROSOFT.md` for every step.
 
 ## What Enveliq does with the connection
 

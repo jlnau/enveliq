@@ -1,6 +1,6 @@
 # The Enveliq website
 
-A small static site for https://enveliq.app: a front page plus the guides, built from the files in `docs/` and `SECURITY.md`. It ships no scripts and loads nothing from other websites.
+A small static site for https://enveliq.app: a front page plus the guides, built from the files in `docs/` and `SECURITY.md`. It loads nothing from other websites. Its only script is the guide search (`src/search.js`): a box on the guides pages opens `/search/`, which reads `/search-index.json` (built from the guides at build time) and lists matches in the visitor's browser. Nothing is sent anywhere. Without scripts the search page says so and points to the list of guides. The security policy allows scripts from the site itself only (`script-src 'self'`).
 
 ## Build it on your own computer
 
@@ -8,7 +8,7 @@ A small static site for https://enveliq.app: a front page plus the guides, built
 cd website
 npm install
 npm run build     # writes the site into website/dist
-npm run check     # every link and picture resolves, no scripts, strict headers
+npm run check     # every link and picture resolves, only the search runs a script, strict headers
 ```
 
 Open `website/dist/index.html` in a browser, or serve the folder with `python -m http.server -d dist`.
