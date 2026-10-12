@@ -44,7 +44,7 @@ button,input,select{font:inherit}button{cursor:pointer}
 .theme-btn .theme-sun{display:none}html[data-theme="light"] .theme-btn .theme-sun{display:block}html[data-theme="light"] .theme-btn .theme-moon{display:none}
 .side-foot{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
 .legal-links{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 12px;margin-top:4px;font-size:11px}.legal-links a{color:var(--c-7c8490);text-decoration:none}.legal-links a:hover{color:var(--text);text-decoration:underline}
-.app.collapsed .legal-links,.app.collapsed .ver{display:none}.ver{text-align:center;color:var(--faint);font-size:11px;letter-spacing:.02em}.ver:empty{display:none}
+.app.collapsed .legal-links,.app.collapsed .ver{display:none}.ver{text-align:center;color:var(--faint);font-size:11px;letter-spacing:.02em}.ver:empty{display:none}.updnote{display:flex;align-items:center;gap:10px;margin:10px 0 0;padding:9px 11px;border:1px solid var(--c-1f4f9c);background:var(--c-0c1c38);border-radius:12px;color:var(--c-bfe3ff);text-decoration:none;font-size:13px}.updnote[hidden]{display:none}.updnote:hover{border-color:var(--c-65c4ff)}.updic{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--c-1f5fc4);color:#fff;flex:none}.updtx{display:flex;flex-direction:column;line-height:1.3;min-width:0}.updtx small{color:var(--c-9fdcff);font-size:11px}.app.collapsed .updnote{justify-content:center;padding:8px 0}.app.collapsed .updtx{display:none}
 .collapse-toggle{position:absolute;top:28px;right:-13px;width:26px;height:26px;border-radius:999px;border:1px solid var(--c-343b4a);background:var(--panel2);color:var(--muted);display:grid;place-items:center;padding:0;z-index:6}
 .collapse-toggle:hover{color:var(--text);border-color:var(--c-4a5265)}.collapse-toggle svg{width:15px;height:15px;transition:transform .18s ease}
 .app.collapsed .collapse-toggle svg{transform:rotate(180deg)}.app.narrow .collapse-toggle{display:none}
@@ -787,6 +787,7 @@ body.on-ship #waitBars{display:none!important}
     <button class="nav" data-filter="archived" title="Archived"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4.5" rx="1"/><path d="M5 8.5V20h14V8.5"/><path d="M10 12.5h4"/></svg><span class="nav-label">Archived</span></button>
     <button class="nav" data-filter="sent" id="sentNav" title="Sent" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg><span class="nav-label">Sent</span></button>
   </nav>
+  <a class="updnote" id="updNote" target="_blank" rel="noopener noreferrer" hidden><span class="updic" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 11l6-6 6 6"/></svg></span><span class="updtx"><b id="updVer">A new version is out</b><small>See what's new</small></span></a>
   <div class="side-foot">
     <button class="nav" id="agentBtn" type="button" title="Talk to Hermes, your AI helper" aria-haspopup="dialog" aria-expanded="false" aria-controls="agentPop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-4.5 3.5V17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M12 8.2l.9 1.9 1.9.9-1.9.9-.9 1.9-.9-1.9-1.9-.9 1.9-.9z"/></svg><span class="nav-label">Agent</span></button>
     <button class="user-pill" id="userPill" aria-haspopup="true" aria-expanded="false" aria-controls="userMenu" title="Switch user">
@@ -1142,6 +1143,7 @@ body.on-ship #waitBars{display:none!important}
       <section data-settings-panel="adminkeep" hidden></section>
       <section data-settings-panel="admincheck" hidden></section>
       <section data-settings-panel="adminbackup" hidden></section>
+      <section data-settings-panel="adminupdates" hidden></section>
       <section data-settings-panel="adminreport" hidden></section>
       <section data-settings-panel="adminms" hidden></section>
       <section data-settings-panel="adminfeatures" hidden></section>
@@ -3318,6 +3320,7 @@ function buildSettingsNav(mode){
     ["","adminaiinstr","AI instructions"],
     ["","adminagent","Agent chat"],
     ["System","adminbackup","Backup and restore"],
+    ["","adminupdates","Updates"],
     ["","adminreport","Reporting"],
     ["","security","Security & privacy"]
   ]:[
@@ -3349,7 +3352,7 @@ function buildSettingsNav(mode){
 // ---- The real pages, shown inside the pop-ups ----
 // auth.css and the page scripts are loaded once, as one module so their names cannot clash with this page's.
 // Each page lives in its own shadow root, so its styles stay inside it.
-const EMBED_IDS=["profile","accounts","signin","setup","general","aiinstr","users","sso","llm","sync","adminaiinstr","adminkeep","admincheck","adminbackup","adminreport","adminms","adminfeatures","adminagent","adminreminders","reminders","calendar","addressbook","important","saved","rules"];
+const EMBED_IDS=["profile","accounts","signin","setup","general","aiinstr","users","sso","llm","sync","adminaiinstr","adminkeep","admincheck","adminbackup","adminupdates","adminreport","adminms","adminfeatures","adminagent","adminreminders","reminders","calendar","addressbook","important","saved","rules"];
 let embedLoad=null,embedCss="";
 function loadEmbedAssets(){
   if(embedLoad)return embedLoad;
@@ -3392,7 +3395,7 @@ async function openEmbedNow(id){
     host._mount.replaceChildren();
     const me=await E.api("/me"),P=new URLSearchParams();
     const pages={profile:()=>E.profilePage(me),accounts:()=>E.mailboxesPage(me),signin:()=>E.accountPage(me,P),setup:()=>E.welcomePage(me,P),
-      general:()=>E.generalPage(me),aiinstr:()=>E.aiInstructionsPage(me),adminaiinstr:()=>E.adminPage(me,"instr"),adminkeep:()=>E.adminPage(me,"keep"),admincheck:()=>E.adminPage(me,"check"),adminbackup:()=>E.adminPage(me,"backup"),adminreport:()=>E.adminPage(me,"reporting"),adminms:()=>E.adminPage(me,"microsoft"),adminfeatures:()=>E.adminPage(me,"features"),adminagent:()=>E.adminPage(me,"agent"),adminreminders:()=>E.adminPage(me,"reminders"),reminders:()=>E.remindersPage(me),calendar:()=>E.syncPage(me),addressbook:()=>E.addressBookPage(me),important:()=>E.importantPage(me),saved:()=>E.savedPage(me),rules:()=>E.rulesPage(me),users:()=>E.adminPage(me,"users"),sso:()=>E.adminPage(me,"signin"),llm:()=>E.adminPage(me,"ai"),sync:()=>E.adminPage(me,"sync")};
+      general:()=>E.generalPage(me),aiinstr:()=>E.aiInstructionsPage(me),adminaiinstr:()=>E.adminPage(me,"instr"),adminkeep:()=>E.adminPage(me,"keep"),admincheck:()=>E.adminPage(me,"check"),adminbackup:()=>E.adminPage(me,"backup"),adminupdates:()=>E.adminPage(me,"updates"),adminreport:()=>E.adminPage(me,"reporting"),adminms:()=>E.adminPage(me,"microsoft"),adminfeatures:()=>E.adminPage(me,"features"),adminagent:()=>E.adminPage(me,"agent"),adminreminders:()=>E.adminPage(me,"reminders"),reminders:()=>E.remindersPage(me),calendar:()=>E.syncPage(me),addressbook:()=>E.addressBookPage(me),important:()=>E.importantPage(me),saved:()=>E.savedPage(me),rules:()=>E.rulesPage(me),users:()=>E.adminPage(me,"users"),sso:()=>E.adminPage(me,"signin"),llm:()=>E.adminPage(me,"ai"),sync:()=>E.adminPage(me,"sync")};
     await pages[id]();
   }catch(er){host.textContent=er.message}
 }
@@ -3451,7 +3454,7 @@ async function detectVaultMode(){
     vaultMode=(st&&typeof st==="object"&&"initialized" in st&&"setup_required" in st&&"sign_in" in st)?"backend":"preview";
     if(vaultMode==="backend"){      // the version is for signed-in people only (the public status page does not say)
       try{const sys=await secureBackendRequest("/api/v1/system",{method:"GET",headers:{}});
-        if(sys&&typeof sys.version==="string"&&/^[0-9.]{1,12}$/.test(sys.version))$("brandVer").textContent="Version "+sys.version}catch{}
+        if(sys&&typeof sys.version==="string"&&/^[0-9.]{1,12}$/.test(sys.version)){$("brandVer").textContent="Version "+sys.version;showUpdate(sys.update)}}catch{}
     }
   }catch{vaultMode="preview"}
   return vaultMode;
@@ -3794,7 +3797,7 @@ document.addEventListener("click",e=>{
   const p=e.target.closest("[data-provider]");if(p){if(!authorizeAdmin())return;provider=p.dataset.provider;document.querySelectorAll(".provider").forEach(x=>x.classList.toggle("active",x===p));providerFields();return}
   const tab=e.target.closest("[data-settings-tab]");if(tab){
     const id=tab.dataset.settingsTab;
-    const adminOnly=["users","sso","llm","sync","adminkeep","admincheck","adminbackup","adminms","adminfeatures","adminreminders","adminaiinstr","adminagent","adminreport","processing","providers","automation","privacy","security","system"].includes(id);
+    const adminOnly=["users","sso","llm","sync","adminkeep","admincheck","adminbackup","adminupdates","adminms","adminfeatures","adminreminders","adminaiinstr","adminagent","adminreport","processing","providers","automation","privacy","security","system"].includes(id);
     if(adminOnly&&!authorizeAdmin())return;
     document.querySelectorAll("[data-settings-tab]").forEach(x=>x.classList.toggle("active",x===tab));try{tab.scrollIntoView({inline:"center",block:"nearest"})}catch(_){}
     document.querySelectorAll("[data-settings-panel]").forEach(x=>x.hidden=x.dataset.settingsPanel!==id);
@@ -4099,6 +4102,11 @@ function paintOutbox(){
   }));
   if(waiting.length&&!outboxTimer)outboxTimer=setInterval(()=>{paintOutbox();if(outbox.some(i=>i.state==="pending"&&sendLeft(i)===0)||outbox.some(i=>i.state==="sending"))pollOutbox()},1000);
   if(!waiting.length&&outboxTimer){clearInterval(outboxTimer);outboxTimer=null}
+}
+function showUpdate(u){   // an administrator is told a newer release is out. Only a plain version number and a link to Enveliq's own releases page are accepted.
+  const n=$("updNote");
+  if(!u||!/^[0-9.]{1,12}$/.test(u.version||"")||!/^https:\/\/github\.com\/jlnau\/enveliq\/releases\//.test(u.url||"")){n.hidden=true;return}
+  n.href=u.url;$("updVer").textContent="Version "+u.version+" is out";n.title="Version "+u.version+" is out. Opens the release notes on GitHub.";n.hidden=false;
 }
 async function undoSend(it){
   try{

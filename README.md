@@ -103,7 +103,7 @@ Not sure? Start at [**Install Enveliq**](docs/install/README.md), which also lis
 - **One person's mail is never visible to another person**, and administrators run Enveliq without reading anyone's mail.
 - **Email is treated as untrusted.** The AI is told that email text is only data, is given no tools, and never decides or calculates anything. Anything the AI wrote is labelled as AI.
 - **Strong sign-in.** Passwords use Argon2id, with authenticator-app and passkey two-factor, recovery codes and single sign-on (Authentik, Authelia, Keycloak or any OpenID Connect service).
-- **No telemetry, no third-party requests.** The pages load nothing from other websites, and the author receives no data.
+- **No telemetry, no third-party requests.** The pages load nothing from other websites, and the author receives no data. The one optional exception is a once-a-day check, made by your server (not your browser), for the number of the newest release, so administrators can be told when a new version is out. Nothing about you is sent, and an administrator can switch it off.
 
 The full details are in [SECURITY.md](SECURITY.md) and the plain-language [privacy notes](docs/PRIVACY.md).
 
@@ -173,6 +173,7 @@ All the guides are listed, by what you want to do, in the [**documentation index
 [Subscriptions](docs/SUBSCRIPTIONS.md) ·
 [Trips](docs/TRIPS.md) ·
 [Backup and restore](docs/BACKUP.md) ·
+[New versions](docs/UPDATES.md) ·
 [The demo](docs/DEMO.md) ·
 [Undo](docs/UNDO.md) ·
 [Checks before sending](docs/SEND_CHECKS.md) ·
@@ -184,6 +185,7 @@ All the guides are listed, by what you want to do, in the [**documentation index
 
 <details>
 <summary><b>What changed recently</b> (latest five versions)</summary>
+- **Unreleased**: **A notice when a new version is out.** Administrators are told, with a card in the left panel linking to the release notes, when a newer version is out. Your server checks about once a day; nothing about you is sent, and an administrator can switch it off.
 - **Unreleased**: **The version number moves to the bottom of the left panel.** The version number is now a small line at the bottom of the left panel, under Terms, Privacy and Security.
 - **Unreleased**: **Row buttons show when you point at an email.** On a computer, the Reviewed, Archive and Bin buttons on a row show only when the mouse is over it, in place of the date. Phones are unchanged.
 - **Unreleased**: **A paperclip on emails with attachments.** Emails that have an attachment show a small paperclip under the date and time in the list.

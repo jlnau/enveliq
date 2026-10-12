@@ -30,6 +30,7 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 - [Search](SEARCH.md) (one search box for emails, tasks, orders and waiting notes)
 - [Subscriptions and free trials](SUBSCRIPTIONS.md) (renewals followed from your email, with a reminder)
 - [Backup and restore, and Export my data](BACKUP.md)
+- [Knowing when a new version is out](UPDATES.md)
 - [The demo](DEMO.md)
 - [Undo for Reviewed, Archive and Bin](UNDO.md)
 - [Checks before sending](SEND_CHECKS.md) (a gentle question if a new email has no subject or a forgotten attachment)

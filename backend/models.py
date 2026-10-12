@@ -6,7 +6,7 @@ import re
 from typing import Any, Literal
 from urllib.parse import urlsplit
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, StrictBool, field_validator
 
 _HOSTNAME = re.compile(r"^(?=.{1,253}$)(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.(?!-)[A-Za-z0-9-]{1,63}(?<!-))*\.?$")
 _EMAIL = re.compile(r"^[^@\s<>\"'`]{1,64}@[^@\s<>\"'`]{1,255}$")
@@ -104,6 +104,10 @@ class AccountPatch(StrictModel):
     @classmethod
     def server_is_host(cls, value: str | None) -> str | None:
         return validate_host(value)
+
+
+class UpdateNoticeBody(StrictModel):
+    enabled: StrictBool
 
 
 class GlobalSettings(StrictModel):
