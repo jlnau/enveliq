@@ -1,6 +1,7 @@
 """Mailbox operations built on the Bridge client: sync, view, reply, resolve."""
 from __future__ import annotations
 
+import logging
 import re
 import threading
 import time
@@ -27,6 +28,7 @@ from . import scamcheck
 from . import subscriptions as subscriptions_mod
 from .parse import _addresses, clean, parse_headers, received_at_of, render_original, sending_identities, summarise_headers
 
+log = logging.getLogger("enveliq.mail")
 PLACEHOLDER_SUMMARY = "Not summarised yet."
 _ANGLE_ID = re.compile(r"^<[^<>\s]{1,994}>$")
 
@@ -97,6 +99,7 @@ class MailService:
         self.holds: Any = None                    # set by the application: (account, message) pairs that have an open task and must not be removed
         self.check_id: Any = None                 # set by the application: the id of the mailbox that is the check address (mail/checkbox.py)
         self.on_people: Any = None                # set by the application: told which senders were seen, to build the address book
+        self.on_new: Any = None                   # set by the application: told which emails just arrived (sender and subject), to apply the person's rules
         self.ai_source = "environment" if self.env_ai.enabled else "none"
         self.locks = AccountLocks()
 
@@ -159,6 +162,7 @@ class MailService:
         known_locators: set[str] = set()
         known_ids: set[str] = set()
         people: list[tuple[str, str]] = []
+        arrived: list[dict[str, Any]] = []
         stored_all = vault.list_messages(account_id)
         for stored in stored_all:
             if stored.get("source_locator"):
@@ -190,7 +194,8 @@ class MailService:
                         received_at=info["received_at"],
                         source_locator=locator(validity, uid),
                     )
-                    vault.create_message(account_id, body.model_dump(mode="python"))
+                    new_id = vault.create_message(account_id, body.model_dump(mode="python"))
+                    arrived.append({"id": new_id, "sender_address": info["sender_address"], "subject": info["subject"]})
                     people.append((info["sender_display"], info["sender_address"]))
                     if info["message_id"]:
                         known_ids.add(info["message_id"])
@@ -241,6 +246,11 @@ class MailService:
                 self.on_people(account, people)
             except Exception:
                 pass                       # the address book never breaks a sync
+        if arrived and self.on_new:
+            try:
+                self.on_new(account, arrived)
+            except Exception:
+                log.warning("rules could not be applied after a sync", exc_info=True)       # rules never break a sync
         return {"added": added, "skipped": skipped, "removed": removed, "unread_seen": len(uids)}
 
     # ---------- AI summaries ----------
