@@ -12,6 +12,11 @@ Newest first. Each entry says what changed for people and which parts of the cod
 - `web/static/auth.js`: the tick-box on the sign-in page and a "Keep me signed in (days)" field in Sign-in rules, with a link to the vault key guide when no key file is set up.
 - Tests: `tests/test_remember_me.py`, `scripts/check_remember_me.mjs`.
 
+**No flash of sample data when you refresh.** On a real Enveliq, pressing the browser's refresh button no longer shows the sample page (the sample name, counts and version) for a split second before your own page appears.
+
+- `prototype/index.html`: while the page starts up (`body.booting`), the frame (menu, buttons, logo, search) shows at once, but your name, role and initials, the greeting, the counts, the version label and the list stay hidden. If it takes more than half a second, a calm line says "Getting your inbox ready…". When there is no server behind the page (the demo or a hosted preview) it appears as soon as that is known, with no loading line, and if the server is slow to answer the page is shown anyway after six seconds.
+- Tests: `scripts/check_no_sample_flash.mjs` (new, added to `.github/workflows/ci.yml`: the frame is there while the answer is slow, nothing personal or sample shows, the loading line only appears after a moment, then the signed-in person's name, greeting and version appear; preview appears at once; a server that never answers does not leave the page half empty).
+
 **Shift + tick selects a whole range of emails.** Tick one email's box, then hold Shift and tick another one a few emails up or down the list, and every email between them is ticked too. Shift + untick clears the range the same way. Ticking without Shift works as before.
 
 - `prototype/index.html`: the tick handler remembers the email ticked last and, when Shift is held, ticks or unticks every email between that one and the new one, in the order shown (so it follows any sorting or filter). **Clear selection** forgets the starting point, so a Shift + tick after it acts like a plain tick.
