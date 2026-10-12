@@ -22,6 +22,8 @@ DEFAULT_POLICY: dict[str, Any] = {
     # Who may sign in with a local password. Administrators always may, so a
     # broken SSO provider can never lock the household out ("break-glass").
     "password_login": "everyone",     # "everyone" | "admins"
+    # "Keep me signed in on this device": how many days such a sign-in lasts. 0 turns the tick-box off. At most 14.
+    "remember_days": 0,
     # What a new password must contain (see passwords.DEFAULT_RULES).
     **passwords.DEFAULT_RULES,
 }
@@ -53,6 +55,9 @@ class UserService:
             raise UserError("Invalid two-factor policy")
         if merged["password_login"] not in ("everyone", "admins"):
             raise UserError("Invalid password sign-in policy")
+        days = merged.get("remember_days", 0)
+        if isinstance(days, bool) or not isinstance(days, int) or not 0 <= days <= 14:
+            raise UserError("Keep me signed in can last between 0 and 14 days")
         merged.update(passwords.clean_rules(merged))
         self.vault.set_global("auth-policy", merged)
         return merged

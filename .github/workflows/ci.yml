@@ -86,6 +86,8 @@ jobs:
         run: node scripts/check_search_everywhere.mjs
       - name: Backup and restore, Export my data (simulated server)
         run: node scripts/check_backup.mjs
+      - name: Keep me signed in, sign-in page and Administration (simulated server)
+        run: node scripts/check_remember_me.mjs
       - name: The demo (made-up mail, no server)
         run: node scripts/check_demo.mjs
       - name: Important people (simulated server)

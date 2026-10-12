@@ -184,6 +184,8 @@ All the guides are listed, by what you want to do, in the [**documentation index
 <details>
 <summary><b>What changed recently</b> (latest five versions)</summary>
 
+- **Unreleased**: **"Keep me signed in on this device".** An administrator can let people stay signed in for up to 14 days with a tick-box on the sign-in page (off by default; needs a vault key file). Restarting Enveliq still signs everyone out.
+
 - **Unreleased**: **No flash of sample data when you refresh.** Pressing refresh no longer shows the sample page (a sample name, counts and version) for a split second before your own page appears.
 - **Unreleased**: **Shift + tick selects a range of emails.** Tick one email, hold Shift and tick another a few emails away, and every email between them is ticked too, up or down the list.
 - **Unreleased**: **A quick check before a new email goes.** If a new email has no subject, or the words say something is attached but nothing is, Enveliq now asks once before sending. It never blocks you: **Send anyway** always sends. The check happens in the page, so it works the same for every mailbox. See [docs/SEND_CHECKS.md](docs/SEND_CHECKS.md).
