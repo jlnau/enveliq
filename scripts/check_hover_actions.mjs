@@ -44,7 +44,7 @@ const settle = (p) => p.waitForTimeout(350);
   const before = await rows.count();
   await pair(2).locator(".archive").click();
   await p.waitForSelector("#undoBar:not([hidden])");
-  check("a button works: Archive takes the email off the list and shows Undo", (await rows.count()) === before - 1);
+  check("a button works: Archive greys the email out and shows Undo", (await rows.count()) === before && (await p.locator("article.mail.leaving").count()) === 1);
   await p.mouse.move(5, 5); await settle(p);
   await p.keyboard.press("Tab");
   // Keyboard: a button that has focus shows its row's buttons

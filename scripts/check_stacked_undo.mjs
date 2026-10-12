@@ -42,9 +42,9 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 760 }], ["phone", {
   check(name + ": the bars sit on top of each other without overlapping", boxes.every((r, i) => i === 0 || r.top >= boxes[i - 1].bottom - 0.5));
   check(name + ": the bars stay inside the screen", boxes.every((r) => r.left >= 0 && r.right <= vp.width && r.bottom <= vp.height));
   if (shots) await p.screenshot({ path: path.join(shots, `stacked-undo-${name}.png`) });
-  const before = await p.locator("article.mail").count();
+  const before = await p.locator("article.mail:not(.leaving)").count();
   await bars().nth(1).locator("button").click();
-  check(name + ": Undo on the middle bar brings back only that email", (await bars().count()) === 2 && (await p.locator("article.mail").count()) === before + 1 && /Archived/.test(await bars().first().innerText()) && /Marked reviewed/.test(await bars().last().innerText()));
+  check(name + ": Undo on the middle bar brings back only that email", (await bars().count()) === 2 && (await p.locator("article.mail:not(.leaving)").count()) === before + 1 && /Archived/.test(await bars().first().innerText()) && /Marked reviewed/.test(await bars().last().innerText()));
   await queue("trashed", 2);
   check(name + ": two emails done together are one bar", (await bars().count()) === 3 && /2 emails/.test(await bars().last().innerText()));
   await queue("archived");
