@@ -542,15 +542,15 @@ body.vopen .vpanel{transform:none;visibility:visible;transition:transform .3s cu
 @media(prefers-reduced-motion:reduce){.vpanel,.vtab,.vtab svg,.deckcard{transition:none!important;animation:none!important}}
 
 /* ---- Phone layout (up to 760px wide) ---- */
-.mtop,.menuscrim,.undobar{display:none}
-.undobar{position:fixed;left:50%;transform:translateX(-50%);width:min(420px,calc(100% - 28px));box-sizing:border-box;bottom:16px;z-index:95;background:var(--c-232a36);border:1px solid var(--c-364055);border-radius:14px;padding:13px 16px;align-items:center;justify-content:space-between;gap:12px;font-size:14px;box-shadow:0 12px 30px rgba(0,0,0,.5);overflow:hidden}
+.mtop,.menuscrim{display:none}
+.undostack{position:fixed;left:50%;transform:translateX(-50%);width:min(420px,calc(100% - 28px));bottom:16px;z-index:95;display:flex;flex-direction:column;gap:8px}.undostack[hidden]{display:none}.undobar{position:relative;box-sizing:border-box;width:100%;background:var(--c-232a36);border:1px solid var(--c-364055);border-radius:14px;padding:13px 16px;align-items:center;justify-content:space-between;gap:12px;font-size:14px;box-shadow:0 12px 30px rgba(0,0,0,.5);overflow:hidden}
 .sendbar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:120;width:min(420px,calc(100% - 28px));display:grid;gap:8px}.sendbar[hidden]{display:none}
 .sendrow{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--c-232a36);border:1px solid var(--c-364055);border-radius:14px;padding:12px 16px;font-size:14px;box-shadow:0 12px 30px rgba(0,0,0,.35);position:relative;overflow:hidden}
 .sendrow button{border:0;background:transparent;color:var(--c-65c4ff);font-weight:700;font-size:15px;padding:6px 4px;cursor:pointer}
 .sendprog{position:absolute;left:0;bottom:0;height:3px;background:var(--brand);transition:width 1s linear}
 @media(max-width:760px){.sendbar{bottom:16px}}
 .primary.busy{opacity:.75;cursor:progress}
-.undobar:not([hidden]){display:flex}.sendbar:not([hidden])~.undobar,.sumbar:not([hidden])~.undobar{bottom:84px}.undobar button{border:0;background:transparent;color:var(--c-65c4ff);font-weight:700;font-size:15px;padding:6px 4px}
+.undobar{display:flex}.undobar span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.undobar button{flex:none}.sendbar:not([hidden])~.undostack,.sumbar:not([hidden])~.undostack{bottom:84px}.undobar button{border:0;background:transparent;color:var(--c-65c4ff);font-weight:700;font-size:15px;padding:6px 4px}
 .undoprog{position:absolute;left:0;bottom:0;height:3px;background:var(--c-1f5fc4);width:100%;transform-origin:left;animation:undoRun 5s linear forwards}
 @keyframes undoRun{from{transform:scaleX(1)}to{transform:scaleX(0)}}
 .swipebg{position:absolute;inset:0;display:flex;align-items:center;padding:0 22px;gap:8px;font-weight:700;font-size:14px;color:#fff;pointer-events:none}
@@ -908,7 +908,7 @@ body.on-ship #waitBars{display:none!important}
     <label class="vcheck" id="vOpenL"><input type="checkbox" id="vOpen"><span><b>Show every email open</b><small>No collapsed rows</small></span></label>
     <label class="vcheck" id="vPeekL"><input type="checkbox" id="vPeek"><span><b>Preview on hover</b><small>Rest on a subject to peek at the summary</small></span></label></div>
 </aside>
-<div class="scrim" id="scrim"></div><div class="menuscrim" id="menuScrim"></div><div class="sendbar" id="sendBar" role="status" aria-live="polite" hidden></div><div class="sumbar" id="sumBar" role="status" aria-live="polite" hidden></div><div class="undobar" id="undoBar" role="status" aria-live="polite" hidden><span id="undoText"></span><button type="button" id="undoBtn">Undo</button><i class="undoprog" id="undoProg"></i></div>
+<div class="scrim" id="scrim"></div><div class="menuscrim" id="menuScrim"></div><div class="sendbar" id="sendBar" role="status" aria-live="polite" hidden></div><div class="sumbar" id="sumBar" role="status" aria-live="polite" hidden></div><div class="undostack" id="undoBar" role="status" aria-live="polite" hidden></div>
 <div class="settings" id="settings">
   <nav class="settings-nav" id="settingsNav"></nav>
 
@@ -4878,33 +4878,41 @@ $("mSyncBtn").onclick=()=>$("syncBtn").click();
 phoneQuery.addEventListener("change",()=>{setMenu(false);document.body.classList.remove("msearch","scrolled");render()});
 function updateScrolled(){const h=document.querySelector("header.top");document.body.classList.toggle("scrolled",isPhone()&&h.getBoundingClientRect().bottom<60)}
 window.addEventListener("scroll",updateScrolled,{passive:true});window.addEventListener("resize",updateScrolled);
-// Undo: every Reviewed / Archive / Bin, on any screen, for one email or several, waits five seconds.
+// Undo: every Reviewed / Archive / Bin, on any screen, for one email or several, waits five seconds. Each action has its own bar.
 // The email(s) leave the list at once; the real action only happens when the bar goes away (or the page is closed).
 window.__undoMs=5000;
-const pendingActs=[];let undoEntry=null;
+const pendingActs=[];
 const UNDO_LABEL={reviewed:"Marked reviewed",archived:"Archived",trashed:"Moved to Bin"};
-function showUndo(entry){
-  undoEntry=entry;const n=entry.ms.length;
-  $("undoText").textContent=`${UNDO_LABEL[entry.status]} · ${n===1?entry.ms[0].subject:n+" emails"}`;
-  const bar=$("undoBar"),pr=$("undoProg");bar.hidden=false;pr.style.animation="none";void pr.offsetWidth;pr.style.animation="";pr.style.animationDuration=Math.max(0,entry.end-Date.now())+"ms";
+const UNDO_MAX=3;           // at most three bars show; a fourth makes the oldest one go through straight away
+function drawUndos(){          // one bar per waiting action, the newest at the bottom. Several emails done together are one action, so one bar.
+  const box=$("undoBar");box.textContent="";box.hidden=!pendingActs.length;
+  pendingActs.forEach(entry=>{
+    const n=entry.ms.length,bar=document.createElement("div");bar.className="undobar";
+    const t=document.createElement("span");t.textContent=`${UNDO_LABEL[entry.status]} · ${n===1?entry.ms[0].subject:n+" emails"}`;
+    const btn=document.createElement("button");btn.type="button";btn.textContent="Undo";btn.onclick=()=>undoEntryNow(entry);
+    const pr=document.createElement("i");pr.className="undoprog";
+    const left=Math.max(0,entry.end-Date.now());pr.style.animationDuration=entry.total+"ms";pr.style.animationDelay=-(entry.total-left)+"ms";
+    bar.append(t,btn,pr);box.append(bar);
+  });
 }
-function nextUndo(){            // after one goes away, the bar shows the one before it that is still waiting
-  const last=pendingActs[pendingActs.length-1];
-  if(last)showUndo(last);else{undoEntry=null;$("undoBar").hidden=true}
+function undoEntryNow(e){
+  clearTimeout(e.timer);const i=pendingActs.indexOf(e);if(i>=0)pendingActs.splice(i,1);
+  e.ms.forEach(m=>{delete m._pending});drawUndos();render();toast("Undone");
 }
 function queueAction(list,status){
   const ms=list.filter(m=>m&&!m._pending&&!m.kept);
   if(!ms.length)return;
   ms.forEach(m=>{m._pending=status;selected.delete(m.id)});
-  const entry={ms,status,end:Date.now()+window.__undoMs};
+  const entry={ms,status,total:window.__undoMs,end:Date.now()+window.__undoMs};
   pendingActs.push(entry);
   entry.timer=setTimeout(()=>commitAction(entry),window.__undoMs);
-  showUndo(entry);render();
+  while(pendingActs.length>UNDO_MAX)commitAction(pendingActs[0]);
+  drawUndos();render();
 }
 const phoneAction=(m,status)=>queueAction([m],status);       // the swipe code
 async function commitAction(entry,together){
   clearTimeout(entry.timer);const i=pendingActs.indexOf(entry);if(i<0)return;pendingActs.splice(i,1);
-  if(undoEntry===entry)nextUndo();
+  drawUndos();
   const {ms,status}=entry,many=ms.length>1;let done=0,failed=false;
   const one=async m=>{
     if(m.real){if(await resolveRealOne(m,status,document.createElement("button"),many))done++;else failed=true}
@@ -4919,10 +4927,6 @@ async function commitAction(entry,together){
     if(many&&ms.some(m=>m.real))refreshTasks();
   }finally{ms.forEach(m=>{delete m._pending});render()}
 }
-$("undoBtn").onclick=()=>{
-  const e=undoEntry;if(!e)return;clearTimeout(e.timer);const i=pendingActs.indexOf(e);if(i>=0)pendingActs.splice(i,1);
-  e.ms.forEach(m=>{delete m._pending});nextUndo();render();toast("Undone");
-};
 const flushActs=()=>{[...pendingActs].forEach(e=>commitAction(e,true))};
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&isPhone())flushActs()});   // a phone may freeze a page that is out of sightwindow.addEventListener("pagehide",flushActs);
 // Swipe a row: right = Reviewed (short) or Archive (long), left = Bin.

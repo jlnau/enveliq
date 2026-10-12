@@ -9,6 +9,12 @@ Newest first. Each entry says what changed for people and which parts of the cod
 - `prototype/index.html`: the row's date and time block gets a small paperclip (`.clip`) when the email has attachments. It says "Has an attachment", or "Has 2 attachments", to a screen reader and as a tooltip. Emails without attachments look as before.
 - Tests: `scripts/check_attachment_clip.mjs` (new; paperclip present and absent, its label, under the date and lined up on the right, no sideways scrolling, on desktop and phone).
 
+**Undo bars stack.** Each Reviewed, Archive or Bin now gets its own Undo bar, so you can still take back an earlier one after doing another. Several emails done together are still one bar.
+
+- `prototype/index.html`: the single Undo bar is now a stack (`#undoBar` holds one `.undobar` per waiting action, newest at the bottom, drawn by `drawUndos()`). Each bar has its own Undo button and its own countdown line, which carries on from where it was when another bar is added. At most three show: a fourth action sends the oldest one straight away.
+- Tests: `scripts/check_stacked_undo.mjs` (new; three in a row, newest at the bottom, no overlap on desktop or phone, Undo on the middle one, several emails as one bar, the three-bar limit, bars leaving one by one). `check_demo.mjs` and `check_inbox_real_mail.mjs` now look at the newest bar.
+- Docs: `docs/UNDO.md`.
+
 ## v0.81 (2026-10-12)
 
 **Mail rules.** "Archive new email from this sender", done for the person as mail arrives.
