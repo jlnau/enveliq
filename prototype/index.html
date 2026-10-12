@@ -656,6 +656,18 @@ body.reader-open{overflow:hidden}
 /* ---- In-between widths: keep the header tidy ---- */
 /* Tasks: the Today card on the inbox, the Tasks page, and the task line inside an email */
 .duebars{padding:0 0 14px}.duebars[hidden]{display:none}
+/* Calm mode: no numbers, softer colours, nothing that says "you are behind". Set per person, remembered in this browser. */
+.calm-row{justify-content:flex-start}.calm-sw{margin-left:auto;width:30px;height:18px;border-radius:999px;background:var(--c-262c38);border:1px solid var(--line);position:relative;flex:none;transition:background .2s}
+.calm-sw::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s}
+.calm-row[aria-checked="true"] .calm-sw{background:var(--brand-deep);border-color:transparent}.calm-row[aria-checked="true"] .calm-sw::after{transform:translateX(12px);background:#fff}
+.app.collapsed .calm-sw{display:none}
+body.calm .badge,body.calm #sumBar,body.calm #syncAgo{display:none!important}
+body.calm .top p .need{color:inherit;text-decoration:none;cursor:default;pointer-events:none}
+body.calm .twhen.soft,body.calm .twhen{color:var(--muted)}
+body.calm .qrow .flag,body.calm .qrow .pdot{filter:grayscale(1);opacity:.55}
+body.calm .today-card{border-color:transparent;background:var(--panel)}
+body.calm *{animation-duration:.001s!important;transition-duration:.001s!important}
+body.calm .calm-row .calm-sw,body.calm .calm-row .calm-sw::after{transition-duration:.2s!important}
 .today-card{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:12px 14px 10px}
 .thead{display:flex;align-items:center;gap:10px;margin-bottom:8px}.thead b{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.thead .linkbtn{margin-left:auto}
 .trow2{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:10px;padding:9px 6px;border-top:1px solid var(--line)}.trow2:first-of-type{border-top:0}
@@ -817,6 +829,7 @@ body.on-ship #waitBars{display:none!important}
   </nav>
   <a class="updnote" id="updNote" target="_blank" rel="noopener noreferrer" hidden><span class="updic" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 11l6-6 6 6"/></svg></span><span class="updtx"><b id="updVer">A new version is out</b><small>See what's new</small></span></a>
   <div class="side-foot">
+    <button class="nav calm-row" id="calmBtn" type="button" role="switch" aria-checked="false" title="Calm mode: no numbers, softer colours, nothing waiting on you"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9c3-3 5-3 9 0s6 3 9 0"/><path d="M3 15c3-3 5-3 9 0s6 3 9 0"/></svg><span class="nav-label">Calm mode</span><span class="calm-sw" aria-hidden="true"></span></button>
     <button class="nav" id="agentBtn" type="button" title="Talk to Hermes, your AI helper" aria-haspopup="dialog" aria-expanded="false" aria-controls="agentPop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-4.5 3.5V17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M12 8.2l.9 1.9 1.9.9-1.9.9-.9 1.9-.9-1.9-1.9-.9 1.9-.9z"/></svg><span class="nav-label">Agent</span></button>
     <button class="user-pill" id="userPill" aria-haspopup="true" aria-expanded="false" aria-controls="userMenu" title="Switch user">
       <span class="avatar" id="avatar">MO</span>
@@ -1771,7 +1784,7 @@ const isoLocal=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"
 function taskOrder(a,b){return (a.state!=="open")-(b.state!=="open")||Math.max(a.days,0)-Math.max(b.days,0)||(a.priority==="high"?0:1)-(b.priority==="high"?0:1)||a.days-b.days||(b.received||0)-(a.received||0)}
 function taskWhen(t){
   const d=new Date(t.due+"T00:00:00"),wd=d.toLocaleDateString("en-AU",{weekday:"short"}),dm=d.toLocaleDateString("en-AU",{day:"numeric",month:"short"});
-  if(t.days<0)return t.days>-7?`Waiting since ${wd}`:`Waiting since ${dm}`;
+  if(t.days<0)return calmOn()?"When you can":t.days>-7?`Waiting since ${wd}`:`Waiting since ${dm}`;
   if(t.days===0)return t.remind_at?"Today · "+new Date(t.remind_at*1000).toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"}).replace(" ",""):"Today";
   if(t.days===1)return "Tomorrow";
   return t.days<7?wd:`${wd} ${dm}`;
@@ -1843,8 +1856,8 @@ function taskRow(t,fin){
 function renderToday(){
   const box=$("dueBars"),open=openTasks(),now=open.filter(t=>t.days<=0);
   if(!now.length||filter==="tasks"||filter==="sent"){box.hidden=true;box.replaceChildren();return}
-  const shown=now.slice(0,3),rest=[...now.slice(3),...open.filter(t=>t.days>0)];
-  box.innerHTML=`<div class="today-card"><div class="thead"><b>Today · ${now.length} ${now.length===1?"thing":"things"}</b><button class="linkbtn" type="button" data-tasks-go>Open Tasks</button></div>${shown.map(t=>taskRow(t,false)).join("")}${rest.length?`<button class="tmore" type="button" data-due-toggle aria-expanded="${dueOpen}">Coming up · ${rest.length} more ${dueOpen?"⌃":"⌄"}</button>${dueOpen?rest.map(t=>taskRow(t,false)).join(""):""}`:""}</div>`;
+  const calm=calmOn(),shown=now.slice(0,calm?1:3),rest=[...now.slice(calm?1:3),...open.filter(t=>t.days>0)];
+  box.innerHTML=`<div class="today-card"><div class="thead"><b>${calmOn()?"Start here":`Today · ${now.length} ${now.length===1?"thing":"things"}`}</b><button class="linkbtn" type="button" data-tasks-go>Open Tasks</button></div>${shown.map(t=>taskRow(t,false)).join("")}${rest.length?`<button class="tmore" type="button" data-due-toggle aria-expanded="${dueOpen}">${calmOn()?"Later":`Coming up · ${rest.length} more`} ${dueOpen?"⌃":"⌄"}</button>${dueOpen?rest.map(t=>taskRow(t,false)).join(""):""}`:""}</div>`;
   box.hidden=false;
 }
 function calendarHtml(){
@@ -2389,7 +2402,7 @@ function render(){
   const greeting=(hr<12?"Good morning":hr<18?"Good afternoon":"Good evening")+(first?`, ${first}`:"");
   document.querySelector(".top-left h2").textContent=greeting;
   $("todayDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"});
-  $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:"All caught up");
+  $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(calmOn()?(inbox.length?"Take it one at a time. Nothing here is urgent.":"Nothing waiting. Enjoy the quiet."):inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:"All caught up");
 
   const rows=data.filter(visible);
   const rank={high:0,normal:1,low:2};
@@ -4895,6 +4908,21 @@ setTimeout(()=>document.body.classList.remove("booting"),6000);   // never leave
   };
 })();
 
+// ---------- Calm mode ----------
+// No numbers, softer colours, no "waiting since". Remembered in this browser (a later version can keep it with the person's other preferences).
+function calmOn(){return document.body.classList.contains("calm")}
+(function(){
+  const btn=$("calmBtn");
+  const paint=()=>btn.setAttribute("aria-checked",String(calmOn()));
+  try{if(localStorage.getItem("enveliq-calm")==="1")document.body.classList.add("calm")}catch{}
+  btn.onclick=()=>{
+    document.body.classList.toggle("calm");
+    try{localStorage.setItem("enveliq-calm",calmOn()?"1":"0")}catch{}
+    paint();
+    try{render()}catch{}
+  };
+  paint();
+})();
 // ---------- Light / dark mode ----------
 // Dark is the default. The choice is remembered in this browser only.
 (function(){
@@ -4928,7 +4956,7 @@ const SW_LABEL={ok:"Reviewed",arch:"Archive",bin:"Bin"},SW_STATUS={ok:"reviewed"
 function syncMobileBar(n,need){
   const logo=$("mLogo"),src=document.querySelector(".brand-wordmark");
   if(logo&&src&&!logo.getAttribute("src"))logo.setAttribute("src",src.getAttribute("src"));
-  $("mTitleSub").textContent=`${n} ${n===1?"email":"emails"}${need?` · ${need} need you`:""}`;
+  $("mTitleSub").textContent=calmOn()?"":`${n} ${n===1?"email":"emails"}${need?` · ${need} need you`:""}`;
   $("fDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short"});
   $("mSyncBtn").hidden=$("syncBtn").hidden;
 }
