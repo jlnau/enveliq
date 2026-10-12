@@ -6,6 +6,7 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 
 - [Install Enveliq: pick your guide](install/README.md)
 - [Choose your settings](install/choose-settings.md) (the three lines in the install file)
+- [Settings reference](ENVIRONMENT.md): every environment variable and what it does
 - On a computer: [Windows or Mac](install/docker-desktop.md) · [Linux](install/docker-compose.md) · [Raspberry Pi](install/raspberry-pi.md) · [Proxmox](install/proxmox.md)
 - With a control panel: [Arcane](install/arcane.md) · [Portainer](install/portainer.md) · [Dockge](install/dockge.md)
 - On a NAS: [Synology](install/synology.md) · [Unraid](install/unraid.md) · [TrueNAS](install/truenas.md)
