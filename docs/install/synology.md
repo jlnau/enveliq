@@ -27,7 +27,7 @@ Open [Choose your settings](choose-settings.md), decide your answers, and come b
 3. **Path:** press **Set Path** and choose `docker/enveliq`.
 4. **Source:** choose **Create docker-compose.yml**.
 5. Open <https://github.com/jlnau/enveliq/blob/main/install/docker-compose.yml> on your computer and press **Copy raw file**. Paste it into the box (Ctrl + V).
-6. Change the lines marked `<-- CHANGE THIS` to your answers. **On a Synology you will normally change the port line** to `- "8765:8765"`, as in the "port line" part of the settings page.
+6. Change the lines marked `<-- CHANGE THIS` to your answers. The port line already says `- "8765:8765"`, so other devices on your network can open Enveliq.
 7. Press **Next**. If it offers **Set up web portal via Web Station**, leave it off. Press **Next**, then **Done**.
 
 Container Manager now downloads and starts Enveliq. This can take several minutes the first time.

@@ -1719,7 +1719,8 @@ function disclosure(key,label,preview,body){
     <span class="disclosure-label">${esc(label)}</span><span class="disclosure-preview">${preview||""}</span><span class="chev">⌄</span>
   </button><div class="disclosure-body">${body}</div></div>`;
 }
-const attachmentsBlock=m=>m.attachments.length?`<section class="ad-block" aria-label="Attachments"><div class="ad-title">${m.attachments.length===1?"1 attachment":m.attachments.length+" attachments"}</div>${m.attachments.map((a,i)=>attachmentDisclosure(m,a,i)).join("")}</section>`:"";
+const unreadFilesBlock=m=>`<section class="ad-block" aria-label="Attachments" data-files-unread><div class="ad-title">${m.fileCount===1?"1 attachment":m.fileCount+" attachments"}</div><div class="ad-wait">Enveliq has not read the files of this email yet.${m.real?` <button class="subtle" type="button" data-att-retry="${esc(m.id)}">Read the files again</button>`:""} You can still open them with View original email.</div></section>`;
+const attachmentsBlock=m=>!m.attachments.length&&m.real&&m.fileCount>0&&m.status==="inbox"?unreadFilesBlock(m):m.attachments.length?`<section class="ad-block" aria-label="Attachments"><div class="ad-title">${m.attachments.length===1?"1 attachment":m.attachments.length+" attachments"}</div>${m.attachments.map((a,i)=>attachmentDisclosure(m,a,i)).join("")}</section>`:"";
 function attachmentDisclosure(m,a,i){
   const key=`att-${m.id}-${i}`,open=expanded.has(key),st=a.state||"done";
   const kindOf=x=>/wordprocessingml/.test(x)?"Word":/pdf/.test(x)?"PDF":/csv/.test(x)?"CSV":/^text\//.test(x)?"Text":/^image\//.test(x)?"Picture":"",meta=[kindOf(a.mime||""),a.pages?`${a.pages} pages`:"",a.size].filter(Boolean).join(" · ");
