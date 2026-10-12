@@ -4,6 +4,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+No changes recorded yet.
+
+## v0.81 (2026-10-12)
+
 **Mail rules.** "Archive new email from this sender", done for the person as mail arrives.
 
 - `backend/mail/rules.py` (new): `Rules`, one encrypted vault record per person (`rules:<user id>`), at most 50 rules. A rule has a sender (one address, or a whole website written `@example.com`), optional words the subject must contain, and an action: **archive** or **mark reviewed**. There is deliberately no action that bins mail.
