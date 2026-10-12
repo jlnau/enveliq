@@ -4,7 +4,11 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**Row buttons show when you point at an email.** On a computer, the Reviewed, Archive and Bin buttons on an email in the list now appear only while the mouse is over that email, in the place of its date, and go away again when the mouse leaves. The list is calmer to look at. Tabbing to a button shows them too. Phones are unchanged (they swipe), and an opened email keeps its own buttons.
+
+- `prototype/index.html`: for a mouse (`hover:hover`) on a screen wider than a phone, a closed row's `.qpair` is hidden until the row is hovered or has focus inside it. It is smaller (32 by 30) and fades in over the date, which fades out. The buttons stay in the page and keep working for the keyboard. The reading-pane layout and phones are left as they were.
+- Tests: `scripts/check_hover_actions.mjs` (new; hidden by default, shown only for the row under the mouse, in the place of the date, inside the row, a button works, keyboard focus shows them, an opened email keeps its buttons, phones unchanged). `check_demo.mjs` and `check_inbox_real_mail.mjs` still pass.
+- Docs: `docs/UNDO.md`.
 
 ## v0.81 (2026-10-12)
 
