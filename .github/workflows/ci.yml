@@ -86,6 +86,8 @@ jobs:
         run: node scripts/check_snooze.mjs
       - name: Search everywhere (simulated server)
         run: node scripts/check_search_everywhere.mjs
+      - name: A blank install shows no sample mail (simulated server)
+        run: node scripts/check_blank_install.mjs
       - name: Backup and restore, Export my data (simulated server)
         run: node scripts/check_backup.mjs
       - name: Keep me signed in, sign-in page and Administration (simulated server)

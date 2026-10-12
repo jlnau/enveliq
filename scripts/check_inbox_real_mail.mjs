@@ -648,9 +648,9 @@ await page.click("#themeBtn");
 {
   const server = makeServer({ withMailbox: false });
   const { page } = await open(server);
-  await page.waitForSelector("article.mail");
-  check("no mailbox: sample emails still shown", (await page.locator("#list").innerText()).includes("Skyline Air"));
-  check("no mailbox: sample banner shown, sync button hidden", (await page.locator(".sample-banner").isVisible()) && !(await page.locator("#syncBtn").isVisible()));
+  await page.waitForSelector(".sample-banner", { state: "visible" });
+  check("no mailbox: no sample emails are shown", (await page.locator("article.mail").count()) === 0 && !(await page.locator("#list").innerText()).includes("Skyline Air"));
+  check("no mailbox: banner says the inbox is empty, sync button hidden", (await page.locator(".sample-banner").innerText()).includes("empty") && !(await page.locator("#syncBtn").isVisible()));
 }
 
 // ---- A brand-new install opens the setup guide once ----
@@ -660,7 +660,7 @@ await page.click("#themeBtn");
   await page.waitForURL("**/welcome", { timeout: 5000 }).catch(() => {});
   check("new install: the setup guide opens by itself the first time", page.url().endsWith("/welcome"));
   await page.goto(`${ORIGIN}/`);
-  await page.waitForSelector("article.mail");
+  await page.waitForSelector(".sample-banner", { state: "visible" });
   check("new install: the second visit shows the inbox, not the guide", page.url() === `${ORIGIN}/`);
 }
 
