@@ -41,7 +41,9 @@ def load_app(tmp_path: Path, **env: str):
         if key not in env:
             os.environ.pop(key, None)
     import backend.app as app_module
-    return importlib.reload(app_module)
+    app_module = importlib.reload(app_module)
+    app_module.mail_service.hold_new_mail = False        # most tests read the inbox straight after a sync; tests of the AI queue switch this on
+    return app_module
 
 
 def b64url(data: bytes) -> str:

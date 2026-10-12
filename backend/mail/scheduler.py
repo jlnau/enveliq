@@ -146,7 +146,7 @@ class AutoSync:
         """The unread emails stored since `before`, as the small facts an alert needs (no summary, no address)."""
         try:
             fresh = [m for m in self.vault.list_messages(account["id"])
-                     if m["id"] not in before and m.get("state", "unread") == "unread" and not m.get("from_all_mail")]
+                     if m["id"] not in before and m.get("state", "unread") == "unread" and not m.get("from_all_mail") and not m.get("ai_pending")]
         except Exception:
             return []
         fresh.sort(key=lambda m: m.get("received_at") or 0, reverse=True)
@@ -158,7 +158,10 @@ class AutoSync:
         try:
             r = self.service.sync(self.vault, account)
             result.update(ok=True, added=r["added"], removed=r.get("removed", 0), summarised=0)
-            if (account.get("settings") or {}).get("ai_summaries") and self.service.summariser.enabled:
+            queued = self.service.on_pending is not None and self.service.hold_new_mail
+            if queued:
+                self.service.enqueue_held(self.vault, account)         # new mail waits in the AI queue; the queue writes the summaries
+            if not queued and (account.get("settings") or {}).get("ai_summaries") and self.service.summariser.enabled:
                 try:
                     for _ in range(SUMMARY_BATCHES):
                         s = self.service.summarise_pending(self.vault, account)

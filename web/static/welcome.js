@@ -455,12 +455,26 @@ async function welcomePage(me, params) {
           found += r.added;
           if (aiOn(a)) {
             try {
+              // New mail waits in the AI queue and is shown when its summary is ready: wait for the line to empty (up to ten minutes).
+              const until = Date.now() + 600000;
+              for (;;) {
+                const q = await api("/me/summary-queue");
+                const mine = q.items.filter(i => i.account_id === a.id);
+                const left = mine.filter(i => i.state === "waiting" || i.state === "writing").length;
+                const failed = mine.find(i => i.state === "failed");
+                if (failed && !problem) problem = { message: failed.error || "A summary did not finish.", code: "ai_bad_reply" };
+                if (!left || Date.now() > until) break;
+                line(`Summarising… ${left} still to do. A local model takes a few seconds per email.`);
+                await new Promise(ok => setTimeout(ok, 2000));
+              }
+              // Anything the queue did not take (for example mail that was not held) is summarised the direct way.
               for (let i = 0; i < 5; i++) {
-                line(`Summarising… ${summarised} done so far. A local model takes a few seconds per email.`);
+                line("Summarising…");
                 const s = await api(`/accounts/${a.id}/summarise`, { method: "POST", body: {} });
-                summarised += s.summarised;
                 if (!s.remaining || !s.summarised) break;
               }
+              const shown = await api(`/accounts/${a.id}/messages`);
+              summarised += shown.filter(m => m.state !== "reviewed" && m.state !== "archived" && !String(m.summary || "").startsWith("Not summarised yet")).length;
             } catch (er) { problem = er; }
           }
         }
