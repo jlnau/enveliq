@@ -113,3 +113,20 @@ def test_one_bad_answer_from_the_model_is_retried_once(tmp_path):
     finally:
         bridge.close()
         model.close()
+
+
+def test_when_a_summary_fails_the_reason_is_specific_and_holds_no_email_text(tmp_path):
+    model = FakeModel(reply="I cannot help with that.")
+    appm, client, bridge = start(tmp_path, model)
+    try:
+        for uid in list(bridge.messages):
+            del bridge.messages[uid]
+        bridge.add(41, PLAIN)
+        aid = account(client, bridge)
+        client.post(f"/api/v1/accounts/{aid}/sync", json={})
+        assert client.post(f"/api/v1/accounts/{aid}/summarise", json={}).json()["failed"] == 1
+        reasons = list(appm.mail_service.problems.values())
+        assert len(reasons) == 1 and "answered, but not in a form" in reasons[0] and "Hello" not in reasons[0]
+    finally:
+        bridge.close()
+        model.close()
