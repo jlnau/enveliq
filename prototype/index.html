@@ -2319,12 +2319,26 @@ function paintSumBar(){
   const g=document.createElement("span");g.className="grow";const p=document.createElement("span");p.className="gprog";p.append(document.createElement("i"));
   row.append(t,g,p);box.replaceChildren(row);
 }
+// Files are summarised just after their email's own summary, so the rows appear a little later. Look again every few seconds
+// for a short while after a summary is written, and for as long as any file says it is being read (never longer than four minutes).
+let fileWatch=null,fileWatchUntil=0,fileWatchHard=0;
+const filesBusy=()=>data.some(m=>m.real&&m.attachments.some(a=>a.state==="working"));
+function watchFiles(ms){
+  const now=Date.now();fileWatchUntil=Math.max(fileWatchUntil,now+ms);fileWatchHard=fileWatchHard||now+240000;
+  if(fileWatch)return;
+  fileWatch=setInterval(async()=>{
+    const t=Date.now();
+    if(t>fileWatchHard||(t>fileWatchUntil&&!filesBusy())){clearInterval(fileWatch);fileWatch=null;fileWatchUntil=fileWatchHard=0;return}
+    if(document.hidden||selected.size||pendingActs.length||$("attachmentModal").classList.contains("open"))return;
+    try{await loadRealMail(currentUser);render()}catch{}
+  },4000);
+}
 async function pollSummaries(first){
   let r;try{r=await secureBackendRequest("/api/v1/me/summary-queue",{method:"GET",headers:{}})}catch{return}
   sq=r;paintSumBar();
   let finished=false;
   for(const it of r.items){const k=it.account_id+":"+it.message_id+":"+it.state;if(it.state==="done"&&!sqDoneSeen.has(k)){sqDoneSeen.add(k);if(!first)finished=true}}
-  if(finished&&realMail){try{await loadRealMail(currentUser)}catch{}}
+  if(finished&&realMail){try{await loadRealMail(currentUser)}catch{}watchFiles(20000)}
   if(realMail)render();
   const busy=r.waiting||r.writing;
   if(busy&&!sqTimer)sqTimer=setInterval(()=>pollSummaries(false),2500);
@@ -3980,6 +3994,7 @@ async function loadRealMail(me){
   await fetchTasks();await fetchShipping();await fetchSubs();await fetchTrips();await fetchWaiting();await fetchImportant();await fetchSaved();      // after realMail is set, so the first load already has the person's tasks
   document.body.classList.add("real-mail");
   $("syncBtn").hidden=false;
+  if(filesBusy())watchFiles(0);
   return true;
 }
 // The server fetches new mail by itself (see /api/v1/sync/status). This page

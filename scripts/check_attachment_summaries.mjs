@@ -66,5 +66,27 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
   check(name + ": no script errors", errors.length === 0);
   await p.close();
 }
+// Rows appear by themselves: while a file is being read the page looks again every few seconds, then stops
+{
+  const p = await b.newPage({ viewport: { width: 1180, height: 820 } }); const errors = [];
+  p.on("pageerror", (e) => errors.push(String(e)));
+  await p.goto(url); await p.waitForTimeout(600);
+  await p.evaluate(() => {
+    const base = data.find((x) => x.status === "inbox" && x.owner === currentUser.id);
+    data.forEach((m) => { m.attachments = []; });
+    data.push({ ...base, id: 9301, subject: "Reading now", real: { accountId: "a", messageId: "m" }, attachments: [{ name: "slow.pdf", mime: "application/pdf", size: "1 MB", pages: 12, state: "working", summary: "", parts: [] }] });
+    window.__loads = 0;
+    window.loadRealMail = async () => { window.__loads++; if (window.__loads >= 2) data.find((x) => x.id === 9301).attachments[0].state = "done"; return true; };
+    document.querySelector(".demo-banner")?.remove(); expanded.add("row-9301"); render(); watchFiles(0);
+  });
+  await p.waitForTimeout(10500);
+  const mid = await p.evaluate(() => window.__loads);
+  check("rows: while a file is being read the page looks again by itself", mid >= 2);
+  check("rows: the row then shows the finished summary", (await p.locator("article.mail", { hasText: "Reading now" }).locator(".ad-line").innerText()) !== "Reading…");
+  await p.waitForTimeout(9000);
+  check("rows: it stops looking once nothing is being read", (await p.evaluate(() => window.__loads)) <= mid + 1);
+  check("rows: no script errors", errors.length === 0);
+  await p.close();
+}
 await b.close(); srv.close();
 process.exit(failed ? 1 : 0);
