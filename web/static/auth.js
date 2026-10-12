@@ -1274,7 +1274,7 @@ function channelCard(ch, redraw) {
     h("ol", { class: "howto" }, ch.steps.map(s => h("li", { text: s }))),
     ...ch.fields.map(fl => field(fl.label, input(`ch_${id}_${fl.key}`, { type: fl.secret ? "password" : "text", autocomplete: "off", spellcheck: "false", maxlength: 600, value: fl.secret ? "" : (fl.value || fl.default || ""),
       placeholder: fl.secret && fl.set ? "Saved. Leave blank to keep it." : fl.placeholder }), fl.help)),
-    h("label", { class: "check", for: `ch_${id}_on` }, h("input", { id: `ch_${id}_on`, type: "checkbox", checked: ch.enabled || !ch.configured }), h("span", {}, h("strong", { text: "Send my reminders here" }))),
+    h("label", { class: "check", for: `ch_${id}_on` }, h("input", { id: `ch_${id}_on`, type: "checkbox", checked: ch.enabled || !ch.configured }), h("span", {}, h("strong", { text: "Send my notifications here" }))),
     ch.last_error ? alertBox("bad", `The last send failed: ${ch.last_error}`) : null,
     ch.last_ok && !ch.last_error ? h("div", { class: "hint", text: `Last sent ${ago(ch.last_ok)}.` }) : null,
     h("div", { class: "row" },
@@ -1301,17 +1301,18 @@ async function remindersPage(me) {
   const redraw = () => remindersPage(me);
   const box = (id, checked, title, hint) => h("label", { class: "check", for: id }, h("input", { id, type: "checkbox", checked }), h("span", {}, h("strong", { text: title }), hint ? h("div", { class: "hint", text: hint }) : null));
   const form = h("form", {},
-    box("rs_morning", s.morning_on, "Morning summary", "One message each morning saying what is due today."),
+    h("p", { class: "hint", text: "Choose what you would like to hear about. Each one goes to the places you turned on above." }),
+    box("rs_morning", s.morning_on, "A morning summary", "One message each morning saying what is due today."),
     field("Send it at", input("rs_morning_time", { type: "time", value: s.morning_time })),
-    box("rs_due", s.due_on, "Remind me when something is due", "Sent once, when a task is due or when a new task for today appears."),
-    box("rs_mail", s.mail_on, "Tell me when new email arrives", "One short message each time Enveliq finds new email for you, to the places chosen below. Quiet hours apply: nothing is sent then, and the emails wait in your inbox."),
-    more("Nudges, quiet hours and privacy",
+    box("rs_due", s.due_on, "When something is due", "Sent once, when a task is due or when a new task for today appears."),
+    box("rs_mail", s.mail_on, "When new email arrives", "One short message each time Enveliq finds new email for you. The email itself is never sent."),
+    more("Repeats, quiet hours and privacy",
       h("div", { class: "grid2" },
         field("Nudge again after (hours)", input("rs_hours", { type: "number", min: "1", max: "12", value: String(s.repeat_hours) }), "If a task is still open, Enveliq nudges you again after this long."),
         field("Nudge at most (times)", input("rs_max", { type: "number", min: "0", max: "5", value: String(s.repeat_max) }), "0 means one reminder and no nudges.")),
       box("rs_quiet", s.quiet_on, "Quiet hours", "Nothing is sent during these hours. What was held is sent when they end."),
       h("div", { class: "grid2" }, field("From", input("rs_from", { type: "time", value: s.quiet_from })), field("Until", input("rs_to", { type: "time", value: s.quiet_to }))),
-      box("rs_titles", s.show_titles, "Show task titles in reminders", "Switch this off for private mode: reminders only say that something is due, so nothing about your mail appears on a lock screen or in a chat service."),
+      box("rs_titles", s.show_titles, "Show task titles", "Switch this off for private mode: messages only say that something is due, so nothing about your mail appears on a lock screen or in a chat service."),
       box("rs_maildetails", s.mail_details, "Show who a new email is from and its subject", "Off by default: the message only says how many emails arrived. Switch this on to see the sender's name and the subject on your lock screen or in a chat service.")),
     h("p", { class: "hint", text: `Times are in your time zone (${ov.tz}).` }),
     h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" })));
@@ -1322,14 +1323,20 @@ async function remindersPage(me) {
     toast("Saved");
   });
   const mine = ov.channels.filter(c => c.allowed);
-  show(...chrome(me, "reminders", h("h1", { text: "Reminders" }),
-    h("p", { class: "lead", text: "Your tasks always appear in Enveliq under Today. Add any of these if you also want a nudge on your phone or in a chat app. You can use several at once. Enveliq never sends the email itself: only your tasks and, if you switch it on below, a short note that new email has arrived." }),
-    guideNote("NOTIFICATIONS.md", "Step by step for each way of being reminded:", "Open the reminders guide"),
-    h("section", { class: "section" }, h("h2", { text: "When to remind me" }), form),
-    h("section", { class: "section" }, h("h2", { text: "Where to send reminders" }),
+  const live = mine.filter(c => c.id === "browser" ? c.enabled && c.devices.length : c.enabled && c.configured);
+  const reach = live.length
+    ? alertBox("info", `Notifications reach you in Enveliq and on: ${live.map(c => c.label).join(", ")}.`)
+    : alertBox("info", "Right now notifications only appear inside Enveliq. To get them on your phone, turn on a place in step 1.");
+  show(...chrome(me, "reminders", h("h1", { text: "Notifications" }),
+    h("p", { class: "lead", text: "Your tasks always appear in Enveliq under Today. If you also want a nudge on your phone or in a chat app, do two things: pick where it should go, then pick what you want to hear about. Enveliq never sends the email itself." }),
+    reach,
+    guideNote("NOTIFICATIONS.md", "Step by step for each place:", "Open the notifications guide"),
+    h("section", { class: "section" }, h("h2", { text: "1. Where should notifications go?" }),
+      h("p", { class: "hint", text: "Open one, follow its short steps and press Save and send a test. On a phone, choose This device." }),
       h("div", { class: "chan" }, h("strong", { text: "In Enveliq" }), " ", h("span", { class: "pill on", text: "Always on" }), h("div", { class: "hint", text: "Today and the Tasks page. Nothing to set up." })),
       ...mine.map(c => channelCard(c, redraw)),
-      mine.length < ov.channels.length ? h("p", { class: "hint", text: "Some channels are hidden because your administrator switched them off." }) : null)));
+      mine.length < ov.channels.length ? h("p", { class: "hint", text: "Some places are hidden because your administrator switched them off." }) : null),
+    h("section", { class: "section" }, h("h2", { text: "2. What should I tell you about?" }), form)));
 }
 // ---------- calendar and To-do lists (everyone) ----------
 function guideList(lines) { return h("ol", { class: "howto" }, lines.map(s => h("li", { text: s }))); }
