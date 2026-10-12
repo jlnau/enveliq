@@ -336,6 +336,7 @@ class MailService:
         warnings: dict[str, Any] = {}
         counts: dict[str, int] = {}
         raws: dict[str, bytes] = {}
+        unread: dict[str, tuple[str, bytes | None, int]] = {}      # emails whose files were not read, with why (and the email itself while it is small)
         summarised: set[str] = set()
         files_on = attach_service.allowed(vault, self.summariser)
         failed = 0
@@ -353,9 +354,19 @@ class MailService:
                             raise BridgeError("not_found", "mailbox reset")
                         raw = s.original(uid)
                         shown = render_original(raw)
-                        if files_on and shown.get("file_count") and len(raw) <= attach_service.MAX_RAW \
-                                and sum(len(b) for b in raws.values()) + len(raw) <= attach_service.MAX_RAW_TOTAL:
-                            raws[m["id"]] = raw             # kept in memory only until its files have been read
+                        if shown.get("file_count"):
+                            why = None
+                            if not files_on:
+                                why = "Summarising attached files is switched off. An administrator can turn it on under Administration, AI model."
+                            elif len(raw) > attach_service.MAX_RAW:
+                                why = "This email is too large to read the files of."
+                            elif sum(len(b) for b in raws.values()) + len(raw) > attach_service.MAX_RAW_TOTAL:
+                                why = "Too many large emails arrived together to read this one's files. Press Read the files again."
+                            if why is None:
+                                raws[m["id"]] = raw         # kept in memory only until its files have been read
+                            else:
+                                log.info("files of %s not read: %s", m["id"], why)
+                                unread[m["id"]] = (why, raw if len(raw) <= attach_service.MAX_RAW else None, int(shown["file_count"]))
                         del raw
                         body = shown["text"][: self.summariser.config.max_chars]
                         if not body.strip():             # an email that is only files: say so, rather than send the model an empty box
@@ -437,7 +448,12 @@ class MailService:
                 attach_service.run(vault, account_id, message_id, raw, self.summariser, instructions)
             except Exception as exc:                 # a problem with a file never loses the email's own summary
                 log.warning("attachment summaries failed: %s", type(exc).__name__)
+                attach_service.mark_unread(vault, account_id, message_id, raw, "Something went wrong while reading these files. Press Try again.", "failed", counts.get(message_id, 0))
         raws.clear()
+        for message_id, (why, raw, n) in unread.items():     # files that were left alone say so on the card
+            if message_id in summarised:
+                attach_service.mark_unread(vault, account_id, message_id, raw, why, "skipped", n)
+        unread.clear()
         if release:                              # summary and files are as ready as they will get: show the emails
             self.release(vault, account, [m["id"] for m in batch])
         return done, failed

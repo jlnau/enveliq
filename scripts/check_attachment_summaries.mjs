@@ -36,11 +36,14 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
       file({ name: "scan.png", mime: "image/png", pages: 0, state: "skipped", reason: "Pictures and scans are not read yet." }),
       file({ name: "broken.docx", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", state: "failed", reason: "The AI server could not be reached, so this file was not summarised." })] });
     data.push({ ...base, id: 9202, subject: "No files here", attachments: [] });
-    document.querySelector(".demo-banner")?.remove(); expanded.add("row-9201"); expanded.add("row-9202"); render();
+    data.push({ ...base, id: 9203, subject: "Files never read", real: { accountId: "a", messageId: "n" }, attachments: [], hasFiles: true, fileCount: 2 });
+    document.querySelector(".demo-banner")?.remove(); expanded.add("row-9201"); expanded.add("row-9202"); expanded.add("row-9203"); render();
   });
   const mail = p.locator("article.mail", { hasText: "Three files" });
   const rows = mail.locator(".ad-row");
   check(name + ": one row per file, under a heading that counts them", (await rows.count()) === 4 && (await mail.locator(".ad-title").innerText()).includes("4 attachments"));
+  const unread = p.locator("article.mail", { hasText: "Files never read" });
+  check(name + ": an email with files but no rows says its files were not read, with a button to read them again", (await unread.locator(".ad-title").innerText()).includes("2 attachments") && (await unread.locator(".ad-wait").innerText()).includes("has not read the files") && (await unread.locator("[data-att-retry]").innerText()) === "Read the files again");
   check(name + ": an email with no files shows no attachments box", (await p.locator("article.mail", { hasText: "No files here" }).locator(".ad-block").count()) === 0);
   const order = await mail.evaluate((a) => { const s = a.querySelector(".qsummary"), b = a.querySelector(".ad-block"), t = a.querySelector(".qtask, .task, [class*=task]"); return { afterSummary: !!(s.compareDocumentPosition(b) & 4), beforeTask: !t || !!(b.compareDocumentPosition(t) & 4) }; });
   check(name + ": the files sit under the email summary and above the task", order.afterSummary && order.beforeTask);
