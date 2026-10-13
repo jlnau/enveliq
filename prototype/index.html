@@ -952,7 +952,7 @@ html[data-theme="light"] .preview-stat{background:linear-gradient(145deg,#fff,#e
 html[data-theme="light"] .preview-stat-copy small{color:var(--muted)}html[data-theme="light"] .preview-stat.action{background:#fff0f3}
 .preview-list-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--preview-gradient);border:1px solid var(--preview-border);border-radius:12px;padding:13px 18px;margin:12px 0}
 .preview-list-heading[hidden]{display:none}.preview-list-heading strong{font-size:18px}.preview-list-heading button{border:0;background:none;color:var(--accent)}
-body:not(.preview-show-filters) #previewListHeading+.filters{display:none!important}
+body:not(.preview-show-filters) #previewListHeading:not([hidden])+.filters{display:none!important}
 @media(max-width:1150px){.preview-overview{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.preview-calm-notice{display:none}.preview-overview{gap:8px}.preview-stat{min-height:103px;padding:11px;gap:8px}.preview-stat-icon{width:28px;height:28px;font-size:16px}.preview-stat-copy b{font-size:24px}.preview-stat-copy small{font-size:10px}}
 
