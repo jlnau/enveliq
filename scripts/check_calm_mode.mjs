@@ -28,6 +28,10 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
   await p.goto(url); await p.waitForTimeout(600);
   await p.evaluate(() => document.querySelector(".demo-banner")?.remove());
   if (name === "phone") await p.click("#menuBtn");
+  if (name === "phone") {
+    check("phone: Calm priority sections start collapsed", await p.evaluate(() => [...document.querySelectorAll(".today-card,.preview-important,.preview-later")].every(el => el.classList.contains("mobile-folded"))));
+    check("phone: recent emails remain visible", await p.locator("#previewListHeading").isVisible() && await p.locator("#list").isVisible());
+  }
   const sw = p.locator("#calmBtn");
   check(name + ": the Calm mode switch is just above Agent, in the footer of the menu", await p.evaluate(() => { const a = document.getElementById("agentBtn"), c = document.getElementById("calmBtn"); return !!c && c.nextElementSibling === a && a.parentElement.classList.contains("side-foot"); }));
   check(name + ": Calm mode starts enabled and announces its state", (await sw.getAttribute("role")) === "switch" && (await sw.getAttribute("aria-checked")) === "true");
@@ -73,6 +77,20 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
 
   await sw.click(); await p.waitForTimeout(300);
   check(name + ": switching Calm mode off announces the change", (await sw.getAttribute("aria-checked")) === "false");
+  if (name === "phone") {
+    check("phone: Today and Coming up start collapsed in normal mode", await p.evaluate(() => !!document.querySelector(".today-card.mobile-folded") && [...document.querySelectorAll(".preview-later")].every(el => el.classList.contains("mobile-folded"))));
+    await p.click("#menuBtn");
+    await p.click('.today-card [data-preview-fold="today"]');
+    check("phone: Today expands when tapped", await p.locator(".today-card .preview-fold-content").isVisible());
+    await p.click('.today-card [data-preview-fold="today"]');
+    check("phone: Today folds again", await p.locator(".today-card .preview-fold-content").isHidden());
+    if (await p.locator(".preview-later").count()) {
+      await p.click('.preview-later [data-preview-fold="later"]');
+      check("phone: Coming up expands when tapped", await p.locator(".preview-later .preview-fold-content").isVisible());
+      await p.click('.preview-later [data-preview-fold="later"]');
+      check("phone: Coming up folds again", await p.locator(".preview-later .preview-fold-content").isHidden());
+    }
+  }
   const off = await calmState();
   check(name + ": switching off restores counters", off.badges > 0 && /\d/.test(off.today) && /\d/.test(off.sub));
   await p.reload(); await p.waitForTimeout(800);
