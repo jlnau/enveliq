@@ -29,7 +29,7 @@ Enveliq does that sorting for you, calmly and in plain words, and **it does it o
 
 - **Know what needs you.** Each email gets a short summary and a clear label. Things that need action are pulled to the top. The rest can wait.
 - **Nothing falls through the cracks.** Enveliq keeps a list of tasks it found in your email, parcels on their way, and emails where you are still waiting for an answer.
-- **Calm by design.** Plain words, no clutter and big, clear buttons. It was designed to be easy on anyone who finds a full inbox stressful.
+- **Calm by design.** The redesigned inbox has a compact dashboard, with optional Calm mode that shows one priority at a time and hides extra counts. On a phone, task sections can be folded so your email is easier to reach.
 - **Private by design.** Your email is never copied into Enveliq. It stores only short, encrypted summaries, on your own machine. There is no account with us, no tracking and no ads. [How that works](#your-privacy)
 - **For the whole household.** Everyone gets their own sign-in and their own private view. Nobody, administrators included, can read another person's mail.
 - **You choose the AI.** Use a cloud AI service, or run one on your own network so that nothing leaves your home.
@@ -211,6 +211,8 @@ The full list is in [docs/VERSION_HISTORY.md](docs/VERSION_HISTORY.md), and a mo
 </details>
 
 Current version: **v0.87**
+
+Version 0.87 includes the [redesigned inbox and Calm mode](docs/INBOX.md), plus the attachment display fix for ad blockers. See the [v0.87 change log](docs/CHANGELOG.md#v087-2026-10-13) for details.
 
 ## For developers
 
