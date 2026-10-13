@@ -939,6 +939,23 @@ body.calm .filters{opacity:.8}
 }
 @media(min-width:761px) and (max-width:1080px){.top h2{font-size:27px}.preview-toolbar{padding-inline:16px}.preview-toolbar .user-pill{min-width:90px}.preview-today-grid{grid-template-columns:1fr}}
 
+
+.preview-calm-notice{position:absolute;right:24px;top:22px;z-index:5;display:grid;grid-template-columns:1fr auto;gap:3px 10px;max-width:365px;padding:14px;background:#102755e8;border:1px solid #4266a5;border-radius:13px;color:white}
+.preview-calm-notice[hidden]{display:none}.preview-calm-notice strong{font-size:14px}.preview-calm-notice span{grid-row:2;color:#d2deff;font-size:11px}.preview-calm-notice button{grid-column:2;grid-row:1/3;border:0;background:#2355a9;color:#fff;border-radius:8px;padding:5px 12px}
+.preview-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}.preview-overview[hidden]{display:none}
+.preview-stat{display:flex;gap:13px;align-items:flex-start;min-height:135px;border-radius:14px;background:linear-gradient(145deg,#172b4d,#0b1d38);border:1px solid #2b4c76;color:#eaf2ff;padding:15px;text-align:left}
+.preview-stat:disabled{opacity:.6;cursor:default}.preview-stat-icon{display:grid;place-items:center;width:37px;height:37px;border-radius:12px;background:#2352a6;color:white;font-size:21px;flex:none}
+.preview-stat-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.preview-stat-copy strong{font-size:14px}.preview-stat-copy b{font-size:31px;line-height:1.2}.preview-stat-copy small{font-size:12px;color:#aec7e9}
+.preview-stat.action{background:linear-gradient(145deg,#3b2438,#1e1b30);border-color:#69415c}.preview-stat.action .preview-stat-icon{background:#af4058}
+.preview-stat.shipping .preview-stat-icon{background:#5037ab}
+html[data-theme="light"] .preview-stat{background:linear-gradient(145deg,#fff,#edf4ff);color:var(--text);border-color:var(--line)}
+html[data-theme="light"] .preview-stat-copy small{color:var(--muted)}html[data-theme="light"] .preview-stat.action{background:#fff0f3}
+.preview-list-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--preview-gradient);border:1px solid var(--preview-border);border-radius:12px;padding:13px 18px;margin:12px 0}
+.preview-list-heading[hidden]{display:none}.preview-list-heading strong{font-size:18px}.preview-list-heading button{border:0;background:none;color:var(--accent)}
+body.calm:not(.preview-show-filters) .preview-list-heading+.filters{display:none}
+@media(max-width:1150px){.preview-overview{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.preview-calm-notice{display:none}.preview-overview{gap:8px}.preview-stat{min-height:103px;padding:11px;gap:8px}.preview-stat-icon{width:28px;height:28px;font-size:16px}.preview-stat-copy b{font-size:24px}.preview-stat-copy small{font-size:10px}}
+
 </style>
 </head>
 <body class="booting">
@@ -1005,6 +1022,7 @@ body.calm .filters{opacity:.8}
   <button class="mbtn" id="mSyncBtn" type="button" aria-label="Sync mail" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14-4M4 4v4h4M4 13a8 8 0 0 0 14 4M20 20v-4h-4"/></svg></button>
   </div>
 <header class="top">
+  <div class="preview-calm-notice" id="previewCalmNotice" hidden><strong>Calm mode is on</strong><span>One thing at a time. Counts are hidden.</span><button type="button" id="previewCalmOff">Turn off</button></div>
   <div class="top-inner">
     <div class="top-left"><div class="greet"><h2>Inbox</h2><span class="today" id="todayDate"></span></div><p id="inboxSubtitle">Private mail for the signed-in person</p></div><div class="enveliq-landscape" aria-hidden="true"><span class="landscape-sun"></span><span class="landscape-mountain landscape-back"></span><span class="landscape-mountain landscape-front"></span></div>
     <div class="search-col"><div class="search"><input id="search" type="search" placeholder="Search inbox" aria-label="Search inbox"><button class="attachment-view sync-btn" id="syncBtn" type="button" hidden>Sync mail</button></div><div class="syncago" id="syncAgo" role="status" aria-live="off" hidden></div></div>
@@ -1015,12 +1033,14 @@ body.calm .filters{opacity:.8}
   <div class="boot-note" id="bootNote" role="status">Getting your inbox ready…</div>
   <div class="note warn" id="httpBanner" role="note" hidden><strong>This page is not encrypted.</strong> You opened Enveliq over plain http, so passwords and your sign-in can be read by anyone on the network, and passkeys and Outlook (Microsoft) sign-in will not work. Open it over https instead: <a href="https://enveliq.app/docs/access/" target="_blank" rel="noopener noreferrer">step-by-step guide</a>.</div>
   <div class="note warn sample-banner"><strong>Welcome to Enveliq.</strong> <span class="sb-demo">These are sample emails. </span><span class="sb-real">Your inbox is empty because no mailbox is connected yet. </span><a href="/welcome">Set up your mailbox</a> to see your own mail with summaries. The guide takes about five minutes.</div>
+  <div id="previewOverview" class="preview-overview" hidden></div>
   <div id="dueBars" class="duebars" role="region" aria-label="Today's tasks" hidden></div>
   <div id="shipBars" class="duebars" role="region" aria-label="Deliveries to confirm" hidden></div>
   <div id="subBars" class="duebars" role="region" aria-label="Subscriptions coming up" hidden></div>
   <div id="tripBars" class="duebars" role="region" aria-label="Trips coming up" hidden></div>
   <div id="waitBars" class="duebars" role="region" aria-label="Waiting on others" hidden></div>
   <div id="msgBars" class="duebars" role="region" aria-label="New messages" hidden></div>
+  <div class="preview-list-heading" id="previewListHeading"><strong>Recent emails</strong><button type="button" id="previewInboxOptions" aria-expanded="false">Inbox options ▾</button></div>
   <div class="filters">
     <button class="chip active" data-chip="all">All</button>
     <label class="flabel" for="filterBy">Filter</label>
@@ -2561,14 +2581,18 @@ function render(){
   $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent");
   document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",filter==="all"));{const fb=$("filterBy"),pick=["action","need","high","attachments"].includes(filter)?filter:"";fb.value=pick;fb.classList.toggle("active",!!pick)}
   $("selectedCount").textContent=selected.size;$("bulk").classList.toggle("show",selected.size>1);
-  $("adminBtn").hidden=!currentUser.is_admin;$("userName").textContent=currentUser.name;$("userRole").textContent=currentUser.is_admin?"Administrator":"User";paintAvatar();
+  $("adminBtn").hidden=!currentUser.is_admin;$("userName").textContent=currentUser.name;$("userRole").textContent=currentUser.is_admin?"Administrator":"User";paintAvatar();previewSyncAccount();
   const inbox=mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)),needN=inbox.filter(m=>m.action||m.priority==="high").length;
   const hr=new Date().getHours(),first=String(currentUser.name||"").trim().split(/\s+/)[0];
   const greeting=(hr<12?"Good morning":hr<18?"Good afternoon":"Good evening")+(first?`, ${first}`:"");
-  document.querySelector(".top-left h2").textContent=greeting;
+  document.querySelector(".top-left h2").textContent=filter==="all"?(calmOn()?"One thing at a time":"My inbox"):greeting;
+  $("previewCalmNotice").hidden=!(filter==="all"&&calmOn());
+  $("previewListHeading").hidden=filter!=="all";
+  previewSyncMenu();
   $("todayDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"});
   $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(calmOn()?(inbox.length?"One thing at a time. Important deadlines stay visible.":"Nothing waiting. Enjoy the quiet."):inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:(document.body.classList.contains("backend")&&!realMail?"No mailbox is connected yet":"All caught up"));
 
+  previewRenderOverview(inbox,needN);
   const rows=data.filter(visible);
   const rank={high:0,normal:1,low:2};
   const eff=m=>wokeBack(m)?m.snoozeUntil/1000:(m.received||0);          // an email that woke up from a snooze sits at the top
@@ -4100,6 +4124,82 @@ function applySidebar(){
 $("collapseToggle").onclick=()=>{sidebarCollapsed=!sidebarCollapsed;applySidebar()};
 narrowScreen.addEventListener("change",applySidebar);phoneQuery.addEventListener("change",applySidebar);
 applySidebar();
+
+
+const moreItems=document.getElementById("moreItems"),moreToggle=document.getElementById("moreToggle");
+const sideNav=document.querySelector(".side-nav");
+for(const el of [document.getElementById("snoozeNav"),sideNav.querySelector('[data-filter="reviewed"]'),sideNav.querySelector('[data-filter="archived"]'),document.getElementById("sentNav"),document.getElementById("subNav"),document.getElementById("tripNav"),document.getElementById("msgNav")])if(el)moreItems.append(el);
+for(const el of [document.getElementById("shipNav"),document.getElementById("waitNav"),sideNav.querySelector('[data-filter="attachments"]'),document.getElementById("moreNav"),document.getElementById("sideSettings")])if(el)sideNav.append(el);
+let moreChoice;try{moreChoice=localStorage.getItem("enveliq-more-open")}catch{}
+function previewSyncMore(){
+  const open=!!moreItems.querySelector(".nav.active")||(moreChoice==null?!calmOn():moreChoice==="1");
+  document.getElementById("moreNav").classList.toggle("expanded",open);
+  moreToggle.setAttribute("aria-expanded",String(open));
+}
+moreToggle.onclick=()=>{
+  moreChoice=document.getElementById("moreNav").classList.contains("expanded")?"0":"1";
+  try{localStorage.setItem("enveliq-more-open",moreChoice)}catch{}
+  previewSyncMore();
+};
+document.getElementById("sideSettings").onclick=()=>openSettings("settings");
+const searchSlot=document.getElementById("previewSearchSlot"),accountSlot=document.getElementById("previewAccountSlot");
+const searchControl=document.querySelector(".top .search-col"),searchHome=document.querySelector(".top-inner");
+const accountControl=document.getElementById("userPill"),accountHome=document.querySelector(".side-foot");
+function previewFitToolbar(){
+  if(window.matchMedia("(max-width:760px)").matches){
+    if(searchControl.parentElement!==searchHome)searchHome.append(searchControl);
+    if(accountControl.parentElement!==accountHome)accountHome.insertBefore(accountControl,accountHome.querySelector(".legal-links"));
+  }else{
+    if(searchControl.parentElement!==searchSlot)searchSlot.append(searchControl);
+    if(accountControl.parentElement!==accountSlot)accountSlot.append(accountControl);
+  }
+}
+previewFitToolbar();window.addEventListener("resize",previewFitToolbar);
+function previewSyncAccount(){
+  if(typeof currentUser==="undefined")return;
+  document.getElementById("previewProfileName").textContent=currentUser.name||"";
+  document.getElementById("previewProfileRole").textContent=currentUser.is_admin?"Administrator":"User";
+  document.getElementById("previewProfileEmail").textContent=window.__me?.email||window.__me?.username||"Personal account";
+  const src=document.getElementById("avatar"),dst=document.getElementById("previewProfileAvatar");
+  dst.replaceChildren();if(src.firstElementChild)dst.append(src.firstElementChild.cloneNode(true));else dst.textContent=currentUser.initials||"";
+}
+function previewSyncMenu(){
+  document.getElementById("previewCalmBtn").setAttribute("aria-checked",String(calmOn()));
+  let choice="dark";try{choice=localStorage.getItem("enveliq-theme")||"dark"}catch{}
+  document.querySelectorAll("[data-theme-choice]").forEach(x=>{x.classList.toggle("chosen",x.dataset.themeChoice===choice);x.setAttribute("aria-pressed",String(x.dataset.themeChoice===choice))});
+  previewSyncMore();
+}
+document.getElementById("previewCalmBtn").onclick=()=>document.getElementById("calmBtn").click();
+document.getElementById("previewCalmOff").onclick=()=>document.getElementById("calmBtn").click();
+function previewTheme(choice){
+  const light=choice==="light"||(choice==="system"&&window.matchMedia("(prefers-color-scheme:light)").matches);
+  if(light)document.documentElement.setAttribute("data-theme","light");else document.documentElement.removeAttribute("data-theme");
+  try{localStorage.setItem("enveliq-theme",choice)}catch{}
+  previewSyncMenu();
+}
+document.querySelectorAll("[data-theme-choice]").forEach(x=>x.onclick=()=>previewTheme(x.dataset.themeChoice));
+window.matchMedia("(prefers-color-scheme:light)").addEventListener("change",()=>{try{if(localStorage.getItem("enveliq-theme")==="system")previewTheme("system")}catch{}});
+document.getElementById("previewInboxOptions").onclick=()=>{
+  const open=document.body.classList.toggle("preview-show-filters");
+  document.getElementById("previewInboxOptions").setAttribute("aria-expanded",String(open));
+};
+function previewRenderOverview(inbox,need){
+  const box=document.getElementById("previewOverview");
+  if(filter!=="all"||calmOn()){box.hidden=true;box.replaceChildren();return}
+  const due=openTasks().filter(t=>t.days<=0).length;
+  const shipping=shipOn()?(shipData.orders||[]).filter(o=>!(o.delivered_at&&o.ack)).length:0;
+  const waiting=waitOn()?(waitData.notes||[]).filter(n=>n.state==="waiting").length:0;
+  const cards=[["action","Needs action",need,"Emails that need you","!"],["tasks","Today",due,"Tasks and reminders","◷"],["shipping","Packages",shipping,"Deliveries tracked","▣"],["waiting","Waiting",waiting,"Replies and follow ups","◴"]];
+  box.replaceChildren();
+  for(const [target,title,count,subtitle,icon] of cards){
+    const btn=document.createElement("button");btn.type="button";btn.className="preview-stat "+target;
+    btn.disabled=(target==="shipping"&&document.getElementById("shipNav").hidden)||(target==="waiting"&&document.getElementById("waitNav").hidden);
+    const ic=document.createElement("span");ic.className="preview-stat-icon";ic.textContent=icon;
+    const details=document.createElement("span");details.className="preview-stat-copy";
+    for(const [tag,value]of [["strong",title],["b",String(count)],["small",subtitle]]){const e=document.createElement(tag);e.textContent=value;details.append(e)}
+    btn.append(ic,details);btn.onclick=()=>document.querySelector('.side-nav .nav[data-filter="'+target+'"]')?.click();box.append(btn);
+  }box.hidden=false;
+}
 
 // ---------- Real mail from connected mailboxes ----------
 // Only the signed-in person's own mailboxes are used. Every value from
