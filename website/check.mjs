@@ -29,12 +29,12 @@ for (const [f, html] of htmlOf) {
   const rel = path.relative(dist, f);
   // The only <script> allowed is a block of search-engine data (JSON), which the browser never runs.
   for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
-    if (rel === path.join("search", "index.html") && /^\s*src="\/search\.js"\s+defer\s*$/.test(m[1]) && !m[2].trim()) continue;       // the guide search, a file from this site
-    if (/^\s*src="\/theme\.js"\s*$/.test(m[1]) && !m[2].trim()) continue;       // the light / dark switch, a file from this site
+    if (rel === path.join("search", "index.html") && /^\s*src="\/search\.js(?:\?v=[0-9a-f]{8})?"\s+defer\s*$/.test(m[1]) && !m[2].trim()) continue;       // the guide search, a file from this site
+    if (/^\s*src="\/theme\.js(?:\?v=[0-9a-f]{8})?"\s*$/.test(m[1]) && !m[2].trim()) continue;       // the light / dark switch, a file from this site
     if (!/^\s*type="application\/ld\+json"\s*$/.test(m[1])) { bad(`${rel}: has a script`); continue; }
     try { JSON.parse(m[2]); } catch { bad(`${rel}: its search-engine data is not valid JSON`); }
   }
-  if (/<script\b(?![^>]*(?:application\/ld\+json|src="\/(?:search|theme)\.js"))/i.test(html)) bad(`${rel}: has a script`);
+  if (/<script\b(?![^>]*(?:application\/ld\+json|src="\/(?:search|theme)\.js(?:\?v=[0-9a-f]{8})?"))/i.test(html)) bad(`${rel}: has a script`);
   if (/\sstyle="/i.test(html)) bad(`${rel}: has an inline style (the security policy blocks it)`);
   if (/\son[a-z]+="/i.test(html)) bad(`${rel}: has an inline event handler`);
   if (!/<title>[^<]{4,}<\/title>/.test(html)) bad(`${rel}: no title`);
@@ -55,7 +55,7 @@ for (const [f, html] of htmlOf) {
       continue;
     }
     if (/^(mailto:|#$)/.test(u)) continue;
-    const [p, hash] = u.split("#");
+    const [p, hash] = u.replace(/\?v=[0-9a-f]{8}(?=#|$)/, "").split("#");
     const target = p ? (p.startsWith("/") ? fileFor(p) : fileFor(path.posix.join("/", path.dirname(rel), p))) : f;
     if (!target) { bad(`${rel}: link to ${u} goes nowhere`); continue; }
     if (hash && target.endsWith(".html") && !idsOf.get(target)?.has(hash)) bad(`${rel}: ${u} has no such heading on that page`);
