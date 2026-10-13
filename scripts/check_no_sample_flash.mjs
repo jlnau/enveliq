@@ -74,6 +74,7 @@ const shown = (page, sel) => page.locator(sel).first().evaluate((el) => {
   check("if it takes longer, a calm line says the inbox is getting ready", (await shown(page, "#bootNote")) && /Getting your inbox ready/.test(await page.locator("#bootNote").innerText()));
   if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, "starting-up.png") });
   await page.waitForFunction(() => !document.body.classList.contains("booting"), null, { timeout: 8000 });
+  console.log("STARTUP DEBUG", JSON.stringify(await page.evaluate(() => ({ name: document.querySelector("#userName")?.textContent, heading: document.querySelector(".top-left h2")?.textContent, version: document.querySelector("#brandVer")?.textContent, bodyClass: document.body.className, vaultMode: typeof vaultMode !== "undefined" ? vaultMode : "undefined", ready: typeof stateReady !== "undefined" ? stateReady : "undefined" }))));
   check("then the signed-in person's own name appears", (await page.locator("#userName").innerText()) === "Riley Example" && (await shown(page, "#userName")));
   check("and a greeting that names them, not the sample person", /Riley/.test(await page.locator(".top-left h2").innerText()) && !/Morgan/.test(await page.locator(".top-left h2").innerText()));
   check("and the real version, not a sample one", /Version 9\.9/.test(await page.locator("#brandVer").innerText()));
