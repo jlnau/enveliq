@@ -17,7 +17,7 @@
   <a href="docs/README.md">All guides</a>
 </p>
 
-<p align="center"><img src="docs/images/home.png" alt="The Enveliq home page: a short list of email, and a card asking whether a parcel has arrived" width="760"></p>
+<p align="center"><picture><source media="(prefers-color-scheme: light)" srcset="docs/images/home-light.png"><img src="docs/images/home.png" alt="The Enveliq home page: a short list of email, and a card asking whether a parcel has arrived" width="760"></picture></p>
 
 ---
 
@@ -54,8 +54,8 @@ Enveliq does that sorting for you, calmly and in plain words, and **it does it o
 | **Many mailboxes** | Gmail, Outlook and Microsoft 365, iCloud, Yahoo, Fastmail, Proton Mail (through Proton Bridge) and any other IMAP service. Replies work with alias services such as Proton Pass and SimpleLogin. |
 
 <p align="center">
-  <img src="docs/images/shipping.png" alt="The Shipping page, with an order shown as Ordered, Shipped, Out for delivery and Delivered" width="48%">
-  <img src="docs/images/writing-help.png" alt="The reply box, with a suggestion from the AI labelled 'Suggested by AI'" width="48%">
+  <picture><source media="(prefers-color-scheme: light)" srcset="docs/images/shipping-light.png"><img src="docs/images/shipping.png" alt="The Shipping page, with an order shown as Ordered, Shipped, Out for delivery and Delivered" width="48%"></picture>
+  <picture><source media="(prefers-color-scheme: light)" srcset="docs/images/writing-help-light.png"><img src="docs/images/writing-help.png" alt="The reply box, with a suggestion from the AI labelled 'Suggested by AI'" width="48%"></picture>
 </p>
 
 *The pictures use made-up example data.*
@@ -185,6 +185,7 @@ All the guides are listed, by what you want to do, in the [**documentation index
 
 <details>
 <summary><b>What changed recently</b> (latest five versions)</summary>
+- **v0.88**: **A calmer, tidier inbox, and a website with light and dark.** Calm mode is cosier, every page has a Back to My inbox button, phones got press-and-hold and swipe, and the website and all its pictures were redone in the new design with a light and dark switch.
 - **Unreleased**: **A notice when a new version is out.** Administrators are told, with a card in the left panel linking to the release notes, when a newer version is out. Your server checks about once a day; nothing about you is sent, and an administrator can switch it off.
 - **Unreleased**: **The version number moves to the bottom of the left panel.** The version number is now a small line at the bottom of the left panel, under Terms, Privacy and Security.
 - **Unreleased**: **Row buttons show when you point at an email.** On a computer, the Reviewed, Archive and Bin buttons on a row show only when the mouse is over it, in place of the date. Phones are unchanged.
@@ -210,9 +211,9 @@ All the guides are listed, by what you want to do, in the [**documentation index
 The full list is in [docs/VERSION_HISTORY.md](docs/VERSION_HISTORY.md), and a more technical one is in the [change log](docs/CHANGELOG.md).
 </details>
 
-Current version: **v0.87**
+Current version: **v0.88**
 
-Version 0.87 includes the [redesigned inbox and Calm mode](docs/INBOX.md), plus the attachment display fix for ad blockers. See the [v0.87 change log](docs/CHANGELOG.md#v087-2026-10-13) for details.
+Version 0.88 includes a cosier Calm mode, a **Back to My inbox** button, easier phone use, and a website with a light and dark switch and new pictures. See the [v0.88 change log](docs/CHANGELOG.md#v088-2026-10-14) for details.
 
 ## For developers
 

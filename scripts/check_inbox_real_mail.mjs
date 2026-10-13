@@ -178,7 +178,7 @@ async function open(server, { seen = true } = {}) {
   await page.click("#previewInboxOptions");
   check("existing filters are accessible when requested", await page.locator("#filterBy").isVisible());
   await page.selectOption("#filterBy", "action");
-  check("changing the filter leaves the header text exactly as it was", (await page.locator(".top-left h2").innerText()) === hdr0[0] && (await page.locator("#inboxSubtitle").innerText()) === hdr0[1] && hdr0[0] === "One thing at a time");
+  check("changing the filter names the page and offers Back to My inbox, and the summary line is unchanged", (await page.locator(".top-left h2").innerText()) === "Needs action" && await page.locator("#backInbox").isVisible() && (await page.locator("#inboxSubtitle").innerText()) === hdr0[1] && hdr0[0] === "One thing at a time");
   await page.selectOption("#filterBy", "");
   const cy = async (sel) => { const b = await page.locator(sel).boundingBox(); return b.y + b.height / 2; };
   check("last-synced text is available in the separate search toolbar", await page.locator("#syncAgo").isVisible() && (await page.locator("#syncAgo").boundingBox()).y < (await page.locator("#inboxSubtitle").boundingBox()).y);

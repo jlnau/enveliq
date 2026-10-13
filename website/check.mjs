@@ -30,10 +30,11 @@ for (const [f, html] of htmlOf) {
   // The only <script> allowed is a block of search-engine data (JSON), which the browser never runs.
   for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
     if (rel === path.join("search", "index.html") && /^\s*src="\/search\.js"\s+defer\s*$/.test(m[1]) && !m[2].trim()) continue;       // the guide search, a file from this site
+    if (/^\s*src="\/theme\.js"\s*$/.test(m[1]) && !m[2].trim()) continue;       // the light / dark switch, a file from this site
     if (!/^\s*type="application\/ld\+json"\s*$/.test(m[1])) { bad(`${rel}: has a script`); continue; }
     try { JSON.parse(m[2]); } catch { bad(`${rel}: its search-engine data is not valid JSON`); }
   }
-  if (/<script\b(?![^>]*(?:application\/ld\+json|src="\/search\.js"))/i.test(html)) bad(`${rel}: has a script`);
+  if (/<script\b(?![^>]*(?:application\/ld\+json|src="\/(?:search|theme)\.js"))/i.test(html)) bad(`${rel}: has a script`);
   if (/\sstyle="/i.test(html)) bad(`${rel}: has an inline style (the security policy blocks it)`);
   if (/\son[a-z]+="/i.test(html)) bad(`${rel}: has an inline event handler`);
   if (!/<title>[^<]{4,}<\/title>/.test(html)) bad(`${rel}: no title`);
@@ -80,5 +81,5 @@ if (!fs.existsSync(path.join(dist, "images/share.png"))) bad("missing the share 
 const headers = fs.existsSync(path.join(dist, "_headers")) ? fs.readFileSync(path.join(dist, "_headers"), "utf8") : "";
 if (!/script-src 'self'(?=;)/.test(headers) || /script-src[^;]*(?:http|\*|data:)/.test(headers)) bad("the security policy lets scripts load from somewhere other than this site");
 if (!/default-src 'none'/.test(headers) || /unsafe-inline|unsafe-eval/.test(headers)) bad("the security policy in _headers is not strict");
-if (!failed) console.log(`✓ ${pages.length} pages, ${count} links and pictures checked; only the guide search runs a script, no outside requests, search tags in place`);
+if (!failed) console.log(`✓ ${pages.length} pages, ${count} links and pictures checked; only the guide search and the light/dark switch run scripts, no outside requests, search tags in place`);
 process.exit(failed ? 1 : 0);
