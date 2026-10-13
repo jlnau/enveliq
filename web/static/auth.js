@@ -438,6 +438,49 @@ function shrinkPicture(file, size = 256) {
     reader.readAsDataURL(file);
   });
 }
+// Remove only pale pixels connected to the outer image border. This restores
+// transparency to legacy JPEG avatars without erasing white inside a logo.
+async function removeLegacyAvatarWhite(user) {
+  const url = `${API}/users/${encodeURIComponent(user.id)}/avatar?v=${encodeURIComponent(user.avatar_v)}`;
+  const response = await fetch(url, { credentials: "same-origin" });
+  if (!response.ok) throw new Error("The current picture could not be loaded");
+  const blob = await response.blob();
+  const source = await createImageBitmap(blob);
+  try {
+    const width = source.width, height = source.height;
+    if (!width || !height || width * height > 1024 * 1024) throw new Error("That picture is too large to repair");
+    const canvas = document.createElement("canvas");canvas.width = width;canvas.height = height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(source, 0, 0);
+    const frame = ctx.getImageData(0, 0, width, height), pixels = frame.data;
+    const seen = new Uint8Array(width * height), queue = new Int32Array(width * height);
+    let head = 0, tail = 0, removed = 0;
+    const pale = pos => {
+      const off = pos * 4, r = pixels[off], g = pixels[off+1], b = pixels[off+2], alpha = pixels[off+3];
+      return alpha > 0 && r >= 222 && g >= 222 && b >= 222 && Math.max(r,g,b) - Math.min(r,g,b) <= 30;
+    };
+    const enqueue = pos => { if (!seen[pos] && pale(pos)) { seen[pos]=1;queue[tail++]=pos; } };
+    for (let x=0;x<width;x++) { enqueue(x);enqueue((height-1)*width+x); }
+    for (let y=0;y<height;y++) { enqueue(y*width);enqueue(y*width+width-1); }
+    while (head<tail) {
+      const pos=queue[head++], x=pos%width, y=(pos-x)/width;
+      if (x>0) enqueue(pos-1);if (x+1<width) enqueue(pos+1);
+      if (y>0) enqueue(pos-width);if (y+1<height) enqueue(pos+width);
+      pixels[pos*4+3]=0;removed++;
+    }
+    if (!removed || removed<width*height*0.02) throw new Error("No removable white background found. Try uploading the original transparent PNG instead.");
+    // Reduce the remaining light fringe beside the removed matte.
+    for (let y=1;y<height-1;y++) for (let x=1;x<width-1;x++) {
+      const pos=y*width+x, off=pos*4;
+      if (seen[pos] || pixels[off+3]===0) continue;
+      if (!(seen[pos-1]||seen[pos+1]||seen[pos-width]||seen[pos+width])) continue;
+      const min=Math.min(pixels[off],pixels[off+1],pixels[off+2]);
+      if (min>185) pixels[off+3]=Math.round(pixels[off+3]*Math.max(0,(255-min)/70));
+    }
+    ctx.putImageData(frame,0,0);
+    return canvas.toDataURL("image/png");
+  } finally { source.close(); }
+}
 function avatarNode(me, cls = "avatar-lg") {
   return me.avatar_v ? h("img", { class: cls, alt: "", src: `${API}/users/${me.id}/avatar?v=${me.avatar_v}` })
                      : h("span", { class: cls + " initials", text: initialsOf(me.display_name || me.username) });
@@ -457,6 +500,7 @@ async function profilePage(me) {
     h("div", {}, h("strong", { text: "Picture" }), h("div", { class: "hint", text: "Optional. A small round picture shown next to your name. It is shrunk on your device before it is saved." }),
       h("div", { class: "row" },
         h("button", { class: "btn small", type: "button", text: me.avatar_v ? "Change picture" : "Add a picture", onclick: () => file.click() }),
+        me.avatar_v ? h("button", { class: "btn small", type: "button", text: "Remove white background", onclick: async e => { try { e.target.disabled=true; const image=await removeLegacyAvatarWhite(me); const u=await api("/me/avatar", { method:"PUT", body:{ image } }); toast("White background removed");tell(u);redraw(); } catch (er) { toast(er.message);e.target.disabled=false; } } }) : null,
         me.avatar_v ? h("button", { class: "btn small", type: "button", text: "Remove", onclick: async () => { try { const u = await api("/me/avatar", { method: "DELETE" }); toast("Picture removed"); tell(u); redraw(); } catch (er) { toast(er.message); } } }) : null)),
     file);
   const form = h("form", {},
