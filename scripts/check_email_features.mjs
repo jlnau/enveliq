@@ -270,6 +270,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("the pencil is in the top bar on a phone", await page.locator("#mNewBtn").isVisible());
   await page.click("#menuBtn");
   await page.click("#moreToggle");
+  check("More expands without closing the phone navigation", await page.evaluate(() => document.body.classList.contains("menu-open")) && (await page.locator("#moreToggle").getAttribute("aria-expanded")) === "true");
   check("Sent is in the slide-out menu", await page.locator("#sentNav").waitFor({ state: "visible", timeout: 3000 }).then(() => true, () => false));
   await page.click("#sentNav");
   await page.waitForSelector(".srow");
