@@ -2067,7 +2067,7 @@ function taskRow(t,fin){
 function previewFocusTask(t){
   const m=taskMsg(t),button=m?'<button class="primary" type="button" data-due-open="'+esc(m.id)+'">Open email</button>':'<button class="primary" type="button" data-tasks-go>Open Tasks</button>';
   const snooze=m?'<button class="tbtn" type="button" data-snooze="'+esc(m.id)+'">Snooze</button>':"";
-  return '<div class="preview-focus-card"><span class="preview-focus-icon" aria-hidden="true">✧</span><div class="preview-focus-copy"><strong>'+esc(t.title)+'</strong>'+(t.detail?'<p>'+esc(t.detail)+'</p>':"")+(t.sender?'<small>From '+esc(t.sender)+'</small>':"")+'<div class="preview-focus-actions">'+button+snooze+'<button class="tbtn" type="button" data-task-act="done" data-task-id="'+esc(t.id)+'">Mark done</button></div></div></div>';
+  return '<div class="preview-focus-card"><span class="preview-focus-icon" aria-hidden="true">✧</span><div class="preview-focus-copy"><strong>'+esc(t.title)+'</strong>'+(t.detail?'<p>'+esc(t.detail)+'</p>':"")+(t.sender?'<small>From '+esc(t.sender)+' · '+esc(taskWhen(t))+'</small>':'<small>'+esc(taskWhen(t))+'</small>')+'<div class="preview-focus-actions">'+button+snooze+'<button class="tbtn" type="button" data-task-act="done" data-task-id="'+esc(t.id)+'">Mark done</button></div></div></div>';
 }
 function renderToday(){
   const box=$("dueBars"),open=openTasks(),now=open.filter(t=>t.days<=0);
