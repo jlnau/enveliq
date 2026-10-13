@@ -81,6 +81,8 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 {
   const server = makeServer({ advance: false });          // the pretend model only moves when the test says so
   const { page, errors, csp, context } = await open(server);
+  check("Inbox options start collapsed", await page.locator("#allSwitch").isHidden());
+  await page.click("#previewInboxOptions");
   check("the switch is shown", await page.locator("#allSwitch").isVisible());
   check("off by default: only the unread email, today's design, no footer", (await page.locator("article.mail").count()) === 1 && !(await page.evaluate(() => document.body.classList.contains("allmail"))) && (await page.locator("#allFoot").isHidden()));
   check("nothing recent was read while it is off", !server.calls.some((c) => c[0] === "recent"));
@@ -136,6 +138,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("no script errors or policy violations", errors.length === 0 && again.errors.length === 0 && csp.length === 0 && again.csp.length === 0);
 
   // Off again: back to today's design
+  await again.page.click("#previewInboxOptions");
   await again.page.click("#allSwitch");
   await again.page.waitForFunction(() => document.querySelectorAll("article.mail").length === 1);
   check("off again restores the default design", !(await again.page.evaluate(() => document.body.classList.contains("allmail"))) && (await again.page.locator("#allFoot").isHidden()));
@@ -152,6 +155,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 {
   const server = makeServer({ advance: false });
   const { page, context } = await open(server, { light: true });
+  await page.click("#previewInboxOptions");
   await page.click("#allSwitch");
   await page.waitForFunction(() => document.querySelectorAll("article.mail").length === 4);
   await shot(page, "on-light");
