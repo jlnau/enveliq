@@ -31,6 +31,23 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
   const sw = p.locator("#calmBtn");
   check(name + ": the Calm mode switch is just above Agent, in the footer of the menu", await p.evaluate(() => { const a = document.getElementById("agentBtn"), c = document.getElementById("calmBtn"); return !!c && c.nextElementSibling === a && a.parentElement.classList.contains("side-foot"); }));
   check(name + ": Calm mode starts enabled and announces its state", (await sw.getAttribute("role")) === "switch" && (await sw.getAttribute("aria-checked")) === "true");
+  check(name + ": the original Enveliq wordmark remains in the sidebar", await p.locator(".brand-wordmark").getAttribute("alt") === "Enveliq" && (await p.locator(".brand-wordmark").getAttribute("src")).startsWith("data:image/webp;base64,"));
+  if (name === "desktop") {
+    check(name + ": desktop search is above the scenic header", await p.evaluate(() => {
+      const search=document.querySelector("#search").getBoundingClientRect(), hero=document.querySelector("header.top").getBoundingClientRect();
+      return search.width > 200 && search.bottom <= hero.top + 1 && document.querySelector("#userPill").closest("#previewAccountSlot") !== null;
+    }));
+    check(name + ": More starts collapsed in Calm mode", (await p.locator("#moreToggle").getAttribute("aria-expanded")) === "false");
+    await p.click("#moreToggle");
+    check(name + ": More still exposes Reviewed and Archived", await p.locator('.more-items [data-filter="reviewed"]').isVisible() && await p.locator('.more-items [data-filter="archived"]').isVisible());
+    await p.click("#moreToggle");
+  } else {
+    check(name + ": mobile has no landscape banner", await p.evaluate(() => getComputedStyle(document.querySelector(".enveliq-landscape")).display === "none" && document.querySelector(".preview-toolbar").getBoundingClientRect().height === 0));
+    await p.click("#moreToggle");
+    check(name + ": opening More does not close mobile navigation", await p.evaluate(() => document.body.classList.contains("menu-open")) && await p.locator('.more-items [data-filter="reviewed"]').isVisible());
+    await p.click("#moreToggle");
+  }
+
   const calmState = () => p.evaluate(() => ({
     badges: [...document.querySelectorAll(".badge")].filter((e) => e.getClientRects().length && getComputedStyle(e).display !== "none").length,
     today: document.querySelector(".today-card .thead b")?.textContent || "",
@@ -66,6 +83,7 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
   check(name + ": Calm mode can be enabled again", (await p.locator("#calmBtn").getAttribute("aria-checked")) === "true" && (await calmState()).badges === 0);
   await p.reload(); await p.waitForTimeout(800);
   check(name + ": choosing Calm mode on is remembered after reload", await p.evaluate(() => document.body.classList.contains("calm")));
+  check(name + ": blue dark theme remains the default", await p.evaluate(() => !document.documentElement.hasAttribute("data-theme") && getComputedStyle(document.body).backgroundColor !== "rgb(13, 15, 20)"));
   check(name + ": no sideways scrolling", await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
   check(name + ": no script errors", errors.length === 0);
   await ctx.close();
