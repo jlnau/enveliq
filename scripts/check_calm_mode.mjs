@@ -39,6 +39,34 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
     }));
     await p.evaluate(() => document.documentElement.dataset.theme = "light");
     check("light theme selects the sunrise artwork", await p.evaluate(() => getComputedStyle(document.querySelector(".main"), "::before").backgroundImage.includes("northern-coast-light.webp")));
+    const clearHeader = () => p.evaluate(() => {
+      const hero = document.querySelector("header.top");
+      const toolbar = document.querySelector(".preview-toolbar");
+      const clear = node => {
+        const style = getComputedStyle(node);
+        const pseudo = getComputedStyle(node, "::before");
+        return style.backgroundImage === "none"
+          && style.backgroundColor === "rgba(0, 0, 0, 0)"
+          && pseudo.display === "none";
+      };
+      const a = getComputedStyle(hero), t = getComputedStyle(toolbar);
+      return clear(hero) && t.backgroundImage === "none"
+        && t.backgroundColor === "rgba(0, 0, 0, 0)";
+    });
+    check("light mode has no solid header bar", await clearHeader());
+    await p.evaluate(() => localStorage.setItem("enveliq-theme", "light"));
+    await p.reload();
+    await p.waitForTimeout(400);
+    check("reload restores light theme and coastal art", await p.evaluate(() =>
+      document.documentElement.dataset.theme === "light"
+      && getComputedStyle(document.querySelector(".main"), "::before").backgroundImage.includes("northern-coast-light.webp")));
+    check("reloaded light mode has no solid header bar", await clearHeader());
+    await p.evaluate(() => localStorage.setItem("enveliq-theme", "dark"));
+    await p.reload();
+    await p.waitForTimeout(400);
+    check("dark mode continues to use aurora artwork", await p.evaluate(() =>
+      document.documentElement.dataset.theme !== "light"
+      && getComputedStyle(document.querySelector(".main"), "::before").backgroundImage.includes("northern-coast-dark.webp")));
     await p.evaluate(() => document.documentElement.removeAttribute("data-theme"));
   } else {
     check("phone stays free of a decorative coastal banner", await p.evaluate(() => getComputedStyle(document.querySelector(".main"), "::before").display === "none"));
