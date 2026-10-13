@@ -8,12 +8,16 @@ No changes recorded yet.
 
 ## v0.87 (2026-10-13)
 
+**A redesigned inbox, with less visual noise.** Calm mode is enabled by default for a new browser and can be turned off at any time. The desktop inbox has a more compact summary and task layout, while phones use smaller summaries and collapsible Today, Coming up, and other task sections. The left sidebar, account menu, and light theme have been refreshed. The account menu offers Dark, Light, and System themes. Inbox Options starts collapsed and expands to show the mailbox filters, sorting, and other controls. Transparent PNG profile pictures now keep their transparency on upload; pictures previously saved with a white JPEG background can be replaced by uploading the original PNG again.
+
+**Attachment summaries remain visible with ad blockers.** The attachment list no longer uses naming that ad blockers mistake for advertising, so file rows and summaries remain visible when blocking is enabled.
+
 <!-- Release notes generated using configuration in .github/release.yml at main -->
 
 ## What's Changed
 ### Other changes
 * Keep attachment summaries visible with ad blockers enabled by @jlnau in https://github.com/jlnau/enveliq/pull/75
-
+* Redesign the inbox with Calm mode, compact desktop and mobile layouts, improved navigation and themes, and transparent profile pictures by @jlnau in https://github.com/jlnau/enveliq/pull/76
 
 **Full Changelog**: https://github.com/jlnau/enveliq/compare/v0.86...v0.87
 
