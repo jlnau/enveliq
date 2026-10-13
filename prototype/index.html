@@ -5262,7 +5262,7 @@ function syncMobileBar(n,need){
 function setMenu(open){document.body.classList.toggle("menu-open",open);const b=$("menuBtn");b.setAttribute("aria-expanded",String(open));b.setAttribute("aria-label",open?"Close the menu":"Open the menu")}
 $("menuBtn").onclick=()=>setMenu(!document.body.classList.contains("menu-open"));
 $("menuScrim").onclick=()=>setMenu(false);
-$("sidebar").addEventListener("click",e=>{if(e.target.closest(".nav"))setMenu(false)});
+$("sidebar").addEventListener("click",e=>{if(e.target.closest(".nav:not(.more-toggle)"))setMenu(false)});
 $("mSearchBtn").onclick=()=>{document.body.classList.add("msearch");$("search").focus()};
 $("mSearchBack").onclick=()=>{document.body.classList.remove("msearch");if(query){query="";$("search").value="";render()}};
 $("mSyncBtn").onclick=()=>$("syncBtn").click();
