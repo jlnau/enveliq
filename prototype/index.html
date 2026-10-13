@@ -8,7 +8,25 @@
 <link rel="apple-touch-icon" href="/brand/enveliq-icon-256.webp">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0d0f14">
-<script>try{var t=localStorage.getItem("enveliq-theme");if(t==="light"||(t==="system"&&matchMedia("(prefers-color-scheme: light)").matches))document.documentElement.setAttribute("data-theme","light")}catch(e){}</script>
+<!-- Resolve the saved appearance before CSS parsing and begin loading only its image.
+     This avoids a dark first frame and a late background swap on light-mode refresh. -->
+<script>
+(function(){
+  var theme="dark";
+  try {
+    var choice=localStorage.getItem("enveliq-theme")||"dark";
+    if(choice==="light"||(choice==="system"&&matchMedia("(prefers-color-scheme: light)").matches))theme="light";
+  } catch(e) {}
+  if(theme==="light")document.documentElement.setAttribute("data-theme","light");
+  var color=document.querySelector('meta[name="theme-color"]');
+  if(color)color.setAttribute("content",theme==="light"?"#f2f6ff":"#07172d");
+  var art=document.createElement("link");
+  art.rel="preload";art.as="image";
+  art.href="/static/northern-coast-"+theme+".webp";
+  art.setAttribute("fetchpriority","high");
+  document.head.appendChild(art);
+})();
+</script>
 <style>
 :root{
   --bg:#0d0f14;--panel:#141821;--panel2:#1a1f2a;--panel3:#202634;--line:#2a3140;
@@ -4465,6 +4483,8 @@ document.getElementById("previewCalmOff").onclick=()=>document.getElementById("c
 function previewTheme(choice){
   const light=choice==="light"||(choice==="system"&&window.matchMedia("(prefers-color-scheme:light)").matches);
   if(light)document.documentElement.setAttribute("data-theme","light");else document.documentElement.removeAttribute("data-theme");
+  const color=document.querySelector('meta[name="theme-color"]');
+  if(color)color.setAttribute("content",light?"#f2f6ff":"#07172d");
   try{localStorage.setItem("enveliq-theme",choice)}catch{}
   previewSyncMenu();
 }
