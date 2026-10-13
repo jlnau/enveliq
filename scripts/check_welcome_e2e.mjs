@@ -88,6 +88,8 @@ await page.waitForSelector("body.real-mail article.mail");
 const rowCount = await page.locator("article.mail").count();
 for (let i = 0; i < rowCount; i++) await page.locator("article.mail:not(.open) .qmain").first().click();
 check("the inbox shows the mail from both mailboxes with AI summaries (read by opening each row)", rowCount === 6 && (await page.locator("#list").innerText()).includes("Dentist appointment on Friday"));
+check("Inbox options start closed after welcome", await page.locator("#sortBy").isHidden() && await page.locator("#mailboxFilter").isHidden());
+await page.click("#previewInboxOptions");
 check("the sort menu and the mailbox menu are there", (await page.locator("#sortBy").isVisible()) && (await page.locator("#mailboxFilter").isVisible()));
 await page.selectOption("#mailboxFilter", "Second");
 check("choosing a mailbox shows only its mail", (await page.locator("article.mail").count()) === 3);
