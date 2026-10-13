@@ -77,7 +77,7 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   await page.click("#userPill");
   await shot(page, "menu");
   const items = (await page.locator("#userMenu .menu-item").allInnerTexts()).map((t) => t.trim());
-  check("the menu preserves account settings and offers all three appearance modes", ["Profile settings", "Settings", "Administration"].every(t=>items.includes(t)) && (await page.locator("[data-theme-choice]").count())===3 && (await page.locator("#previewCalmBtn").isVisible()));
+  check("the menu preserves account settings and offers all three appearance modes", ["Profile settings", "Settings", "Manage users"].every(t=>items.includes(t)) && (await page.locator("[data-theme-choice]").count())===3 && (await page.locator("#previewCalmBtn").isVisible()));
   check("Sign out is in the menu too", (await page.locator("#userMenu button", { hasText: "Sign out" }).count()) === 1);
   await page.click('[data-theme-choice="light"]');
   check("Light mode works from the account menu", (await page.evaluate(() => document.documentElement.dataset.theme))==="light");
