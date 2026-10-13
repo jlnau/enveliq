@@ -4,7 +4,7 @@ This is a **separate draft UI experiment**. It does not update production Enveli
 
 ## What changes
 
-The previous rectangular mountain and sun banner is replaced with a continuous Northern Coast illustration. Dark theme uses a moonlit northern shoreline and aurora glow. Light theme uses an icy coastal sunrise. The artwork flows behind the search and account controls and fades away behind the summary cards.
+The previous rectangular mountain and sun banner is replaced with scenic WebP imagery cropped directly from the approved Northern Coast concept, not simplified vector drawings. Dark theme uses a moonlit northern shoreline and aurora glow. Light theme uses an icy coastal sunrise. The artwork flows behind the search and account controls and fades away behind the summary cards.
 
 Existing mail, task lists, Calm mode, mobile accordion layout, account settings and API behavior are unchanged. In particular, **mobile Calm mode still has no decorative banner**. The header background is deliberately static, with no animation, and honours reduced transparency settings.
 
@@ -25,4 +25,4 @@ The Compose stack has **its own data volume and network** and publishes host por
 
 ## Validation
 
-Check both Light and Dark on desktop, expanded and collapsed sidebar, account menu readability, search, task controls, and inbox options. Then check mobile standard and mobile Calm mode for compact headers and collapsed sections. Verify the static images load successfully at `/static/northern-coast-dark.svg` and `/static/northern-coast-light.svg`.
+Check both Light and Dark on desktop, expanded and collapsed sidebar, account menu readability, search, task controls, and inbox options. Then check mobile standard and mobile Calm mode for compact headers and collapsed sections. Verify the static images load successfully at `/static/northern-coast-dark.webp` and `/static/northern-coast-light.webp`.
