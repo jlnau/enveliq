@@ -98,6 +98,8 @@ jobs:
         run: node scripts/check_rail_and_folds.mjs
       - name: Calm mode compact layout (made-up mail, no server)
         run: node scripts/check_calm_layout.mjs
+      - name: Back to My inbox, Inbox options and full-screen email (made-up mail, no server)
+        run: node scripts/check_back_to_inbox.mjs
       - name: Backup and restore, Export my data (simulated server)
         run: node scripts/check_backup.mjs
       - name: Microsoft sign-in help (simulated server)

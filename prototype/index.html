@@ -52,6 +52,8 @@ button,input,select{font:inherit}button{cursor:pointer}
 .brand-mark{display:none;width:40px;height:40px}
 .brand-wordmark{display:block;width:176px;max-width:100%;height:auto}
 .top-left{min-width:0}
+.back-inbox{display:inline-flex;align-items:center;gap:6px;margin:0 0 8px;padding:5px 13px 5px 9px;border:1px solid rgba(160,190,255,.35);background:rgba(40,60,110,.5);color:#cfe0ff;border-radius:999px;font-family:inherit;font-weight:600;font-size:13px;line-height:1.3;cursor:pointer}.back-inbox:hover{background:rgba(60,90,160,.6)}.back-inbox[hidden]{display:none}
+html[data-theme="light"] .back-inbox{background:rgba(255,255,255,.82);border-color:#b9cdee;color:#1f4fb0}
 .brand small{display:block;color:var(--muted);font-size:11px;letter-spacing:.02em;padding-left:6px}.brand small b{color:var(--c-9fdcff);font-weight:600}
 .label{color:var(--faint);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin:20px 10px 8px}
 .nav{position:relative;width:100%;border:0;background:transparent;color:var(--muted);text-align:left;padding:9px 12px;border-radius:10px;display:flex;align-items:center;gap:11px;margin:2px 0;white-space:nowrap}
@@ -1253,7 +1255,7 @@ html[data-theme="light"]{--backdrop:url("data:image/svg+xml,%3Csvg xmlns='http:/
 <header class="top">
   <div class="preview-calm-notice" id="previewCalmNotice" hidden><strong>Calm mode is on</strong><span>One thing at a time. Counts are hidden.</span><button type="button" id="previewCalmOff">Turn off</button></div>
   <div class="top-inner">
-    <div class="top-left"><div class="greet"><h2>Inbox</h2><span class="today" id="todayDate"></span></div><p id="inboxSubtitle">Private mail for the signed-in person</p></div><div class="enveliq-landscape" aria-hidden="true"><span class="landscape-sun"></span><span class="landscape-mountain landscape-back"></span><span class="landscape-mountain landscape-front"></span></div>
+    <div class="top-left"><button class="back-inbox" id="backInbox" type="button" data-back-inbox hidden><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>Back to My inbox</button><div class="greet"><h2>Inbox</h2><span class="today" id="todayDate"></span></div><p id="inboxSubtitle">Private mail for the signed-in person</p></div><div class="enveliq-landscape" aria-hidden="true"><span class="landscape-sun"></span><span class="landscape-mountain landscape-back"></span><span class="landscape-mountain landscape-front"></span></div>
     <div class="search-col"><div class="search"><input id="search" type="search" placeholder="Search inbox" aria-label="Search inbox"><button class="attachment-view sync-btn" id="syncBtn" type="button" hidden>Sync mail</button></div><div class="syncago" id="syncAgo" role="status" aria-live="off" hidden></div></div>
   </div>
 </header>
@@ -2870,7 +2872,9 @@ function render(){
   const inbox=mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)),needN=inbox.filter(m=>m.action||m.priority==="high").length;
   const hr=new Date().getHours(),first=String(currentUser.name||"").trim().split(/\s+/)[0];
   const greeting=(hr<12?"Good morning":hr<18?"Good afternoon":"Good evening")+(first?`, ${first}`:"");
-  document.querySelector(".top-left h2").textContent=["all","action","need","high","attachments"].includes(filter)?(calmOn()?"One thing at a time":"My inbox"):greeting;
+  const VIEW_NAMES={action:"Needs action",need:"Needs action",high:"Important",attachments:"Attachments",tasks:"Tasks",shipping:"Shipping",waiting:"Waiting for reply",reviewed:"Reviewed",archived:"Archived",subscriptions:"Subscriptions",trips:"Trips",messages:"Messages"};
+  document.querySelector(".top-left h2").textContent=VIEW_NAMES[filter]||(filter==="all"&&calmOn()?"One thing at a time":filter==="all"?"My inbox":greeting);
+  $("backInbox").hidden=filter==="all"||filter==="sent";
   $("previewCalmNotice").hidden=!(filter==="all"&&calmOn());
   $("previewListHeading").hidden=["sent","tasks","shipping","waiting","subscriptions","trips","messages"].includes(filter);
   previewSyncMenu();
@@ -4168,6 +4172,7 @@ document.addEventListener("click",e=>{
      if(t.matches("[data-msg-mute]")&&msgS.cur){msgReq(`/threads/${encodeURIComponent(msgS.cur.id)}/mute`,"PUT",{muted:!msgS.cur.muted}).then(async()=>{await loadMsgs();await fetchMsgSummary();render()}).catch(er=>toast(er.message,5000));return}
      if(t.matches("[data-msg-unsend]")&&msgS.cur){msgReq(`/threads/${encodeURIComponent(msgS.cur.id)}/messages/${encodeURIComponent(t.dataset.msgUnsend)}`,"DELETE").then(async()=>{await loadMsgs();render()}).catch(er=>toast(er.message,5000));return}
    }}
+  if(e.target.closest("[data-back-inbox]")){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();window.scrollTo({top:0});return}
   const n=e.target.closest("[data-filter]");if(n){filter=n.dataset.filter;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="messages")openMsgPage();return}
   const c=e.target.closest("[data-chip]");if(c){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();return}
   const wa=e.target.closest("[data-wait]");if(wa){waitAct(wa.dataset.waitId,wa.dataset.wait);return}
