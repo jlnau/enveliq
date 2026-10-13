@@ -1,4 +1,4 @@
-// Browser check for the paperclip under the date on emails that have an attachment. Uses the demo build (made-up mail, no server).
+// Browser check for the paperclip immediately left of the timestamp, without adding row height. Uses the demo build (made-up mail, no server).
 // Usage: node scripts/check_attachment_clip.mjs      Set SHOTS=<folder> to save screenshots.
 import { chromium } from "playwright";
 import http from "node:http"; import fs from "node:fs"; import path from "node:path";
@@ -36,8 +36,8 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 760 }], ["phone", {
   check(name + ": an email with an attachment has a paperclip", (await row("Your Skyline Air Travel Reminder").locator(".time .clip").count()) === 1);
   check(name + ": an email without one has none", (await row("No files here").locator(".clip").count()) === 0);
   check(name + ": the paperclip says so for a screen reader", (await row("Your Skyline Air Travel Reminder").locator(".clip").getAttribute("aria-label")) === "Has an attachment" && (await row("Two files here").locator(".clip").getAttribute("aria-label")) === "Has 2 attachments");
-  const t = await row("Your Skyline Air Travel Reminder").locator(".time").evaluate((e) => { const c = e.querySelector(".clip").getBoundingClientRect(), r = e.getBoundingClientRect(), tx = document.createRange(); tx.selectNodeContents(e.firstChild); const d = tx.getBoundingClientRect(); return { below: c.top >= d.bottom - 1, inside: c.right <= r.right + 1 && c.left >= r.left - 1, right: Math.abs(c.right - d.right) < 3 }; });
-  check(name + ": it sits under the date and time, lined up on the right", t.below && t.inside && t.right);
+  const t = await row("Your Skyline Air Travel Reminder").locator(".time").evaluate((e) => { const c = e.querySelector(".clip").getBoundingClientRect(), d = e.querySelector(".time-text").getBoundingClientRect(), r = e.getBoundingClientRect(); return { left: c.right <= d.left + 1 && d.left - c.right < 12, sameLine: Math.abs((c.top + c.bottom) / 2 - (d.top + d.bottom) / 2) < 3, inside: c.left >= r.left - 1 && d.right <= r.right + 1, compact: r.height <= Math.max(c.height, d.height) + 4 }; });
+  check(name + ": the paperclip sits immediately left of the timestamp on one compact line", t.left && t.sameLine && t.inside && t.compact);
   check(name + ": no sideways scrolling", await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
   if (shots) await p.screenshot({ path: path.join(shots, `clip-${name}.png`) });
   check(name + ": no script errors", errors.length === 0);

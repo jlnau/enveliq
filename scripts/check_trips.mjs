@@ -82,7 +82,9 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 {
   const server = makeServer();
   const { page, errors, csp, context } = await open(server);
-  check("the Trips entry is shown when there is a trip", await page.locator("#tripNav").isVisible() && await page.locator("#trackLabel").isVisible());
+  check("the Trips entry is available under More when there is a trip", await page.locator("#moreItems #tripNav").count() === 1 && await page.locator("#tripNav").getAttribute("hidden") === null);
+  if (!(await page.locator("#tripNav").isVisible())) await page.locator("#moreToggle").click();
+  check("expanding More makes Trips visible", await page.locator("#tripNav").isVisible());
   check("the badge counts the trips that are not over (3)", (await page.locator("#tripBadge").innerText()).trim() === "3");
   const home = await page.locator("#tripBars").innerText();
   check("Home shows a trip under way and one starting within a week", home.includes("Trip to Rome") && home.includes("Under way") && home.includes("Trip to Lisbon") && home.includes("Starts in 5 days"));

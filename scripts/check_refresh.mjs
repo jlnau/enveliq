@@ -78,7 +78,7 @@ function makeServer(opts = {}) {
 const browser = await chromium.launch();
 async function open(server, { width = 1200, height = 900 } = {}) {
   const context = await browser.newContext({ viewport: { width, height } });
-  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); } catch (e) {} });
+  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-calm", "0"); } catch (e) {} });
   const page = await context.newPage();
   const errors = [], csp = [];
   page.on("pageerror", (e) => errors.push(String(e)));
@@ -95,6 +95,8 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   const server = makeServer();
   const { page, context } = await open(server);
   await page.waitForSelector("article.mail");
+  check("Inbox options start collapsed", await page.locator("#expandAll").isHidden() && (await page.locator("#previewInboxOptions").getAttribute("aria-expanded")) === "false");
+  await page.click("#previewInboxOptions");
   check("the expand link starts as Expand all", (await page.locator("#expandAll").innerText()) === "Expand all" && await page.locator("#expandAll").isVisible());
 
   // Expand all / Collapse all

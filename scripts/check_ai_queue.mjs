@@ -25,14 +25,17 @@ const shots = process.env.SHOTS; if (shots) fs.mkdirSync(shots, { recursive: tru
 for (const [name, vp] of [["desktop", { width: 1180, height: 760 }], ["phone", { width: 390, height: 780 }]]) {
   const p = await b.newPage({ viewport: vp }); const errors = [];
   p.on("pageerror", (e) => errors.push(String(e)));
+  // The queue is operational feedback, so it must remain visible in default Calm mode.
   await p.goto(url); await p.waitForTimeout(600);
   await p.evaluate(() => { document.querySelector(".demo-banner")?.remove(); });
   const bar = p.locator("#sumBar");
+  check(name + ": default Calm mode is active", await p.evaluate(() => document.body.classList.contains("calm")));
   const paint = (q, live = 0) => p.evaluate(([q, live]) => { sq = { items: [], ...q }; aiLive = live; paintSumBar(); }, [q, live]);
   await paint({ waiting: 0, writing: 0, new_mail: 0 });
   check(name + ": the bar is hidden when nothing is queued", await bar.evaluate((e) => e.hidden));
   await paint({ waiting: 2, writing: 1, new_mail: 3 });
   const text = await bar.innerText();
+  check(name + ": AI processing status stays visible in Calm mode", await bar.isVisible());
   check(name + ": it says what is being written and what is waiting", text.includes("AI queue") && text.includes("1 being written") && text.includes("2 waiting"));
   check(name + ": it says new emails appear when their summary and files are ready", text.includes("3 new emails appear in your inbox when its summary and files are ready."));
   if (shots) await p.screenshot({ path: path.join(shots, `ai-queue-${name}.png`) });

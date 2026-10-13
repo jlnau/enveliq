@@ -68,6 +68,7 @@ for (const [name, vp] of [["desktop", { width: 1200, height: 900 }], ["phone", {
   const seen = [];
   for (const f of ["tasks", "attachments", "reviewed", "archived", "action"]) {
     if (name === "phone") await page.click("#menuBtn");
+    if ((f === "reviewed" || f === "archived") && !(await page.locator("#moreToggle").getAttribute("aria-expanded")).includes("true")) await page.click("#moreToggle");
     await page.locator(`.side-nav .nav[data-filter="${f}"]`).click(); await page.waitForTimeout(250);
     seen.push(await page.evaluate(() => document.body.innerText));
   }

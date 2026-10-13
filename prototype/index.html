@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="/brand/enveliq-icon-256.webp">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0d0f14">
-<script>try{var t=localStorage.getItem("enveliq-theme");if(t==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}</script>
+<script>try{var t=localStorage.getItem("enveliq-theme");if(t==="light"||(t==="system"&&matchMedia("(prefers-color-scheme: light)").matches))document.documentElement.setAttribute("data-theme","light")}catch(e){}</script>
 <style>
 :root{
   --bg:#0d0f14;--panel:#141821;--panel2:#1a1f2a;--panel3:#202634;--line:#2a3140;
@@ -569,7 +569,9 @@ body.vopen .vpanel{transform:none;visibility:visible;transition:transform .3s cu
 .sendprog{position:absolute;left:0;bottom:0;height:3px;background:var(--brand);transition:width 1s linear}
 @media(max-width:760px){.sendbar{bottom:16px}}
 .primary.busy{opacity:.75;cursor:progress}
-.undobar{display:flex}.undobar span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.undobar button{flex:none}.sendbar:not([hidden])~.undostack,.sumbar:not([hidden])~.undostack{bottom:84px}.undobar button{border:0;background:transparent;color:var(--c-65c4ff);font-weight:700;font-size:15px;padding:6px 4px}
+.undobar{display:flex}.undobar span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.undobar button{flex:none}.sendbar:not([hidden])~.undostack,.sumbar:not([hidden])~.undostack{bottom:84px}
+/* Keep Undo accessible when both a pending send and AI queue are active. */
+.sendbar:not([hidden])~.sumbar:not([hidden])~.undostack:not([hidden]){bottom:150px}.undobar button{border:0;background:transparent;color:var(--c-65c4ff);font-weight:700;font-size:15px;padding:6px 4px}
 /* On a computer, the Reviewed / Archive / Bin buttons on a closed row show only while the mouse is over it (or a button has the keyboard), in the place of the date. Phones swipe instead. */
 @media(hover:hover) and (min-width:761px){body:not(.layout-right) .mail.quiet:not(.open) .qrow{grid-template-columns:22px 170px minmax(0,1fr) 120px}body:not(.layout-right) .mail.quiet:not(.open) .qpair{position:absolute;right:14px;top:50%;transform:translateY(-50%);opacity:0;transition:opacity .15s;gap:6px}body:not(.layout-right) .mail.quiet:not(.open):hover .qpair,body:not(.layout-right) .mail.quiet:not(.open):focus-within .qpair{opacity:1}body:not(.layout-right) .mail.quiet:not(.open) .time{transition:opacity .15s}body:not(.layout-right) .mail.quiet:not(.open):hover .time,body:not(.layout-right) .mail.quiet:not(.open):focus-within .time{opacity:0}body:not(.layout-right) .mail.quiet:not(.open) .qic{width:32px;height:30px}body:not(.layout-right) .mail.quiet:not(.open) .qic svg{width:15px;height:15px}}
 /* An email waiting out its five seconds stays where it is, slightly greyed and gently pulsing, with a thin line that runs across its bottom */
@@ -661,13 +663,12 @@ body.reader-open{overflow:hidden}
 .calm-sw::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s}
 .calm-row[aria-checked="true"] .calm-sw{background:var(--brand-deep);border-color:transparent}.calm-row[aria-checked="true"] .calm-sw::after{transform:translateX(12px);background:#fff}
 .app.collapsed .calm-sw{display:none}
-body.calm .badge,body.calm #sumBar,body.calm #syncAgo{display:none!important}
+body.calm .badge{display:none!important}
 body.calm .top p .need{color:inherit;text-decoration:none;cursor:default;pointer-events:none}
 body.calm .twhen.soft,body.calm .twhen{color:var(--muted)}
-body.calm .qrow .flag,body.calm .qrow .pdot{filter:grayscale(1);opacity:.55}
+body.calm .qrow .pdot{filter:grayscale(1);opacity:.55}
 body.calm .today-card{border-color:transparent;background:var(--panel)}
-body.calm *{animation-duration:.001s!important;transition-duration:.001s!important}
-body.calm .calm-row .calm-sw,body.calm .calm-row .calm-sw::after{transition-duration:.2s!important}
+/* Calm mode reduces visual noise without altering action progress, undo countdowns, modal transitions or security alerts. */
 .today-card{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:12px 14px 10px}
 .thead{display:flex;align-items:center;gap:10px;margin-bottom:8px}.thead b{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.thead .linkbtn{margin-left:auto}
 .trow2{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:10px;padding:9px 6px;border-top:1px solid var(--line)}.trow2:first-of-type{border-top:0}
@@ -799,6 +800,317 @@ body.on-ship #waitBars{display:none!important}
   .search{width:100%}.search input{flex:1;width:auto}
   .syncago{justify-content:flex-end}
 }
+
+/* Feature preview: compact Enveliq landscape and calm first dashboard.
+   UI only. The mail, task, reminder and vault APIs remain unchanged. */
+@media (min-width:761px) {
+  .top {min-height:94px;box-sizing:border-box;padding:15px 22px;overflow:hidden;background:var(--top-bg);isolation:isolate}
+  .top-inner {position:relative;z-index:2;max-width:none;align-items:flex-start;min-height:64px}
+  .top .greet {height:40px;line-height:40px;top:-6px}
+  .top h2 {font-size:27px;line-height:40px;letter-spacing:-.03em}
+  .top .today {display:none}
+  .top p {font-size:15px;line-height:normal;margin:6px 0 0;max-width:52ch}
+  .top .search input {background:var(--panel);border-radius:12px}
+}
+.enveliq-landscape {pointer-events:none;position:absolute;inset:0;overflow:hidden;z-index:0;opacity:.6}
+.landscape-sun {position:absolute;right:13%;bottom:11px;width:49px;height:49px;border-radius:50%;background:#f2c88e;opacity:.76}
+.landscape-mountain {position:absolute;left:0;right:0;bottom:0;height:42px}
+.landscape-back {background:#7598c6;opacity:.25;clip-path:polygon(0 95%,13% 58%,25% 87%,39% 27%,53% 81%,68% 31%,81% 70%,91% 22%,100% 70%,100% 100%,0 100%)}
+.landscape-front {background:#4c81ad;opacity:.23;clip-path:polygon(0 77%,9% 95%,21% 57%,34% 97%,47% 45%,60% 95%,72% 58%,82% 95%,92% 62%,100% 85%,100% 100%,0 100%)}
+html[data-theme="light"] .enveliq-landscape {opacity:.52}
+.preview-today-grid {display:grid;grid-template-columns:minmax(0,1.6fr) minmax(240px,1fr);gap:14px}
+.preview-today-grid>.today-card {border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--panel)}
+.preview-important {padding:16px;background:var(--panel);border:1px solid var(--c-51353b);border-radius:14px;min-width:0}
+.preview-important .thead b {color:var(--c-d4a2a7)}
+.preview-later {margin-top:12px;padding:8px 15px 12px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.preview-later>.tmore {font-weight:650;padding:7px 0}
+body.calm .preview-today-grid>.today-card {border-color:var(--line)}
+body.calm .preview-important .twhen.soft,body.calm .preview-important .twhen{color:var(--c-d4a2a7)}
+.time .clip {display:inline-flex;margin:0 5px 0 0;vertical-align:middle;align-items:center;justify-content:center;line-height:1}
+.time .time-text {vertical-align:middle}
+.time {display:flex;align-items:center;justify-content:flex-end;gap:2px}
+@media (max-width:760px) {
+  /* Existing compact mobile navigation stays. No banner steals vertical space. */
+  .enveliq-landscape {display:none}
+  .preview-today-grid {grid-template-columns:minmax(0,1fr)}
+  .preview-today-grid>.today-card,.preview-important {padding:12px}
+  .preview-later {padding:7px 12px}
+  .time {display:flex!important;align-items:center;justify-content:flex-end}
+}
+@media (prefers-reduced-motion:reduce) {.enveliq-landscape *{animation:none!important;transition:none!important}}
+
+
+/* UI preview full shell. Presentation only; existing navigation, tasks, menus and mail actions are reused. */
+:root{--preview-ink:#07162d;--preview-panel:#0e203d;--preview-border:#243b60;--preview-gradient:linear-gradient(145deg,#101f38,#07172d)}
+html:not([data-theme="light"]){--bg:#08182e;--panel:#101f37;--panel2:#1b3153;--panel3:#23395a;--line:#293d5b;--top-bg:#09172e;--text:#eef5ff;--muted:#b3c3df;--faint:#8196b8;--accent:#53a3ff}
+html[data-theme="light"]{--bg:#f2f6ff;--panel:#ffffff;--panel2:#e9f0fb;--panel3:#dfebfb;--line:#d8e3f3;--top-bg:#f6f9ff;--text:#182a47;--muted:#536b88;--faint:#7990ad;--accent:#1563df;--preview-ink:#f4f8ff;--preview-panel:#ffffff;--preview-border:#d6e2f3;--preview-gradient:linear-gradient(145deg,#fff,#edf4ff)}
+.app{--side-w:242px}
+.sidebar{background:linear-gradient(160deg,#0b1e3a,#08162e);border-right:1px solid #263c61;padding:25px 16px 16px}
+html[data-theme="light"] .sidebar{background:linear-gradient(170deg,#e9f1ff,#f8fbff);border-color:var(--line)}
+.brand{margin:9px 0 18px 4px}.brand-wordmark{width:186px}
+.brand small{display:none}
+.side-nav .label{display:none}
+.side-nav .nav{min-height:42px;padding:10px 12px;border-radius:10px;margin:2px 0;font-size:14px}
+.side-nav .nav svg{width:21px;height:21px;flex-basis:21px}
+.sidebar .nav.active{background:#173c80;color:#7bbaff}
+html[data-theme="light"] .sidebar .nav.active{background:#dbeafe;color:#1354bb}
+.sidebar .nav.newmail{min-height:45px;background:linear-gradient(115deg,#0056f7,#136af6);color:white;margin:0 0 16px;font-weight:750}
+.sidebar .side-foot{border-color:#284268}
+.more-nav{border-top:1px solid #294363;margin-top:15px;padding-top:10px}
+.more-toggle .more-arrow{margin-left:auto;color:var(--faint);transition:transform .2s}
+.more-nav.expanded .more-arrow{transform:rotate(180deg)}
+.more-items{display:none;padding-left:10px}
+.more-nav.expanded .more-items{display:block}
+.more-items .nav{padding:8px 10px}
+.more-nav:has(.nav.active) .more-items{display:block}
+.side-foot .calm-row{padding:13px 12px;background:linear-gradient(145deg,#11284c,#0d2342);border:1px solid #264573;border-radius:13px}
+html[data-theme="light"] .side-foot .calm-row{background:#e4eeff;border-color:var(--line)}
+.side-foot .user-pill{display:none}
+.preview-toolbar{height:68px;padding:10px 26px;display:flex;align-items:center;justify-content:space-between;gap:20px;background:var(--top-bg);border-bottom:1px solid var(--line);position:relative;z-index:9}
+.preview-toolbar-search{flex:1;min-width:0;max-width:690px}
+.preview-toolbar-search .search-col{width:100%;align-items:stretch;gap:0}
+.preview-toolbar-search .search{width:100%}
+.preview-toolbar-search .search input{width:100%;min-width:120px;height:43px;border-radius:12px;padding:9px 15px}
+.preview-toolbar-actions{display:flex;align-items:center;gap:14px;flex:none;min-width:0}
+.preview-help{display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;width:30px;height:30px;color:var(--muted);font-weight:850;text-decoration:none;font-size:19px}
+.preview-toolbar .user-pill{border:0;background:transparent;width:auto;max-width:220px;min-width:125px;padding:3px;color:var(--text)}
+.preview-toolbar .user-pill .avatar{width:37px;height:37px;flex-basis:37px}
+.preview-toolbar .user-pill .user-copy strong{font-size:13px}
+.preview-toolbar .user-pill .user-copy small{font-size:11px}
+.user-menu{top:66px;right:16px;left:auto;bottom:auto;width:min(342px,calc(100vw - 24px));z-index:95;background:var(--panel);border:1px solid var(--line);padding:12px;border-radius:15px;box-shadow:0 20px 55px #0007}
+.app.collapsed~.user-menu{left:auto;right:16px;bottom:auto}
+.preview-profile{display:flex;gap:10px;align-items:center;padding:8px 5px 12px}
+.preview-profile-avatar{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:50%;background:var(--panel2);font-weight:700;overflow:hidden}
+.preview-profile-avatar img{width:100%;height:100%;object-fit:cover}
+.preview-profile-data{display:flex;flex-direction:column;min-width:0;flex:1}.preview-profile-data strong,.preview-profile-data small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preview-profile-data small{color:var(--muted);font-size:11px}
+.preview-profile-role{color:var(--accent);background:var(--panel2);font-size:10px;border-radius:99px;padding:4px 8px}
+.preview-theme-options{border-top:1px solid var(--line);padding:9px 0 3px}
+.preview-theme-options button{width:100%;display:flex;justify-content:space-between;background:none;color:var(--text);border:0;border-radius:9px;text-align:left;padding:9px 12px}
+.preview-theme-options button:hover,.preview-theme-options button.chosen{background:var(--panel2)}
+.preview-theme-options button span{display:none;color:var(--accent)}.preview-theme-options button.chosen span{display:inline}
+.preview-calm-option{align-items:center}.preview-calm-option small{display:block}
+.preview-menu-switch{width:32px;height:18px;background:var(--faint);border-radius:99px;position:relative;flex:none}
+.preview-menu-switch:after{content:"";position:absolute;width:14px;height:14px;top:2px;left:2px;background:white;border-radius:50%;transition:left .2s}
+.preview-calm-option[aria-checked="true"] .preview-menu-switch{background:#1b69fa}
+.preview-calm-option[aria-checked="true"] .preview-menu-switch:after{left:16px}
+.user-menu .menu-actions{display:flex;flex-direction:column}
+.user-menu #themeBtn{display:none}
+.user-menu .menu-label[data-preview-only],.user-menu [data-preview-only]{display:none}
+.top{position:relative!important;top:auto!important;z-index:2;min-height:148px!important;padding:25px 28px 25px!important;background:linear-gradient(120deg,#102d67,#193a78 48%,#152c57 85%,#0a234d)!important;overflow:hidden}
+.top:before{content:"";position:absolute;inset:0;background-image:radial-gradient(ellipse at 72% 37%,#ffdb9d 0 20px,transparent 21px),linear-gradient(155deg,transparent 56%,#102650 56% 100%);opacity:.95}
+.top .enveliq-landscape{opacity:1!important;z-index:1}
+.top .landscape-sun{right:27%;bottom:26px;width:44px;height:44px;background:#ffd8a0;opacity:.95}
+.top .landscape-back{height:76px;background:#315d9d;opacity:.65;clip-path:polygon(0 100%,0 57%,10% 81%,22% 34%,34% 91%,45% 45%,57% 89%,69% 25%,79% 87%,92% 30%,100% 80%,100% 100%)}
+.top .landscape-front{height:57px;background:#112c55;opacity:.93;clip-path:polygon(0 100%,0 45%,11% 95%,23% 58%,35% 100%,47% 52%,57% 98%,70% 63%,83% 100%,94% 53%,100% 85%,100% 100%)}
+.top-inner{max-width:none;min-height:90px!important;align-items:center!important;position:relative;z-index:2}
+.top .top-left{z-index:3;position:relative}
+.top h2{color:white;font-size:36px;line-height:1.15}
+.top p{color:#e1e9ff;font-size:17px;max-width:650px}
+html[data-theme="light"] .top{background:linear-gradient(120deg,#91bcfa,#b7d5fc 54%,#d6e5ff)!important}
+html[data-theme="light"] .top h2{color:#102b5a}
+html[data-theme="light"] .top p{color:#294c80}
+html[data-theme="light"] .top .landscape-back{background:#77a3d8}html[data-theme="light"] .top .landscape-front{background:#4e82bb;opacity:.65}
+html[data-theme="light"] .top .landscape-sun{background:#fff3c1}
+html[data-theme="light"] .top:before{opacity:.36}
+.content{max-width:1370px;padding:18px 25px 55px}
+.preview-today-grid{grid-template-columns:minmax(0,1.55fr) minmax(240px,1fr);gap:15px}
+.preview-today-grid>.today-card,.preview-important,.preview-later{background:var(--preview-gradient);border-color:var(--preview-border);padding:19px}
+.preview-today-grid .thead b{color:var(--text);font-size:19px;letter-spacing:normal;text-transform:none}
+.preview-important{background:linear-gradient(135deg,#261d36,#1b1d33);border-color:#5c344c}
+.preview-important .thead b{color:#ff7b87}
+html[data-theme="light"] .preview-important{background:#fff4f5;border-color:#f7cfd7}
+html[data-theme="light"] .preview-important .thead b{color:#b6364c}
+.preview-today-grid .trow2{min-height:62px}
+.preview-later>.tmore{font-size:16px;color:var(--text)}
+.quiet-list{border-color:var(--preview-border);background:var(--preview-gradient)}
+.mail.quiet{border-bottom-color:var(--line)}
+body.calm .filters{opacity:.8}
+@media(max-width:760px){
+  .preview-toolbar{display:none}
+  .sidebar .user-pill{display:flex}
+  .user-menu,.app.collapsed~.user-menu{left:12px;right:auto;top:auto;bottom:62px}
+  .top{height:0!important;min-height:0!important;padding:0!important}
+  .top:before,.top .enveliq-landscape{display:none}
+  .content{padding:7px 12px 90px}
+  .preview-today-grid{grid-template-columns:1fr}
+  .preview-today-grid>.today-card,.preview-important,.preview-later{padding:12px}
+  .more-items .nav{min-height:43px}
+}
+@media(min-width:761px) and (max-width:1080px){.top h2{font-size:27px}.preview-toolbar{padding-inline:16px}.preview-toolbar .user-pill{min-width:90px}.preview-today-grid{grid-template-columns:1fr}}
+
+
+.preview-calm-notice{position:absolute;right:24px;top:22px;z-index:5;display:grid;grid-template-columns:1fr auto;gap:3px 10px;max-width:365px;padding:14px;background:#102755e8;border:1px solid #4266a5;border-radius:13px;color:white}
+.preview-calm-notice[hidden]{display:none}.preview-calm-notice strong{font-size:14px}.preview-calm-notice span{grid-row:2;color:#d2deff;font-size:11px}.preview-calm-notice button{grid-column:2;grid-row:1/3;border:0;background:#2355a9;color:#fff;border-radius:8px;padding:5px 12px}
+.preview-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}.preview-overview[hidden]{display:none}
+.preview-stat{display:flex;gap:13px;align-items:flex-start;min-height:135px;border-radius:14px;background:linear-gradient(145deg,#172b4d,#0b1d38);border:1px solid #2b4c76;color:#eaf2ff;padding:15px;text-align:left}
+.preview-stat:disabled{opacity:.6;cursor:default}.preview-stat-icon{display:grid;place-items:center;width:37px;height:37px;border-radius:12px;background:#2352a6;color:white;font-size:21px;flex:none}
+.preview-stat-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.preview-stat-copy strong{font-size:14px}.preview-stat-copy b{font-size:31px;line-height:1.2}.preview-stat-copy small{font-size:12px;color:#aec7e9}
+.preview-stat.action{background:linear-gradient(145deg,#3b2438,#1e1b30);border-color:#69415c}.preview-stat.action .preview-stat-icon{background:#af4058}
+.preview-stat.shipping .preview-stat-icon{background:#5037ab}
+html[data-theme="light"] .preview-stat{background:linear-gradient(145deg,#fff,#edf4ff);color:var(--text);border-color:var(--line)}
+html[data-theme="light"] .preview-stat-copy small{color:var(--muted)}html[data-theme="light"] .preview-stat.action{background:#fff0f3}
+.preview-list-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--preview-gradient);border:1px solid var(--preview-border);border-radius:12px;padding:13px 18px;margin:12px 0}
+.preview-list-heading[hidden]{display:none}.preview-list-heading strong{font-size:18px}.preview-list-heading button{border:0;background:none;color:var(--accent)}
+body:not(.preview-show-filters) #previewListHeading:not([hidden])+.filters{display:none!important}
+@media(max-width:1150px){.preview-overview{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.preview-calm-notice{display:none}.preview-overview{gap:8px}.preview-stat{min-height:103px;padding:11px;gap:8px}.preview-stat-icon{width:28px;height:28px;font-size:16px}.preview-stat-copy b{font-size:24px}.preview-stat-copy small{font-size:10px}}
+
+
+.preview-focus-card{display:grid;grid-template-columns:54px minmax(0,1fr);gap:16px;padding:18px;background:var(--panel2);border:1px solid var(--line);border-radius:13px}
+.preview-focus-icon{display:grid;place-items:center;width:52px;height:52px;border-radius:14px;background:#2051a5;color:#e3edff;font-size:29px}
+.preview-focus-copy strong{display:block;font-size:18px;line-height:1.3}.preview-focus-copy p{margin:6px 0;color:var(--muted);font-size:14px}.preview-focus-copy small{color:var(--faint)}
+.preview-focus-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}.preview-focus-actions .tbtn{padding:9px 13px}
+.preview-later .trow2{display:inline-grid;vertical-align:top;width:calc(33.333% - 9px);margin:12px 10px 0 0;grid-template-columns:24px minmax(0,1fr);grid-template-rows:auto auto;border:1px solid var(--line);border-radius:11px;background:var(--panel2);padding:13px;min-height:92px}
+.preview-later .trow2:nth-of-type(3n+1){margin-right:0}
+.preview-later .trow2 .twhen{grid-column:2;grid-row:2}
+.preview-later .trow2 .ttl{white-space:normal;line-height:1.35}
+.side-foot .calm-row{flex-wrap:wrap;white-space:normal}
+.side-foot .calm-row:after{content:"A quieter inbox, one thing at a time. Counts are hidden.";flex:0 0 100%;font-size:11px;line-height:1.5;color:#b3c5e3;padding-top:3px}
+html[data-theme="light"] .side-foot .calm-row:after{color:#556e91}
+body.calm:has(#bulk.show) .preview-list-heading+.filters{display:flex!important}
+@media(max-width:760px){.preview-focus-card{grid-template-columns:35px minmax(0,1fr);gap:10px;padding:12px}.preview-focus-icon{width:34px;height:34px;font-size:18px}.preview-focus-copy strong{font-size:15px}.preview-later .trow2{width:100%;margin-right:0}}
+
+
+.sidebar{background-color:#0b1d38}
+html[data-theme="light"] .sidebar{background-color:#f5f9ff}
+.preview-toolbar{min-height:73px;height:73px}
+.preview-toolbar .search-col{max-height:62px}
+.preview-toolbar .search input{height:39px}
+body:not(.calm) .top .preview-calm-notice{display:none}
+@media(min-width:761px) and (max-width:1110px){
+  .preview-calm-notice{right:12px;top:11px;width:200px;max-width:28%;padding:10px;grid-template-columns:1fr}
+  .preview-calm-notice span{font-size:10px}
+  .preview-calm-notice button{grid-column:1;grid-row:3;justify-self:start}
+  .top-left{max-width:70%}
+}
+
+
+/* Compact preview dashboard revision: keep the controls usable, show mail sooner. */
+@media(min-width:761px){
+  .top{min-height:78px!important;padding:10px 22px!important}
+  .top-inner{min-height:56px!important}
+  .top h2{font-size:28px}
+  .top p{font-size:13px;margin-top:3px}
+  .top .landscape-sun{width:29px;height:29px;bottom:16px}
+  .top .landscape-back{height:49px}.top .landscape-front{height:36px}
+  .preview-calm-notice{top:8px;right:16px;padding:8px 11px}
+  .content{padding-top:12px}
+  .preview-overview{gap:10px;margin-bottom:12px}
+  .preview-stat{min-height:75px;padding:9px 11px;align-items:center;gap:10px}
+  .preview-stat-icon{width:34px;height:34px;font-size:18px}
+  .preview-stat-copy{display:grid;grid-template-columns:auto 1fr;align-items:center;column-gap:9px}
+  .preview-stat-copy b{font-size:25px;grid-row:1/3}
+  .preview-stat-copy strong{font-size:13px}.preview-stat-copy small{font-size:10px}
+  body:not(.calm) .preview-today-grid{grid-template-columns:minmax(0,1fr)}
+  .preview-today-grid>.today-card,.preview-important,.preview-later{padding:11px 14px}
+  .preview-today-grid .trow2{min-height:43px}
+  .preview-today-grid .thead{margin-bottom:5px}
+  .preview-focus-card{grid-template-columns:40px minmax(0,1fr);padding:11px;gap:10px}
+  .preview-focus-icon{width:39px;height:39px;font-size:22px}
+  .preview-focus-copy strong{font-size:15px}
+  .preview-focus-copy p{font-size:12px;margin:3px 0}
+  .preview-focus-actions{margin-top:7px}
+  .preview-focus-actions .tbtn{padding:6px 10px}
+  .preview-later{margin-top:9px}
+  .preview-later-items{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:8px}
+  .preview-later .trow2{display:grid!important;width:100%!important;margin:0!important;min-height:78px!important;padding:9px!important}
+}
+.preview-later-head,.preview-heading-actions{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.preview-heading-actions{margin-left:auto}
+.preview-later .tmore{padding:0!important;font-weight:650}
+.preview-fold-toggle{display:none;border:0;background:transparent;color:var(--accent);font-size:21px;line-height:1;min-width:34px;min-height:34px;cursor:pointer}
+.app.collapsed .side-foot .calm-row{width:44px;min-height:44px;padding:10px;justify-content:center;border-radius:10px}
+.app.collapsed .side-foot .calm-row .nav-label,.app.collapsed .side-foot .calm-row .calm-sw,.app.collapsed .side-foot .calm-row:after{display:none!important}
+.app.collapsed .side-foot .calm-row[aria-checked="true"]{background:#174d9b;color:white}
+@media(max-width:760px){
+  body.calm .enveliq-landscape,body.calm .preview-calm-notice{display:none!important}
+  .preview-overview{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px;margin:4px 0 10px}
+  .preview-stat{min-width:0;min-height:61px;padding:7px 3px;flex-direction:column;align-items:center;gap:3px;text-align:center;border-radius:9px}
+  .preview-stat-icon{height:20px;width:20px;font-size:13px;border-radius:6px}
+  .preview-stat-copy{gap:1px}
+  .preview-stat-copy b{font-size:19px;line-height:1}
+  .preview-stat-copy strong{font-size:9px;line-height:1.2}
+  .preview-stat-copy small{display:none}
+  .preview-today-grid{gap:7px}
+  .preview-today-grid>.today-card,.preview-important,.preview-later{padding:8px 10px;margin-top:6px;border-radius:11px}
+  .preview-today-grid .thead{margin:0}
+  .preview-today-grid .thead b{font-size:15px}
+  .preview-fold-toggle{display:inline-flex;align-items:center;justify-content:center}
+  .preview-today-grid .mobile-folded .preview-fold-content,.preview-later.mobile-folded .preview-fold-content{display:none}
+  .preview-focus-card{padding:9px;gap:8px}
+  .preview-focus-copy p{display:none}
+  .preview-focus-actions{margin-top:7px}
+  .preview-later-items{margin-top:6px}
+  .preview-later .trow2{min-height:68px;padding:9px}
+  .preview-later .tmore{font-size:15px}
+  .preview-list-heading{padding:8px 11px;margin:9px 0}
+  .preview-list-heading strong{font-size:16px}
+  body.preview-mobile-emails-closed #previewListHeading+.filters,
+  body.preview-mobile-emails-closed #list{display:none!important}
+  .app.collapsed .side-foot .calm-row{width:44px}
+}
+
+/* Light theme refinement: clean wordmark surround, quiet scenic header, legible metadata. */
+@media(min-width:761px){
+  html[data-theme="light"] .sidebar .brand{
+    background:#ffffff;
+    padding:9px 11px;
+    border-radius:12px;
+    margin:0 12px 17px 0;
+    box-shadow:0 1px 4px rgba(33,66,119,.07);
+  }
+  html[data-theme="light"] .sidebar .brand-wordmark{
+    display:block;
+    max-width:100%;
+    height:auto;
+  }
+  /* Keep the entire collapse control inside the rail, clear of the main panel. */
+  .sidebar .collapse-toggle{
+    right:5px;
+    top:10px;
+    width:28px;
+    height:28px;
+    z-index:35;
+  }
+  .sidebar .brand{padding-right:27px}
+  html[data-theme="light"] .sidebar .brand{padding-right:27px}
+}
+html[data-theme="light"] .top{
+  background:linear-gradient(110deg,#d8ebff 0%,#c6e1ff 56%,#dceeff 100%)!important;
+  border-bottom:1px solid #bdd7f6;
+}
+html[data-theme="light"] .top:before{
+  background:radial-gradient(circle at 84% 34%,rgba(255,238,171,.9) 0 15px,transparent 16px);
+  opacity:.7;
+}
+html[data-theme="light"] .top .landscape-sun{
+  background:#ffedb3;opacity:.83
+}
+html[data-theme="light"] .top .landscape-back{
+  background:#a9d1fc;opacity:.47
+}
+html[data-theme="light"] .top .landscape-front{
+  background:#6aadee;opacity:.34
+}
+html[data-theme="light"] .top h2{color:#122f59}
+html[data-theme="light"] .top p{color:#233f67}
+html[data-theme="light"] .sidebar .nav{color:#273c60}
+html[data-theme="light"] .sidebar .nav svg{color:#344c73}
+html[data-theme="light"] .sidebar .nav.active{color:#0754bf}
+html[data-theme="light"] .sidebar .nav.active svg{color:#075ed4}
+html[data-theme="light"] .sidebar .nav .badge{color:#244264}
+html[data-theme="light"] .time,
+html[data-theme="light"] .time-text,
+html[data-theme="light"] .twhen,
+html[data-theme="light"] .fdate,
+html[data-theme="light"] #syncAgo{color:#46638b}
+html[data-theme="light"] .trow2 .twhen.soft,
+html[data-theme="light"] .preview-important .twhen.soft{color:#8b5900}
+html[data-theme="light"] .trow2 small,
+html[data-theme="light"] .preview-focus-copy small{color:#526c90}
+.avatar:has(img),.preview-profile-avatar:has(img){background:transparent!important}
+.avatar img,.preview-profile-avatar img{background:transparent!important;object-fit:contain}
 </style>
 </head>
 <body class="booting">
@@ -826,6 +1138,11 @@ body.on-ship #waitBars{display:none!important}
     <button class="nav" data-filter="reviewed" title="Reviewed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.6 2.6L16 9.6"/></svg><span class="nav-label">Reviewed</span></button>
     <button class="nav" data-filter="archived" title="Archived"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4.5" rx="1"/><path d="M5 8.5V20h14V8.5"/><path d="M10 12.5h4"/></svg><span class="nav-label">Archived</span></button>
     <button class="nav" data-filter="sent" id="sentNav" title="Sent" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg><span class="nav-label">Sent</span></button>
+    <div class="more-nav" id="moreNav">
+      <button class="nav more-toggle" id="moreToggle" type="button" aria-expanded="false" aria-controls="moreItems" title="More mailbox views"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3zM3 9h18"/></svg><span class="nav-label">More</span><span class="more-arrow" aria-hidden="true">⌄</span></button>
+      <div class="more-items" id="moreItems"></div>
+    </div>
+    <button class="nav" id="sideSettings" type="button" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg><span class="nav-label">Settings</span></button>
   </nav>
   <a class="updnote" id="updNote" target="_blank" rel="noopener noreferrer" hidden><span class="updic" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 11l6-6 6 6"/></svg></span><span class="updtx"><b id="updVer">A new version is out</b><small>See what's new</small></span></a>
   <div class="side-foot">
@@ -842,6 +1159,13 @@ body.on-ship #waitBars{display:none!important}
 </aside>
 
 <main class="main">
+<div class="preview-toolbar" id="previewToolbar">
+  <div class="preview-toolbar-search" id="previewSearchSlot"></div>
+  <div class="preview-toolbar-actions">
+    <a class="preview-help" href="https://enveliq.app/docs/" target="_blank" rel="noopener noreferrer" aria-label="Help and support" title="Help and support">?</a>
+    <div id="previewAccountSlot"></div>
+  </div>
+</div>
 <div class="mtop" id="mTop">
   <button class="mbtn" id="menuBtn" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Open the menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   <button class="mbtn" id="mSearchBack" type="button" aria-label="Close search" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
@@ -853,8 +1177,9 @@ body.on-ship #waitBars{display:none!important}
   <button class="mbtn" id="mSyncBtn" type="button" aria-label="Sync mail" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14-4M4 4v4h4M4 13a8 8 0 0 0 14 4M20 20v-4h-4"/></svg></button>
   </div>
 <header class="top">
+  <div class="preview-calm-notice" id="previewCalmNotice" hidden><strong>Calm mode is on</strong><span>One thing at a time. Counts are hidden.</span><button type="button" id="previewCalmOff">Turn off</button></div>
   <div class="top-inner">
-    <div class="top-left"><div class="greet"><h2>Inbox</h2><span class="today" id="todayDate"></span></div><p id="inboxSubtitle">Private mail for the signed-in person</p></div>
+    <div class="top-left"><div class="greet"><h2>Inbox</h2><span class="today" id="todayDate"></span></div><p id="inboxSubtitle">Private mail for the signed-in person</p></div><div class="enveliq-landscape" aria-hidden="true"><span class="landscape-sun"></span><span class="landscape-mountain landscape-back"></span><span class="landscape-mountain landscape-front"></span></div>
     <div class="search-col"><div class="search"><input id="search" type="search" placeholder="Search inbox" aria-label="Search inbox"><button class="attachment-view sync-btn" id="syncBtn" type="button" hidden>Sync mail</button></div><div class="syncago" id="syncAgo" role="status" aria-live="off" hidden></div></div>
   </div>
 </header>
@@ -863,12 +1188,14 @@ body.on-ship #waitBars{display:none!important}
   <div class="boot-note" id="bootNote" role="status">Getting your inbox ready…</div>
   <div class="note warn" id="httpBanner" role="note" hidden><strong>This page is not encrypted.</strong> You opened Enveliq over plain http, so passwords and your sign-in can be read by anyone on the network, and passkeys and Outlook (Microsoft) sign-in will not work. Open it over https instead: <a href="https://enveliq.app/docs/access/" target="_blank" rel="noopener noreferrer">step-by-step guide</a>.</div>
   <div class="note warn sample-banner"><strong>Welcome to Enveliq.</strong> <span class="sb-demo">These are sample emails. </span><span class="sb-real">Your inbox is empty because no mailbox is connected yet. </span><a href="/welcome">Set up your mailbox</a> to see your own mail with summaries. The guide takes about five minutes.</div>
+  <div id="previewOverview" class="preview-overview" hidden></div>
   <div id="dueBars" class="duebars" role="region" aria-label="Today's tasks" hidden></div>
   <div id="shipBars" class="duebars" role="region" aria-label="Deliveries to confirm" hidden></div>
   <div id="subBars" class="duebars" role="region" aria-label="Subscriptions coming up" hidden></div>
   <div id="tripBars" class="duebars" role="region" aria-label="Trips coming up" hidden></div>
   <div id="waitBars" class="duebars" role="region" aria-label="Waiting on others" hidden></div>
   <div id="msgBars" class="duebars" role="region" aria-label="New messages" hidden></div>
+  <div class="preview-list-heading" id="previewListHeading"><strong>Recent emails</strong><span class="preview-heading-actions"><button type="button" id="previewInboxOptions" aria-expanded="false">Inbox options ▾</button><button class="preview-fold-toggle" type="button" data-preview-fold="emails" aria-label="Collapse recent emails" aria-expanded="true">⌃</button></span></div>
   <div class="filters">
     <button class="chip active" data-chip="all">All</button>
     <label class="flabel" for="filterBy">Filter</label>
@@ -922,13 +1249,23 @@ body.on-ship #waitBars{display:none!important}
 </main>
 </div>
 
-<div class="user-menu" id="userMenu">
+<div class="user-menu" id="userMenu" role="menu" aria-label="Account and appearance">
+  <div class="preview-profile"><span class="preview-profile-avatar" id="previewProfileAvatar"></span><span class="preview-profile-data"><strong id="previewProfileName"></strong><small id="previewProfileEmail"></small></span><span class="preview-profile-role" id="previewProfileRole"></span></div>
+  <div class="preview-theme-options" role="group" aria-label="Appearance">
+    <button type="button" data-theme-choice="dark">☾ &nbsp; Dark mode <span aria-hidden="true">✓</span></button>
+    <button type="button" data-theme-choice="light">☼ &nbsp; Light mode <span aria-hidden="true">✓</span></button>
+    <button type="button" data-theme-choice="system">▣ &nbsp; System theme <span aria-hidden="true">✓</span></button>
+  </div>
+  <div class="menu-sep"></div>
+  <button class="user-option preview-calm-option" id="previewCalmBtn" type="button" role="switch" aria-checked="true"><span>Calm mode <small>One thing at a time</small></span><span class="preview-menu-switch" aria-hidden="true"></span></button>
+  <div class="menu-sep"></div>
   <div class="menu-actions" id="menuActions">
     <button class="user-option menu-item" id="profileBtn" type="button" title="Your name, picture and details"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.2-3.6 4.2-5.5 8-5.5s6.8 1.9 8 5.5"/></svg><span class="menu-text">Profile settings</span></button>
     <button class="user-option menu-item" id="settingsBtn" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="nav-label menu-text">Settings</span></button>
-    <button class="user-option menu-item" id="adminBtn" title="Administration" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.6 3.1 8.2 7.5 9.5 4.4-1.3 7.5-4.9 7.5-9.5V6z"/><path d="m9 12 2 2 4-4"/></svg><span class="nav-label menu-text">Administration</span></button>
+    <button class="user-option menu-item" id="adminBtn" title="Administration" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.6 3.1 8.2 7.5 9.5 4.4-1.3 7.5-4.9 7.5-9.5V6z"/><path d="m9 12 2 2 4-4"/></svg><span class="nav-label menu-text">Manage users</span></button>
     <button class="user-option menu-item theme-btn" id="themeBtn" type="button" title="Switch between light and dark mode" aria-pressed="false"><svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span class="nav-label menu-text" id="themeLabel">Light mode</span></button>
   </div>
+  <a class="user-option preview-help-item" href="https://enveliq.app/docs/" target="_blank" rel="noopener noreferrer">? &nbsp; Help and support</a>
   <div class="menu-sep" id="menuSep"></div>
   <div class="menu-label" data-preview-only>Preview: switch person</div>
   <button class="user-option" data-preview-only data-switch-user="morgan"><span><strong>Morgan</strong><br><small>Administrator</small></span><span>MO</span></button>
@@ -1784,7 +2121,7 @@ const isoLocal=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"
 function taskOrder(a,b){return (a.state!=="open")-(b.state!=="open")||Math.max(a.days,0)-Math.max(b.days,0)||(a.priority==="high"?0:1)-(b.priority==="high"?0:1)||a.days-b.days||(b.received||0)-(a.received||0)}
 function taskWhen(t){
   const d=new Date(t.due+"T00:00:00"),wd=d.toLocaleDateString("en-AU",{weekday:"short"}),dm=d.toLocaleDateString("en-AU",{day:"numeric",month:"short"});
-  if(t.days<0)return calmOn()?"When you can":t.days>-7?`Waiting since ${wd}`:`Waiting since ${dm}`;
+  if(t.days<0)return t.days>-7?`Waiting since ${wd}`:`Waiting since ${dm}`;
   if(t.days===0)return t.remind_at?"Today · "+new Date(t.remind_at*1000).toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"}).replace(" ",""):"Today";
   if(t.days===1)return "Tomorrow";
   return t.days<7?wd:`${wd} ${dm}`;
@@ -1853,13 +2190,41 @@ function taskRow(t,fin){
   const m=taskMsg(t);
   return `<div class="trow2${fin?" fin":""}"><button class="tick" type="button" data-task-act="${fin?"reopen":"done"}" data-task-id="${esc(t.id)}" aria-label="${fin?"Put back: ":"Mark done: "}${esc(t.title)}"></button><button class="tmain" type="button" ${m?`data-due-open="${esc(m.id)}"`:"disabled"} aria-label="${esc(t.title)}. ${m?"Show the email":""}"><span class="ttl">${esc(t.title)}</span><span class="tfr">${esc(t.sender?"from "+t.sender:"")}</span></button>${fin?`<span class="reason">${esc(t.reason_text||"Done")}</span>`:`<span class="twhen${t.days<0?" soft":""}">${esc(taskWhen(t))}</span>`}</div>`;
 }
+function previewFocusTask(t){
+  const m=taskMsg(t),button=m?'<button class="primary" type="button" data-due-open="'+esc(m.id)+'">Open email</button>':'<button class="primary" type="button" data-tasks-go>Open Tasks</button>';
+  const snooze=m?'<button class="tbtn" type="button" data-snooze="'+esc(m.id)+'">Snooze</button>':"";
+  return '<div class="preview-focus-card"><span class="preview-focus-icon" aria-hidden="true">✧</span><div class="preview-focus-copy"><strong>'+esc(t.title)+'</strong>'+(t.detail?'<p>'+esc(t.detail)+'</p>':"")+(t.sender?'<small>From '+esc(t.sender)+' · '+esc(taskWhen(t))+'</small>':'<small>'+esc(taskWhen(t))+'</small>')+'<div class="preview-focus-actions">'+button+snooze+'<button class="tbtn" type="button" data-task-act="done" data-task-id="'+esc(t.id)+'">Mark done</button></div></div></div>';
+}
+const previewMobileOpen={focus:false,important:false,later:false,today:false,emails:true};
+function previewFoldControl(section,open){
+  return '<button class="preview-fold-toggle" type="button" data-preview-fold="'+section+'" aria-label="'+(open?'Collapse ':'Expand ')+section+'" aria-expanded="'+open+'">'+(open?'⌃':'⌄')+'</button>';
+}
 function renderToday(){
   const box=$("dueBars"),open=openTasks(),now=open.filter(t=>t.days<=0);
   if(!now.length||filter==="tasks"||filter==="sent"){box.hidden=true;box.replaceChildren();return}
-  const calm=calmOn(),shown=now.slice(0,calm?1:3),rest=[...now.slice(calm?1:3),...open.filter(t=>t.days>0)];
-  box.innerHTML=`<div class="today-card"><div class="thead"><b>${calmOn()?"Start here":`Today · ${now.length} ${now.length===1?"thing":"things"}`}</b><button class="linkbtn" type="button" data-tasks-go>Open Tasks</button></div>${shown.map(t=>taskRow(t,false)).join("")}${rest.length?`<button class="tmore" type="button" data-due-toggle aria-expanded="${dueOpen}">${calmOn()?"Later":`Coming up · ${rest.length} more`} ${dueOpen?"⌃":"⌄"}</button>${dueOpen?rest.map(t=>taskRow(t,false)).join(""):""}`:""}</div>`;
+  const calm=calmOn(),shown=now.slice(0,calm?1:3),important=calm?now.slice(1):[],rest=open.filter(t=>t.days>0);
+  const mobile=window.matchMedia("(max-width:760px)").matches;
+  const title=calm?"Start here":'Today · '+now.length+' '+(now.length===1?"thing":"things");
+  const focusKey=calm?"focus":"today";
+  const focusToggle=previewFoldControl(focusKey,previewMobileOpen[focusKey]);
+  const urgent=important.length?'<section class="preview-important'+(mobile&&!previewMobileOpen.important?' mobile-folded':'')+'"><div class="thead"><b>Also important today</b><span class="preview-heading-actions"><button class="linkbtn" type="button" data-tasks-go>All tasks</button>'+previewFoldControl("important",previewMobileOpen.important)+'</span></div><div class="preview-fold-content">'+important.slice(0,previewMobileOpen.important?important.length:1).map(t=>taskRow(t,false)).join("")+'</div></section>':"";
+  const laterRows=(mobile?previewMobileOpen.later:(calm||dueOpen))?rest.slice(0,3):[];
+  const later=rest.length?'<section class="preview-later'+(mobile&&!previewMobileOpen.later?' mobile-folded':'')+'"><div class="preview-later-head"><button class="tmore" type="button" '+(mobile?'data-preview-fold="later" aria-expanded="'+previewMobileOpen.later+'"':'data-due-toggle aria-expanded="'+dueOpen+'"')+'>'+(calm?"Later":'Coming up · '+rest.length+' more')+'</button><span class="preview-heading-actions">'+(rest.length>3?'<button class="linkbtn" type="button" data-tasks-go>All tasks</button>':'')+previewFoldControl("later",previewMobileOpen.later)+'</span></div><div class="preview-later-items preview-fold-content">'+laterRows.map(t=>taskRow(t,false)).join("")+'</div></section>':"";
+  box.innerHTML='<div class="preview-today-grid"><section class="today-card'+(mobile&&!previewMobileOpen[focusKey]?' mobile-folded':'')+'"><div class="thead"><b>'+title+'</b><span class="preview-heading-actions"><button class="linkbtn" type="button" data-tasks-go>Open Tasks</button>'+focusToggle+'</span></div><div class="preview-fold-content">'+(calm&&shown[0]?previewFocusTask(shown[0]):shown.map(t=>taskRow(t,false)).join(""))+'</div></section>'+urgent+'</div>'+later;
   box.hidden=false;
 }
+document.addEventListener("click",e=>{
+  const trigger=e.target.closest("[data-preview-fold]");
+  if(!trigger)return;
+  const name=trigger.dataset.previewFold;
+  if(!(name in previewMobileOpen))return;
+  previewMobileOpen[name]=!previewMobileOpen[name];
+  if(name==="emails"){
+    document.body.classList.toggle("preview-mobile-emails-closed",!previewMobileOpen.emails);
+    trigger.setAttribute("aria-expanded",String(previewMobileOpen.emails));
+    trigger.textContent=previewMobileOpen.emails?"⌃":"⌄";
+  }else renderToday();
+});
 function calendarHtml(){
   const today=tasksData.today||isoLocal(new Date());
   if(!calMonth)calMonth=today.slice(0,7);
@@ -2396,14 +2761,18 @@ function render(){
   $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent");
   document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",filter==="all"));{const fb=$("filterBy"),pick=["action","need","high","attachments"].includes(filter)?filter:"";fb.value=pick;fb.classList.toggle("active",!!pick)}
   $("selectedCount").textContent=selected.size;$("bulk").classList.toggle("show",selected.size>1);
-  $("adminBtn").hidden=!currentUser.is_admin;$("userName").textContent=currentUser.name;$("userRole").textContent=currentUser.is_admin?"Administrator":"User";paintAvatar();
+  $("adminBtn").hidden=!currentUser.is_admin;$("userName").textContent=currentUser.name;$("userRole").textContent=currentUser.is_admin?"Administrator":"User";paintAvatar();previewSyncAccount();
   const inbox=mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)),needN=inbox.filter(m=>m.action||m.priority==="high").length;
   const hr=new Date().getHours(),first=String(currentUser.name||"").trim().split(/\s+/)[0];
   const greeting=(hr<12?"Good morning":hr<18?"Good afternoon":"Good evening")+(first?`, ${first}`:"");
-  document.querySelector(".top-left h2").textContent=greeting;
+  document.querySelector(".top-left h2").textContent=["all","action","need","high","attachments"].includes(filter)?(calmOn()?"One thing at a time":"My inbox"):greeting;
+  $("previewCalmNotice").hidden=!(filter==="all"&&calmOn());
+  $("previewListHeading").hidden=filter!=="all";
+  previewSyncMenu();
   $("todayDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"});
-  $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(calmOn()?(inbox.length?"Take it one at a time. Nothing here is urgent.":"Nothing waiting. Enjoy the quiet."):inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:(document.body.classList.contains("backend")&&!realMail?"No mailbox is connected yet":"All caught up"));
+  $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(calmOn()?(inbox.length?"One thing at a time. Important deadlines stay visible.":"Nothing waiting. Enjoy the quiet."):inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:(document.body.classList.contains("backend")&&!realMail?"No mailbox is connected yet":"All caught up"));
 
+  previewRenderOverview(inbox,needN);
   const rows=data.filter(visible);
   const rank={high:0,normal:1,low:2};
   const eff=m=>wokeBack(m)?m.snoozeUntil/1000:(m.received||0);          // an email that woke up from a snooze sits at the top
@@ -2441,7 +2810,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
       ${lead}
       <div class="sender">${flag}${esc(m.sender)}</div>
       <div class="qmain">${isImp(m)?'<span class="imp-pill" title="You marked this person as important">&#9733; Important</span>':""}${m.scam?'<span class="scam-pill" title="Something about this email looks odd. Open it to see what.">Be careful</span>':""}<span class="subject">${esc(m.subject)}</span></div>
-      <div class="time">${esc(m.time)}${fileN(m)?`<span class="clip" role="img" aria-label="${esc(clipWords(m))}" title="${esc(clipWords(m))}">${ICON_CLIP}</span>`:""}${m.replied?'<span class="replied">↩ Replied</span>':""}${isSnoozed(m)?`<span class="snz">Snoozed until ${esc(snoozeWhen(m.snoozeUntil))}</span>`:wokeBack(m)?'<span class="snz back">↺ Back from snooze</span>':""}</div>
+      <div class="time">${fileN(m)?`<span class="clip" role="img" aria-label="${esc(clipWords(m))}" title="${esc(clipWords(m))}">${ICON_CLIP}</span>`:""}<span class="time-text">${esc(m.time)}</span>${m.replied?'<span class="replied">↩ Replied</span>':""}${isSnoozed(m)?`<span class="snz">Snoozed until ${esc(snoozeWhen(m.snoozeUntil))}</span>`:wokeBack(m)?'<span class="snz back">↺ Back from snooze</span>':""}</div>
       ${open?"<span></span>":quick}
       ${tog}
     </div>${open?detail:""}</article>`;
@@ -3911,7 +4280,7 @@ $("sortBy").addEventListener("change",e=>{sortMode=e.target.value;render()});
 $("filterBy").addEventListener("change",e=>{filter=e.target.value||"all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"&&filter==="all"));render()});
 $("mailboxFilter").addEventListener("change",e=>{mailboxSel=e.target.value;render()});
 $("clear").onclick=()=>{selected.clear();selAnchor=null;render()};
-$("settingsBtn").onclick=()=>openSettings("settings");$("adminBtn").onclick=()=>{if(authorizeAdmin())openSettings("admin")};$("closeSettings").onclick=closeSettings;$("cancelSettings").onclick=closeSettings;$("scrim").onclick=closeSettings;
+$("settingsBtn").onclick=()=>openSettings("settings");$("adminBtn").onclick=()=>{if(authorizeAdmin())openSettings("admin","users")};$("closeSettings").onclick=closeSettings;$("cancelSettings").onclick=closeSettings;$("scrim").onclick=closeSettings;
 $("saveSettings").onclick=()=>{closeSettings();toast("Settings saved for this prototype")};
 $("testProvider").onclick=testConfig;
 $("profileBtn").onclick=()=>openSettings("settings","profile");
@@ -3935,6 +4304,82 @@ function applySidebar(){
 $("collapseToggle").onclick=()=>{sidebarCollapsed=!sidebarCollapsed;applySidebar()};
 narrowScreen.addEventListener("change",applySidebar);phoneQuery.addEventListener("change",applySidebar);
 applySidebar();
+
+
+const moreItems=document.getElementById("moreItems"),moreToggle=document.getElementById("moreToggle");
+const sideNav=document.querySelector(".side-nav");
+for(const el of [document.getElementById("snoozeNav"),sideNav.querySelector('[data-filter="reviewed"]'),sideNav.querySelector('[data-filter="archived"]'),document.getElementById("sentNav"),document.getElementById("subNav"),document.getElementById("tripNav"),document.getElementById("msgNav")])if(el)moreItems.append(el);
+for(const el of [document.getElementById("shipNav"),document.getElementById("waitNav"),sideNav.querySelector('[data-filter="attachments"]'),document.getElementById("moreNav"),document.getElementById("sideSettings")])if(el)sideNav.append(el);
+let moreChoice;try{moreChoice=localStorage.getItem("enveliq-more-open")}catch{}
+function previewSyncMore(){
+  const open=!!moreItems.querySelector(".nav.active")||(moreChoice==null?!calmOn():moreChoice==="1");
+  document.getElementById("moreNav").classList.toggle("expanded",open);
+  moreToggle.setAttribute("aria-expanded",String(open));
+}
+moreToggle.onclick=()=>{
+  moreChoice=document.getElementById("moreNav").classList.contains("expanded")?"0":"1";
+  try{localStorage.setItem("enveliq-more-open",moreChoice)}catch{}
+  previewSyncMore();
+};
+document.getElementById("sideSettings").onclick=()=>openSettings("settings");
+const searchSlot=document.getElementById("previewSearchSlot"),accountSlot=document.getElementById("previewAccountSlot");
+const searchControl=document.querySelector(".top .search-col"),searchHome=document.querySelector(".top-inner");
+const accountControl=document.getElementById("userPill"),accountHome=document.querySelector(".side-foot");
+function previewFitToolbar(){
+  if(window.matchMedia("(max-width:760px)").matches){
+    if(searchControl.parentElement!==searchHome)searchHome.append(searchControl);
+    if(accountControl.parentElement!==accountHome)accountHome.insertBefore(accountControl,accountHome.querySelector(".legal-links"));
+  }else{
+    if(searchControl.parentElement!==searchSlot)searchSlot.append(searchControl);
+    if(accountControl.parentElement!==accountSlot)accountSlot.append(accountControl);
+  }
+}
+previewFitToolbar();window.addEventListener("resize",previewFitToolbar);
+function previewSyncAccount(){
+  if(typeof currentUser==="undefined")return;
+  document.getElementById("previewProfileName").textContent=currentUser.name||"";
+  document.getElementById("previewProfileRole").textContent=currentUser.is_admin?"Administrator":"User";
+  document.getElementById("previewProfileEmail").textContent=window.__me?.email||window.__me?.username||"Personal account";
+  const src=document.getElementById("avatar"),dst=document.getElementById("previewProfileAvatar");
+  dst.replaceChildren();if(src.firstElementChild)dst.append(src.firstElementChild.cloneNode(true));else dst.textContent=currentUser.initials||"";
+}
+function previewSyncMenu(){
+  document.getElementById("previewCalmBtn").setAttribute("aria-checked",String(calmOn()));
+  let choice="dark";try{choice=localStorage.getItem("enveliq-theme")||"dark"}catch{}
+  document.querySelectorAll("[data-theme-choice]").forEach(x=>{x.classList.toggle("chosen",x.dataset.themeChoice===choice);x.setAttribute("aria-pressed",String(x.dataset.themeChoice===choice))});
+  previewSyncMore();
+}
+document.getElementById("previewCalmBtn").onclick=()=>document.getElementById("calmBtn").click();
+document.getElementById("previewCalmOff").onclick=()=>document.getElementById("calmBtn").click();
+function previewTheme(choice){
+  const light=choice==="light"||(choice==="system"&&window.matchMedia("(prefers-color-scheme:light)").matches);
+  if(light)document.documentElement.setAttribute("data-theme","light");else document.documentElement.removeAttribute("data-theme");
+  try{localStorage.setItem("enveliq-theme",choice)}catch{}
+  previewSyncMenu();
+}
+document.querySelectorAll("[data-theme-choice]").forEach(x=>x.onclick=()=>previewTheme(x.dataset.themeChoice));
+window.matchMedia("(prefers-color-scheme:light)").addEventListener("change",()=>{try{if(localStorage.getItem("enveliq-theme")==="system")previewTheme("system")}catch{}});
+document.getElementById("previewInboxOptions").onclick=()=>{
+  const open=document.body.classList.toggle("preview-show-filters");
+  document.getElementById("previewInboxOptions").setAttribute("aria-expanded",String(open));
+};
+function previewRenderOverview(inbox,need){
+  const box=document.getElementById("previewOverview");
+  if(filter!=="all"||calmOn()){box.hidden=true;box.replaceChildren();return}
+  const due=openTasks().filter(t=>t.days<=0).length;
+  const shipping=shipOn()?(shipData.orders||[]).filter(o=>!(o.delivered_at&&o.ack)).length:0;
+  const waiting=waitOn()?(waitData.notes||[]).filter(n=>n.state==="waiting").length:0;
+  const cards=[["action","Needs action",need,"Emails that need you","!"],["tasks","Today",due,"Tasks and reminders","◷"],["shipping","Packages",shipping,"Deliveries tracked","▣"],["waiting","Waiting",waiting,"Replies and follow ups","◴"]];
+  box.replaceChildren();
+  for(const [target,title,count,subtitle,icon] of cards){
+    const btn=document.createElement("button");btn.type="button";btn.className="preview-stat "+target;
+    btn.disabled=(target==="shipping"&&document.getElementById("shipNav").hidden)||(target==="waiting"&&document.getElementById("waitNav").hidden);
+    const ic=document.createElement("span");ic.className="preview-stat-icon";ic.textContent=icon;
+    const details=document.createElement("span");details.className="preview-stat-copy";
+    for(const [tag,value]of [["strong",title],["b",String(count)],["small",subtitle]]){const e=document.createElement(tag);e.textContent=value;details.append(e)}
+    btn.append(ic,details);btn.onclick=()=>document.querySelector('.side-nav .nav[data-filter="'+target+'"]')?.click();box.append(btn);
+  }box.hidden=false;
+}
 
 // ---------- Real mail from connected mailboxes ----------
 // Only the signed-in person's own mailboxes are used. Every value from
@@ -4130,7 +4575,7 @@ async function bootBackendMode(){
   out.onclick=async()=>{try{await secureBackendRequest("/api/v1/auth/logout",{method:"POST",body:"{}"})}catch{}location.href="/login"};
   // Keep the menu actions (profile, settings, admin, light mode); drop the preview "switch person" list.
   menu.querySelectorAll("[data-preview-only]").forEach(el=>el.remove());
-  menu.append(label,out);$("menuSep").hidden=false;
+  menu.append(out);$("menuSep").hidden=false;
   render();
   try{
     window.__me=me;if(await loadRealMail(me)){restoreOpen();restorePage();openFromLink(location.href,true);stateReady=true;$("syncBtn").onclick=()=>syncRealMail(me);render();startAutoRefresh(me);pollOutbox();pollSummaries(true)}
@@ -4914,7 +5359,7 @@ function calmOn(){return document.body.classList.contains("calm")}
 (function(){
   const btn=$("calmBtn");
   const paint=()=>btn.setAttribute("aria-checked",String(calmOn()));
-  try{if(localStorage.getItem("enveliq-calm")==="1")document.body.classList.add("calm")}catch{}
+  try{if(localStorage.getItem("enveliq-calm")!=="0")document.body.classList.add("calm")}catch{document.body.classList.add("calm")}
   btn.onclick=()=>{
     document.body.classList.toggle("calm");
     try{localStorage.setItem("enveliq-calm",calmOn()?"1":"0")}catch{}
@@ -4963,7 +5408,7 @@ function syncMobileBar(n,need){
 function setMenu(open){document.body.classList.toggle("menu-open",open);const b=$("menuBtn");b.setAttribute("aria-expanded",String(open));b.setAttribute("aria-label",open?"Close the menu":"Open the menu")}
 $("menuBtn").onclick=()=>setMenu(!document.body.classList.contains("menu-open"));
 $("menuScrim").onclick=()=>setMenu(false);
-$("sidebar").addEventListener("click",e=>{if(e.target.closest(".nav"))setMenu(false)});
+$("sidebar").addEventListener("click",e=>{if(e.target.closest(".nav:not(.more-toggle)"))setMenu(false)});
 $("mSearchBtn").onclick=()=>{document.body.classList.add("msearch");$("search").focus()};
 $("mSearchBack").onclick=()=>{document.body.classList.remove("msearch");if(query){query="";$("search").value="";render()}};
 $("mSyncBtn").onclick=()=>$("syncBtn").click();

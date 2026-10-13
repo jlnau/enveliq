@@ -88,7 +88,8 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 {
   const server = makeServer();
   const { page, errors, csp, context } = await open(server);
-  check("the Subscriptions entry is shown when there is something to follow", await page.locator("#subNav").isVisible() && await page.locator("#trackLabel").isVisible());
+  check("Subscriptions is available under More when there is something to follow", await page.locator("#moreItems #subNav").count() === 1 && await page.locator("#subNav").getAttribute("hidden") === null);
+  if (!(await page.locator("#subNav").isVisible())) await page.locator("#moreToggle").click();
   check("the badge counts what is coming up soon (2)", (await page.locator("#subBadge").innerText()).trim() === "2" && await page.locator("#subBadge.hot").count() === 1);
   const home = await page.locator("#subBars").innerText();
   check("Home shows what is coming up, in plain words", home.includes(`Streamly renews on the ${nth(dayOfMonth(3))}`) && home.includes("Clipboard Pro free trial ends tomorrow"));

@@ -200,7 +200,8 @@ ol.guide-steps li > p{margin:2px 0 0}
 .howto{margin:0;padding-left:20px;color:var(--muted);font-size:13px;display:grid;gap:4px}
 
 .avatar-edit{display:flex;gap:16px;align-items:center}
-.avatar-lg{width:72px;height:72px;border-radius:50%;object-fit:cover;flex:none;background:var(--panel2);border:1px solid var(--line)}
+.avatar-lg{width:72px;height:72px;border-radius:50%;object-fit:contain;flex:none;background:transparent;border:0}
+.avatar-lg.initials{background:var(--panel2);border:1px solid var(--line)}
 .avatar-lg.initials{display:grid;place-items:center;font-weight:800;font-size:22px;color:var(--text)}
 
 .bklist{list-style:none;margin:16px 0;padding:0;display:grid;gap:10px}
