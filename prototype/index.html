@@ -451,13 +451,13 @@ body.real-mail .sample-banner{display:none}
 .payload-preview{margin-top:9px;background:var(--c-0b1016);border:1px solid var(--c-293241);border-radius:9px;padding:9px 10px;color:var(--c-9faabd);font:10px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap}
 
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,15px);opacity:0;background:var(--c-252b38);border:1px solid var(--c-3b4352);padding:9px 12px;border-radius:9px;transition:.18s;z-index:30}.toast.show{opacity:1;transform:translate(-50%,0)}
-.app.collapsed .brand-wordmark,.app.collapsed .brand small,.app.collapsed .nav-label,.app.collapsed .user-copy,.app.collapsed .user-chev{display:none}
+.app.collapsed .brand-wordmark,.app.collapsed .brand small,.app.collapsed .nav-label,.app.collapsed .sidebar .user-copy,.app.collapsed .sidebar .user-chev{display:none}
 .app.collapsed .brand{align-items:center;margin:0 0 16px}.app.collapsed .brand-mark{display:block}
 .app.collapsed .sidebar{padding-inline:10px}
 .app.collapsed .label{font-size:0;line-height:0;height:1px;background:var(--line);margin:12px 8px}
 .app.collapsed .nav{justify-content:center;padding:10px 0}
 .app.collapsed .badge{position:absolute;top:2px;right:4px;min-width:16px;padding:0 4px;font-size:9px;line-height:15px;text-align:center;background:var(--brand-deep);color:#fff}
-.app.collapsed .user-pill{justify-content:center;padding:7px 0}
+.app.collapsed .sidebar .user-pill{justify-content:center;padding:7px 0}
 .app.collapsed~.user-menu{left:76px;bottom:14px}
 /* ---------- Hermes chat ---------- */
 .agent-pop{position:fixed;right:20px;bottom:20px;z-index:65;width:min(410px,calc(100vw - 24px));height:min(580px,calc(100dvh - 40px));display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:hidden}
@@ -859,6 +859,7 @@ html[data-theme="light"] .sidebar .nav.active{background:#dbeafe;color:#1354bb}
 .more-nav{border-top:1px solid #294363;margin-top:15px;padding-top:10px}
 .more-toggle .more-arrow{margin-left:auto;color:var(--faint);transition:transform .2s}
 .more-nav.expanded .more-arrow{transform:rotate(180deg)}
+.more-toggle .more-chev{display:none}.app.collapsed .more-toggle .more-chev{display:block;transform-origin:12px 14.4px;transition:transform .2s}.app.collapsed .more-toggle .more-arrow{display:none}.app.collapsed .more-nav.expanded .more-chev{transform:rotate(180deg)}
 .more-items{display:none;padding-left:10px}
 .more-nav.expanded .more-items{display:block}
 .more-items .nav{padding:8px 10px}
@@ -1019,6 +1020,7 @@ body:not(.calm) .top .preview-calm-notice{display:none}
 .preview-later-head,.preview-heading-actions{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .preview-heading-actions{margin-left:auto}
 .preview-later .tmore{padding:0!important;font-weight:650}
+.preview-fold-toggle.always{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;border-radius:8px;color:var(--accent);font-size:0}.preview-fold-toggle.always:hover{background:rgba(120,160,255,.14)}.preview-fold-toggle.always svg{transition:transform .18s ease}.preview-fold-toggle.always[aria-expanded="false"] svg{transform:rotate(180deg)}
 .preview-fold-toggle{display:none;border:0;background:transparent;color:var(--accent);font-size:21px;line-height:1;min-width:34px;min-height:34px;cursor:pointer}
 .app.collapsed .side-foot .calm-row{width:44px;min-height:44px;padding:10px;justify-content:center;border-radius:10px}
 .app.collapsed .side-foot .calm-row .nav-label,.app.collapsed .side-foot .calm-row .calm-sw,.app.collapsed .side-foot .calm-row:after{display:none!important}
@@ -1060,14 +1062,12 @@ body:not(.calm) .top .preview-calm-notice{display:none}
   }
   /* Keep the entire collapse control inside the rail, clear of the main panel. */
   .sidebar .collapse-toggle{
-    right:5px;
-    top:10px;
+    right:-14px;
+    top:22px;
     width:28px;
     height:28px;
     z-index:35;
   }
-  .sidebar .brand{padding-right:27px}
-  html[data-theme="light"] .sidebar .brand{padding-right:27px}
 }
 html[data-theme="light"] .top{
   background:linear-gradient(110deg,#d8ebff 0%,#c6e1ff 56%,#dceeff 100%)!important;
@@ -1174,7 +1174,7 @@ html[data-theme="light"]{--backdrop:url("data:image/svg+xml,%3Csvg xmlns='http:/
     <button class="nav" data-filter="archived" title="Archived"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4.5" rx="1"/><path d="M5 8.5V20h14V8.5"/><path d="M10 12.5h4"/></svg><span class="nav-label">Archived</span></button>
     <button class="nav" data-filter="sent" id="sentNav" title="Sent" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg><span class="nav-label">Sent</span></button>
     <div class="more-nav" id="moreNav">
-      <button class="nav more-toggle" id="moreToggle" type="button" aria-expanded="false" aria-controls="moreItems" title="More mailbox views"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3zM3 9h18"/></svg><span class="nav-label">More</span><span class="more-arrow" aria-hidden="true">⌄</span></button>
+      <button class="nav more-toggle" id="moreToggle" type="button" aria-expanded="false" aria-controls="moreItems" title="More mailbox views"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3zM3 9h18"/><path class="more-chev" d="m9.5 13.2 2.5 2.4 2.5-2.4"/></svg><span class="nav-label">More</span><span class="more-arrow" aria-hidden="true">⌄</span></button>
       <div class="more-items" id="moreItems"></div>
     </div>
     <button class="nav" id="sideSettings" type="button" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg><span class="nav-label">Settings</span></button>
@@ -1977,7 +1977,7 @@ function loadView(){
     if(raw&&typeof raw==="object"){for(const k in VIEW_ALLOWED)if(VIEW_ALLOWED[k].includes(raw[k]))v[k]=raw[k];if(typeof raw.peek==="boolean")v.peek=raw.peek}}catch{}
   return v;
 }
-let view=loadView(),readerOpen=false,dueOpen=false,paneId=null,lastPaneIdx=0,lastRowIds=[],lastDeckShown=null,deckDir="next",lastReadId=null;
+let view=loadView(),readerOpen=false,dueOpen=false,calmLaterOpen=true,paneId=null,lastPaneIdx=0,lastRowIds=[],lastDeckShown=null,deckDir="next",lastReadId=null;
 function saveView(){try{localStorage.setItem("enveliq-view",JSON.stringify(view))}catch{}}
 function applyView(){
   readerOpen=false;
@@ -2231,6 +2231,7 @@ function previewFocusTask(t){
   return '<div class="preview-focus-card"><span class="preview-focus-icon" aria-hidden="true">✧</span><div class="preview-focus-copy"><strong>'+esc(t.title)+'</strong>'+(t.detail?'<p>'+esc(t.detail)+'</p>':"")+(t.sender?'<small>From '+esc(t.sender)+' · '+esc(taskWhen(t))+'</small>':'<small>'+esc(taskWhen(t))+'</small>')+'<div class="preview-focus-actions">'+button+snooze+'<button class="tbtn" type="button" data-task-act="done" data-task-id="'+esc(t.id)+'">Mark done</button></div></div></div>';
 }
 const previewMobileOpen={focus:false,important:false,later:false,today:false,emails:true};
+const ICON_FOLD='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>';
 function previewFoldControl(section,open){
   return '<button class="preview-fold-toggle" type="button" data-preview-fold="'+section+'" aria-label="'+(open?'Collapse ':'Expand ')+section+'" aria-expanded="'+open+'">'+(open?'⌃':'⌄')+'</button>';
 }
@@ -2243,8 +2244,9 @@ function renderToday(){
   const focusKey=calm?"focus":"today";
   const focusToggle=previewFoldControl(focusKey,previewMobileOpen[focusKey]);
   const urgent=important.length?'<section class="preview-important'+(mobile&&!previewMobileOpen.important?' mobile-folded':'')+'"><div class="thead"><b>Also important today</b><span class="preview-heading-actions"><button class="linkbtn" type="button" data-tasks-go>All tasks</button>'+previewFoldControl("important",previewMobileOpen.important)+'</span></div><div class="preview-fold-content">'+important.slice(0,previewMobileOpen.important?important.length:1).map(t=>taskRow(t,false)).join("")+'</div></section>':"";
-  const laterRows=(mobile?previewMobileOpen.later:(calm||dueOpen))?rest.slice(0,3):[];
-  const later=rest.length?'<section class="preview-later'+(mobile&&!previewMobileOpen.later?' mobile-folded':'')+'"><div class="preview-later-head"><button class="tmore" type="button" '+(mobile?'data-preview-fold="later" aria-expanded="'+previewMobileOpen.later+'"':'data-due-toggle aria-expanded="'+dueOpen+'"')+'>'+(calm?"Later":'Coming up · '+rest.length+' more')+'</button><span class="preview-heading-actions">'+(rest.length>3?'<button class="linkbtn" type="button" data-tasks-go>All tasks</button>':'')+previewFoldControl("later",previewMobileOpen.later)+'</span></div><div class="preview-later-items preview-fold-content">'+laterRows.map(t=>taskRow(t,false)).join("")+'</div></section>':"";
+  const laterOpen=mobile?previewMobileOpen.later:(calm?calmLaterOpen:dueOpen);
+  const laterRows=laterOpen?rest.slice(0,3):[];
+  const later=rest.length?'<section class="preview-later'+(mobile&&!previewMobileOpen.later?' mobile-folded':'')+'"><div class="preview-later-head"><button class="tmore" type="button" '+(mobile?'data-preview-fold="later" aria-expanded="'+previewMobileOpen.later+'"':(calm?'data-later-toggle':'data-due-toggle')+' aria-expanded="'+laterOpen+'"')+'>'+(calm?"Later":'Coming up · '+rest.length+' more')+'</button><span class="preview-heading-actions">'+(rest.length>3?'<button class="linkbtn" type="button" data-tasks-go>All tasks</button>':'')+(mobile?previewFoldControl("later",previewMobileOpen.later):'<button class="preview-fold-toggle always" type="button" '+(calm?'data-later-toggle':'data-due-toggle')+' aria-expanded="'+laterOpen+'" aria-label="'+(laterOpen?'Hide':'Show')+(calm?' later':' what is coming up')+'">'+ICON_FOLD+'</button>')+'</span></div><div class="preview-later-items preview-fold-content">'+laterRows.map(t=>taskRow(t,false)).join("")+'</div></section>':"";
   box.innerHTML='<div class="preview-today-grid"><section class="today-card'+(mobile&&!previewMobileOpen[focusKey]?' mobile-folded':'')+'"><div class="thead"><b>'+title+'</b><span class="preview-heading-actions"><button class="linkbtn" type="button" data-tasks-go>Open Tasks</button>'+focusToggle+'</span></div><div class="preview-fold-content">'+(calm&&shown[0]?previewFocusTask(shown[0]):shown.map(t=>taskRow(t,false)).join(""))+'</div></section>'+urgent+'</div>'+later;
   box.hidden=false;
 }
@@ -4017,8 +4019,11 @@ async function lockVault(){
 
 // The round picture beside the username: a small photo if they added one, otherwise initials.
 function paintAvatar(){
-  const el=$("avatar");el.replaceChildren();
-  if(currentUser.avatar){const i=document.createElement("img");i.alt="";i.src=currentUser.avatar;el.append(i)}else el.textContent=currentUser.initials;
+  const el=$("avatar"),want=currentUser.avatar||"";
+  const img=el.firstElementChild;
+  if(want&&img&&img.tagName==="IMG"&&img.getAttribute("src")===want)return;     // same picture: leave it alone, so it never blinks out while it reloads
+  el.replaceChildren();
+  if(want){const i=document.createElement("img");i.alt="";i.src=want;el.append(i)}else el.textContent=currentUser.initials;
 }
 window.addEventListener("enveliq-profile",e=>{
   const u=e.detail||{};if(!currentUser||u.id!==currentUser.id)return;
@@ -4069,6 +4074,7 @@ document.addEventListener("click",e=>{
   const qrow=e.target.closest(".qrow");if(qrow&&!e.target.closest("button,input,a,label,select")){if(view.layout==="list"&&view.rows==="open")return;const t=qrow.querySelector("[data-expand],[data-pick]");if(t){t.click();return}}
   if(e.target.closest("[data-reader-close]")){readerOpen=false;render();return}
   const dt=e.target.closest("[data-due-toggle]");if(dt){dueOpen=!dueOpen;render();return}
+  const lt=e.target.closest("[data-later-toggle]");if(lt){calmLaterOpen=!calmLaterOpen;render();return}
   const pk=e.target.closest("[data-pick]");if(pk){if(view.layout==="screen")readerOpen=true;const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;render();return}
   const retryAtt=e.target.closest("[data-att-retry]");if(retryAtt){const m=data.find(x=>x.id===+retryAtt.dataset.attRetry&&x.owner===currentUser.id);if(m&&m.real){retryAtt.disabled=true;secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/attachments/summarise`,{method:"POST",body:"{}"}).then(()=>{toast("Reading the files again. This can take a minute.",4000);m.attachments.forEach(a=>{if(a.state==="failed")a.state="working"});render()}).catch(er=>{retryAtt.disabled=false;toast(er.message,6000)})}return}
   const openAtt=e.target.closest("[data-open-attachment]");if(openAtt){openAttachmentViewer(openAtt.dataset.openAttachment);return}

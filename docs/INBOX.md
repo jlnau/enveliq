@@ -53,6 +53,14 @@ The pictures are drawn in code and held inside the page, so Enveliq downloads no
 
 On a phone, press and hold an email for about half a second. A box appears on the left of every email (the emails move to the right to make room), and the email you held is ticked. Tap any other email to tick or untick it; tapping does not open it while you are picking. A bar along the bottom shows how many are ticked, with **Reviewed**, **Archive** and **Bin**. These work like the buttons on a single email, so **Undo** is still offered. **Done** leaves picking, and so does unticking the last email. A quick tap still opens an email, and swiping still works when you are not picking. Wide screens keep the tick boxes they always had. `scripts/check_phone_select.mjs` checks this.
 
+## The side panel, and opening and closing the lists
+
+- The round arrow that narrows or widens the side panel sits on the panel's edge line. When the panel is narrow the logo is centred in it, and the **More** icon carries its own small arrow inside it (it flips when More is open).
+- Narrowing the side panel never changes the user button in the top right: it keeps your picture, name and role. Your picture is also kept between refreshes, so it no longer blinks out while it reloads.
+- The **Coming up** panel has an arrow on its right that is always there. It points up when the panel is open and down when it is closed. In Calm mode the **Later** box has the same arrow and starts open. (On a phone these panels already had their own arrow.)
+
+`scripts/check_rail_and_folds.mjs` checks all of this.
+
 ## The version number
 
 The Enveliq version is a small grey line at the bottom of the left panel, above **Terms**, **Privacy** and **Security**. It is hidden when the panel is collapsed. Administrators also see a small card above it when a newer version has been published. See [Knowing when a new version is out](UPDATES.md).
