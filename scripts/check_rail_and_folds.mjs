@@ -71,6 +71,20 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   if (shots) await p.screenshot({ path: path.join(shots, "customise-open.png") });
   await ctx.close();
 }
+{ // ticked-email buttons stay in view when Inbox options is closed
+  const [ctx, p] = await open(false, false);
+  await p.evaluate(() => { const base = data.filter((m) => m.status === "inbox" && !m.kept); let id = 9000; while (data.filter((m) => m.status === "inbox" && !m.kept && !m._pending).length < 4) data.push({ ...base[0], id: ++id, subject: "Another made-up email " + id, sender: "Example Sender " + id }); render(); });
+  await p.locator("[data-select]").nth(0).check(); await p.waitForTimeout(150);
+  check("one ticked email: no bulk buttons yet", !(await vis(p, "#previewBulk")));
+  await p.locator("[data-select]").nth(1).check(); await p.waitForTimeout(250);
+  check("two ticked, Inbox options closed: the buttons show in the Recent emails panel", await p.evaluate(() => { const r = document.querySelector("#previewBulk").getBoundingClientRect(), h = document.querySelector("#previewListHeading").getBoundingClientRect(); return r.width > 50 && r.top >= h.top && r.bottom <= h.bottom + 1 && document.querySelector("#previewSelCount").textContent === "2"; }));
+  await p.click("#previewInboxOptions"); await p.waitForTimeout(250);
+  check("Inbox options open: the buttons are in the filter bar and not shown twice", !(await vis(p, "#previewBulk")) && await vis(p, "#bulk"));
+  await p.click("#previewInboxOptions"); await p.waitForTimeout(250);
+  await p.click("#previewBulk [data-bulk=\"archived\"]"); await p.waitForTimeout(300);
+  check("pressing Archive in the panel sends both emails away", (await p.locator("article.mail.quiet.leaving").count()) === 2 && !(await vis(p, "#previewBulk")));
+  await ctx.close();
+}
 { // wide sidebar
   const [ctx, p] = await open(false, false);
   const g = await p.evaluate(() => ({ edge: document.querySelector("#sidebar").getBoundingClientRect().right, t: (() => { const r = document.querySelector("#collapseToggle").getBoundingClientRect(); return r.left + r.width / 2; })() }));

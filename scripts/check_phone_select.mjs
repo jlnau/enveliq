@@ -60,31 +60,40 @@ for (const theme of ["dark", "light"]) {
   check(theme + ": the emails move to the right to make room", x1 > x0 + 20);
   check(theme + ": the held email is ticked", await rows.nth(1).locator(".check").isChecked());
   check(theme + ": the held email did not open", !(await rows.nth(1).evaluate((e) => e.classList.contains("open"))));
-  const bar = await p.evaluate(() => { const r = document.querySelector("#bulk").getBoundingClientRect(); return { show: getComputedStyle(document.querySelector("#bulk")).display !== "none", bottom: r.bottom, h: innerHeight, w: r.width, n: document.querySelector("#selectedCount").textContent, scrollW: document.documentElement.scrollWidth, iw: innerWidth }; });
-  check(theme + ": the action bar sits along the bottom of the screen", bar.show && Math.abs(bar.bottom - bar.h) < 2 && bar.w >= bar.iw - 1);
+  const bar = await p.evaluate(() => { const r = document.querySelector("#previewBulk").getBoundingClientRect(), h = document.querySelector("#previewListHeading").getBoundingClientRect(); return { show: getComputedStyle(document.querySelector("#previewBulk")).display !== "none", inside: r.top >= h.top && r.bottom <= h.bottom + 1, below: r.top > h.top + 30, n: document.querySelector("#previewSelCount").textContent, scrollW: document.documentElement.scrollWidth, iw: innerWidth }; });
+  check(theme + ": the buttons sit under the Recent emails title, inside that panel", bar.show && bar.inside && bar.below);
   check(theme + ": it says 1 selected", bar.n === "1");
   check(theme + ": no sideways scrolling", bar.scrollW <= bar.iw);
   if (shots) await p.screenshot({ path: path.join(shots, `phone-select-${theme}-1.png`) });
   // tapping other emails ticks them without opening
   await rows.nth(2).locator(".qmain").click(); await p.waitForTimeout(200);
   await rows.nth(0).locator(".sender").click(); await p.waitForTimeout(200);
-  check(theme + ": tapping more emails ticks them", (await p.locator("#selectedCount").textContent()) === "3");
+  check(theme + ": tapping more emails ticks them", (await p.locator("#previewSelCount").textContent()) === "3");
   check(theme + ": tapping does not open emails", (await p.locator("article.mail.quiet.open").count()) === 0);
   if (shots) await p.screenshot({ path: path.join(shots, `phone-select-${theme}-3.png`) });
   // tapping a ticked email unticks it
   await rows.nth(0).locator(".sender").click(); await p.waitForTimeout(200);
-  check(theme + ": tapping a ticked email unticks it", (await p.locator("#selectedCount").textContent()) === "2");
+  check(theme + ": tapping a ticked email unticks it", (await p.locator("#previewSelCount").textContent()) === "2");
   // Done leaves picking
-  await p.locator("#selDone").click(); await p.waitForTimeout(250);
-  check(theme + ": Done leaves picking and clears the ticks", !(await p.evaluate(() => document.body.classList.contains("selecting"))) && (await p.locator("article.mail.quiet.selected").count()) === 0);
+  await p.locator("#previewBulkClear").click(); await p.waitForTimeout(250);
+  check(theme + ": Clear leaves picking and clears the ticks", !(await p.evaluate(() => document.body.classList.contains("selecting"))) && (await p.locator("article.mail.quiet.selected").count()) === 0);
   check(theme + ": the emails move back", Math.abs((await rows.nth(1).locator(".sender").evaluate((e) => e.getBoundingClientRect().left)) - x0) < 2);
   // a bulk action
   await hold(p, rows.nth(0)); await rows.nth(1).locator(".qmain").click(); await p.waitForTimeout(150);
-  const before = await p.locator("article.mail.quiet").count(); console.log("selected before archive:", await p.locator("#selectedCount").textContent(), "sel mode:", await p.evaluate(() => document.body.classList.contains("selecting")));
-  await p.locator('[data-bulk="archived"]').click(); await p.waitForTimeout(400);
+  const before = await p.locator("article.mail.quiet").count(); 
+  await p.locator('#previewBulk [data-bulk="archived"]').click(); await p.waitForTimeout(400);
   const after = await p.evaluate(() => ({ sel: document.body.classList.contains("selecting"), leaving: document.querySelectorAll("article.mail.quiet.leaving").length, rows: document.querySelectorAll("article.mail.quiet").length }));
   console.log("after archive:", JSON.stringify(after), "before:", before);
   check(theme + ": Archive leaves picking and sends both emails away", !after.sel && (after.leaving === 2 || after.rows === before - 2));
+  // an Undo bar can be swiped away when it is in the way
+  {
+    const bb = await p.locator(".undobar").first().boundingBox();
+    const drag = async (dx) => { await p.mouse.move(bb.x + bb.width / 2, bb.y + 15); await p.mouse.down(); await p.mouse.move(bb.x + bb.width / 2 + dx / 2, bb.y + 15, { steps: 4 }); await p.mouse.move(bb.x + bb.width / 2 + dx, bb.y + 15, { steps: 4 }); await p.mouse.up(); await p.waitForTimeout(450); };
+    await drag(30);
+    check(theme + ": a short swipe on the Undo bar springs back", (await p.locator(".undobar").count()) === 1 && await p.evaluate(() => pendingActs.length === 1));
+    await drag(-170);
+    check(theme + ": swiping the Undo bar away clears it", (await p.locator(".undobar").count()) === 0 && await p.evaluate(() => pendingActs.length === 0));
+  }
   // unticking the last email leaves picking too
   await p.waitForTimeout(300);
   const r2 = p.locator("article.mail.quiet:not(.leaving)");

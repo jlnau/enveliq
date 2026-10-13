@@ -51,7 +51,15 @@ The pictures are drawn in code and held inside the page, so Enveliq downloads no
 
 ## Picking several emails on a phone
 
-On a phone, press and hold an email for about half a second. A box appears on the left of every email (the emails move to the right to make room), and the email you held is ticked. Tap any other email to tick or untick it; tapping does not open it while you are picking. A bar along the bottom shows how many are ticked, with **Reviewed**, **Archive** and **Bin**. These work like the buttons on a single email, so **Undo** is still offered. **Done** leaves picking, and so does unticking the last email. A quick tap still opens an email, and swiping still works when you are not picking. Wide screens keep the tick boxes they always had. `scripts/check_phone_select.mjs` checks this.
+On a phone, press and hold an email for about half a second. A box appears on the left of every email (the emails move to the right to make room), and the email you held is ticked. Tap any other email to tick or untick it; tapping does not open it while you are picking. The count, **Clear** and the **Reviewed**, **Archive** and **Bin** buttons appear under the "Recent emails" title. These work like the buttons on a single email, so **Undo** is still offered. **Clear** leaves picking, and so does unticking the last email. A quick tap still opens an email, and swiping still works when you are not picking. Wide screens keep the tick boxes they always had. `scripts/check_phone_select.mjs` checks this.
+
+## Clearing the Undo bar on a phone
+
+If the Undo bar at the bottom is covering an email, swipe it left or right and it goes. The action goes through straight away, so there is no Undo after that. A short nudge springs it back. (`scripts/check_phone_select.mjs` checks this.)
+
+## Ticked emails: where the buttons show
+
+When you tick two or more emails on a computer, **Reviewed**, **Archive** and **Bin** appear in the "Recent emails" panel, so you can still see them while **Inbox options** is closed. When Inbox options is open they sit in its bar instead, never in both places.
 
 ## The side panel, and opening and closing the lists
 

@@ -569,7 +569,7 @@ body.vopen .vpanel{transform:none;visibility:visible;transition:transform .3s cu
 .sendprog{position:absolute;left:0;bottom:0;height:3px;background:var(--brand);transition:width 1s linear}
 @media(max-width:760px){.sendbar{bottom:16px}}
 .primary.busy{opacity:.75;cursor:progress}
-.undobar{display:flex}.undobar span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.undobar button{flex:none}.sendbar:not([hidden])~.undostack,.sumbar:not([hidden])~.undostack{bottom:84px}
+.undobar{display:flex;touch-action:pan-y}.undobar span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.undobar button{flex:none}.sendbar:not([hidden])~.undostack,.sumbar:not([hidden])~.undostack{bottom:84px}
 /* Keep Undo accessible when both a pending send and AI queue are active. */
 .sendbar:not([hidden])~.sumbar:not([hidden])~.undostack:not([hidden]){bottom:150px}.undobar button{border:0;background:transparent;color:var(--c-65c4ff);font-weight:700;font-size:15px;padding:6px 4px}
 /* On a computer, the Reviewed / Archive / Bin buttons on a closed row show only while the mouse is over it (or a button has the keyboard), in the place of the date. Phones swipe instead. */
@@ -970,6 +970,13 @@ body:not(.preview-show-filters) #previewListHeading:not([hidden])+.filters{displ
 .side-foot .calm-row:after{content:"A quieter inbox, one thing at a time. Counts are hidden.";flex:0 0 100%;font-size:11px;line-height:1.5;color:#b3c5e3;padding-top:3px}
 html[data-theme="light"] .side-foot .calm-row:after{color:#556e91}
 body.calm:has(#bulk.show) .preview-list-heading+.filters{display:flex!important}
+/* The ticked-emails buttons live in the heading too, so they stay in view while Inbox options is closed. */
+.preview-bulk{display:none;align-items:center;gap:10px;font-size:13px;flex:1;min-width:0;justify-content:center}
+.preview-bulk.show{display:flex}
+body.preview-show-filters .preview-bulk,body.calm:has(#bulk.show):not(.selecting) .preview-bulk{display:none!important}
+.preview-bulk .pb-actions{display:flex;gap:8px}
+.preview-list-heading .preview-bulk .action{border:1px solid var(--line);background:var(--panel2);border-radius:9px;font-weight:650;padding:6px 11px;font-size:13px}.preview-list-heading .preview-bulk .reviewed{color:var(--c-72df9f)}.preview-list-heading .preview-bulk .archive{color:var(--c-65c4ff)}.preview-list-heading .preview-bulk .trash{color:var(--c-ff7f87)}
+.preview-list-heading .preview-bulk .linkbtn{color:var(--muted);text-decoration:underline}
 @media(max-width:760px){.preview-focus-card{grid-template-columns:35px minmax(0,1fr);gap:10px;padding:12px}.preview-focus-icon{width:34px;height:34px;font-size:18px}.preview-focus-copy strong{font-size:15px}.preview-later .trow2{width:100%;margin-right:0}}
 
 
@@ -1048,6 +1055,7 @@ body:not(.calm) .top .preview-calm-notice{display:none}
   .preview-later .tmore{font-size:15px}
   .preview-list-heading{padding:8px 11px;margin:9px 0}
   .preview-list-heading strong{font-size:16px}
+  .preview-list-heading{flex-wrap:wrap}.preview-bulk.show{order:3;flex:0 0 100%;flex-wrap:wrap;justify-content:space-between;padding-top:8px;border-top:1px solid var(--line)}.preview-bulk .pb-actions{flex:0 0 100%;display:grid;grid-template-columns:repeat(3,1fr)}.preview-list-heading .preview-bulk .action{padding:10px 6px;font-size:14px;justify-content:center}
   body.preview-mobile-emails-closed #previewListHeading+.filters,
   body.preview-mobile-emails-closed #list{display:none!important}
   .app.collapsed .side-foot .calm-row{width:44px}
@@ -1132,20 +1140,11 @@ html[data-theme="light"]{--backdrop:url("data:image/svg+xml,%3Csvg xmlns='http:/
   body.selecting .mail.quiet .check{display:block;grid-area:c;width:22px;height:22px;margin:1px 0 0;align-self:start}
   body.selecting .mail.quiet.selected{background:var(--panel2)}
   body.selecting .qtoggle{display:none}
-  body.selecting:not(.zz) #previewListHeading:not([hidden])+.filters,body.selecting .filters{display:flex!important;height:0;min-height:0;padding:0;margin:0;overflow:visible;opacity:1}
-  body.selecting .filters>:not(#bulk){display:none!important}
-  body.selecting .bulk{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 12px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(0,0,0,.22);font-size:14px}
-  body.selecting .bulk .linkbtn#clear,body.selecting .bulk-sep{display:none}
-  body.selecting .bulk-actions{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  body.selecting .bulk .action{padding:11px 6px;font-size:14px;justify-content:center}
-  body.selecting .bulk .seldone{display:inline-block;flex:0 0 auto;font-size:15px}
-  body.selecting .bulk>strong{flex:1 1 calc(100% - 100px);min-width:0}
+  body.selecting:not(.zz) #previewListHeading:not([hidden])+.filters,body.selecting .filters{display:none!important}          /* the buttons are in the Recent emails panel instead */
   body.selecting #viewTab{display:none}
-  body.selecting .content{padding-bottom:150px}
 }
 @keyframes selShift{from{opacity:.6;transform:translateX(-14px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){body.selecting .qrow{animation:none}}
-.seldone{display:none}
 </style>
 </head>
 <body class="booting">
@@ -1230,7 +1229,7 @@ html[data-theme="light"]{--backdrop:url("data:image/svg+xml,%3Csvg xmlns='http:/
   <div id="tripBars" class="duebars" role="region" aria-label="Trips coming up" hidden></div>
   <div id="waitBars" class="duebars" role="region" aria-label="Waiting on others" hidden></div>
   <div id="msgBars" class="duebars" role="region" aria-label="New messages" hidden></div>
-  <div class="preview-list-heading" id="previewListHeading"><strong>Recent emails</strong><span class="preview-heading-actions"><button type="button" id="previewInboxOptions" aria-expanded="false">Inbox options ▾</button><button class="preview-fold-toggle" type="button" data-preview-fold="emails" aria-label="Collapse recent emails" aria-expanded="true">⌃</button></span></div>
+  <div class="preview-list-heading" id="previewListHeading"><strong>Recent emails</strong><div class="preview-bulk" id="previewBulk" role="group" aria-label="What to do with the emails you ticked"><span class="pb-count"><b id="previewSelCount">0</b> selected</span><button class="linkbtn" type="button" id="previewBulkClear">Clear</button><span class="pb-actions"><button class="action reviewed" type="button" data-bulk="reviewed">✓ Reviewed</button><button class="action archive" type="button" data-bulk="archived">▣ Archive</button><button class="action trash" type="button" data-bulk="trashed">🗑 Bin</button></span></div><span class="preview-heading-actions"><button type="button" id="previewInboxOptions" aria-expanded="false">Inbox options ▾</button><button class="preview-fold-toggle" type="button" data-preview-fold="emails" aria-label="Collapse recent emails" aria-expanded="true">⌃</button></span></div>
   <div class="filters">
     <button class="chip active" data-chip="all">All</button>
     <label class="flabel" for="filterBy">Filter</label>
@@ -1243,7 +1242,7 @@ html[data-theme="light"]{--backdrop:url("data:image/svg+xml,%3Csvg xmlns='http:/
     </select>
     <button class="linkbtn expall" id="expandAll" type="button" hidden>Expand all</button>
     <div class="bulk" id="bulk">
-      <strong><span id="selectedCount">0</span> selected</strong> <button class="linkbtn" id="clear" type="button">Clear</button> <button class="linkbtn seldone" id="selDone" type="button">Done</button>
+      <strong><span id="selectedCount">0</span> selected</strong> <button class="linkbtn" id="clear" type="button">Clear</button>
       <span class="bulk-sep" aria-hidden="true"></span>
       <div class="bulk-actions">
         <button class="action reviewed" data-bulk="reviewed">✓ Reviewed</button>
@@ -2801,7 +2800,7 @@ function render(){
   for(const [id,n] of [["allBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)).length],["actionBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)&&m.action).length],["attachBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)&&fileN(m)).length],["taskBadge",openTasks().length]]){const el=$(id);el.textContent=n;el.hidden=n===0}
   $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent");
   document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",filter==="all"));{const fb=$("filterBy"),pick=["action","need","high","attachments"].includes(filter)?filter:"";fb.value=pick;fb.classList.toggle("active",!!pick)}
-  $("selectedCount").textContent=selected.size;$("bulk").classList.toggle("show",selected.size>1||selMode);
+  $("selectedCount").textContent=selected.size;$("bulk").classList.toggle("show",selected.size>1||selMode);$("previewBulk").classList.toggle("show",selected.size>1||selMode);$("previewSelCount").textContent=selected.size;
   $("adminBtn").hidden=!currentUser.is_admin;$("userName").textContent=currentUser.name;$("userRole").textContent=currentUser.is_admin?"Administrator":"User";paintAvatar();previewSyncAccount();
   const inbox=mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)),needN=inbox.filter(m=>m.action||m.priority==="high").length;
   const hr=new Date().getHours(),first=String(currentUser.name||"").trim().split(/\s+/)[0];
@@ -4325,7 +4324,7 @@ $("sortBy").addEventListener("change",e=>{sortMode=e.target.value;render()});
 $("filterBy").addEventListener("change",e=>{filter=e.target.value||"all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"&&filter==="all"));render()});
 $("mailboxFilter").addEventListener("change",e=>{mailboxSel=e.target.value;render()});
 $("clear").onclick=()=>{selected.clear();selAnchor=null;render()};
-$("selDone").onclick=()=>{selected.clear();selAnchor=null;selMode=false;render()};
+$("previewBulkClear").onclick=()=>{selected.clear();selAnchor=null;render()};
 $("settingsBtn").onclick=()=>openSettings("settings");$("adminBtn").onclick=()=>{if(authorizeAdmin())openSettings("admin","users")};$("closeSettings").onclick=closeSettings;$("cancelSettings").onclick=closeSettings;$("scrim").onclick=closeSettings;
 $("saveSettings").onclick=()=>{closeSettings();toast("Settings saved for this prototype")};
 $("testProvider").onclick=testConfig;
@@ -5474,11 +5473,35 @@ function drawUndos(){          // one bar per waiting action, the newest at the 
     const n=entry.ms.length,bar=document.createElement("div");bar.className="undobar";
     const t=document.createElement("span");t.textContent=`${UNDO_LABEL[entry.status]} · ${n===1?entry.ms[0].subject:n+" emails"}`;
     const btn=document.createElement("button");btn.type="button";btn.textContent="Undo";btn.onclick=()=>undoEntryNow(entry);
+    bar._entry=entry;
     const pr=document.createElement("i");pr.className="undoprog";
     const left=Math.max(0,entry.end-Date.now());pr.style.animationDuration=entry.total+"ms";pr.style.animationDelay=-(entry.total-left)+"ms";
     bar.append(t,btn,pr);box.append(bar);
   });
 }
+// Swipe an Undo bar left or right to clear it when it is in the way. The action then goes through straight away (no Undo).
+(function(){
+  const box=$("undoBar");let g=null;const FAR=80;
+  box.addEventListener("pointerdown",e=>{
+    const bar=e.target.closest(".undobar");if(!bar||e.target.closest("button")||(e.pointerType==="mouse"&&e.button!==0))return;
+    g={bar,x:e.clientX,y:e.clientY,dx:0,on:false,pid:e.pointerId};
+  });
+  box.addEventListener("pointermove",e=>{
+    if(!g||e.pointerId!==g.pid)return;
+    const dx=e.clientX-g.x,dy=e.clientY-g.y;
+    if(!g.on){if(Math.abs(dy)>14&&Math.abs(dy)>Math.abs(dx)){g=null;return}if(Math.abs(dx)<8)return;g.on=true;g.bar.style.transition="none";try{g.bar.setPointerCapture(e.pointerId)}catch{}}
+    g.dx=dx;g.bar.style.transform=`translateX(${dx}px)`;g.bar.style.opacity=String(Math.max(.25,1-Math.abs(dx)/260));
+  });
+  const end=e=>{
+    if(!g||e.pointerId!==g.pid)return;
+    const s=g;g=null;if(!s.on)return;
+    const far=e.type!=="pointercancel"&&Math.abs(s.dx)>=FAR,bar=s.bar;
+    bar.style.transition="transform .16s ease-out,opacity .16s ease-out";
+    if(far){bar.style.transform=`translateX(${s.dx>0?"120%":"-120%"})`;bar.style.opacity="0";const ent=bar._entry;setTimeout(()=>{if(ent&&pendingActs.includes(ent))commitAction(ent)},170)}
+    else{bar.style.transform="";bar.style.opacity=""}
+  };
+  box.addEventListener("pointerup",end);box.addEventListener("pointercancel",end);
+})();
 function undoEntryNow(e){
   clearTimeout(e.timer);const i=pendingActs.indexOf(e);if(i>=0)pendingActs.splice(i,1);
   e.ms.forEach(m=>{delete m._pending});drawUndos();render();toast("Undone");
