@@ -956,6 +956,21 @@ body.calm:not(.preview-show-filters) .preview-list-heading+.filters{display:none
 @media(max-width:1150px){.preview-overview{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.preview-calm-notice{display:none}.preview-overview{gap:8px}.preview-stat{min-height:103px;padding:11px;gap:8px}.preview-stat-icon{width:28px;height:28px;font-size:16px}.preview-stat-copy b{font-size:24px}.preview-stat-copy small{font-size:10px}}
 
+
+.preview-focus-card{display:grid;grid-template-columns:54px minmax(0,1fr);gap:16px;padding:18px;background:var(--panel2);border:1px solid var(--line);border-radius:13px}
+.preview-focus-icon{display:grid;place-items:center;width:52px;height:52px;border-radius:14px;background:#2051a5;color:#e3edff;font-size:29px}
+.preview-focus-copy strong{display:block;font-size:18px;line-height:1.3}.preview-focus-copy p{margin:6px 0;color:var(--muted);font-size:14px}.preview-focus-copy small{color:var(--faint)}
+.preview-focus-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}.preview-focus-actions .tbtn{padding:9px 13px}
+.preview-later .trow2{display:inline-grid;vertical-align:top;width:calc(33.333% - 9px);margin:12px 10px 0 0;grid-template-columns:24px minmax(0,1fr);grid-template-rows:auto auto;border:1px solid var(--line);border-radius:11px;background:var(--panel2);padding:13px;min-height:92px}
+.preview-later .trow2:nth-of-type(3n+1){margin-right:0}
+.preview-later .trow2 .twhen{grid-column:2;grid-row:2}
+.preview-later .trow2 .ttl{white-space:normal;line-height:1.35}
+.side-foot .calm-row{flex-wrap:wrap;white-space:normal}
+.side-foot .calm-row:after{content:"A quieter inbox, one thing at a time. Counts are hidden.";flex:0 0 100%;font-size:11px;line-height:1.5;color:#b3c5e3;padding-top:3px}
+html[data-theme="light"] .side-foot .calm-row:after{color:#556e91}
+body.calm:has(#bulk.show) .preview-list-heading+.filters{display:flex!important}
+@media(max-width:760px){.preview-focus-card{grid-template-columns:35px minmax(0,1fr);gap:10px;padding:12px}.preview-focus-icon{width:34px;height:34px;font-size:18px}.preview-focus-copy strong{font-size:15px}.preview-later .trow2{width:100%;margin-right:0}}
+
 </style>
 </head>
 <body class="booting">
@@ -2035,14 +2050,19 @@ function taskRow(t,fin){
   const m=taskMsg(t);
   return `<div class="trow2${fin?" fin":""}"><button class="tick" type="button" data-task-act="${fin?"reopen":"done"}" data-task-id="${esc(t.id)}" aria-label="${fin?"Put back: ":"Mark done: "}${esc(t.title)}"></button><button class="tmain" type="button" ${m?`data-due-open="${esc(m.id)}"`:"disabled"} aria-label="${esc(t.title)}. ${m?"Show the email":""}"><span class="ttl">${esc(t.title)}</span><span class="tfr">${esc(t.sender?"from "+t.sender:"")}</span></button>${fin?`<span class="reason">${esc(t.reason_text||"Done")}</span>`:`<span class="twhen${t.days<0?" soft":""}">${esc(taskWhen(t))}</span>`}</div>`;
 }
+function previewFocusTask(t){
+  const m=taskMsg(t),button=m?'<button class="primary" type="button" data-due-open="'+esc(m.id)+'">Open email</button>':'<button class="primary" type="button" data-tasks-go>Open Tasks</button>';
+  const snooze=m?'<button class="tbtn" type="button" data-snooze="'+esc(m.id)+'">Snooze</button>':"";
+  return '<div class="preview-focus-card"><span class="preview-focus-icon" aria-hidden="true">✧</span><div class="preview-focus-copy"><strong>'+esc(t.title)+'</strong>'+(t.detail?'<p>'+esc(t.detail)+'</p>':"")+(t.sender?'<small>From '+esc(t.sender)+'</small>':"")+'<div class="preview-focus-actions">'+button+snooze+'<button class="tbtn" type="button" data-task-act="done" data-task-id="'+esc(t.id)+'">Mark done</button></div></div></div>';
+}
 function renderToday(){
   const box=$("dueBars"),open=openTasks(),now=open.filter(t=>t.days<=0);
   if(!now.length||filter==="tasks"||filter==="sent"){box.hidden=true;box.replaceChildren();return}
   const calm=calmOn(),shown=now.slice(0,calm?1:3),important=calm?now.slice(1):[],rest=open.filter(t=>t.days>0);
   const title=calm?"Start here":`Today · ${now.length} ${now.length===1?"thing":"things"}`;
   const urgent=important.length?`<section class="preview-important"><div class="thead"><b>Also important today</b><button class="linkbtn" type="button" data-tasks-go>All tasks</button></div>${important.map(t=>taskRow(t,false)).join("")}</section>`:"";
-  const later=rest.length?`<section class="preview-later"><button class="tmore" type="button" data-due-toggle aria-expanded="${dueOpen}">${calm?"Later":`Coming up · ${rest.length} more`} ${dueOpen?"⌃":"⌄"}</button>${dueOpen?rest.map(t=>taskRow(t,false)).join(""):""}</section>`:"";
-  box.innerHTML=`<div class="preview-today-grid"><section class="today-card"><div class="thead"><b>${title}</b><button class="linkbtn" type="button" data-tasks-go>Open Tasks</button></div>${shown.map(t=>taskRow(t,false)).join("")}</section>${urgent}</div>${later}`;
+  const later=rest.length?`<section class="preview-later"><button class="tmore" type="button" data-due-toggle aria-expanded="${dueOpen}">${calm?"Later":`Coming up · ${rest.length} more`} ${dueOpen?"⌃":"⌄"}</button>${(dueOpen?rest:calm?rest.slice(0,3):[]).map(t=>taskRow(t,false)).join("")}</section>`:"";
+  box.innerHTML=`<div class="preview-today-grid"><section class="today-card"><div class="thead"><b>${title}</b><button class="linkbtn" type="button" data-tasks-go>Open Tasks</button></div>${calm&&shown[0]?previewFocusTask(shown[0]):shown.map(t=>taskRow(t,false)).join("")}</section>${urgent}</div>${later}`;
   box.hidden=false;
 }
 function calendarHtml(){
