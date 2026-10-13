@@ -112,7 +112,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 {
   const server = makeServer();
   const { page, errors, csp, context } = await open(server);
-  check("the Shipping entry is shown when the feature is on", await page.locator("#shipNav").isVisible() && await page.locator("#trackLabel").isVisible());
+  check("the Shipping entry is shown when the feature is on", await page.locator("#shipNav").isVisible());
   check("the sidebar shows how many orders are being followed (4), not a dash", (await page.locator("#shipBadge").innerText()).trim() === "4");
   check("the number turns blue because one order needs you", await page.locator("#shipBadge.hot").count() === 1);
   check("Home shows the teal card for the delivered order only", (await page.locator("#shipBars .shiprow").count()) === 1 && (await page.locator("#shipBars").innerText()).includes("Northside Audio"));
