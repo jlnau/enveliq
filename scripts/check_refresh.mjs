@@ -95,6 +95,8 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   const server = makeServer();
   const { page, context } = await open(server);
   await page.waitForSelector("article.mail");
+  check("Inbox options start collapsed", await page.locator("#expandAll").isHidden() && (await page.locator("#previewInboxOptions").getAttribute("aria-expanded")) === "false");
+  await page.click("#previewInboxOptions");
   check("the expand link starts as Expand all", (await page.locator("#expandAll").innerText()) === "Expand all" && await page.locator("#expandAll").isVisible());
 
   // Expand all / Collapse all
