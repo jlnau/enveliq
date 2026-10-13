@@ -96,6 +96,7 @@ When Calm mode is on:
 - The extra counts and distracting dashboard summary cards are hidden, and the header uses a gentler message on desktop.
 - **Start here** highlights one task; **Also important today** and **Later** keep other tasks available without putting them all in front of you at once.
 - On a phone, the decorative Calm mode banner is omitted. **Start here**, **Also important today**, and **Later** all start collapsed, and you can open each when needed.
+- On a computer screen, **Start here** is a short, compact card with smaller **Open email**, **Snooze** and **Mark done** buttons. When it is the only panel it uses the full width. When there is also something in **Also important today**, that shows as a slim strip along the bottom of the same card instead of a separate panel beside it. This is only a change to how it looks; phones keep their own layout.
 - The rest of the inbox, its mail, and its tasks remain accessible. Calm mode does not change, delete, or hide any underlying mailbox records.
 
 You can switch back to the regular dashboard at any time. Turning Calm mode off does not remove tasks or reset your data.
