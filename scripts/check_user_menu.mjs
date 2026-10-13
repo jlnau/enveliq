@@ -120,7 +120,7 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   check("the picture replaces the initials beside the name", (await page.locator("#avatar img").getAttribute("src")).includes("/api/v1/users/u1/avatar"));
   check("the picture loads (the page allows it)", await page.evaluate(() => { const i = document.querySelector("#avatar img"); return new Promise((ok) => (i.complete ? ok(i.naturalWidth > 0) : (i.onload = () => ok(true), i.onerror = () => ok(false)))); }));
   await shot(page, "profile");
-  await pf.locator("button:has-text('Remove')").click();
+  await pf.getByRole("button", { name: "Remove", exact: true }).click();
   await page.waitForFunction(() => !document.querySelector("#avatar img") && document.getElementById("avatar").textContent.length > 0);
   check("removing the picture brings the initials back", true);
   await page.click("#closeSettings");
