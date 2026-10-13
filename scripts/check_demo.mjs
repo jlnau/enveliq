@@ -55,7 +55,7 @@ for (const [name, vp] of [["desktop", { width: 1280, height: 800 }], ["phone", {
   if (shots) await p.screenshot({ path: path.join(shots, `demo-undo-${name}.png`) });
   await p.click("#undoBar .undobar:last-child button");
   ok(name + ": Undo brings it back", (await p.locator("article.mail:not(.leaving)").count()) === rowsBefore && !(await p.locator("#undoBar").isVisible()));
-  ok(name + ": it never asked for anything but the page and its pictures", seen.every((s) => /^GET \/(?:brand\/[\w.-]+|static\/northern-coast-(?:dark|light)\.svg)?$/.test(s)));
+  ok(name + ": it never asked for anything but the page and its pictures", seen.every((s) => /^GET \/(?:brand\/[\w.-]+|static\/northern-coast-(?:dark|light)\.webp)?$/.test(s)));
   ok(name + ": no outside requests", seen.every((s) => !/^[A-Z]+ https?:/.test(s)));
   ok(name + ": no script errors or Content-Security-Policy violations", problems.length === 0);
   if (problems.length) console.log("   " + problems.join("\n   "));
