@@ -37,6 +37,8 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
     sub: [...document.getElementById("inboxSubtitle").childNodes].filter((n) => !(n.classList && n.classList.contains("sdate"))).map((n) => n.textContent).join(""),
     more: document.querySelector(".tmore")?.textContent || "",
     rows: document.querySelectorAll(".today-card .trow2").length,
+    focused: document.querySelectorAll(".today-card .preview-focus-card").length,
+    focusDate: document.querySelector(".today-card .preview-focus-copy small")?.textContent || "",
     important: document.querySelectorAll(".preview-important .trow2").length,
     dueCount: typeof openTasks === "function" ? openTasks().filter(t => t.days <= 0).length : 0,
     laterCount: typeof openTasks === "function" ? openTasks().filter(t => t.days > 0).length : 0,
@@ -46,9 +48,10 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
   }));
   const on = await calmState();
   check(name + ": Calm mode hides counters", on.badges === 0 && !/\d/.test(on.today) && !/\d/.test(on.sub) && !/\d/.test(on.more) && on.bar === "none");
-  check(name + ": Calm mode shows one Start here task and a Later section when needed", on.today === "Start here" && on.rows === 1 && (on.laterCount > 0 ? /Later/.test(on.more) : !/Later/.test(on.more)));
-  check(name + ": every due task remains visible in Calm mode", on.dueCount >= 1 && on.rows + on.important === on.dueCount);
-  check(name + ": overdue task dates remain visible", on.overdueCount === 0 || /Waiting since/.test(on.when));
+  check(name + ": Calm mode shows one Start here task and a Later section when needed", on.today === "Start here" && on.focused === 1 && (on.laterCount > 0 ? /Later/.test(on.more) : !/Later/.test(on.more)));
+  check(name + ": every due task remains visible in Calm mode", on.dueCount >= 1 && on.focused + on.important === on.dueCount);
+  check(name + ": overdue task dates remain visible", on.overdueCount === 0 || /Waiting since/.test(on.when + "|" + on.focusDate));
+  check(name + ": Calm home keeps actionable task controls", await p.locator(".preview-focus-card [data-task-act=done]").count() === 1 && (await p.locator(".preview-focus-card [data-due-open],.preview-focus-card [data-tasks-go]").count()) === 1);
   if (shots) await p.screenshot({ path: path.join(shots, "calm-" + name + ".png") });
 
   await sw.click(); await p.waitForTimeout(300);
