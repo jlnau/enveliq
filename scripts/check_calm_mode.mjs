@@ -38,6 +38,14 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
       return bg.includes("northern-coast-dark.webp") && getComputedStyle(hero).backgroundColor === "rgba(0, 0, 0, 0)";
     }));
     await p.evaluate(() => document.documentElement.dataset.theme = "light");
+    check("coast artwork begins behind the toolbar at the very top", await p.evaluate(() => {
+      const main = document.querySelector(".main");
+      const bg = getComputedStyle(main, "::before");
+      const layer = bg.backgroundPosition.split(",");
+      const top = main.getBoundingClientRect().top;
+      const toolbarTop = document.querySelector(".preview-toolbar").getBoundingClientRect().top;
+      return layer.every(p => /top|0px|0%/.test(p)) && Math.abs(top - toolbarTop) < 2;
+    }));
     check("light theme selects the sunrise artwork", await p.evaluate(() => getComputedStyle(document.querySelector(".main"), "::before").backgroundImage.includes("northern-coast-light.webp")));
     const clearHeader = () => p.evaluate(() => {
       const hero = document.querySelector("header.top");
