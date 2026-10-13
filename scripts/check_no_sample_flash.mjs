@@ -84,7 +84,7 @@ const shown = (page, sel) => page.locator(sel).first().evaluate((el) => {
   if (!identityReady) console.log("IDENTITY DEBUG", JSON.stringify(await page.evaluate(() => ["#userName", ".top-left h2", "#brandVer"].map(sel => { const e = document.querySelector(sel), c = getComputedStyle(e); return { sel, text: e.textContent, innerText: e.innerText, height: e.getBoundingClientRect().height, display: c.display, visibility: c.visibility, opacity: c.opacity, parentDisplay: getComputedStyle(e.parentElement).display }; }))));
   check("then the signed-in person's own name appears", identityReady && (await shown(page, "#userName")));
   check("and a greeting that names them, not the sample person", identityReady && /Riley/.test(await page.locator(".top-left h2").innerText()) && !/Morgan/.test(await page.locator(".top-left h2").innerText()));
-  check("and the real version, not a sample one", identityReady && /Version 9\\.9/.test(await page.locator("#brandVer").innerText()));
+  check("and the real version, not a sample one", identityReady && /Version 9\.9/.test(await page.locator("#brandVer").innerText()));
   check("and the loading line is gone", !(await shown(page, "#bootNote")));
   await page.context().close();
 }
