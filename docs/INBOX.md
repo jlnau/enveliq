@@ -29,6 +29,7 @@ Open an email and its files are listed under the summary, above the task: one ro
 - An email is never shown with a number of files and nothing beside it. If its files were left alone (the attachment switch is off, the email is too large) each file is listed as **Not summarised** with the reason. If Enveliq has not read the files at all, the email says so and offers **Read the files again**. The server log has one line saying why (`files of … not read`).
 - PDF (with text), Word (.docx), text and CSV files are read, however long. Scans and pictures are not read yet.
 - Administrators control this under Administration, AI model. See [the AI guide](AI_SUMMARIES.md#summaries-of-attached-files) for the limits and the cloud-service rule.
+- Attachment file rows and summaries use names that do not get mistaken for advertisements, so they remain visible with common ad blockers enabled.
 
 ## Reviewed, Archive and Bin
 
@@ -50,16 +51,31 @@ The Enveliq version is a small grey line at the bottom of the left panel, above 
 
 Normally Enveliq signs you out after 30 minutes without use. If an administrator has turned on **Keep me signed in on this device** (Administration, Sign-in rules, from 1 to 14 days), the sign-in page shows a tick-box for it. Tick it only on a device that is yours. It needs Enveliq to unlock itself from a key file (see [Unlock by itself after a restart](VAULT_KEY.md)); restarting Enveliq still signs everyone out.
 
+## Finding your way around
+
+The main inbox shows **Needs action**, **Today**, **Packages**, and **Waiting** at the top. These open the corresponding views. The **Today** section shows tasks that need attention; **Coming up** shows the next tasks due later. On a phone, the task sections start folded so you can reach the email list sooner; tap a section heading or its arrow to open it.
+
+The **Recent emails** section lists your mail. **Inbox options** starts closed on computers and phones. Press it to show the mailbox filter, sorting, **All emails**, **Expand all**, and the other available inbox controls; press it again to hide them. On phones, **Recent emails** can also be expanded or collapsed.
+
+The left menu leads to **My inbox**, **Needs action**, **Tasks**, **Shipping**, **Waiting for reply**, and **Attachments**. The **More** section contains other views, including Sent, Reviewed, and Archived where available. Collapsing the desktop menu keeps the icons; the compact Calm mode control remains available.
+
 ## Calm mode
 
-For days when numbers make everything feel urgent. At the bottom of the menu, just above **Agent**, press **Calm mode** to turn it on (press it again to turn it off). It is remembered in that browser, and each person chooses for themselves.
+Calm mode is on by default in a browser that has never chosen a mode. Each browser remembers the choice, and you can turn Calm mode off from the bottom of the left menu or from the account menu.
 
-When it is on:
+When Calm mode is on:
 
-- The numbers beside My inbox, Needs action, Tasks and Attachments are hidden, and so are the counts in the greeting ("2 emails to look at, 2 need you") and the AI queue bar.
-- The greeting says "Take it one at a time. Nothing here is urgent."
-- The Today card is headed **Start here** and shows one task. The rest wait under **Later**, without a count.
-- "Waiting since Thu" becomes "When you can", and the amber needs-action dots turn grey.
-- Movement on the page is turned off.
+- The extra counts and distracting dashboard summary cards are hidden, and the header uses a gentler message on desktop.
+- **Start here** highlights one task; **Also important today** and **Later** keep other tasks available without putting them all in front of you at once.
+- On a phone, the decorative Calm mode banner is omitted. **Start here**, **Also important today**, and **Later** all start collapsed, and you can open each when needed.
+- The rest of the inbox, its mail, and its tasks remain accessible. Calm mode does not change, delete, or hide any underlying mailbox records.
 
-Nothing is hidden for good: every email, task and list is still there, and **Needs action** still works.
+You can switch back to the regular dashboard at any time. Turning Calm mode off does not remove tasks or reset your data.
+
+## Light and dark themes
+
+Open the account menu at the top right to choose **Dark**, **Light**, or **System**. System follows the device setting. Theme and Calm mode are independent choices.
+
+## Profile pictures
+
+Under **Profile settings**, you can choose your own picture. New uploads of transparent PNG images preserve the clear areas, so the panel colour shows through around and inside a logo. An image previously uploaded before this was fixed may have been saved with a white background; uploading the **original transparent PNG again** is the most reliable way to restore transparency. The **Remove white background** action in Profile settings is an optional repair for an older saved image, not something a correctly uploaded transparent image needs.

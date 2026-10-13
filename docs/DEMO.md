@@ -14,7 +14,7 @@ A banner at the top of every screen says so.
 
 - The page cannot connect to anything. Its rules (a Content-Security-Policy) forbid every network request, so even a mistake could not send anything out.
 - Only the page's own fingerprinted scripts can run. No script, font, picture or tracker comes from another website.
-- It sets nothing in your browser except the light or dark choice, and it cannot be placed inside another website.
+- It keeps only local interface preferences, such as Light or Dark theme and Calm mode, in your browser. It does not save demo mail or connect to a mailbox, and it cannot be placed inside another website.
 
 ## How it is made (for the person running Enveliq's website)
 
