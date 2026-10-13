@@ -228,6 +228,9 @@ async function open(server, { seen = true } = {}) {
     await page.click("#undoBar .undobar:last-child button");
     check("desktop: Undo brings both back and still nothing was sent", (await page.locator("article.mail").count()) === cardsB && !(await page.locator("#undoBar").isVisible()) && server.calls.length === callsB);
   }
+  check("Calm mode is enabled for a new browser and hides counters", (await page.locator("#calmBtn").getAttribute("aria-checked")) === "true" && (await page.locator("#allBadge").isHidden()));
+  await page.click("#calmBtn");
+  check("Calm mode can be switched off to show counts", (await page.locator("#calmBtn").getAttribute("aria-checked")) === "false" && (await page.locator("#allBadge").isVisible()));
   check("a count of zero shows no blue number, other counts do", (await page.locator("#actionBadge").isHidden()) && (await page.locator("#attachBadge").isHidden()) && (await page.locator("#allBadge").isVisible()));
   await page.selectOption("#filterBy", "high");
   check("choosing a filter highlights the dropdown and un-highlights All", (await page.locator("#filterBy.active").count()) === 1 && (await page.locator('.chip[data-chip="all"].active').count()) === 0);
