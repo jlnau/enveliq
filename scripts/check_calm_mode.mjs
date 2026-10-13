@@ -79,7 +79,7 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
   check(name + ": switching Calm mode off announces the change", (await sw.getAttribute("aria-checked")) === "false");
   if (name === "phone") {
     check("phone: Today and Coming up start collapsed in normal mode", await p.evaluate(() => !!document.querySelector(".today-card.mobile-folded") && [...document.querySelectorAll(".preview-later")].every(el => el.classList.contains("mobile-folded"))));
-    await p.click("#menuBtn");
+    if (await p.evaluate(() => document.body.classList.contains("menu-open"))) await p.click("#menuBtn");
     await p.click('.today-card [data-preview-fold="today"]');
     check("phone: Today expands when tapped", await p.locator(".today-card .preview-fold-content").isVisible());
     await p.click('.today-card [data-preview-fold="today"]');
