@@ -59,6 +59,8 @@ On a phone, press and hold an email for about half a second. A box appears on th
 - Narrowing the side panel never changes the user button in the top right: it keeps your picture, name and role. Your picture is also kept between refreshes, so it no longer blinks out while it reloads.
 - The **Coming up** panel has an arrow on its right that is always there. It points up when the panel is open and down when it is closed. In Calm mode the **Later** box has the same arrow and starts open. (On a phone these panels already had their own arrow.)
 
+- The account menu (your picture, top right) has a **Customise** button. It closes the menu and opens the panel on the right that changes how the inbox looks.
+
 `scripts/check_rail_and_folds.mjs` checks all of this.
 
 ## The version number

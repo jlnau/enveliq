@@ -61,6 +61,16 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   check("no script errors (narrow sidebar)", p.errors.length === 0);
   await ctx.close();
 }
+{ // Customise in the account menu
+  const [ctx, p] = await open(false, false);
+  await p.click("#userPill"); await p.waitForTimeout(250);
+  check("the account menu has a Customise button", await vis(p, "#customiseBtn"));
+  await p.click("#customiseBtn"); await p.waitForTimeout(500);
+  check("pressing Customise closes the menu", !(await p.evaluate(() => document.querySelector("#userMenu").classList.contains("open"))));
+  check("and opens the panel on the right", await p.evaluate(() => document.body.classList.contains("vopen") && document.querySelector("#viewTab").getAttribute("aria-expanded") === "true"));
+  if (shots) await p.screenshot({ path: path.join(shots, "customise-open.png") });
+  await ctx.close();
+}
 { // wide sidebar
   const [ctx, p] = await open(false, false);
   const g = await p.evaluate(() => ({ edge: document.querySelector("#sidebar").getBoundingClientRect().right, t: (() => { const r = document.querySelector("#collapseToggle").getBoundingClientRect(); return r.left + r.width / 2; })() }));
