@@ -1248,12 +1248,37 @@ html[data-theme="light"] .preview-focus-copy small{color:#526c90}
     text-shadow:0 1px 5px rgba(0,9,30,.96),0 1px 2px rgba(0,9,30,.95)!important;
   }
   .main .top p .need{color:#ffe5a6!important;text-decoration-thickness:1px}
+  /* Soft local contrast around search, help and account controls. The
+     gradient fades in every direction so the coastal art stays continuous. */
+  .main .preview-toolbar-search::before,
+  .main .preview-toolbar-actions::before{
+    content:"";position:absolute;pointer-events:none;z-index:-1;
+    inset:-22px -28px;
+    background:radial-gradient(ellipse at center,
+      rgba(3,14,36,.43) 0%,rgba(3,14,36,.22) 48%,
+      transparent 78%);
+  }
   .main .preview-toolbar .syncago{
+    color:#e3f3ff!important;
     text-shadow:0 1px 5px rgba(0,9,30,.95);
+  }
+  /* Keep overview counts legible over varied coastal highlights while
+     retaining the glass surface and the artwork beneath it. */
+  .main .preview-overview .preview-stat{
+    background:rgba(12,31,59,.82)!important;
+    border-color:rgba(151,190,237,.26)!important;
+    color:#f1f7ff!important;
+    box-shadow:0 5px 20px rgba(0,13,41,.16);
   }
   .main .preview-toolbar .user-copy strong,
   .main .preview-toolbar .user-copy small{
     text-shadow:0 1px 4px rgba(0,9,30,.65);
+  }
+  html[data-theme="light"] .main .preview-toolbar-search::before,
+  html[data-theme="light"] .main .preview-toolbar-actions::before{
+    background:radial-gradient(ellipse at center,
+      rgba(250,253,255,.75) 0%,rgba(250,253,255,.37) 47%,
+      transparent 80%);
   }
   html[data-theme="light"] .main .top .top-inner::before{
     background:radial-gradient(ellipse at 22% 51%,
