@@ -1229,6 +1229,53 @@ html[data-theme="light"] .preview-focus-copy small{color:#526c90}
     background:rgba(255,240,244,.88)!important
   }
 }
+/* Maintain readable UI labels against detailed coast and sky photography.
+   Broad, feathered spotlights preserve the continuous artwork without
+   introducing a hard edge, opaque panel or changing the layout. */
+@media(min-width:761px){
+  .main .top .top-inner::before{
+    content:"";position:absolute;z-index:-1;pointer-events:none;
+    top:-28px;bottom:-28px;left:-24px;width:min(650px,82vw);
+    background:radial-gradient(ellipse at 22% 51%,
+      rgba(3,14,36,.70) 0%,rgba(3,14,36,.47) 39%,
+      rgba(3,14,36,.18) 61%,transparent 82%);
+  }
+  .main .top h2{
+    text-shadow:0 2px 9px rgba(0,9,30,.85),0 1px 2px rgba(0,9,30,.95)!important;
+  }
+  .main .top p,.main .top p b{
+    color:#f4f8ff!important;
+    text-shadow:0 1px 5px rgba(0,9,30,.96),0 1px 2px rgba(0,9,30,.95)!important;
+  }
+  .main .top p .need{color:#ffe5a6!important;text-decoration-thickness:1px}
+  .main .preview-toolbar .syncago{
+    text-shadow:0 1px 5px rgba(0,9,30,.95);
+  }
+  .main .preview-toolbar .user-copy strong,
+  .main .preview-toolbar .user-copy small{
+    text-shadow:0 1px 4px rgba(0,9,30,.65);
+  }
+  html[data-theme="light"] .main .top .top-inner::before{
+    background:radial-gradient(ellipse at 22% 51%,
+      rgba(250,253,255,.90) 0%,rgba(248,252,255,.68) 40%,
+      rgba(248,252,255,.25) 62%,transparent 82%);
+  }
+  html[data-theme="light"] .main .top h2{
+    color:#09264c!important;
+    text-shadow:0 1px 7px rgba(255,255,255,.98),0 1px 2px #fff!important;
+  }
+  html[data-theme="light"] .main .top p,
+  html[data-theme="light"] .main .top p b{
+    color:#15365a!important;
+    text-shadow:0 1px 5px #fff,0 1px 2px #fff!important;
+  }
+  html[data-theme="light"] .main .top p .need{color:#80510b!important}
+  html[data-theme="light"] .main .preview-toolbar .syncago,
+  html[data-theme="light"] .main .preview-toolbar .user-copy strong,
+  html[data-theme="light"] .main .preview-toolbar .user-copy small{
+    text-shadow:0 1px 5px rgba(255,255,255,.95);
+  }
+}
 @media(min-width:761px) and (max-width:1080px){
   .main::before{height:330px}
 }
