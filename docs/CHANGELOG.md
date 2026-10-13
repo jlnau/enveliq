@@ -6,6 +6,20 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 No changes recorded yet.
 
+## v0.88 (2026-10-14)
+
+**A calmer, tidier inbox, and a new look for the website.** Calm mode is cosier: on a computer the **Start here** card is shorter with smaller buttons, fills the width when it is alone, and shows **Also important today** as a slim strip along its bottom edge. Every page other than My inbox has a **Back to My inbox** button, and its title is the page's name. Needs action and the other email pages show the same **Recent emails / Inbox options** panel as My inbox. **Closed** on Waiting for reply starts folded. The Tasks page uses the full width. **Open full screen** now sits beside the left menu, with normal-sized Reviewed, Archive and Bin buttons.
+
+**Easier on a phone.** Press and hold an email to pick several, with the buttons under the "Recent emails" title. Swipe the Undo bar or the AI queue bar sideways to clear it out of the way (the AI keeps working). Panels have an arrow that opens and closes them: Coming up, Calm's Later, and More in the narrow left panel. The account menu has a **Customise** button, and the user button no longer disappears when the left panel is narrow.
+
+**Header pictures and a plain logo.** The inbox header has a night-sky (dark) or daytime (light) backdrop, and the logo is plain. In light mode the Shipping, Subscriptions, Trips and Waiting for reply cards and the New email button now use light colours.
+
+**The website has a light and dark switch.** A sun/moon button in the top bar switches the website between light and dark and remembers the choice on the visitor's own device (without it, the site follows the device setting). The dark colours match the app. Every picture on the website, in the guides and in the README was retaken in the new design, in both themes. The website now runs two small scripts from its own address (the guide search and this switch), and its security policy and wording say so. Nothing is sent anywhere.
+
+Code and tests: `prototype/index.html` (all pages), `website/` (`src/style.css`, `src/theme.js`, `build.mjs`, `check.mjs`), `scripts/check_backdrop.mjs`, `check_phone_select.mjs`, `check_rail_and_folds.mjs`, `check_calm_layout.mjs`, `check_back_to_inbox.mjs` (all in CI), `scripts/retake_pictures.mjs` and `scripts/place_pictures.py` for retaking the pictures. Docs: `docs/INBOX.md`, `website/README.md`.
+
+* Header backdrop, plain logo, Calm layout, navigation, phone selection and swipe, light mode fixes, and a new website and pictures by @jlnau in https://github.com/jlnau/enveliq/pull/80
+
 ## v0.87 (2026-10-13)
 
 **A redesigned inbox, with less visual noise.** Calm mode is enabled by default for a new browser and can be turned off at any time. The desktop inbox has a more compact summary and task layout, while phones use smaller summaries and collapsible Today, Coming up, and other task sections. The left sidebar, account menu, and light theme have been refreshed. The account menu offers Dark, Light, and System themes. Inbox Options starts collapsed and expands to show the mailbox filters, sorting, and other controls. Transparent PNG profile pictures now keep their transparency on upload; pictures previously saved with a white JPEG background can be replaced by uploading the original PNG again.

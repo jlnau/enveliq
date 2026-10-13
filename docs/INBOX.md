@@ -43,6 +43,34 @@ Tick one email's box, then hold **Shift** and tick another one a few emails up o
 
 On a real Enveliq server, a person with no mailbox connected sees an empty inbox. There are no sample emails or sample accounts. A short banner says the inbox is empty because no mailbox is connected yet, and the list links to the setup guide. The sample emails still appear in the hosted demo and in the no-server preview, where they are made up on purpose.
 
+## The picture behind the top of the page
+
+On a computer or tablet, the top of every page sits on a quiet picture: a night sky with a moon and soft hills in dark mode, and a morning sky with a low sun and pale hills in light mode. The heading, the search box and the first row of cards (Start here, Also important today) sit on it, and the cards are slightly see-through so the picture shows faintly behind them. The picture fades out above the email list, and it scrolls away with the page. On a phone there is no picture, so nothing takes up room.
+
+The pictures are drawn in code and held inside the page, so Enveliq downloads nothing extra to show them. In light mode the logo sits straight on the sidebar colour, with no white box behind it. To change the pictures, edit `scripts/make_backdrops.mjs`, run it, and paste its output over the `--backdrop` lines in `prototype/index.html`.
+
+## Picking several emails on a phone
+
+On a phone, press and hold an email for about half a second. A box appears on the left of every email (the emails move to the right to make room), and the email you held is ticked. Tap any other email to tick or untick it; tapping does not open it while you are picking. The count, **Clear** and the **Reviewed**, **Archive** and **Bin** buttons appear under the "Recent emails" title. These work like the buttons on a single email, so **Undo** is still offered. **Clear** leaves picking, and so does unticking the last email. A quick tap still opens an email, and swiping still works when you are not picking. Wide screens keep the tick boxes they always had. `scripts/check_phone_select.mjs` checks this.
+
+## Clearing the Undo bar on a phone
+
+If the Undo bar at the bottom is covering an email, swipe it left or right and it goes. The action goes through straight away, so there is no Undo after that. A short nudge springs it back. The same swipe hides the **AI queue** bar. That only hides the bar: the summaries keep being written, and the bar comes back the next time the AI starts work. (`scripts/check_phone_select.mjs` checks this.)
+
+## Ticked emails: where the buttons show
+
+When you tick two or more emails on a computer, **Reviewed**, **Archive** and **Bin** appear in the "Recent emails" panel, so you can still see them while **Inbox options** is closed. When Inbox options is open they sit in its bar instead, never in both places.
+
+## The side panel, and opening and closing the lists
+
+- The round arrow that narrows or widens the side panel sits on the panel's edge line. When the panel is narrow the logo is centred in it, and the **More** icon carries its own small arrow inside it (it flips when More is open).
+- Narrowing the side panel never changes the user button in the top right: it keeps your picture, name and role. Your picture is also kept between refreshes, so it no longer blinks out while it reloads.
+- The **Coming up** panel has an arrow on its right that is always there. It points up when the panel is open and down when it is closed. In Calm mode the **Later** box has the same arrow and starts open. (On a phone these panels already had their own arrow.)
+
+- The account menu (your picture, top right) has a **Customise** button. It closes the menu and opens the panel on the right that changes how the inbox looks.
+
+`scripts/check_rail_and_folds.mjs` checks all of this.
+
 ## The version number
 
 The Enveliq version is a small grey line at the bottom of the left panel, above **Terms**, **Privacy** and **Security**. It is hidden when the panel is collapsed. Administrators also see a small card above it when a newer version has been published. See [Knowing when a new version is out](UPDATES.md).
@@ -59,6 +87,17 @@ The **Recent emails** section lists your mail. **Inbox options** starts closed o
 
 The left menu leads to **My inbox**, **Needs action**, **Tasks**, **Shipping**, **Waiting for reply**, and **Attachments**. The **More** section contains other views, including Sent, Reviewed, and Archived where available. Collapsing the desktop menu keeps the icons; the compact Calm mode control remains available.
 
+## Getting back to My inbox
+- On every page other than My inbox (Needs action, Tasks, Shipping, Waiting for reply, Attachments, Reviewed, Archived and so on), a **Back to My inbox** button sits above the page title. The title now shows the name of the page you are on instead of "My inbox".
+- Needs action, Attachments, Reviewed and Archived show the same **Recent emails** panel with **Inbox options** as My inbox, so the options fold away in the same way everywhere.
+- On **Waiting for reply**, the **Closed** section is folded away until you open it with its arrow, so the page does not look like a long list of open items.
+- With **Open full screen**, on a computer the email sits beside the left menu and below the top bar, and **Reviewed**, **Archive** and **Bin** are normal buttons centred along the bottom (they used to be stretched across the screen and partly hidden).
+
+## Light mode and pictures
+- In light mode, the Shipping, Subscriptions, Trips and Waiting for reply cards (on their own pages and on the home page) and the New email button now use light colours. They used to keep their dark colours.
+- The Tasks page uses the full width, like the other pages.
+- The pictures in the guides, the README and the website were retaken in the current design, in dark and light (see `website/README.md`).
+
 ## Calm mode
 
 Calm mode is on by default in a browser that has never chosen a mode. Each browser remembers the choice, and you can turn Calm mode off from the bottom of the left menu or from the account menu.
@@ -68,6 +107,7 @@ When Calm mode is on:
 - The extra counts and distracting dashboard summary cards are hidden, and the header uses a gentler message on desktop.
 - **Start here** highlights one task; **Also important today** and **Later** keep other tasks available without putting them all in front of you at once.
 - On a phone, the decorative Calm mode banner is omitted. **Start here**, **Also important today**, and **Later** all start collapsed, and you can open each when needed.
+- On a computer screen, **Start here** is a short, compact card with smaller **Open email**, **Snooze** and **Mark done** buttons. When it is the only panel it uses the full width. When there is also something in **Also important today**, that shows as a slim strip along the bottom of the same card instead of a separate panel beside it. This is only a change to how it looks; phones keep their own layout.
 - The rest of the inbox, its mail, and its tasks remain accessible. Calm mode does not change, delete, or hide any underlying mailbox records.
 
 You can switch back to the regular dashboard at any time. Turning Calm mode off does not remove tasks or reset your data.

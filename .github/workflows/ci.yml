@@ -90,6 +90,16 @@ jobs:
         run: node scripts/check_blank_install.mjs
       - name: Calm mode (made-up mail, no server)
         run: node scripts/check_calm_mode.mjs
+      - name: Inbox backdrop and plain logo (made-up mail, no server)
+        run: node scripts/check_backdrop.mjs
+      - name: Phone - press and hold to pick several emails (made-up mail, no server)
+        run: node scripts/check_phone_select.mjs
+      - name: Side panel, user button and fold arrows (made-up mail, no server)
+        run: node scripts/check_rail_and_folds.mjs
+      - name: Calm mode compact layout (made-up mail, no server)
+        run: node scripts/check_calm_layout.mjs
+      - name: Back to My inbox, Inbox options and full-screen email (made-up mail, no server)
+        run: node scripts/check_back_to_inbox.mjs
       - name: Backup and restore, Export my data (simulated server)
         run: node scripts/check_backup.mjs
       - name: Microsoft sign-in help (simulated server)
