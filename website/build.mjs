@@ -4,6 +4,7 @@
 //
 // Usage: node build.mjs        (needs: npm install)
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
@@ -369,5 +370,22 @@ const entries = [["/", "docs/README.md"], ["/tour/", "website/src/tour.html"], .
 // A shallow copy of the repository gives every page the same date. That says nothing, so the dates are left out then.
 const useDates = new Set(entries.map(([, d]) => d)).size > 1;
 write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.map(([u, d]) => `  <url><loc>${SITE}${u}</loc>${useDates && d ? `<lastmod>${d}</lastmod>` : ""}</url>`).join("\n")}\n</urlset>\n`);
+
+
+// Stamp every picture, the stylesheet and the two scripts with a short fingerprint of the file (for example /style.css?v=1a2b3c4d).
+// A changed picture or style then has a new address, so browsers and Cloudflare never show an old copy next to new pages.
+{
+  const stamp = new Map();
+  const fp = (u) => {
+    if (!stamp.has(u)) { const f = path.join(dist, u.slice(1)); stamp.set(u, fs.existsSync(f) ? crypto.createHash("sha256").update(fs.readFileSync(f)).digest("hex").slice(0, 8) : ""); }
+    return stamp.get(u);
+  };
+  const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]);
+  for (const f of walk(dist).filter((x) => x.endsWith(".html"))) {
+    const html = fs.readFileSync(f, "utf8");
+    const out = html.replace(/((?:src|href)=")(\/(?:images\/[^"?#]+|style\.css|theme\.js|search\.js))(")/g, (all, a, u, c) => fp(u) ? `${a}${u}?v=${fp(u)}${c}` : all);
+    if (out !== html) fs.writeFileSync(f, out);
+  }
+}
 
 console.log(`Built ${sources.size + 3} pages into ${path.relative(process.cwd(), dist) || "dist"}`);

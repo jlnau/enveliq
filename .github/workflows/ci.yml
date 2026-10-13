@@ -182,6 +182,8 @@ jobs:
       - run: npx playwright install ${{ vars.RUNNER_LABELS == '' && '--with-deps' || '' }} chromium
       - name: Search the guides (browser)
         run: node scripts/check_site_search.mjs
+      - name: Website light / dark switch (browser)
+        run: node scripts/check_website_theme.mjs
 
   docker:
     name: Docker image
