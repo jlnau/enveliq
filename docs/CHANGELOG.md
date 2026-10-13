@@ -6,6 +6,26 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 No changes recorded yet.
 
+## v0.86 (2026-10-12)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+### Other changes
+* Fix the broken QR code in authenticator-app setup by @jlnau in https://github.com/jlnau/enveliq/pull/64
+* Never show a count of files with nothing beside it by @jlnau in https://github.com/jlnau/enveliq/pull/65
+* Install file: publish port 8765:8765 by @jlnau in https://github.com/jlnau/enveliq/pull/66
+* Docker Compose guide: show the install file first by @jlnau in https://github.com/jlnau/enveliq/pull/67
+* Add a settings reference: every environment variable by @jlnau in https://github.com/jlnau/enveliq/pull/68
+* Microsoft guide: explain the directory Microsoft now needs by @jlnau in https://github.com/jlnau/enveliq/pull/69
+* Search the guides on the website by @jlnau in https://github.com/jlnau/enveliq/pull/70
+* Calm mode: no numbers, softer colours, one task at a time by @jlnau in https://github.com/jlnau/enveliq/pull/71
+* Show no sample emails on a blank install by @jlnau in https://github.com/jlnau/enveliq/pull/72
+* Rename Settings Reminders to Notifications and make it two clear steps by @jlnau in https://github.com/jlnau/enveliq/pull/73
+
+
+**Full Changelog**: https://github.com/jlnau/enveliq/compare/v0.85...v0.86
+
 ## v0.85 (2026-10-12)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
