@@ -9,7 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 execFileSync("node", ["demo/build.mjs"], { cwd: root, stdio: "ignore" });
 const dist = path.join(root, "demo", "dist");
 const headers = Object.fromEntries(fs.readFileSync(path.join(dist, "_headers"), "utf8").split("\n").slice(1).filter((l) => l.includes(":")).map((l) => { const i = l.indexOf(":"); return [l.slice(0, i).trim().toLowerCase(), l.slice(i + 1).trim()]; }));
-const types = { ".html": "text/html; charset=utf-8", ".webp": "image/webp", ".png": "image/png" };
+const types = { ".html": "text/html; charset=utf-8", ".webp": "image/webp", ".png": "image/png", ".svg": "image/svg+xml" };
 const srv = http.createServer((q, r) => {
   const p = q.url.split("?")[0], f = path.join(dist, p === "/" ? "index.html" : p.replace(/^\/+/, ""));
   if (!f.startsWith(dist + path.sep) || f.endsWith("_headers") || !fs.existsSync(f)) { r.statusCode = 404; return r.end("not found"); }
@@ -27,6 +27,23 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
   p.on("pageerror", (e) => errors.push(String(e)));
   await p.goto(url); await p.waitForTimeout(600);
   await p.evaluate(() => document.querySelector(".demo-banner")?.remove());
+  if (name === "desktop") {
+    for (const mode of ["dark", "light"]) {
+      const response = await p.request.get(url + "static/northern-coast-" + mode + ".svg");
+      check("northern coast " + mode + " artwork is served in demo", response.status() === 200 && (await response.text()).includes("<svg"));
+    }
+    check("desktop artwork is on the main page and not in a boxed banner", await p.evaluate(() => {
+      const bg = getComputedStyle(document.querySelector(".main"), "::before").backgroundImage;
+      const hero = document.querySelector(".top");
+      return bg.includes("northern-coast-dark.svg") && getComputedStyle(hero).backgroundColor === "rgba(0, 0, 0, 0)";
+    }));
+    await p.evaluate(() => document.documentElement.dataset.theme = "light");
+    check("light theme selects the sunrise artwork", await p.evaluate(() => getComputedStyle(document.querySelector(".main"), "::before").backgroundImage.includes("northern-coast-light.svg")));
+    await p.evaluate(() => document.documentElement.removeAttribute("data-theme"));
+  } else {
+    check("phone stays free of a decorative coastal banner", await p.evaluate(() => getComputedStyle(document.querySelector(".main"), "::before").display === "none"));
+  }
+
   if (name === "phone") await p.click("#menuBtn");
   if (name === "phone") {
     check("phone: Calm priority sections start collapsed", await p.evaluate(() => [...document.querySelectorAll(".today-card,.preview-important,.preview-later")].every(el => el.classList.contains("mobile-folded"))));
