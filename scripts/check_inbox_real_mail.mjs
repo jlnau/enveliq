@@ -248,11 +248,11 @@ async function open(server, { seen = true } = {}) {
   // Light / dark mode
   const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   const darkBg = await bg();
-  check("starts in dark mode with the toggle in the user menu", (await page.locator("#userMenu #themeBtn").count()) === 1 && (await page.locator("#themeBtn").innerText()).includes("Light mode"));
+  check("starts in dark mode and offers appearance choices", (await page.locator("[data-theme-choice]").count()) === 3 && await page.locator('[data-theme-choice="dark"]').getAttribute("aria-pressed")==="true");
   await page.click("#userPill");
-await page.click("#themeBtn");
+await page.click('[data-theme-choice="light"]');
   const lightBg = await bg();
-  check("toggle switches to light mode", (await page.evaluate(() => document.documentElement.dataset.theme)) === "light" && lightBg !== darkBg && (await page.locator("#themeBtn").innerText()).includes("Dark mode"));
+  check("toggle switches to light mode", (await page.evaluate(() => document.documentElement.dataset.theme)) === "light" && lightBg !== darkBg && (await page.locator('[data-theme-choice="light"]').getAttribute("aria-pressed")) === "true");
   const lum = (c) => c.match(/\d+/g).slice(0, 3).map(Number).reduce((a, b) => a + b, 0) / 3;
   const cardBg = await page.evaluate(() => getComputedStyle(document.querySelector(".sidebar")).backgroundColor);
   const subjectColour = await page.evaluate(() => getComputedStyle(document.querySelector("article.mail .subject")).color);
@@ -262,7 +262,7 @@ await page.click("#themeBtn");
   await page.waitForSelector("article.mail");
   check("light mode is remembered after reload", (await page.evaluate(() => document.documentElement.dataset.theme)) === "light");
   await page.click("#userPill");
-await page.click("#themeBtn");
+await page.click('[data-theme-choice="dark"]');
   check("toggle switches back to dark mode", (await page.evaluate(() => document.documentElement.dataset.theme)) === undefined && (await bg()) === darkBg);
 
   // View email (rows hide their extra buttons until opened)
