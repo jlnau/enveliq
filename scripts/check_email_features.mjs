@@ -91,6 +91,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 {
   const server = makeServer();
   const { page, errors } = await open(server);
+  await page.click("#moreToggle");
   check("New email button and Sent item are shown", (await page.locator("#newMailBtn").isVisible()) && (await page.locator("#sentNav").isVisible()));
 
   // New email: suggestions, chips, Cc/Bcc, attachment, send
@@ -268,6 +269,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   const { page, csp } = await open(server, { width: 390, height: 800 });
   check("the pencil is in the top bar on a phone", await page.locator("#mNewBtn").isVisible());
   await page.click("#menuBtn");
+  await page.click("#moreToggle");
   check("Sent is in the slide-out menu", await page.locator("#sentNav").waitFor({ state: "visible", timeout: 3000 }).then(() => true, () => false));
   await page.click("#sentNav");
   await page.waitForSelector(".srow");
