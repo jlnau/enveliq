@@ -110,7 +110,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   const server = makeServer();
   const { page, errors, csp, context } = await open(server);
   await page.waitForFunction(() => document.getElementById("msgBadge").textContent === "2");
-  check("the Messages entry is in the sidebar", await page.locator("#msgNav").isVisible());
+  check("the Messages entry is available under More", await page.locator("#moreItems #msgNav").count() === 1 && await page.locator("#msgNav").getAttribute("hidden") === null);
   check("the count shows 2 unread messages and is highlighted", (await page.locator("#msgBadge").innerText()).trim() === "2" && (await page.locator("#msgBadge.hot").count()) === 1);
   const card = await page.locator("#msgBars").innerText();
   check("Home says who left you how many messages", card.includes("Cara and Sam left you 2 messages") && card.includes("Dinner at 7"));
