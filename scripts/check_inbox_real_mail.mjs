@@ -174,11 +174,14 @@ async function open(server, { seen = true } = {}) {
   check("every row shows when it arrived, lined up on the right", rights.length === 3 && new Set(rights).size === 1 && (await page.locator("article.mail .time").allInnerTexts()).every((t) => t.trim().length > 0));
   check("each row has three icon buttons (tick, archive, red bin) and no arrow; Reply and View original email stay hidden until it is opened", (await page.locator("article.mail .qrow [data-status=reviewed]").count()) === 3 && (await page.locator("article.mail .qrow [data-status=archived]").count()) === 3 && (await page.locator("article.mail .qrow [data-status=trashed]").count()) === 3 && (await page.locator("article.mail .qrow .qic").evaluateAll((els) => els.every((e) => e.getAttribute("aria-label") && e.innerText.trim() === "" && e.querySelector("svg")))) && (await page.locator("article.mail .qtoggle").evaluateAll((els) => els.every((e) => e.getBoundingClientRect().width <= 1))) && (await page.locator("article.mail [data-open-email]").count()) === 0);
   const hdr0 = [await page.locator(".top-left h2").innerText(), await page.locator("#inboxSubtitle").innerText()];
+  check("new default Calm view is shown with a discreet inbox options control", hdr0[0] === "One thing at a time" && await page.locator("#previewInboxOptions").isVisible());
+  await page.click("#previewInboxOptions");
+  check("existing filters are accessible when requested", await page.locator("#filterBy").isVisible());
   await page.selectOption("#filterBy", "action");
-  check("changing the filter leaves the header text exactly as it was", (await page.locator(".top-left h2").innerText()) === hdr0[0] && (await page.locator("#inboxSubtitle").innerText()) === hdr0[1] && /^Good (morning|afternoon|evening)/.test(hdr0[0]));
+  check("changing the filter leaves the header text exactly as it was", (await page.locator(".top-left h2").innerText()) === hdr0[0] && (await page.locator("#inboxSubtitle").innerText()) === hdr0[1] && hdr0[0] === "One thing at a time");
   await page.selectOption("#filterBy", "");
   const cy = async (sel) => { const b = await page.locator(sel).boundingBox(); return b.y + b.height / 2; };
-  check("the last-synced text lines up with the email count on the left (within 2px)", Math.abs((await cy("#syncAgo")) - (await cy("#inboxSubtitle"))) <= 2);
+  check("last-synced text is available in the separate search toolbar", await page.locator("#syncAgo").isVisible() && (await page.locator("#syncAgo").boundingBox()).y < (await page.locator("#inboxSubtitle").boundingBox()).y);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1 && [...document.querySelectorAll("article.mail .qrow")].every((r) => r.scrollWidth <= r.clientWidth + 1));
   check("rows fit inside the page", overflow);
   check("a closed row shows only the subject, not the start of the summary", (await page.locator("article.mail .qrow .summary").count()) === 0);
