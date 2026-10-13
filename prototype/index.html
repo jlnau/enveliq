@@ -118,7 +118,7 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 .nosum .gprog{width:90px;height:4px;border-radius:4px;background:var(--line);overflow:hidden}.nosum .gprog i{display:block;height:100%;width:40%;background:var(--accent);animation:gslide 1.2s ease-in-out infinite}@keyframes gslide{0%{margin-left:-40%}100%{margin-left:100%}}
 .nosum-note{color:var(--faint);font-size:12px;margin:6px 0 0}
 .sumbar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:119;width:min(420px,calc(100% - 28px))}.sumbar[hidden]{display:none}.sendbar:not([hidden])~.sumbar{bottom:84px}
-.sumnote{color:var(--muted);font-size:12.5px}.sumbar .sumrow{display:flex;align-items:center;gap:12px;background:var(--c-232a36);border:1px solid var(--c-364055);border-radius:14px;padding:11px 16px;font-size:14px;box-shadow:0 12px 30px rgba(0,0,0,.35)}.sumrow .grow{flex:1}.sumrow .gprog{width:70px;height:4px;border-radius:4px;background:var(--line);overflow:hidden}.sumrow .gprog i{display:block;height:100%;width:40%;background:var(--accent);animation:gslide 1.2s ease-in-out infinite}
+.sumnote{color:var(--muted);font-size:12.5px}.sumbar .sumrow{touch-action:pan-y;display:flex;align-items:center;gap:12px;background:var(--c-232a36);border:1px solid var(--c-364055);border-radius:14px;padding:11px 16px;font-size:14px;box-shadow:0 12px 30px rgba(0,0,0,.35)}.sumrow .grow{flex:1}.sumrow .gprog{width:70px;height:4px;border-radius:4px;background:var(--line);overflow:hidden}.sumrow .gprog i{display:block;height:100%;width:40%;background:var(--accent);animation:gslide 1.2s ease-in-out infinite}
 .qic{display:grid;place-items:center;width:42px;height:34px;padding:0}.qic svg{width:17px;height:17px}.qpair{display:flex;gap:6px}.qic.reviewed{background:var(--c-122219);border-color:var(--c-315644)}.qic.archive{background:var(--c-0c1626);border-color:var(--c-1f3f75)}.qic.trash{background:var(--c-2d1a20);border-color:var(--c-58343b)}.qfrom{color:var(--muted);font-size:13px}.qsummary{color:var(--c-d7dbe5);font-size:15px;line-height:1.55;max-width:860px;margin:6px 0 4px}.qdetail .actions{margin-top:14px}.mail.quiet.open{background:linear-gradient(180deg,var(--panel2),var(--panel))}.flag{display:inline-block;width:8px;height:8px;border-radius:999px;background:var(--c-e7d39a);margin-right:8px;vertical-align:1px}
 @media (max-width:760px){.qdetail.split{flex-direction:column;padding:6px 16px 18px}.qside{width:auto;align-self:stretch}.qrow{grid-template-columns:22px minmax(0,1fr) auto}.qrow .sender,.qrow .time{display:none}.mail.quiet .summary{display:none}}
 .empty{border:1px dashed var(--c-333b4b);border-radius:14px;padding:60px 20px;text-align:center;color:var(--muted)}
@@ -2726,10 +2726,12 @@ function genBlock(m){
   else if(it&&it.state==="failed"){text=`Could not summarise (${it.error||"try again"})`;btn=`<button type="button" class="gen" data-gen="${esc(m.id)}">Try again</button>`}
   return `<div class="qsummary"><div class="nosum"><span class="${dot}" aria-hidden="true"></span><span>${esc(text)}</span>${btn}</div><p class="nosum-note">${esc(note)}</p></div>`;
 }
-let aiLive=0,sqWasBusy=false;
+let aiLive=0,sqWasBusy=false,sumDismissed=false,sumDragging=false;   // sumDismissed: swiped out of the way; the work carries on, and the bar comes back the next time the AI starts
 function paintSumBar(){
-  const box=$("sumBar"),w=sq.waiting||0,r=sq.writing||0,n=sq.new_mail||0;
-  box.hidden=!(w||r||aiLive);
+  const box=$("sumBar"),w=sq.waiting||0,r=sq.writing||0,n=sq.new_mail||0,active=!!(w||r||aiLive);
+  if(!active)sumDismissed=false;
+  if(sumDragging)return;                                  // do not rebuild the bar under a finger
+  box.hidden=!active||sumDismissed;
   if(box.hidden){box.replaceChildren();return}
   const row=document.createElement("div");row.className="sumrow";
   const t=document.createElement("span");
@@ -2739,6 +2741,29 @@ function paintSumBar(){
   const g=document.createElement("span");g.className="grow";const p=document.createElement("span");p.className="gprog";p.append(document.createElement("i"));
   row.append(t,g,p);box.replaceChildren(row);
 }
+// Swipe the AI queue bar left or right to hide it. It only hides the bar: the summaries keep being written.
+(function(){
+  const box=$("sumBar");let g=null;const FAR=80;
+  box.addEventListener("pointerdown",e=>{
+    const row=e.target.closest(".sumrow");if(!row||e.target.closest("button,a")||(e.pointerType==="mouse"&&e.button!==0))return;
+    g={row,x:e.clientX,y:e.clientY,dx:0,on:false,pid:e.pointerId};
+  });
+  box.addEventListener("pointermove",e=>{
+    if(!g||e.pointerId!==g.pid)return;
+    const dx=e.clientX-g.x,dy=e.clientY-g.y;
+    if(!g.on){if(Math.abs(dy)>14&&Math.abs(dy)>Math.abs(dx)){g=null;return}if(Math.abs(dx)<8)return;g.on=true;sumDragging=true;g.row.style.transition="none";try{g.row.setPointerCapture(e.pointerId)}catch{}}
+    g.dx=dx;g.row.style.transform=`translateX(${dx}px)`;g.row.style.opacity=String(Math.max(.25,1-Math.abs(dx)/260));
+  });
+  const end=e=>{
+    if(!g||e.pointerId!==g.pid)return;
+    const s=g;g=null;if(!s.on)return;
+    const far=e.type!=="pointercancel"&&Math.abs(s.dx)>=FAR,row=s.row;
+    row.style.transition="transform .16s ease-out,opacity .16s ease-out";
+    if(far){row.style.transform=`translateX(${s.dx>0?"120%":"-120%"})`;row.style.opacity="0";setTimeout(()=>{sumDragging=false;sumDismissed=true;paintSumBar()},170)}
+    else{row.style.transform="";row.style.opacity="";sumDragging=false}
+  };
+  box.addEventListener("pointerup",end);box.addEventListener("pointercancel",end);
+})();
 setInterval(()=>{if(realMail&&!document.hidden&&!sqTimer)pollSummaries(false)},15000);   // new mail is queued by the server, so look now and then even when nothing was pressed
 async function pollSummaries(first){
   let r;try{r=await secureBackendRequest("/api/v1/me/summary-queue",{method:"GET",headers:{}})}catch{return}

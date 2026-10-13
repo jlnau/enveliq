@@ -102,6 +102,24 @@ for (const theme of ["dark", "light"]) {
   check(theme + ": no script errors", p.errors.length === 0);
   await ctx.close();
 }
+// the AI queue bar can be swiped out of the way, and the work carries on
+{
+  const [ctx, p] = await open("dark", { width: 390, height: 844 });
+  await p.evaluate(() => { sq = { waiting: 1, writing: 1, new_mail: 0, items: [] }; paintSumBar(); });
+  const shown = () => p.evaluate(() => !document.querySelector("#sumBar").hidden && !!document.querySelector("#sumBar .sumrow"));
+  check("AI queue bar: it shows while the AI is working", await shown());
+  const drag = async (dx) => { const bb = await p.locator("#sumBar .sumrow").boundingBox(); await p.mouse.move(bb.x + bb.width / 2, bb.y + 12); await p.mouse.down(); await p.mouse.move(bb.x + bb.width / 2 + dx / 2, bb.y + 12, { steps: 4 }); await p.mouse.move(bb.x + bb.width / 2 + dx, bb.y + 12, { steps: 4 }); await p.mouse.up(); await p.waitForTimeout(450); };
+  await drag(30);
+  check("AI queue bar: a short swipe springs back", await shown());
+  await drag(150);
+  check("AI queue bar: swiping it away hides it", !(await shown()));
+  await p.evaluate(() => paintSumBar());
+  check("AI queue bar: it stays hidden while the AI is still working", !(await shown()) && await p.evaluate(() => sq.writing === 1));
+  await p.evaluate(() => { sq = { waiting: 0, writing: 0, new_mail: 0, items: [] }; paintSumBar(); sq = { waiting: 2, writing: 0, new_mail: 0, items: [] }; paintSumBar(); });
+  check("AI queue bar: it comes back the next time the AI starts", await shown());
+  check("AI queue bar: no script errors", p.errors.length === 0);
+  await ctx.close();
+}
 // a wide screen never shows the phone tick-box mode
 {
   const [ctx, p] = await open("dark", { width: 1200, height: 800 });

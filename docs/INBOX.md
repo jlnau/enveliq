@@ -55,7 +55,7 @@ On a phone, press and hold an email for about half a second. A box appears on th
 
 ## Clearing the Undo bar on a phone
 
-If the Undo bar at the bottom is covering an email, swipe it left or right and it goes. The action goes through straight away, so there is no Undo after that. A short nudge springs it back. (`scripts/check_phone_select.mjs` checks this.)
+If the Undo bar at the bottom is covering an email, swipe it left or right and it goes. The action goes through straight away, so there is no Undo after that. A short nudge springs it back. The same swipe hides the **AI queue** bar. That only hides the bar: the summaries keep being written, and the bar comes back the next time the AI starts work. (`scripts/check_phone_select.mjs` checks this.)
 
 ## Ticked emails: where the buttons show
 
