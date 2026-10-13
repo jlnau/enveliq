@@ -428,9 +428,10 @@ function shrinkPicture(file, size = 256) {
         const side = Math.min(img.width, img.height), c = document.createElement("canvas");
         c.width = c.height = size;
         const g = c.getContext("2d");
-        g.fillStyle = "#fff"; g.fillRect(0, 0, size, size);
+        // Keep alpha intact. JPEG and an opaque canvas flatten transparent logos onto white.
+        g.clearRect(0, 0, size, size);
         g.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
-        resolve(c.toDataURL("image/jpeg", 0.86));
+        resolve(c.toDataURL("image/png"));
       };
       img.src = reader.result;
     };
