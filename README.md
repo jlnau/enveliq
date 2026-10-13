@@ -185,6 +185,7 @@ All the guides are listed, by what you want to do, in the [**documentation index
 
 <details>
 <summary><b>What changed recently</b> (latest five versions)</summary>
+- **v0.88**: **A calmer, tidier inbox, and a website with light and dark.** Calm mode is cosier, every page has a Back to My inbox button, phones got press-and-hold and swipe, and the website and all its pictures were redone in the new design with a light and dark switch.
 - **Unreleased**: **A notice when a new version is out.** Administrators are told, with a card in the left panel linking to the release notes, when a newer version is out. Your server checks about once a day; nothing about you is sent, and an administrator can switch it off.
 - **Unreleased**: **The version number moves to the bottom of the left panel.** The version number is now a small line at the bottom of the left panel, under Terms, Privacy and Security.
 - **Unreleased**: **Row buttons show when you point at an email.** On a computer, the Reviewed, Archive and Bin buttons on a row show only when the mouse is over it, in place of the date. Phones are unchanged.
@@ -210,9 +211,9 @@ All the guides are listed, by what you want to do, in the [**documentation index
 The full list is in [docs/VERSION_HISTORY.md](docs/VERSION_HISTORY.md), and a more technical one is in the [change log](docs/CHANGELOG.md).
 </details>
 
-Current version: **v0.87**
+Current version: **v0.88**
 
-Version 0.87 includes the [redesigned inbox and Calm mode](docs/INBOX.md), plus the attachment display fix for ad blockers. See the [v0.87 change log](docs/CHANGELOG.md#v087-2026-10-13) for details.
+Version 0.88 includes a cosier Calm mode, a **Back to My inbox** button, easier phone use, and a website with a light and dark switch and new pictures. See the [v0.88 change log](docs/CHANGELOG.md#v088-2026-10-14) for details.
 
 ## For developers
 
