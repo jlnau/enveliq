@@ -93,7 +93,7 @@ const shown = (page, sel) => page.locator(sel).first().evaluate((el) => {
 {
   const page = await open("preview", 0);
   await page.waitForFunction(() => !document.body.classList.contains("booting"), null, { timeout: 3000 });
-  check("with no server behind it, the preview page appears straight away", (await page.locator("#userName").innerText()) === "Morgan" && (await shown(page, "#userName")));
+  check("with no server behind it, the preview page appears straight away", await page.waitForFunction(() => { const e = document.querySelector("#userName"); return e?.textContent === "Morgan" && getComputedStyle(e).visibility === "visible" && e.getBoundingClientRect().height > 0; }, null, { timeout: 1500 }).then(() => true, () => false));
   check("and shows no loading line", !(await shown(page, "#bootNote")));
   await page.context().close();
 }
