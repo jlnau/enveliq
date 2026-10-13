@@ -1050,6 +1050,65 @@ body:not(.calm) .top .preview-calm-notice{display:none}
   body.preview-mobile-emails-closed #list{display:none!important}
   .app.collapsed .side-foot .calm-row{width:44px}
 }
+
+/* Light theme refinement: clean wordmark surround, quiet scenic header, legible metadata. */
+@media(min-width:761px){
+  html[data-theme="light"] .sidebar .brand{
+    background:#ffffff;
+    padding:9px 11px;
+    border-radius:12px;
+    margin:0 12px 17px 0;
+    box-shadow:0 1px 4px rgba(33,66,119,.07);
+  }
+  html[data-theme="light"] .sidebar .brand-wordmark{
+    display:block;
+    max-width:100%;
+    height:auto;
+  }
+  /* Keep the entire collapse control inside the rail, clear of the main panel. */
+  .sidebar .collapse-toggle{
+    right:5px;
+    top:10px;
+    width:28px;
+    height:28px;
+    z-index:35;
+  }
+  .sidebar .brand{padding-right:27px}
+  html[data-theme="light"] .sidebar .brand{padding-right:27px}
+}
+html[data-theme="light"] .top{
+  background:linear-gradient(110deg,#d8ebff 0%,#c6e1ff 56%,#dceeff 100%)!important;
+  border-bottom:1px solid #bdd7f6;
+}
+html[data-theme="light"] .top:before{
+  background:radial-gradient(circle at 84% 34%,rgba(255,238,171,.9) 0 15px,transparent 16px);
+  opacity:.7;
+}
+html[data-theme="light"] .top .landscape-sun{
+  background:#ffedb3;opacity:.83
+}
+html[data-theme="light"] .top .landscape-back{
+  background:#a9d1fc;opacity:.47
+}
+html[data-theme="light"] .top .landscape-front{
+  background:#6aadee;opacity:.34
+}
+html[data-theme="light"] .top h2{color:#122f59}
+html[data-theme="light"] .top p{color:#233f67}
+html[data-theme="light"] .sidebar .nav{color:#273c60}
+html[data-theme="light"] .sidebar .nav svg{color:#344c73}
+html[data-theme="light"] .sidebar .nav.active{color:#0754bf}
+html[data-theme="light"] .sidebar .nav.active svg{color:#075ed4}
+html[data-theme="light"] .sidebar .nav .badge{color:#244264}
+html[data-theme="light"] .time,
+html[data-theme="light"] .time-text,
+html[data-theme="light"] .twhen,
+html[data-theme="light"] .fdate,
+html[data-theme="light"] #syncAgo{color:#46638b}
+html[data-theme="light"] .trow2 .twhen.soft,
+html[data-theme="light"] .preview-important .twhen.soft{color:#8b5900}
+html[data-theme="light"] .trow2 small,
+html[data-theme="light"] .preview-focus-copy small{color:#526c90}
 </style>
 </head>
 <body class="booting">
