@@ -1,0 +1,51 @@
+# Isolated Enveliq UI preview.
+# This stack does NOT share the production data volume, container names or network.
+name: enveliq-northern-preview
+
+services:
+  enveliq-northern-preview:
+    image: ghcr.io/jlnau/enveliq:northern-coast-preview
+    pull_policy: always
+    container_name: enveliq-northern-preview
+    restart: unless-stopped
+    environment:
+      ENVELIQ_PUBLIC_URL: ${ENVELIQ_NORTHERN_PREVIEW_PUBLIC_URL:-http://localhost:8768}
+      ENVELIQ_SETUP_CODE: ${ENVELIQ_NORTHERN_PREVIEW_SETUP_CODE:?Choose a unique setup code of at least 20 characters}
+      ENVELIQ_VAULT_KEY: ${ENVELIQ_NORTHERN_PREVIEW_VAULT_KEY:-}
+      ENVELIQ_RENDER_URL: http://enveliq-northern-preview-render:8766
+    ports:
+      - "127.0.0.1:8768:8765"
+    volumes:
+      - enveliq-northern-preview-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    networks: [default, preview-render]
+    mem_limit: 768m
+    pids_limit: 128
+
+  enveliq-northern-preview-render:
+    image: ghcr.io/jlnau/enveliq-render:northern-coast-preview
+    pull_policy: always
+    container_name: enveliq-northern-preview-render
+    restart: unless-stopped
+    user: "10002:10002"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    networks: [preview-render]
+    mem_limit: 1536m
+    pids_limit: 64
+    cpus: 1.0
+
+networks:
+  preview-render:
+    internal: true
+
+volumes:
+  enveliq-northern-preview-data:
+    name: enveliq-northern-preview-data
