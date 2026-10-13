@@ -1151,6 +1151,24 @@ html[data-theme="light"] .preview-focus-copy small{color:#526c90}
     backdrop-filter:none!important;
   }
   .top{top:auto!important;overflow:visible!important;}
+  /* The older light-theme rule uses html[data-theme] .top with !important.
+     Explicitly override that selector so it cannot create an opaque bar,
+     either when changing themes or after restoring the choice on reload. */
+  html[data-theme="light"] .top,
+  html[data-theme="light"] .preview-toolbar{
+    background:transparent!important;
+    background-image:none!important;
+    background-color:transparent!important;
+    border:0!important;
+    box-shadow:none!important;
+    backdrop-filter:none!important;
+  }
+  html[data-theme="light"] .top::before{
+    content:none!important;
+    display:none!important;
+    background:none!important;
+    opacity:0!important;
+  }
   .top::before,.top .enveliq-landscape{display:none!important}
   .top .top-inner,.preview-toolbar-search,.preview-toolbar-actions{position:relative;z-index:2}
   .top h2{color:#fff;text-shadow:0 1px 7px #06142aaa}
