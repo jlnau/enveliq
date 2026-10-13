@@ -155,7 +155,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("a note says only the first pages are shown", (await page.locator("#docStage").innerText()).includes("first 2 of 3"));
   const w0 = await page.locator("#docStage img.doc-page").first().evaluate((e) => e.getBoundingClientRect().width);
   await page.click("#docIn");
-  check("zoom makes the pages bigger", (await page.locator("#docStage img.doc-page").first().evaluate((e) => e.getBoundingClientRect().width)) > w0);
+  check("zoom makes the pages bigger", await page.waitForFunction((before) => document.querySelector("#docStage img.doc-page")?.getBoundingClientRect().width > before, w0, { timeout: 3000 }).then(() => true, () => false));
   await shot(page, "doc");
   await page.keyboard.press("Escape");
   check("Escape closes the document viewer", await page.locator("#docBox").isHidden());
@@ -268,7 +268,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   const { page, csp } = await open(server, { width: 390, height: 800 });
   check("the pencil is in the top bar on a phone", await page.locator("#mNewBtn").isVisible());
   await page.click("#menuBtn");
-  check("Sent is in the slide-out menu", await page.locator("#sentNav").isVisible());
+  check("Sent is in the slide-out menu", await page.locator("#sentNav").waitFor({ state: "visible", timeout: 3000 }).then(() => true, () => false));
   await page.click("#sentNav");
   await page.waitForSelector(".srow");
   check("the phone title says Sent", (await page.locator("#mTitle b").innerText()) === "Sent");
