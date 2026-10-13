@@ -69,12 +69,26 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
       document.documentElement.dataset.theme === "light"
       && getComputedStyle(document.querySelector(".main"), "::before").backgroundImage.includes("northern-coast-light.webp")));
     check("reloaded light mode has no solid header bar", await clearHeader());
+    check("light refresh preloads only the sunrise picture and starts with a light browser chrome", await p.evaluate(() => {
+      const preload = [...document.querySelectorAll('link[rel="preload"][as="image"]')];
+      return preload.length === 1
+        && preload[0].getAttribute("href") === "/static/northern-coast-light.webp"
+        && document.querySelector('meta[name="theme-color"]')?.getAttribute("content") === "#f2f6ff"
+        && getComputedStyle(document.documentElement).colorScheme === "light";
+    }));
     await p.evaluate(() => localStorage.setItem("enveliq-theme", "dark"));
     await p.reload();
     await p.waitForTimeout(400);
     check("dark mode continues to use aurora artwork", await p.evaluate(() =>
       document.documentElement.dataset.theme !== "light"
       && getComputedStyle(document.querySelector(".main"), "::before").backgroundImage.includes("northern-coast-dark.webp")));
+    check("dark refresh preloads only the aurora picture and starts with dark browser chrome", await p.evaluate(() => {
+      const preload = [...document.querySelectorAll('link[rel="preload"][as="image"]')];
+      return preload.length === 1
+        && preload[0].getAttribute("href") === "/static/northern-coast-dark.webp"
+        && document.querySelector('meta[name="theme-color"]')?.getAttribute("content") === "#07172d"
+        && getComputedStyle(document.documentElement).colorScheme === "dark";
+    }));
     await p.evaluate(() => document.documentElement.removeAttribute("data-theme"));
   } else {
     check("phone stays free of a decorative coastal banner", await p.evaluate(() => getComputedStyle(document.querySelector(".main"), "::before").display === "none"));
