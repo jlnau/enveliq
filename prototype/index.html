@@ -258,7 +258,7 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 
 
 
-.ad-block{margin:14px 0 4px;border:1px solid var(--c-232a36);border-radius:12px;background:var(--c-10141b);overflow:hidden}
+.attachment-summary-block{margin:14px 0 4px;border:1px solid var(--c-232a36);border-radius:12px;background:var(--c-10141b);overflow:hidden}
 .ad-title{padding:9px 14px 7px;font-size:12px;font-weight:650;color:var(--muted)}
 .ad-row{border-top:1px solid var(--c-232a36)}
 .ad-head{display:grid;grid-template-columns:18px auto minmax(0,1fr) auto auto 16px;gap:9px;align-items:center;padding:10px 14px;cursor:pointer}
@@ -2069,8 +2069,8 @@ function disclosure(key,label,preview,body){
     <span class="disclosure-label">${esc(label)}</span><span class="disclosure-preview">${preview||""}</span><span class="chev">⌄</span>
   </button><div class="disclosure-body">${body}</div></div>`;
 }
-const unreadFilesBlock=m=>`<section class="ad-block" aria-label="Attachments" data-files-unread><div class="ad-title">${m.fileCount===1?"1 attachment":m.fileCount+" attachments"}</div><div class="ad-wait">Enveliq has not read the files of this email yet.${m.real?` <button class="subtle" type="button" data-att-retry="${esc(m.id)}">Read the files again</button>`:""} You can still open them with View original email.</div></section>`;
-const attachmentsBlock=m=>!m.attachments.length&&m.real&&m.fileCount>0&&m.status==="inbox"?unreadFilesBlock(m):m.attachments.length?`<section class="ad-block" aria-label="Attachments"><div class="ad-title">${m.attachments.length===1?"1 attachment":m.attachments.length+" attachments"}</div>${m.attachments.map((a,i)=>attachmentDisclosure(m,a,i)).join("")}</section>`:"";
+const unreadFilesBlock=m=>`<section class="attachment-summary-block" aria-label="Attachments" data-files-unread><div class="ad-title">${m.fileCount===1?"1 attachment":m.fileCount+" attachments"}</div><div class="ad-wait">Enveliq has not read the files of this email yet.${m.real?` <button class="subtle" type="button" data-att-retry="${esc(m.id)}">Read the files again</button>`:""} You can still open them with View original email.</div></section>`;
+const attachmentsBlock=m=>!m.attachments.length&&m.real&&m.fileCount>0&&m.status==="inbox"?unreadFilesBlock(m):m.attachments.length?`<section class="attachment-summary-block" aria-label="Attachments"><div class="ad-title">${m.attachments.length===1?"1 attachment":m.attachments.length+" attachments"}</div>${m.attachments.map((a,i)=>attachmentDisclosure(m,a,i)).join("")}</section>`:"";
 function attachmentDisclosure(m,a,i){
   const key=`att-${m.id}-${i}`,open=expanded.has(key),st=a.state||"done";
   const kindOf=x=>/wordprocessingml/.test(x)?"Word":/pdf/.test(x)?"PDF":/csv/.test(x)?"CSV":/^text\//.test(x)?"Text":/^image\//.test(x)?"Picture":"",meta=[kindOf(a.mime||""),a.pages?`${a.pages} pages`:"",a.size].filter(Boolean).join(" · ");
