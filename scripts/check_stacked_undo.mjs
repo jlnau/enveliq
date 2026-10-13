@@ -37,6 +37,10 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 760 }], ["phone", {
   const bars = () => p.locator("#undoBar .undobar");
   await queue("archived"); await queue("trashed"); await queue("reviewed");
   check(name + ": three actions in a row show three bars", (await bars().count()) === 3);
+  check(name + ": Calm mode starts enabled while Undo remains visible", await p.evaluate(() => document.body.classList.contains("calm") && getComputedStyle(document.getElementById("undoBar")).display !== "none"));
+  const progress = await bars().last().locator(".undoprog").evaluate((e) => ({ name: getComputedStyle(e).animationName, seconds: parseFloat(getComputedStyle(e).animationDuration) }));
+  check(name + ": Undo progress retains the full action countdown in Calm mode", progress.name.includes("undoRun") && progress.seconds >= 59);
+
   check(name + ": the newest is at the bottom", /Marked reviewed/.test(await bars().last().innerText()) && /Archived/.test(await bars().first().innerText()));
   const boxes = await bars().evaluateAll((els) => els.map((e) => e.getBoundingClientRect()));
   check(name + ": the bars sit on top of each other without overlapping", boxes.every((r, i) => i === 0 || r.top >= boxes[i - 1].bottom - 0.5));
