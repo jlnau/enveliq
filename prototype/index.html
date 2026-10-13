@@ -799,6 +799,45 @@ body.on-ship #waitBars{display:none!important}
   .search{width:100%}.search input{flex:1;width:auto}
   .syncago{justify-content:flex-end}
 }
+
+/* Feature preview: compact Enveliq landscape and calm first dashboard.
+   UI only. The mail, task, reminder and vault APIs remain unchanged. */
+@media (min-width:761px) {
+  .top {min-height:94px;box-sizing:border-box;padding:15px 22px;overflow:hidden;background:var(--top-bg);isolation:isolate}
+  .top-inner {position:relative;z-index:2;max-width:none;align-items:center;min-height:64px}
+  .top .greet {height:auto;line-height:1.1;top:0}
+  .top h2 {font-size:27px;line-height:1.2;letter-spacing:-.03em}
+  .top .today {display:none}
+  .top p {font-size:13px;line-height:1.3;margin:5px 0 0;max-width:52ch}
+  .top .search input {background:var(--panel);border-radius:12px}
+}
+.enveliq-landscape {pointer-events:none;position:absolute;inset:0;overflow:hidden;z-index:0;opacity:.6}
+.landscape-sun {position:absolute;right:13%;bottom:11px;width:49px;height:49px;border-radius:50%;background:#f2c88e;opacity:.76}
+.landscape-mountain {position:absolute;left:0;right:0;bottom:0;height:42px}
+.landscape-back {background:#7598c6;opacity:.25;clip-path:polygon(0 95%,13% 58%,25% 87%,39% 27%,53% 81%,68% 31%,81% 70%,91% 22%,100% 70%,100% 100%,0 100%)}
+.landscape-front {background:#4c81ad;opacity:.23;clip-path:polygon(0 77%,9% 95%,21% 57%,34% 97%,47% 45%,60% 95%,72% 58%,82% 95%,92% 62%,100% 85%,100% 100%,0 100%)}
+html[data-theme="light"] .enveliq-landscape {opacity:.52}
+.preview-today-grid {display:grid;grid-template-columns:minmax(0,1.6fr) minmax(240px,1fr);gap:14px}
+.preview-today-grid>.today-card {border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--panel)}
+.preview-important {padding:16px;background:var(--panel);border:1px solid var(--c-51353b);border-radius:14px;min-width:0}
+.preview-important .thead b {color:var(--c-d4a2a7)}
+.preview-later {margin-top:12px;padding:8px 15px 12px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.preview-later>.tmore {font-weight:650;padding:7px 0}
+body.calm .preview-today-grid>.today-card {border-color:var(--line)}
+body.calm .preview-important .twhen.soft,body.calm .preview-important .twhen{color:var(--c-d4a2a7)}
+.time .clip {display:inline-flex;margin:0 5px 0 0;vertical-align:middle;align-items:center;justify-content:center;line-height:1}
+.time .time-text {vertical-align:middle}
+.time {display:flex;align-items:center;justify-content:flex-end;gap:2px}
+@media (max-width:760px) {
+  /* Existing compact mobile navigation stays. No banner steals vertical space. */
+  .enveliq-landscape {display:none}
+  .preview-today-grid {grid-template-columns:minmax(0,1fr)}
+  .preview-today-grid>.today-card,.preview-important {padding:12px}
+  .preview-later {padding:7px 12px}
+  .time {display:flex!important;align-items:center;justify-content:flex-end}
+}
+@media (prefers-reduced-motion:reduce) {.enveliq-landscape *{animation:none!important;transition:none!important}}
+
 </style>
 </head>
 <body class="booting">
@@ -854,7 +893,7 @@ body.on-ship #waitBars{display:none!important}
   </div>
 <header class="top">
   <div class="top-inner">
-    <div class="top-left"><div class="greet"><h2>Inbox</h2><span class="today" id="todayDate"></span></div><p id="inboxSubtitle">Private mail for the signed-in person</p></div>
+    <div class="top-left"><div class="greet"><h2>Inbox</h2><span class="today" id="todayDate"></span></div><p id="inboxSubtitle">Private mail for the signed-in person</p></div><div class="enveliq-landscape" aria-hidden="true"><span class="landscape-sun"></span><span class="landscape-mountain landscape-back"></span><span class="landscape-mountain landscape-front"></span></div>
     <div class="search-col"><div class="search"><input id="search" type="search" placeholder="Search inbox" aria-label="Search inbox"><button class="attachment-view sync-btn" id="syncBtn" type="button" hidden>Sync mail</button></div><div class="syncago" id="syncAgo" role="status" aria-live="off" hidden></div></div>
   </div>
 </header>
@@ -1856,8 +1895,11 @@ function taskRow(t,fin){
 function renderToday(){
   const box=$("dueBars"),open=openTasks(),now=open.filter(t=>t.days<=0);
   if(!now.length||filter==="tasks"||filter==="sent"){box.hidden=true;box.replaceChildren();return}
-  const calm=calmOn(),shown=now.slice(0,calm?1:3),rest=[...now.slice(calm?1:3),...open.filter(t=>t.days>0)];
-  box.innerHTML=`<div class="today-card"><div class="thead"><b>${calmOn()?"Start here":`Today · ${now.length} ${now.length===1?"thing":"things"}`}</b><button class="linkbtn" type="button" data-tasks-go>Open Tasks</button></div>${shown.map(t=>taskRow(t,false)).join("")}${rest.length?`<button class="tmore" type="button" data-due-toggle aria-expanded="${dueOpen}">${calmOn()?"Later":`Coming up · ${rest.length} more`} ${dueOpen?"⌃":"⌄"}</button>${dueOpen?rest.map(t=>taskRow(t,false)).join(""):""}`:""}</div>`;
+  const calm=calmOn(),shown=now.slice(0,calm?1:3),important=calm?now.slice(1):[],rest=open.filter(t=>t.days>0);
+  const title=calm?"Start here":`Today · ${now.length} ${now.length===1?"thing":"things"}`;
+  const urgent=important.length?`<section class="preview-important"><div class="thead"><b>Also important today</b><button class="linkbtn" type="button" data-tasks-go>All tasks</button></div>${important.map(t=>taskRow(t,false)).join("")}</section>`:"";
+  const later=rest.length?`<section class="preview-later"><button class="tmore" type="button" data-due-toggle aria-expanded="${dueOpen}">${calm?"Later":`Coming up · ${rest.length} more`} ${dueOpen?"⌃":"⌄"}</button>${dueOpen?rest.map(t=>taskRow(t,false)).join(""):""}</section>`:"";
+  box.innerHTML=`<div class="preview-today-grid"><section class="today-card"><div class="thead"><b>${title}</b><button class="linkbtn" type="button" data-tasks-go>Open Tasks</button></div>${shown.map(t=>taskRow(t,false)).join("")}</section>${urgent}</div>${later}`;
   box.hidden=false;
 }
 function calendarHtml(){
@@ -2402,7 +2444,7 @@ function render(){
   const greeting=(hr<12?"Good morning":hr<18?"Good afternoon":"Good evening")+(first?`, ${first}`:"");
   document.querySelector(".top-left h2").textContent=greeting;
   $("todayDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"});
-  $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(calmOn()?(inbox.length?"Take it one at a time. Nothing here is urgent.":"Nothing waiting. Enjoy the quiet."):inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:(document.body.classList.contains("backend")&&!realMail?"No mailbox is connected yet":"All caught up"));
+  $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(calmOn()?(inbox.length?"One thing at a time. Important deadlines stay visible.":"Nothing waiting. Enjoy the quiet."):inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:(document.body.classList.contains("backend")&&!realMail?"No mailbox is connected yet":"All caught up"));
 
   const rows=data.filter(visible);
   const rank={high:0,normal:1,low:2};
@@ -2441,7 +2483,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
       ${lead}
       <div class="sender">${flag}${esc(m.sender)}</div>
       <div class="qmain">${isImp(m)?'<span class="imp-pill" title="You marked this person as important">&#9733; Important</span>':""}${m.scam?'<span class="scam-pill" title="Something about this email looks odd. Open it to see what.">Be careful</span>':""}<span class="subject">${esc(m.subject)}</span></div>
-      <div class="time">${esc(m.time)}${fileN(m)?`<span class="clip" role="img" aria-label="${esc(clipWords(m))}" title="${esc(clipWords(m))}">${ICON_CLIP}</span>`:""}${m.replied?'<span class="replied">↩ Replied</span>':""}${isSnoozed(m)?`<span class="snz">Snoozed until ${esc(snoozeWhen(m.snoozeUntil))}</span>`:wokeBack(m)?'<span class="snz back">↺ Back from snooze</span>':""}</div>
+      <div class="time">${fileN(m)?`<span class="clip" role="img" aria-label="${esc(clipWords(m))}" title="${esc(clipWords(m))}">${ICON_CLIP}</span>`:""}<span class="time-text">${esc(m.time)}</span>${m.replied?'<span class="replied">↩ Replied</span>':""}${isSnoozed(m)?`<span class="snz">Snoozed until ${esc(snoozeWhen(m.snoozeUntil))}</span>`:wokeBack(m)?'<span class="snz back">↺ Back from snooze</span>':""}</div>
       ${open?"<span></span>":quick}
       ${tog}
     </div>${open?detail:""}</article>`;
@@ -4914,7 +4956,7 @@ function calmOn(){return document.body.classList.contains("calm")}
 (function(){
   const btn=$("calmBtn");
   const paint=()=>btn.setAttribute("aria-checked",String(calmOn()));
-  try{if(localStorage.getItem("enveliq-calm")==="1")document.body.classList.add("calm")}catch{}
+  try{if(localStorage.getItem("enveliq-calm")!=="0")document.body.classList.add("calm")}catch{document.body.classList.add("calm")}
   btn.onclick=()=>{
     document.body.classList.toggle("calm");
     try{localStorage.setItem("enveliq-calm",calmOn()?"1":"0")}catch{}
