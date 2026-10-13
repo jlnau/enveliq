@@ -1124,6 +1124,28 @@ html[data-theme="light"]{--backdrop:url("data:image/svg+xml,%3Csvg xmlns='http:/
   html[data-theme="light"] .preview-today-grid>.today-card{background:rgba(255,255,255,.62)}
   html[data-theme="light"] .preview-important{background:rgba(255,244,246,.76)}
 }
+/* Phone: press and hold an email to pick several. Tick boxes slide in on the left; the emails shift right to make room. */
+@media(max-width:760px){
+  .mail.quiet .qrow{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+  body.selecting .qrow{grid-template-columns:30px minmax(0,1fr) auto;grid-template-areas:"c s t" "c m m";column-gap:10px;animation:selShift .18s ease-out}
+  body.selecting .qrow>:first-child{display:block}
+  body.selecting .mail.quiet .check{display:block;grid-area:c;width:22px;height:22px;margin:1px 0 0;align-self:start}
+  body.selecting .mail.quiet.selected{background:var(--panel2)}
+  body.selecting .qtoggle{display:none}
+  body.selecting:not(.zz) #previewListHeading:not([hidden])+.filters,body.selecting .filters{display:flex!important;height:0;min-height:0;padding:0;margin:0;overflow:visible;opacity:1}
+  body.selecting .filters>:not(#bulk){display:none!important}
+  body.selecting .bulk{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 12px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(0,0,0,.22);font-size:14px}
+  body.selecting .bulk .linkbtn#clear,body.selecting .bulk-sep{display:none}
+  body.selecting .bulk-actions{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  body.selecting .bulk .action{padding:11px 6px;font-size:14px;justify-content:center}
+  body.selecting .bulk .seldone{display:inline-block;flex:0 0 auto;font-size:15px}
+  body.selecting .bulk>strong{flex:1 1 calc(100% - 100px);min-width:0}
+  body.selecting #viewTab{display:none}
+  body.selecting .content{padding-bottom:150px}
+}
+@keyframes selShift{from{opacity:.6;transform:translateX(-14px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){body.selecting .qrow{animation:none}}
+.seldone{display:none}
 </style>
 </head>
 <body class="booting">
@@ -1221,7 +1243,7 @@ html[data-theme="light"]{--backdrop:url("data:image/svg+xml,%3Csvg xmlns='http:/
     </select>
     <button class="linkbtn expall" id="expandAll" type="button" hidden>Expand all</button>
     <div class="bulk" id="bulk">
-      <strong><span id="selectedCount">0</span> selected</strong> <button class="linkbtn" id="clear" type="button">Clear</button>
+      <strong><span id="selectedCount">0</span> selected</strong> <button class="linkbtn" id="clear" type="button">Clear</button> <button class="linkbtn seldone" id="selDone" type="button">Done</button>
       <span class="bulk-sep" aria-hidden="true"></span>
       <div class="bulk-actions">
         <button class="action reviewed" data-bulk="reviewed">✓ Reviewed</button>
@@ -2752,8 +2774,11 @@ $("allSwitch").onclick=async()=>{
   try{await loadRealMail(currentUser)}catch(er){toast(er.message,5000)}
   b.disabled=false;render();
 };
+let selMode=false;          // phone only: set by pressing and holding an email
 function render(){
   window.__hidePeek&&window.__hidePeek();
+  if(selMode&&(!selected.size||!isPhone()))selMode=false;
+  document.body.classList.toggle("selecting",selMode);
   document.body.classList.toggle("in-sent",filter==="sent");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="sent"?"Sent":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
   const mine=userMessages().filter(m=>!m.extra);          // the quiet "All emails" entries are never counted
   if(!realMail)syncDemoTasks();else settleTasks();
@@ -2773,7 +2798,7 @@ function render(){
   for(const [id,n] of [["allBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)).length],["actionBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)&&m.action).length],["attachBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)&&fileN(m)).length],["taskBadge",openTasks().length]]){const el=$(id);el.textContent=n;el.hidden=n===0}
   $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent");
   document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",filter==="all"));{const fb=$("filterBy"),pick=["action","need","high","attachments"].includes(filter)?filter:"";fb.value=pick;fb.classList.toggle("active",!!pick)}
-  $("selectedCount").textContent=selected.size;$("bulk").classList.toggle("show",selected.size>1);
+  $("selectedCount").textContent=selected.size;$("bulk").classList.toggle("show",selected.size>1||selMode);
   $("adminBtn").hidden=!currentUser.is_admin;$("userName").textContent=currentUser.name;$("userRole").textContent=currentUser.is_admin?"Administrator":"User";paintAvatar();previewSyncAccount();
   const inbox=mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)),needN=inbox.filter(m=>m.action||m.priority==="high").length;
   const hr=new Date().getHours(),first=String(currentUser.name||"").trim().split(/\s+/)[0];
@@ -4059,7 +4084,7 @@ document.addEventListener("click",e=>{
   }
   const exp=e.target.closest("[data-expand]");if(exp){const key=exp.dataset.expand;expanded.has(key)?expanded.delete(key):expanded.add(key);render();return}
   const a=e.target.closest("[data-status]");if(a){deckDir="act";const m=data.find(x=>x.id===+a.dataset.id&&x.owner===currentUser.id);if(m&&["reviewed","archived","trashed"].includes(a.dataset.status)){queueAction([m],a.dataset.status);return}if(m&&m.real){resolveRealOne(m,a.dataset.status,a);return}if(m){m.status=a.dataset.status;m.attachments=[];m.attachmentsPurged=true;closeAttachmentViewer();selected.delete(m.id);render();toast(m.status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${m.status} · attachment data purged`)}return}
-  const b=e.target.closest("[data-bulk]");if(b){queueAction([...selected].map(id=>data.find(x=>x.id===id&&x.owner===currentUser.id)),b.dataset.bulk);closeAttachmentViewer();return}
+  const b=e.target.closest("[data-bulk]");if(b){queueAction([...selected].map(id=>data.find(x=>x.id===id&&x.owner===currentUser.id)),b.dataset.bulk);selMode=false;closeAttachmentViewer();return}
   if(e.target.closest("[data-need]")){filter="need";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();return}
   {const t=e.target.closest("[data-msg-open],[data-msg-new],[data-msg-back],[data-msg-send],[data-msg-mute],[data-msg-unsend],[data-msg-go]");
    if(t){
@@ -4293,6 +4318,7 @@ $("sortBy").addEventListener("change",e=>{sortMode=e.target.value;render()});
 $("filterBy").addEventListener("change",e=>{filter=e.target.value||"all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"&&filter==="all"));render()});
 $("mailboxFilter").addEventListener("change",e=>{mailboxSel=e.target.value;render()});
 $("clear").onclick=()=>{selected.clear();selAnchor=null;render()};
+$("selDone").onclick=()=>{selected.clear();selAnchor=null;selMode=false;render()};
 $("settingsBtn").onclick=()=>openSettings("settings");$("adminBtn").onclick=()=>{if(authorizeAdmin())openSettings("admin","users")};$("closeSettings").onclick=closeSettings;$("cancelSettings").onclick=closeSettings;$("scrim").onclick=closeSettings;
 $("saveSettings").onclick=()=>{closeSettings();toast("Settings saved for this prototype")};
 $("testProvider").onclick=testConfig;
@@ -5483,8 +5509,24 @@ document.addEventListener("visibilitychange",()=>{if(document.hidden&&isPhone())
 (function(){
   const list=$("list");let st=null,swiped=0;
   const T1=76,kindFor=(dx,w)=>dx>0?(dx>=w*.55?"arch":dx>=T1?"ok":""):(dx<=-T1?"bin":"");
+  // Press and hold (about half a second) on an email: start picking several.
+  let lp=null,held=0;const LP_MS=500;
+  const lpStop=()=>{if(lp){clearTimeout(lp.t);lp=null}};
   list.addEventListener("pointerdown",e=>{
+    lpStop();held=0;
     if(!isPhone()||(e.pointerType==="mouse"&&e.button!==0))return;
+    if(selMode)return;                                   // already picking: taps do the work, no swiping
+    const a=e.target.closest("article.mail.quiet");
+    if(a&&!a.classList.contains("open")&&!e.target.closest("button,input,a,select,label,.reader")){
+      const lead=a.querySelector("[data-select]");
+      if(lead){
+        const id=+lead.dataset.select,m=data.find(x=>x.id===id&&x.owner===currentUser.id);
+        if(m&&!m.kept&&!m._pending)lp={x:e.clientX,y:e.clientY,pid:e.pointerId,t:setTimeout(()=>{
+          lp=null;st=null;held=Date.now();selMode=true;selected.add(id);selAnchor=id;
+          try{navigator.vibrate&&navigator.vibrate(15)}catch{}
+          render()},LP_MS)};
+      }
+    }
     const art=e.target.closest("article.mail.quiet");
     if(!art||art.classList.contains("open")||e.target.closest("button,input,a,select,label,.reader"))return;
     const tg=art.querySelector("[data-expand],[data-pick]");if(!tg)return;
@@ -5493,6 +5535,7 @@ document.addEventListener("visibilitychange",()=>{if(document.hidden&&isPhone())
     st={art,m,x:e.clientX,y:e.clientY,dx:0,on:false,w:art.offsetWidth,pid:e.pointerId};
   });
   list.addEventListener("pointermove",e=>{
+    if(lp&&e.pointerId===lp.pid&&Math.hypot(e.clientX-lp.x,e.clientY-lp.y)>10)lpStop();
     if(!st||e.pointerId!==st.pid)return;
     const dx=e.clientX-st.x,dy=e.clientY-st.y;
     if(!st.on){
@@ -5508,6 +5551,7 @@ document.addEventListener("visibilitychange",()=>{if(document.hidden&&isPhone())
     st.bg.innerHTML=dx>0?`${SW_ICON[show]}<span>${SW_LABEL[show]}</span>`:`<span>${SW_LABEL[show]}</span>${SW_ICON[show]}`;
   });
   const end=e=>{
+    if(lp&&e.pointerId===lp.pid)lpStop();
     if(!st||e.pointerId!==st.pid)return;
     const s=st;st=null;if(!s.on)return;swiped=Date.now();
     const k=e.type==="pointercancel"?"":kindFor(s.dx,s.w),row=s.art.querySelector(".qrow");
@@ -5517,6 +5561,16 @@ document.addEventListener("visibilitychange",()=>{if(document.hidden&&isPhone())
   };
   list.addEventListener("pointerup",end);list.addEventListener("pointercancel",end);
   list.addEventListener("click",e=>{if(Date.now()-swiped<350){e.stopPropagation();e.preventDefault();swiped=0}},true);
+  list.addEventListener("click",e=>{                 // the lift after a long press must not open the email
+    if(held&&Date.now()-held<1500){e.stopPropagation();e.preventDefault();held=0;return}
+    if(!selMode||!isPhone())return;
+    const a=e.target.closest("article.mail.quiet");if(!a)return;
+    const c=a.querySelector("[data-select]");if(!c)return;
+    if(e.target===c)return;                          // the box itself is handled by its own change
+    e.stopPropagation();e.preventDefault();
+    const id=+c.dataset.select;selected.has(id)?selected.delete(id):selected.add(id);selAnchor=id;render();
+  },true);
+  list.addEventListener("contextmenu",e=>{if(isPhone()&&e.target.closest("article.mail.quiet"))e.preventDefault()});
 })();
 // ---- View panel wiring ----
 function setViewPanel(open){document.body.classList.toggle("vopen",open);$("viewTab").setAttribute("aria-expanded",String(open))}
