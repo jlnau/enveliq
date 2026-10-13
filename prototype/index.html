@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="/brand/enveliq-icon-256.webp">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0d0f14">
-<script>try{var t=localStorage.getItem("enveliq-theme");if(t==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}</script>
+<script>try{var t=localStorage.getItem("enveliq-theme");if(t==="light"||(t==="system"&&matchMedia("(prefers-color-scheme: light)").matches))document.documentElement.setAttribute("data-theme","light")}catch(e){}</script>
 <style>
 :root{
   --bg:#0d0f14;--panel:#141821;--panel2:#1a1f2a;--panel3:#202634;--line:#2a3140;
@@ -839,6 +839,106 @@ body.calm .preview-important .twhen.soft,body.calm .preview-important .twhen{col
 }
 @media (prefers-reduced-motion:reduce) {.enveliq-landscape *{animation:none!important;transition:none!important}}
 
+
+/* UI preview full shell. Presentation only; existing navigation, tasks, menus and mail actions are reused. */
+:root{--preview-ink:#07162d;--preview-panel:#0e203d;--preview-border:#243b60;--preview-gradient:linear-gradient(145deg,#101f38,#07172d)}
+html:not([data-theme="light"]){--bg:#08182e;--panel:#101f37;--panel2:#1b3153;--panel3:#23395a;--line:#293d5b;--top-bg:#09172e;--text:#eef5ff;--muted:#b3c3df;--faint:#8196b8;--accent:#53a3ff}
+html[data-theme="light"]{--bg:#f2f6ff;--panel:#ffffff;--panel2:#e9f0fb;--panel3:#dfebfb;--line:#d8e3f3;--top-bg:#f6f9ff;--text:#182a47;--muted:#536b88;--faint:#7990ad;--accent:#1563df;--preview-ink:#f4f8ff;--preview-panel:#ffffff;--preview-border:#d6e2f3;--preview-gradient:linear-gradient(145deg,#fff,#edf4ff)}
+.app{--side-w:242px}
+.sidebar{background:linear-gradient(160deg,#0b1e3a,#08162e);border-right:1px solid #263c61;padding:25px 16px 16px}
+html[data-theme="light"] .sidebar{background:linear-gradient(170deg,#e9f1ff,#f8fbff);border-color:var(--line)}
+.brand{margin:9px 0 18px 4px}.brand-wordmark{width:186px}
+.brand small{display:none}
+.side-nav .label{display:none}
+.side-nav .nav{min-height:42px;padding:10px 12px;border-radius:10px;margin:2px 0;font-size:14px}
+.side-nav .nav svg{width:21px;height:21px;flex-basis:21px}
+.sidebar .nav.active{background:#173c80;color:#7bbaff}
+html[data-theme="light"] .sidebar .nav.active{background:#dbeafe;color:#1354bb}
+.sidebar .nav.newmail{min-height:45px;background:linear-gradient(115deg,#0056f7,#136af6);color:white;margin:0 0 16px;font-weight:750}
+.sidebar .side-foot{border-color:#284268}
+.more-nav{border-top:1px solid #294363;margin-top:15px;padding-top:10px}
+.more-toggle .more-arrow{margin-left:auto;color:var(--faint);transition:transform .2s}
+.more-nav.expanded .more-arrow{transform:rotate(180deg)}
+.more-items{display:none;padding-left:10px}
+.more-nav.expanded .more-items{display:block}
+.more-items .nav{padding:8px 10px}
+.more-nav:has(.nav.active) .more-items{display:block}
+.side-foot .calm-row{padding:13px 12px;background:linear-gradient(145deg,#11284c,#0d2342);border:1px solid #264573;border-radius:13px}
+html[data-theme="light"] .side-foot .calm-row{background:#e4eeff;border-color:var(--line)}
+.side-foot .user-pill{display:none}
+.preview-toolbar{height:68px;padding:10px 26px;display:flex;align-items:center;justify-content:space-between;gap:20px;background:var(--top-bg);border-bottom:1px solid var(--line);position:relative;z-index:9}
+.preview-toolbar-search{flex:1;min-width:0;max-width:690px}
+.preview-toolbar-search .search-col{width:100%;align-items:stretch;gap:0}
+.preview-toolbar-search .search{width:100%}
+.preview-toolbar-search .search input{width:100%;min-width:120px;height:43px;border-radius:12px;padding:9px 15px}
+.preview-toolbar-actions{display:flex;align-items:center;gap:14px;flex:none;min-width:0}
+.preview-help{display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;width:30px;height:30px;color:var(--muted);font-weight:850;text-decoration:none;font-size:19px}
+.preview-toolbar .user-pill{border:0;background:transparent;width:auto;max-width:220px;min-width:125px;padding:3px;color:var(--text)}
+.preview-toolbar .user-pill .avatar{width:37px;height:37px;flex-basis:37px}
+.preview-toolbar .user-pill .user-copy strong{font-size:13px}
+.preview-toolbar .user-pill .user-copy small{font-size:11px}
+.user-menu{top:66px;right:16px;left:auto;bottom:auto;width:min(342px,calc(100vw - 24px));z-index:95;background:var(--panel);border:1px solid var(--line);padding:12px;border-radius:15px;box-shadow:0 20px 55px #0007}
+.app.collapsed~.user-menu{left:auto;right:16px;bottom:auto}
+.preview-profile{display:flex;gap:10px;align-items:center;padding:8px 5px 12px}
+.preview-profile-avatar{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:50%;background:var(--panel2);font-weight:700;overflow:hidden}
+.preview-profile-avatar img{width:100%;height:100%;object-fit:cover}
+.preview-profile-data{display:flex;flex-direction:column;min-width:0;flex:1}.preview-profile-data strong,.preview-profile-data small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preview-profile-data small{color:var(--muted);font-size:11px}
+.preview-profile-role{color:var(--accent);background:var(--panel2);font-size:10px;border-radius:99px;padding:4px 8px}
+.preview-theme-options{border-top:1px solid var(--line);padding:9px 0 3px}
+.preview-theme-options button{width:100%;display:flex;justify-content:space-between;background:none;color:var(--text);border:0;border-radius:9px;text-align:left;padding:9px 12px}
+.preview-theme-options button:hover,.preview-theme-options button.chosen{background:var(--panel2)}
+.preview-theme-options button span{display:none;color:var(--accent)}.preview-theme-options button.chosen span{display:inline}
+.preview-calm-option{align-items:center}.preview-calm-option small{display:block}
+.preview-menu-switch{width:32px;height:18px;background:var(--faint);border-radius:99px;position:relative;flex:none}
+.preview-menu-switch:after{content:"";position:absolute;width:14px;height:14px;top:2px;left:2px;background:white;border-radius:50%;transition:left .2s}
+.preview-calm-option[aria-checked="true"] .preview-menu-switch{background:#1b69fa}
+.preview-calm-option[aria-checked="true"] .preview-menu-switch:after{left:16px}
+.user-menu .menu-actions{display:flex;flex-direction:column}
+.user-menu #themeBtn{display:none}
+.user-menu .menu-label[data-preview-only],.user-menu [data-preview-only]{display:none}
+.top{position:relative!important;top:auto!important;z-index:2;min-height:148px!important;padding:25px 28px 25px!important;background:linear-gradient(120deg,#102d67,#193a78 48%,#152c57 85%,#0a234d)!important;overflow:hidden}
+.top:before{content:"";position:absolute;inset:0;background-image:radial-gradient(ellipse at 72% 37%,#ffdb9d 0 20px,transparent 21px),linear-gradient(155deg,transparent 56%,#102650 56% 100%);opacity:.95}
+.top .enveliq-landscape{opacity:1!important;z-index:1}
+.top .landscape-sun{right:27%;bottom:26px;width:44px;height:44px;background:#ffd8a0;opacity:.95}
+.top .landscape-back{height:76px;background:#315d9d;opacity:.65;clip-path:polygon(0 100%,0 57%,10% 81%,22% 34%,34% 91%,45% 45%,57% 89%,69% 25%,79% 87%,92% 30%,100% 80%,100% 100%)}
+.top .landscape-front{height:57px;background:#112c55;opacity:.93;clip-path:polygon(0 100%,0 45%,11% 95%,23% 58%,35% 100%,47% 52%,57% 98%,70% 63%,83% 100%,94% 53%,100% 85%,100% 100%)}
+.top-inner{max-width:none;min-height:90px!important;align-items:center!important;position:relative;z-index:2}
+.top .top-left{z-index:3;position:relative}
+.top h2{color:white;font-size:36px;line-height:1.15}
+.top p{color:#e1e9ff;font-size:17px;max-width:650px}
+html[data-theme="light"] .top{background:linear-gradient(120deg,#91bcfa,#b7d5fc 54%,#d6e5ff)!important}
+html[data-theme="light"] .top h2{color:#102b5a}
+html[data-theme="light"] .top p{color:#294c80}
+html[data-theme="light"] .top .landscape-back{background:#77a3d8}html[data-theme="light"] .top .landscape-front{background:#4e82bb;opacity:.65}
+html[data-theme="light"] .top .landscape-sun{background:#fff3c1}
+html[data-theme="light"] .top:before{opacity:.36}
+.content{max-width:1370px;padding:18px 25px 55px}
+.preview-today-grid{grid-template-columns:minmax(0,1.55fr) minmax(240px,1fr);gap:15px}
+.preview-today-grid>.today-card,.preview-important,.preview-later{background:var(--preview-gradient);border-color:var(--preview-border);padding:19px}
+.preview-today-grid .thead b{color:var(--text);font-size:19px;letter-spacing:normal;text-transform:none}
+.preview-important{background:linear-gradient(135deg,#261d36,#1b1d33);border-color:#5c344c}
+.preview-important .thead b{color:#ff7b87}
+html[data-theme="light"] .preview-important{background:#fff4f5;border-color:#f7cfd7}
+html[data-theme="light"] .preview-important .thead b{color:#b6364c}
+.preview-today-grid .trow2{min-height:62px}
+.preview-later>.tmore{font-size:16px;color:var(--text)}
+.quiet-list{border-color:var(--preview-border);background:var(--preview-gradient)}
+.mail.quiet{border-bottom-color:var(--line)}
+body.calm .filters{opacity:.8}
+@media(max-width:760px){
+  .preview-toolbar{display:none}
+  .sidebar .user-pill{display:flex}
+  .user-menu,.app.collapsed~.user-menu{left:12px;right:auto;top:auto;bottom:62px}
+  .top{height:0!important;min-height:0!important;padding:0!important}
+  .top:before,.top .enveliq-landscape{display:none}
+  .content{padding:7px 12px 90px}
+  .preview-today-grid{grid-template-columns:1fr}
+  .preview-today-grid>.today-card,.preview-important,.preview-later{padding:12px}
+  .more-items .nav{min-height:43px}
+}
+@media(min-width:761px) and (max-width:1080px){.top h2{font-size:27px}.preview-toolbar{padding-inline:16px}.preview-toolbar .user-pill{min-width:90px}.preview-today-grid{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body class="booting">
@@ -866,6 +966,11 @@ body.calm .preview-important .twhen.soft,body.calm .preview-important .twhen{col
     <button class="nav" data-filter="reviewed" title="Reviewed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.6 2.6L16 9.6"/></svg><span class="nav-label">Reviewed</span></button>
     <button class="nav" data-filter="archived" title="Archived"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4.5" rx="1"/><path d="M5 8.5V20h14V8.5"/><path d="M10 12.5h4"/></svg><span class="nav-label">Archived</span></button>
     <button class="nav" data-filter="sent" id="sentNav" title="Sent" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg><span class="nav-label">Sent</span></button>
+    <div class="more-nav" id="moreNav">
+      <button class="nav more-toggle" id="moreToggle" type="button" aria-expanded="false" aria-controls="moreItems" title="More mailbox views"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3zM3 9h18"/></svg><span class="nav-label">More</span><span class="more-arrow" aria-hidden="true">⌄</span></button>
+      <div class="more-items" id="moreItems"></div>
+    </div>
+    <button class="nav" id="sideSettings" type="button" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg><span class="nav-label">Settings</span></button>
   </nav>
   <a class="updnote" id="updNote" target="_blank" rel="noopener noreferrer" hidden><span class="updic" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 11l6-6 6 6"/></svg></span><span class="updtx"><b id="updVer">A new version is out</b><small>See what's new</small></span></a>
   <div class="side-foot">
@@ -882,6 +987,13 @@ body.calm .preview-important .twhen.soft,body.calm .preview-important .twhen{col
 </aside>
 
 <main class="main">
+<div class="preview-toolbar" id="previewToolbar">
+  <div class="preview-toolbar-search" id="previewSearchSlot"></div>
+  <div class="preview-toolbar-actions">
+    <a class="preview-help" href="https://enveliq.app/docs/" target="_blank" rel="noopener noreferrer" aria-label="Help and support" title="Help and support">?</a>
+    <div id="previewAccountSlot"></div>
+  </div>
+</div>
 <div class="mtop" id="mTop">
   <button class="mbtn" id="menuBtn" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Open the menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   <button class="mbtn" id="mSearchBack" type="button" aria-label="Close search" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
@@ -962,13 +1074,23 @@ body.calm .preview-important .twhen.soft,body.calm .preview-important .twhen{col
 </main>
 </div>
 
-<div class="user-menu" id="userMenu">
+<div class="user-menu" id="userMenu" role="menu" aria-label="Account and appearance">
+  <div class="preview-profile"><span class="preview-profile-avatar" id="previewProfileAvatar"></span><span class="preview-profile-data"><strong id="previewProfileName"></strong><small id="previewProfileEmail"></small></span><span class="preview-profile-role" id="previewProfileRole"></span></div>
+  <div class="preview-theme-options" role="group" aria-label="Appearance">
+    <button type="button" data-theme-choice="dark">☾ &nbsp; Dark mode <span aria-hidden="true">✓</span></button>
+    <button type="button" data-theme-choice="light">☼ &nbsp; Light mode <span aria-hidden="true">✓</span></button>
+    <button type="button" data-theme-choice="system">▣ &nbsp; System theme <span aria-hidden="true">✓</span></button>
+  </div>
+  <div class="menu-sep"></div>
+  <button class="user-option preview-calm-option" id="previewCalmBtn" type="button" role="switch" aria-checked="true"><span>Calm mode <small>One thing at a time</small></span><span class="preview-menu-switch" aria-hidden="true"></span></button>
+  <div class="menu-sep"></div>
   <div class="menu-actions" id="menuActions">
     <button class="user-option menu-item" id="profileBtn" type="button" title="Your name, picture and details"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.2-3.6 4.2-5.5 8-5.5s6.8 1.9 8 5.5"/></svg><span class="menu-text">Profile settings</span></button>
     <button class="user-option menu-item" id="settingsBtn" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="nav-label menu-text">Settings</span></button>
     <button class="user-option menu-item" id="adminBtn" title="Administration" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.6 3.1 8.2 7.5 9.5 4.4-1.3 7.5-4.9 7.5-9.5V6z"/><path d="m9 12 2 2 4-4"/></svg><span class="nav-label menu-text">Administration</span></button>
     <button class="user-option menu-item theme-btn" id="themeBtn" type="button" title="Switch between light and dark mode" aria-pressed="false"><svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span class="nav-label menu-text" id="themeLabel">Light mode</span></button>
   </div>
+  <a class="user-option preview-help-item" href="https://enveliq.app/docs/" target="_blank" rel="noopener noreferrer">? &nbsp; Help and support</a>
   <div class="menu-sep" id="menuSep"></div>
   <div class="menu-label" data-preview-only>Preview: switch person</div>
   <button class="user-option" data-preview-only data-switch-user="morgan"><span><strong>Morgan</strong><br><small>Administrator</small></span><span>MO</span></button>
