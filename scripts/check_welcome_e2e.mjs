@@ -9,6 +9,8 @@ const check = (label, good) => { console.log((good ? "✓ " : "✗ ") + label); 
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 1100, height: 1000 } });
 await context.addCookies(ctx.cookies);
+// Advanced mailbox controls are intentionally collapsed when Calm mode is enabled.
+await context.addInitScript(() => localStorage.setItem("enveliq-calm", "0"));
 const page = await context.newPage();
 const csp = []; page.on("console", (m) => { if (/Content Security Policy/i.test(m.text())) csp.push(m.text()); });
 const errors = []; page.on("pageerror", (e) => errors.push(String(e)));
@@ -86,6 +88,8 @@ await page.waitForSelector("body.real-mail article.mail");
 const rowCount = await page.locator("article.mail").count();
 for (let i = 0; i < rowCount; i++) await page.locator("article.mail:not(.open) .qmain").first().click();
 check("the inbox shows the mail from both mailboxes with AI summaries (read by opening each row)", rowCount === 6 && (await page.locator("#list").innerText()).includes("Dentist appointment on Friday"));
+check("Inbox options start closed after welcome", await page.locator("#sortBy").isHidden() && await page.locator("#mailboxFilter").isHidden());
+await page.click("#previewInboxOptions");
 check("the sort menu and the mailbox menu are there", (await page.locator("#sortBy").isVisible()) && (await page.locator("#mailboxFilter").isVisible()));
 await page.selectOption("#mailboxFilter", "Second");
 check("choosing a mailbox shows only its mail", (await page.locator("article.mail").count()) === 3);
@@ -96,7 +100,7 @@ check("sorting by sender puts them in A to Z order", senders.length === 6 && sen
 
 // The Settings and Administration pop-ups on the inbox page hold the real pages
 await page.click("#userPill");
-check("the user menu holds Profile settings, Settings, Administration, Light mode and Sign out (and no switch-person list)", (await page.locator("#userMenu a").count()) === 0 && (await page.locator("#userMenu button", { hasText: "Sign out" }).count()) === 1 && (await page.locator("#userMenu #profileBtn, #userMenu #settingsBtn, #userMenu #themeBtn").count()) === 3 && (await page.locator("#userMenu [data-switch-user]").count()) === 0 && (await page.locator(".side-foot #settingsBtn, .side-foot #themeBtn, .side-foot #adminBtn").count()) === 0 && (await page.locator(".side-foot #agentBtn").count()) === 1);
+check("the redesigned user menu offers account settings, administration, appearance and sign out", (await page.locator("#userMenu #profileBtn").count()) === 1 && (await page.locator("#userMenu #settingsBtn").count()) === 1 && (await page.locator("#userMenu #adminBtn").count()) === 1 && (await page.locator("#userMenu [data-theme-choice]").count()) === 3 && (await page.locator("#userMenu button", { hasText: "Sign out" }).count()) === 1 && (await page.locator("#userMenu [data-switch-user]").count()) === 0);
 await page.click("#userPill");
 await page.click("#userPill");
 await page.click("#settingsBtn");

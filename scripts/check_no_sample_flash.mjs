@@ -74,9 +74,17 @@ const shown = (page, sel) => page.locator(sel).first().evaluate((el) => {
   check("if it takes longer, a calm line says the inbox is getting ready", (await shown(page, "#bootNote")) && /Getting your inbox ready/.test(await page.locator("#bootNote").innerText()));
   if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, "starting-up.png") });
   await page.waitForFunction(() => !document.body.classList.contains("booting"), null, { timeout: 8000 });
-  check("then the signed-in person's own name appears", (await page.locator("#userName").innerText()) === "Riley Example" && (await shown(page, "#userName")));
-  check("and a greeting that names them, not the sample person", /Riley/.test(await page.locator(".top-left h2").innerText()) && !/Morgan/.test(await page.locator(".top-left h2").innerText()));
-  check("and the real version, not a sample one", /Version 9\.9/.test(await page.locator("#brandVer").innerText()));
+  // Wait for the browser to paint the real identity after the boot state clears.
+  // This still fails if placeholder data is displayed or the real identity never appears.
+  const identityReady = await page.waitForFunction(() => {
+    const u = document.querySelector("#userName"), h = document.querySelector(".top-left h2"), v = document.querySelector("#brandVer");
+    const visible = (el) => el && getComputedStyle(el).display !== "none" && getComputedStyle(el).visibility !== "hidden" && el.getBoundingClientRect().height > 0;
+    return visible(u) && u.textContent === "Riley Example" && visible(h) && h.textContent === "One thing at a time" && v?.textContent === "Version 9.9";
+  }, null, { timeout: 3000 }).then(() => true, () => false);
+  if (!identityReady) console.log("IDENTITY DEBUG", JSON.stringify(await page.evaluate(() => ["#userName", ".top-left h2", "#brandVer"].map(sel => { const e = document.querySelector(sel), c = getComputedStyle(e); return { sel, text: e.textContent, innerText: e.innerText, height: e.getBoundingClientRect().height, display: c.display, visibility: c.visibility, opacity: c.opacity, parentDisplay: getComputedStyle(e.parentElement).display }; }))));
+  check("then the signed-in person's own name appears", identityReady && (await shown(page, "#userName")));
+  check("and the Calm header is shown while identity stays in the top account button", identityReady && (await page.locator(".top-left h2").innerText()) === "One thing at a time" && (await page.locator("#userName").innerText()) === "Riley Example");
+  check("and the real version, not a sample one", identityReady && /Version 9\.9/.test(await page.locator("#brandVer").innerText()));
   check("and the loading line is gone", !(await shown(page, "#bootNote")));
   await page.context().close();
 }
@@ -85,7 +93,7 @@ const shown = (page, sel) => page.locator(sel).first().evaluate((el) => {
 {
   const page = await open("preview", 0);
   await page.waitForFunction(() => !document.body.classList.contains("booting"), null, { timeout: 3000 });
-  check("with no server behind it, the preview page appears straight away", (await page.locator("#userName").innerText()) === "Morgan" && (await shown(page, "#userName")));
+  check("with no server behind it, the preview page appears straight away", await page.waitForFunction(() => { const e = document.querySelector("#userName"); return e?.textContent === "Morgan" && getComputedStyle(e).visibility === "visible" && e.getBoundingClientRect().height > 0; }, null, { timeout: 1500 }).then(() => true, () => false));
   check("and shows no loading line", !(await shown(page, "#bootNote")));
   await page.context().close();
 }

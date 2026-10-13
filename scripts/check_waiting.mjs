@@ -96,7 +96,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 {
   const server = makeServer();
   const { page, errors, csp, context } = await open(server);
-  check("the Waiting entry is shown when the feature is on", await page.locator("#waitNav").isVisible() && await page.locator("#trackLabel").isVisible() && await page.locator("#shipNav").isHidden());
+  check("the Waiting entry is shown when the feature is on", await page.locator("#waitNav").isVisible() && await page.locator("#shipNav").isHidden());
   check("the sidebar shows how many are being waited on (3; the answered one is not counted)", (await page.locator("#waitBadge").innerText()).trim() === "3");
   check("the number turns blue because two are due", await page.locator("#waitBadge.hot").count() === 1);
   check("Home shows the amber card with the due notes only", (await page.locator("#waitBars .waitrow").count()) === 2 && !(await page.locator("#waitBars").innerText()).includes("Lunch on Thursday"));
@@ -143,6 +143,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 {
   const server = makeServer();
   const { page, errors, context } = await open(server);
+  if (!(await page.locator("#sentNav").isVisible())) await page.locator("#moreToggle").click();
   await page.click("#sentNav");
   await page.waitForSelector(".srow");
   const rows = page.locator(".srow");

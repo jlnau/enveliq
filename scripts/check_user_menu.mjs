@@ -74,16 +74,25 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   check("the page names its tab icon", (await page.locator('head link[rel="icon"]').getAttribute("href")) === "/brand/enveliq-icon-128.webp");
   check("the sidebar footer keeps only Calm mode and Agent", (await page.locator(".side-foot .nav").allInnerTexts()).map((t) => t.trim()).join("|") === "Calm mode|Agent");
   check("the menu is closed to begin with", await page.locator("#userMenu").isHidden());
+  check("desktop Inbox options start collapsed", await page.locator("#filterBy").isHidden() && await page.locator("#previewInboxOptions").getAttribute("aria-expanded")==="false");
+  await page.click("#previewInboxOptions");
+  check("desktop Inbox options can be expanded", await page.locator("#filterBy").isVisible() && await page.locator("#previewInboxOptions").getAttribute("aria-expanded")==="true");
+  await page.click("#previewInboxOptions");
+  check("desktop Inbox options collapse again", await page.locator("#filterBy").isHidden());
+
   await page.click("#userPill");
   await shot(page, "menu");
   const items = (await page.locator("#userMenu .menu-item").allInnerTexts()).map((t) => t.trim());
-  check("the menu lists Profile settings, Settings, Administration and Light mode", ["Profile settings", "Settings", "Administration", "Light mode"].every((t) => items.includes(t)));
+  check("the menu preserves account settings and offers all three appearance modes", ["Profile settings", "Settings", "Manage users"].every(t=>items.includes(t)) && (await page.locator("[data-theme-choice]").count())===3 && (await page.locator("#previewCalmBtn").isVisible()));
   check("Sign out is in the menu too", (await page.locator("#userMenu button", { hasText: "Sign out" }).count()) === 1);
-  await page.click("#themeBtn");
-  check("Light mode works from the menu and the menu closes", (await page.evaluate(() => document.documentElement.dataset.theme)) === "light" && (await page.locator("#userMenu").isHidden()));
+  await page.click('[data-theme-choice="light"]');
+  check("Light mode works from the account menu", (await page.evaluate(() => document.documentElement.dataset.theme))==="light");
+  check("Light mode is visibly selected", await page.locator('[data-theme-choice="light"]').getAttribute("aria-pressed")==="true");
+  await page.click('[data-theme-choice="system"]');
+  check("System theme can be chosen and is remembered", await page.locator('[data-theme-choice="system"]').getAttribute("aria-pressed")==="true" && await page.evaluate(()=>localStorage.getItem("enveliq-theme"))==="system");
+  await page.click('[data-theme-choice="dark"]');
+  check("Dark mode works from the menu", !(await page.evaluate(() => document.documentElement.dataset.theme)));
   await page.click("#userPill");
-  check("the toggle now says Dark mode", (await page.locator("#themeBtn").innerText()).includes("Dark mode"));
-  await page.click("#themeBtn");
 
   // Profile settings
   await page.click("#userPill");
@@ -107,11 +116,11 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   await pf.locator("#pf_file").setInputFiles({ name: "me.png", mimeType: "image/png", buffer: PNG });
   await page.waitForFunction(() => document.querySelector("#avatar img"), null, { timeout: 15000 });
   const av = server.calls.find((c) => c[0] === "avatar");
-  check("a chosen picture is shrunk to a small JPEG before it is sent", !!av && av[1].startsWith("data:image/jpeg;base64"));
+  check("a chosen picture keeps PNG transparency when resized before upload", !!av && av[1].startsWith("data:image/png;base64"));
   check("the picture replaces the initials beside the name", (await page.locator("#avatar img").getAttribute("src")).includes("/api/v1/users/u1/avatar"));
   check("the picture loads (the page allows it)", await page.evaluate(() => { const i = document.querySelector("#avatar img"); return new Promise((ok) => (i.complete ? ok(i.naturalWidth > 0) : (i.onload = () => ok(true), i.onerror = () => ok(false)))); }));
   await shot(page, "profile");
-  await pf.locator("button:has-text('Remove')").click();
+  await pf.getByRole("button", { name: "Remove", exact: true }).click();
   await page.waitForFunction(() => !document.querySelector("#avatar img") && document.getElementById("avatar").textContent.length > 0);
   check("removing the picture brings the initials back", true);
   await page.click("#closeSettings");
@@ -166,11 +175,16 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
 {
   const server = makeServer("admin");
   const { page } = await open(server, { width: 390, height: 780 });
+  check("phone Inbox options start collapsed", await page.locator("#filterBy").isHidden());
+  await page.click("#previewInboxOptions");
+  check("phone Inbox options expand when tapped", await page.locator("#filterBy").isVisible());
+  await page.click("#previewInboxOptions");
+  check("phone Inbox options collapse again", await page.locator("#filterBy").isHidden());
   await page.click("#menuBtn");
   await page.click("#userPill");
   const box = await page.locator("#userMenu").boundingBox();
   check("on a phone the menu fits on the screen", !!box && box.x >= 0 && box.x + box.width <= 390 && box.y >= 0 && box.y + box.height <= 780);
-  check("on a phone every menu item can be reached", (await page.locator("#userMenu .menu-item:visible").count()) === 4);
+  check("on a phone account, appearance and Calm controls can be reached", (await page.locator("#userMenu .menu-item:visible").count()) >= 2 && (await page.locator("[data-theme-choice]:visible").count()) === 3 && await page.locator("#previewCalmBtn").isVisible());
   await page.click("#settingsBtn");
   await page.waitForSelector("#settings.open");
   check("choosing Settings on a phone closes the side menu and the user menu", !(await page.evaluate(() => document.body.classList.contains("menu-open"))) && (await page.locator("#userMenu").isHidden()));

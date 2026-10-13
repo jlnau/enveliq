@@ -1,0 +1,51 @@
+# Isolated Enveliq UI preview.
+# This stack does NOT share the production data volume, container names or network.
+name: enveliq-preview
+
+services:
+  enveliq-preview:
+    image: ghcr.io/jlnau/enveliq:ui-preview
+    pull_policy: always
+    container_name: enveliq-preview
+    restart: unless-stopped
+    environment:
+      ENVELIQ_PUBLIC_URL: ${ENVELIQ_PREVIEW_PUBLIC_URL:-http://localhost:8767}
+      ENVELIQ_SETUP_CODE: ${ENVELIQ_PREVIEW_SETUP_CODE:?Choose a unique setup code of at least 20 characters}
+      ENVELIQ_VAULT_KEY: ${ENVELIQ_PREVIEW_VAULT_KEY:-}
+      ENVELIQ_RENDER_URL: http://enveliq-preview-render:8766
+    ports:
+      - "127.0.0.1:8767:8765"
+    volumes:
+      - enveliq-preview-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    networks: [default, preview-render]
+    mem_limit: 768m
+    pids_limit: 128
+
+  enveliq-preview-render:
+    image: ghcr.io/jlnau/enveliq-render:ui-preview
+    pull_policy: always
+    container_name: enveliq-preview-render
+    restart: unless-stopped
+    user: "10002:10002"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    networks: [preview-render]
+    mem_limit: 1536m
+    pids_limit: 64
+    cpus: 1.0
+
+networks:
+  preview-render:
+    internal: true
+
+volumes:
+  enveliq-preview-data:
+    name: enveliq-preview-data
