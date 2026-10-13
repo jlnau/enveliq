@@ -66,7 +66,7 @@ function makeServer(opts = {}) {
 const browser = await chromium.launch();
 async function open(server, { width = 1200, height = 900, light = false, ctxObj = null } = {}) {
   const context = ctxObj || await browser.newContext({ viewport: { width, height } });
-  if (!ctxObj) await context.addInitScript((l) => { try { localStorage.setItem("enveliq-welcome-seen", "1"); if (l) localStorage.setItem("enveliq-theme", "light"); } catch (e) {} }, light);
+  if (!ctxObj) await context.addInitScript((l) => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-calm", "0"); if (l) localStorage.setItem("enveliq-theme", "light"); } catch (e) {} }, light);
   const page = await context.newPage();
   const errors = [], csp = [];
   page.on("pageerror", (e) => errors.push(String(e)));
