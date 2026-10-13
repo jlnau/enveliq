@@ -12,7 +12,7 @@ const headerText = fs.readFileSync(path.join(dist, "_headers"), "utf8");
 const headers = Object.fromEntries(headerText.split("\n").slice(1).filter((l) => l.includes(":")).map((l) => { const i = l.indexOf(":"); return [l.slice(0, i).trim().toLowerCase(), l.slice(i + 1).trim()]; }));
 
 const seen = [];
-const types = { ".html": "text/html; charset=utf-8", ".webp": "image/webp" };
+const types = { ".html": "text/html; charset=utf-8", ".webp": "image/webp", ".svg": "image/svg+xml" };
 const srv = http.createServer((q, r) => {
   seen.push(q.method + " " + q.url);
   const p = q.url.split("?")[0];
@@ -55,7 +55,7 @@ for (const [name, vp] of [["desktop", { width: 1280, height: 800 }], ["phone", {
   if (shots) await p.screenshot({ path: path.join(shots, `demo-undo-${name}.png`) });
   await p.click("#undoBar .undobar:last-child button");
   ok(name + ": Undo brings it back", (await p.locator("article.mail:not(.leaving)").count()) === rowsBefore && !(await p.locator("#undoBar").isVisible()));
-  ok(name + ": it never asked for anything but the page and its pictures", seen.every((s) => /^GET \/(brand\/[\w.-]+)?$/.test(s)));
+  ok(name + ": it never asked for anything but the page and its pictures", seen.every((s) => /^GET \/(?:brand\/[\w.-]+|static\/northern-coast-(?:dark|light)\.svg)?$/.test(s)));
   ok(name + ": no outside requests", seen.every((s) => !/^[A-Z]+ https?:/.test(s)));
   ok(name + ": no script errors or Content-Security-Policy violations", problems.length === 0);
   if (problems.length) console.log("   " + problems.join("\n   "));
