@@ -41,6 +41,8 @@ await p.click("#previewInboxOptions"); await p.waitForTimeout(200);
 check("Needs action: Inbox options closes", !(await vis(".filters")));
 await p.click('.nav[data-filter="tasks"]'); await p.waitForTimeout(300);
 check("Tasks: the title is Tasks and the Back button shows", (await p.locator(".top-left h2").innerText()) === "Tasks" && await vis("#backInbox") && !(await vis("#previewListHeading")));
+await p.evaluate(() => { document.querySelector("[data-view-list], [data-tview=list]")?.click(); });
+check("Tasks: the lists use the full width of the page, not a narrow column", await p.evaluate(() => { const g = document.querySelector("#tasksPage .tgroup, #tasksPage .tp-head"), page = document.querySelector("#tasksPage"); return !g || g.getBoundingClientRect().width > page.getBoundingClientRect().width * 0.9; }));
 if (shots) await p.screenshot({ path: path.join(shots, "back-tasks.png") });
 await p.click("#backInbox"); await p.waitForTimeout(300);
 check("Back to My inbox goes home and lights up My inbox in the menu", (await p.locator(".top-left h2").innerText()) === "My inbox" && !(await vis("#backInbox")) && (await p.locator('.nav[data-filter="all"].active').count()) === 1);

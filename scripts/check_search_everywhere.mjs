@@ -58,7 +58,12 @@ const handler = async (route) => {
   return json(404, { detail: "not found" });
 };
 const browser = await chromium.launch();
-const shot = async (page, name) => { if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, name + ".png") }); };
+// For the website pictures (TOUR=1) the made-up hostile test email is shown with a friendly subject, so the picture reads well. Only what is drawn changes, not what the check tests.
+const shot = async (page, name) => {
+  if (!process.env.SHOTS) return;
+  if (process.env.TOUR) await page.evaluate(() => { const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); for (let n = w.nextNode(); n; n = w.nextNode()) if (n.nodeValue.includes("<img src=x onerror=")) n.nodeValue = n.nodeValue.replace("<img src=x onerror=window.__pwned=1>", ""); });
+  await page.screenshot({ path: path.join(process.env.SHOTS, name + ".png") });
+};
 async function open(width, height) {
   const context = await browser.newContext({ viewport: { width, height }, timezoneId: "Australia/Melbourne", locale: "en-AU" });
   await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); } catch (e) {} });

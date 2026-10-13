@@ -17,7 +17,7 @@
   <a href="docs/README.md">All guides</a>
 </p>
 
-<p align="center"><img src="docs/images/home.png" alt="The Enveliq home page: a short list of email, and a card asking whether a parcel has arrived" width="760"></p>
+<p align="center"><picture><source media="(prefers-color-scheme: light)" srcset="docs/images/home-light.png"><img src="docs/images/home.png" alt="The Enveliq home page: a short list of email, and a card asking whether a parcel has arrived" width="760"></picture></p>
 
 ---
 
@@ -54,8 +54,8 @@ Enveliq does that sorting for you, calmly and in plain words, and **it does it o
 | **Many mailboxes** | Gmail, Outlook and Microsoft 365, iCloud, Yahoo, Fastmail, Proton Mail (through Proton Bridge) and any other IMAP service. Replies work with alias services such as Proton Pass and SimpleLogin. |
 
 <p align="center">
-  <img src="docs/images/shipping.png" alt="The Shipping page, with an order shown as Ordered, Shipped, Out for delivery and Delivered" width="48%">
-  <img src="docs/images/writing-help.png" alt="The reply box, with a suggestion from the AI labelled 'Suggested by AI'" width="48%">
+  <picture><source media="(prefers-color-scheme: light)" srcset="docs/images/shipping-light.png"><img src="docs/images/shipping.png" alt="The Shipping page, with an order shown as Ordered, Shipped, Out for delivery and Delivered" width="48%"></picture>
+  <picture><source media="(prefers-color-scheme: light)" srcset="docs/images/writing-help-light.png"><img src="docs/images/writing-help.png" alt="The reply box, with a suggestion from the AI labelled 'Suggested by AI'" width="48%"></picture>
 </p>
 
 *The pictures use made-up example data.*

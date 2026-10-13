@@ -1,6 +1,6 @@
 # The Enveliq website
 
-A small static site for https://enveliq.app: a front page plus the guides, built from the files in `docs/` and `SECURITY.md`. It loads nothing from other websites. Its only script is the guide search (`src/search.js`): a box on the guides pages opens `/search/`, which reads `/search-index.json` (built from the guides at build time) and lists matches in the visitor's browser. Nothing is sent anywhere. Without scripts the search page says so and points to the list of guides. The security policy allows scripts from the site itself only (`script-src 'self'`).
+A small static site for https://enveliq.app: a front page plus the guides, built from the files in `docs/` and `SECURITY.md`. It loads nothing from other websites. It runs two small scripts from the site itself. The guide search (`src/search.js`): a box on the guides pages opens `/search/`, which reads `/search-index.json` (built from the guides at build time) and lists matches in the visitor's browser. And the light or dark switch (`src/theme.js`): a button in the top bar that remembers the visitor's choice in their own browser (without it the site follows the device setting). Nothing is sent anywhere. Without scripts the search page says so and points to the list of guides. The security policy allows scripts from the site itself only (`script-src 'self'`).
 
 ## Build it on your own computer
 
@@ -35,6 +35,12 @@ Each merge to `main` publishes again.
 - Long titles are shortened in `SHORT_TITLE`. Descriptions are cut at a sentence or word, at most 160 characters.
 - The sitemap adds "last changed" dates when the repository has real history. A shallow copy gives every page the same date, so the dates are left out then.
 - `npm run check` fails if a page loses its title, description, canonical address, share tags or heading, or if the sitemap lists a hidden page.
+
+## Light and dark, and the pictures
+
+- The colours are set in `src/style.css` as two sets (dark, matching the app's night-sky look, and light). `src/theme.js` sets `data-theme` on the page before it is drawn.
+- Every picture has a dark version and a light twin named `NAME-light.webp` (guide pictures: `NAME-light.png`). The build shows the right one automatically. A picture with no twin is shown in both themes.
+- To retake all the pictures in the current design: `node scripts/retake_pictures.mjs <folder>` (runs the browser checks with made-up mail, once for dark and once for light), then `python scripts/place_pictures.py <folder>` puts them in `docs/images` and `website/src/images`.
 
 ## Also in the build
 

@@ -176,7 +176,11 @@ function render(rel) {
       },
       image({ href, title: t, text }) {
         const to = resolveLink(href, rel);
-        return `<img src="${esc(to)}" alt="${esc(text)}"${t ? ` title="${esc(t)}"` : ""} loading="lazy">`;
+        const img = (src, cls) => `<img${cls ? ` class="${cls}"` : ""} src="${esc(src)}" alt="${esc(text)}"${t ? ` title="${esc(t)}"` : ""} loading="lazy">`;
+        const lightHref = /\.png$/i.test(href) && !/-light\.png$/i.test(href) ? href.replace(/\.png$/i, "-light.png") : null;
+        const lightTarget = lightHref && path.posix.normalize(path.posix.join(path.posix.dirname(rel), lightHref));
+        if (lightTarget && fs.existsSync(path.join(root, lightTarget))) return img(to, "img-dark") + img(resolveLink(lightHref, rel), "img-light");
+        return img(to);
       },
     },
   });
@@ -294,7 +298,11 @@ fs.mkdirSync(dist, { recursive: true });
 
 for (const rel of sources.keys()) docsPage(rel);
 
-const home = fs.readFileSync(path.join(here, "src", "home.html"), "utf8");
+// A picture with a "-light" twin next to it is shown in both themes: the dark one in dark mode, the light one in light mode.
+const pairPictures = (html) => html.replace(/<img\b([^>]*?)\ssrc="\/images\/([a-z0-9-]+)\.webp"([^>]*)>/g, (all, a, name, b) =>
+  name.endsWith("-light") || !fs.existsSync(path.join(here, "src", "images", name + "-light.webp")) ? all :
+    `<img class="img-dark"${a} src="/images/${name}.webp"${b}><img class="img-light"${a} src="/images/${name}-light.webp"${b}>`);
+const home = pairPictures(fs.readFileSync(path.join(here, "src", "home.html"), "utf8"));
 write("index.html", head({
   title: "Enveliq: turn email into clarity",
   description: "A private email assistant that runs on your own computer. It reads your mail, tells you what needs a reply, and keeps everything else out of your way.",
@@ -308,7 +316,7 @@ write("index.html", head({
   ] }),
 }) + home + foot());
 
-const tour = fs.readFileSync(path.join(here, "src", "tour.html"), "utf8");
+const tour = pairPictures(fs.readFileSync(path.join(here, "src", "tour.html"), "utf8"));
 write("tour/index.html", head({
   title: "A look around Enveliq: screenshots of the app",
   description: "See Enveliq's parcel tracking, one-tap questions, writing help, new email and safe email viewer. Every screen uses made-up example mail.",

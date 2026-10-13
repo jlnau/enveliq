@@ -93,6 +93,11 @@ The left menu leads to **My inbox**, **Needs action**, **Tasks**, **Shipping**, 
 - On **Waiting for reply**, the **Closed** section is folded away until you open it with its arrow, so the page does not look like a long list of open items.
 - With **Open full screen**, on a computer the email sits beside the left menu and below the top bar, and **Reviewed**, **Archive** and **Bin** are normal buttons centred along the bottom (they used to be stretched across the screen and partly hidden).
 
+## Light mode and pictures
+- In light mode, the Shipping, Subscriptions, Trips and Waiting for reply cards (on their own pages and on the home page) and the New email button now use light colours. They used to keep their dark colours.
+- The Tasks page uses the full width, like the other pages.
+- The pictures in the guides, the README and the website were retaken in the current design, in dark and light (see `website/README.md`).
+
 ## Calm mode
 
 Calm mode is on by default in a browser that has never chosen a mode. Each browser remembers the choice, and you can turn Calm mode off from the bottom of the left menu or from the account menu.

@@ -783,7 +783,7 @@ body.on-ship #waitBars{display:none!important}
 .fbtns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .fbtn{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;padding:11px 18px;font-size:15px}.fbtn.pri{background:var(--brand-deep);border-color:var(--brand-deep);color:#fff;font-weight:700}
 .focus-next{color:var(--faint);font-size:13px}
-.tgroup{margin-bottom:18px;max-width:760px}.tgroup h4{margin:0 0 6px;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.tgroup{margin-bottom:18px}.tgroup h4{margin:0 0 6px;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
 .tgroup .trow2{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:7px;padding:10px 12px}
 .reason{font-size:12px;color:var(--green);white-space:nowrap}
 .taskline{margin-top:11px;border-top:1px solid var(--line);padding-top:10px;display:grid;gap:6px}
@@ -1187,6 +1187,23 @@ html[data-theme="light"]{--backdrop:url("data:image/svg+xml,%3Csvg xmlns='http:/
 }
 /* Open full screen on a computer: the email fills the main area beside the left menu and below the top bar, and the buttons are normal-sized and centred under it. */
 @media(min-width:761px){body.reader-open header.top .top-inner{visibility:hidden}.reader{left:var(--side-w);top:73px;z-index:12}.ract{justify-content:center;padding:12px 14px}.ract .action{flex:0 0 auto;min-width:150px;padding:9px 22px;font-size:14px}}
+/* Light mode: the Shipping cards and the New email button were still using their dark-mode colours. */
+html[data-theme="light"] .sidebar .nav.newmail,html[data-theme="light"] .sidebar .nav.newmail:hover,html[data-theme="light"] .sidebar .nav.newmail svg{color:#fff}
+html[data-theme="light"] .ocard.arrive{background:#e5f6f2;border-color:#9bd5c9}
+html[data-theme="light"] .ocard.arrive .oshop{color:var(--text)}
+html[data-theme="light"] .opill.teal{background:#d2efe8;color:#0b6f5e}
+html[data-theme="light"] .ostages i,html[data-theme="light"] .ostages u{background:#c5cfe2}
+html[data-theme="light"] .ostages i.d,html[data-theme="light"] .ostages u.d{background:#1fa892}
+html[data-theme="light"] .ostages i.n{background:var(--panel);border-color:#1fa892}
+html[data-theme="light"] .odelay{color:#8a5a00}
+/* Light mode: the cards on the home page for deliveries, subscriptions, trips and replies still had dark-mode colours. */
+html[data-theme="light"] .shipcard{background:#e5f6f2;border-color:#9bd5c9}html[data-theme="light"] .shipcard .thead b{color:#0b6f5e}html[data-theme="light"] .shiprow{border-top-color:#b7dfd6}html[data-theme="light"] .shiprow .who span{color:#3d6b64}
+html[data-theme="light"] .subcard{background:#fdf4d9;border-color:#e6cf86}html[data-theme="light"] .subcard .thead b{color:#8a5a00}html[data-theme="light"] .subrow{border-top-color:#ecdba3}html[data-theme="light"] .subrow .who span{color:#6e5a1f}
+html[data-theme="light"] .tripcard{background:#e6f0fd;border-color:#a8c4ec}html[data-theme="light"] .tripcard .thead b{color:#1b5bc0}html[data-theme="light"] .triprow{border-top-color:#bdd2f0}html[data-theme="light"] .triprow .who span{color:#47628c}
+html[data-theme="light"] .waitcard{background:#fdf1dd;border-color:#dcb972}
+html[data-theme="light"] .subitem.soon{background:#fdf4d9;border-color:#e6cf86}html[data-theme="light"] .subitem.soon .subwhen{color:#8a5a00}
+html[data-theme="light"] .tripitem.now{background:#e6f0fd;border-color:#a8c4ec}html[data-theme="light"] .tripkind{color:#1b5bc0}
+html[data-theme="light"] .wcard.due{background:#fdf1dd;border-color:#dcb972}html[data-theme="light"] .wage{color:#8a5a00}
 </style>
 </head>
 <body class="booting">
