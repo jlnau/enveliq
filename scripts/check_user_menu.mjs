@@ -77,13 +77,16 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   await page.click("#userPill");
   await shot(page, "menu");
   const items = (await page.locator("#userMenu .menu-item").allInnerTexts()).map((t) => t.trim());
-  check("the menu lists Profile settings, Settings, Administration and Light mode", ["Profile settings", "Settings", "Administration", "Light mode"].every((t) => items.includes(t)));
+  check("the menu preserves account settings and offers all three appearance modes", ["Profile settings", "Settings", "Administration"].every(t=>items.includes(t)) && (await page.locator("[data-theme-choice]").count())===3 && (await page.locator("#previewCalmBtn").isVisible()));
   check("Sign out is in the menu too", (await page.locator("#userMenu button", { hasText: "Sign out" }).count()) === 1);
-  await page.click("#themeBtn");
-  check("Light mode works from the menu and the menu closes", (await page.evaluate(() => document.documentElement.dataset.theme)) === "light" && (await page.locator("#userMenu").isHidden()));
+  await page.click('[data-theme-choice="light"]');
+  check("Light mode works from the account menu", (await page.evaluate(() => document.documentElement.dataset.theme))==="light");
+  check("Light mode is visibly selected", await page.locator('[data-theme-choice="light"]').getAttribute("aria-pressed")==="true");
+  await page.click('[data-theme-choice="system"]');
+  check("System theme can be chosen and is remembered", await page.locator('[data-theme-choice="system"]').getAttribute("aria-pressed")==="true" && await page.evaluate(()=>localStorage.getItem("enveliq-theme"))==="system");
+  await page.click('[data-theme-choice="dark"]');
+  check("Dark mode works from the menu", !(await page.evaluate(() => document.documentElement.dataset.theme)));
   await page.click("#userPill");
-  check("the toggle now says Dark mode", (await page.locator("#themeBtn").innerText()).includes("Dark mode"));
-  await page.click("#themeBtn");
 
   // Profile settings
   await page.click("#userPill");
@@ -170,7 +173,7 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   await page.click("#userPill");
   const box = await page.locator("#userMenu").boundingBox();
   check("on a phone the menu fits on the screen", !!box && box.x >= 0 && box.x + box.width <= 390 && box.y >= 0 && box.y + box.height <= 780);
-  check("on a phone every menu item can be reached", (await page.locator("#userMenu .menu-item:visible").count()) === 4);
+  check("on a phone account, appearance and Calm controls can be reached", (await page.locator("#userMenu .menu-item:visible").count()) >= 2 && (await page.locator("[data-theme-choice]:visible").count()) === 3 && await page.locator("#previewCalmBtn").isVisible());
   await page.click("#settingsBtn");
   await page.waitForSelector("#settings.open");
   check("choosing Settings on a phone closes the side menu and the user menu", !(await page.evaluate(() => document.body.classList.contains("menu-open"))) && (await page.locator("#userMenu").isHidden()));
