@@ -43,6 +43,12 @@ Tick one email's box, then hold **Shift** and tick another one a few emails up o
 
 On a real Enveliq server, a person with no mailbox connected sees an empty inbox. There are no sample emails or sample accounts. A short banner says the inbox is empty because no mailbox is connected yet, and the list links to the setup guide. The sample emails still appear in the hosted demo and in the no-server preview, where they are made up on purpose.
 
+## The picture behind the top of the page
+
+On a computer or tablet, the top of every page sits on a quiet picture: a night sky with a moon and soft hills in dark mode, and a morning sky with a low sun and pale hills in light mode. The heading, the search box and the first row of cards (Start here, Also important today) sit on it, and the cards are slightly see-through so the picture shows faintly behind them. The picture fades out above the email list, and it scrolls away with the page. On a phone there is no picture, so nothing takes up room.
+
+The pictures are drawn in code and held inside the page, so Enveliq downloads nothing extra to show them. In light mode the logo sits straight on the sidebar colour, with no white box behind it. To change the pictures, edit `scripts/make_backdrops.mjs`, run it, and paste its output over the `--backdrop` lines in `prototype/index.html`.
+
 ## The version number
 
 The Enveliq version is a small grey line at the bottom of the left panel, above **Terms**, **Privacy** and **Security**. It is hidden when the panel is collapsed. Administrators also see a small card above it when a newer version has been published. See [Knowing when a new version is out](UPDATES.md).

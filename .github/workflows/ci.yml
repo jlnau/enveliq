@@ -90,6 +90,8 @@ jobs:
         run: node scripts/check_blank_install.mjs
       - name: Calm mode (made-up mail, no server)
         run: node scripts/check_calm_mode.mjs
+      - name: Inbox backdrop and plain logo (made-up mail, no server)
+        run: node scripts/check_backdrop.mjs
       - name: Backup and restore, Export my data (simulated server)
         run: node scripts/check_backup.mjs
       - name: Microsoft sign-in help (simulated server)
