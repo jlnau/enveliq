@@ -51,6 +51,9 @@ fs.rmSync(dist, { recursive: true, force: true });
 fs.mkdirSync(path.join(dist, "brand"), { recursive: true });
 fs.writeFileSync(path.join(dist, "index.html"), html);
 for (const f of fs.readdirSync(path.join(root, "brand", "web"))) fs.copyFileSync(path.join(root, "brand", "web", f), path.join(dist, "brand", f));
+// Northern Coast artwork is a local static asset in both the Docker app and this offline demo.
+fs.mkdirSync(path.join(dist, "static"), { recursive: true });
+for (const theme of ["dark", "light"]) fs.copyFileSync(path.join(root, "web", "static", `northern-coast-${theme}.svg`), path.join(dist, "static", `northern-coast-${theme}.svg`));
 fs.writeFileSync(path.join(dist, "_headers"), `/*
   Content-Security-Policy: ${csp}
   X-Content-Type-Options: nosniff
