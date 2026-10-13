@@ -1145,6 +1145,43 @@ html[data-theme="light"]{--backdrop:url("data:image/svg+xml,%3Csvg xmlns='http:/
 }
 @keyframes selShift{from{opacity:.6;transform:translateX(-14px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){body.selecting .qrow{animation:none}}
+/* Calm mode on a computer or tablet: one soft card, with the second item as a quiet strip along its bottom edge (no red panel, no gap). */
+@media(min-width:761px){
+  body.calm .preview-today-grid{grid-template-columns:minmax(0,1fr)!important;gap:0!important;align-items:start}
+  body.calm .preview-today-grid>.today-card{border-radius:20px 20px 0 0;padding:14px 22px 16px!important;background:linear-gradient(160deg,rgba(40,52,82,.84),rgba(30,40,66,.84));border-color:rgba(160,180,220,.16);box-shadow:none}
+  body.calm .preview-today-grid>.today-card:only-child{border-radius:20px}
+  body.calm .preview-today-grid .thead{margin-bottom:8px}
+  body.calm .preview-today-grid .thead b{font-size:16px;font-weight:600;color:#dfe8fa}
+  body.calm .preview-today-grid .thead .linkbtn{color:#9fb2d6;font-weight:400;text-decoration:none;font-size:13px}
+  body.calm .preview-focus-card{grid-template-columns:40px minmax(0,1fr);gap:14px;padding:14px 16px;background:rgba(255,255,255,.04);border-color:rgba(170,190,230,.14);border-radius:16px}
+  body.calm .preview-focus-icon{width:38px;height:38px;font-size:20px;border-radius:50%;background:rgba(120,150,210,.22);color:#cfe0ff}
+  body.calm .preview-focus-copy strong{font-size:17px;font-weight:600;line-height:1.3}
+  body.calm .preview-focus-copy p{margin:4px 0;font-size:13.5px;line-height:1.5}
+  body.calm .preview-focus-copy small{font-size:12px}
+  body.calm .preview-focus-actions{gap:7px;margin-top:9px}
+  body.calm .preview-focus-actions .primary,body.calm .preview-focus-actions .tbtn{padding:5px 12px;font-size:13px;border-radius:10px;min-height:0;line-height:1.35}
+  body.calm .preview-focus-actions .primary{background:#4a74c9;box-shadow:none;font-weight:600}
+  body.calm .preview-focus-actions .tbtn{background:rgba(255,255,255,.05);border-color:rgba(170,190,230,.18);color:#c9d6ee}
+  body.calm .preview-important{display:flex;align-items:center;gap:16px;border-radius:0 0 20px 20px;border-top:0;padding:9px 22px!important;background:rgba(60,50,68,.7);border-color:rgba(214,170,190,.18);box-shadow:none}
+  body.calm .preview-important .thead{margin:0;flex:none}
+  body.calm .preview-important .thead b{font-size:13.5px;color:#e9cdd5}
+  body.calm .preview-important .thead .linkbtn{display:none}
+  body.calm .preview-important .preview-fold-content{flex:1;min-width:0}
+  body.calm .preview-important .trow2{min-height:0!important;background:none!important;border:0!important;padding:0!important}
+  body.calm .preview-important .twhen,body.calm .preview-important .twhen.soft{color:#cdb3bd}
+  body.calm .preview-later{border-radius:20px;background:rgba(26,34,56,.62);border-color:rgba(160,180,220,.12);box-shadow:none;margin-top:14px}
+  html[data-theme="light"] body.calm .preview-today-grid>.today-card{background:linear-gradient(160deg,#ffffff,#eef4ff);border-color:#d6e2f3}
+  html[data-theme="light"] body.calm .preview-today-grid .thead b{color:var(--text)}
+  html[data-theme="light"] body.calm .preview-today-grid .thead .linkbtn{color:#4a6a98}
+  html[data-theme="light"] body.calm .preview-focus-card{background:rgba(21,99,223,.05);border-color:#d6e2f3}
+  html[data-theme="light"] body.calm .preview-focus-icon{background:#dbe7fb;color:#2b59b3}
+  html[data-theme="light"] body.calm .preview-focus-actions .primary{background:#2f6fe0;color:#fff}
+  html[data-theme="light"] body.calm .preview-focus-actions .tbtn{background:#fff;border-color:#cfdcf0;color:#2a4670}
+  html[data-theme="light"] body.calm .preview-important{background:#f8eff2;border-color:#ecd6dd}
+  html[data-theme="light"] body.calm .preview-important .thead b{color:#8d4659}
+  html[data-theme="light"] body.calm .preview-important .twhen,html[data-theme="light"] body.calm .preview-important .twhen.soft{color:#8a6671}
+  html[data-theme="light"] body.calm .preview-later{background:rgba(255,255,255,.72);border-color:#d6e2f3}
+}
 </style>
 </head>
 <body class="booting">
