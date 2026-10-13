@@ -6,6 +6,17 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 No changes recorded yet.
 
+## v0.87 (2026-10-13)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+### Other changes
+* Keep attachment summaries visible with ad blockers enabled by @jlnau in https://github.com/jlnau/enveliq/pull/75
+
+
+**Full Changelog**: https://github.com/jlnau/enveliq/compare/v0.86...v0.87
+
 ## v0.86 (2026-10-12)
 
 <!-- Release notes generated using configuration in .github/release.yml at main -->
