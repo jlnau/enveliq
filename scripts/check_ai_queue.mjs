@@ -25,6 +25,8 @@ const shots = process.env.SHOTS; if (shots) fs.mkdirSync(shots, { recursive: tru
 for (const [name, vp] of [["desktop", { width: 1180, height: 760 }], ["phone", { width: 390, height: 780 }]]) {
   const p = await b.newPage({ viewport: vp }); const errors = [];
   p.on("pageerror", (e) => errors.push(String(e)));
+  // This check measures the queue bar; explicitly opt out of Calm mode, which hides the bar by design.
+  await p.addInitScript(() => localStorage.setItem("enveliq-calm", "0"));
   await p.goto(url); await p.waitForTimeout(600);
   await p.evaluate(() => { document.querySelector(".demo-banner")?.remove(); });
   const bar = p.locator("#sumBar");
