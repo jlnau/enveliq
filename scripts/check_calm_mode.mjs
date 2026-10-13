@@ -39,12 +39,13 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
     rows: document.querySelectorAll(".today-card .trow2").length,
     important: document.querySelectorAll(".preview-important .trow2").length,
     dueCount: typeof openTasks === "function" ? openTasks().filter(t => t.days <= 0).length : 0,
+    laterCount: typeof openTasks === "function" ? openTasks().filter(t => t.days > 0).length : 0,
     when: [...document.querySelectorAll(".twhen")].map((e) => e.textContent).join("|"),
     bar: getComputedStyle(document.getElementById("sumBar")).display
   }));
   const on = await calmState();
   check(name + ": Calm mode hides counters", on.badges === 0 && !/\d/.test(on.today) && !/\d/.test(on.sub) && !/\d/.test(on.more) && on.bar === "none");
-  check(name + ": Calm mode shows one Start here task, with later tasks available", on.today === "Start here" && on.rows === 1 && /Later/.test(on.more));
+  check(name + ": Calm mode shows one Start here task and a Later section when needed", on.today === "Start here" && on.rows === 1 && (on.laterCount > 0 ? /Later/.test(on.more) : !/Later/.test(on.more)));
   check(name + ": every due task remains visible in Calm mode", on.dueCount >= 1 && on.rows + on.important === on.dueCount);
   check(name + ": Calm mode softens waiting labels", !/Waiting since/.test(on.when));
   if (shots) await p.screenshot({ path: path.join(shots, "calm-" + name + ".png") });
