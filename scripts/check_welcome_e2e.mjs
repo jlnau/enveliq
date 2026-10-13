@@ -9,6 +9,8 @@ const check = (label, good) => { console.log((good ? "✓ " : "✗ ") + label); 
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 1100, height: 1000 } });
 await context.addCookies(ctx.cookies);
+// Advanced mailbox controls are intentionally collapsed when Calm mode is enabled.
+await context.addInitScript(() => localStorage.setItem("enveliq-calm", "0"));
 const page = await context.newPage();
 const csp = []; page.on("console", (m) => { if (/Content Security Policy/i.test(m.text())) csp.push(m.text()); });
 const errors = []; page.on("pageerror", (e) => errors.push(String(e)));
