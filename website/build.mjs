@@ -218,6 +218,7 @@ const head = ({ title, description, canonical, home, noindex, ld }) => `<!doctyp
 <meta name="twitter:description" content="${esc(description)}">
 <meta name="twitter:image" content="${SHARE.url}">
 <meta name="twitter:image:alt" content="${esc(SHARE.alt)}">${noindex ? '\n<meta name="robots" content="noindex, follow">' : ""}
+<script src="/theme.js"></script>
 <link rel="stylesheet" href="/style.css">${ld ? "\n" + ld : ""}
 </head>
 <body${home ? ' class="home"' : ""}>
@@ -233,6 +234,7 @@ const head = ({ title, description, canonical, home, noindex, ld }) => `<!doctyp
       <a href="/search/">Search</a>
       <a href="/docs/security/">Security</a>
       <a class="gh" href="${REPO}" rel="noopener noreferrer">GitHub</a>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to light mode" title="Switch to light mode" hidden><svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg><svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
     </nav>
   </div>
 </header>
@@ -242,7 +244,7 @@ const foot = () => `
   <div class="foot-in">
     <p><strong>Enveliq</strong> turns email into clarity. Free to use, and it runs on your own computer.</p>
     <p class="links"><a href="/tour/">Tour</a> <a href="/docs/install/">Install</a> <a href="/docs/">Guides</a> <a href="/docs/privacy/">Privacy</a> <a href="/docs/terms/">Terms</a> <a href="${REPO}" rel="noopener noreferrer">Source code</a></p>
-    <p class="small">This website sets no cookies and loads nothing from other sites. The only script is the small search on the guides page, which runs in your browser and sends nothing anywhere.</p>
+    <p class="small">This website sets no cookies and loads nothing from other sites. Two small scripts run in your browser and send nothing anywhere: the guide search, and the light or dark switch (which remembers your choice on your own device).</p>
   </div>
 </footer>
 </body>
@@ -319,6 +321,7 @@ write("404.html", head({ title: "Page not found - Enveliq", description: "That p
 
 write("search-index.json", JSON.stringify(searchIndex));
 copy(path.join(here, "src", "search.js"), "search.js");
+copy(path.join(here, "src", "theme.js"), "theme.js");
 write("search/index.html", head({ title: "Search the guides - Enveliq", description: "Search every Enveliq guide for a word or a question.", canonical: "/search/", noindex: true }) +
   `<main id="main" class="doc-col narrow"><article class="doc"><h1>Search the guides</h1>
 ${searchBox("q", true)}
