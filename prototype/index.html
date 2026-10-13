@@ -740,6 +740,7 @@ body.on-ship #waitBars{display:none!important}
 .wto{font-weight:700}.wsub{color:var(--muted)}.wask{color:var(--text)}.wage{color:#f0b24a;font-size:13px;font-weight:600}.wcard:not(.due) .wage{color:var(--muted);font-weight:400}
 .wbtn{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:9px;padding:9px 14px;min-height:44px}.wbtn.amber{background:#f0b24a;border-color:#f0b24a;color:#241d10;font-weight:700}
 .wgroup{margin:18px 0 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.wclosed-toggle{display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;padding:6px 0;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer;text-align:left}.wclosed-arrow{display:inline-flex;margin-left:auto;color:var(--accent)}.wclosed-arrow svg{transition:transform .18s}.wclosed-toggle[aria-expanded="false"] .wclosed-arrow svg{transform:rotate(180deg)}
 .wset{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:14px;flex-wrap:wrap;margin:0 0 14px}.wset select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:40px}
 #subPage{display:none;padding-top:14px}body.on-sub #subPage{display:block}body.on-sub .filters,body.on-sub #list,body.on-sub .sample-banner,body.on-sub #dueBars,body.on-sub #shipBars,body.on-sub #waitBars,body.on-sub #subBars,body.on-sub #tripBars{display:none!important}
 .subcard{border:1px solid #5a4a1c;background:#241f10;border-radius:14px;padding:12px 14px;margin-bottom:12px}
@@ -1182,6 +1183,8 @@ html[data-theme="light"]{--backdrop:url("data:image/svg+xml,%3Csvg xmlns='http:/
   html[data-theme="light"] body.calm .preview-important .twhen,html[data-theme="light"] body.calm .preview-important .twhen.soft{color:#8a6671}
   html[data-theme="light"] body.calm .preview-later{background:rgba(255,255,255,.72);border-color:#d6e2f3}
 }
+/* Open full screen on a computer: the email fills the main area beside the left menu and below the top bar, and the buttons are normal-sized and centred under it. */
+@media(min-width:761px){body.reader-open header.top .top-inner{visibility:hidden}.reader{left:var(--side-w);top:73px;z-index:12}.ract{justify-content:center;padding:12px 14px}.ract .action{flex:0 0 auto;min-width:150px;padding:9px 22px;font-size:14px}}
 </style>
 </head>
 <body class="booting">
@@ -2014,7 +2017,7 @@ function loadView(){
     if(raw&&typeof raw==="object"){for(const k in VIEW_ALLOWED)if(VIEW_ALLOWED[k].includes(raw[k]))v[k]=raw[k];if(typeof raw.peek==="boolean")v.peek=raw.peek}}catch{}
   return v;
 }
-let view=loadView(),readerOpen=false,dueOpen=false,calmLaterOpen=true,paneId=null,lastPaneIdx=0,lastRowIds=[],lastDeckShown=null,deckDir="next",lastReadId=null;
+let view=loadView(),readerOpen=false,dueOpen=false,calmLaterOpen=true,waitClosedOpen=false,paneId=null,lastPaneIdx=0,lastRowIds=[],lastDeckShown=null,deckDir="next",lastReadId=null;
 function saveView(){try{localStorage.setItem("enveliq-view",JSON.stringify(view))}catch{}}
 function applyView(){
   readerOpen=false;
@@ -2745,7 +2748,7 @@ function renderWaitPage(){
   const head=`<div class="tp-head"><h3>Waiting for reply</h3></div><p class="sp-sub">Emails you sent that ask for something. Enveliq watches for the reply and tells you when nobody has answered.</p><label class="wset">Remind me after <select id="waitDays" aria-label="Days before a reminder">${opts}</select> days</label>`;
   if(!ns.length){box.innerHTML=head+'<div class="focus-card"><div class="focus-big">Nobody owes you an answer</div><div class="focus-sub">Emails you send that ask for something show up here by themselves. Only emails you send from now on are read. If this stays empty, check that Waiting for reply is switched on for your mailbox in Settings, My email accounts. To follow an older email, open Sent and press Follow for a reply on it.</div></div><div class="oact"><button class="wbtn" type="button" data-wait-check>Check my sent mail now</button></div>';return}
   const sect=(t,l)=>l.length?`<h4 class="wgroup">${t}</h4>`+l.map(waitCard).join(""):"";
-  box.innerHTML=head+sect(`No reply yet · ${due.length}`,due)+sect("Still within the time",soon)+sect("Closed",closed)+'<div class="oact"><button class="wbtn" type="button" data-wait-check>Check my sent mail now</button></div><p class="sp-sub">Closed notes are forgotten after 7 days. Replies are spotted from your inbox, so one that was deleted before it was checked will not close a note: press Got a reply.</p>';
+  box.innerHTML=head+sect(`No reply yet · ${due.length}`,due)+sect("Still within the time",soon)+(closed.length?`<h4 class="wgroup wclosed-head"><button class="wclosed-toggle" type="button" data-wait-closed-toggle aria-expanded="${waitClosedOpen}">Closed · ${closed.length}<span class="wclosed-arrow" aria-hidden="true">${ICON_FOLD}</span></button></h4>`+(waitClosedOpen?closed.map(waitCard).join(""):""):"")+'<div class="oact"><button class="wbtn" type="button" data-wait-check>Check my sent mail now</button></div><p class="sp-sub">Closed notes are forgotten after 7 days. Replies are spotted from your inbox, so one that was deleted before it was checked will not close a note: press Got a reply.</p>';
 }
 function renderWaitHome(){
   const box=$("waitBars"),due=waitOn()?(waitData.notes||[]).filter(n=>n.due):[];
@@ -2869,7 +2872,7 @@ function render(){
   const greeting=(hr<12?"Good morning":hr<18?"Good afternoon":"Good evening")+(first?`, ${first}`:"");
   document.querySelector(".top-left h2").textContent=["all","action","need","high","attachments"].includes(filter)?(calmOn()?"One thing at a time":"My inbox"):greeting;
   $("previewCalmNotice").hidden=!(filter==="all"&&calmOn());
-  $("previewListHeading").hidden=filter!=="all";
+  $("previewListHeading").hidden=["sent","tasks","shipping","waiting","subscriptions","trips","messages"].includes(filter);
   previewSyncMenu();
   $("todayDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"});
   $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(calmOn()?(inbox.length?"One thing at a time. Important deadlines stay visible.":"Nothing waiting. Enjoy the quiet."):inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:(document.body.classList.contains("backend")&&!realMail?"No mailbox is connected yet":"All caught up"));
@@ -4136,6 +4139,7 @@ document.addEventListener("click",e=>{
   const qrow=e.target.closest(".qrow");if(qrow&&!e.target.closest("button,input,a,label,select")){if(view.layout==="list"&&view.rows==="open")return;const t=qrow.querySelector("[data-expand],[data-pick]");if(t){t.click();return}}
   if(e.target.closest("[data-reader-close]")){readerOpen=false;render();return}
   const dt=e.target.closest("[data-due-toggle]");if(dt){dueOpen=!dueOpen;render();return}
+  const wct=e.target.closest("[data-wait-closed-toggle]");if(wct){waitClosedOpen=!waitClosedOpen;renderWaitPage();return}
   const lt=e.target.closest("[data-later-toggle]");if(lt){calmLaterOpen=!calmLaterOpen;render();return}
   const pk=e.target.closest("[data-pick]");if(pk){if(view.layout==="screen")readerOpen=true;const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;render();return}
   const retryAtt=e.target.closest("[data-att-retry]");if(retryAtt){const m=data.find(x=>x.id===+retryAtt.dataset.attRetry&&x.owner===currentUser.id);if(m&&m.real){retryAtt.disabled=true;secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/attachments/summarise`,{method:"POST",body:"{}"}).then(()=>{toast("Reading the files again. This can take a minute.",4000);m.attachments.forEach(a=>{if(a.state==="failed")a.state="working"});render()}).catch(er=>{retryAtt.disabled=false;toast(er.message,6000)})}return}

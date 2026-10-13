@@ -105,7 +105,10 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 
   await page.click("#waitNav");
   await page.waitForSelector("#waitPage .wcard");
-  check("the page lists due, waiting and closed notes", (await page.locator("#waitPage .wcard").count()) === 4 && (await page.locator("#waitPage .wcard.due").count()) === 2 && (await page.locator("#waitPage .wcard.closed").count()) === 1 && await page.locator("#list").isHidden());
+  check("the page lists due and waiting notes, and Closed is folded away until opened", (await page.locator("#waitPage .wcard").count()) === 3 && (await page.locator("#waitPage .wcard.due").count()) === 2 && (await page.locator("#waitPage .wcard.closed").count()) === 0 && (await page.locator("[data-wait-closed-toggle]").getAttribute("aria-expanded")) === "false" && /closed · 1/i.test(await page.locator("[data-wait-closed-toggle]").innerText()) && await page.locator("#list").isHidden());
+  await shot(page, "wait-closed-folded");
+  await page.click("[data-wait-closed-toggle]");
+  check("opening Closed shows the closed note", (await page.locator("#waitPage .wcard").count()) === 4 && (await page.locator("#waitPage .wcard.closed").count()) === 1 && (await page.locator("[data-wait-closed-toggle]").getAttribute("aria-expanded")) === "true");
   const txt = await page.locator("#waitPage").innerText();
   check("shows the ask, the time left, and why a note was closed", txt.includes("Waiting: Send me the quote by Friday.") && /Reminder after 3 days/.test(txt) && txt.includes("Replied"));
   check("hostile text is shown as text, not run", !(await page.evaluate(() => window.__pwned)) && (await page.locator("#waitPage img, #waitPage script").count()) === 0 && txt.includes("<script>window.__pwned=1</script>"));
