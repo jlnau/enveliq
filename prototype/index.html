@@ -1111,6 +1111,82 @@ html[data-theme="light"] .trow2 small,
 html[data-theme="light"] .preview-focus-copy small{color:#526c90}
 .avatar:has(img),.preview-profile-avatar:has(img){background:transparent!important}
 .avatar img,.preview-profile-avatar img{background:transparent!important;object-fit:contain}
+
+/* Northern Coast draft UI.
+   The artwork belongs to the page surface, not a banner: it starts behind
+   search/account controls and fades behind the compact summary cards.
+   Mail, task, accessibility and navigation markup remain unchanged. */
+@media (min-width:761px){
+  .main{position:relative;isolation:isolate}
+  .main::before{
+    content:"";position:absolute;z-index:-1;pointer-events:none;
+    inset:0 0 auto;height:322px;
+    background-image:
+      linear-gradient(to bottom,rgba(4,15,37,.05) 0%,rgba(4,15,37,.10) 48%,var(--bg) 99%),
+      url("/static/northern-coast-dark.svg");
+    background-size:100% 100%,cover;
+    background-position:center,center 43%;
+    background-repeat:no-repeat;
+    -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 56%,rgba(0,0,0,.82) 76%,transparent 100%);
+    mask-image:linear-gradient(to bottom,#000 0%,#000 56%,rgba(0,0,0,.82) 76%,transparent 100%);
+  }
+  html[data-theme="light"] .main::before{
+    background-image:
+      linear-gradient(to bottom,rgba(245,250,255,.16) 0%,rgba(245,250,255,.13) 48%,var(--bg) 99%),
+      url("/static/northern-coast-light.svg");
+  }
+  /* Neutralize the old rectangular landscape and its two geometric peaks. */
+  .top,.preview-toolbar{
+    background:transparent!important;
+    border-bottom-color:transparent!important;
+    backdrop-filter:none!important;
+  }
+  .top{overflow:visible!important;box-shadow:none!important}
+  .top::before,.top .enveliq-landscape{display:none!important}
+  .top .top-inner{position:relative;z-index:2}
+  .top h2{color:#fff;text-shadow:0 1px 8px rgba(0,12,29,.45)}
+  .top p{color:#e5efff;text-shadow:0 1px 7px rgba(0,12,29,.55)}
+  .preview-toolbar-search,.preview-toolbar-actions{position:relative;z-index:2}
+  .preview-toolbar .search input{
+    background:rgba(8,29,62,.77)!important;
+    border-color:rgba(142,184,232,.35)!important;
+    color:#f3f9ff!important;
+    backdrop-filter:blur(7px);
+  }
+  .preview-toolbar .search input::placeholder{color:#c2d4e9}
+  .preview-toolbar .preview-help{background:rgba(6,25,55,.35);color:#e5f2ff}
+  .preview-toolbar .user-pill{border-radius:10px;background:rgba(6,25,55,.24)!important;color:#f4f8ff!important}
+  .preview-toolbar .user-pill .user-copy small{color:#d9e9ff}
+  .preview-toolbar .syncago{color:#cfedff}
+  .content{position:relative;z-index:2}
+  .preview-overview .preview-stat{
+    backdrop-filter:blur(9px);
+    box-shadow:0 7px 23px rgba(0,17,43,.12)
+  }
+  html[data-theme="light"] .top h2{color:#0e2a53;text-shadow:0 1px 6px rgba(255,255,255,.58)}
+  html[data-theme="light"] .top p{color:#223d62;text-shadow:0 1px 5px rgba(255,255,255,.85)}
+  html[data-theme="light"] .preview-toolbar .search input{
+    background:rgba(255,255,255,.82)!important;
+    border-color:rgba(140,179,220,.5)!important;
+    color:#142b49!important;
+  }
+  html[data-theme="light"] .preview-toolbar .search input::placeholder{color:#596d88}
+  html[data-theme="light"] .preview-toolbar .preview-help{background:rgba(255,255,255,.5);color:#21456a}
+  html[data-theme="light"] .preview-toolbar .user-pill{background:rgba(255,255,255,.35)!important;color:#193253!important}
+  html[data-theme="light"] .preview-toolbar .user-pill .user-copy small{color:#486084}
+  html[data-theme="light"] .preview-toolbar .syncago{color:#335a7b}
+}
+@media(min-width:761px) and (max-width:1080px){
+  .main::before{height:280px;background-position:center,53% 45%}
+}
+@media(max-width:760px){
+  /* Preserve the intentionally compact mobile UI, including banner-free Calm mode. */
+  .main::before{display:none}
+}
+@media(prefers-reduced-transparency:reduce){
+  .preview-toolbar .search input{backdrop-filter:none!important}
+  .preview-overview .preview-stat{backdrop-filter:none!important}
+}
 </style>
 </head>
 <body class="booting">
