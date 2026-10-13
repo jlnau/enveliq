@@ -952,7 +952,7 @@ html[data-theme="light"] .preview-stat{background:linear-gradient(145deg,#fff,#e
 html[data-theme="light"] .preview-stat-copy small{color:var(--muted)}html[data-theme="light"] .preview-stat.action{background:#fff0f3}
 .preview-list-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--preview-gradient);border:1px solid var(--preview-border);border-radius:12px;padding:13px 18px;margin:12px 0}
 .preview-list-heading[hidden]{display:none}.preview-list-heading strong{font-size:18px}.preview-list-heading button{border:0;background:none;color:var(--accent)}
-body.calm:not(.preview-show-filters) .preview-list-heading+.filters{display:none}
+body:not(.preview-show-filters) #previewListHeading+.filters{display:none!important}
 @media(max-width:1150px){.preview-overview{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.preview-calm-notice{display:none}.preview-overview{gap:8px}.preview-stat{min-height:103px;padding:11px;gap:8px}.preview-stat-icon{width:28px;height:28px;font-size:16px}.preview-stat-copy b{font-size:24px}.preview-stat-copy small{font-size:10px}}
 
@@ -1109,6 +1109,8 @@ html[data-theme="light"] .trow2 .twhen.soft,
 html[data-theme="light"] .preview-important .twhen.soft{color:#8b5900}
 html[data-theme="light"] .trow2 small,
 html[data-theme="light"] .preview-focus-copy small{color:#526c90}
+.avatar:has(img),.preview-profile-avatar:has(img){background:transparent!important}
+.avatar img,.preview-profile-avatar img{background:transparent!important;object-fit:contain}
 </style>
 </head>
 <body class="booting">
@@ -2193,7 +2195,7 @@ function previewFocusTask(t){
   const snooze=m?'<button class="tbtn" type="button" data-snooze="'+esc(m.id)+'">Snooze</button>':"";
   return '<div class="preview-focus-card"><span class="preview-focus-icon" aria-hidden="true">✧</span><div class="preview-focus-copy"><strong>'+esc(t.title)+'</strong>'+(t.detail?'<p>'+esc(t.detail)+'</p>':"")+(t.sender?'<small>From '+esc(t.sender)+' · '+esc(taskWhen(t))+'</small>':'<small>'+esc(taskWhen(t))+'</small>')+'<div class="preview-focus-actions">'+button+snooze+'<button class="tbtn" type="button" data-task-act="done" data-task-id="'+esc(t.id)+'">Mark done</button></div></div></div>';
 }
-const previewMobileOpen={focus:false,important:false,later:false,today:true,emails:true};
+const previewMobileOpen={focus:false,important:false,later:false,today:false,emails:true};
 function previewFoldControl(section,open){
   return '<button class="preview-fold-toggle" type="button" data-preview-fold="'+section+'" aria-label="'+(open?'Collapse ':'Expand ')+section+'" aria-expanded="'+open+'">'+(open?'⌃':'⌄')+'</button>';
 }
@@ -2206,8 +2208,8 @@ function renderToday(){
   const focusKey=calm?"focus":"today";
   const focusToggle=previewFoldControl(focusKey,previewMobileOpen[focusKey]);
   const urgent=important.length?'<section class="preview-important'+(mobile&&!previewMobileOpen.important?' mobile-folded':'')+'"><div class="thead"><b>Also important today</b><span class="preview-heading-actions"><button class="linkbtn" type="button" data-tasks-go>All tasks</button>'+previewFoldControl("important",previewMobileOpen.important)+'</span></div><div class="preview-fold-content">'+important.slice(0,previewMobileOpen.important?important.length:1).map(t=>taskRow(t,false)).join("")+'</div></section>':"";
-  const laterRows=(calm||dueOpen||mobile&&previewMobileOpen.later)?rest.slice(0,3):[];
-  const later=rest.length?'<section class="preview-later'+(mobile&&!previewMobileOpen.later?' mobile-folded':'')+'"><div class="preview-later-head"><button class="tmore" type="button" data-due-toggle aria-expanded="'+dueOpen+'">'+(calm?"Later":'Coming up · '+rest.length+' more')+'</button><span class="preview-heading-actions">'+(rest.length>3?'<button class="linkbtn" type="button" data-tasks-go>All tasks</button>':'')+previewFoldControl("later",previewMobileOpen.later)+'</span></div><div class="preview-later-items preview-fold-content">'+laterRows.map(t=>taskRow(t,false)).join("")+'</div></section>':"";
+  const laterRows=(mobile?previewMobileOpen.later:(calm||dueOpen))?rest.slice(0,3):[];
+  const later=rest.length?'<section class="preview-later'+(mobile&&!previewMobileOpen.later?' mobile-folded':'')+'"><div class="preview-later-head"><button class="tmore" type="button" '+(mobile?'data-preview-fold="later" aria-expanded="'+previewMobileOpen.later+'"':'data-due-toggle aria-expanded="'+dueOpen+'"')+'>'+(calm?"Later":'Coming up · '+rest.length+' more')+'</button><span class="preview-heading-actions">'+(rest.length>3?'<button class="linkbtn" type="button" data-tasks-go>All tasks</button>':'')+previewFoldControl("later",previewMobileOpen.later)+'</span></div><div class="preview-later-items preview-fold-content">'+laterRows.map(t=>taskRow(t,false)).join("")+'</div></section>':"";
   box.innerHTML='<div class="preview-today-grid"><section class="today-card'+(mobile&&!previewMobileOpen[focusKey]?' mobile-folded':'')+'"><div class="thead"><b>'+title+'</b><span class="preview-heading-actions"><button class="linkbtn" type="button" data-tasks-go>Open Tasks</button>'+focusToggle+'</span></div><div class="preview-fold-content">'+(calm&&shown[0]?previewFocusTask(shown[0]):shown.map(t=>taskRow(t,false)).join(""))+'</div></section>'+urgent+'</div>'+later;
   box.hidden=false;
 }
