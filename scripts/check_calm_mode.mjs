@@ -30,22 +30,36 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
   if (name === "phone") await p.click("#menuBtn");
   const sw = p.locator("#calmBtn");
   check(name + ": the Calm mode switch is just above Agent, in the footer of the menu", await p.evaluate(() => { const a = document.getElementById("agentBtn"), c = document.getElementById("calmBtn"); return !!c && c.nextElementSibling === a && a.parentElement.classList.contains("side-foot"); }));
-  check(name + ": it starts off, and says so to screen readers", (await sw.getAttribute("role")) === "switch" && (await sw.getAttribute("aria-checked")) === "false");
-  const before = await p.evaluate(() => ({ badges: [...document.querySelectorAll(".badge")].filter((e) => e.offsetParent).length, today: document.querySelector(".today-card .thead b")?.textContent || "", sub: [...document.getElementById("inboxSubtitle").childNodes].filter((n) => !(n.classList && n.classList.contains("sdate"))).map((n) => n.textContent).join("") }));
-  check(name + ": off, the page shows its numbers", before.badges > 0 && /\d/.test(before.today) && /\d/.test(before.sub));
-  await sw.click(); await p.waitForTimeout(300);
-  check(name + ": on, the switch says so", (await sw.getAttribute("aria-checked")) === "true");
-  const after = await p.evaluate(() => ({ badges: [...document.querySelectorAll(".badge")].filter((e) => e.offsetParent).length, today: document.querySelector(".today-card .thead b")?.textContent || "", sub: [...document.getElementById("inboxSubtitle").childNodes].filter((n) => !(n.classList && n.classList.contains("sdate"))).map((n) => n.textContent).join(""), more: document.querySelector(".tmore")?.textContent || "", rows: document.querySelectorAll(".today-card .trow2").length, when: [...document.querySelectorAll(".twhen")].map((e) => e.textContent).join("|"), bar: getComputedStyle(document.getElementById("sumBar")).display }));
-  check(name + ": on, no counts are shown anywhere (menu, greeting, Today card, queue bar)", after.badges === 0 && !/\d/.test(after.today) && !/\d/.test(after.sub) && !/\d/.test(after.more) && after.bar === "none");
-  check(name + ": on, the Today card shows one task, headed Start here, with the rest under Later", after.today === "Start here" && after.rows === 1 && /Later/.test(after.more));
-  check(name + ": on, nothing says Waiting since", !/Waiting since/.test(after.when));
-  await p.reload(); await p.waitForTimeout(800);
-  check(name + ": it is remembered after a reload", await p.evaluate(() => document.body.classList.contains("calm")));
-  await p.evaluate(() => document.querySelector(".demo-banner")?.remove());
+  check(name + ": Calm mode starts enabled and announces its state", (await sw.getAttribute("role")) === "switch" && (await sw.getAttribute("aria-checked")) === "true");
+  const calmState = () => p.evaluate(() => ({
+    badges: [...document.querySelectorAll(".badge")].filter((e) => e.getClientRects().length && getComputedStyle(e).display !== "none").length,
+    today: document.querySelector(".today-card .thead b")?.textContent || "",
+    sub: [...document.getElementById("inboxSubtitle").childNodes].filter((n) => !(n.classList && n.classList.contains("sdate"))).map((n) => n.textContent).join(""),
+    more: document.querySelector(".tmore")?.textContent || "",
+    rows: document.querySelectorAll(".today-card .trow2").length,
+    important: document.querySelectorAll(".preview-important .trow2").length,
+    when: [...document.querySelectorAll(".twhen")].map((e) => e.textContent).join("|"),
+    bar: getComputedStyle(document.getElementById("sumBar")).display
+  }));
+  const on = await calmState();
+  check(name + ": Calm mode hides counters", on.badges === 0 && !/\\d/.test(on.today) && !/\\d/.test(on.sub) && !/\\d/.test(on.more) && on.bar === "none");
+  check(name + ": Calm mode shows one Start here task, with later tasks available", on.today === "Start here" && on.rows === 1 && /Later/.test(on.more));
+  check(name + ": other important tasks remain visible", on.important > 0);
+  check(name + ": Calm mode softens waiting labels", !/Waiting since/.test(on.when));
   if (shots) await p.screenshot({ path: path.join(shots, "calm-" + name + ".png") });
+
+  await sw.click(); await p.waitForTimeout(300);
+  check(name + ": switching Calm mode off announces the change", (await sw.getAttribute("aria-checked")) === "false");
+  const off = await calmState();
+  check(name + ": switching off restores counters", off.badges > 0 && /\\d/.test(off.today) && /\\d/.test(off.sub));
+  await p.reload(); await p.waitForTimeout(800);
+  check(name + ": explicit opt out is remembered after reload", await p.evaluate(() => !document.body.classList.contains("calm")));
+  await p.evaluate(() => document.querySelector(".demo-banner")?.remove());
   if (name === "phone") await p.click("#menuBtn");
   await p.click("#calmBtn"); await p.waitForTimeout(300);
-  check(name + ": off again brings the numbers back", await p.evaluate(() => [...document.querySelectorAll(".badge")].some((e) => e.offsetParent)));
+  check(name + ": Calm mode can be enabled again", (await p.locator("#calmBtn").getAttribute("aria-checked")) === "true" && (await calmState()).badges === 0);
+  await p.reload(); await p.waitForTimeout(800);
+  check(name + ": choosing Calm mode on is remembered after reload", await p.evaluate(() => document.body.classList.contains("calm")));
   check(name + ": no sideways scrolling", await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
   check(name + ": no script errors", errors.length === 0);
   await ctx.close();
