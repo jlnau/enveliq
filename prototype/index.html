@@ -985,6 +985,71 @@ body:not(.calm) .top .preview-calm-notice{display:none}
   .top-left{max-width:70%}
 }
 
+
+/* Compact preview dashboard revision: keep the controls usable, show mail sooner. */
+@media(min-width:761px){
+  .top{min-height:78px!important;padding:10px 22px!important}
+  .top-inner{min-height:56px!important}
+  .top h2{font-size:28px}
+  .top p{font-size:13px;margin-top:3px}
+  .top .landscape-sun{width:29px;height:29px;bottom:16px}
+  .top .landscape-back{height:49px}.top .landscape-front{height:36px}
+  .preview-calm-notice{top:8px;right:16px;padding:8px 11px}
+  .content{padding-top:12px}
+  .preview-overview{gap:10px;margin-bottom:12px}
+  .preview-stat{min-height:75px;padding:9px 11px;align-items:center;gap:10px}
+  .preview-stat-icon{width:34px;height:34px;font-size:18px}
+  .preview-stat-copy{display:grid;grid-template-columns:auto 1fr;align-items:center;column-gap:9px}
+  .preview-stat-copy b{font-size:25px;grid-row:1/3}
+  .preview-stat-copy strong{font-size:13px}.preview-stat-copy small{font-size:10px}
+  body:not(.calm) .preview-today-grid{grid-template-columns:minmax(0,1fr)}
+  .preview-today-grid>.today-card,.preview-important,.preview-later{padding:11px 14px}
+  .preview-today-grid .trow2{min-height:43px}
+  .preview-today-grid .thead{margin-bottom:5px}
+  .preview-focus-card{grid-template-columns:40px minmax(0,1fr);padding:11px;gap:10px}
+  .preview-focus-icon{width:39px;height:39px;font-size:22px}
+  .preview-focus-copy strong{font-size:15px}
+  .preview-focus-copy p{font-size:12px;margin:3px 0}
+  .preview-focus-actions{margin-top:7px}
+  .preview-focus-actions .tbtn{padding:6px 10px}
+  .preview-later{margin-top:9px}
+  .preview-later-items{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:8px}
+  .preview-later .trow2{display:grid!important;width:100%!important;margin:0!important;min-height:78px!important;padding:9px!important}
+}
+.preview-later-head,.preview-heading-actions{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.preview-heading-actions{margin-left:auto}
+.preview-later .tmore{padding:0!important;font-weight:650}
+.preview-fold-toggle{display:none;border:0;background:transparent;color:var(--accent);font-size:21px;line-height:1;min-width:34px;min-height:34px;cursor:pointer}
+.app.collapsed .side-foot .calm-row{width:44px;min-height:44px;padding:10px;justify-content:center;border-radius:10px}
+.app.collapsed .side-foot .calm-row .nav-label,.app.collapsed .side-foot .calm-row .calm-sw,.app.collapsed .side-foot .calm-row:after{display:none!important}
+.app.collapsed .side-foot .calm-row[aria-checked="true"]{background:#174d9b;color:white}
+@media(max-width:760px){
+  body.calm .top,body.calm .enveliq-landscape,body.calm .preview-calm-notice{display:none!important}
+  .preview-overview{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px;margin:4px 0 10px}
+  .preview-stat{min-width:0;min-height:61px;padding:7px 3px;flex-direction:column;align-items:center;gap:3px;text-align:center;border-radius:9px}
+  .preview-stat-icon{height:20px;width:20px;font-size:13px;border-radius:6px}
+  .preview-stat-copy{gap:1px}
+  .preview-stat-copy b{font-size:19px;line-height:1}
+  .preview-stat-copy strong{font-size:9px;line-height:1.2}
+  .preview-stat-copy small{display:none}
+  .preview-today-grid{gap:7px}
+  .preview-today-grid>.today-card,.preview-important,.preview-later{padding:8px 10px;margin-top:6px;border-radius:11px}
+  .preview-today-grid .thead{margin:0}
+  .preview-today-grid .thead b{font-size:15px}
+  .preview-fold-toggle{display:inline-flex;align-items:center;justify-content:center}
+  .preview-today-grid .mobile-folded .preview-fold-content,.preview-later.mobile-folded .preview-fold-content{display:none}
+  .preview-focus-card{padding:9px;gap:8px}
+  .preview-focus-copy p{display:none}
+  .preview-focus-actions{margin-top:7px}
+  .preview-later-items{margin-top:6px}
+  .preview-later .trow2{min-height:68px;padding:9px}
+  .preview-later .tmore{font-size:15px}
+  .preview-list-heading{padding:8px 11px;margin:9px 0}
+  .preview-list-heading strong{font-size:16px}
+  body.preview-mobile-emails-closed #previewListHeading+.filters,
+  body.preview-mobile-emails-closed #list{display:none!important}
+  .app.collapsed .side-foot .calm-row{width:44px}
+}
 </style>
 </head>
 <body class="booting">
@@ -1069,7 +1134,7 @@ body:not(.calm) .top .preview-calm-notice{display:none}
   <div id="tripBars" class="duebars" role="region" aria-label="Trips coming up" hidden></div>
   <div id="waitBars" class="duebars" role="region" aria-label="Waiting on others" hidden></div>
   <div id="msgBars" class="duebars" role="region" aria-label="New messages" hidden></div>
-  <div class="preview-list-heading" id="previewListHeading"><strong>Recent emails</strong><button type="button" id="previewInboxOptions" aria-expanded="false">Inbox options ▾</button></div>
+  <div class="preview-list-heading" id="previewListHeading"><strong>Recent emails</strong><span class="preview-heading-actions"><button type="button" id="previewInboxOptions" aria-expanded="false">Inbox options ▾</button><button class="preview-fold-toggle" type="button" data-preview-fold="emails" aria-label="Collapse recent emails" aria-expanded="true">⌃</button></span></div>
   <div class="filters">
     <button class="chip active" data-chip="all">All</button>
     <label class="flabel" for="filterBy">Filter</label>
@@ -2069,16 +2134,36 @@ function previewFocusTask(t){
   const snooze=m?'<button class="tbtn" type="button" data-snooze="'+esc(m.id)+'">Snooze</button>':"";
   return '<div class="preview-focus-card"><span class="preview-focus-icon" aria-hidden="true">✧</span><div class="preview-focus-copy"><strong>'+esc(t.title)+'</strong>'+(t.detail?'<p>'+esc(t.detail)+'</p>':"")+(t.sender?'<small>From '+esc(t.sender)+' · '+esc(taskWhen(t))+'</small>':'<small>'+esc(taskWhen(t))+'</small>')+'<div class="preview-focus-actions">'+button+snooze+'<button class="tbtn" type="button" data-task-act="done" data-task-id="'+esc(t.id)+'">Mark done</button></div></div></div>';
 }
+const previewMobileOpen={focus:false,important:false,later:false,today:true,emails:true};
+function previewFoldControl(section,open){
+  return '<button class="preview-fold-toggle" type="button" data-preview-fold="'+section+'" aria-label="'+(open?'Collapse ':'Expand ')+section+'" aria-expanded="'+open+'">'+(open?'⌃':'⌄')+'</button>';
+}
 function renderToday(){
   const box=$("dueBars"),open=openTasks(),now=open.filter(t=>t.days<=0);
   if(!now.length||filter==="tasks"||filter==="sent"){box.hidden=true;box.replaceChildren();return}
   const calm=calmOn(),shown=now.slice(0,calm?1:3),important=calm?now.slice(1):[],rest=open.filter(t=>t.days>0);
-  const title=calm?"Start here":`Today · ${now.length} ${now.length===1?"thing":"things"}`;
-  const urgent=important.length?`<section class="preview-important"><div class="thead"><b>Also important today</b><button class="linkbtn" type="button" data-tasks-go>All tasks</button></div>${important.map(t=>taskRow(t,false)).join("")}</section>`:"";
-  const later=rest.length?`<section class="preview-later"><button class="tmore" type="button" data-due-toggle aria-expanded="${dueOpen}">${calm?"Later":`Coming up · ${rest.length} more`} ${dueOpen?"⌃":"⌄"}</button>${(dueOpen?rest:calm?rest.slice(0,3):[]).map(t=>taskRow(t,false)).join("")}</section>`:"";
-  box.innerHTML=`<div class="preview-today-grid"><section class="today-card"><div class="thead"><b>${title}</b><button class="linkbtn" type="button" data-tasks-go>Open Tasks</button></div>${calm&&shown[0]?previewFocusTask(shown[0]):shown.map(t=>taskRow(t,false)).join("")}</section>${urgent}</div>${later}`;
+  const mobile=window.matchMedia("(max-width:760px)").matches;
+  const title=calm?"Start here":'Today · '+now.length+' '+(now.length===1?"thing":"things");
+  const focusKey=calm?"focus":"today";
+  const focusToggle=previewFoldControl(focusKey,previewMobileOpen[focusKey]);
+  const urgent=important.length?'<section class="preview-important'+(mobile&&!previewMobileOpen.important?' mobile-folded':'')+'"><div class="thead"><b>Also important today</b><span class="preview-heading-actions"><button class="linkbtn" type="button" data-tasks-go>All tasks</button>'+previewFoldControl("important",previewMobileOpen.important)+'</span></div><div class="preview-fold-content">'+important.slice(0,previewMobileOpen.important?important.length:1).map(t=>taskRow(t,false)).join("")+'</div></section>':"";
+  const laterRows=(calm||dueOpen||mobile&&previewMobileOpen.later)?rest.slice(0,3):[];
+  const later=rest.length?'<section class="preview-later'+(mobile&&!previewMobileOpen.later?' mobile-folded':'')+'"><div class="preview-later-head"><button class="tmore" type="button" data-due-toggle aria-expanded="'+dueOpen+'">'+(calm?"Later":'Coming up · '+rest.length+' more')+'</button><span class="preview-heading-actions">'+(rest.length>3?'<button class="linkbtn" type="button" data-tasks-go>All tasks</button>':'')+previewFoldControl("later",previewMobileOpen.later)+'</span></div><div class="preview-later-items preview-fold-content">'+laterRows.map(t=>taskRow(t,false)).join("")+'</div></section>':"";
+  box.innerHTML='<div class="preview-today-grid"><section class="today-card'+(mobile&&!previewMobileOpen[focusKey]?' mobile-folded':'')+'"><div class="thead"><b>'+title+'</b><span class="preview-heading-actions"><button class="linkbtn" type="button" data-tasks-go>Open Tasks</button>'+focusToggle+'</span></div><div class="preview-fold-content">'+(calm&&shown[0]?previewFocusTask(shown[0]):shown.map(t=>taskRow(t,false)).join(""))+'</div></section>'+urgent+'</div>'+later;
   box.hidden=false;
 }
+document.addEventListener("click",e=>{
+  const trigger=e.target.closest("[data-preview-fold]");
+  if(!trigger)return;
+  const name=trigger.dataset.previewFold;
+  if(!(name in previewMobileOpen))return;
+  previewMobileOpen[name]=!previewMobileOpen[name];
+  if(name==="emails"){
+    document.body.classList.toggle("preview-mobile-emails-closed",!previewMobileOpen.emails);
+    trigger.setAttribute("aria-expanded",String(previewMobileOpen.emails));
+    trigger.textContent=previewMobileOpen.emails?"⌃":"⌄";
+  }else renderToday();
+});
 function calendarHtml(){
   const today=tasksData.today||isoLocal(new Date());
   if(!calMonth)calMonth=today.slice(0,7);
