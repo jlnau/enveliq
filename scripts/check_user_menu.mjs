@@ -74,6 +74,12 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   check("the page names its tab icon", (await page.locator('head link[rel="icon"]').getAttribute("href")) === "/brand/enveliq-icon-128.webp");
   check("the sidebar footer keeps only Calm mode and Agent", (await page.locator(".side-foot .nav").allInnerTexts()).map((t) => t.trim()).join("|") === "Calm mode|Agent");
   check("the menu is closed to begin with", await page.locator("#userMenu").isHidden());
+  check("desktop Inbox options start collapsed", await page.locator("#filterBy").isHidden() && await page.locator("#previewInboxOptions").getAttribute("aria-expanded")==="false");
+  await page.click("#previewInboxOptions");
+  check("desktop Inbox options can be expanded", await page.locator("#filterBy").isVisible() && await page.locator("#previewInboxOptions").getAttribute("aria-expanded")==="true");
+  await page.click("#previewInboxOptions");
+  check("desktop Inbox options collapse again", await page.locator("#filterBy").isHidden());
+
   await page.click("#userPill");
   await shot(page, "menu");
   const items = (await page.locator("#userMenu .menu-item").allInnerTexts()).map((t) => t.trim());
@@ -110,7 +116,7 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   await pf.locator("#pf_file").setInputFiles({ name: "me.png", mimeType: "image/png", buffer: PNG });
   await page.waitForFunction(() => document.querySelector("#avatar img"), null, { timeout: 15000 });
   const av = server.calls.find((c) => c[0] === "avatar");
-  check("a chosen picture is shrunk to a small JPEG before it is sent", !!av && av[1].startsWith("data:image/jpeg;base64"));
+  check("a chosen picture keeps PNG transparency when resized before upload", !!av && av[1].startsWith("data:image/png;base64"));
   check("the picture replaces the initials beside the name", (await page.locator("#avatar img").getAttribute("src")).includes("/api/v1/users/u1/avatar"));
   check("the picture loads (the page allows it)", await page.evaluate(() => { const i = document.querySelector("#avatar img"); return new Promise((ok) => (i.complete ? ok(i.naturalWidth > 0) : (i.onload = () => ok(true), i.onerror = () => ok(false)))); }));
   await shot(page, "profile");
@@ -169,6 +175,11 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
 {
   const server = makeServer("admin");
   const { page } = await open(server, { width: 390, height: 780 });
+  check("phone Inbox options start collapsed", await page.locator("#filterBy").isHidden());
+  await page.click("#previewInboxOptions");
+  check("phone Inbox options expand when tapped", await page.locator("#filterBy").isVisible());
+  await page.click("#previewInboxOptions");
+  check("phone Inbox options collapse again", await page.locator("#filterBy").isHidden());
   await page.click("#menuBtn");
   await page.click("#userPill");
   const box = await page.locator("#userMenu").boundingBox();
