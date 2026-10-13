@@ -13,13 +13,19 @@ GitHub has no built-in "release template" that pre-fills the form. What it does 
 
 No terminal commands or manual changelog edits are needed for the normal release process. The workflow stops safely if the previous release tag is missing, there are no new merged PRs, or the new release branch or tag already exists.
 
+## If the version was prepared before the last feature merged
+
+Do **not** run Prepare Release again if `backend/version.py` and the README already show the intended version. Instead, check that the later feature is merged into `main`, add its notes to the existing version heading in `docs/CHANGELOG.md` through a reviewed documentation PR, and wait for the checks on that final `main` commit. **No tag or release should be created until that documentation PR is merged.**
+
+For **v0.87**, the version preparation PR (#77) was merged before the UI redesign PR (#76). Both feature PRs (#75 and #76) are now in `main`; the v0.87 changelog must mention both. The previous release is v0.86. The v0.87 tag must be created from the final checked `main` commit, which contains both changes and these release notes.
+
 ## Create the release
 
 1. On the repository's front page, press **Create a new release** (right-hand side, under "Releases").
-2. **Choose a tag:** type the version with a `v` in front, for example `v0.86`, then choose **Create new tag: v0.86 on publish**. The tag must match `backend/version.py` exactly, or the publish step stops on purpose.
+2. **Choose a tag:** type the version with a `v` in front, for example `v0.87`, then choose **Create new tag: v0.87 on publish**. The tag must match `backend/version.py` exactly, or the publish step stops on purpose.
 3. **Target:** leave it on `main`.
-4. **Release title:** `Enveliq v0.86` (same number as the tag).
-5. **Description:** press **Generate release notes**, then add the two short parts from the template below at the top. (On the very first release the button is greyed out, because there is no earlier tag to compare with. Write the notes by hand.)
+4. **Release title:** `Enveliq v0.87` (same number as the tag).
+5. **Description:** press **Generate release notes**, then add the two short parts from the template below at the top. Confirm that it mentions the attachment ad blocker fix (#75) and redesigned UI (#76). Release preparation and documentation PRs are not user features and should not appear as feature highlights. (On the very first release the button is greyed out, because there is no earlier tag to compare with. Write the notes by hand.)
 6. Leave **Set as the latest release** ticked. Leave "pre-release" unticked.
 7. Press **Publish release**.
 8. Open the **Actions** tab and watch **Checks**. When **Publish images** shows a green tick, the new images are ready.
