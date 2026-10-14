@@ -2,6 +2,7 @@ name: Build UI Preview
 on:
   push:
     branches:
+      - "preview/**"
       - feature/ui-preview-calm-default
   workflow_dispatch:
 

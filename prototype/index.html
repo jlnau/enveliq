@@ -1204,6 +1204,14 @@ html[data-theme="light"] .waitcard{background:#fdf1dd;border-color:#dcb972}
 html[data-theme="light"] .subitem.soon{background:#fdf4d9;border-color:#e6cf86}html[data-theme="light"] .subitem.soon .subwhen{color:#8a5a00}
 html[data-theme="light"] .tripitem.now{background:#e6f0fd;border-color:#a8c4ec}html[data-theme="light"] .tripkind{color:#1b5bc0}
 html[data-theme="light"] .wcard.due{background:#fdf1dd;border-color:#dcb972}html[data-theme="light"] .wage{color:#8a5a00}
+
+/* Stay put while the emails scroll: on a computer the search / Sync mail / name bar and the "Recent emails" bar stay at the top.
+   Only the emails move. Not used on phones, which have their own fixed top bar. */
+@media(min-width:761px){
+  html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sticky;top:0;z-index:20}
+  html body.stuck .main>.preview-toolbar{background:var(--bg);box-shadow:0 8px 0 var(--bg)}      /* a solid bar only once the page has moved, so the picture behind the top shows when it has not */
+  html .content>.preview-list-heading,html[data-theme] .content>.preview-list-heading{position:sticky;top:81px;z-index:15;margin-top:0}
+}
 </style>
 </head>
 <body class="booting">
@@ -5547,7 +5555,7 @@ $("mSearchBtn").onclick=()=>{document.body.classList.add("msearch");$("search").
 $("mSearchBack").onclick=()=>{document.body.classList.remove("msearch");if(query){query="";$("search").value="";render()}};
 $("mSyncBtn").onclick=()=>$("syncBtn").click();
 phoneQuery.addEventListener("change",()=>{setMenu(false);document.body.classList.remove("msearch","scrolled");render()});
-function updateScrolled(){const h=document.querySelector("header.top");document.body.classList.toggle("scrolled",isPhone()&&h.getBoundingClientRect().bottom<60)}
+function updateScrolled(){const h=document.querySelector("header.top");document.body.classList.toggle("scrolled",isPhone()&&h.getBoundingClientRect().bottom<60);document.body.classList.toggle("stuck",!isPhone()&&window.scrollY>6)}
 window.addEventListener("scroll",updateScrolled,{passive:true});window.addEventListener("resize",updateScrolled);
 // Undo: every Reviewed / Archive / Bin, on any screen, for one email or several, waits five seconds. Each action has its own bar.
 // The email(s) leave the list at once; the real action only happens when the bar goes away (or the page is closed).

@@ -93,6 +93,12 @@ The left menu leads to **My inbox**, **Needs action**, **Tasks**, **Shipping**, 
 - On **Waiting for reply**, the **Closed** section is folded away until you open it with its arrow, so the page does not look like a long list of open items.
 - With **Open full screen**, on a computer the email sits beside the left menu and below the top bar, and **Reviewed**, **Archive** and **Bin** are normal buttons centred along the bottom (they used to be stretched across the screen and partly hidden).
 
+## The top stays in view while you scroll
+- On a computer, the bar with the search box, Sync mail, the help button and your name stays at the top of the page when you scroll down a long list. The "Recent emails" bar with **Inbox options** (and the buttons for ticked emails) stays right under it. Only the emails move.
+- The title, the four count tiles and the picture behind them scroll away as before, so you get more room for the emails.
+- At the very top of the page the bar is see-through, so the picture behind it still shows. It turns solid only once you have scrolled, so no emails show through it.
+- Phones are unchanged. They already have their own bar at the top of the screen.
+
 ## Light mode and pictures
 - In light mode, the Shipping, Subscriptions, Trips and Waiting for reply cards (on their own pages and on the home page) and the New email button now use light colours. They used to keep their dark colours.
 - The Tasks page uses the full width, like the other pages.
