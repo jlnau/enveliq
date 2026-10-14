@@ -1,6 +1,7 @@
 // Browser check for the fixed top of the inbox on a computer: the search / Sync mail / name bar and the "Recent emails" bar stay in view
 // while the emails scroll. The top bar is never a solid block: it stays see-through, and nothing that scrolls up to it (text, tiles, titles)
-// is seen through it. Phones keep their own top bar.
+// is seen through it; it fades out softly below the bar instead of being cut off with a hard line, and the Recent emails bar itself is never faded.
+// Phones keep their own top bar.
 // The page is loaded from a pretend Enveliq server (Playwright intercepts requests).
 //
 // Usage (needs Playwright and a Chromium build):
@@ -97,6 +98,10 @@ for (const theme of ["dark", "light"]) {
     check(`${theme}: at ${y}px down, no page text shows under the bar`, Buffer.compare(withText, without) === 0);
   }
   await page.evaluate(() => window.scrollTo(0, 900)); await page.waitForTimeout(250);
+  const masks = await page.evaluate(() => ({ heading: getComputedStyle(document.querySelector("#previewListHeading")).maskImage, tiles: getComputedStyle(document.querySelector("main .content > .duebars, main .content > #previewOverview, main .content > .filters") || document.body).maskImage }));
+  check(`${theme}: the Recent emails bar itself is not faded`, masks.heading === "none");
+  const stops = (await page.evaluate(() => getComputedStyle(document.querySelector(".main > .top")).maskImage)).match(/(-?[\d.]+)px/g).map((v) => parseFloat(v));
+  check(`${theme}: what scrolls under the bar fades in softly over ${stops[4] - stops[3]}px, not a hard cut`, stops.length === 5 && Math.abs(stops[4] - stops[3] - 36) <= 1);
   const first = await page.evaluate((hb) => { const rows = [...document.querySelectorAll("article.mail")].filter((a) => a.getBoundingClientRect().bottom > hb); return rows.length ? Math.round(rows[0].getBoundingClientRect().top) : null; }, head.bottom);
   check(`${theme}: the emails scroll under the bars (first row at ${first})`, first !== null);
   await shot(page, `sticky-${theme}`);

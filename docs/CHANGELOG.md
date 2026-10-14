@@ -4,7 +4,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-**The top of the inbox stays in view.** On a computer, the search / Sync mail / name bar and the "Recent emails" bar now stay at the top while you scroll a long list, so the controls are always in reach. Only the emails scroll. The top bar stays see-through, so the picture behind it always shows, and nothing that scrolls up to it is seen through it. Phones are unchanged.
+**The top of the inbox stays in view.** On a computer, the search / Sync mail / name bar and the "Recent emails" bar now stay at the top while you scroll a long list, so the controls are always in reach. Only the emails scroll. The top bar stays see-through, so the picture behind it always shows, and anything that scrolls up to it fades out softly instead of being cut off with a hard line. Phones are unchanged.
 
 **Even gaps on the main screen.** On a computer, the gap between Coming up and Recent emails (and between the delivery, subscription, trip and reply cards) was bigger than the rest. All the boxes on the main screen now sit the same small distance apart.
 

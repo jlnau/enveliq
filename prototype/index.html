@@ -1207,7 +1207,8 @@ html[data-theme="light"] .wcard.due{background:#fdf1dd;border-color:#dcb972}html
 
 /* Stay put while the emails scroll: on a computer the search / Sync mail / name bar and the "Recent emails" bar stay at the top.
    The top bar is never a solid block: it stays see-through, so the picture behind it always shows. Emails, tiles and titles that scroll
-   up to it simply stop at its lower edge (a mask, set from the scroll position below), so no text is ever seen through the bar.
+   up to it fade out softly just below its lower edge (a 36px mask that grows in over the first 36px of scrolling, set from the scroll position below), so no text is ever seen through the bar
+   and nothing is cut off with a hard line.
    Not used on phones, which have their own fixed top bar. */
 @media(min-width:761px){
   html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sticky;top:0;z-index:20;background:transparent}
@@ -1217,9 +1218,9 @@ html[data-theme="light"] .wcard.due{background:#fdf1dd;border-color:#dcb972}html
   .duebars{padding-bottom:12px}
   .duebars>.msgcard,.duebars>.shipcard,.duebars>.subcard,.duebars>.tripcard,.duebars>.waitcard{margin-bottom:0}
   html .duebars>.preview-later,html body.calm .duebars>.preview-later{margin-top:12px}
-  body.stuck .main>.top,body.stuck .main>.content{
-    -webkit-mask-image:linear-gradient(#000 0,#000 var(--cut,-1px),transparent var(--cut,-1px),transparent var(--cut2,-1px),#000 var(--cut2,-1px));
-    mask-image:linear-gradient(#000 0,#000 var(--cut,-1px),transparent var(--cut,-1px),transparent var(--cut2,-1px),#000 var(--cut2,-1px))}
+  body.stuck .main>.top,body.stuck .main>.content>:not(#previewListHeading){      /* the Recent emails bar is left out: it is the one thing that stays in view */
+    -webkit-mask-image:linear-gradient(#000 0,#000 var(--cut,-1px),transparent var(--cut,-1px),transparent var(--cut2,-1px),#000 calc(var(--cut2,-1px) + var(--fade,36px)));
+    mask-image:linear-gradient(#000 0,#000 var(--cut,-1px),transparent var(--cut,-1px),transparent var(--cut2,-1px),#000 calc(var(--cut2,-1px) + var(--fade,36px)))}
 }
 </style>
 </head>
@@ -5566,8 +5567,9 @@ $("mSyncBtn").onclick=()=>$("syncBtn").click();
 phoneQuery.addEventListener("change",()=>{setMenu(false);document.body.classList.remove("msearch","scrolled");render()});
 function updateScrolled(){const h=document.querySelector("header.top");document.body.classList.toggle("scrolled",isPhone()&&h.getBoundingClientRect().bottom<60);
   const stuck=!isPhone()&&window.scrollY>6;document.body.classList.toggle("stuck",stuck);
-  if(stuck){const bar=document.getElementById("previewToolbar").offsetHeight;   // hide what is under the top bar: the band from the top of the window down to the bar's lower edge
-    for(const el of document.querySelectorAll(".main>.top,.main>.content")){const t=el.getBoundingClientRect().top;el.style.setProperty("--cut",(-t)+"px");el.style.setProperty("--cut2",(bar-t)+"px")}}}
+  if(stuck){const bar=document.getElementById("previewToolbar").offsetHeight;document.body.style.setProperty("--fade",Math.min(36,window.scrollY)+"px");   // the soft edge grows over the first 36px of scrolling, so nothing dims before you move
+      // hide what is under the top bar: the band from the top of the window down to the bar's lower edge
+    for(const el of document.querySelectorAll(".main>.top,.main>.content>:not(#previewListHeading)")){const t=el.getBoundingClientRect().top;el.style.setProperty("--cut",(-t)+"px");el.style.setProperty("--cut2",(bar-t)+"px")}}}
 let scrollTick=0;window.addEventListener("scroll",()=>{if(!scrollTick)scrollTick=requestAnimationFrame(()=>{scrollTick=0;updateScrolled()})},{passive:true});window.addEventListener("resize",updateScrolled);
 // Undo: every Reviewed / Archive / Bin, on any screen, for one email or several, waits five seconds. Each action has its own bar.
 // The email(s) leave the list at once; the real action only happens when the bar goes away (or the page is closed).
