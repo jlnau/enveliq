@@ -1,4 +1,4 @@
-// Browser check for phones: whatever layout is chosen, an email opens full screen and the only way to the next one is to close it.
+// Browser check for phones: whatever layout is chosen, an email opens in the Open full screen view. A bigger screen keeps the chosen layout.
 // The page is loaded from a pretend Enveliq server (Playwright intercepts the requests), so this needs no Python.
 //   node scripts/check_phone_reader.mjs [path/to/prototype/index.html]     (SHOTS=<dir> saves screenshots)
 import { chromium } from "playwright";
@@ -73,7 +73,7 @@ for (const layout of ["list", "right", "bottom", "screen", "deck"]) {
   check(`[${layout}] tapping an email opens it full screen`, await fills(page));
   if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `phone_${layout}.png`) });
   check(`[${layout}] it shows that email`, (await page.locator(".reader h3").innerText()).includes("Plan for May"));
-  check(`[${layout}] there is a Close button and no Next or Previous`, (await page.locator(".reader [data-reader-close]").innerText()).includes("Close") && (await page.locator(".reader [aria-label='Next email'], .reader [aria-label='Previous email']").count()) === 0);
+  check(`[${layout}] it is the Open full screen view: a back button, the count and the pinned buttons`, (await page.locator(".reader [data-reader-close]").count()) === 1 && /^\d+ of \d+$/.test((await page.locator(".rtop b").innerText()).trim()) && (await page.locator(".ract [data-status=reviewed]").count()) === 1);
   await page.locator(".reader [data-reader-close]").click();
   check(`[${layout}] Close goes back to the list`, (await page.locator(".reader").count()) === 0 && (await page.locator("article.mail").count()) >= 3);
   await page.locator("article.mail", { hasText: "Third one" }).locator(".qmain").click();

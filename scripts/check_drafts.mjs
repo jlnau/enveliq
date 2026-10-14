@@ -183,9 +183,9 @@ check("pressing again deletes it", drafts.length === 2 && (await page.locator(".
 await page.setViewportSize({ width: 390, height: 780 });
 await page.goto(`${ORIGIN}/`);
 await page.waitForSelector("article.mail");
-const phoneRow = page.locator("article.mail", { hasText: "Plan for May" });
-await expand(phoneRow);
-await phoneRow.locator("[data-reply]").first().click();
+await page.locator("article.mail", { hasText: "Plan for May" }).locator(".qmain").click();      // on a phone the email opens full screen
+await page.waitForSelector(".reader");
+await page.locator(".reader [data-reply]").first().click();
 await page.fill("#composeText", "Typed on my phone.");
 await page.click("#composeClose");
 await page.waitForSelector("#dkAsk.open");
