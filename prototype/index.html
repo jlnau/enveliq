@@ -1240,6 +1240,7 @@ html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sti
    The title, the four counts, Today / Coming up and the list sit in a column on the left; the open email fills the whole right side.
    The left column scrolls by itself; the page does not. Phones, and every other layout, are unchanged. */
 .read-dock{display:none}
+.preview-later.later-closed .preview-later-items{display:none!important}
 body.layout-right .panes.right{display:block}
 @media(max-width:900px){
   .read-dock:not(:empty){display:block;padding:0 16px 90px}
@@ -1286,6 +1287,14 @@ body.preview-mobile-emails-closed #readDock{display:none!important}
   html body.split-read .preview-later .preview-later-items>.trow2{display:grid!important;width:auto!important;margin:0!important;padding:9px 6px!important;min-height:0!important;border:0;border-radius:0;background:none;grid-template-columns:28px minmax(0,1fr);row-gap:0}
   html body.split-read .preview-later .preview-later-items>.trow2:nth-child(n+2){display:none!important}          /* Coming up shows only the soonest thing */
   body.split-read .preview-later .trow2 .twhen{grid-column:2;margin-top:-4px;font-size:11px}
+  /* Coming up: the same shade as Today, and a link to the Tasks page (not a fold with an arrow) that shows only the soonest thing */
+  html body.split-read #dueBars>.preview-later{background:rgba(13,29,56,.62);border-color:var(--preview-border);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2)}
+  html[data-theme="light"] body.split-read #dueBars>.preview-later{background:rgba(255,255,255,.62)}
+  html body.split-read.calm #dueBars>.preview-later{background:linear-gradient(160deg,rgba(40,52,82,.84),rgba(30,40,66,.84));border-color:rgba(160,180,220,.16);border-radius:14px}
+  html[data-theme="light"] body.split-read.calm #dueBars>.preview-later{background:linear-gradient(160deg,#ffffff,#eef4ff);border-color:#d6e2f3}
+  body.split-read .preview-later .preview-fold-toggle{display:none}
+  html body.split-read .preview-later .preview-later-head>.tmore{padding:0!important;font-size:14px;font-weight:700;color:var(--accent);text-decoration:underline;cursor:pointer}
+  html body.split-read .preview-later.later-closed .preview-later-items{display:block!important}
   body.split-read .preview-today-grid .thead{margin-bottom:6px}
   body.split-read .preview-today-grid .thead b{font-size:14px}
   body.split-read .preview-today-grid .trow2{min-height:0;grid-template-columns:28px minmax(0,1fr);row-gap:0}
@@ -2395,6 +2404,8 @@ const ICON_FOLD='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" str
 function previewFoldControl(section,open){
   return '<button class="preview-fold-toggle" type="button" data-preview-fold="'+section+'" aria-label="'+(open?'Collapse ':'Expand ')+section+'" aria-expanded="'+open+'">'+(open?'⌃':'⌄')+'</button>';
 }
+const splitNow=()=>document.body.classList.contains("split-read")&&window.matchMedia("(min-width:901px)").matches;          // the side-by-side view, where Coming up is a link to Tasks
+const goTasks=()=>{filter="tasks";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="tasks"));render()};
 function renderToday(){
   const box=$("dueBars"),open=openTasks(),now=open.filter(t=>t.days<=0);
   if(!now.length||filter==="tasks"||filter==="sent"){box.hidden=true;box.replaceChildren();return}
@@ -2405,8 +2416,8 @@ function renderToday(){
   const focusToggle=previewFoldControl(focusKey,previewMobileOpen[focusKey]);
   const urgent=important.length?'<section class="preview-important'+(mobile&&!previewMobileOpen.important?' mobile-folded':'')+'"><div class="thead"><b>Also important today</b><span class="preview-heading-actions"><button class="linkbtn" type="button" data-tasks-go>All tasks</button>'+previewFoldControl("important",previewMobileOpen.important)+'</span></div><div class="preview-fold-content">'+important.slice(0,previewMobileOpen.important?important.length:1).map(t=>taskRow(t,false)).join("")+'</div></section>':"";
   const laterOpen=mobile?previewMobileOpen.later:(calm?calmLaterOpen:dueOpen);
-  const laterRows=laterOpen?rest.slice(0,3):[];
-  const later=rest.length?'<section class="preview-later'+(mobile&&!previewMobileOpen.later?' mobile-folded':'')+'"><div class="preview-later-head"><button class="tmore" type="button" '+(mobile?'data-preview-fold="later" aria-expanded="'+previewMobileOpen.later+'"':(calm?'data-later-toggle':'data-due-toggle')+' aria-expanded="'+laterOpen+'"')+'>'+(calm?"Later":'Coming up · '+rest.length+' more')+'</button><span class="preview-heading-actions">'+(rest.length>3?'<button class="linkbtn" type="button" data-tasks-go>All tasks</button>':'')+(mobile?previewFoldControl("later",previewMobileOpen.later):'<button class="preview-fold-toggle always" type="button" '+(calm?'data-later-toggle':'data-due-toggle')+' aria-expanded="'+laterOpen+'" aria-label="'+(laterOpen?'Hide':'Show')+(calm?' later':' what is coming up')+'">'+ICON_FOLD+'</button>')+'</span></div><div class="preview-later-items preview-fold-content">'+laterRows.map(t=>taskRow(t,false)).join("")+'</div></section>':"";
+  const laterRows=rest.slice(0,laterOpen?3:1);          // the soonest one is always drawn; it is hidden while folded, except in the side-by-side view, which shows it
+  const later=rest.length?'<section class="preview-later'+(mobile&&!previewMobileOpen.later?' mobile-folded':'')+(laterOpen?'':' later-closed')+'"><div class="preview-later-head"><button class="tmore" type="button" '+(mobile?'data-preview-fold="later" aria-expanded="'+previewMobileOpen.later+'"':(calm?'data-later-toggle':'data-due-toggle')+' aria-expanded="'+laterOpen+'"')+'>'+(calm?"Later":'Coming up · '+rest.length+' more')+'</button><span class="preview-heading-actions">'+(rest.length>3?'<button class="linkbtn" type="button" data-tasks-go>All tasks</button>':'')+(mobile?previewFoldControl("later",previewMobileOpen.later):'<button class="preview-fold-toggle always" type="button" '+(calm?'data-later-toggle':'data-due-toggle')+' aria-expanded="'+laterOpen+'" aria-label="'+(laterOpen?'Hide':'Show')+(calm?' later':' what is coming up')+'">'+ICON_FOLD+'</button>')+'</span></div><div class="preview-later-items preview-fold-content">'+laterRows.map(t=>taskRow(t,false)).join("")+'</div></section>':"";
   box.innerHTML='<div class="preview-today-grid"><section class="today-card'+(mobile&&!previewMobileOpen[focusKey]?' mobile-folded':'')+'"><div class="thead"><b>'+title+'</b><span class="preview-heading-actions"><button class="linkbtn" type="button" data-tasks-go>Open Tasks</button>'+focusToggle+'</span></div><div class="preview-fold-content">'+(calm&&shown[0]?previewFocusTask(shown[0]):shown.map(t=>taskRow(t,false)).join(""))+'</div></section>'+urgent+'</div>'+later;
   box.hidden=false;
 }
@@ -4269,9 +4280,9 @@ document.addEventListener("click",e=>{
   const due=e.target.closest("[data-due-open]");if(due){const id=due.dataset.dueOpen;filter="all";query="";$("search").value="";expanded.add(`row-${id}`);{const dm=data.find(x=>String(x.id)===id);if(dm){paneId=dm.id;if(view.layout==="screen")readerOpen=true}}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();const el=document.querySelector(`[data-expand="row-${CSS.escape(id)}"]`);el&&el.closest("article").scrollIntoView({block:"nearest",behavior:"smooth"});return}
   const qrow=e.target.closest(".qrow");if(qrow&&!e.target.closest("button,input,a,label,select")){if(view.layout==="list"&&view.rows==="open")return;const t=qrow.querySelector("[data-expand],[data-pick]");if(t){t.click();return}}
   if(e.target.closest("[data-reader-close]")){readerOpen=false;render();return}
-  const dt=e.target.closest("[data-due-toggle]");if(dt){dueOpen=!dueOpen;render();return}
+  const dt=e.target.closest("[data-due-toggle]");if(dt){if(splitNow()){goTasks();return}dueOpen=!dueOpen;render();return}
   const wct=e.target.closest("[data-wait-closed-toggle]");if(wct){waitClosedOpen=!waitClosedOpen;renderWaitPage();return}
-  const lt=e.target.closest("[data-later-toggle]");if(lt){calmLaterOpen=!calmLaterOpen;render();return}
+  const lt=e.target.closest("[data-later-toggle]");if(lt){if(splitNow()){goTasks();return}calmLaterOpen=!calmLaterOpen;render();return}
   const pk=e.target.closest("[data-pick]");if(pk){if(view.layout==="screen")readerOpen=true;const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;render();return}
   const retryAtt=e.target.closest("[data-att-retry]");if(retryAtt){const m=data.find(x=>x.id===+retryAtt.dataset.attRetry&&x.owner===currentUser.id);if(m&&m.real){retryAtt.disabled=true;secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/attachments/summarise`,{method:"POST",body:"{}"}).then(()=>{toast("Reading the files again. This can take a minute.",4000);m.attachments.forEach(a=>{if(a.state==="failed")a.state="working"});render()}).catch(er=>{retryAtt.disabled=false;toast(er.message,6000)})}return}
   const openAtt=e.target.closest("[data-open-attachment]");if(openAtt){openAttachmentViewer(openAtt.dataset.openAttachment);return}

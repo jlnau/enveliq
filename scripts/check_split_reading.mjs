@@ -36,7 +36,7 @@ for (const theme of ["dark", "light"]) {
   const { page, errs } = await open(1400, 900, theme, "right");
   await page.evaluate(() => {
     tasksData.tasks = [{ id: "a", title: "Download and install new configurations", detail: "", sender: "Ultra.cc", state: "open", days: 0, due: "2026-10-14" }, { id: "a2", title: "Renew the domain", detail: "", sender: "Z", state: "open", days: 0, due: "2026-10-14" }, { id: "a3", title: "A third thing today", detail: "", sender: "Z", state: "open", days: 0, due: "2026-10-14" }, { id: "b", title: "Second thing", detail: "", sender: "X", state: "open", days: 3, due: "2026-10-17" }, { id: "c", title: "Third thing", detail: "", sender: "Y", state: "open", days: 5, due: "2026-10-19" }, { id: "d", title: "Fourth thing", detail: "", sender: "Y", state: "open", days: 6, due: "2026-10-20" }];
-    dueOpen = true; renderToday();
+    dueOpen = false; renderToday();
   });
   await page.waitForTimeout(200);
   const t = `(${theme}) `;
@@ -54,10 +54,18 @@ for (const theme of ["dark", "light"]) {
   check(t + "Today shows at most two things", (await vis("#dueBars .today-card .trow2")) === 2);
   check(t + "Coming up shows only the soonest thing", (await vis("#dueBars .preview-later .trow2")) === 1);
   const t2 = await box(page, "#dueBars .today-card"), l2 = await box(page, "#dueBars .preview-later");
+  const shade = await page.evaluate(() => { const g = (s) => getComputedStyle(document.querySelector(s)).backgroundColor; return [g("#dueBars .today-card"), g("#dueBars .preview-later")]; });
+  check(t + "the Coming up box is the same shade as the Today box", shade[0] === shade[1]);
+  check(t + "Coming up has no arrow to fold it", (await page.locator("#dueBars .preview-later .preview-fold-toggle").evaluate((e) => getComputedStyle(e).display)) === "none");
   check(t + "the Coming up box is the same height as the Today box", Math.abs(t2.h - l2.h) <= 2);
   check(t + "the first email in the list starts high up (it did not move down)", list.y < 520);
   const btn = await box(page, "#readDock .reading .qbtns .reviewed");
   check(t + "Reviewed, Archive and Bin sit at the bottom of the email panel", btn && btn.b <= dock.b && btn.b >= dock.b - 80);
+  if (theme === "dark") {
+    await page.locator("#dueBars .preview-later .tmore").click(); await page.waitForTimeout(250);
+    check("clicking Coming up goes to the Tasks page, it does not fold", await page.evaluate(() => document.body.classList.contains("on-tasks")));
+    await page.locator('[data-filter="all"]').first().click(); await page.waitForTimeout(250);
+  }
   await page.mouse.move(300, 600); await page.mouse.wheel(0, 900); await page.waitForTimeout(150);
   check(t + "the page itself does not scroll", (await page.evaluate(() => window.scrollY)) === 0);
   check(t + "no script errors", errs.length === 0);
@@ -72,6 +80,11 @@ for (const theme of ["dark", "light"]) {
 }
 {
   const { page } = await open(1400, 900, "dark", "list");
+  await page.evaluate(() => { tasksData.tasks = [{ id: "a", title: "T", detail: "", sender: "U", state: "open", days: 0, due: "2026-10-14" }, { id: "b", title: "B", detail: "", sender: "X", state: "open", days: 3, due: "2026-10-17" }, { id: "c", title: "C", detail: "", sender: "X", state: "open", days: 5, due: "2026-10-19" }]; dueOpen = false; renderToday(); });
+  await page.waitForTimeout(150);
+  check("other layouts: Coming up is still a fold with its arrow, closed shows no items", (await page.locator("#dueBars .preview-later .preview-fold-toggle").isVisible()) && (await page.locator("#dueBars .preview-later .trow2:visible").count()) === 0);
+  await page.locator("#dueBars .preview-later .tmore").click(); await page.waitForTimeout(200);
+  check("other layouts: pressing Coming up opens it (shows its things) and does not go to Tasks", (await page.evaluate(() => dueOpen === true)) && !(await page.evaluate(() => document.body.classList.contains("on-tasks"))));
   check("the classic list layout is unchanged", (await page.evaluate(() => document.body.classList.contains("split-read"))) === false && (await page.locator("#readDock .reading").count()) === 0);
   await page.context().close();
 }
