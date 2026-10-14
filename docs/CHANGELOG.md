@@ -8,7 +8,9 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 **Even gaps on the main screen.** On a computer, the gap between Coming up and Recent emails (and between the delivery, subscription, trip and reply cards) was bigger than the rest. All the boxes on the main screen now sit the same small distance apart.
 
-Code and tests: `prototype/index.html` (sticky bars and spacing, desktop only), `scripts/check_sticky_header.mjs` and `scripts/check_main_gaps.mjs` (new, in CI), `docs/INBOX.md`.
+**Simpler menu wording.** In the menu that opens when you click your name, **Settings** is now for everyone and opens your own settings (your profile is the first tab inside). The administrator item is called **Administration** and shows only for administrators. The extra "Profile settings" and "Manage users" items are gone; the Settings button in the left bar is unchanged.
+
+Code and tests: `prototype/index.html` (menu wording, sticky bars and spacing, desktop only), `scripts/check_sticky_header.mjs` and `scripts/check_main_gaps.mjs` (new, in CI), `docs/INBOX.md`.
 
 ## v0.88 (2026-10-14)
 
