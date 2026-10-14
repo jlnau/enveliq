@@ -127,7 +127,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   // Sent
   await page.click("#sentNav");
   await page.waitForSelector(".srow");
-  check("Sent hides the inbox list and shows the notes", (await page.locator("#sentView").isVisible()) && !(await page.locator("#list").isVisible()) && (await page.locator(".sent-note").first().innerText()).includes("last 14 days"));
+  check("Sent hides the inbox list and shows the notes (last 14 days under the title, Nothing is saved in the note)", (await page.locator("#sentView").isVisible()) && !(await page.locator("#list").isVisible()) && (await page.locator("#inboxSubtitle").innerText()).includes("last 14 days") && (await page.locator(".sent-note").first().innerText()).includes("Nothing is saved"));
   check("rows show who it went to and the subject", (await page.locator(".swho").allInnerTexts()).join("|") === "Cara Harris +1|alex.chen@example.invalid" && (await page.locator(".ssub").first().innerText()) === "Dinner on Saturday");
   check("the tiny footer says it is limited to the last 14 days", (await page.locator("#sentFoot").innerText()) === "Limited to the last 14 days." && (await page.locator("#sentFoot").isVisible()));
   await page.locator(".shead").first().click();
