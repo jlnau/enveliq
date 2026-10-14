@@ -12,7 +12,9 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 **Clearer Microsoft sign-in steps.** The steps in Administration, Microsoft sign-in (and `docs/MICROSOFT.md`) now start with getting a free Azure account, with the App registrations link first, and follow what Microsoft's current screens show: the account type wording, the Authentication Settings tab, and adding the email, offline_access and openid permissions. They also say plainly that "Office 365 Exchange Online" will not be in the list in a new directory and is not needed.
 
-Code and tests: `web/static/auth.js` (Microsoft steps), `prototype/index.html` (menu wording, sticky bars and spacing, desktop only), `scripts/check_sticky_header.mjs` and `scripts/check_main_gaps.mjs` (new, in CI), `docs/INBOX.md`.
+**No more flash of the old layout when you refresh quickly.** On a computer, the search box (at the far right of the title) and the "?" help button were drawn in their old places for a split second, until the page had loaded enough to move them into the top bar. They are now kept hidden until they are in place. Phones are unchanged. The server was already telling the browser not to keep old copies of the page, so this was never an old file.
+
+Code and tests: `scripts/check_no_flash.mjs` (new, in CI), `web/static/auth.js` (Microsoft steps), `prototype/index.html` (menu wording, sticky bars and spacing, desktop only), `scripts/check_sticky_header.mjs` and `scripts/check_main_gaps.mjs` (new, in CI), `docs/INBOX.md`.
 
 ## v0.88 (2026-10-14)
 
