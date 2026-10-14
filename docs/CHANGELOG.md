@@ -10,7 +10,9 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 **Simpler menu wording.** In the menu that opens when you click your name, **Settings** is now for everyone and opens your own settings (your profile is the first tab inside). The administrator item is called **Administration** and shows only for administrators. The extra "Profile settings" and "Manage users" items are gone; the Settings button in the left bar is unchanged.
 
-Code and tests: `prototype/index.html` (menu wording, sticky bars and spacing, desktop only), `scripts/check_sticky_header.mjs` and `scripts/check_main_gaps.mjs` (new, in CI), `docs/INBOX.md`.
+**Clearer Microsoft sign-in steps.** The steps in Administration, Microsoft sign-in (and `docs/MICROSOFT.md`) now start with getting a free Azure account, with the App registrations link first, and follow what Microsoft's current screens show: the account type wording, the Authentication Settings tab, and adding the email, offline_access and openid permissions. They also say plainly that "Office 365 Exchange Online" will not be in the list in a new directory and is not needed.
+
+Code and tests: `web/static/auth.js` (Microsoft steps), `prototype/index.html` (menu wording, sticky bars and spacing, desktop only), `scripts/check_sticky_header.mjs` and `scripts/check_main_gaps.mjs` (new, in CI), `docs/INBOX.md`.
 
 ## v0.88 (2026-10-14)
 

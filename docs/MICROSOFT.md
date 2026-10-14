@@ -22,38 +22,61 @@ Outlook.com and Hotmail addresses, and work or school (Microsoft 365) addresses.
 
 ## Part 1: make the registration at Microsoft
 
+### Get a free Azure account
+
 1. Open **App registrations**: <https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade>
-   and sign in.
-   * **If you see "The ability to create applications outside of a directory has been
-     deprecated"**, your account has no directory yet. Press **Signing up for Azure** in that
-     message, finish the sign-up (this creates a *Default Directory* for you), then come back to
-     this link. A work or school account already has a directory and skips this.
-2. Press **+ New registration**.
+   and sign in with any Microsoft account. An Outlook.com or Hotmail address is fine.
+2. **If you see "The ability to create applications outside of a directory has been
+   deprecated"**, you do not have an Azure account yet. Press **Signing up for Azure** in that
+   message and finish the sign-up. It makes you a free *Default Directory*, which is where the
+   registration lives. Microsoft may ask for a card to confirm who you are. Read what its sign-up
+   page says about charges first. You do not need a paid plan. A work or school account already
+   has a directory and skips this.
+3. When the sign-up is done, open the link in step 1 again. You should see a page called
+   **App registrations**.
+
+### Register Enveliq
+
+1. Press **+ New registration**.
    * **Name:** `Enveliq` (anything you like).
-   * **Supported account types:** *Accounts in any organizational directory (Any Microsoft
-     Entra ID tenant, Multitenant) and personal Microsoft accounts*. Choose *Single tenant*
-     only if every mailbox is in your own work or school directory.
-   * **Redirect URI:** from the dropdown choose **Public client/native (mobile & desktop)** and
-     paste the **redirect address** shown in Enveliq under *Administration, Microsoft
+   * **Supported account types:** *Any Entra ID Tenant + Personal Microsoft accounts* (older
+     screens: *Accounts in any organizational directory and personal Microsoft accounts*). This is
+     what makes Outlook and Hotmail addresses work. Choose *Single tenant* only if every mailbox is
+     in your own work or school directory.
+   * **Redirect URI:** in the first box choose **Public client/native (mobile & desktop)**. In the
+     second box paste the **redirect address** shown in Enveliq under *Administration, Microsoft
      sign-in*. It looks like `https://enveliq.example.com/api/v1/mail/microsoft/callback`.
      It must match exactly.
    * Press **Register**.
-3. On the **Overview** page copy **Application (client) ID**. (If you chose *Single tenant*, also
-   copy **Directory (tenant) ID**.)
-4. Open **Authentication** in the left menu. Find **Allow public client flows** (under *Advanced
-   settings*, or on the *Settings* tab in the newer portal), set it to **Yes** and **Save**.
-   Without this, Microsoft refuses the sign-in with "does not allow public client flows".
-5. Open **API permissions**, **+ Add a permission**, the **APIs my organization uses** tab,
-   search for `Office 365 Exchange Online`, choose **Delegated permissions**, tick
-   `IMAP.AccessAsUser.All` and `SMTP.Send`, and press **Add permissions**.
-   * If Exchange Online is not in the list (it can be missing in a directory made for a
-     personal account), skip this step. Microsoft asks for the permissions when the first
-     person signs in.
-   * Under **Microsoft Graph** the delegated permissions `openid`, `email` and `offline_access`
-     should be present. Add them if they are not.
-6. Work or school accounts: if you are the administrator of that directory, press
-   **Grant admin consent for (your directory)** on the API permissions page. If you are not,
-   a tenant administrator may have to approve the app when the first person signs in.
+2. You land on the **Overview** page. Copy the **Application (client) ID**, a long code like
+   `1a2b3c4d-…`. (If you chose *Single tenant*, also copy **Directory (tenant) ID**.)
+
+### Allow public client flows
+
+1. Open **Authentication** in the left menu, then the **Settings** tab (older screens: under
+   *Advanced settings*).
+2. Switch **Allow public client flows** to **Enabled** (Yes) and press **Save**.
+
+Without this, Microsoft refuses the sign-in with "does not allow public client flows".
+
+### Add the permissions
+
+1. Open **API permissions** and press **+ Add a permission**.
+2. Choose **Microsoft Graph**, then **Delegated permissions**.
+3. Open **OpenId permissions**, tick **email**, **offline_access** and **openid**, then press
+   **Update permissions** (or **Add permissions**). The `User.Read` permission that is already there
+   can stay.
+
+You will **not** find "Office 365 Exchange Online" in the list of APIs in a new directory, and you do
+not need it. Enveliq asks for the mail permissions (`IMAP.AccessAsUser.All`, `SMTP.Send`) itself when a
+person signs in, and Microsoft shows an approval page where they press **Accept**. If your directory does
+list Exchange Online, you may add those two delegated permissions there too, but it is optional.
+
+### Work or school accounts
+
+If you are the administrator of that directory, press **Grant admin consent for (your directory)** on
+the API permissions page. If you are not, a tenant administrator may have to approve the app when the
+first person signs in.
 
 You do **not** need a client secret, a certificate, a verified publisher, or a paid plan.
 
@@ -79,9 +102,9 @@ mailbox. If the test fails nothing is kept.
 | What you see | What it means and what to do |
 | --- | --- |
 | Microsoft's page: *redirect URI does not match* (AADSTS50011) | The redirect address in the registration is not exactly the one Enveliq shows. Fix it under **Authentication**. Check http/https, the host name and that there is no trailing slash. |
-| *does not allow public client flows* | Part 1, step 4 was missed. |
+| *does not allow public client flows* | *Allow public client flows* was missed or not saved (Part 1, *Allow public client flows*). |
 | *Microsoft does not know that client ID* | The client ID has a typo, or the account type chosen in Enveliq does not match the registration (for example a personal account with a single-tenant registration). |
-| *Consent is needed* / *Need admin approval* | Work or school directory: an administrator must grant consent (Part 1, step 6). |
+| *Consent is needed* / *Need admin approval* | Work or school directory: an administrator must grant consent (Part 1, *Work or school accounts*). |
 | Sign-in works, then *the mailbox refused the connection* | The mailbox does not allow IMAP or SMTP sign-in. Personal Outlook.com: Settings, Mail, Sync email, turn on **Let devices and apps use IMAP**. Work or school: see below. |
 | A mailbox stops syncing after months | Microsoft ended the saved sign-in (long inactivity, password change, or access removed). Remove the mailbox in Enveliq and add it again. |
 
@@ -126,6 +149,6 @@ expire, and Enveliq cannot warn you when yours does.
 Microsoft shows this on the App registrations page when a personal account has no directory.
 Nothing is wrong with Enveliq or with your account. Create a directory by signing up for Azure
 (the link in Microsoft's message), or join the Microsoft 365 Developer Program if you qualify,
-then open App registrations again and carry on from Part 1, step 2. Microsoft changes this
+then open App registrations again and carry on from Part 1, "Register Enveliq". Microsoft changes this
 sign-up from time to time, so if the screens differ, follow Microsoft's prompts to get a
 directory and return here.
