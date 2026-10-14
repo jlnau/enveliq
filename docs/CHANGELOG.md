@@ -4,7 +4,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-**Drafts.** When you close a New email, Reply, Reply all or Forward window that has writing in it, Enveliq now asks **Save this as a draft?** (**Save as draft**, **Discard** or **Keep writing**). Saved drafts are on a new **Drafts** page (left menu, under More, with a count). **Continue writing** opens the draft again, on the email it answers for a reply or forward, and sending it removes it. Drafts are kept on the server for 14 days after you last saved them, so they are still there if you close the browser. Attachments are not kept in a draft. See `docs/DRAFTS.md`.
+**Drafts.** When you close a New email, Reply, Reply all or Forward window that has writing in it, Enveliq now asks **Save this as a draft?** (**Save as draft**, **Discard** or **Keep writing**). Saved drafts are on a new **Drafts** page (left menu, under More, with a count). **Continue writing** opens the draft again, on the email it answers for a reply or forward, and sending it removes it. While you write, the email is also saved to Drafts by itself every few seconds and once more when the page is closed, so closing the browser does not lose it; Discard deletes that copy. Drafts are kept on the server for 14 days after you last saved them. Attachments are not kept in a draft. See `docs/DRAFTS.md`.
 
 **Side by side view: no circles, two things in Coming up.** In the Reading pane on the right layout, the Today and Coming up boxes no longer have the round tick buttons, so the words get the room, and Coming up now shows the soonest two things instead of one. Everything else is unchanged; use the Tasks page to mark things done.
 

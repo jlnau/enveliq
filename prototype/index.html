@@ -1839,6 +1839,7 @@ body.on-draft .filters,body.on-draft #list,body.on-draft .sample-banner,body.on-
     <div id="cmCcRow" hidden><label>Cc</label><div class="chips" id="cmCc" data-label="Cc"></div></div>
     <div id="cmBccRow" hidden><label>Bcc</label><div class="chips" id="cmBcc" data-label="Bcc"></div></div>
     <div class="compose-hint" id="cmCount" hidden></div>
+    <div class="compose-hint" id="cmAuto" hidden></div>
     <div><label for="composeSubject">Subject</label><input id="composeSubject"></div>
     <div class="saved-row" id="composeSavedRow" hidden><label for="composeSaved">Saved reply</label><select id="composeSaved"></select></div>
     <div><label for="composeText">Message</label><textarea id="composeText" placeholder="Write your reply"></textarea></div>
@@ -1890,6 +1891,7 @@ body.on-draft .filters,body.on-draft #list,body.on-draft .sample-banner,body.on-
     <div><label for="nmText">Message</label><textarea id="nmText" maxlength="100000"></textarea></div>
     <div class="wh" id="nmWh" hidden></div>
     <div class="nm-files" id="nmFiles"></div>
+    <div class="compose-hint" id="nmAuto" hidden></div>
   </form>
   <div class="compose-foot">
     <span class="nm-attach"><button class="btn" id="nmAttach" type="button">Attach</button><input type="file" id="nmFile" multiple hidden></span>
@@ -3321,7 +3323,7 @@ function openComposer(id,mode,pre){
   $("composeQuote").textContent=mode==="forward"?`The whole email from ${m.sender} <${m.address}> is added under your note when you press Send. It is fetched from your mailbox then and is not stored.`:m.real?`On ${m.date||m.time}, ${m.sender} <${m.address}> wrote. Open "View email" to read the original.`:`On ${m.date||m.time}, ${m.sender} <${m.address}> wrote:\n`+(m.body||[m.summary]).map(par=>par.split("\n").map(l=>"> "+l).join("\n")).join("\n>\n");
   closeAttachmentViewer();
   cmCount();
-  composing.base=composeSnap();
+  composing.base=composeSnap();composing.saved=null;{const n=$("cmAuto");n.hidden=true;n.textContent=""}
   $("compose").classList.add("open");$("composeScrim").classList.add("show");
   if(mode==="forward"){
     setTimeout(()=>f.to.input.focus(),0);
@@ -3365,8 +3367,9 @@ function sendReply(){
     const req=mode==="forward"
       ?secureBackendRequest(base+"/forward",{method:"POST",body:JSON.stringify({body:text,from_address:from,to:toList,cc:ccList,bcc:bccList,keep_files:cm.files.map(x=>x.index)})})
       :secureBackendRequest(base+"/reply",{method:"POST",body:JSON.stringify(plainDefault?{body:text,from_address:from}:{body:text,from_address:from,kind:mode,to:toList,cc:ccList,bcc:bccList})});
-    const did=composing.draftId;
-    req.then(r=>{
+    const tgt=composing;
+    req.then(async r=>{
+        await settleAuto();const did=tgt.draftId;
         closeComposer();if(did)deleteDraftQuiet(did);
         if(r.queued){noteQueuedReply(r,m,mode);return}
         if(mode!=="forward"){m.replied=true;m.repliedAt=realTime(Date.now()/1000)}
@@ -5289,18 +5292,19 @@ function openDraft(id){
 let dkResolve=null;
 function draftAsk(what,hasDraft){
   $("dkSub").textContent=what;
-  $("dkText").textContent=hasDraft?"Save keeps your changes in Drafts for 14 days. Discard throws the changes away; the draft you saved before stays as it was.":"Save as draft keeps it in Drafts for 14 days, even if you close the browser. Discard throws it away.";
+  $("dkText").textContent=hasDraft?"This is already in Drafts, saved as you wrote. Save as draft keeps it there for 14 days. Discard deletes the draft.":"Save as draft keeps it in Drafts for 14 days, even if you close the browser. Discard throws it away.";
   $("dkAsk").classList.add("open");$("dkScrim").classList.add("show");setTimeout(()=>$("dkSave").focus(),0);
   return new Promise(res=>{dkResolve=res});
 }
 function dkDone(v){$("dkAsk").classList.remove("open");$("dkScrim").classList.remove("show");const r=dkResolve;dkResolve=null;if(r)r(v)}
 $("dkSave").onclick=()=>dkDone("save");$("dkDiscard").onclick=()=>dkDone("discard");$("dkKeep").onclick=()=>dkDone("keep");$("dkScrim").onclick=()=>dkDone("keep");
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("dkAsk").classList.contains("open")){e.stopPropagation();e.preventDefault();dkDone("keep")}},true);
-async function putDraft(id,body){
+async function putDraft(id,body,keepalive){
   let r;
-  try{r=id?await secureBackendRequest(`/api/v1/me/drafts/${encodeURIComponent(id)}`,{method:"PUT",body:JSON.stringify(body)}):await secureBackendRequest("/api/v1/me/drafts",{method:"POST",body:JSON.stringify(body)})}
+  const ka=keepalive?{keepalive:true}:{};
+  try{r=id?await secureBackendRequest(`/api/v1/me/drafts/${encodeURIComponent(id)}`,{method:"PUT",body:JSON.stringify(body),...ka}):await secureBackendRequest("/api/v1/me/drafts",{method:"POST",body:JSON.stringify(body),...ka})}
   catch(er){
-    if(id&&/not there/i.test(er.message||""))r=await secureBackendRequest("/api/v1/me/drafts",{method:"POST",body:JSON.stringify(body)});else throw er;
+    if(id&&/not there/i.test(er.message||""))r=await secureBackendRequest("/api/v1/me/drafts",{method:"POST",body:JSON.stringify(body),...ka});else throw er;
   }
   return r;
 }
@@ -5314,6 +5318,44 @@ function composeSnap(){
   const f=cmFields();
   return JSON.stringify([composing.mode,f.to.items.map(p=>p.address),f.cc.items.map(p=>p.address),f.bcc.items.map(p=>p.address),bareOrText($("composeText").value),cm.removed]);
 }
+const peopleOf=f=>[...f.items.map(addrText),...(addrOk(f.input.value.trim())?[f.input.value.trim()]:[])];     // an address typed but not yet turned into a chip counts too
+function composePayload(){
+  const {m,mode}=composing,f=cmFields();
+  return {kind:mode,account_id:m.real.accountId,message_id:m.real.messageId,from_address:$("composeFrom").value,to:peopleOf(f.to),cc:peopleOf(f.cc),bcc:peopleOf(f.bcc),subject:$("composeSubject").value,body:bareOrText($("composeText").value)};
+}
+function composeWorth(){
+  const f=cmFields(),mode=composing.mode;
+  return !isBare($("composeText").value)||(mode==="forward"&&f.to.items.length>0)||(mode==="reply"&&(f.cc.items.length>0||f.bcc.items.length>0));
+}
+function nmPayload(){
+  const f=nmFields(),[aid,from]=$("nmFrom").value.split("|");
+  return {kind:"new",account_id:aid,from_address:from,to:peopleOf(f.to),cc:peopleOf(f.cc),bcc:peopleOf(f.bcc),subject:$("nmSubject").value.trim(),body:bareOrText($("nmText").value)};
+}
+// While an email is being written it is saved to Drafts by itself every few seconds, and once more if the page is closed,
+// so closing the browser or losing power does not lose the words.
+let autoBusy=false;
+async function settleAuto(){for(let i=0;i<40&&autoBusy;i++)await new Promise(r=>setTimeout(r,100))}
+async function autosaveDrafts(keepalive){
+  if(!realMail||(autoBusy&&!keepalive))return;
+  let snap,payload,target,note;
+  if(composing&&composing.m.real&&$("compose").classList.contains("open")){
+    snap=composeSnap();if(snap===composing.base||snap===composing.saved||!composeWorth())return;
+    payload=composePayload();target=composing;note="cmAuto";
+  }else if($("newMail").classList.contains("open")){
+    snap=nmSnap();if(snap===nm.base||snap===nm.saved||!nmDirty())return;
+    payload=nmPayload();target=nm;note="nmAuto";
+  }else return;
+  autoBusy=true;
+  try{
+    const fresh=!target.draftId;
+    const r=await putDraft(target.draftId,payload,keepalive);
+    target.draftId=r.id;target.saved=snap;
+    const n=$(note);if(n){n.hidden=false;n.textContent="Saved to Drafts at "+new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})+". Kept for 14 days."}
+    if(fresh)loadDrafts();
+  }catch{}finally{autoBusy=false}
+}
+setInterval(()=>autosaveDrafts(false),3000);
+window.addEventListener("pagehide",()=>autosaveDrafts(true));
 async function requestCloseComposer(){
   if(!composing)return;
   const {m,mode}=composing;
@@ -5322,10 +5364,8 @@ async function requestCloseComposer(){
   const a=await draftAsk(mode==="forward"?`Forward: ${m.subject}`:`${mode==="reply_all"?"Reply all":"Reply"} to ${m.sender}`,!!composing.draftId);
   if(a==="keep")return;
   if(a==="save"){
-    const ok=await savedAsDraft(composing.draftId,{kind:mode,account_id:m.real.accountId,message_id:m.real.messageId,from_address:$("composeFrom").value,
-      to:f.to.items.map(addrText),cc:f.cc.items.map(addrText),bcc:f.bcc.items.map(addrText),subject:$("composeSubject").value,body:bareOrText($("composeText").value)});
-    if(!ok)return;
-  }
+    if(!(await savedAsDraft(composing.draftId,composePayload())))return;
+  }else if(composing.draftId)deleteDraftQuiet(composing.draftId);
   closeComposer();
 }
 function nmSnap(){
@@ -5339,11 +5379,9 @@ async function requestCloseNewMail(){
   const a=await draftAsk($("nmSubject").value.trim()||"New email",!!nm.draftId);
   if(a==="keep")return;
   if(a==="save"){
-    const [aid,from]=$("nmFrom").value.split("|");
-    const ok=await savedAsDraft(nm.draftId,{kind:"new",account_id:aid,from_address:from,to:f.to.items.map(addrText),cc:f.cc.items.map(addrText),bcc:f.bcc.items.map(addrText),subject:$("nmSubject").value.trim(),body:bareOrText($("nmText").value)});
-    if(!ok)return;
+    if(!(await savedAsDraft(nm.draftId,nmPayload())))return;
     if(nm.files.length)toast("Saved to Drafts. Attachments are not kept in a draft, so add them again.",6000);
-  }
+  }else if(nm.draftId)deleteDraftQuiet(nm.draftId);
   closeNewMail();
 }
 $("draftPage").addEventListener("click",e=>{
@@ -5381,7 +5419,7 @@ function openNewMail(pre){
   f.to.set(pre&&pre.to);f.cc.set(pre&&pre.cc);f.bcc.set(pre&&pre.bcc);
   $("nmCcRow").hidden=!(pre&&pre.cc&&pre.cc.length);$("nmBccRow").hidden=!(pre&&pre.bcc&&pre.bcc.length);
   $("nmSubject").value=(pre&&pre.subject)||"";$("nmText").value=(pre&&pre.body)?pre.body:withSig("");whReset("new");paintSaved("nmSaved","nmSavedRow");
-  nm.base=nmSnap();
+  nm.base=nmSnap();nm.saved=null;{const n=$("nmAuto");n.hidden=true;n.textContent=""}
   const n=realPrefs.undo_send_seconds||0;
   $("nmHint").textContent=n>0?`Held for ${n} ${n===1?"second":"seconds"} so you can undo`:"Sent as soon as you press Send";
   $("newMail").classList.add("open");$("nmScrim").classList.add("show");
@@ -5450,7 +5488,7 @@ async function sendNew(){
   nm.busy=true;const btn=$("nmSend"),label=btn.textContent;btn.disabled=true;btn.textContent="Sending…";btn.classList.add("busy");
   try{
     const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/send`,{method:"POST",body:JSON.stringify({to,cc,bcc,subject,body,from_address:from,files:nm.files.map(x=>({name:x.name,type:x.type,data:x.data}))})});
-    const did=nm.draftId;
+    await settleAuto();const did=nm.draftId;
     closeNewMail(true);if(did)deleteDraftQuiet(did);
     if(r.queued)noteQueuedNew(r,aid,subject);else toast(`✓ Email sent from ${r.from}`,4500);
   }catch(er){toast(er.message,6000)}

@@ -70,6 +70,22 @@ await ccRow.locator("[data-reply]").first().click();
 await page.click("#composeCancel");
 check("closing a reply you have not written in asks nothing", (await asking()) === 0 && (await page.locator("#compose.open").count()) === 0);
 
+// Autosave: what is being written is saved by itself, and a closed page saves it once more
+await expand(ccRow);
+await ccRow.locator("[data-reply]").first().click();
+await page.fill("#composeText", "Typed, then the browser closes.");
+await page.waitForFunction(() => document.getElementById("cmAuto") && !document.getElementById("cmAuto").hidden, null, { timeout: 8000 }).catch(() => {});
+check("a reply being written is saved to Drafts by itself, without closing it", drafts.length === 1 && drafts[0].body === "Typed, then the browser closes." && (await page.locator("#cmAuto").innerText()).includes("Saved to Drafts"));
+await page.fill("#composeText", "Typed, then the browser closes. One more line.");
+await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+await page.waitForTimeout(500);
+check("closing the page saves the latest words once more, in the same draft", drafts.length === 1 && drafts[0].body.endsWith("One more line."));
+await page.click("#composeCancel");
+check("closing it afterwards says it is already in Drafts", (await asking()) === 1 && (await page.locator("#dkText").innerText()).includes("already in Drafts"));
+await page.click("#dkDiscard");
+await page.waitForTimeout(300);
+check("Discard deletes the draft that was saved by itself", drafts.length === 0);
+
 // Reply with text: Keep writing, Discard, then Save as draft
 await expand(ccRow);
 await ccRow.locator("[data-reply]").first().click();
