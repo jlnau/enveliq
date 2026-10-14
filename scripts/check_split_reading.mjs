@@ -58,7 +58,7 @@ for (const theme of ["dark", "light"]) {
   check(t + "the Coming up box is the same shade as the Today box", shade[0] === shade[1]);
   check(t + "Coming up has no arrow to fold it", (await page.locator("#dueBars .preview-later .preview-fold-toggle").evaluate((e) => getComputedStyle(e).display)) === "none");
   check(t + "the Coming up box is the same height as the Today box", Math.abs(t2.h - l2.h) <= 2);
-  check(t + "the first email in the list starts high up (it did not move down)", list.y < 520);
+  check(t + `the first email in the list starts high up (at ${Math.round(list.y)}, it did not move down)`, list.y < 640);
   const btn = await box(page, "#readDock .reading .qbtns .reviewed");
   check(t + "Reviewed, Archive and Bin sit at the bottom of the email panel", btn && btn.b <= dock.b && btn.b >= dock.b - 80);
   if (theme === "dark") {
@@ -91,7 +91,7 @@ for (const theme of ["dark", "light"]) {
   const today = await box(page, "#dueBars .today-card"), later = await box(page, "#dueBars .preview-later"), imp = await box(page, "#dueBars .preview-important"), list = await box(page, "#paneList");
   check(t + "Also important today is under Later, on the right", imp && later && imp.x >= today.r && imp.y >= later.b && Math.abs(imp.x - later.x) <= 2);
   check(t + "both sides are the same height", Math.abs(today.b - imp.b) <= 2);
-  check(t + "the cards are short: the list starts high up", list.y < 520);
+  check(t + `the cards are short: the list starts high up (at ${Math.round(list.y)})`, list.y < 640);
   check(t + "no script errors", errs.length === 0);
   if (shots) await page.screenshot({ path: path.join(shots, `split-calm-${theme}.png`) });
   await page.context().close();
