@@ -87,6 +87,12 @@ The **Recent emails** section lists your mail. **Inbox options** starts closed o
 
 The left menu leads to **My inbox**, **Needs action**, **Tasks**, **Shipping**, **Waiting for reply**, and **Attachments**. The **More** section contains other views, including Sent, Reviewed, and Archived where available. Collapsing the desktop menu keeps the icons; the compact Calm mode control remains available.
 
+## Bigger windows for emails and attachments
+
+The window that shows an original email, an attachment, a picture or a PDF now grows with your browser window (up to a sensible size) instead of staying a fixed size, and always stays inside the browser window. On a big monitor you see much more of the email at once. The email stays a readable column in the middle. PDF pages are drawn larger and fit the width of the window; the **−** and **+** buttons zoom from there. Phones are unchanged (full screen).
+
+Web addresses in the text of an email can be clicked, but they never open by themselves: you are first asked where it goes (see "Where does this link go?" in the Be careful guide).
+
 ## Getting back to My inbox
 - The Sent page uses the same header as the other pages (Back button, title, then a line saying it shows your last 14 days of sent mail). The page keeps room for its scroll bar, so nothing moves sideways when the emails finish loading.
 - On every page other than My inbox (Needs action, Tasks, Shipping, Waiting for reply, Attachments, Reviewed, Archived, Sent and so on), a **Back to My inbox** button sits above the page title. The title now shows the name of the page you are on instead of "My inbox".

@@ -32,7 +32,7 @@ from typing import Any
 
 MAX_PDF_BYTES = 10 * 1024 * 1024
 MAX_PAGES = 20
-PAGE_LONG_SIDE = 1000          # pixels; bounds the size of any one picture whatever the page size says
+PAGE_LONG_SIDE = 1500          # pixels; bounds the size of any one picture whatever the page size says (large enough to stay sharp in a big window)
 MAX_PAGE_PNG = 3 * 1024 * 1024
 MAX_TOTAL_PNG = 24 * 1024 * 1024
 WALL_SECONDS = 20

@@ -289,13 +289,15 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 .attachment-meta-line{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.attachment-meta-line span{font-size:10px;color:var(--c-8f9aac);border:1px solid var(--c-303847);border-radius:999px;padding:3px 7px}
 .attachment-purge-note{color:var(--c-8994a7);font-size:11px;margin-top:7px}
 .attachment-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:40}.attachment-scrim.show{display:block}
-.attachment-modal{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(960px,94vw);height:min(820px,92vh);background:var(--c-10151d);border:1px solid var(--c-3a4355);border-radius:16px;box-shadow:0 32px 120px rgba(0,0,0,.6);z-index:41;overflow:hidden}
+.attachment-modal{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(1200px,94vw);height:min(92vh,2400px);background:var(--c-10151d);border:1px solid var(--c-3a4355);border-radius:16px;box-shadow:0 32px 120px rgba(0,0,0,.6);z-index:41;overflow:hidden}
 .attachment-modal.open{display:flex;flex-direction:column}
 .attachment-modal-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:16px 18px;border-bottom:1px solid var(--line)}
 .attachment-modal-head h3{margin:0;font-size:16px}.attachment-modal-head p{margin:3px 0 0;color:var(--muted);font-size:11px}
 .attachment-modal-close{border:0;background:transparent;color:var(--muted);font-size:22px}
 .attachment-security-strip{display:flex;gap:7px;flex-wrap:wrap;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--c-0d1219)}
 .attachment-security-strip span{font-size:10px;border:1px solid var(--c-315644);background:var(--c-122219);color:var(--c-bfe8cf);border-radius:999px;padding:4px 7px}
+.inline-link{color:#1f4fb0;text-decoration:underline;text-underline-offset:2px;cursor:pointer;border-radius:3px}.inline-link:hover{color:#123a8a}.inline-link:focus-visible{outline:2px solid #1f4fb0;outline-offset:2px}
+.link-ask{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--c-0d1219);font-size:13px;color:var(--text)}.link-ask[hidden]{display:none}.link-ask b{overflow-wrap:anywhere}.link-ask button{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:10px;padding:7px 12px;min-height:36px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
 .attachment-viewer{flex:1;min-height:0;overflow:auto;padding:22px;background:var(--c-0a0e13);display:flex;flex-direction:column;gap:22px;justify-content:flex-start;align-items:center;scroll-behavior:smooth}
 .safe-document{position:relative;flex:0 0 auto;width:min(720px,100%);min-height:720px;background:#fff;color:#20242b;border-radius:4px;box-shadow:0 18px 50px rgba(0,0,0,.35);padding:44px 52px}
 .safe-document h4{margin:0 0 6px;font-size:21px}.safe-document .doc-sub{color:#66707d;font-size:12px;border-bottom:1px solid #d7dce3;padding-bottom:14px;margin-bottom:20px}.safe-document .doc-block{margin:15px 0}.safe-document .doc-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#7c8490;font-weight:800}.safe-document .doc-value{font-size:16px;font-weight:700;margin-top:3px}.safe-document p{line-height:1.6;color:#414953}.safe-image{width:min(760px,100%);min-height:460px;border-radius:10px;background:linear-gradient(135deg,#eee,#d8dce6);color:#20242b;display:grid;place-items:center;padding:28px}.safe-image-card{width:min(560px,100%);background:white;border-radius:16px;padding:24px;box-shadow:0 14px 45px rgba(0,0,0,.18)}
@@ -407,10 +409,10 @@ body.in-sent .filters,body.in-sent #list,body.in-sent .sample-banner,body.in-sen
 .pics{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}.pics .pic{border:1px solid #dfe3ea;background:#f4f6fa;border-radius:8px;padding:0;width:150px;height:110px;overflow:hidden;cursor:zoom-in;display:grid;place-items:center;color:#7c8490;font-size:11px}.pics .pic img{width:100%;height:100%;object-fit:cover;display:block}
 .att-foot{color:#7c8490;font-size:11px;margin:10px 0 0}
 .picbox{position:fixed;inset:0;z-index:60;background:rgba(3,5,9,.78);display:flex;align-items:center;justify-content:center;padding:16px}.picbox[hidden]{display:none}
-.pic-card{width:min(900px,100%);max-height:100%;overflow:auto;background:var(--c-10151d);border:1px solid var(--c-3a4355);border-radius:16px;padding:16px 18px;display:grid;gap:12px}
+.pic-card{width:min(1200px,100%);max-height:100%;overflow:auto;background:var(--c-10151d);border:1px solid var(--c-3a4355);border-radius:16px;padding:16px 18px;display:grid;gap:12px}
 .pic-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.pic-head h3{margin:0;font-size:16px;overflow-wrap:anywhere}.pic-head p{margin:3px 0 0;color:var(--muted);font-size:12px}
-.pic-stage{position:relative;min-height:160px;display:grid;place-items:center;background:var(--c-0b1016);border-radius:10px;overflow:hidden}.pic-stage img{max-width:100%;max-height:60vh;display:block}.pic-stage img[hidden]{display:none}
-.doc-stage{max-height:62vh;overflow:auto;background:var(--c-0b1016);border-radius:10px;padding:14px;display:grid;gap:14px;justify-items:center;min-height:160px;align-content:start}
+.pic-stage{position:relative;min-height:160px;display:grid;place-items:center;background:var(--c-0b1016);border-radius:10px;overflow:hidden}.pic-stage img{max-width:100%;max-height:max(240px,calc(100vh - 210px));display:block}.pic-stage img[hidden]{display:none}
+.doc-stage{max-height:max(240px,calc(100vh - 210px));overflow:auto;background:var(--c-0b1016);border-radius:10px;padding:14px;display:grid;gap:14px;justify-items:center;min-height:160px;align-content:start}
 .doc-stage img.doc-page{display:block;height:auto;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.45);max-width:none}
 .doc-stage pre{margin:0;justify-self:stretch;white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
 .doc-stage .doc-table{justify-self:stretch;overflow:auto;max-width:100%}.doc-stage table{border-collapse:collapse;font-size:12px}.doc-stage td,.doc-stage th{border:1px solid var(--c-3a4355);padding:4px 8px;text-align:left;vertical-align:top}
@@ -1680,6 +1682,7 @@ html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sti
     <button class="attachment-modal-close" id="attachmentModalClose" aria-label="Close"><span aria-hidden="true">×</span><span class="cw">Close</span></button>
   </div>
   <div class="attachment-security-strip" id="viewerStrip"></div>
+  <div class="link-ask" id="linkAsk" role="alert" hidden><span id="linkAskText"></span><a class="unsub" id="linkAskOpen" target="_blank" rel="noopener noreferrer nofollow">Open it</a><button type="button" id="linkAskNo">Not now</button></div>
   <div class="attachment-viewer" id="attachmentViewer"></div>
   <div class="attachment-modal-foot"><strong id="attachmentModalSummary"></strong><p id="viewerNote"></p><div class="modal-actions" id="viewerActions"></div></div>
 </div>
@@ -3190,6 +3193,7 @@ function closeAttachmentViewer(fromBack){
   $("attachmentScrim").classList.remove("show");
   $("attachmentViewer").innerHTML="";
   $("attachmentViewerControls").innerHTML="";
+  $("linkAsk").hidden=true;
   currentAttachmentView=null;
 }
 
@@ -5240,7 +5244,8 @@ $("picNext").onclick=()=>{pv.i=(pv.i+1)%pv.list.length;showPic()};
 $("picSave").onclick=()=>saveAttachment(pv.base,pv.list[pv.i]);
 const dv={base:"",a:null,seq:0,zoom:100};
 function closeDoc(){dv.seq++;$("docBox").hidden=true;$("docStage").replaceChildren()}
-function docZoom(d){dv.zoom=Math.max(40,Math.min(200,dv.zoom+d));for(const im of $("docStage").querySelectorAll("img.doc-page"))im.style.width=Math.round(dv.zoom*3.4)+"px"}
+function docPx(){return Math.round(dv.zoom/100*Math.max(280,Math.min(1060,$("docStage").clientWidth-40)))}   // 100% is "fit the window", so a bigger window shows bigger pages
+function docZoom(d){dv.zoom=Math.max(40,Math.min(150,dv.zoom+d));for(const im of $("docStage").querySelectorAll("img.doc-page"))im.style.width=docPx()+"px"}
 async function openDoc(base,a){
   dv.base=base;dv.a=a;dv.zoom=100;const my=++dv.seq,stage=$("docStage");
   $("docName").textContent=a.filename;$("docCount").textContent=kb(a.size_bytes);
@@ -5254,7 +5259,7 @@ async function openDoc(base,a){
     const out=[];
     if(j.kind==="pdf"){
       $("docCount").textContent=`${kb(a.size_bytes)} · ${j.total} ${j.total===1?"page":"pages"}`;
-      for(const [i,b64] of j.pages.entries()){const im=document.createElement("img");im.className="doc-page";im.alt=`Page ${i+1} of ${j.total}`;im.src="data:image/png;base64,"+b64;im.style.width=Math.round(dv.zoom*3.4)+"px";out.push(im)}
+      for(const [i,b64] of j.pages.entries()){const im=document.createElement("img");im.className="doc-page";im.alt=`Page ${i+1} of ${j.total}`;im.src="data:image/png;base64,"+b64;im.style.width=docPx()+"px";out.push(im)}
       if(j.shown<j.total){const n=document.createElement("p");n.className="doc-note";n.textContent=`Showing the first ${j.shown} of ${j.total} pages. Save to my device to read the rest.`;out.push(n)}
     }else if(j.kind==="csv"){
       const wrap=document.createElement("div");wrap.className="doc-table";const t=document.createElement("table");
@@ -5358,8 +5363,36 @@ function wireAttachments(root,o,c){
     }).catch(()=>{b.textContent="Not shown"});
   }
 }
+// Web addresses in the text of an email. Only an address the server has already checked (a plain public web link that did not look
+// odd) becomes clickable, and a click never opens it: it first asks "This goes to <website>. Open it in a new tab?". Anything else stays plain text.
+function emailTextHtml(text,links,careful){
+  const ok=new Map();
+  for(const l of (Array.isArray(links)?links:[]))if(l&&!l.flagged&&typeof l.url==="string"&&typeof l.host==="string"&&l.host&&/^https?:\/\/[^\s"'<>\\]{4,2000}$/.test(l.url))ok.set(l.url,l.host);
+  if(!ok.size)return esc(text);
+  const re=/https?:\/\/[^\s<>"')\]]+/gi;let out="",last=0,m;
+  while((m=re.exec(text))){
+    let raw=m[0],trail="";
+    while(raw&&".,;:!?".includes(raw.slice(-1))){trail=raw.slice(-1)+trail;raw=raw.slice(0,-1)}
+    out+=esc(text.slice(last,m.index));
+    const host=ok.get(raw);
+    out+=host?`<span class="inline-link" role="button" tabindex="0" data-inline-link="${esc(raw)}" data-host="${esc(host.slice(0,100))}"${careful?' data-careful="1"':""}>${esc(raw)}</span>${esc(trail)}`:esc(raw+trail);
+    last=m.index+m[0].length;
+  }
+  return out+esc(text.slice(last));
+}
+function askInlineLink(el){
+  const url=el.dataset.inlineLink||"",host=el.dataset.host||"";
+  if(!/^https?:\/\/[^\s"'<>\\]{4,2000}$/.test(url)||!host)return;
+  const t=$("linkAskText");t.replaceChildren(document.createTextNode((el.dataset.careful?"This email looked odd. ":"")+"This goes to "));
+  const b=document.createElement("b");b.textContent=host;t.append(b,document.createTextNode(". Open it in a new tab?"));
+  const a=$("linkAskOpen");a.href=url;a.textContent=el.dataset.careful?"Open anyway":"Open it";
+  $("linkAsk").hidden=false;a.focus();
+}
+document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("[data-inline-link]");if(l){e.preventDefault();askInlineLink(l);return}if(e.target.closest&&e.target.closest("#linkAskNo"))$("linkAsk").hidden=true});
+document.addEventListener("keydown",e=>{if(e.key!=="Enter"&&e.key!==" ")return;const l=e.target.closest&&e.target.closest("[data-inline-link]");if(l){e.preventDefault();askInlineLink(l)}});
 function presentOriginal(o,c){
   revokeViewerUrls();
+  $("linkAsk").hidden=true;
   currentAttachmentView=null;
   $("attachmentModalName").textContent=c.title;
   $("attachmentModalContext").textContent=c.context||"";
@@ -5374,7 +5407,7 @@ function presentOriginal(o,c){
   $("attachmentViewer").innerHTML=`<article class="email-doc">
     <dl class="email-head">${rows.map(([k,v,t])=>`<dt>${esc(k)}</dt><dd${t==="ok"||t==="warn"?` class="${t}"`:""}>${esc(v)}</dd>`).join("")}</dl>
     <h4>${esc(o.subject||c.title)}</h4>${scamHtml(o.warning||c.scam)}${remote}${hasInline?'<div class="pics" data-inline></div>':""}
-    <pre class="email-text">${esc(o.text||"(no text content)")}</pre>${o.truncated?'<p class="hint">Shortened for display.</p>':""}${c.sent?"":linksHtml(o.links,!!(o.warning||c.scam))}${attachmentsHtml(o,c)}
+    <pre class="email-text">${emailTextHtml(o.text||"(no text content)",c.sent?[]:o.links,!!(o.warning||c.scam))}</pre>${o.truncated?'<p class="hint">Shortened for display.</p>':""}${c.sent?"":linksHtml(o.links,!!(o.warning||c.scam))}${attachmentsHtml(o,c)}
   </article>`;
   wireAttachments($("attachmentViewer"),o,c);
   $("attachmentViewer").scrollTop=0;
