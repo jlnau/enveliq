@@ -34,6 +34,8 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 - [Knowing when a new version is out](UPDATES.md)
 - [The demo](DEMO.md)
 - [Undo for Reviewed, Archive and Bin](UNDO.md)
+- [Reply, Reply all and Forward](REPLY_FORWARD.md) (several people in To, Cc and Bcc as chips)
+- [Drafts](DRAFTS.md) (save an unfinished email for 14 days)
 - [Checks before sending](SEND_CHECKS.md) (a gentle question if a new email has no subject or a forgotten attachment)
 - [Important people](IMPORTANT_PEOPLE.md) (mail from people you choose is shown first)
 - [Signature and saved replies](SAVED_REPLIES.md) (your signature, and short texts you use often)

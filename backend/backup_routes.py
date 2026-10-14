@@ -115,7 +115,7 @@ def build_backup_router(ctx: Any) -> APIRouter:
         except BackupError as err:
             raise _fail(err) from None
         vault.audit({"event": "vault_restored", "actor_user_id": uid, "at": time.time()})
-        sessions.revoke_all()                      # what people were signed in as may no longer be the same
+        sessions.revoke_everyone()                 # what people were signed in as may no longer be the same
         return {"restored": True, "safety_copy": result["safety_copy"], "counts": result["counts"]}
 
     @router.get("/me/export")

@@ -149,6 +149,8 @@ const box = (page, sel) => page.locator(sel).evaluate((e) => { const r = e.getBo
 
 {
   const { page, errors, context } = await open(390, 800);
+  // On a phone an email now opens full screen (see check_phone_reader.mjs). This part checks sizes and fit inside an open email row, so it keeps the row layout.
+  await page.evaluate(() => { lay = () => view.layout; render(); });
   await expandAll(page);
   await openOriginal(page, "Your order receipt");
   const ph = await box(page, "#attachmentModal");

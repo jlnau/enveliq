@@ -331,3 +331,22 @@ class FakeBridge:
                         w(b"502 no\r\n")
 
         return H
+
+
+def raw_email_with(subject: str, sender: str, to: str, *, cc: str = "", message_id: str, delivered_to: str | None = None,
+                   body: str = "Hello there.\n", file: tuple[str, bytes] | None = None) -> bytes:
+    """Like raw_email, with a Cc line and, if wanted, one attached file."""
+    import base64 as _b64
+    head = [f"From: {sender}", f"To: {to}", f"Subject: {subject}", "Date: Wed, 07 Oct 2026 09:00:00 +1100", f"Message-ID: {message_id}"]
+    if cc:
+        head.append(f"Cc: {cc}")
+    if delivered_to:
+        head.append(f"Delivered-To: {delivered_to}")
+    if file is None:
+        return ("\r\n".join(head) + "\r\n\r\n" + body.replace("\n", "\r\n")).encode()
+    name, data = file
+    head += ["MIME-Version: 1.0", 'Content-Type: multipart/mixed; boundary="B"']
+    text = ("\r\n--B\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n" + body.replace("\n", "\r\n") +
+            f'\r\n--B\r\nContent-Type: application/pdf; name="{name}"\r\nContent-Disposition: attachment; filename="{name}"\r\n'
+            "Content-Transfer-Encoding: base64\r\n\r\n" + _b64.b64encode(data).decode() + "\r\n--B--\r\n")
+    return ("\r\n".join(head) + "\r\n" + text).encode()

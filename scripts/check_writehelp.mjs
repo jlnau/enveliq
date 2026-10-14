@@ -191,6 +191,8 @@ async function openReply(page) {
 {
   const server = makeServer();
   const { page, context } = await open(server, { width: 390, height: 800 });
+  // On a phone an email now opens full screen (see check_phone_reader.mjs). This part checks sizes and fit inside an open email row, so it keeps the row layout.
+  await page.evaluate(() => { lay = () => view.layout; render(); });
   await openReply(page);
   await page.click("#whBtn_reply");
   await page.waitForSelector("#whSug_reply");

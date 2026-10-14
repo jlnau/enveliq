@@ -43,7 +43,7 @@ for (const theme of ["dark", "light"]) {
   // a quick tap must not start picking
   await rows.nth(1).locator(".qmain").click(); await p.waitForTimeout(200);
   check(theme + ": a quick tap does not start picking", !(await p.evaluate(() => document.body.classList.contains("selecting"))));
-  check(theme + ": a quick tap still opens the email as before", (await p.locator("article.mail.quiet.open").count()) === 1);
+  check(theme + ": a quick tap opens the email full screen", (await p.locator(".reader").count()) === 1);
   await again();
   // too short a hold
   await again();
@@ -59,7 +59,7 @@ for (const theme of ["dark", "light"]) {
   const x1 = await rows.nth(1).locator(".sender").evaluate((e) => e.getBoundingClientRect().left);
   check(theme + ": the emails move to the right to make room", x1 > x0 + 20);
   check(theme + ": the held email is ticked", await rows.nth(1).locator(".check").isChecked());
-  check(theme + ": the held email did not open", !(await rows.nth(1).evaluate((e) => e.classList.contains("open"))));
+  check(theme + ": the held email did not open", !(await rows.nth(1).evaluate((e) => e.classList.contains("open"))) && (await p.locator(".reader").count()) === 0);
   const bar = await p.evaluate(() => { const r = document.querySelector("#previewBulk").getBoundingClientRect(), h = document.querySelector("#previewListHeading").getBoundingClientRect(); return { show: getComputedStyle(document.querySelector("#previewBulk")).display !== "none", inside: r.top >= h.top && r.bottom <= h.bottom + 1, below: r.top > h.top + 30, n: document.querySelector("#previewSelCount").textContent, scrollW: document.documentElement.scrollWidth, iw: innerWidth }; });
   check(theme + ": the buttons sit under the Recent emails title, inside that panel", bar.show && bar.inside && bar.below);
   check(theme + ": it says 1 selected", bar.n === "1");

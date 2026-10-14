@@ -35,6 +35,8 @@ from .mail.important import ImportantPeople
 from .mail.important_routes import build_important_router
 from .mail.rules import Rules
 from .mail.rules_routes import build_rules_router
+from .mail.drafts import Drafts
+from .mail.drafts_routes import build_drafts_router
 from .mail.saved_writing import SavedWriting
 from .mail.saved_writing_routes import build_saved_writing_router
 from .mail.subscriptions import SubBook
@@ -196,6 +198,16 @@ SSO_REDIRECT_URI = f"{PUBLIC_ORIGIN}/api/v1/auth/sso/callback"
 
 # Whenever the vault locks (manual, idle timer or key replacement), drop every
 # session and sign-in step, and wipe every decrypted preview held in RAM.
+def _principal_for(user_id: str):
+    """Who a remembered sign-in belongs to after a restart, or None if they are gone or switched off."""
+    try:
+        user = users.get(user_id)
+    except (KeyError, VaultLocked):
+        return None
+    return None if user.get("disabled") else users.principal(user)
+
+
+sessions.resolver = _principal_for
 vault.add_lock_listener(sessions.revoke_all)
 vault.add_lock_listener(flows.clear)
 vault.add_lock_listener(preview_leases.clear)
@@ -480,6 +492,7 @@ def delete_user_data(user_id: str) -> None:
     writehelpbook.forget_user(user_id)
     importantbook.forget_user(user_id)
     savedbook.forget_user(user_id)
+    draftbook.forget_user(user_id)
     rulebook.forget_user(user_id)
     for account in vault.list_accounts():
         if account.get("owner_user_id") == user_id:
@@ -586,6 +599,7 @@ shipbook = ShipBook(vault)
 subbook = SubBook(vault, taskbook.timezone_of)
 importantbook = ImportantPeople(vault)
 savedbook = SavedWriting(vault)
+draftbook = Drafts(vault)
 rulebook = Rules(vault)
 tripbook = TripBook(vault, taskbook.timezone_of)
 messagebook = MessageBook(vault, users)
@@ -634,7 +648,7 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, subscriptions=subbook, important=importantbook, saved_writing=savedbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, subscriptions=subbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))
@@ -644,6 +658,7 @@ app.include_router(build_shipping_router(mail_ctx))
 app.include_router(build_subscriptions_router(mail_ctx))
 app.include_router(build_important_router(mail_ctx))
 app.include_router(build_saved_writing_router(mail_ctx))
+app.include_router(build_drafts_router(mail_ctx))
 app.include_router(build_rules_router(mail_ctx))
 app.include_router(build_trips_router(mail_ctx))
 app.include_router(build_waiting_router(mail_ctx))

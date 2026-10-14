@@ -124,7 +124,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.locator('#waitPage .wcard', { hasText: "Quote for the fence" }).locator('[data-wait-nudge]').click();
   await page.waitForSelector("#newMail.open");
   check("Write a nudge opens New email to that person, with the subject and a short message", (await page.locator("#nmSubject").inputValue()) === "Re: Quote for the fence" && (await page.locator("#nmTo").innerText()).includes("Dana") && (await page.locator("#nmText").inputValue()).includes("Send me the quote by Friday"));
-  await page.locator("#nmCancel").click(); await page.locator("#nmCancel").click();
+  await page.locator("#nmCancel").click();
   await page.waitForFunction(() => !document.querySelector("#newMail.open"));
 
   await page.locator('#waitPage .wcard', { hasText: "Quote for the fence" }).locator('[data-wait="later"]').click();

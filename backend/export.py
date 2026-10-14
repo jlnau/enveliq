@@ -22,6 +22,7 @@ PLAIN_RECORDS = {
     "writing_help": "writehelp:",
     "important_people": "important:",
     "signature_and_saved_replies": "saved:",
+    "drafts": "drafts:",
     "rules": "rules:",
     "assistant_chats": "agent:",
 }
