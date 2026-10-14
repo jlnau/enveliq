@@ -368,7 +368,7 @@ The retained record holds only the encrypted summary and metadata (invariant 4).
 
 Replies must work with alias services (Proton Pass, SimpleLogin, Firefox Relay, Apple Hide My Email, DuckDuckGo) and with multiple sending addresses.
 
-**Who the reply goes to.** The Reply-To address if present, otherwise From, exactly as received, and only that address (no reply-all by default). For an email that arrived through an alias service this is a long reverse-alias address; replying to it is what makes the service deliver the reply from the alias. Enveliq never shortens it or swaps it for the contact's real address.
+**Who the reply goes to.** The Reply-To address if present, otherwise From, exactly as received, and only that address by default. **Reply all** (shown only when the original has people on Cc) adds the other people the email was sent to and everyone on Cc, from addresses saved when the email was read; the person can edit the list before sending. For an email that arrived through an alias service this is a long reverse-alias address; replying to it is what makes the service deliver the reply from the alias. Enveliq never shortens it or swaps it for the contact's real address.
 
 **Who the reply comes from.**
 1. If the email was delivered to one of the account's sending identities (for example a Proton custom-domain address or a Gmail "Send mail as" address), the reply comes from that address.
@@ -381,6 +381,8 @@ The sending identities come from the provider at connection time (Proton Bridge 
 - A person always presses Send. The LLM can suggest wording but has no ability to send, and email content can never trigger a send (invariant 6).
 - Every value that goes into an outgoing header (To, From, Subject, In-Reply-To, References) is rejected if it contains CR, LF or NUL, which blocks header injection (for example a hidden `Bcc:` line in a crafted Reply-To). Enforced in `ReplyContext` today; the send path must enforce it again.
 - In-Reply-To and References are set from the original's Message-ID so the reply threads correctly and reply detection can resolve the review item.
+- **Other people's addresses (v0.90).** To make Reply all work, `ReplyContext` keeps the Cc and other To addresses of an email (at most 20 each, bare addresses without names, never our own addresses), inside the encrypted vault like the rest of the reply context. They are never sent to anyone but the signed-in owner of the mailbox, and are removed with the email. Addresses that do not look like email addresses, or contain line breaks, are dropped when saving so they can never stop a reply.
+- **Forward (v0.90).** The original is fetched from the mailbox when the person presses Send, quoted and attached by the server, and not stored. Forward, Reply all and Cc/Bcc recipients go through the same checks as New email: header-injection rejection, at most 50 people, repeats removed, Bcc only in the envelope, 10 files and 10 MB. A record the person may not open answers "not found", so another person cannot forward or reply to it. The audit log records the kind (`reply`, `reply_all`, `email_forwarded`) and the number of people, never an address or any text.
 - Sending is rate-limited per user, and the provider keeps the sent copy in its Sent folder; Enveliq stores only an encrypted audit event (who, when, which item), never the reply text.
 - Addresses that look like no-reply mailboxes produce a warning, not a block.
 

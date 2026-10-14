@@ -14,7 +14,7 @@ from email.message import Message
 from html.parser import HTMLParser
 from typing import Any
 
-from ..models import ReplyContext
+from ..models import _EMAIL, _HEADER_UNSAFE, ReplyContext
 from . import links, scamcheck, unsub
 
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
@@ -172,6 +172,17 @@ def summarise_headers(raw: bytes, identities: list[str]) -> dict[str, Any] | Non
         message_id = found.group(0)
     references = _ANGLE_ID.findall(clean(msg.get("References"), 20_000))[-49:]
 
+    # The other people on the email, for Reply all. Bare addresses only, never our own, never the person we reply to.
+    skip = set(known) | {sender[1].lower(), (reply_to or "").lower()}
+    others: dict[str, list[str]] = {"Cc": [], "To": []}
+    for header in ("Cc", "To"):
+        for _, addr in _addresses(msg, header):
+            low = addr.lower()
+            if low in skip or not addr or len(addr) > 320 or not _EMAIL.match(addr) or _HEADER_UNSAFE.search(addr):
+                continue
+            skip.add(low)
+            others[header].append(addr)
+
     context = None
     if reply_to:
         try:
@@ -181,6 +192,8 @@ def summarise_headers(raw: bytes, identities: list[str]) -> dict[str, Any] | Non
                 via_alias=alias_service(reply_to),
                 message_id=message_id,
                 references=references,
+                cc=others["Cc"][:20],
+                also_to=others["To"][:20],
             ).model_dump()
         except ValueError:
             context = None  # unusable address: show the email but offer no reply
@@ -349,3 +362,36 @@ def render_original(raw: bytes) -> dict[str, Any]:
         "warning": scamcheck.from_whole(msg),
         "sender_check": scamcheck.sender_check(msg),
     }
+
+
+def forward_quote(raw: bytes) -> str:
+    """The "Forwarded message" block put under a forwarded note: who, when, subject, then the text of the original."""
+    msg = parse_headers(raw)
+    sender = (_addresses(msg, "From") or [("", "")])[0]
+
+    def line(label: str, pairs: list[tuple[str, str]]) -> str:
+        if not pairs:
+            return ""
+        return f"{label}: " + ", ".join(f"{n} <{a}>" if n else a for n, a in pairs[:50]) + "\n"
+
+    shown = render_original(raw)
+    head = "---------- Forwarded message ----------\n"
+    head += line("From", [sender] if sender[1] else [])
+    date = clean(msg.get("Date"), 100)
+    if date:
+        head += f"Date: {date}\n"
+    head += f"Subject: {clean(msg.get('Subject'), 998) or '(no subject)'}\n"
+    head += line("To", _addresses(msg, "To")) + line("Cc", _addresses(msg, "Cc"))
+    return head + "\n" + shown["text"]
+
+
+def forward_files(raw: bytes, keep: list[int] | None) -> list[tuple[bytes, str, str]]:
+    """(content, name, type) of the original's files to send along: the numbered ones, or all of them. Pictures that are part of the text are left out unless numbered."""
+    parts = list_parts(email.message_from_bytes(raw, policy=policy.default))
+    wanted = [i for i, p in enumerate(parts) if not part_info(i, p)["inline"]] if keep is None else [i for i in dict.fromkeys(keep) if 0 <= i < len(parts)]
+    out = []
+    for i in wanted:
+        got = attachment_bytes(raw, i)
+        if got is not None:
+            out.append(got)
+    return out

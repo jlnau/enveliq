@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import base64
 import time
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi import Path as PathParam
@@ -79,11 +79,46 @@ class AiConfigBody(StrictModel):
 class ReplyBody(StrictModel):
     body: str = Field(min_length=1, max_length=100_000)
     from_address: str | None = Field(default=None, max_length=320)
+    # Who it goes to. Left out, a reply goes to the sender and a Reply all also to the other people on the email.
+    kind: Literal["reply", "reply_all"] = "reply"
+    to: list[str] | None = Field(default=None, max_length=50)
+    cc: list[str] | None = Field(default=None, max_length=50)
+    bcc: list[str] | None = Field(default=None, max_length=50)
 
     @field_validator("from_address")
     @classmethod
     def from_address_safe(cls, value: str | None) -> str | None:
         return header_safe(value)
+
+    @field_validator("to", "cc", "bcc")
+    @classmethod
+    def short_addresses(cls, values: list[str] | None) -> list[str] | None:
+        for v in values or []:
+            if len(v) > 320:
+                raise ValueError("address too long")
+        return values
+
+
+class ForwardBody(StrictModel):
+    to: list[str] = Field(default_factory=list, max_length=50)
+    cc: list[str] = Field(default_factory=list, max_length=50)
+    bcc: list[str] = Field(default_factory=list, max_length=50)
+    body: str = Field(default="", max_length=100_000)
+    from_address: str | None = Field(default=None, max_length=320)
+    keep_files: list[int] | None = Field(default=None, max_length=50)    # numbers of the original's files to send; left out sends them all
+
+    @field_validator("from_address")
+    @classmethod
+    def from_address_safe(cls, value: str | None) -> str | None:
+        return header_safe(value)
+
+    @field_validator("to", "cc", "bcc")
+    @classmethod
+    def short_addresses(cls, values: list[str]) -> list[str]:
+        for v in values:
+            if len(v) > 320:
+                raise ValueError("address too long")
+        return values
 
 
 MAX_SNOOZE_DAYS = 366
@@ -370,17 +405,40 @@ def build_mail_router(ctx: Any) -> APIRouter:
         try:
             if delay > 0:
                 # Undo send: check everything now, then hold the reply for the person's chosen time.
-                built = service.build_reply(account, message, body.body, body.from_address)
-                item = outbox.enqueue(user, account_id, message_id, built, body.body, delay)
+                built = service.build_reply(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.kind)
+                item = outbox.enqueue(user, account_id, message_id, built, body.body, delay, kind=body.kind)
                 return {"queued": True, "id": item.id, "send_at": item.send_at, "now": time.time(), "from": item.chosen,
-                        "to": item.recipients[0] if item.recipients else ""}
-            sent_from = service.reply(account, message, body.body, body.from_address)
+                        "to": item.recipients[0] if item.recipients else "", "people": len(item.recipients)}
+            built = service.build_reply(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.kind)
+            sent_from = service.reply(account, message, body.body, body.from_address, built)
         except BridgeError as err:
             raise fail(err) from None
         service.mark_replied(vault, account_id, message_id)
-        vault.audit({"event": "reply_sent", "actor_user_id": user, "account_id": account_id,
+        vault.audit({"event": "reply_sent", "actor_user_id": user, "account_id": account_id, "kind": body.kind, "people": len(built[2]),
                      "message_id": message_id, "at": time.time()})
         return {"sent": True, "from": sent_from}
+
+    @router.post("/accounts/{account_id}/messages/{message_id}/forward")
+    def forward(body: ForwardBody, account_id: AccountId, message_id: MessageId, session: Session = Depends(session_dep)):
+        """Forward an email. The original is fetched from the mailbox now and never kept; the forward is built here, not by the page."""
+        account = owned(account_id, session, "forward emails")
+        message = message_of(account_id, message_id)
+        user = session.principal.user_id
+        if not send_limit.allow(f"send:{user}") or not send_total.allow("all"):
+            raise HTTPException(status_code=429, detail="Too many emails sent recently. Wait a few minutes.")
+        delay = review.user_prefs(vault, user)["undo_send_seconds"]
+        try:
+            built = service.build_forward(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.keep_files)
+            if delay > 0:
+                item = outbox.enqueue(user, account_id, message_id, built, body.body, delay, kind="forward")
+                return {"queued": True, "id": item.id, "send_at": item.send_at, "now": time.time(), "from": item.chosen,
+                        "to": item.recipients[0] if item.recipients else "", "people": len(item.recipients)}
+            service.bridge.send(service.target(account), built[0], built[1], built[2])
+        except BridgeError as err:
+            raise fail(err) from None
+        vault.audit({"event": "email_forwarded", "actor_user_id": user, "account_id": account_id, "people": len(built[2]),
+                     "message_id": message_id, "at": time.time()})
+        return {"sent": True, "from": built[1]}
 
     @router.post("/accounts/{account_id}/messages/{message_id}/snooze")
     def snooze(body: SnoozeBody, account_id: AccountId, message_id: MessageId, response: Response, session: Session = Depends(session_dep)):
@@ -428,7 +486,12 @@ def build_mail_router(ctx: Any) -> APIRouter:
                 data = part.get_payload(decode=True) or b""
                 files.append({"name": part.get_filename() or "attachment", "type": part.get_content_type(),
                               "data": base64.b64encode(data).decode("ascii")})
-        return {"cancelled": True, "body": item.body, "from": item.chosen, "to": item.recipients[0] if item.recipients else "",
+        def listed(name: str) -> list[str]:
+            return [a.addr_spec for h in item.msg.get_all(name, []) for a in getattr(h, "addresses", ())]
+        to_list, cc_list = listed("To"), listed("Cc")
+        shown = {x.lower() for x in to_list + cc_list}
+        people = {"kind": item.kind, "to_list": to_list, "cc_list": cc_list, "bcc_list": [r for r in item.recipients if r.lower() not in shown]}
+        return {**people, "cancelled": True, "body": item.body, "from": item.chosen, "to": item.recipients[0] if item.recipients else "",
                 "account_id": item.account_id, "message_id": item.message_id, "draft": item.draft, "files": files}
 
     return router

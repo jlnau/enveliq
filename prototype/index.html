@@ -1817,12 +1817,16 @@ body.preview-mobile-emails-closed #readDock{display:none!important}
   </div>
   <form class="compose-body" id="composeForm">
     <div><label for="composeFrom">From</label><select id="composeFrom"></select><div class="compose-hint" id="composeFromHint"></div></div>
-    <div><label for="composeTo">To</label><input id="composeTo" readonly><div class="compose-hint" id="composeToHint"></div></div>
+    <div><label>To <span class="ccsw"><button type="button" id="cmCcBtn">Cc</button><button type="button" id="cmBccBtn">Bcc</button></span></label><div class="chips" id="cmTo" data-label="To"></div><div class="compose-hint" id="composeToHint"></div></div>
+    <div id="cmCcRow" hidden><label>Cc</label><div class="chips" id="cmCc" data-label="Cc"></div></div>
+    <div id="cmBccRow" hidden><label>Bcc</label><div class="chips" id="cmBcc" data-label="Bcc"></div></div>
+    <div class="compose-hint" id="cmCount" hidden></div>
     <div><label for="composeSubject">Subject</label><input id="composeSubject"></div>
     <div class="saved-row" id="composeSavedRow" hidden><label for="composeSaved">Saved reply</label><select id="composeSaved"></select></div>
     <div><label for="composeText">Message</label><textarea id="composeText" placeholder="Write your reply"></textarea></div>
     <div class="wh" id="composeWh" hidden></div>
-    <details><summary>Original message (quoted below your reply)</summary><pre id="composeQuote"></pre></details>
+    <div id="cmFilesRow" hidden><label>Files from the original email</label><div class="nm-files" id="cmFiles"></div></div>
+    <details><summary id="composeQuoteTitle">Original message (quoted below your reply)</summary><pre id="composeQuote"></pre></details>
   </form>
   <div class="compose-foot">
     <small>Prototype: nothing is sent. You always press Send yourself; the AI never sends mail.</small>
@@ -3056,9 +3060,9 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
     const quick=m.kept?"<span></span>":`<span class="qpair"><button class="action reviewed qic" data-id="${esc(m.id)}" data-status="reviewed" aria-label="Mark reviewed" title="Mark reviewed">${ICON_OK}</button><button class="action archive qic" data-id="${esc(m.id)}" data-status="archived" aria-label="Archive" title="Archive">${ICON_ARCH}</button><button class="action trash qic" data-id="${esc(m.id)}" data-status="trashed" aria-label="Bin" title="Bin">${ICON_BIN}</button></span>`;
     const category=m.action?"Needs action":m.priority==="high"?"High priority":"Information";
     const attCount=fileN(m)?`${fileN(m)} ${fileN(m)===1?"file":"files"}`:"None";
-    const replyBtn=(m.replyTo?`<button class="subtle" data-reply="${esc(m.id)}">${ICON_REPLY}Reply</button>`:"")+(m.kept?"":isSnoozed(m)?`<button class="subtle" data-unsnooze="${esc(m.id)}">${ICON_SNOOZE}Wake now</button>`:`<button class="subtle" data-snooze="${esc(m.id)}" aria-haspopup="menu">${ICON_SNOOZE}Snooze</button>`)||"<span></span>";
+    const replyBtn=(m.replyTo?`<button class="subtle" data-reply="${esc(m.id)}">${ICON_REPLY}Reply</button>`:"")+moreReplyBtns(m)+(m.kept?"":isSnoozed(m)?`<button class="subtle" data-unsnooze="${esc(m.id)}">${ICON_SNOOZE}Wake now</button>`:`<button class="subtle" data-snooze="${esc(m.id)}" aria-haspopup="menu">${ICON_SNOOZE}Snooze</button>`)||"<span></span>";
     const detail=m.kept
-      ?`<div class="qdetail"><div class="qfrom"><span class="addr">&lt;${esc(m.address)}&gt;</span></div><div class="qsummary">${esc(m.summary)}</div>${taskHtml}${attachmentsBlock(m)}<div class="kept-note">${m.status==="archived"?"Archived":"Marked reviewed"} in your mailbox. Kept here until ${esc(m.keptUntil)}.${m.replied?` You replied ${esc(m.repliedAt||"just now")}.`:""}</div><div class="actions">${m.replyTo?`<button class="action reply" data-reply="${esc(m.id)}">↩ Reply</button>`:""}<button class="action trash" data-id="${esc(m.id)}" data-status="expired">Remove from this list</button></div></div>`
+      ?`<div class="qdetail"><div class="qfrom"><span class="addr">&lt;${esc(m.address)}&gt;</span></div><div class="qsummary">${esc(m.summary)}</div>${taskHtml}${attachmentsBlock(m)}<div class="kept-note">${m.status==="archived"?"Archived":"Marked reviewed"} in your mailbox. Kept here until ${esc(m.keptUntil)}.${m.replied?` You replied ${esc(m.repliedAt||"just now")}.`:""}</div><div class="actions">${m.replyTo?`<button class="action reply" data-reply="${esc(m.id)}">↩ Reply</button>`:""}${moreReplyBtns(m,"action reply")}<button class="action trash" data-id="${esc(m.id)}" data-status="expired">Remove from this list</button></div></div>`
       :`<div class="qdetail split"><div class="qmainc">${scamHtml(m.scam)}${m.ungen&&m.real&&feat.all_mail&&allMail?genBlock(m):`<div class="qsummary">${esc(m.summary)}</div>`}${attachmentsBlock(m)}${taskHtml}<div class="qfill"></div><div class="qfoot"><span class="qleft">${replyBtn}${m.kept||!m.address?"":`<button class="subtle" data-important="${esc(m.id)}" aria-pressed="${isImp(m)}">&#9733; ${isImp(m)?"Not important":"Important person"}</button>`}${m.kept||!m.address||!realMail||isImp(m)?"":`<button class="subtle" data-rule="${esc(m.id)}">Always archive these</button>`}${unsubHtml(m.unsub,!!m.scam)}</span><button class="linkbtn view-email" data-open-email="${esc(m.id)}">View original email</button></div></div>
         <aside class="qside" aria-label="Email details"><div class="qkv"><span>From</span><span class="addr">${esc(m.address)}</span></div><div class="qkv"><span>Received</span><span>${esc(m.time)}</span></div>${m.replied?`<div class="qkv replied-kv"><span>Replied</span><span>${esc(m.repliedAt||"Just now")}</span></div>`:""}<div class="qkv"><span>Category</span><span>${esc(category)}</span></div><div class="qkv"><span>Attachments</span><span>${esc(attCount)}</span></div>
         <div class="qbtns"><button class="action reviewed" data-id="${esc(m.id)}" data-status="reviewed">${ICON_OK}Reviewed</button><div class="two"><button class="action archive" data-id="${esc(m.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(m.id)}" data-status="trashed">${ICON_BIN}Bin</button></div></div></aside></div>`;
@@ -3188,7 +3192,7 @@ function openEmailViewer(id){
   $("attachmentViewer").scrollTop=0;
   $("attachmentModalSummary").textContent=`Summary: ${m.summary}`;
   $("viewerNote").textContent="Enveliq keeps only the encrypted summary. The full email stays in your mailbox and is shown here without saving it.";
-  $("viewerActions").innerHTML=unsubHtml(m.unsub)+`<button class="primary" data-reply="${esc(m.id)}">↩ Reply</button>`;
+  $("viewerActions").innerHTML=unsubHtml(m.unsub)+moreReplyBtns(m,"btn")+`<button class="primary" data-reply="${esc(m.id)}">↩ Reply</button>`;
   $("attachmentModal").classList.add("open");
   $("attachmentScrim").classList.add("show");viewerPush();
 }
@@ -3208,6 +3212,13 @@ let composing=null;
 const isNoReply=addr=>/(^|[._-])(no-?reply|do-?not-?reply|donotreply|notifications?)@/i.test(addr||"");
 function accountFor(m){
   return accounts.find(a=>a.owner===currentUser.id&&a.name===m.account)||accounts.find(a=>a.owner===currentUser.id);
+}
+// Reply all shows only when the email has people on Cc. Forward needs a real mailbox (the original is fetched when you forward it).
+const ICON_FWD=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5M20 9H10a6 6 0 0 0-6 6v3"/></svg>`;
+function moreReplyBtns(m,cls){
+  if(!m)return "";
+  const c=cls||"subtle";
+  return (m.replyTo&&m.replyCc&&m.replyCc.length?`<button class="${c}" data-reply-all="${esc(m.id)}">Reply all</button>`:"")+(m.real&&realMail?`<button class="${c}" data-forward="${esc(m.id)}">${ICON_FWD}Forward</button>`:"");
 }
 function planReply(m){
   const acct=accountFor(m);
@@ -3229,25 +3240,67 @@ function planReply(m){
     :`Replying only to the sender.`;
   return {acct,identities,to,from,fromHint,fromKind,toHint,noReply:isNoReply(to)};
 }
-function openComposer(id){
+const cm={fields:null,files:[]};
+function cmFields(){if(!cm.fields)cm.fields={to:chipField($("cmTo"),cmCount),cc:chipField($("cmCc"),cmCount),bcc:chipField($("cmBcc"),cmCount)};return cm.fields}
+const cmPeople=()=>{const f=cmFields(),seen=new Set(),n=[];for(const l of [f.to.items,f.cc.items,f.bcc.items])for(const p of l){const k=p.address.toLowerCase();if(!seen.has(k)){seen.add(k);n.push(p)}}return n};
+const peopleText=list=>list.length<2?(list[0]||""):`${list[0]} and ${list.length-1} ${list.length===2?"other":"others"}`;
+function cmCount(){
+  const el=$("cmCount");if(!el||!composing)return;
+  const n=cmPeople().length;
+  el.hidden=!(composing.mode!=="reply"&&n>1)&&!(n>2);
+  el.textContent=`This goes to ${n} people.`;
+}
+function paintCmFiles(){
+  $("cmFilesRow").hidden=!cm.files.length;
+  $("cmFiles").replaceChildren(...cm.files.map((f,i)=>{
+    const sp=document.createElement("span");sp.className="nm-file";
+    const b=document.createElement("b");b.textContent=f.name;const z=document.createElement("span");z.textContent=kb(f.size);
+    const x=document.createElement("button");x.type="button";x.textContent="×";x.setAttribute("aria-label","Leave out "+f.name);x.onclick=()=>{cm.files.splice(i,1);paintCmFiles()};
+    sp.append(b,z,x);return sp;
+  }));
+}
+// mode: "reply", "reply_all" or "forward". pre (after Undo): the people it was going to.
+function openComposer(id,mode,pre){
+  mode=mode||"reply";
   const m=data.find(x=>x.id===Number(id)&&x.owner===currentUser.id);
   if(!m){toast("This email is no longer available");return}
   const plan=planReply(m);
-  composing={m,plan};
-  $("composeTitle").textContent=`Reply to ${m.sender}`;
+  if(mode==="reply_all"&&!(m.replyCc&&m.replyCc.length))mode="reply";
+  if(mode==="forward"&&!(m.real&&realMail))mode="reply";
+  composing={m,plan,mode};
+  const f=cmFields();f.to.clear();f.cc.clear();f.bcc.clear();cm.files=[];paintCmFiles();
+  const word=mode==="forward"?"Forward":mode==="reply_all"?"Reply all to":"Reply to";
+  $("composeTitle").textContent=mode==="forward"?`Forward: ${m.subject}`:`${word} ${m.sender}`;
   $("composeContext").textContent=`${m.subject} · ${plan.acct?.name||m.account}`;
   $("composeFrom").innerHTML=plan.identities.map(a=>`<option value="${esc(a)}" ${a===plan.from?"selected":""}>${esc(a)}</option>`).join("");
-  const fh=$("composeFromHint");fh.textContent=plan.fromHint;fh.className="compose-hint"+(plan.fromKind==="alias"?" alias":plan.fromKind==="fallback"&&m.deliveredTo?" warn":"");
-  $("composeTo").value=plan.to;
+  const fh=$("composeFromHint");fh.textContent=mode==="forward"?plan.fromHint.replace(/Your reply/g,"Your forward").replace(/your reply/g,"your forward"):plan.fromHint;fh.className="compose-hint"+(plan.fromKind==="alias"?" alias":plan.fromKind==="fallback"&&m.deliveredTo?" warn":"");
   const th=$("composeToHint");
-  th.textContent=plan.noReply?`${plan.toHint} This looks like an address that doesn't accept replies, so your message may not be read.`:plan.toHint;
-  th.className="compose-hint"+(plan.noReply?" warn":m.viaAlias?" alias":"");
-  $("composeSubject").value=/^re:/i.test(m.subject)?m.subject:`Re: ${m.subject}`;
+  if(mode==="forward"){
+    th.textContent="Type a name or an address, then press Enter or Tab.";th.className="compose-hint";
+  }else{
+    th.textContent=mode==="reply_all"?"Goes to the sender, the other people the email was sent to, and everyone on Cc. You can take anyone off.":(plan.noReply?`${plan.toHint} This looks like an address that doesn't accept replies, so your message may not be read.`:plan.toHint);
+    th.className="compose-hint"+(mode==="reply"&&plan.noReply?" warn":mode==="reply"&&m.viaAlias?" alias":"");
+  }
+  if(pre){f.to.set(pre.to);f.cc.set(pre.cc);f.bcc.set(pre.bcc)}
+  else if(mode==="forward"){}
+  else{f.to.set([plan.to,...(mode==="reply_all"?m.replyAlsoTo||[]:[])]);if(mode==="reply_all")f.cc.set(m.replyCc)}
+  $("cmCcRow").hidden=!f.cc.items.length;$("cmBccRow").hidden=!f.bcc.items.length;
+  $("composeSubject").value=mode==="forward"?(/^fwd?:/i.test(m.subject)?m.subject:`Fwd: ${m.subject}`):(/^re:/i.test(m.subject)?m.subject:`Re: ${m.subject}`);
   $("composeText").value=withSig("");whReset("reply");paintSaved("composeSaved","composeSavedRow");
-  $("composeQuote").textContent=m.real?`On ${m.date||m.time}, ${m.sender} <${m.address}> wrote. Open "View email" to read the original.`:`On ${m.date||m.time}, ${m.sender} <${m.address}> wrote:\n`+(m.body||[m.summary]).map(par=>par.split("\n").map(l=>"> "+l).join("\n")).join("\n>\n");
+  $("composeText").placeholder=mode==="forward"?"Add a note (optional)":"Write your reply";
+  $("composeSend").textContent=mode==="forward"?"Send forward":"Send reply";
+  $("composeQuoteTitle").textContent=mode==="forward"?"The original email (added below your note when you send)":"Original message (quoted below your reply)";
+  $("composeQuote").textContent=mode==="forward"?`The whole email from ${m.sender} <${m.address}> is added under your note when you press Send. It is fetched from your mailbox then and is not stored.`:m.real?`On ${m.date||m.time}, ${m.sender} <${m.address}> wrote. Open "View email" to read the original.`:`On ${m.date||m.time}, ${m.sender} <${m.address}> wrote:\n`+(m.body||[m.summary]).map(par=>par.split("\n").map(l=>"> "+l).join("\n")).join("\n>\n");
   closeAttachmentViewer();
+  cmCount();
   $("compose").classList.add("open");$("composeScrim").classList.add("show");
-  setTimeout(()=>{const t=$("composeText");t.focus();t.setSelectionRange(0,0)},0);
+  if(mode==="forward"){
+    setTimeout(()=>f.to.input.focus(),0);
+    const mine=composing;
+    secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/original`,{method:"GET",headers:{}})
+      .then(o=>{if(composing!==mine)return;cm.files=(o.attachments||[]).filter(a=>!a.inline).map(a=>({index:a.index,name:a.filename,size:a.size_bytes||0}));paintCmFiles()})
+      .catch(()=>{});
+  }else setTimeout(()=>{const t=$("composeText");t.focus();t.setSelectionRange(0,0)},0);
 }
 function closeComposer(){
   $("compose").classList.remove("open");$("composeScrim").classList.remove("show");composing=null;
@@ -3255,14 +3308,21 @@ function closeComposer(){
 let sendingReply=false,whPassed=false;
 function sendReply(){
   if(!composing)return;
+  const {m,plan,mode}=composing;
+  const f=cmFields();
+  if(!f.to.commit()||!f.cc.commit()||!f.bcc.commit())return;
   const text=$("composeText").value.trim();
-  if(isBare(text)){toast("Write your reply first");$("composeText").focus();return}
-  const {m,plan}=composing;
+  if(mode!=="forward"&&isBare(text)){toast("Write your reply first");$("composeText").focus();return}
   const from=$("composeFrom").value;
   if(!plan.identities.includes(from)){toast("Choose one of your sending addresses");return}
+  const people=cmPeople();
+  if(!people.length){toast("Add at least one person to send this to");f.to.input.focus();return}
+  if(people.length>50){toast("A message can go to at most 50 people");return}
+  const toList=f.to.items.map(p=>p.address),ccList=f.cc.items.map(p=>p.address),bccList=f.bcc.items.map(p=>p.address);
+  const who=peopleText(people.map(p=>p.address));
   const acct=plan.acct;
   if(m.real&&!sendingReply&&!whPassed&&whNeedsCheck("reply")){
-    whConfirm("reply",plan.to,text).then(ok=>{if(ok){whPassed=true;try{sendReply()}finally{whPassed=false}}});
+    whConfirm("reply",who,text).then(ok=>{if(ok){whPassed=true;try{sendReply()}finally{whPassed=false}}});
     return;
   }
   if(m.real){
@@ -3270,11 +3330,17 @@ function sendReply(){
     sendingReply=true;
     const btn=$("composeSend"),label=btn.textContent;
     btn.disabled=true;btn.textContent="Sending…";btn.classList.add("busy");$("composeText").readOnly=true;
-    secureBackendRequest(`/api/v1/accounts/${m.real.accountId}/messages/${m.real.messageId}/reply`,{method:"POST",body:JSON.stringify({body:text,from_address:from})})
-      .then(r=>{
+    const base=`/api/v1/accounts/${m.real.accountId}/messages/${m.real.messageId}`;
+    // A plain reply with nothing changed lets the server use the sender's address exactly as it was received.
+    const plainDefault=mode==="reply"&&!ccList.length&&!bccList.length&&toList.length===1&&toList[0]===plan.to;
+    const req=mode==="forward"
+      ?secureBackendRequest(base+"/forward",{method:"POST",body:JSON.stringify({body:text,from_address:from,to:toList,cc:ccList,bcc:bccList,keep_files:cm.files.map(x=>x.index)})})
+      :secureBackendRequest(base+"/reply",{method:"POST",body:JSON.stringify(plainDefault?{body:text,from_address:from}:{body:text,from_address:from,kind:mode,to:toList,cc:ccList,bcc:bccList})});
+    req.then(r=>{
         closeComposer();
-        if(r.queued){noteQueuedReply(r,m);return}
-        m.replied=true;m.repliedAt=realTime(Date.now()/1000);render();toast(`✓ Reply sent from ${r.from} to ${plan.to}`,4500);
+        if(r.queued){noteQueuedReply(r,m,mode);return}
+        if(mode!=="forward"){m.replied=true;m.repliedAt=realTime(Date.now()/1000)}
+        render();toast(`✓ ${mode==="forward"?"Forward":"Reply"} sent from ${r.from} to ${who}`,4500);
       })
       .catch(er=>toast(er.message,6000))
       .finally(()=>{sendingReply=false;btn.disabled=false;btn.textContent=label;btn.classList.remove("busy");$("composeText").readOnly=false});
@@ -3282,10 +3348,12 @@ function sendReply(){
   }
   closeComposer();
   // Reply detection: with "Complete linked task after reply" on, the item resolves.
-  if(acct?.settings?.actions?.completeTaskOnReply!==false){m.status="reviewed";m.attachments=[];m.attachmentsPurged=true;selected.delete(m.id)}
-  m.replied=true;
+  if(mode!=="forward"){
+    if(acct?.settings?.actions?.completeTaskOnReply!==false){m.status="reviewed";m.attachments=[];m.attachmentsPurged=true;selected.delete(m.id)}
+    m.replied=true;
+  }
   render();
-  toast(`Reply sent from ${from} to ${plan.to} (prototype: nothing was sent)`);
+  toast(`${mode==="forward"?"Forward":"Reply"} sent from ${from} to ${who} (prototype: nothing was sent)`);
 }
 
 // On a phone the Back button should close a window, not leave Enveliq: opening one adds a history step, closing removes it.
@@ -4309,6 +4377,8 @@ document.addEventListener("click",e=>{
   const ruleBtn=e.target.closest("[data-rule]");if(ruleBtn){const m=data.find(x=>x.id===Number(ruleBtn.dataset.rule)&&x.owner===currentUser.id);if(m)addRuleFor(m,ruleBtn);return}
   const impBtn=e.target.closest("[data-important]");if(impBtn){const m=data.find(x=>x.id===Number(impBtn.dataset.important)&&x.owner===currentUser.id);if(m)setImportant(m,!isImp(m));return}
   const replyBtn=e.target.closest("[data-reply]");if(replyBtn){openComposer(replyBtn.dataset.reply);return}
+  const replyAllBtn=e.target.closest("[data-reply-all]");if(replyAllBtn){openComposer(replyAllBtn.dataset.replyAll,"reply_all");return}
+  const fwdBtn=e.target.closest("[data-forward]");if(fwdBtn){openComposer(fwdBtn.dataset.forward,"forward");return}
   if(e.target.closest("#expandAll")){
     const b=$("expandAll");
     if(b.dataset.mode==="collapse"){for(const k of [...expanded])if(k.startsWith("row-"))expanded.delete(k);if(view.rows==="open"){view.rows="collapsed";saveView();applyView()}}
@@ -4704,7 +4774,7 @@ async function loadRealMail(me){
         subject:r.subject,time:realTime(r.received_at),date:r.received_at?new Date(r.received_at*1000).toLocaleString():"",received:r.received_at||0,
         summary:r.summary,priority:r.priority||"normal",category:r.category||"Email",action:!!r.action_required,status:r.state==="reviewed"||r.state==="archived"?r.state:"inbox",kept:r.state==="reviewed"||r.state==="archived",keptUntil:r.resolved_at?new Date((r.resolved_at+realPrefs.keep_days*86400)*1000).toLocaleDateString(undefined,{day:"numeric",month:"short"}):"",
         task:r.suggested_task&&r.suggested_task.title?{title:r.suggested_task.title,due:r.suggested_task.due||"",detail:r.suggested_task.detail||""}:null,attachments:(r.attachment_summaries||[]).map(a=>({name:a.filename,mime:a.mime_type||"",size:fmtBytes(a.size_bytes),pages:a.pages||0,index:a.index,state:a.state==="reading"?"working":a.state||"done",summary:a.summary||"",parts:(a.parts||[]).map(p=>({title:p.title||"",text:p.text})),note:a.note||"",reason:a.reason||"",real:true})),hasFiles:!!r.has_attachments,fileCount:Number.isInteger(r.attachment_count)?r.attachment_count:null,
-        replyTo:ctx.reply_to||null,deliveredTo:ctx.delivered_to||null,viaAlias:ctx.via_alias||null,unsub:r.unsubscribe||null,scam:r.scam_warning||null,real:{accountId:a.id,messageId:r.id},extra:!!r.from_all_mail,ungen:String(r.summary||"").startsWith("Not summarised yet"),snoozeUntil:r.snoozed_until?r.snoozed_until*1000:0,replied:!!r.replied_at,repliedAt:r.replied_at?realTime(r.replied_at):""});
+        replyTo:ctx.reply_to||null,replyCc:ctx.cc||[],replyAlsoTo:ctx.also_to||[],deliveredTo:ctx.delivered_to||null,viaAlias:ctx.via_alias||null,unsub:r.unsubscribe||null,scam:r.scam_warning||null,real:{accountId:a.id,messageId:r.id},extra:!!r.from_all_mail,ungen:String(r.summary||"").startsWith("Not summarised yet"),snoozeUntil:r.snoozed_until?r.snoozed_until*1000:0,replied:!!r.replied_at,repliedAt:r.replied_at?realTime(r.replied_at):""});
     }
   }
   items.sort((x,y)=>y.received-x.received);
@@ -4867,16 +4937,16 @@ async function bootBackendMode(){
 let outbox=[],outboxSkew=0,outboxTimer=null,outboxSeen=new Set(),outboxFirst=true,outboxLen=new Map();
 const sendLeft=it=>Math.max(0,Math.ceil((it.send_at*1000-(Date.now()+outboxSkew))/1000));
 function realMsgOf(it){return data.find(x=>x.real&&x.real.accountId===it.account_id&&x.real.messageId===it.message_id)}
-function noteQueuedReply(r,m){
+function noteQueuedReply(r,m,kind){
   outboxSkew=r.now*1000-Date.now();
-  outbox=outbox.filter(x=>x.id!==r.id).concat([{id:r.id,account_id:m.real.accountId,message_id:m.real.messageId,state:"pending",send_at:r.send_at,from:r.from,to:r.to,total:Math.max(1,r.send_at-r.now)}]);
+  outbox=outbox.filter(x=>x.id!==r.id).concat([{id:r.id,account_id:m.real.accountId,message_id:m.real.messageId,state:"pending",kind:kind==="forward"?"forward":kind==="reply_all"?"reply_all":"reply",send_at:r.send_at,from:r.from,to:r.to,people:r.people||1,total:Math.max(1,r.send_at-r.now)}]);
   outboxFirst=false;paintOutbox();
 }
 function paintOutbox(){
   const box=$("sendBar"),waiting=outbox.filter(i=>i.state==="pending"||i.state==="sending");
   box.hidden=!waiting.length;
   box.replaceChildren(...waiting.map(it=>{
-    const m=realMsgOf(it),who=m?m.sender:it.to,what=it.kind==="new"?"email":"reply",left=sendLeft(it),total=it.total||(outboxLen.get(it.id)||Math.max(left,1));
+    const m=realMsgOf(it),n=it.people||1,who=it.kind==="forward"||!m?(n>1?peopleText([it.to,...Array(n-1).fill("")]):it.to):m.sender,what=it.kind==="new"?"email":it.kind==="forward"?"forward":"reply",left=sendLeft(it),total=it.total||(outboxLen.get(it.id)||Math.max(left,1));
     if(!outboxLen.has(it.id))outboxLen.set(it.id,Math.max(left,1));
     const row=document.createElement("div");row.className="sendrow";
     const span=document.createElement("span");span.textContent=it.state==="sending"||left===0?`Sending your ${what} to ${who}…`:`Sending your ${what} to ${who} in ${left}s`;
@@ -4903,7 +4973,7 @@ async function undoSend(it){
         toast(`Email cancelled. Nothing was sent. Your text${(r.files||[]).length?" and attachments are":" is"} back in the box.`,5000);
       }else toast("Email cancelled. Nothing was sent.",3500);
     }
-    else if(m&&!composing){openComposer(m.id);$("composeText").value=r.body||"";if(r.from&&[...$("composeFrom").options].some(o=>o.value===r.from))$("composeFrom").value=r.from;toast("Reply cancelled. Nothing was sent. Your text is back in the box.",4000)}
+    else if(m&&!composing){openComposer(m.id,r.kind||"reply",r.to_list&&r.to_list.length?{to:r.to_list,cc:r.cc_list,bcc:r.bcc_list}:null);$("composeText").value=r.body||"";if(r.from&&[...$("composeFrom").options].some(o=>o.value===r.from))$("composeFrom").value=r.from;toast("Reply cancelled. Nothing was sent. Your text is back in the box.",4000)}
     else toast("Reply cancelled. Nothing was sent.",3500);
   }catch(er){toast(er.message||"Too late: that reply has already gone",4500);pollOutbox()}
 }
@@ -4954,7 +5024,7 @@ const initialsOf=t=>(String(t).replace(/@.*/,"").split(/[\s._-]+/).filter(Boolea
 const kb=n=>n>=1048576?`${(n/1048576).toFixed(1)} MB`:`${Math.max(1,Math.round(n/1024))} KB`;
 
 // A box of recipient chips with suggestions from the address book.
-function chipField(box){
+function chipField(box,onChange){
   const state={items:[]};
   const input=document.createElement("input");input.type="text";input.autocomplete="off";input.spellcheck=false;input.setAttribute("aria-label",box.dataset.label||"Recipients");
   const sug=document.createElement("div");sug.className="suggest";sug.hidden=true;sug.setAttribute("role","listbox");
@@ -4969,6 +5039,7 @@ function chipField(box){
       x.onclick=e=>{e.stopPropagation();state.items=state.items.filter(q=>q!==p);paint();input.focus()};
       c.append(t,x);box.insertBefore(c,input);
     }
+    if(onChange)onChange();
   }
   function add(p){
     const a=String(p.address||"").trim();if(!addrOk(a))return false;
@@ -5520,7 +5591,7 @@ function presentOriginal(o,c){
   $("attachmentViewer").scrollTop=0;
   $("attachmentModalSummary").textContent="";
   $("viewerNote").textContent=c.sent?"This is a read-only copy from your Sent folder. Enveliq does not keep it.":"Enveliq keeps only the encrypted summary. The full email stays in your mailbox and is shown here without saving it.";
-  $("viewerActions").innerHTML=(c.sent?"":unsubHtml(o.unsubscribe||c.unsub,!!(o.warning||c.scam)))+(c.replyId?`<button class="primary" data-reply="${esc(c.replyId)}">↩ Reply</button>`:"");
+  $("viewerActions").innerHTML=(c.sent?"":unsubHtml(o.unsubscribe||c.unsub,!!(o.warning||c.scam)))+(c.replyId?moreReplyBtns(data.find(x=>x.id===c.replyId),"btn")+`<button class="primary" data-reply="${esc(c.replyId)}">↩ Reply</button>`:"");
   $("attachmentModal").classList.add("open");
   $("attachmentScrim").classList.add("show");viewerPush();
 }
@@ -5530,6 +5601,8 @@ $("nmSend").onclick=sendNew;$("nmForm").addEventListener("submit",e=>{e.preventD
 $("nmAttach").onclick=()=>$("nmFile").click();
 $("nmCcBtn").onclick=()=>{$("nmCcRow").hidden=false;nmFields().cc.input.focus()};
 $("nmBccBtn").onclick=()=>{$("nmBccRow").hidden=false;nmFields().bcc.input.focus()};
+$("cmCcBtn").onclick=()=>{$("cmCcRow").hidden=false;cmFields().cc.input.focus()};
+$("cmBccBtn").onclick=()=>{$("cmBccRow").hidden=false;cmFields().bcc.input.focus()};
 $("sentRefresh").onclick=loadSent;
 $("sentBox").onchange=e=>{sentAcct=e.target.value;loadSent()};
 bootBackendMode().finally(()=>document.body.classList.remove("booting"));

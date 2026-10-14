@@ -281,7 +281,7 @@ await page.click('[data-theme-choice="dark"]');
   const newsRow = page.locator("article.mail", { hasText: "Weekly news" });
   await expand(newsRow);
   await newsRow.locator("[data-reply]").click();
-  check("reply goes to the reverse-alias address exactly", (await page.inputValue("#composeTo")) === "news_at_x_k3j9@simplelogin.co");
+  check("reply goes to the reverse-alias address exactly", (await page.locator("#cmTo .pchip span").first().getAttribute("title")) === "news_at_x_k3j9@simplelogin.co" && (await page.locator("#cmTo .pchip").count()) === 1);
   const identities = await page.locator("#composeFrom option").allInnerTexts();
   check("from list is the mailbox plus its sending identities", identities.includes("me@example.invalid") && identities.includes("alias@example.invalid"));
   await page.fill("#composeText", "Thanks.");
