@@ -601,6 +601,7 @@ body.vopen .vpanel{transform:none;visibility:visible;transition:transform .3s cu
 .mail.quiet.swiping{position:relative;overflow:hidden;user-select:none}.mail.quiet.swiping .qrow{position:relative;background:var(--panel);will-change:transform}.mail.quiet.swipeout .qrow{transition:transform .18s ease-out}
 .reader{position:fixed;inset:0;z-index:90;background:var(--bg);display:flex;flex-direction:column}
 .rtop{height:56px;flex:none;display:flex;align-items:center;gap:6px;padding:0 12px;border-bottom:1px solid var(--c-232a36)}.rtop b{font-size:15px;margin-left:4px}.rtop .sp{flex:1}
+.rbtn.rclose{width:auto;padding:0 14px;font-size:15px;font-weight:600;gap:6px;border-color:var(--line);background:var(--panel)}
 .rbtn{width:40px;height:40px;border-radius:11px;border:1px solid transparent;background:transparent;color:var(--text);font-size:22px;line-height:1;display:grid;place-items:center}.rbtn:hover:not(:disabled){background:var(--panel2);border-color:var(--line)}.rbtn:disabled{opacity:.3}
 .rbody{flex:1;overflow:auto;padding:16px 16px 24px;max-width:860px;width:100%;margin:0 auto;box-sizing:border-box}
 .rfrom{display:flex;align-items:center;gap:12px}.rfrom .dcav{width:40px;height:40px}.rbody h3{margin:14px 0 4px;font-size:22px;line-height:1.28;letter-spacing:-.01em}
@@ -2154,7 +2155,7 @@ function openFromLink(raw,fromAddress,quiet){
   query="";$("search").value="";document.body.classList.remove("msearch");
   filter=isSnoozed(m)?"snoozed":m.status==="inbox"?"all":m.status;
   document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));
-  expanded.add(`row-${m.id}`);paneId=m.id;if(view.layout==="screen")readerOpen=true;
+  expanded.add(`row-${m.id}`);paneId=m.id;if(lay()==="screen")readerOpen=true;
   render();
   const el=document.querySelector(`[data-expand="row-${m.id}"],[data-pick="${m.id}"]`);if(el&&el.scrollIntoView)el.scrollIntoView({block:"center"});
   return true;
@@ -2208,11 +2209,13 @@ function loadView(){
   return v;
 }
 let view=loadView(),readerOpen=false,dueOpen=false,calmLaterOpen=true,waitClosedOpen=false,paneId=null,lastPaneIdx=0,lastRowIds=[],lastDeckShown=null,deckDir="next",lastReadId=null;
+// On a phone every email opens full screen (the "screen" layout), whatever layout was chosen for a bigger screen. The choice itself is kept.
+function lay(){return phoneQuery.matches?"screen":view.layout}
 function saveView(){try{localStorage.setItem("enveliq-view",JSON.stringify(view))}catch{}}
 function applyView(){
   readerOpen=false;
   const c=document.body.classList;
-  for(const l of VIEW_ALLOWED.layout)c.toggle("layout-"+l,view.layout===l);
+  for(const l of VIEW_ALLOWED.layout)c.toggle("layout-"+l,lay()===l);
   c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");
   document.querySelectorAll("#viewPanel [data-view]").forEach(b=>{const on=view[b.dataset.view]===b.dataset.val;b.classList.toggle("on",on);b.setAttribute("aria-checked",String(on))});
   const classic=view.layout==="list";
@@ -2280,7 +2283,7 @@ document.addEventListener("click",e=>{
   const m=b.dataset.searchOpen?data.find(x=>x.id===+b.dataset.searchOpen&&x.owner===currentUser.id):null;
   filter=m?(isSnoozed(m)?"snoozed":m.status==="inbox"?"all":m.status):b.dataset.searchGo;
   document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));
-  if(m){expanded.add(`row-${m.id}`);paneId=m.id;if(view.layout==="screen")readerOpen=true}
+  if(m){expanded.add(`row-${m.id}`);paneId=m.id;if(lay()==="screen")readerOpen=true}
   render();
   if(m){const el=document.querySelector(`[data-expand="row-${m.id}"],[data-pick="${m.id}"]`);if(el&&el.scrollIntoView)el.scrollIntoView({block:"center"})}
 });
@@ -3082,7 +3085,7 @@ function render(){
   if(cmp)rows.sort(cmp);
   if(impSet.size)rows.sort((a,b)=>isImp(b)-isImp(a));          // a stable sort: important people first, the chosen order kept inside each group
   scheduleWake();
-  {const b=$("expandAll"),can=view.layout==="list"&&!["tasks","sent","drafts","shipping","subscriptions","trips","waiting","messages"].includes(filter)&&rows.length>0;
+  {const b=$("expandAll"),can=lay()==="list"&&!["tasks","sent","drafts","shipping","subscriptions","trips","waiting","messages"].includes(filter)&&rows.length>0;
    b.hidden=!can||selected.size>1;if(can){const all=view.rows==="open"||rows.every(m=>expanded.has(`row-${m.id}`));b.textContent=all?"Collapse all":"Expand all";b.dataset.mode=all?"collapse":"expand"}}
 const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5l-7.6 7.6a5 5 0 0 1-7-7l8-8a3.4 3.4 0 0 1 4.8 4.8l-8 8a1.8 1.8 0 0 1-2.5-2.5L14 7.2"/></svg>`,ICON_SNOOZE=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`,ICON_OK=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,ICON_ARCH=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg>`,ICON_BIN=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>`,ICON_REPLY=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 6 6v3"/></svg>`;
   const leaveStyle=m=>{          // an email waiting out its Undo: the line along its bottom runs for the time that is left
@@ -3106,7 +3109,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
         <div class="qbtns"><button class="action reviewed" data-id="${esc(m.id)}" data-status="reviewed">${ICON_OK}Reviewed</button><div class="two"><button class="action archive" data-id="${esc(m.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(m.id)}" data-status="trashed">${ICON_BIN}Bin</button></div></div></aside></div>`;
     if(mode==="detail")return detail;
     const tog=mode==="pane"?`<button class="qtoggle" data-pick="${esc(m.id)}" aria-label="Show this email">Show email</button>`:view.rows==="open"?"":`<button class="qtoggle" data-expand="row-${esc(m.id)}" aria-expanded="${esc(open)}" aria-label="${open?"Hide":"Show"} the full email summary and actions">${open?"Hide":"Show"} details</button>`;
-    return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(m._pending?"leaving to-"+m._pending:"")} ${esc(mode==="pane"&&view.layout!=="screen"&&m.id===paneId?"current":"")}"${leaveStyle(m)}><div class="qrow">
+    return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(m._pending?"leaving to-"+m._pending:"")} ${esc(mode==="pane"&&lay()!=="screen"&&m.id===paneId?"current":"")}"${leaveStyle(m)}><div class="qrow">
       ${lead}
       <div class="sender">${flag}${esc(m.sender)}</div>
       <div class="qmain">${isImp(m)?'<span class="imp-pill" title="You marked this person as important">&#9733; Important</span>':""}${m.scam?'<span class="scam-pill" title="Something about this email looks odd. Open it to see what.">Be careful</span>':""}<span class="subject">${esc(m.subject)}</span></div>
@@ -3119,19 +3122,19 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
   const prevScroll=document.getElementById("paneList"),prevTop=prevScroll?prevScroll.scrollTop:0,prevRead=document.querySelector(".reading"),prevReadTop=prevRead?prevRead.scrollTop:0;
   lastRowIds=rows.map(m=>m.id);
   if(!rows.length){listHtml=`<div class="empty">${query&&String(query).trim().length>=2&&filter!=="snoozed"?"Nothing in this view matches your search.":filter==="snoozed"?"Nothing is snoozed. Use Snooze on an email to set it aside until you need it.":realMail&&!data.some(m=>m.status==="inbox")?"You're all caught up. Press <strong>Sync mail</strong> to look for new unread email.":document.body.classList.contains("backend")&&!realMail?`Your mail will appear here once a mailbox is connected. <a href="/welcome">Set up your mailbox</a>`:`Nothing in this view for ${esc(currentUser.name)}.`}</div>`}
-  else if(view.layout==="list"){listHtml=`<div class="quiet-list">${rows.map(m=>quiet(m)).join("")}</div>`}
+  else if(lay()==="list"){listHtml=`<div class="quiet-list">${rows.map(m=>quiet(m)).join("")}</div>`}
   else{
     let idx=rows.findIndex(m=>m.id===paneId);
     if(idx<0)idx=Math.min(Math.max(lastPaneIdx,0),rows.length-1);
     const cur=rows[idx];paneId=cur.id;lastPaneIdx=idx;
-    if(view.layout==="screen"){
+    if(lay()==="screen"){
       listHtml=`<div class="quiet-list">${rows.map(m=>quiet(m,"pane")).join("")}</div>`;
       if(readerOpen){
         const prev=rows[idx-1],next=rows[idx+1];
         const act=cur.kept?"":`<div class="ract"><button class="action reviewed" data-id="${esc(cur.id)}" data-status="reviewed">${ICON_OK}Reviewed</button><button class="action archive" data-id="${esc(cur.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(cur.id)}" data-status="trashed">${ICON_BIN}Bin</button></div>`;
-        listHtml+=`<div class="reader" role="dialog" aria-modal="true" aria-label="${esc(cur.subject)}"><div class="rtop"><button class="rbtn" type="button" data-reader-close aria-label="Back to the list">‹</button><b>${idx+1} of ${rows.length}</b><span class="sp"></span><button class="rbtn" type="button" ${prev?`data-pick="${esc(prev.id)}"`:"disabled"} aria-label="Previous email">↑</button><button class="rbtn" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">↓</button></div><div class="rbody"><div class="rfrom"><span class="dcav" aria-hidden="true">${esc(String(cur.sender||"?").trim().charAt(0).toUpperCase())}</span><div><div class="dcfrom">${esc(cur.sender)}</div><div class="dcsub">${esc(cur.address)} · ${esc(cur.time)}</div></div></div><h3>${esc(cur.subject)}</h3>${quiet(cur,"detail")}</div>${act}</div>`;
+        listHtml+=`<div class="reader" role="dialog" aria-modal="true" aria-label="${esc(cur.subject)}"><div class="rtop">${isPhone()?`<button class="rbtn rclose" type="button" data-reader-close aria-label="Close this email">✕ Close</button>`:`<button class="rbtn" type="button" data-reader-close aria-label="Back to the list">‹</button><b>${idx+1} of ${rows.length}</b><span class="sp"></span><button class="rbtn" type="button" ${prev?`data-pick="${esc(prev.id)}"`:"disabled"} aria-label="Previous email">↑</button><button class="rbtn" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">↓</button>`}</div><div class="rbody"><div class="rfrom"><span class="dcav" aria-hidden="true">${esc(String(cur.sender||"?").trim().charAt(0).toUpperCase())}</span><div><div class="dcfrom">${esc(cur.sender)}</div><div class="dcsub">${esc(cur.address)} · ${esc(cur.time)}</div></div></div><h3>${esc(cur.subject)}</h3>${quiet(cur,"detail")}</div>${act}</div>`;
       }
-    }else if(view.layout==="deck"){
+    }else if(lay()==="deck"){
       const enter=lastDeckShown!==cur.id?` enter-${deckDir}`:"";lastDeckShown=cur.id;
       const prev=rows[idx-1],next=rows[idx+1],rest=Math.min(2,rows.length-idx-1);
       const dots=rows.length<=24?rows.map((m,i)=>`<i class="${i===idx?"on":""}"></i>`).join(""):"";
@@ -3143,17 +3146,17 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
         ${act}<div class="deckdots" aria-hidden="true">${dots}</div></div>`;
     }else{
       const readingHtml=`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div></header>${quiet(cur,"detail")}</section>`;
-      if(view.layout==="right"&&!["sent","drafts","tasks","shipping","waiting","subscriptions","trips","messages"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
+      if(lay()==="right"&&!["sent","drafts","tasks","shipping","waiting","subscriptions","trips","messages"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
         dockHtml=readingHtml;
-        listHtml=`<div class="panes ${esc(view.layout)}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div></div>`;
-      }else listHtml=`<div class="panes ${esc(view.layout)}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div>${readingHtml}</div>`;
+        listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div></div>`;
+      }else listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div>${readingHtml}</div>`;
     }
   }
   const leftBox=document.querySelector(".main>.content"),leftTop=leftBox?leftBox.scrollTop:0;
   $("list").innerHTML=searchMore(rows)+listHtml;
   $("readDock").innerHTML=dockHtml;document.body.classList.toggle("split-read",!!dockHtml);
   if(leftBox&&dockHtml){leftBox.scrollTop=leftTop;const c=document.querySelector("#paneList .current");if(c){const a=c.getBoundingClientRect(),b=leftBox.getBoundingClientRect(),hh=(document.getElementById("previewListHeading")||{offsetHeight:0}).offsetHeight;if(a.top<b.top+hh)leftBox.scrollTop+=a.top-b.top-hh-6;else if(a.bottom>b.bottom)leftBox.scrollTop+=a.bottom-b.bottom+6}}
-  document.body.classList.toggle("reader-open",view.layout==="screen"&&readerOpen&&rows.length>0);
+  document.body.classList.toggle("reader-open",lay()==="screen"&&readerOpen&&rows.length>0);
   if(!rows.length)readerOpen=false;
   syncMobileBar(inbox.length,needN);
   const pl=document.getElementById("paneList");
@@ -4429,13 +4432,13 @@ let selAnchor=null,selShift=false;   // the email ticked last, and whether Shift
 document.addEventListener("click",e=>{if(e.target.matches&&e.target.matches("[data-select]"))selShift=e.shiftKey},true);
 document.addEventListener("keydown",e=>{const h=e.target&&e.target.closest&&e.target.closest(".ad-head");if(h&&e.target===h&&(e.key==="Enter"||e.key===" ")&&!e.isComposing){e.preventDefault();h.click()}});          // an attachment row opens from the keyboard
 document.addEventListener("click",e=>{
-  const due=e.target.closest("[data-due-open]");if(due){const id=due.dataset.dueOpen;filter="all";query="";$("search").value="";expanded.add(`row-${id}`);{const dm=data.find(x=>String(x.id)===id);if(dm){paneId=dm.id;if(view.layout==="screen")readerOpen=true}}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();const el=document.querySelector(`[data-expand="row-${CSS.escape(id)}"]`);el&&el.closest("article").scrollIntoView({block:"nearest",behavior:"smooth"});return}
-  const qrow=e.target.closest(".qrow");if(qrow&&!e.target.closest("button,input,a,label,select")){if(view.layout==="list"&&view.rows==="open")return;const t=qrow.querySelector("[data-expand],[data-pick]");if(t){t.click();return}}
+  const due=e.target.closest("[data-due-open]");if(due){const id=due.dataset.dueOpen;filter="all";query="";$("search").value="";expanded.add(`row-${id}`);{const dm=data.find(x=>String(x.id)===id);if(dm){paneId=dm.id;if(lay()==="screen")readerOpen=true}}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();const el=document.querySelector(`[data-expand="row-${CSS.escape(id)}"]`);el&&el.closest("article").scrollIntoView({block:"nearest",behavior:"smooth"});return}
+  const qrow=e.target.closest(".qrow");if(qrow&&!e.target.closest("button,input,a,label,select")){if(lay()==="list"&&view.rows==="open")return;const t=qrow.querySelector("[data-expand],[data-pick]");if(t){t.click();return}}
   if(e.target.closest("[data-reader-close]")){readerOpen=false;render();return}
   const dt=e.target.closest("[data-due-toggle]");if(dt){if(splitNow()){goTasks();return}dueOpen=!dueOpen;render();return}
   const wct=e.target.closest("[data-wait-closed-toggle]");if(wct){waitClosedOpen=!waitClosedOpen;renderWaitPage();return}
   const lt=e.target.closest("[data-later-toggle]");if(lt){if(splitNow()){goTasks();return}calmLaterOpen=!calmLaterOpen;render();return}
-  const pk=e.target.closest("[data-pick]");if(pk){if(view.layout==="screen")readerOpen=true;const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;render();return}
+  const pk=e.target.closest("[data-pick]");if(pk){if(lay()==="screen")readerOpen=true;const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;render();return}
   const retryAtt=e.target.closest("[data-att-retry]");if(retryAtt){const m=data.find(x=>x.id===+retryAtt.dataset.attRetry&&x.owner===currentUser.id);if(m&&m.real){retryAtt.disabled=true;secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/attachments/summarise`,{method:"POST",body:"{}"}).then(()=>{toast("Reading the files again. This can take a minute.",4000);m.attachments.forEach(a=>{if(a.state==="failed")a.state="working"});render()}).catch(er=>{retryAtt.disabled=false;toast(er.message,6000)})}return}
   const openAtt=e.target.closest("[data-open-attachment]");if(openAtt){openAttachmentViewer(openAtt.dataset.openAttachment);return}
   const openEmail=e.target.closest("[data-open-email]");if(openEmail){openEmailViewer(openEmail.dataset.openEmail);return}
@@ -4670,7 +4673,7 @@ $("search").addEventListener("input",e=>{query=e.target.value;render()});
   }
   document.addEventListener("mouseover",e=>{
     const t=e.target.closest&&e.target.closest(".qrow .sender, .qrow .qmain");
-    if(!t||view.layout!=="list"||!view.peek){if(cur)hide();return}
+    if(!t||lay()!=="list"||!view.peek){if(cur)hide();return}
     const row=t.closest(".qrow");if(row===cur)return;
     hide();cur=row;timer=setTimeout(()=>show(row),window.__peekDelay);
   });
@@ -6005,7 +6008,7 @@ $("sidebar").addEventListener("click",e=>{if(e.target.closest(".nav:not(.more-to
 $("mSearchBtn").onclick=()=>{document.body.classList.add("msearch");$("search").focus()};
 $("mSearchBack").onclick=()=>{document.body.classList.remove("msearch");if(query){query="";$("search").value="";render()}};
 $("mSyncBtn").onclick=()=>$("syncBtn").click();
-phoneQuery.addEventListener("change",()=>{setMenu(false);document.body.classList.remove("msearch","scrolled");render()});
+phoneQuery.addEventListener("change",()=>{setMenu(false);document.body.classList.remove("msearch","scrolled");applyView();render()});
 function updateScrolled(){const h=document.querySelector("header.top");document.body.classList.toggle("scrolled",isPhone()&&h.getBoundingClientRect().bottom<60);
   const stuck=!isPhone()&&window.scrollY>6;document.body.classList.toggle("stuck",stuck);
   if(stuck){const bar=document.getElementById("previewToolbar").offsetHeight;document.body.style.setProperty("--fade",Math.min(36,window.scrollY)+"px");   // the soft edge grows over the first 36px of scrolling, so nothing dims before you move
@@ -6168,7 +6171,7 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Escape"&&readerOpen){readerOpen=false;render();return}
   if(e.key==="Escape"&&document.body.classList.contains("menu-open")){setMenu(false);return}
   if(e.key==="Escape"&&document.body.classList.contains("vopen")&&!$("compose").classList.contains("open")&&!$("attachmentModal").classList.contains("open")){setViewPanel(false);return}
-  if(view.layout!=="deck"||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(lay()!=="deck"||e.metaKey||e.ctrlKey||e.altKey)return;
   const t=e.target;if(t&&t.closest&&t.closest("input,select,textarea,[contenteditable],#compose,#viewPanel"))return;
   if($("compose").classList.contains("open")||$("attachmentModal").classList.contains("open"))return;
   const k=e.key.toLowerCase();
