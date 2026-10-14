@@ -1,5 +1,6 @@
 // Browser check for the fixed top of the inbox on a computer: the search / Sync mail / name bar and the "Recent emails" bar stay in view
-// while the emails scroll, and the picture behind the top shows until the page has moved. Phones keep their own top bar.
+// while the emails scroll. The top bar is never a solid block: it stays see-through, and nothing that scrolls up to it (text, tiles, titles)
+// is seen through it. Phones keep their own top bar.
 // The page is loaded from a pretend Enveliq server (Playwright intercepts requests).
 //
 // Usage (needs Playwright and a Chromium build):
@@ -79,13 +80,25 @@ for (const theme of ["dark", "light"]) {
   await page.evaluate(() => window.scrollTo(0, 900)); await page.waitForTimeout(250);
   const bar = await rect(page, "#previewToolbar"), head = await rect(page, "#previewListHeading");
   check(`${theme}: the search / name bar stays at the top while scrolled (top ${bar.top})`, bar.top === 0 && bar.bottom > 40);
-  check(`${theme}: the Recent emails bar stays right under it (top ${head.top}, bar bottom ${bar.bottom})`, Math.abs(head.top - (bar.bottom + 8)) <= 2);
+  check(`${theme}: the Recent emails bar stays right under it (top ${head.top}, bar bottom ${bar.bottom})`, Math.abs(head.top - bar.bottom) <= 2);
   const bg1 = await page.evaluate(() => getComputedStyle(document.querySelector("#previewToolbar")).backgroundColor);
-  check(`${theme}: once scrolled the bar is solid so emails do not show through`, bg1 !== "rgba(0, 0, 0, 0)" && bg1 !== "transparent");
-  const first = await page.evaluate((hb) => { const rows = [...document.querySelectorAll("article.mail")].filter((a) => a.getBoundingClientRect().bottom > hb); return rows.length ? Math.round(rows[0].getBoundingClientRect().top) : null; }, head.bottom);
-  check(`${theme}: the emails scroll under the bars (first row at ${first})`, first !== null);
+  check(`${theme}: the bar stays see-through while scrolled, never a solid block`, bg1 === "rgba(0, 0, 0, 0)" || bg1 === "transparent");
   const clicked = await page.evaluate(() => { const b = document.querySelector("#search"); b.focus(); return document.activeElement === b; });
   check(`${theme}: the search box can still be used while scrolled`, clicked);
+  // Nothing under the bar may show: take the strip behind the bar with the page text in place, then with all page text hidden, and compare.
+  await page.addStyleTag({ content: "#previewToolbar *{visibility:hidden!important}" });
+  const strip = { x: 260, y: 0, width: 600, height: bar.bottom - 2 };
+  for (const y of [300, 900, 1500]) {
+    await page.evaluate((y) => window.scrollTo(0, y), y); await page.waitForTimeout(250);
+    const withText = await page.screenshot({ clip: strip });
+    await page.addStyleTag({ content: ".main>.top,.main>.content{visibility:hidden!important}" });
+    const without = await page.screenshot({ clip: strip });
+    await page.evaluate(() => { document.querySelectorAll("style").forEach((st) => { if (st.textContent.includes(".main>.top,.main>.content{visibility:hidden")) st.remove(); }); });
+    check(`${theme}: at ${y}px down, no page text shows under the bar`, Buffer.compare(withText, without) === 0);
+  }
+  await page.evaluate(() => window.scrollTo(0, 900)); await page.waitForTimeout(250);
+  const first = await page.evaluate((hb) => { const rows = [...document.querySelectorAll("article.mail")].filter((a) => a.getBoundingClientRect().bottom > hb); return rows.length ? Math.round(rows[0].getBoundingClientRect().top) : null; }, head.bottom);
+  check(`${theme}: the emails scroll under the bars (first row at ${first})`, first !== null);
   await shot(page, `sticky-${theme}`);
   await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(250);
   const back = await rect(page, "#previewToolbar");

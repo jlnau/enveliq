@@ -4,7 +4,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-**The top of the inbox stays in view.** On a computer, the search / Sync mail / name bar and the "Recent emails" bar now stay at the top while you scroll a long list, so the controls are always in reach. Only the emails scroll. Phones are unchanged.
+**The top of the inbox stays in view.** On a computer, the search / Sync mail / name bar and the "Recent emails" bar now stay at the top while you scroll a long list, so the controls are always in reach. Only the emails scroll. The top bar stays see-through, so the picture behind it always shows, and nothing that scrolls up to it is seen through it. Phones are unchanged.
 
 Code and tests: `prototype/index.html` (sticky bars, desktop only), `scripts/check_sticky_header.mjs` (new, in CI), `docs/INBOX.md`.
 

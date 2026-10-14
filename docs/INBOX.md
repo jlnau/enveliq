@@ -96,7 +96,7 @@ The left menu leads to **My inbox**, **Needs action**, **Tasks**, **Shipping**, 
 ## The top stays in view while you scroll
 - On a computer, the bar with the search box, Sync mail, the help button and your name stays at the top of the page when you scroll down a long list. The "Recent emails" bar with **Inbox options** (and the buttons for ticked emails) stays right under it. Only the emails move.
 - The title, the four count tiles and the picture behind them scroll away as before, so you get more room for the emails.
-- At the very top of the page the bar is see-through, so the picture behind it still shows. It turns solid only once you have scrolled, so no emails show through it.
+- The top bar is never a solid block. It stays see-through the whole time, so the picture behind it always shows. Emails, tiles and titles that scroll up to it simply stop at its lower edge, so no text is ever seen through it.
 - Phones are unchanged. They already have their own bar at the top of the screen.
 
 ## Light mode and pictures
