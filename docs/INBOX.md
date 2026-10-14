@@ -139,3 +139,7 @@ Open the account menu at the top right to choose **Dark**, **Light**, or **Syste
 ## Profile pictures
 
 Under **Settings, Profile**, you can choose your own picture. New uploads of transparent PNG images preserve the clear areas, so the panel colour shows through around and inside a logo. An image previously uploaded before this was fixed may have been saved with a white background; uploading the **original transparent PNG again** is the most reliable way to restore transparency. The **Remove white background** action in Settings, Profile is an optional repair for an older saved image, not something a correctly uploaded transparent image needs.
+
+## Reading pane on the right (computer)
+
+Choose **Reading pane on the right** in the View panel (the tab on the right edge). The open email fills the whole right side of the screen, from just under the search bar to the bottom of the window, and **Reviewed**, **Archive** and **Bin** stay along its bottom edge. The left column holds the page title, the four counts in one slim row, **Today** and **Coming up** side by side, the **Recent emails** bar and the list. The left column scrolls by itself; the page does not. This applies to every page that lists emails. On a phone, or a window narrower than 900 pixels, the email appears under the list as before. The other layouts are unchanged. Browser check: `scripts/check_split_reading.mjs`.

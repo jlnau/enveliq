@@ -1235,6 +1235,69 @@ html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sti
     -webkit-mask-image:linear-gradient(#000 0,#000 var(--cut,-1px),transparent var(--cut,-1px),transparent var(--cut2,-1px),#000 calc(var(--cut2,-1px) + var(--fade,36px)));
     mask-image:linear-gradient(#000 0,#000 var(--cut,-1px),transparent var(--cut,-1px),transparent var(--cut2,-1px),#000 calc(var(--cut2,-1px) + var(--fade,36px)))}
 }
+
+/* Reading panel on the right, all the way up to the top bar (computers and tablets, "Reading pane on the right" layout).
+   The title, the four counts, Today / Coming up and the list sit in a column on the left; the open email fills the whole right side.
+   The left column scrolls by itself; the page does not. Phones, and every other layout, are unchanged. */
+.read-dock{display:none}
+body.layout-right .panes.right{display:block}
+@media(max-width:900px){
+  .read-dock:not(:empty){display:block;padding:0 16px 90px}
+  body.layout-right .content{padding-bottom:12px}
+}
+@media(max-width:760px){.read-dock:not(:empty){padding:0 12px 90px}}
+body.booting #readDock{display:none!important}
+body.backend:not(.mail-ready) #readDock{visibility:hidden}
+body.preview-mobile-emails-closed #readDock{display:none!important}
+@media(min-width:901px){
+  html:has(body.split-read){scrollbar-gutter:auto}
+  html body.split-read{overflow:hidden;height:100vh;display:flex;flex-direction:column}
+  body.split-read .app{flex:1 1 auto;min-height:0;height:auto;grid-template-rows:minmax(0,1fr)}
+  body.split-read .sidebar{min-height:0}
+  body.split-read .main{min-height:0;height:100%;display:grid;grid-template-columns:minmax(320px,2fr) minmax(0,3fr);grid-template-rows:auto auto minmax(0,1fr);column-gap:16px}
+  body.split-read .main>.preview-toolbar{grid-column:1/-1;grid-row:1}
+  body.split-read .main>.mtop{display:none}
+  html body.split-read .main>.top{grid-column:1;grid-row:2;margin-left:24px;min-height:0!important;padding:0 0 10px!important;overflow:visible}
+  html body.split-read .main>.top .top-inner{min-height:0!important;align-items:flex-start!important}
+  html body.split-read .main>.content{grid-column:1;grid-row:3;margin:0 0 0 24px;padding:0 8px 24px 0;max-width:none;overflow-y:auto;min-height:0;scrollbar-width:thin}
+  html body.split-read .main>.read-dock{grid-column:2;grid-row:2/4;display:block;min-height:0;margin:0 24px 20px 0;padding:0;position:relative;z-index:1}
+  body.split-read .top .greet{height:34px;line-height:34px;top:0}
+  body.split-read .top h2{font-size:26px;margin:0;line-height:34px}
+  html body.split-read .top p{margin:2px 0 0;font-size:13px;line-height:1.35}
+  body.split-read .top .preview-calm-notice{position:static;max-width:none;margin:0 0 10px;padding:9px 12px;grid-template-columns:1fr auto}
+  body.split-read.stuck .main>.top,body.split-read.stuck .main>.content>*{-webkit-mask-image:none;mask-image:none}
+  /* the four counts: one slim row */
+  html body.split-read .preview-overview{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+  body.split-read .preview-stat{min-height:0;padding:8px 10px;align-items:center;gap:0}
+  body.split-read .preview-stat-icon{display:none}
+  body.split-read .preview-stat-copy{flex-direction:row;align-items:center;gap:8px}
+  body.split-read .preview-stat-copy b{order:0;font-size:20px;line-height:1}
+  body.split-read .preview-stat-copy strong{order:1;font-size:11.5px;font-weight:500;line-height:1.15}
+  body.split-read .preview-stat-copy small{display:none}
+  /* Today and Coming up side by side */
+  body.split-read #dueBars:not([hidden]){display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:8px;align-items:start;padding-bottom:12px}
+  body.split-read #dueBars>.preview-today-grid{grid-column:1;grid-row:1;grid-template-columns:minmax(0,1fr)!important;gap:8px!important}
+  body.split-read #dueBars>.preview-today-grid:only-child{grid-column:1/-1}
+  body.split-read #dueBars>.preview-later{grid-column:2;grid-row:1;margin-top:0!important}
+  html body.split-read .today-card,html body.split-read .preview-important,html body.split-read .preview-later{padding:10px 12px!important}
+  body.split-read .preview-today-grid .thead{margin-bottom:6px}
+  body.split-read .preview-today-grid .thead b{font-size:14px}
+  body.split-read .preview-today-grid .trow2{min-height:0;grid-template-columns:28px minmax(0,1fr);row-gap:0}
+  body.split-read .preview-today-grid .trow2 .twhen{grid-column:2;margin-top:-4px;font-size:11px}
+  /* the Recent emails bar and the list */
+  html body.split-read .content>.preview-list-heading{position:sticky;top:0;margin:0 0 10px;padding:9px 14px}
+  body.split-read .preview-list-heading strong{font-size:15px}
+  body.split-read .panelist{height:auto;min-height:0;overflow:visible}
+  /* the open email fills the right side; Reviewed / Archive / Bin stay at the bottom */
+  body.split-read .reading{height:100%;min-height:0;display:flex;flex-direction:column}
+  body.split-read .reading .qdetail.split{flex:1 0 auto}
+  body.split-read .reading .qside{flex:1;display:flex;flex-direction:column}
+  body.split-read .reading .qbtns{margin-top:auto;position:sticky;bottom:0;background:var(--c-10151d);padding:12px 0 2px}
+}
+@media(min-width:901px) and (max-width:1100px){
+  body.split-read #dueBars:not([hidden]){grid-template-columns:minmax(0,1fr)}
+  body.split-read #dueBars>.preview-later{grid-column:1;grid-row:2}
+}
 </style>
 </head>
 <body class="booting">
@@ -1370,6 +1433,7 @@ html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sti
   </section>
   <div id="peek" class="peek" role="tooltip" hidden><div class="peek-in" id="peekIn"></div></div>
 </section>
+<aside class="read-dock" id="readDock"></aside>
 </main>
 </div>
 
@@ -2973,7 +3037,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
       ${tog}
     </div>${open?detail:""}</article>`;
   };
-  let listHtml;
+  let listHtml,dockHtml="";
   const prevScroll=document.getElementById("paneList"),prevTop=prevScroll?prevScroll.scrollTop:0,prevRead=document.querySelector(".reading"),prevReadTop=prevRead?prevRead.scrollTop:0;
   lastRowIds=rows.map(m=>m.id);
   if(!rows.length){listHtml=`<div class="empty">${query&&String(query).trim().length>=2&&filter!=="snoozed"?"Nothing in this view matches your search.":filter==="snoozed"?"Nothing is snoozed. Use Snooze on an email to set it aside until you need it.":realMail&&!data.some(m=>m.status==="inbox")?"You're all caught up. Press <strong>Sync mail</strong> to look for new unread email.":document.body.classList.contains("backend")&&!realMail?`Your mail will appear here once a mailbox is connected. <a href="/welcome">Set up your mailbox</a>`:`Nothing in this view for ${esc(currentUser.name)}.`}</div>`}
@@ -3000,10 +3064,17 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
         <button class="decknav next" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">›</button></div>
         ${act}<div class="deckdots" aria-hidden="true">${dots}</div></div>`;
     }else{
-      listHtml=`<div class="panes ${esc(view.layout)}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div><section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div></header>${quiet(cur,"detail")}</section></div>`;
+      const readingHtml=`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div></header>${quiet(cur,"detail")}</section>`;
+      if(view.layout==="right"&&!["sent","tasks","shipping","waiting","subscriptions","trips","messages"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
+        dockHtml=readingHtml;
+        listHtml=`<div class="panes ${esc(view.layout)}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div></div>`;
+      }else listHtml=`<div class="panes ${esc(view.layout)}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div>${readingHtml}</div>`;
     }
   }
+  const leftBox=document.querySelector(".main>.content"),leftTop=leftBox?leftBox.scrollTop:0;
   $("list").innerHTML=searchMore(rows)+listHtml;
+  $("readDock").innerHTML=dockHtml;document.body.classList.toggle("split-read",!!dockHtml);
+  if(leftBox&&dockHtml){leftBox.scrollTop=leftTop;const c=document.querySelector("#paneList .current");if(c){const a=c.getBoundingClientRect(),b=leftBox.getBoundingClientRect(),hh=(document.getElementById("previewListHeading")||{offsetHeight:0}).offsetHeight;if(a.top<b.top+hh)leftBox.scrollTop+=a.top-b.top-hh-6;else if(a.bottom>b.bottom)leftBox.scrollTop+=a.bottom-b.bottom+6}}
   document.body.classList.toggle("reader-open",view.layout==="screen"&&readerOpen&&rows.length>0);
   if(!rows.length)readerOpen=false;
   syncMobileBar(inbox.length,needN);
