@@ -281,3 +281,25 @@ def test_in_the_app_a_remembered_sign_in_survives_a_restart_and_a_plain_one_does
     appm.sessions._sessions.clear()                                 # the process restarted: memory is gone
     assert kept.get("/api/v1/me").status_code == 200
     assert plain_c.get("/api/v1/me").status_code == 401
+
+
+def test_a_passkey_sign_in_with_the_tick_is_remembered_and_survives_a_restart(keyed):
+    from helpers import SoftAuthenticator
+    appm, admin = keyed
+    admin.put("/api/v1/admin/auth-policy", json={"remember_days": 14})
+    auth = SoftAuthenticator()
+    opts = admin.post("/api/v1/auth/passkeys/register/options").json()
+    assert admin.post("/api/v1/auth/passkeys/register/verify", json={"credential": auth.create(opts), "name": "Phone"}).status_code == 200
+
+    def passkey_login(**extra):
+        c = TestClient(appm.app, raise_server_exceptions=False)
+        o = c.post("/api/v1/auth/passkeys/options", json={"purpose": "login"}).json()
+        return c, c.post("/api/v1/auth/passkeys/verify", json={"credential": auth.get(o), **extra})
+
+    c, r = passkey_login(remember=True)
+    assert r.status_code == 200 and max_age(r) == 14 * DAY
+    _, plain_r = passkey_login()
+    assert max_age(plain_r) == 12 * 3600                            # no tick, no long sign-in
+    appm.sessions._sessions.clear()                                 # a restart
+    me = c.get("/api/v1/me")
+    assert me.status_code == 200 and me.json()["session"]["method"] == "passkey"
