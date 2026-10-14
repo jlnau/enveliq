@@ -387,8 +387,8 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 #newMail .compose-foot small{flex:1;text-align:right}
 .sentview{display:none}
 body.in-sent .sentview{display:block}
-body.in-sent header.top,body.in-sent .filters,body.in-sent #list,body.in-sent .sample-banner,body.in-sent #dueBars,body.in-sent #shipBars,body.in-sent #subBars,body.in-sent #tripBars,body.in-sent #waitBars,body.in-sent #mTitleSub,body.in-sent #peek{display:none!important}
-.sent-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:6px 0 12px}.sent-top h2{margin:0;font-size:22px}
+body.in-sent .filters,body.in-sent #list,body.in-sent .sample-banner,body.in-sent #dueBars,body.in-sent #shipBars,body.in-sent #subBars,body.in-sent #tripBars,body.in-sent #waitBars,body.in-sent #mTitleSub,body.in-sent #peek{display:none!important}
+.sent-top{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin:0 0 12px}
 .sent-tools{display:flex;gap:8px;align-items:center}
 .sent-note{border:1px solid var(--c-1f3f75);background:var(--c-0c1626);color:var(--c-bfe3ff);border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:12px}
 .sent-status{color:var(--muted);font-size:13px;margin:8px 2px}.sent-status:empty{display:none}
@@ -1219,6 +1219,8 @@ html[data-theme="light"] .wcard.due{background:#fdf1dd;border-color:#dcb972}html
 @media(min-width:761px){
   /* Until the page script has moved the search box and your name into the top bar, do not draw them in their old places (and keep the "?" hidden until your name is in place). Without this they flash for a split second on a quick refresh. */
 html .top-inner>.search-col{display:none}
+/* A page with a scrollbar must not sit in a different place from one without: keep the space for it. */
+html{scrollbar-gutter:stable}
 html .preview-toolbar-actions:has(>#previewAccountSlot:empty){visibility:hidden}
 html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sticky;top:0;z-index:20;background:transparent}
   html .content>.preview-list-heading,html[data-theme] .content>.preview-list-heading{position:sticky;top:73px;z-index:15;margin-top:0}
@@ -1358,9 +1360,8 @@ html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sti
   <section id="msgPage" aria-label="Messages"></section>
   <div class="allfoot" id="allFoot" hidden>Last 14 days, 100 emails max.</div>
   <section id="sentView" class="sentview" aria-label="Sent" hidden>
-    <button class="back-inbox" id="sentBack" type="button" data-back-inbox><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>Back to My inbox</button>
-    <div class="sent-top"><h2>Sent</h2><span class="sent-tools"><select id="sentBox" aria-label="Mailbox" hidden></select><button class="btn" id="sentRefresh" type="button">Refresh</button></span></div>
-    <div class="sent-note" role="note">Your last 14 days of sent mail, read from your mailbox when you open this page. Nothing is saved in Enveliq.</div>
+    <div class="sent-top"><span class="sent-tools"><select id="sentBox" aria-label="Mailbox" hidden></select><button class="btn" id="sentRefresh" type="button">Refresh</button></span></div>
+    <div class="sent-note" role="note">Read from your mailbox when you open this page. Nothing is saved in Enveliq.</div>
     <div id="sentStatus" class="sent-status" role="status" aria-live="polite"></div>
     <div id="sentList" class="sent-list"></div>
     <p id="sentFoot" class="sent-foot" hidden>Limited to the last 14 days.</p>
@@ -2916,14 +2917,15 @@ function render(){
   const inbox=mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)),needN=inbox.filter(m=>m.action||m.priority==="high").length;
   const hr=new Date().getHours(),first=String(currentUser.name||"").trim().split(/\s+/)[0];
   const greeting=(hr<12?"Good morning":hr<18?"Good afternoon":"Good evening")+(first?`, ${first}`:"");
-  const VIEW_NAMES={action:"Needs action",need:"Needs action",high:"Important",attachments:"Attachments",tasks:"Tasks",shipping:"Shipping",waiting:"Waiting for reply",reviewed:"Reviewed",archived:"Archived",subscriptions:"Subscriptions",trips:"Trips",messages:"Messages"};
+  const VIEW_NAMES={action:"Needs action",need:"Needs action",high:"Important",attachments:"Attachments",tasks:"Tasks",shipping:"Shipping",waiting:"Waiting for reply",reviewed:"Reviewed",archived:"Archived",subscriptions:"Subscriptions",trips:"Trips",messages:"Messages",sent:"Sent"};
   document.querySelector(".top-left h2").textContent=VIEW_NAMES[filter]||(filter==="all"&&calmOn()?"One thing at a time":filter==="all"?"My inbox":greeting);
-  $("backInbox").hidden=filter==="all"||filter==="sent";
+  $("backInbox").hidden=filter==="all";
   $("previewCalmNotice").hidden=!(filter==="all"&&calmOn());
   $("previewListHeading").hidden=["sent","tasks","shipping","waiting","subscriptions","trips","messages"].includes(filter);
   previewSyncMenu();
   $("todayDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"});
   $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(calmOn()?(inbox.length?"One thing at a time. Important deadlines stay visible.":"Nothing waiting. Enjoy the quiet."):inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:(document.body.classList.contains("backend")&&!realMail?"No mailbox is connected yet":"All caught up"));
+  if(filter==="sent")$("inboxSubtitle").textContent="Your last 14 days of sent mail";
 
   previewRenderOverview(inbox,needN);
   const rows=data.filter(visible);

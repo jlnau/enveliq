@@ -12,7 +12,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 **Clearer Microsoft sign-in steps.** The steps in Administration, Microsoft sign-in (and `docs/MICROSOFT.md`) now start with getting a free Azure account, with the App registrations link first, and follow what Microsoft's current screens show: the account type wording, the Authentication Settings tab, and adding the email, offline_access and openid permissions. They also say plainly that "Office 365 Exchange Online" will not be in the list in a new directory and is not needed.
 
-**Back button on the Sent page.** The "Back to My inbox" button that the other pages have was missing on Sent. It now shows above the Sent title and takes you home, like the others.
+**The Sent page now looks like the other pages.** It was missing the "Back to My inbox" button, and its title was smaller, in a different place and font. Sent now uses the same page header as Archived and the rest: the Back button, then the title, then a line saying what the page is ("Your last 14 days of sent mail"). The page also keeps room for its scroll bar, so nothing shifts sideways when the emails finish loading.
 
 **A cogwheel for Settings.** The Settings icon in the left menu was a sun. It is now the same standard cogwheel used in the menu under your name.
 
