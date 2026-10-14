@@ -3266,7 +3266,7 @@ function planReply(m){
     :`Replying only to the sender.`;
   return {acct,identities,to,from,fromHint,fromKind,toHint,noReply:isNoReply(to)};
 }
-const cm={fields:null,files:[]};
+const cm={fields:null,files:[],removed:0};
 function cmFields(){if(!cm.fields)cm.fields={to:chipField($("cmTo"),cmCount),cc:chipField($("cmCc"),cmCount),bcc:chipField($("cmBcc"),cmCount)};return cm.fields}
 const cmPeople=()=>{const f=cmFields(),seen=new Set(),n=[];for(const l of [f.to.items,f.cc.items,f.bcc.items])for(const p of l){const k=p.address.toLowerCase();if(!seen.has(k)){seen.add(k);n.push(p)}}return n};
 const peopleText=list=>list.length<2?(list[0]||""):`${list[0]} and ${list.length-1} ${list.length===2?"other":"others"}`;
@@ -3281,7 +3281,7 @@ function paintCmFiles(){
   $("cmFiles").replaceChildren(...cm.files.map((f,i)=>{
     const sp=document.createElement("span");sp.className="nm-file";
     const b=document.createElement("b");b.textContent=f.name;const z=document.createElement("span");z.textContent=kb(f.size);
-    const x=document.createElement("button");x.type="button";x.textContent="×";x.setAttribute("aria-label","Leave out "+f.name);x.onclick=()=>{cm.files.splice(i,1);paintCmFiles()};
+    const x=document.createElement("button");x.type="button";x.textContent="×";x.setAttribute("aria-label","Leave out "+f.name);x.onclick=()=>{cm.files.splice(i,1);cm.removed++;paintCmFiles()};
     sp.append(b,z,x);return sp;
   }));
 }
@@ -3294,7 +3294,7 @@ function openComposer(id,mode,pre){
   if(mode==="reply_all"&&!(m.replyCc&&m.replyCc.length))mode="reply";
   if(mode==="forward"&&!(m.real&&realMail))mode="reply";
   composing={m,plan,mode,draftId:(pre&&pre.draftId)||null};
-  const f=cmFields();f.to.clear();f.cc.clear();f.bcc.clear();cm.files=[];paintCmFiles();
+  const f=cmFields();f.to.clear();f.cc.clear();f.bcc.clear();cm.files=[];cm.removed=0;paintCmFiles();
   const word=mode==="forward"?"Forward":mode==="reply_all"?"Reply all to":"Reply to";
   $("composeTitle").textContent=mode==="forward"?`Forward: ${m.subject}`:`${word} ${m.sender}`;
   $("composeContext").textContent=`${m.subject} · ${plan.acct?.name||m.account}`;
@@ -3327,7 +3327,7 @@ function openComposer(id,mode,pre){
     setTimeout(()=>f.to.input.focus(),0);
     const mine=composing;
     secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/original`,{method:"GET",headers:{}})
-      .then(o=>{if(composing!==mine)return;cm.files=(o.attachments||[]).filter(a=>!a.inline).map(a=>({index:a.index,name:a.filename,size:a.size_bytes||0}));paintCmFiles();mine.base=composeSnap()})
+      .then(o=>{if(composing!==mine)return;cm.files=(o.attachments||[]).filter(a=>!a.inline).map(a=>({index:a.index,name:a.filename,size:a.size_bytes||0}));paintCmFiles()})
       .catch(()=>{});
   }else setTimeout(()=>{const t=$("composeText");t.focus();t.setSelectionRange(0,0)},0);
 }
@@ -5312,7 +5312,7 @@ const bareOrText=t=>isBare(t)?"":String(t).trim();
 function composeSnap(){
   if(!composing)return "";
   const f=cmFields();
-  return JSON.stringify([composing.mode,f.to.items.map(p=>p.address),f.cc.items.map(p=>p.address),f.bcc.items.map(p=>p.address),bareOrText($("composeText").value),cm.files.length]);
+  return JSON.stringify([composing.mode,f.to.items.map(p=>p.address),f.cc.items.map(p=>p.address),f.bcc.items.map(p=>p.address),bareOrText($("composeText").value),cm.removed]);
 }
 async function requestCloseComposer(){
   if(!composing)return;
