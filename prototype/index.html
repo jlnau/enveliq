@@ -1846,6 +1846,7 @@ body.on-draft .filters,body.on-draft #list,body.on-draft .sample-banner,body.on-
     <div class="wh" id="composeWh" hidden></div>
     <div id="cmFilesRow" hidden><label>Files from the original email</label><div class="nm-files" id="cmFiles"></div></div>
     <details><summary id="composeQuoteTitle">Original message (quoted below your reply)</summary><pre id="composeQuote"></pre></details>
+    <div id="cmQuoteRow" hidden><button class="btn" type="button" id="cmQuoteIn">Put the original in my message</button><div class="compose-hint" id="cmQuoteHint">Adds the sender's email under your words so you can change or cut it. It is then not added a second time.</div></div>
   </form>
   <div class="compose-foot">
     <small>Prototype: nothing is sent. You always press Send yourself; the AI never sends mail.</small>
@@ -3319,8 +3320,9 @@ function openComposer(id,mode,pre){
   if(pre&&pre.from&&plan.identities.includes(pre.from))$("composeFrom").value=pre.from;
   $("composeText").placeholder=mode==="forward"?"Add a note (optional)":"Write your reply";
   $("composeSend").textContent=mode==="forward"?"Send forward":"Send reply";
-  $("composeQuoteTitle").textContent=mode==="forward"?"The original email (added below your note when you send)":"Original message (quoted below your reply)";
-  $("composeQuote").textContent=mode==="forward"?`The whole email from ${m.sender} <${m.address}> is added under your note when you press Send. It is fetched from your mailbox then and is not stored.`:m.real?`On ${m.date||m.time}, ${m.sender} <${m.address}> wrote. Open "View email" to read the original.`:`On ${m.date||m.time}, ${m.sender} <${m.address}> wrote:\n`+(m.body||[m.summary]).map(par=>par.split("\n").map(l=>"> "+l).join("\n")).join("\n>\n");
+  $("composeQuoteTitle").textContent=mode==="forward"?"The original email (added below your note when you send)":m.real?"The original email (added below your reply when you send)":"Original message (quoted below your reply)";
+  $("cmQuoteRow").hidden=mode==="forward"||!m.real;$("cmQuoteIn").disabled=false;
+  $("composeQuote").textContent=mode==="forward"?`The whole email from ${m.sender} <${m.address}> is added under your note when you press Send. It is fetched from your mailbox then and is not stored.`:m.real?`The whole email from ${m.sender} <${m.address}> is added under your reply when you press Send, so they always see what you are answering. It is fetched from your mailbox then and is not stored. Press "Put the original in my message" to add it to your message instead, where you can change it.`:`On ${m.date||m.time}, ${m.sender} <${m.address}> wrote:\n`+(m.body||[m.summary]).map(par=>par.split("\n").map(l=>"> "+l).join("\n")).join("\n>\n");
   closeAttachmentViewer();
   cmCount();
   composing.base=composeSnap();composing.saved=null;{const n=$("cmAuto");n.hidden=true;n.textContent=""}
@@ -3332,6 +3334,26 @@ function openComposer(id,mode,pre){
       .then(o=>{if(composing!==mine)return;cm.files=(o.attachments||[]).filter(a=>!a.inline).map(a=>({index:a.index,name:a.filename,size:a.size_bytes||0}));paintCmFiles()})
       .catch(()=>{});
   }else setTimeout(()=>{const t=$("composeText");t.focus();t.setSelectionRange(0,0)},0);
+}
+// The original email can sit inside the person's own message ("On <date>, <who> wrote:" then lines starting with ">"). When it does, Send does not add it a second time.
+const hasInlineQuote=t=>/^.{1,300} wrote:\n>/m.test(String(t||"").replace(/\r\n/g,"\n"));
+function quoteBlock(o){
+  const f=o.from||{},who=(f.name?`${f.name} <${f.address}>`:f.address)||"the sender";
+  const head=o.date?`On ${o.date}, ${who} wrote:`:`${who} wrote:`;
+  return head+"\n"+String(o.text||"").replace(/\r\n/g,"\n").replace(/^\n+|\n+$/g,"").split("\n").map(l=>l?"> "+l:">").join("\n");
+}
+async function quoteInline(){
+  if(!composing||composing.mode==="forward"||!composing.m.real)return;
+  const mine=composing,m=mine.m,btn=$("cmQuoteIn"),t=$("composeText");
+  if(hasInlineQuote(t.value)){toast("The original is already in your message");return}
+  btn.disabled=true;
+  try{
+    const o=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/original`,{method:"GET",headers:{}});
+    if(composing!==mine)return;
+    t.value=t.value.replace(/\s+$/,"")+"\n\n"+quoteBlock(o);
+    $("cmQuoteHint").textContent="The original is now in your message. Change or cut it as you like. It will not be added a second time.";
+    t.focus();t.setSelectionRange(0,0);t.scrollTop=0;
+  }catch(e){if(composing===mine){btn.disabled=false;toast("Could not get the original email. Try again.")}}
 }
 function closeComposer(){
   $("compose").classList.remove("open");$("composeScrim").classList.remove("show");composing=null;
@@ -3363,10 +3385,11 @@ function sendReply(){
     btn.disabled=true;btn.textContent="Sending…";btn.classList.add("busy");$("composeText").readOnly=true;
     const base=`/api/v1/accounts/${m.real.accountId}/messages/${m.real.messageId}`;
     // A plain reply with nothing changed lets the server use the sender's address exactly as it was received.
-    const plainDefault=mode==="reply"&&!ccList.length&&!bccList.length&&toList.length===1&&toList[0]===plan.to;
+    const inlineQuote=hasInlineQuote(text);
+    const plainDefault=!inlineQuote&&mode==="reply"&&!ccList.length&&!bccList.length&&toList.length===1&&toList[0]===plan.to;
     const req=mode==="forward"
       ?secureBackendRequest(base+"/forward",{method:"POST",body:JSON.stringify({body:text,from_address:from,to:toList,cc:ccList,bcc:bccList,keep_files:cm.files.map(x=>x.index)})})
-      :secureBackendRequest(base+"/reply",{method:"POST",body:JSON.stringify(plainDefault?{body:text,from_address:from}:{body:text,from_address:from,kind:mode,to:toList,cc:ccList,bcc:bccList})});
+      :secureBackendRequest(base+"/reply",{method:"POST",body:JSON.stringify(plainDefault?{body:text,from_address:from}:{body:text,from_address:from,kind:mode,to:toList,cc:ccList,bcc:bccList,add_original:!inlineQuote})});
     const tgt=composing;
     req.then(async r=>{
         await settleAuto();const did=tgt.draftId;
@@ -5949,7 +5972,7 @@ $("oauthAllow").onclick=finishOAuth;
 $("attachmentModalClose").onclick=closeAttachmentViewer;
 $("attachmentScrim").onclick=closeAttachmentViewer;
 $("composeClose").onclick=requestCloseComposer;$("composeCancel").onclick=requestCloseComposer;$("composeScrim").onclick=requestCloseComposer;
-$("composeSend").onclick=sendReply;$("composeForm").addEventListener("submit",e=>{e.preventDefault();sendReply()});
+$("cmQuoteIn").onclick=quoteInline;$("composeSend").onclick=sendReply;$("composeForm").addEventListener("submit",e=>{e.preventDefault();sendReply()});
 document.addEventListener("click",e=>{if(e.target.closest("[data-preview-only]")){e.preventDefault();toast(document.body.classList.contains("backend")?"Use the account pages for this":"Preview only: this works on your Enveliq server")}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("docBox").hidden)closeDoc();else if(!$("picBox").hidden)closePic();else if($("newMail").classList.contains("open"))requestCloseNewMail();else if($("compose").classList.contains("open"))requestCloseComposer();else if($("attachmentModal").classList.contains("open"))closeAttachmentViewer()}});
 const setupBtn=document.getElementById("vaultSetupBtn");if(setupBtn)setupBtn.onclick=setupVault;

@@ -120,3 +120,45 @@ def test_held_forward_is_listed_as_a_forward_and_not_marked_replied(env):
     c = client.delete(f"/api/v1/me/outbox/{r.json()['id']}").json()
     assert c["kind"] == "forward" and c["to_list"] == ["mum@example.invalid"] and c["bcc_list"] == [BOSS]
     assert bridge.sent == []
+
+
+def body_of(msg):
+    return msg.get_body(preferencelist=("plain",)).get_content()
+
+
+def test_every_reply_carries_the_whole_original_under_the_persons_words(env):
+    _, client, bridge, _ = env
+    aid, m = synced_with_cc(client, bridge)
+    r = client.post(f"/api/v1/accounts/{aid}/messages/{m['Plan for May']['id']}/reply", json={"body": "Sounds good."})
+    assert r.status_code == 200, r.text
+    _, msg = sent_message(bridge)
+    text = body_of(msg)
+    assert text.startswith("Sounds good.\n\nOn Wed, 07 Oct 2026 09:00:00 +1100, Alice Example <alice@example.invalid> wrote:\n> Hello there.")
+    assert not msg.is_multipart() or not list(msg.iter_attachments())              # quoted in the text, not attached
+
+
+def test_reply_all_and_replies_with_chosen_people_carry_it_too(env):
+    _, client, bridge, _ = env
+    aid, m = synced_with_cc(client, bridge)
+    url = f"/api/v1/accounts/{aid}/messages/{m['Plan for May']['id']}/reply"
+    assert client.post(url, json={"body": "A", "kind": "reply_all"}).status_code == 200
+    assert "> Hello there." in body_of(sent_message(bridge)[1])
+    assert client.post(url, json={"body": "B", "to": [PEER]}).status_code == 200
+    assert "> Hello there." in body_of(sent_message(bridge)[1])
+
+
+def test_when_the_person_already_put_it_in_their_message_it_is_not_added_again(env):
+    _, client, bridge, _ = env
+    aid, m = synced_with_cc(client, bridge)
+    mine = "Thanks.\n\nOn Wed, Alice wrote:\n> Hello (I cut the rest)"
+    r = client.post(f"/api/v1/accounts/{aid}/messages/{m['Plan for May']['id']}/reply", json={"body": mine, "add_original": False})
+    assert r.status_code == 200, r.text
+    text = body_of(sent_message(bridge)[1])
+    assert text.strip() == mine and text.count("wrote:") == 1
+
+
+def test_the_original_is_quoted_only_in_what_is_sent_never_kept(env):
+    appm, client, bridge, _ = env
+    aid, m = synced_with_cc(client, bridge)
+    client.post(f"/api/v1/accounts/{aid}/messages/{m['Plan for May']['id']}/reply", json={"body": "Ok."})
+    assert "Hello there." not in str(appm.vault.get_message(aid, m["Plan for May"]["id"]))

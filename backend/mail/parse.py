@@ -385,6 +385,18 @@ def forward_quote(raw: bytes) -> str:
     return head + "\n" + shown["text"]
 
 
+def reply_quote(raw: bytes) -> str:
+    """What a reply carries under the person's words: "On <date>, <name> <address> wrote:" and the whole text of the
+    original, each line starting with "> ". Fetched when the reply is sent and never kept."""
+    msg = parse_headers(raw)
+    sender = (_addresses(msg, "From") or [("", "")])[0]
+    who = (f"{sender[0]} <{sender[1]}>" if sender[0] else sender[1]) or "the sender"
+    date = clean(msg.get("Date"), 100)
+    head = f"On {date}, {who} wrote:" if date else f"{who} wrote:"
+    text = render_original(raw)["text"].replace("\r\n", "\n").strip("\n")
+    return head + "\n" + "\n".join(("> " + line) if line else ">" for line in text.split("\n"))
+
+
 def forward_files(raw: bytes, keep: list[int] | None) -> list[tuple[bytes, str, str]]:
     """(content, name, type) of the original's files to send along: the numbered ones, or all of them. Pictures that are part of the text are left out unless numbered."""
     parts = list_parts(email.message_from_bytes(raw, policy=policy.default))

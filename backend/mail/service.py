@@ -26,7 +26,7 @@ AI_CONFIG_RECORD = "ai_config"
 MAIL_METHODS = ("proton_bridge", "imap")   # account types that sync
 from . import scamcheck
 from . import subscriptions as subscriptions_mod
-from .parse import _addresses, clean, forward_files, forward_quote, parse_headers, received_at_of, render_original, sending_identities, summarise_headers
+from .parse import _addresses, clean, forward_files, forward_quote, parse_headers, received_at_of, render_original, reply_quote, sending_identities, summarise_headers
 
 log = logging.getLogger("enveliq.mail")
 PLACEHOLDER_SUMMARY = "Not summarised yet."
@@ -804,7 +804,9 @@ class MailService:
 
     def build_reply(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None,
                     to: list[str] | None = None, cc: list[str] | None = None, bcc: list[str] | None = None,
-                    kind: str = "reply") -> tuple[EmailMessage, str, list[str]]:
+                    kind: str = "reply", add_original: bool = True) -> tuple[EmailMessage, str, list[str]]:
+        """A reply. Unless the person already put the original into their own message (add_original False), the whole
+        original email is fetched from the mailbox now and quoted under their words. It is never kept."""
         ctx = message.get("reply_context")
         if not ctx or not ctx.get("reply_to"):
             raise BridgeError("not_configured", "This email has no address to reply to.")
@@ -832,7 +834,16 @@ class MailService:
             msg["In-Reply-To"] = original_id
             refs = [r for r in ctx.get("references", []) if _ANGLE_ID.match(r)][-49:] + [original_id]
             msg["References"] = " ".join(refs)
-        msg.set_content(body.replace("\r\n", "\n"))
+        text = body.replace("\r\n", "\n").rstrip()
+        if add_original:
+            try:
+                quoted = reply_quote(self.original_raw(account, message))
+            except BridgeError as err:
+                if err.code == "not_found":
+                    raise BridgeError("not_found", "Enveliq could not find the original email to quote, so nothing was sent. Sync and try again.") from None
+                raise
+            text = text + "\n\n" + quoted
+        msg.set_content(text)
         return msg, chosen, [a.addr_spec for a in to_a + cc_a + bcc_a]
 
     def build_forward(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None,

@@ -133,8 +133,17 @@ def test_changing_the_password_signs_out_the_other_long_sign_ins(keyed):
 # ---- the session manager itself, with a clock we move ----
 
 class StubVault:
+    def __init__(self):
+        self.records = {}
+
     def touch(self):
         pass
+
+    def get_global(self, rid):
+        return self.records.get(rid)
+
+    def set_global(self, rid, payload):
+        self.records[rid] = payload
 
 
 @pytest.fixture

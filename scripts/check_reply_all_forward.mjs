@@ -99,6 +99,24 @@ await page.click("#composeSend");
 await page.waitForFunction(() => !document.getElementById("compose").classList.contains("open"));
 sent = calls.at(-1);
 check("Reply all sends the chosen people and says what kind it is", sent[0] === "reply" && sent[1].kind === "reply_all" && sent[1].to.join() === "alice@example.invalid,dan@example.invalid" && sent[1].cc.join() === "sam@example.invalid");
+check("by default the server is told to add the original email under the reply", sent[1].add_original === true);
+
+// The original can instead be put into the message itself, where it can be edited; then it is not added twice
+await page.waitForTimeout(300);
+await expand(ccRow);
+await ccRow.locator("[data-reply]").first().click();
+check("a reply says the original is added under it when sent, and offers to put it in the message", (await page.locator("#composeQuote").textContent()).includes("added under your reply when you press Send") && await page.locator("#cmQuoteIn").isVisible());
+await page.fill("#composeText", "Thanks for this.");
+await page.click("#cmQuoteIn");
+await page.waitForFunction(() => document.getElementById("composeText").value.includes("> Hello"));
+const inline = await page.inputValue("#composeText");
+check("the button puts 'On <date>, <name> <address> wrote:' and the quoted text under the message", inline.startsWith("Thanks for this.") && inline.includes("wrote:\n> Hello") && inline.includes("Alice <alice@example.invalid>"));
+await page.fill("#composeText", inline.replace("> Hello", "> Hello (cut down)"));
+await shot("reply_inline");
+await page.click("#composeSend");
+await page.waitForFunction(() => !document.getElementById("compose").classList.contains("open"));
+sent = calls.at(-1);
+check("a message that already has the original in it tells the server not to add it again", sent[0] === "reply" && sent[1].add_original === false && sent[1].body.includes("> Hello (cut down)"));
 
 // Forward: empty To, Fwd subject, the original's files as removable chips
 await page.waitForTimeout(300);

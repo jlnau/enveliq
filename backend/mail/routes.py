@@ -84,6 +84,8 @@ class ReplyBody(StrictModel):
     to: list[str] | None = Field(default=None, max_length=50)
     cc: list[str] | None = Field(default=None, max_length=50)
     bcc: list[str] | None = Field(default=None, max_length=50)
+    # The whole original email is quoted under the reply unless the person already put it into their own message.
+    add_original: bool = True
 
     @field_validator("from_address")
     @classmethod
@@ -405,11 +407,11 @@ def build_mail_router(ctx: Any) -> APIRouter:
         try:
             if delay > 0:
                 # Undo send: check everything now, then hold the reply for the person's chosen time.
-                built = service.build_reply(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.kind)
+                built = service.build_reply(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.kind, body.add_original)
                 item = outbox.enqueue(user, account_id, message_id, built, body.body, delay, kind=body.kind)
                 return {"queued": True, "id": item.id, "send_at": item.send_at, "now": time.time(), "from": item.chosen,
                         "to": item.recipients[0] if item.recipients else "", "people": len(item.recipients)}
-            built = service.build_reply(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.kind)
+            built = service.build_reply(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.kind, body.add_original)
             sent_from = service.reply(account, message, body.body, body.from_address, built)
         except BridgeError as err:
             raise fail(err) from None
