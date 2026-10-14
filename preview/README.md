@@ -19,6 +19,8 @@ This folder describes the separate Docker preview stack originally used to test 
 5. Deploy. The two preview containers must show healthy. For a remote browser, use a separate HTTPS reverse proxy hostname forwarding to port `8767` on the Docker host and set `ENVELIQ_PREVIEW_PUBLIC_URL` to that HTTPS address before deployment.
 6. Open the preview address and finish first time setup with the test setup code. Configure test mailboxes only.
 
+**Testing a version before it goes live.** Each version has one draft pull request (for example "Version 0.89") and one test branch with the same number (for example `preview/v0.89`). The test branch always holds the same code as the pull request. Every push to a `preview/` branch builds the preview images (the `ui-preview` tag). The draft pull request's description starts with the test branch name. When the **Build UI Preview** run on that branch shows a green tick, redeploy the `enveliq-preview` project in Arcane and test there.
+
 To update an existing preview after its image source changes, wait for a successful preview image build and then redeploy only the preview project in Arcane. Do not redeploy the production project as part of preview testing.
 
 ## Interface changes

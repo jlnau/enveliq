@@ -56,3 +56,4 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 - [Architecture](ARCHITECTURE.md)
 - [Change log](CHANGELOG.md) and [full version history](VERSION_HISTORY.md)
 - [Making a release](RELEASING.md) (for the maintainer)
+- [Looking after Enveliq: updates and security checks](MAINTENANCE.md) (for the maintainer)

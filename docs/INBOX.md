@@ -87,11 +87,31 @@ The **Recent emails** section lists your mail. **Inbox options** starts closed o
 
 The left menu leads to **My inbox**, **Needs action**, **Tasks**, **Shipping**, **Waiting for reply**, and **Attachments**. The **More** section contains other views, including Sent, Reviewed, and Archived where available. Collapsing the desktop menu keeps the icons; the compact Calm mode control remains available.
 
+## Bigger windows for emails and attachments
+
+The window that shows an original email, an attachment, a picture or a PDF now grows with your browser window (up to a sensible size) instead of staying a fixed size, and always stays inside the browser window. On a big monitor you see much more of the email at once. The email stays a readable column in the middle. PDF pages are drawn larger and fit the width of the window; the **−** and **+** buttons zoom from there. Phones are unchanged (full screen).
+
+Web addresses in the text of an email can be clicked, but they never open by themselves: you are first asked where it goes (see "Where does this link go?" in the Be careful guide).
+
 ## Getting back to My inbox
-- On every page other than My inbox (Needs action, Tasks, Shipping, Waiting for reply, Attachments, Reviewed, Archived and so on), a **Back to My inbox** button sits above the page title. The title now shows the name of the page you are on instead of "My inbox".
+- The Sent page uses the same header as the other pages (Back button, title, then a line saying it shows your last 14 days of sent mail). The page keeps room for its scroll bar, so nothing moves sideways when the emails finish loading.
+- On every page other than My inbox (Needs action, Tasks, Shipping, Waiting for reply, Attachments, Reviewed, Archived, Sent and so on), a **Back to My inbox** button sits above the page title. The title now shows the name of the page you are on instead of "My inbox".
 - Needs action, Attachments, Reviewed and Archived show the same **Recent emails** panel with **Inbox options** as My inbox, so the options fold away in the same way everywhere.
 - On **Waiting for reply**, the **Closed** section is folded away until you open it with its arrow, so the page does not look like a long list of open items.
 - With **Open full screen**, on a computer the email sits beside the left menu and below the top bar, and **Reviewed**, **Archive** and **Bin** are normal buttons centred along the bottom (they used to be stretched across the screen and partly hidden).
+
+## The top stays in view while you scroll
+- On a computer, the bar with the search box, Sync mail, the help button and your name stays at the top of the page when you scroll down a long list. The "Recent emails" bar with **Inbox options** (and the buttons for ticked emails) stays right under it. Only the emails move.
+- The title, the four count tiles and the picture behind them scroll away as before, so you get more room for the emails.
+- The top bar is never a solid block. It stays see-through the whole time, so the picture behind it always shows. Emails, tiles and titles that scroll up to it fade out softly just below its lower edge (no hard cut-off line), so no text is ever seen through it. The Recent emails bar itself is never faded.
+- Phones are unchanged. They already have their own bar at the top of the screen.
+
+## Nothing in the wrong place when the page loads
+
+While the page starts up, only the background shows. Nothing else is drawn (no menu, no boxes, no buttons) until everything is in its right place, and then the whole page fades in together. This is why a quick refresh, or several in a row, no longer shows parts of the page jumping into position. If loading takes more than a moment, a calm "Getting your inbox ready…" line appears, and after a few seconds the page is shown anyway so it can never stay blank. People who prefer less motion get no fade.
+
+## Even gaps on the main screen
+- On a computer, the boxes on the main screen (the four count tiles, Today, Coming up, the cards for deliveries, subscriptions, trips, replies and messages, and the Recent emails bar) are all separated by the same small gap, so no space is wasted between them.
 
 ## Light mode and pictures
 - In light mode, the Shipping, Subscriptions, Trips and Waiting for reply cards (on their own pages and on the home page) and the New email button now use light colours. They used to keep their dark colours.
@@ -118,4 +138,4 @@ Open the account menu at the top right to choose **Dark**, **Light**, or **Syste
 
 ## Profile pictures
 
-Under **Profile settings**, you can choose your own picture. New uploads of transparent PNG images preserve the clear areas, so the panel colour shows through around and inside a logo. An image previously uploaded before this was fixed may have been saved with a white background; uploading the **original transparent PNG again** is the most reliable way to restore transparency. The **Remove white background** action in Profile settings is an optional repair for an older saved image, not something a correctly uploaded transparent image needs.
+Under **Settings, Profile**, you can choose your own picture. New uploads of transparent PNG images preserve the clear areas, so the panel colour shows through around and inside a logo. An image previously uploaded before this was fixed may have been saved with a white background; uploading the **original transparent PNG again** is the most reliable way to restore transparency. The **Remove white background** action in Settings, Profile is an optional repair for an older saved image, not something a correctly uploaded transparent image needs.

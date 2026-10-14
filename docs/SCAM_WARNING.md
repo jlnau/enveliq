@@ -78,6 +78,7 @@ In **View original email**, a **Links in this email** list shows each link in th
 - **On an email marked Be careful** the question is firmer. It says the email looked odd and the button reads **Open anyway**.
 - **Some links cannot be opened from here**, such as a link to a number address or to a private address. They are listed with the reason and have no way to open.
 - Only the website name is shown, not the rest of the address, because the rest can hold a personal token.
+- **Web addresses in the text of the email can be clicked too.** An address in the text that is also in the list above (a plain public web address that did not look odd) is underlined. Clicking it does not open it: a bar at the top of the window says *"This goes to orders.example.com. Open it in a new tab?"* with **Open it** and **Not now**, the same question as the list. An address that was not checked, and every address in an email marked Be careful, stays plain text.
 
 ![The original of an email from Parcel Service with a Be careful note. Under it a list called Links in this email shows parcel-help.example with the note that a link says royalmail.com but really goes to parcel-help.example. Open was pressed, and a question asks whether to open it in a new tab, with an Open anyway button.](images/link-check.png)
 

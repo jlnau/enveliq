@@ -46,6 +46,25 @@ check("Tasks: the lists use the full width of the page, not a narrow column", aw
 if (shots) await p.screenshot({ path: path.join(shots, "back-tasks.png") });
 await p.click("#backInbox"); await p.waitForTimeout(300);
 check("Back to My inbox goes home and lights up My inbox in the menu", (await p.locator(".top-left h2").innerText()) === "My inbox" && !(await vis("#backInbox")) && (await p.locator('.nav[data-filter="all"].active').count()) === 1);
+await p.evaluate(() => { document.getElementById("sentNav").hidden = false; });
+await p.click('.nav[data-filter="sent"]'); await p.waitForTimeout(400);
+const sentGeo = await p.evaluate(() => { const r = (q) => document.querySelector(q).getBoundingClientRect(), h = document.querySelector(".top-left h2"); return { back: r("#backInbox").left, title: h.getBoundingClientRect().left, size: getComputedStyle(h).fontSize, font: getComputedStyle(h).fontFamily }; });
+await p.click('.nav[data-filter="archived"]'); await p.waitForTimeout(300);
+if (shots) await p.screenshot({ path: path.join(shots, "back-archived.png") });
+const arcGeo = await p.evaluate(() => { const r = (q) => document.querySelector(q).getBoundingClientRect(), h = document.querySelector(".top-left h2"); return { back: r("#backInbox").left, title: h.getBoundingClientRect().left, size: getComputedStyle(h).fontSize, font: getComputedStyle(h).fontFamily }; });
+await p.click('.nav[data-filter="sent"]'); await p.waitForTimeout(300);
+check("Sent: it uses the same page header as the other pages (Back to My inbox, then the title \"Sent\")", await vis("#backInbox") && /Back to My inbox/.test(await p.locator("#backInbox").innerText()) && (await p.locator(".top-left h2").innerText()) === "Sent");
+check("Sent: the Back button, the title, the title's size and its font are in the same place and style as on Archived", Math.abs(sentGeo.back - arcGeo.back) <= 1 && Math.abs(sentGeo.title - arcGeo.title) <= 1 && sentGeo.size === arcGeo.size && sentGeo.font === arcGeo.font);
+const before = await p.evaluate(() => ({ t: document.querySelector(".top-left h2").getBoundingClientRect().left, b: document.querySelector("#backInbox").getBoundingClientRect().left, n: document.querySelector(".sent-note").getBoundingClientRect().left }));
+await p.evaluate(() => { const l = document.getElementById("sentList"); l.innerHTML = Array.from({ length: 80 }, (_, i) => `<div style="height:46px">row ${i}</div>`).join(""); });
+await p.waitForTimeout(200);
+const after = await p.evaluate(() => ({ t: document.querySelector(".top-left h2").getBoundingClientRect().left, b: document.querySelector("#backInbox").getBoundingClientRect().left, n: document.querySelector(".sent-note").getBoundingClientRect().left, long: document.documentElement.scrollHeight > innerHeight }));
+check("Sent: nothing moves sideways when the emails load and the page becomes long enough to scroll", after.long && Math.abs(after.t - before.t) < 0.5 && Math.abs(after.b - before.b) < 0.5 && Math.abs(after.n - before.n) < 0.5);
+check("Sent: the line under the title says what the page is, like the other pages, not the inbox summary", /last 14 days of sent mail/.test(await p.locator("#inboxSubtitle").innerText()) && !/need you/.test(await p.locator("#inboxSubtitle").innerText()));
+if (shots) await p.screenshot({ path: path.join(shots, "back-sent.png") });
+await p.click("#backInbox"); await p.waitForTimeout(300);
+check("Sent: Back to My inbox goes home and lights up My inbox in the menu", (await p.locator(".top-left h2").innerText()) === "My inbox" && !(await vis("#sentView")) && (await p.locator('.nav[data-filter="all"].active').count()) === 1);
+check("The Settings icon in the left menu is the same cogwheel as in the name menu (not a sun)", await p.evaluate(() => document.querySelector("#sideSettings svg").innerHTML.replace(/\s+/g, "") === document.querySelector("#settingsBtn svg").innerHTML.replace(/\s+/g, "")));
 // Open full screen
 await p.evaluate(() => { view.layout = "screen"; readerOpen = true; render(); });
 await p.waitForTimeout(300);

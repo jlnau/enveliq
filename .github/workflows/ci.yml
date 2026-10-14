@@ -100,6 +100,14 @@ jobs:
         run: node scripts/check_calm_layout.mjs
       - name: Back to My inbox, Inbox options and full-screen email (made-up mail, no server)
         run: node scripts/check_back_to_inbox.mjs
+      - name: Search bar and Recent emails bar stay in view while scrolling (made-up mail, no server)
+        run: node scripts/check_sticky_header.mjs
+      - name: Even gaps between the boxes on the main screen (made-up mail, no server)
+        run: node scripts/check_main_gaps.mjs
+      - name: No flash of the old layout on a quick refresh (page with its script switched off)
+        run: node scripts/check_no_flash.mjs
+      - name: Bigger email and attachment windows, and clickable links that ask first (simulated server)
+        run: node scripts/check_viewer_size.mjs
       - name: Backup and restore, Export my data (simulated server)
         run: node scripts/check_backup.mjs
       - name: Microsoft sign-in help (simulated server)
