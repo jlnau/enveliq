@@ -4,7 +4,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-**On a phone, every email opens full screen.** Whichever layout is chosen, on a phone tapping an email now opens it on its own, filling the screen, exactly like the **Open full screen** layout (back button, count with Next and Previous arrows, and the buttons pinned along the bottom). The layout you picked is kept for bigger screens. See `docs/INBOX.md`.
+**On a phone, every email opens full screen.** Whichever layout is chosen, on a phone tapping an email now opens it on its own, filling the screen, with one **✕ Close** button. To read the next email you close this one and tap the next in the list. The layout you picked is kept for bigger screens. See `docs/INBOX.md`.
 
 **Phone fix: the "Save this as a draft?" question now shows.** On a phone the writing window fills the screen, and the question was hidden underneath it, so pressing Close seemed to do nothing. The question (and the "Send this?" check and the send warning, which had the same fault) now appears above the window as a sheet from the bottom of the screen with wide buttons. See `docs/DRAFTS.md`.
 

@@ -630,16 +630,14 @@ await page.click('[data-theme-choice="dark"]');
   // Wait and measure in one step. The list can be redrawn at any moment (a sync tick, say), which would replace the
   // reader element between a separate "wait until visible" and "measure it" and make the measurement come back empty.
   const rdr = await (await page.waitForFunction(() => { const r = document.querySelector(".reader")?.getBoundingClientRect(); return r && r.width > 0 && r.height > 0 ? { width: r.width, height: r.height } : null; })).jsonValue();
-  check("full screen: tapping a row opens the email over the whole screen with a count and pinned buttons", rdr.width >= 419 && rdr.height >= 819 && /^\d+ of \d+$/.test((await page.locator(".rtop b").innerText()).trim()) && (await page.locator(".ract [data-status=reviewed]").isVisible()) && (await page.locator(".ract [data-status=trashed]").isVisible()));
-  const t1 = (await page.locator(".rbody h3").innerText()).trim();
-  await page.locator(".rtop [data-pick]").last().click();
-  check("full screen: the arrows move to the next email", (await page.locator(".rbody h3").innerText()).trim() !== t1);
+  check("full screen: tapping a row opens the email over the whole screen with a Close button and pinned buttons", rdr.width >= 419 && rdr.height >= 819 && (await page.locator(".rtop [data-reader-close]").innerText()).includes("Close") && (await page.locator(".ract [data-status=reviewed]").isVisible()) && (await page.locator(".ract [data-status=trashed]").isVisible()));
+  check("full screen: on a phone there are no Next or Previous arrows (Close is the way to the next email)", (await page.locator(".rtop [data-pick]").count()) === 0);
   await page.locator(".ract [data-status=trashed]").click();
   await page.waitForSelector("#undoBar:not([hidden])");
   await page.click("#undoBar .undobar:last-child button");
   check("full screen: Bin waits for Undo as well", (await page.locator(".rbody h3").count()) === 1);
   await page.locator("[data-reader-close]").click();
-  check("full screen: the back arrow returns to the list", (await page.locator(".reader").count()) === 0 && (await page.locator("article.mail").count()) >= 1);
+  check("full screen: Close returns to the list", (await page.locator(".reader").count()) === 0 && (await page.locator("article.mail").count()) >= 1);
   await page.evaluate(() => { view = { ...VIEW_DEFAULT }; saveView(); applyView(); render(); });
   await page.setViewportSize({ width: 1200, height: 900 });
   await page.waitForTimeout(300);
