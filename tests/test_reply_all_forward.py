@@ -123,7 +123,7 @@ def test_held_forward_is_listed_as_a_forward_and_not_marked_replied(env):
 
 
 def body_of(msg):
-    return msg.get_body(preferencelist=("plain",)).get_content()
+    return msg.get_body(preferencelist=("plain",)).get_content().replace("\r\n", "\n")      # sent mail uses CRLF line ends
 
 
 def test_every_reply_carries_the_whole_original_under_the_persons_words(env):
