@@ -23,9 +23,9 @@ let failed = false;
 const check = (label, good) => { console.log((good ? "✓ " : "✗ ") + label); if (!good) { failed = true; console.log("::error::" + label); } };
 const b = await chromium.launch();
 const shots = process.env.SHOTS; if (shots) fs.mkdirSync(shots, { recursive: true });
-const open = async (w, h, theme, layout) => {
+const open = async (w, h, theme, layout, calm = "0") => {
   const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
-  await ctx.addInitScript(([t, l]) => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-theme", t); localStorage.setItem("enveliq-calm", "0"); localStorage.setItem("enveliq-view", JSON.stringify({ layout: l, density: "standard", width: "centered", rows: "collapsed", peek: true })); } catch {} }, [theme, layout]);
+  await ctx.addInitScript(([t, l, c]) => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-theme", t); localStorage.setItem("enveliq-calm", c); localStorage.setItem("enveliq-view", JSON.stringify({ layout: l, density: "standard", width: "centered", rows: "collapsed", peek: true })); } catch {} }, [theme, layout, calm]);
   const page = await ctx.newPage(); const errs = []; page.on("pageerror", (e) => errs.push(e.message));
   await page.goto(origin + "/"); await page.waitForSelector("article.mail"); await page.waitForTimeout(700);
   return { page, errs };
@@ -76,6 +76,24 @@ for (const theme of ["dark", "light"]) {
     check("clicking another email shows it in the panel on the right", (await page.locator("#readDock .rhead h3").innerText()).trim() === second);
     check("the email panel is not left over on the Tasks page", await (async () => { await page.locator('[data-filter="tasks"]').first().click(); await page.waitForTimeout(250); return (await page.evaluate(() => document.body.classList.contains("split-read"))) === false && (await page.locator("#readDock .reading").count()) === 0; })());
   }
+  await page.context().close();
+}
+for (const theme of ["dark", "light"]) {
+  const { page, errs } = await open(1400, 900, theme, "right", "1");
+  await page.evaluate(() => {
+    tasksData.tasks = [{ id: "a", title: "Download and install new configurations", detail: "Log in, download and import the new settings on each device you use.", sender: "Ultra.cc", state: "open", days: 0, due: "2026-10-14" }, { id: "a2", title: "Renew the domain", detail: "", sender: "Z", state: "open", days: 0, due: "2026-10-14" }, { id: "b", title: "Second thing", detail: "", sender: "X", state: "open", days: 3, due: "2026-10-17" }];
+    renderToday();
+  });
+  await page.waitForTimeout(250);
+  const t = `(calm, ${theme}) `;
+  check(t + "the Calm mode bar on top is gone", !(await page.locator("#previewCalmNotice").isVisible()));
+  check(t + "no icon in Start here", !(await page.locator("#dueBars .preview-focus-icon").isVisible()));
+  const today = await box(page, "#dueBars .today-card"), later = await box(page, "#dueBars .preview-later"), imp = await box(page, "#dueBars .preview-important"), list = await box(page, "#paneList");
+  check(t + "Also important today is under Later, on the right", imp && later && imp.x >= today.r && imp.y >= later.b && Math.abs(imp.x - later.x) <= 2);
+  check(t + "both sides are the same height", Math.abs(today.b - imp.b) <= 2);
+  check(t + "the cards are short: the list starts high up", list.y < 520);
+  check(t + "no script errors", errs.length === 0);
+  if (shots) await page.screenshot({ path: path.join(shots, `split-calm-${theme}.png`) });
   await page.context().close();
 }
 {

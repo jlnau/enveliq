@@ -53,11 +53,11 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   // Coming up arrow
   const ar = p.locator("[data-due-toggle].always");
   check("Coming up has an arrow that is always there", await ar.count() === 1 && await ar.isVisible());
-  check("Coming up starts closed", (await ar.getAttribute("aria-expanded")) === "false" && (await p.locator(".preview-later .trow2").count()) === 0);
+  check("Coming up starts closed", (await ar.getAttribute("aria-expanded")) === "false" && (await p.locator(".preview-later .trow2:visible").count()) === 0);
   await ar.click(); await p.waitForTimeout(250);
   check("pressing the arrow opens it", (await p.locator(".preview-later .trow2").count()) === 2 && (await p.locator("[data-due-toggle].always").getAttribute("aria-expanded")) === "true");
   await p.locator("[data-due-toggle].always").click(); await p.waitForTimeout(250);
-  check("pressing it again closes it", (await p.locator(".preview-later .trow2").count()) === 0);
+  check("pressing it again closes it", (await p.locator(".preview-later .trow2:visible").count()) === 0);
   check("no script errors (narrow sidebar)", p.errors.length === 0);
   await ctx.close();
 }
@@ -99,7 +99,7 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   check("Calm mode: Later has an arrow", await ar.count() === 1 && await ar.isVisible());
   check("Calm mode: Later starts open", (await ar.getAttribute("aria-expanded")) === "true" && (await p.locator(".preview-later .trow2").count()) === 2);
   await ar.click(); await p.waitForTimeout(250);
-  check("Calm mode: pressing the arrow closes Later", (await p.locator(".preview-later .trow2").count()) === 0 && (await p.locator(".preview-later [data-later-toggle].always").getAttribute("aria-expanded")) === "false");
+  check("Calm mode: pressing the arrow closes Later", (await p.locator(".preview-later .trow2:visible").count()) === 0 && (await p.locator(".preview-later [data-later-toggle].always").getAttribute("aria-expanded")) === "false");
   await p.locator(".preview-later [data-later-toggle].always").click(); await p.waitForTimeout(250);
   check("Calm mode: and opens it again", (await p.locator(".preview-later .trow2").count()) === 2);
   check("no script errors (Calm mode)", p.errors.length === 0);
