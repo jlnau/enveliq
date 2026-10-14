@@ -46,6 +46,13 @@ check("Tasks: the lists use the full width of the page, not a narrow column", aw
 if (shots) await p.screenshot({ path: path.join(shots, "back-tasks.png") });
 await p.click("#backInbox"); await p.waitForTimeout(300);
 check("Back to My inbox goes home and lights up My inbox in the menu", (await p.locator(".top-left h2").innerText()) === "My inbox" && !(await vis("#backInbox")) && (await p.locator('.nav[data-filter="all"].active').count()) === 1);
+await p.evaluate(() => { document.getElementById("sentNav").hidden = false; });
+await p.click('.nav[data-filter="sent"]'); await p.waitForTimeout(400);
+check("Sent: the Back to My inbox button shows above the title, like the other pages", await vis("#sentBack") && /Back to My inbox/.test(await p.locator("#sentBack").innerText()) && await vis("#sentView h2"));
+if (shots) await p.screenshot({ path: path.join(shots, "back-sent.png") });
+await p.click("#sentBack"); await p.waitForTimeout(300);
+check("Sent: Back to My inbox goes home and lights up My inbox in the menu", (await p.locator(".top-left h2").innerText()) === "My inbox" && !(await vis("#sentView")) && (await p.locator('.nav[data-filter="all"].active').count()) === 1);
+check("The Settings icon in the left menu is the same cogwheel as in the name menu (not a sun)", await p.evaluate(() => document.querySelector("#sideSettings svg").innerHTML.replace(/\s+/g, "") === document.querySelector("#settingsBtn svg").innerHTML.replace(/\s+/g, "")));
 // Open full screen
 await p.evaluate(() => { view.layout = "screen"; readerOpen = true; render(); });
 await p.waitForTimeout(300);

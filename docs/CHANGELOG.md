@@ -12,6 +12,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 **Clearer Microsoft sign-in steps.** The steps in Administration, Microsoft sign-in (and `docs/MICROSOFT.md`) now start with getting a free Azure account, with the App registrations link first, and follow what Microsoft's current screens show: the account type wording, the Authentication Settings tab, and adding the email, offline_access and openid permissions. They also say plainly that "Office 365 Exchange Online" will not be in the list in a new directory and is not needed.
 
+**Back button on the Sent page.** The "Back to My inbox" button that the other pages have was missing on Sent. It now shows above the Sent title and takes you home, like the others.
+
+**A cogwheel for Settings.** The Settings icon in the left menu was a sun. It is now the same standard cogwheel used in the menu under your name.
+
 **A maintenance guide.** New `docs/MAINTENANCE.md` for the maintainer: what Enveliq relies on (the database is one SQLite file, with no separate server), a weekly, per-release, monthly and twice-a-year routine, the GitHub security alerts to switch on, and why the preview build's tools should be pinned to exact versions. Documentation only; nothing in the app changes.
 
 **Nothing in the wrong place when you refresh quickly.** Refreshing used to show parts of the page for a split second before they had moved into place: the search box and the "?" button in their old spots, the Recent emails box out of position, and some menu buttons. Now only the background shows until everything is ready, then the whole page fades in together in its right place (a calm "Getting your inbox ready…" line still appears if it takes more than a moment). Phones get the same. The server was already telling the browser not to keep old copies of the page, so this was never an old file.

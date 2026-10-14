@@ -1262,7 +1262,7 @@ html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sti
       <button class="nav more-toggle" id="moreToggle" type="button" aria-expanded="false" aria-controls="moreItems" title="More mailbox views"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3zM3 9h18"/><path class="more-chev" d="m9.5 13.2 2.5 2.4 2.5-2.4"/></svg><span class="nav-label">More</span><span class="more-arrow" aria-hidden="true">⌄</span></button>
       <div class="more-items" id="moreItems"></div>
     </div>
-    <button class="nav" id="sideSettings" type="button" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg><span class="nav-label">Settings</span></button>
+    <button class="nav" id="sideSettings" type="button" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="nav-label">Settings</span></button>
   </nav>
   <a class="updnote" id="updNote" target="_blank" rel="noopener noreferrer" hidden><span class="updic" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 11l6-6 6 6"/></svg></span><span class="updtx"><b id="updVer">A new version is out</b><small>See what's new</small></span></a>
   <div class="side-foot">
@@ -1358,6 +1358,7 @@ html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sti
   <section id="msgPage" aria-label="Messages"></section>
   <div class="allfoot" id="allFoot" hidden>Last 14 days, 100 emails max.</div>
   <section id="sentView" class="sentview" aria-label="Sent" hidden>
+    <button class="back-inbox" id="sentBack" type="button" data-back-inbox><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>Back to My inbox</button>
     <div class="sent-top"><h2>Sent</h2><span class="sent-tools"><select id="sentBox" aria-label="Mailbox" hidden></select><button class="btn" id="sentRefresh" type="button">Refresh</button></span></div>
     <div class="sent-note" role="note">Your last 14 days of sent mail, read from your mailbox when you open this page. Nothing is saved in Enveliq.</div>
     <div id="sentStatus" class="sent-status" role="status" aria-live="polite"></div>
