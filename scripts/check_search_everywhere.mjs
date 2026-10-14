@@ -24,7 +24,7 @@ const messages = [
   { ...base, id: "m-a", subject: "Dentist on Monday", sender_display: "Brightwater Dental", sender_address: "clinic@example.invalid", received_at: nowS - 300, reply_context: ctx("a"), summary: "Reminds you of a check-up on Monday at 10:30." },
   { ...base, id: "m-b", subject: "Your electricity bill", sender_display: "Northside Power", sender_address: "bills@example.invalid", received_at: nowS - 90000, reply_context: ctx("b"), summary: "Your bill is ready and due in two weeks.", state: "reviewed", resolved_at: nowS - 3600 },
   { ...base, id: "m-c", subject: "Photos from the trip", sender_display: "Alice", sender_address: "alice@example.invalid", received_at: nowS - 200000, reply_context: ctx("c"), summary: "Shares the holiday photos and asks about dinner.", state: "archived", resolved_at: nowS - 7200 },
-  { ...base, id: "m-d", subject: "Book club", sender_display: "Kim", sender_address: "kim@example.invalid", received_at: nowS - 400, reply_context: ctx("d"), summary: "Asks which book to read next.", snoozed_until: nowS + 86400 },
+  { ...base, id: "m-d", subject: "Book club", sender_display: "Kim", sender_address: "kim@example.invalid", received_at: nowS - 400, reply_context: ctx("d"), summary: "Asks which book to read next.", snoozed_until: Math.floor(Date.now() / 1000) + 86400 },
   { ...base, id: "m-e", subject: "<img src=x onerror=window.__pwned=1>Offer", sender_display: "Odd Sender", sender_address: "odd@example.invalid", received_at: nowS - 500, reply_context: ctx("e"), summary: "A <b>special</b> offer for the trip.", state: "reviewed", resolved_at: nowS - 100 },
 ];
 const tasks = { today: "2026-10-14", tasks: [
