@@ -102,6 +102,8 @@ jobs:
         run: node scripts/check_back_to_inbox.mjs
       - name: Search bar and Recent emails bar stay in view while scrolling (made-up mail, no server)
         run: node scripts/check_sticky_header.mjs
+      - name: Even gaps between the boxes on the main screen (made-up mail, no server)
+        run: node scripts/check_main_gaps.mjs
       - name: Backup and restore, Export my data (simulated server)
         run: node scripts/check_backup.mjs
       - name: Microsoft sign-in help (simulated server)

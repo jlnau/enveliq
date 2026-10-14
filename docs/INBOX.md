@@ -99,6 +99,9 @@ The left menu leads to **My inbox**, **Needs action**, **Tasks**, **Shipping**, 
 - The top bar is never a solid block. It stays see-through the whole time, so the picture behind it always shows. Emails, tiles and titles that scroll up to it simply stop at its lower edge, so no text is ever seen through it.
 - Phones are unchanged. They already have their own bar at the top of the screen.
 
+## Even gaps on the main screen
+- On a computer, the boxes on the main screen (the four count tiles, Today, Coming up, the cards for deliveries, subscriptions, trips, replies and messages, and the Recent emails bar) are all separated by the same small gap, so no space is wasted between them.
+
 ## Light mode and pictures
 - In light mode, the Shipping, Subscriptions, Trips and Waiting for reply cards (on their own pages and on the home page) and the New email button now use light colours. They used to keep their dark colours.
 - The Tasks page uses the full width, like the other pages.

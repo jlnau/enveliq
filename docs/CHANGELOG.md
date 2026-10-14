@@ -6,7 +6,9 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 **The top of the inbox stays in view.** On a computer, the search / Sync mail / name bar and the "Recent emails" bar now stay at the top while you scroll a long list, so the controls are always in reach. Only the emails scroll. The top bar stays see-through, so the picture behind it always shows, and nothing that scrolls up to it is seen through it. Phones are unchanged.
 
-Code and tests: `prototype/index.html` (sticky bars, desktop only), `scripts/check_sticky_header.mjs` (new, in CI), `docs/INBOX.md`.
+**Even gaps on the main screen.** On a computer, the gap between Coming up and Recent emails (and between the delivery, subscription, trip and reply cards) was bigger than the rest. All the boxes on the main screen now sit the same small distance apart.
+
+Code and tests: `prototype/index.html` (sticky bars and spacing, desktop only), `scripts/check_sticky_header.mjs` and `scripts/check_main_gaps.mjs` (new, in CI), `docs/INBOX.md`.
 
 ## v0.88 (2026-10-14)
 

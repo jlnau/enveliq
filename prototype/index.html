@@ -1212,6 +1212,11 @@ html[data-theme="light"] .wcard.due{background:#fdf1dd;border-color:#dcb972}html
 @media(min-width:761px){
   html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sticky;top:0;z-index:20;background:transparent}
   html .content>.preview-list-heading,html[data-theme] .content>.preview-list-heading{position:sticky;top:73px;z-index:15;margin-top:0}
+  /* One even gap (12px) between all the boxes on the main screen: the count tiles, Today, Coming up, the cards for deliveries, subscriptions, trips,
+     replies and messages, and the Recent emails bar. Before, each had its own margin, so some gaps were twice as big. */
+  .duebars{padding-bottom:12px}
+  .duebars>.msgcard,.duebars>.shipcard,.duebars>.subcard,.duebars>.tripcard,.duebars>.waitcard{margin-bottom:0}
+  html .duebars>.preview-later,html body.calm .duebars>.preview-later{margin-top:12px}
   body.stuck .main>.top,body.stuck .main>.content{
     -webkit-mask-image:linear-gradient(#000 0,#000 var(--cut,-1px),transparent var(--cut,-1px),transparent var(--cut2,-1px),#000 var(--cut2,-1px));
     mask-image:linear-gradient(#000 0,#000 var(--cut,-1px),transparent var(--cut,-1px),transparent var(--cut2,-1px),#000 var(--cut2,-1px))}
