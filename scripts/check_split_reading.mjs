@@ -35,8 +35,8 @@ const box = (page, sel) => page.evaluate((s) => { const e = document.querySelect
 for (const theme of ["dark", "light"]) {
   const { page, errs } = await open(1400, 900, theme, "right");
   await page.evaluate(() => {
-    tasksData.tasks = [{ id: "a", title: "Download and install new configurations", detail: "", sender: "Ultra.cc", state: "open", days: 0, due: "2026-10-14" }, { id: "b", title: "Second thing", detail: "", sender: "X", state: "open", days: 3, due: "2026-10-17" }, { id: "c", title: "Third thing", detail: "", sender: "Y", state: "open", days: 5, due: "2026-10-19" }];
-    renderToday();
+    tasksData.tasks = [{ id: "a", title: "Download and install new configurations", detail: "", sender: "Ultra.cc", state: "open", days: 0, due: "2026-10-14" }, { id: "a2", title: "Renew the domain", detail: "", sender: "Z", state: "open", days: 0, due: "2026-10-14" }, { id: "a3", title: "A third thing today", detail: "", sender: "Z", state: "open", days: 0, due: "2026-10-14" }, { id: "b", title: "Second thing", detail: "", sender: "X", state: "open", days: 3, due: "2026-10-17" }, { id: "c", title: "Third thing", detail: "", sender: "Y", state: "open", days: 5, due: "2026-10-19" }, { id: "d", title: "Fourth thing", detail: "", sender: "Y", state: "open", days: 6, due: "2026-10-20" }];
+    dueOpen = true; renderToday();
   });
   await page.waitForTimeout(200);
   const t = `(${theme}) `;
@@ -50,6 +50,11 @@ for (const theme of ["dark", "light"]) {
   check(t + "the four counts sit in one slim row", tiles.length === 4 && tiles.every((x) => x[0] === tiles[0][0]) && tiles[0][1] <= 60);
   const today = await box(page, "#dueBars .today-card"), later = await box(page, "#dueBars .preview-later");
   check(t + "Today and Coming up sit side by side", today && later && Math.abs(today.y - later.y) <= 2 && later.x >= today.r);
+  const vis = (sel) => page.evaluate((q) => [...document.querySelectorAll(q)].filter((e) => e.getBoundingClientRect().height > 0).length, sel);
+  check(t + "Today shows at most two things", (await vis("#dueBars .today-card .trow2")) === 2);
+  check(t + "Coming up shows only the soonest thing", (await vis("#dueBars .preview-later .trow2")) === 1);
+  const t2 = await box(page, "#dueBars .today-card"), l2 = await box(page, "#dueBars .preview-later");
+  check(t + "the Coming up box is the same height as the Today box", Math.abs(t2.h - l2.h) <= 2);
   check(t + "the first email in the list starts high up (it did not move down)", list.y < 520);
   const btn = await box(page, "#readDock .reading .qbtns .reviewed");
   check(t + "Reviewed, Archive and Bin sit at the bottom of the email panel", btn && btn.b <= dock.b && btn.b >= dock.b - 80);

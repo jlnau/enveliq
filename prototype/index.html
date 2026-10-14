@@ -1275,11 +1275,17 @@ body.preview-mobile-emails-closed #readDock{display:none!important}
   body.split-read .preview-stat-copy strong{order:1;font-size:11.5px;font-weight:500;line-height:1.15}
   body.split-read .preview-stat-copy small{display:none}
   /* Today and Coming up side by side */
-  body.split-read #dueBars:not([hidden]){display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:8px;align-items:start;padding-bottom:12px}
+  body.split-read #dueBars:not([hidden]){display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:8px;align-items:stretch;padding-bottom:12px}
   body.split-read #dueBars>.preview-today-grid{grid-column:1;grid-row:1;grid-template-columns:minmax(0,1fr)!important;gap:8px!important}
   body.split-read #dueBars>.preview-today-grid:only-child{grid-column:1/-1}
   body.split-read #dueBars>.preview-later{grid-column:2;grid-row:1;margin-top:0!important}
   html body.split-read .today-card,html body.split-read .preview-important,html body.split-read .preview-later{padding:10px 12px!important}
+  body.split-read .preview-today-grid>.today-card{height:100%;box-sizing:border-box}
+  body.split-read .today-card .preview-fold-content>.trow2:nth-child(n+3){display:none}                 /* Today has room for two things */
+  html body.split-read .preview-later .preview-later-items{display:block;margin-top:4px}
+  html body.split-read .preview-later .preview-later-items>.trow2{display:grid!important;width:auto!important;margin:0!important;padding:9px 6px!important;min-height:0!important;border:0;border-radius:0;background:none;grid-template-columns:28px minmax(0,1fr);row-gap:0}
+  html body.split-read .preview-later .preview-later-items>.trow2:nth-child(n+2){display:none!important}          /* Coming up shows only the soonest thing */
+  body.split-read .preview-later .trow2 .twhen{grid-column:2;margin-top:-4px;font-size:11px}
   body.split-read .preview-today-grid .thead{margin-bottom:6px}
   body.split-read .preview-today-grid .thead b{font-size:14px}
   body.split-read .preview-today-grid .trow2{min-height:0;grid-template-columns:28px minmax(0,1fr);row-gap:0}
