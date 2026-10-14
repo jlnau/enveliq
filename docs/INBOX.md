@@ -99,9 +99,9 @@ The left menu leads to **My inbox**, **Needs action**, **Tasks**, **Shipping**, 
 - The top bar is never a solid block. It stays see-through the whole time, so the picture behind it always shows. Emails, tiles and titles that scroll up to it fade out softly just below its lower edge (no hard cut-off line), so no text is ever seen through it. The Recent emails bar itself is never faded.
 - Phones are unchanged. They already have their own bar at the top of the screen.
 
-## No flash of the old layout on a quick refresh
+## Nothing in the wrong place when the page loads
 
-On a computer, the search box and the "?" help button live in the bar at the top. The page moves them there as soon as its script runs, so until then they are kept hidden rather than drawn in their old places. This is why you no longer see them jump when you refresh several times in a row. A phone keeps its own layout.
+While the page starts up, only the background shows. Nothing else is drawn (no menu, no boxes, no buttons) until everything is in its right place, and then the whole page fades in together. This is why a quick refresh, or several in a row, no longer shows parts of the page jumping into position. If loading takes more than a moment, a calm "Getting your inbox ready…" line appears, and after a few seconds the page is shown anyway so it can never stay blank. People who prefer less motion get no fade.
 
 ## Even gaps on the main screen
 - On a computer, the boxes on the main screen (the four count tiles, Today, Coming up, the cards for deliveries, subscriptions, trips, replies and messages, and the Recent emails bar) are all separated by the same small gap, so no space is wasted between them.

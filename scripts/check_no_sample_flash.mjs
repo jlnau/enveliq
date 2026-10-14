@@ -62,10 +62,10 @@ const shown = (page, sel) => page.locator(sel).first().evaluate((el) => {
   return c.display !== "none" && c.visibility !== "hidden" && Number(c.opacity) > 0.5 && el.getBoundingClientRect().height > 0;
 }).catch(() => false);
 
-// ---- a real server whose answer is slow: the frame shows, nothing personal or sample does ----
+// ---- a real server whose answer is slow: only the background (and a calm line) shows, nothing personal or sample does ----
 {
   const page = await open("real", 2500);
-  check("while the server has not said who is signed in, the menu frame is already there (not a blank page)", await shown(page, 'button[data-filter="all"]'));
+  check("while the server has not said who is signed in, no part of the page is drawn in a wrong place: only the background shows", !(await shown(page, 'button[data-filter="all"]')) && !(await shellVisible(page)));
   check("the sample name Morgan, the sample role and initials cannot be seen", !(await shown(page, "#userName")) && !(await shown(page, "#userRole")) && !(await shown(page, "#avatar")));
   check("no greeting, no counts and no version label show yet", !(await shown(page, ".top-left h2")) && !(await shown(page, ".badge")) && !(await shown(page, "#brandVer")));
   check("no sample emails or notices show", !(await shown(page, "article.mail")) && !(await shown(page, ".sample-banner")));

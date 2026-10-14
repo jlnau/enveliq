@@ -1,5 +1,5 @@
-// Browser check for the split-second flash on a quick refresh. Before the page script has run, the search box (far right of the title) and the
-// "?" help button must not be drawn in their old places on a computer. It loads the page with its script switched off, which is exactly what a
+// Browser check for the split-second flash on a quick refresh. Before the page is ready, nothing is drawn but the background: no menu, no boxes,
+// no buttons, and in particular not the search box (far right of the title) or the "?" help button in their old places. It loads the page with its script switched off, which is exactly what a
 // very quick refresh sees, and looks at what would be painted. A phone keeps its own layout.
 //
 // Usage (needs Playwright and a Chromium build):
@@ -20,8 +20,11 @@ for (const [width, height, name] of [[1200, 900, "desktop"], [390, 800, "phone"]
   await page.setContent(html, { waitUntil: "domcontentloaded" });
   const seen = await page.evaluate(() => {
     const painted = (el) => { if (!el) return false; const cs = getComputedStyle(el); const r = el.getBoundingClientRect(); return cs.display !== "none" && cs.visibility !== "hidden" && r.width > 0 && r.height > 0; };
-    return { oldSearch: painted(document.querySelector(".top-inner > .search-col")), help: painted(document.querySelector(".preview-help")) };
+    const kids = [".sidebar", ".preview-toolbar", ".preview-list-heading", ".nav", ".preview-help"].map((q) => [...document.querySelectorAll(q)].some(painted));
+    return { oldSearch: painted(document.querySelector(".top-inner > .search-col")), help: painted(document.querySelector(".preview-help")), anything: kids.some(Boolean), app: getComputedStyle(document.querySelector(".app")).visibility, bg: getComputedStyle(document.documentElement).backgroundColor };
   });
+  check(name + ": before the page is ready nothing is drawn (no menu, no boxes, no buttons), only the background", seen.app === "hidden" && !seen.anything);
+  check(name + ": the background colour is already there (not white)", seen.bg !== "rgba(0, 0, 0, 0)" && seen.bg !== "rgb(255, 255, 255)");
   if (name === "desktop") {
     check("desktop: before the script runs, the search box is not drawn at the right of the title", !seen.oldSearch);
     check("desktop: before the script runs, the \"?\" help button is not drawn on its own", !seen.help);

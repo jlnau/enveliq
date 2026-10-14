@@ -430,6 +430,12 @@ body.booting .badge,body.booting #avatar,body.booting .user-copy,body.booting .t
 .boot-note{display:none;margin:18px 2px;color:var(--muted);font-size:14px;opacity:0}
 body.booting .boot-note{display:block;animation:bootnote 0s linear .5s forwards}
 @keyframes bootnote{to{opacity:1}}
+/* While the page starts up, show only the background. Nothing is drawn until everything is in its right place, then it all fades in together (a quick refresh used to show boxes and buttons in the wrong places for a split second). The calm "Getting your inbox ready" line still appears if this takes more than a moment, and the 6 second fallback below always reveals the page. */
+html body.booting .app{visibility:hidden}
+html body.booting .app .boot-note{visibility:visible}
+body:not(.booting) .app{animation:appin .22s ease-out}
+@keyframes appin{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){body:not(.booting) .app{animation:none}}
 body.backend:not(.mail-ready) #list{visibility:hidden}
 body.backend:not(.mail-ready) #dueBars,body.backend:not(.mail-ready) #shipBars,body.backend:not(.mail-ready) #subBars,body.backend:not(.mail-ready) #tripBars,body.backend:not(.mail-ready) #waitBars,body.backend:not(.mail-ready) .sample-banner{display:none!important}
 .sample-banner{display:none;margin-bottom:12px}.sample-banner .sb-real{display:none}body.backend .sample-banner .sb-demo{display:none}body.backend .sample-banner .sb-real{display:inline}
