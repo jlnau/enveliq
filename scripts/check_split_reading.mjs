@@ -52,7 +52,8 @@ for (const theme of ["dark", "light"]) {
   check(t + "Today and Coming up sit side by side", today && later && Math.abs(today.y - later.y) <= 2 && later.x >= today.r);
   const vis = (sel) => page.evaluate((q) => [...document.querySelectorAll(q)].filter((e) => e.getBoundingClientRect().height > 0).length, sel);
   check(t + "Today shows at most two things", (await vis("#dueBars .today-card .trow2")) === 2);
-  check(t + "Coming up shows only the soonest thing", (await vis("#dueBars .preview-later .trow2")) === 1);
+  check(t + "Coming up shows the soonest two things", (await vis("#dueBars .preview-later .trow2")) === 2);
+  check(t + "there are no circles in the Today and Coming up boxes", (await vis("#dueBars .tick")) === 0);
   const t2 = await box(page, "#dueBars .today-card"), l2 = await box(page, "#dueBars .preview-later");
   const shade = await page.evaluate(() => { const g = (s) => getComputedStyle(document.querySelector(s)).backgroundColor; return [g("#dueBars .today-card"), g("#dueBars .preview-later")]; });
   check(t + "the Coming up box is the same shade as the Today box", shade[0] === shade[1]);

@@ -364,6 +364,10 @@ The retained record holds only the encrypted summary and metadata (invariant 4).
 - When HTML rendering is added later, it must be sanitised server-side and shown in a sandboxed frame with no scripts, no forms and a CSP that blocks remote loads.
 - Nothing from the original is written to disk, logs or the vault.
 
+## Drafts (v0.90)
+
+A draft is an email a person started and has not sent. It is stored as one encrypted record per person (`drafts:<user id>`) under the vault's master key, like the signature and saved replies. It holds only what the person typed (kind, To/Cc/Bcc, subject, their own words) and which mailbox and email it answers. It never holds the original email's text or any attachment. Only the signed-in owner can list, change or delete their drafts (another person's draft id answers "not found"). Drafts are removed 14 days after the last save (the record is cleaned each time the list is read or a draft is saved), included in **Export my data** for that person only, and removed with the person. Line breaks and control characters are removed from the subject and addresses, and a draft is never sent by itself: sending goes through the normal send path and its checks. Responses are `Cache-Control: no-store`.
+
 ## Replying and aliases (v0.16)
 
 Replies must work with alias services (Proton Pass, SimpleLogin, Firefox Relay, Apple Hide My Email, DuckDuckGo) and with multiple sending addresses.

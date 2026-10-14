@@ -177,6 +177,7 @@ All the guides are listed, by what you want to do, in the [**documentation index
 [The demo](docs/DEMO.md) ·
 [Undo](docs/UNDO.md) ·
 [Reply, Reply all and Forward](docs/REPLY_FORWARD.md) ·
+[Drafts](docs/DRAFTS.md) ·
 [Checks before sending](docs/SEND_CHECKS.md) ·
 [Important people](docs/IMPORTANT_PEOPLE.md) ·
 [Signature and saved replies](docs/SAVED_REPLIES.md) ·

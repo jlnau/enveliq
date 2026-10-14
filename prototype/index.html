@@ -1285,7 +1285,11 @@ body.preview-mobile-emails-closed #readDock{display:none!important}
   body.split-read .today-card .preview-fold-content>.trow2:nth-child(n+3){display:none}                 /* Today has room for two things */
   html body.split-read .preview-later .preview-later-items{display:block;margin-top:4px}
   html body.split-read .preview-later .preview-later-items>.trow2{display:grid!important;width:auto!important;margin:0!important;padding:9px 6px!important;min-height:0!important;border:0;border-radius:0;background:none;grid-template-columns:28px minmax(0,1fr);row-gap:0}
-  html body.split-read .preview-later .preview-later-items>.trow2:nth-child(n+2){display:none!important}          /* Coming up shows only the soonest thing */
+  html body.split-read .preview-later .preview-later-items>.trow2:nth-child(n+3){display:none!important}          /* Coming up shows the soonest two things */
+  body.split-read #dueBars .tick{display:none!important}                                                    /* no circles: the words get the room */
+  body.split-read #dueBars .trow2{grid-template-columns:minmax(0,1fr)!important}
+  body.split-read #dueBars .trow2 .twhen{grid-column:1!important;margin-top:0!important}
+  html body.split-read .preview-later .preview-later-items>.trow2{grid-template-columns:minmax(0,1fr)!important}
   body.split-read .preview-later .trow2 .twhen{grid-column:2;margin-top:-4px;font-size:11px}
   /* Coming up: the same shade as Today, and a link to the Tasks page (not a fold with an arrow) that shows only the soonest thing */
   html body.split-read #dueBars>.preview-later{background:rgba(13,29,56,.62);border-color:var(--preview-border);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2)}
@@ -1332,6 +1336,18 @@ body.preview-mobile-emails-closed #readDock{display:none!important}
   body.split-read #dueBars:not([hidden]){grid-template-columns:minmax(0,1fr)}
   body.split-read #dueBars>.preview-later{grid-column:1;grid-row:2}
 }
+/* Drafts page and the "Save this as a draft?" question */
+#draftPage{display:none;padding-top:14px}body.on-draft #draftPage{display:block}
+body.on-draft .filters,body.on-draft #list,body.on-draft .sample-banner,body.on-draft #dueBars,body.on-draft #shipBars,body.on-draft #subBars,body.on-draft #tripBars,body.on-draft #waitBars,body.on-draft #msgBars,body.on-draft #mTitleSub,body.on-draft #peek{display:none!important}
+.drow{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:0 0 10px;display:grid;gap:6px}
+.drow .dtop{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.drow .dkind{font-size:12px;border:1px solid var(--c-1f3f75);color:var(--c-bfe3ff);border-radius:999px;padding:1px 9px}
+.drow .dto{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.drow .dsub{font-weight:600}
+.drow .dprev{color:var(--muted);font-size:13.5px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}
+.drow .dmeta{color:var(--muted);font-size:12.5px}
+.drow .dact{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+#dkAsk{width:min(520px,94vw);z-index:63}#dkScrim{z-index:62}#dkAsk button{min-height:44px}#dkAsk .compose-body p{margin:0;line-height:1.5}
 </style>
 </head>
 <body class="booting">
@@ -1359,6 +1375,7 @@ body.preview-mobile-emails-closed #readDock{display:none!important}
     <button class="nav" data-filter="reviewed" title="Reviewed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.6 2.6L16 9.6"/></svg><span class="nav-label">Reviewed</span></button>
     <button class="nav" data-filter="archived" title="Archived"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4.5" rx="1"/><path d="M5 8.5V20h14V8.5"/><path d="M10 12.5h4"/></svg><span class="nav-label">Archived</span></button>
     <button class="nav" data-filter="sent" id="sentNav" title="Sent" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg><span class="nav-label">Sent</span></button>
+    <button class="nav" data-filter="drafts" id="draftNav" title="Drafts" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg><span class="nav-label">Drafts</span><span class="badge" id="draftBadge" hidden></span></button>
     <div class="more-nav" id="moreNav">
       <button class="nav more-toggle" id="moreToggle" type="button" aria-expanded="false" aria-controls="moreItems" title="More mailbox views"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3zM3 9h18"/><path class="more-chev" d="m9.5 13.2 2.5 2.4 2.5-2.4"/></svg><span class="nav-label">More</span><span class="more-arrow" aria-hidden="true">⌄</span></button>
       <div class="more-items" id="moreItems"></div>
@@ -1456,6 +1473,7 @@ body.preview-mobile-emails-closed #readDock{display:none!important}
   <section id="subPage" aria-label="Subscriptions"></section>
   <section id="tripPage" aria-label="Trips"></section>
   <section id="waitPage" aria-label="Waiting for reply"></section>
+  <section id="draftPage" aria-label="Drafts"></section>
   <section id="msgPage" aria-label="Messages"></section>
   <div class="allfoot" id="allFoot" hidden>Last 14 days, 100 emails max.</div>
   <section id="sentView" class="sentview" aria-label="Sent" hidden>
@@ -1834,6 +1852,13 @@ body.preview-mobile-emails-closed #readDock{display:none!important}
   </div>
 </div>
 
+<div class="compose-scrim" id="dkScrim"></div>
+<div class="compose" id="dkAsk" role="dialog" aria-modal="true" aria-labelledby="dkTitle">
+  <div class="compose-head"><div><h3 id="dkTitle">Save this as a draft?</h3><p id="dkSub"></p></div></div>
+  <div class="compose-body"><p id="dkText"></p></div>
+  <div class="compose-foot"><button class="btn" id="dkKeep" type="button">Keep writing</button><div class="modal-actions"><button class="btn" id="dkDiscard" type="button">Discard</button><button class="primary" id="dkSave" type="button">Save as draft</button></div></div>
+</div>
+
 <div class="compose-scrim wh-scrim" id="whScrim"></div>
 <div class="compose" id="whCheck" role="dialog" aria-modal="true" aria-labelledby="whCheckTitle">
   <div class="compose-head"><div><h3 id="whCheckTitle">Send this?</h3><p id="whCheckSub"></p></div></div>
@@ -2083,7 +2108,7 @@ let vaultMode=null; // "backend" | "preview"
 const previewVault={initialized:false,unlocked:false,salt:null,verifier:null};
 const expanded=new Set();
 // A refresh keeps you where you are: the page (in the address bar after #/) and which emails are open (this tab only).
-const PAGES=["all","action","tasks","attachments","reviewed","archived","sent","shipping","subscriptions","trips","waiting","messages"];
+const PAGES=["all","action","tasks","attachments","reviewed","archived","sent","drafts","shipping","subscriptions","trips","waiting","messages"];
 let stateReady=false;
 const rowKeyOf=id=>{const m=data.find(x=>String(x.id)===String(id));return m&&m.real?m.real.accountId+":"+m.real.messageId:null};
 function saveOpen(){
@@ -2132,10 +2157,11 @@ if("serviceWorker" in navigator){
 function restorePage(){
   const m=/^#\/(settings|admin)\/([a-z]*)$/.exec(location.hash||""),p=/^#\/([a-z]+)$/.exec(location.hash||"");
   if(p&&PAGES.includes(p[1])){
-    const want=p[1],ok={sent:feat.sent,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,messages:feat.messages}[want];
+    const want=p[1],ok={sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,messages:feat.messages}[want];
     if(want!=="all"&&ok!==false){
       filter=want;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===want));
       if(want==="sent")loadSent();
+      if(want==="drafts")loadDrafts();
       if(want==="messages")openMsgPage();
     }
   }
@@ -2182,7 +2208,7 @@ function applyView(){
   $("vOpen").disabled=$("vPeek").disabled=!classic;$("vOpenL").classList.toggle("off",!classic);$("vPeekL").classList.toggle("off",!classic);
 }
 function visible(m){
-  if(m.owner!==currentUser.id||filter==="sent"||filter==="tasks")return false;
+  if(m.owner!==currentUser.id||filter==="sent"||filter==="drafts"||filter==="tasks")return false;
   if(mailboxSel&&m.account!==mailboxSel)return false;
   if(filter==="snoozed"){if(!isSnoozed(m))return false}else if(isSnoozed(m))return false;      // a snoozed email waits out of sight until its time
   if(query&&!(`${m.sender} ${m.address} ${m.subject} ${m.summary} ${m.category}`.toLowerCase().includes(query.toLowerCase())))return false;
@@ -2439,7 +2465,7 @@ function renderToday(){
   const focusToggle=previewFoldControl(focusKey,previewMobileOpen[focusKey]);
   const urgent=important.length?'<section class="preview-important'+(mobile&&!previewMobileOpen.important?' mobile-folded':'')+'"><div class="thead"><b>Also important today</b><span class="preview-heading-actions"><button class="linkbtn" type="button" data-tasks-go>All tasks</button>'+previewFoldControl("important",previewMobileOpen.important)+'</span></div><div class="preview-fold-content">'+important.slice(0,previewMobileOpen.important?important.length:1).map(t=>taskRow(t,false)).join("")+'</div></section>':"";
   const laterOpen=mobile?previewMobileOpen.later:(calm?calmLaterOpen:dueOpen);
-  const laterRows=rest.slice(0,laterOpen?3:1);          // the soonest one is always drawn; it is hidden while folded, except in the side-by-side view, which shows it
+  const laterRows=rest.slice(0,laterOpen?3:2);          // the soonest one is always drawn; it is hidden while folded, except in the side-by-side view, which shows it
   const later=rest.length?'<section class="preview-later'+(mobile&&!previewMobileOpen.later?' mobile-folded':'')+(laterOpen?'':' later-closed')+'"><div class="preview-later-head"><button class="tmore" type="button" '+(mobile?'data-preview-fold="later" aria-expanded="'+previewMobileOpen.later+'"':(calm?'data-later-toggle':'data-due-toggle')+' aria-expanded="'+laterOpen+'"')+'>'+(calm?"Later":'Coming up · '+rest.length+' more')+'</button><span class="preview-heading-actions">'+(rest.length>3?'<button class="linkbtn" type="button" data-tasks-go>All tasks</button>':'')+(mobile?previewFoldControl("later",previewMobileOpen.later):'<button class="preview-fold-toggle always" type="button" '+(calm?'data-later-toggle':'data-due-toggle')+' aria-expanded="'+laterOpen+'" aria-label="'+(laterOpen?'Hide':'Show')+(calm?' later':' what is coming up')+'">'+ICON_FOLD+'</button>')+'</span></div><div class="preview-later-items preview-fold-content">'+laterRows.map(t=>taskRow(t,false)).join("")+'</div></section>':"";
   box.innerHTML='<div class="preview-today-grid"><section class="today-card'+(mobile&&!previewMobileOpen[focusKey]?' mobile-folded':'')+'"><div class="thead"><b>'+title+'</b><span class="preview-heading-actions"><button class="linkbtn" type="button" data-tasks-go>Open Tasks</button>'+focusToggle+'</span></div><div class="preview-fold-content">'+(calm&&shown[0]?previewFocusTask(shown[0]):shown.map(t=>taskRow(t,false)).join(""))+'</div></section>'+urgent+'</div>'+later;
   box.hidden=false;
@@ -3000,7 +3026,7 @@ function render(){
   window.__hidePeek&&window.__hidePeek();
   if(selMode&&(!selected.size||!isPhone()))selMode=false;
   document.body.classList.toggle("selecting",selMode);
-  document.body.classList.toggle("in-sent",filter==="sent");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="sent"?"Sent":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
+  document.body.classList.toggle("in-sent",filter==="sent");document.body.classList.toggle("on-draft",filter==="drafts");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="sent"?"Sent":filter==="drafts"?"Drafts":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
   const mine=userMessages().filter(m=>!m.extra);          // the quiet "All emails" entries are never counted
   if(!realMail)syncDemoTasks();else settleTasks();
   document.body.classList.toggle("on-tasks",filter==="tasks");
@@ -3010,29 +3036,29 @@ function render(){
   document.body.classList.toggle("on-wait",filter==="waiting");
   document.body.classList.toggle("on-msg",filter==="messages");
   saveOpen();syncHash();
-  renderToday();renderShipHome();renderSubHome();renderTripHome();renderWaitHome();renderMsgHome();if(filter==="messages")renderMsgPage();if(filter==="waiting")renderWaitPage();if(filter==="tasks")renderTasksPage();if(filter==="shipping")renderShipPage();if(filter==="subscriptions")renderSubPage();if(filter==="trips")renderTripPage();subNavSync();
+  renderToday();renderShipHome();renderSubHome();renderTripHome();renderWaitHome();renderMsgHome();if(filter==="messages")renderMsgPage();if(filter==="waiting")renderWaitPage();if(filter==="drafts")renderDraftPage();if(filter==="tasks")renderTasksPage();if(filter==="shipping")renderShipPage();if(filter==="subscriptions")renderSubPage();if(filter==="trips")renderTripPage();subNavSync();
   // The number is how many are being followed; it turns blue when one needs you (an order to confirm, a reply nobody has sent).
   {const os=shipOn()?(shipData.orders||[]).filter(o=>!(o.delivered_at&&o.ack)):[];const sb=$("shipBadge");if(sb){sb.textContent=os.length;sb.hidden=!os.length;sb.classList.toggle("hot",os.some(o=>o.needs_confirm||o.unsure))}}
   {const mb=$("msgBadge");if(mb){const n=msgOn()?msgSum.unread:0;mb.textContent=n;mb.hidden=!n;mb.classList.toggle("hot",n>0)}}
   {const ns=waitOn()?(waitData.notes||[]).filter(n=>n.state==="waiting"):[];const wb=$("waitBadge");if(wb){wb.textContent=ns.length;wb.hidden=!ns.length;wb.classList.toggle("hot",ns.some(n=>n.due))}}
   const asleep=mine.filter(isSnoozed);{const sn=$("snoozeNav"),sb=$("snoozeBadge");sn.hidden=!asleep.length&&filter!=="snoozed";sb.textContent=asleep.length;sb.hidden=!asleep.length}
   for(const [id,n] of [["allBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)).length],["actionBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)&&m.action).length],["attachBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)&&fileN(m)).length],["taskBadge",openTasks().length]]){const el=$(id);el.textContent=n;el.hidden=n===0}
-  $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent");
+  $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent"&&filter!=="drafts");
   document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",filter==="all"));{const fb=$("filterBy"),pick=["action","need","high","attachments"].includes(filter)?filter:"";fb.value=pick;fb.classList.toggle("active",!!pick)}
   $("selectedCount").textContent=selected.size;$("bulk").classList.toggle("show",selected.size>1||selMode);$("previewBulk").classList.toggle("show",selected.size>1||selMode);$("previewSelCount").textContent=selected.size;
   $("adminBtn").hidden=!currentUser.is_admin;$("userName").textContent=currentUser.name;$("userRole").textContent=currentUser.is_admin?"Administrator":"User";paintAvatar();previewSyncAccount();
   const inbox=mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)),needN=inbox.filter(m=>m.action||m.priority==="high").length;
   const hr=new Date().getHours(),first=String(currentUser.name||"").trim().split(/\s+/)[0];
   const greeting=(hr<12?"Good morning":hr<18?"Good afternoon":"Good evening")+(first?`, ${first}`:"");
-  const VIEW_NAMES={action:"Needs action",need:"Needs action",high:"Important",attachments:"Attachments",tasks:"Tasks",shipping:"Shipping",waiting:"Waiting for reply",reviewed:"Reviewed",archived:"Archived",subscriptions:"Subscriptions",trips:"Trips",messages:"Messages",sent:"Sent"};
+  const VIEW_NAMES={action:"Needs action",need:"Needs action",high:"Important",attachments:"Attachments",tasks:"Tasks",shipping:"Shipping",waiting:"Waiting for reply",reviewed:"Reviewed",archived:"Archived",subscriptions:"Subscriptions",trips:"Trips",messages:"Messages",sent:"Sent",drafts:"Drafts"};
   document.querySelector(".top-left h2").textContent=VIEW_NAMES[filter]||(filter==="all"&&calmOn()?"One thing at a time":filter==="all"?"My inbox":greeting);
   $("backInbox").hidden=filter==="all";
   $("previewCalmNotice").hidden=!(filter==="all"&&calmOn());
-  $("previewListHeading").hidden=["sent","tasks","shipping","waiting","subscriptions","trips","messages"].includes(filter);
+  $("previewListHeading").hidden=["sent","drafts","tasks","shipping","waiting","subscriptions","trips","messages"].includes(filter);
   previewSyncMenu();
   $("todayDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"});
   $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(calmOn()?(inbox.length?"One thing at a time. Important deadlines stay visible.":"Nothing waiting. Enjoy the quiet."):inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:(document.body.classList.contains("backend")&&!realMail?"No mailbox is connected yet":"All caught up"));
-  if(filter==="sent")$("inboxSubtitle").textContent="Your last 14 days of sent mail";
+  if(filter==="sent")$("inboxSubtitle").textContent="Your last 14 days of sent mail";if(filter==="drafts")$("inboxSubtitle").textContent="Emails you started and have not sent";
 
   previewRenderOverview(inbox,needN);
   const rows=data.filter(visible);
@@ -3044,7 +3070,7 @@ function render(){
   if(cmp)rows.sort(cmp);
   if(impSet.size)rows.sort((a,b)=>isImp(b)-isImp(a));          // a stable sort: important people first, the chosen order kept inside each group
   scheduleWake();
-  {const b=$("expandAll"),can=view.layout==="list"&&!["tasks","sent","shipping","subscriptions","trips","waiting","messages"].includes(filter)&&rows.length>0;
+  {const b=$("expandAll"),can=view.layout==="list"&&!["tasks","sent","drafts","shipping","subscriptions","trips","waiting","messages"].includes(filter)&&rows.length>0;
    b.hidden=!can||selected.size>1;if(can){const all=view.rows==="open"||rows.every(m=>expanded.has(`row-${m.id}`));b.textContent=all?"Collapse all":"Expand all";b.dataset.mode=all?"collapse":"expand"}}
 const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5l-7.6 7.6a5 5 0 0 1-7-7l8-8a3.4 3.4 0 0 1 4.8 4.8l-8 8a1.8 1.8 0 0 1-2.5-2.5L14 7.2"/></svg>`,ICON_SNOOZE=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`,ICON_OK=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,ICON_ARCH=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg>`,ICON_BIN=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>`,ICON_REPLY=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 6 6v3"/></svg>`;
   const leaveStyle=m=>{          // an email waiting out its Undo: the line along its bottom runs for the time that is left
@@ -3105,7 +3131,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
         ${act}<div class="deckdots" aria-hidden="true">${dots}</div></div>`;
     }else{
       const readingHtml=`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div></header>${quiet(cur,"detail")}</section>`;
-      if(view.layout==="right"&&!["sent","tasks","shipping","waiting","subscriptions","trips","messages"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
+      if(view.layout==="right"&&!["sent","drafts","tasks","shipping","waiting","subscriptions","trips","messages"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
         dockHtml=readingHtml;
         listHtml=`<div class="panes ${esc(view.layout)}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div></div>`;
       }else listHtml=`<div class="panes ${esc(view.layout)}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div>${readingHtml}</div>`;
@@ -3267,7 +3293,7 @@ function openComposer(id,mode,pre){
   const plan=planReply(m);
   if(mode==="reply_all"&&!(m.replyCc&&m.replyCc.length))mode="reply";
   if(mode==="forward"&&!(m.real&&realMail))mode="reply";
-  composing={m,plan,mode};
+  composing={m,plan,mode,draftId:(pre&&pre.draftId)||null};
   const f=cmFields();f.to.clear();f.cc.clear();f.bcc.clear();cm.files=[];paintCmFiles();
   const word=mode==="forward"?"Forward":mode==="reply_all"?"Reply all to":"Reply to";
   $("composeTitle").textContent=mode==="forward"?`Forward: ${m.subject}`:`${word} ${m.sender}`;
@@ -3287,18 +3313,21 @@ function openComposer(id,mode,pre){
   $("cmCcRow").hidden=!f.cc.items.length;$("cmBccRow").hidden=!f.bcc.items.length;
   $("composeSubject").value=mode==="forward"?(/^fwd?:/i.test(m.subject)?m.subject:`Fwd: ${m.subject}`):(/^re:/i.test(m.subject)?m.subject:`Re: ${m.subject}`);
   $("composeText").value=withSig("");whReset("reply");paintSaved("composeSaved","composeSavedRow");
+  if(pre&&pre.body!=null)$("composeText").value=pre.body;
+  if(pre&&pre.from&&plan.identities.includes(pre.from))$("composeFrom").value=pre.from;
   $("composeText").placeholder=mode==="forward"?"Add a note (optional)":"Write your reply";
   $("composeSend").textContent=mode==="forward"?"Send forward":"Send reply";
   $("composeQuoteTitle").textContent=mode==="forward"?"The original email (added below your note when you send)":"Original message (quoted below your reply)";
   $("composeQuote").textContent=mode==="forward"?`The whole email from ${m.sender} <${m.address}> is added under your note when you press Send. It is fetched from your mailbox then and is not stored.`:m.real?`On ${m.date||m.time}, ${m.sender} <${m.address}> wrote. Open "View email" to read the original.`:`On ${m.date||m.time}, ${m.sender} <${m.address}> wrote:\n`+(m.body||[m.summary]).map(par=>par.split("\n").map(l=>"> "+l).join("\n")).join("\n>\n");
   closeAttachmentViewer();
   cmCount();
+  composing.base=composeSnap();
   $("compose").classList.add("open");$("composeScrim").classList.add("show");
   if(mode==="forward"){
     setTimeout(()=>f.to.input.focus(),0);
     const mine=composing;
     secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/original`,{method:"GET",headers:{}})
-      .then(o=>{if(composing!==mine)return;cm.files=(o.attachments||[]).filter(a=>!a.inline).map(a=>({index:a.index,name:a.filename,size:a.size_bytes||0}));paintCmFiles()})
+      .then(o=>{if(composing!==mine)return;cm.files=(o.attachments||[]).filter(a=>!a.inline).map(a=>({index:a.index,name:a.filename,size:a.size_bytes||0}));paintCmFiles();mine.base=composeSnap()})
       .catch(()=>{});
   }else setTimeout(()=>{const t=$("composeText");t.focus();t.setSelectionRange(0,0)},0);
 }
@@ -3336,8 +3365,9 @@ function sendReply(){
     const req=mode==="forward"
       ?secureBackendRequest(base+"/forward",{method:"POST",body:JSON.stringify({body:text,from_address:from,to:toList,cc:ccList,bcc:bccList,keep_files:cm.files.map(x=>x.index)})})
       :secureBackendRequest(base+"/reply",{method:"POST",body:JSON.stringify(plainDefault?{body:text,from_address:from}:{body:text,from_address:from,kind:mode,to:toList,cc:ccList,bcc:bccList})});
+    const did=composing.draftId;
     req.then(r=>{
-        closeComposer();
+        closeComposer();if(did)deleteDraftQuiet(did);
         if(r.queued){noteQueuedReply(r,m,mode);return}
         if(mode!=="forward"){m.replied=true;m.repliedAt=realTime(Date.now()/1000)}
         render();toast(`✓ ${mode==="forward"?"Forward":"Reply"} sent from ${r.from} to ${who}`,4500);
@@ -4400,7 +4430,7 @@ document.addEventListener("click",e=>{
      if(t.matches("[data-msg-unsend]")&&msgS.cur){msgReq(`/threads/${encodeURIComponent(msgS.cur.id)}/messages/${encodeURIComponent(t.dataset.msgUnsend)}`,"DELETE").then(async()=>{await loadMsgs();render()}).catch(er=>toast(er.message,5000));return}
    }}
   if(e.target.closest("[data-back-inbox]")){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();window.scrollTo({top:0});return}
-  const n=e.target.closest("[data-filter]");if(n){filter=n.dataset.filter;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="messages")openMsgPage();return}
+  const n=e.target.closest("[data-filter]");if(n){filter=n.dataset.filter;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="drafts")loadDrafts();if(filter==="messages")openMsgPage();return}
   const c=e.target.closest("[data-chip]");if(c){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();return}
   const wa=e.target.closest("[data-wait]");if(wa){waitAct(wa.dataset.waitId,wa.dataset.wait);return}
   const wn=e.target.closest("[data-wait-nudge]");if(wn){waitNudge(wn.dataset.waitNudge);return}
@@ -4651,7 +4681,7 @@ applySidebar();
 
 const moreItems=document.getElementById("moreItems"),moreToggle=document.getElementById("moreToggle");
 const sideNav=document.querySelector(".side-nav");
-for(const el of [document.getElementById("snoozeNav"),sideNav.querySelector('[data-filter="reviewed"]'),sideNav.querySelector('[data-filter="archived"]'),document.getElementById("sentNav"),document.getElementById("subNav"),document.getElementById("tripNav"),document.getElementById("msgNav")])if(el)moreItems.append(el);
+for(const el of [document.getElementById("snoozeNav"),sideNav.querySelector('[data-filter="reviewed"]'),sideNav.querySelector('[data-filter="archived"]'),document.getElementById("sentNav"),document.getElementById("draftNav"),document.getElementById("subNav"),document.getElementById("tripNav"),document.getElementById("msgNav")])if(el)moreItems.append(el);
 for(const el of [document.getElementById("shipNav"),document.getElementById("waitNav"),sideNav.querySelector('[data-filter="attachments"]'),document.getElementById("moreNav"),document.getElementById("sideSettings")])if(el)sideNav.append(el);
 let moreChoice;try{moreChoice=localStorage.getItem("enveliq-more-open")}catch{}
 function previewSyncMore(){
@@ -5005,7 +5035,8 @@ async function pollOutbox(){
 function applyFeatures(){
   const on=realMail&&accounts.length>0;
   $("newMailBtn").hidden=$("mNewBtn").hidden=!(on&&feat.compose);
-  $("sentNav").hidden=!(on&&feat.sent);
+  $("sentNav").hidden=!(on&&feat.sent);$("draftNav").hidden=!on;if(on&&!draftData.loaded)loadDrafts();
+  if(filter==="drafts"&&!on){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   $("shipNav").hidden=!(on&&feat.shipping);$("waitNav").hidden=!(on&&feat.waiting);subNavSync();
   if(filter==="waiting"&&!(on&&feat.waiting)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   if(filter==="trips"&&!(on&&feat.travel)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
@@ -5207,6 +5238,122 @@ $("composeSaved").onchange=()=>insertSaved($("composeSaved"),$("composeText"));$
 $("composeText").addEventListener("input",()=>whLabel("reply"));
 $("nmText").addEventListener("input",()=>whLabel("new"));
 
+// ---- Drafts: unfinished emails kept on the server for 14 days (so they are still there if the browser is closed) ----
+let draftData={items:[],loaded:false,skew:0};
+const DRAFT_KIND={new:"New email",reply:"Reply",reply_all:"Reply all",forward:"Forward"};
+function paintDraftBadge(){const b=$("draftBadge");if(!b)return;const n=draftData.items.length;b.hidden=!n;b.textContent=n}
+async function loadDrafts(){
+  if(!realMail)return;
+  try{
+    const r=await secureBackendRequest("/api/v1/me/drafts",{method:"GET",headers:{}});
+    draftData={items:r.items||[],loaded:true,skew:r.now*1000-Date.now()};
+  }catch{draftData.loaded=true}
+  paintDraftBadge();if(filter==="drafts")renderDraftPage();
+}
+async function deleteDraftQuiet(id){
+  try{await secureBackendRequest(`/api/v1/me/drafts/${encodeURIComponent(id)}`,{method:"DELETE",headers:{}})}catch{}
+  draftData.items=draftData.items.filter(d=>d.id!==id);paintDraftBadge();if(filter==="drafts")renderDraftPage();
+}
+function renderDraftPage(){
+  const box=$("draftPage"),el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
+  const head=el("div","tp-head");head.append(el("h3",null,"Drafts"));
+  const sub=el("p","sp-sub","Emails you started and have not sent. Each one is kept for 14 days after you last saved it, even if you close the browser. Attachments are not kept.");
+  const out=[head,sub];
+  if(!draftData.items.length){
+    const c=el("div","focus-card");c.append(el("div","focus-big","No drafts"),el("div","focus-sub","When you close an email you are writing, you can choose Save as draft. It will wait for you here."));out.push(c);
+  }
+  for(const d of draftData.items){
+    const row=el("div","drow");
+    const top=el("div","dtop"),first=d.to[0]||d.cc[0]||d.bcc[0],n=d.to.length+d.cc.length+d.bcc.length;
+    const who=first?(parseAddr(first).name||parseAddr(first).address)+(n>1?` and ${n-1} ${n===2?"other":"others"}`:""):"(nobody yet)";
+    top.append(el("span","dkind",DRAFT_KIND[d.kind]||"Email"),el("span","dto",who),el("span","dmeta",realTime(d.updated)));
+    row.append(top,el("div","dsub",d.subject||"(no subject)"));
+    if(d.body.trim())row.append(el("div","dprev",d.body.trim().slice(0,300)));
+    const left=Math.max(1,Math.ceil((d.expires*1000-(Date.now()+draftData.skew))/86400000));
+    row.append(el("div","dmeta",`Kept ${left} more ${left===1?"day":"days"}`));
+    const act=el("div","dact");
+    const go=el("button","primary","Continue writing");go.type="button";go.dataset.draftOpen=d.id;
+    const del=el("button","btn","Delete");del.type="button";del.dataset.draftDel=d.id;
+    act.append(go,del);row.append(act);out.push(row);
+  }
+  box.replaceChildren(...out);
+}
+function openDraft(id){
+  const d=draftData.items.find(x=>x.id===id);if(!d)return;
+  const asNew=()=>openNewMail({account_id:d.account_id,to:d.to,cc:d.cc,bcc:d.bcc,subject:d.subject,body:d.body,from:d.from_address,draftId:d.id});
+  if(d.kind==="new"){asNew();return}
+  const m=data.find(x=>x.real&&x.real.accountId===d.account_id&&x.real.messageId===d.message_id&&x.owner===currentUser.id);
+  if(!m){toast("The email this answers is not in your list any more, so it opens as a new email.",5000);asNew();return}
+  openComposer(m.id,d.kind,{to:d.to,cc:d.cc,bcc:d.bcc,body:d.body,from:d.from_address,draftId:d.id});
+}
+let dkResolve=null;
+function draftAsk(what,hasDraft){
+  $("dkSub").textContent=what;
+  $("dkText").textContent=hasDraft?"Save keeps your changes in Drafts for 14 days. Discard throws the changes away; the draft you saved before stays as it was.":"Save as draft keeps it in Drafts for 14 days, even if you close the browser. Discard throws it away.";
+  $("dkAsk").classList.add("open");$("dkScrim").classList.add("show");setTimeout(()=>$("dkSave").focus(),0);
+  return new Promise(res=>{dkResolve=res});
+}
+function dkDone(v){$("dkAsk").classList.remove("open");$("dkScrim").classList.remove("show");const r=dkResolve;dkResolve=null;if(r)r(v)}
+$("dkSave").onclick=()=>dkDone("save");$("dkDiscard").onclick=()=>dkDone("discard");$("dkKeep").onclick=()=>dkDone("keep");$("dkScrim").onclick=()=>dkDone("keep");
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("dkAsk").classList.contains("open")){e.stopPropagation();e.preventDefault();dkDone("keep")}},true);
+async function putDraft(id,body){
+  let r;
+  try{r=id?await secureBackendRequest(`/api/v1/me/drafts/${encodeURIComponent(id)}`,{method:"PUT",body:JSON.stringify(body)}):await secureBackendRequest("/api/v1/me/drafts",{method:"POST",body:JSON.stringify(body)})}
+  catch(er){
+    if(id&&/not there/i.test(er.message||""))r=await secureBackendRequest("/api/v1/me/drafts",{method:"POST",body:JSON.stringify(body)});else throw er;
+  }
+  return r;
+}
+async function savedAsDraft(id,body){
+  try{await putDraft(id,body);toast("Saved to Drafts. Kept for 14 days.",4000);loadDrafts();return true}
+  catch(er){toast(er.message||"Could not save the draft",6000);return false}
+}
+const bareOrText=t=>isBare(t)?"":String(t).trim();
+function composeSnap(){
+  if(!composing)return "";
+  const f=cmFields();
+  return JSON.stringify([composing.mode,f.to.items.map(p=>p.address),f.cc.items.map(p=>p.address),f.bcc.items.map(p=>p.address),bareOrText($("composeText").value),cm.files.length]);
+}
+async function requestCloseComposer(){
+  if(!composing)return;
+  const {m,mode}=composing;
+  if(!m.real||composeSnap()===composing.base){closeComposer();return}
+  const f=cmFields();f.to.commit(true);f.cc.commit(true);f.bcc.commit(true);
+  const a=await draftAsk(mode==="forward"?`Forward: ${m.subject}`:`${mode==="reply_all"?"Reply all":"Reply"} to ${m.sender}`,!!composing.draftId);
+  if(a==="keep")return;
+  if(a==="save"){
+    const ok=await savedAsDraft(composing.draftId,{kind:mode,account_id:m.real.accountId,message_id:m.real.messageId,from_address:$("composeFrom").value,
+      to:f.to.items.map(addrText),cc:f.cc.items.map(addrText),bcc:f.bcc.items.map(addrText),subject:$("composeSubject").value,body:bareOrText($("composeText").value)});
+    if(!ok)return;
+  }
+  closeComposer();
+}
+function nmSnap(){
+  const f=nmFields();
+  return JSON.stringify([$("nmFrom").value,f.to.items.map(p=>p.address),f.cc.items.map(p=>p.address),f.bcc.items.map(p=>p.address),$("nmSubject").value.trim(),bareOrText($("nmText").value),nm.files.length]);
+}
+async function requestCloseNewMail(){
+  if(!$("newMail").classList.contains("open"))return;
+  const f=nmFields();f.to.commit(true);f.cc.commit(true);f.bcc.commit(true);
+  if(!nmDirty()||nmSnap()===nm.base){closeNewMail();return}
+  const a=await draftAsk($("nmSubject").value.trim()||"New email",!!nm.draftId);
+  if(a==="keep")return;
+  if(a==="save"){
+    const [aid,from]=$("nmFrom").value.split("|");
+    const ok=await savedAsDraft(nm.draftId,{kind:"new",account_id:aid,from_address:from,to:f.to.items.map(addrText),cc:f.cc.items.map(addrText),bcc:f.bcc.items.map(addrText),subject:$("nmSubject").value.trim(),body:bareOrText($("nmText").value)});
+    if(!ok)return;
+    if(nm.files.length)toast("Saved to Drafts. Attachments are not kept in a draft, so add them again.",6000);
+  }
+  closeNewMail();
+}
+$("draftPage").addEventListener("click",e=>{
+  const o=e.target.closest("[data-draft-open]");if(o){openDraft(o.dataset.draftOpen);return}
+  const x=e.target.closest("[data-draft-del]");if(x){
+    if(x.dataset.armed){deleteDraftQuiet(x.dataset.draftDel);toast("Draft deleted",3000);return}
+    x.dataset.armed="1";x.textContent="Delete this draft?";setTimeout(()=>{if(x.isConnected){delete x.dataset.armed;x.textContent="Delete"}},4000);
+  }
+});
+
 // ---- New email ----
 const nm={files:[],busy:false,armed:false,fields:null};
 function nmFields(){if(!nm.fields)nm.fields={to:chipField($("nmTo")),cc:chipField($("nmCc")),bcc:chipField($("nmBcc"))};return nm.fields}
@@ -5222,7 +5369,7 @@ function paintNmFiles(){
 function openNewMail(pre){
   if(!realMail||!feat.compose||!accounts.length){toast("New email is not available");return}
   const f=nmFields();
-  f.to.clear();f.cc.clear();f.bcc.clear();nm.armed=false;
+  f.to.clear();f.cc.clear();f.bcc.clear();nm.armed=false;nm.draftId=(pre&&pre.draftId)||null;
   nm.files=((pre&&pre.files)||[]).map(x=>({name:x.name,type:x.type||"application/octet-stream",size:Math.floor(x.data.length*3/4)-(x.data.endsWith("==")?2:x.data.endsWith("=")?1:0),data:x.data}));
   paintNmFiles();
   $("nmCancel").textContent="Cancel";
@@ -5234,14 +5381,14 @@ function openNewMail(pre){
   f.to.set(pre&&pre.to);f.cc.set(pre&&pre.cc);f.bcc.set(pre&&pre.bcc);
   $("nmCcRow").hidden=!(pre&&pre.cc&&pre.cc.length);$("nmBccRow").hidden=!(pre&&pre.bcc&&pre.bcc.length);
   $("nmSubject").value=(pre&&pre.subject)||"";$("nmText").value=(pre&&pre.body)?pre.body:withSig("");whReset("new");paintSaved("nmSaved","nmSavedRow");
+  nm.base=nmSnap();
   const n=realPrefs.undo_send_seconds||0;
   $("nmHint").textContent=n>0?`Held for ${n} ${n===1?"second":"seconds"} so you can undo`:"Sent as soon as you press Send";
   $("newMail").classList.add("open");$("nmScrim").classList.add("show");
   setTimeout(()=>f.to.input.focus(),0);
 }
-function closeNewMail(force){
-  if(!force&&nmDirty()&&!nm.armed){nm.armed=true;$("nmCancel").textContent="Discard this email?";setTimeout(()=>{nm.armed=false;$("nmCancel").textContent="Cancel"},4000);return}
-  $("newMail").classList.remove("open");$("nmScrim").classList.remove("show");nm.files=[];nm.armed=false;nmWarned=false;
+function closeNewMail(){
+  $("newMail").classList.remove("open");$("nmScrim").classList.remove("show");nm.files=[];nm.armed=false;nmWarned=false;nm.draftId=null;
 }
 $("nmFile").addEventListener("change",async e=>{
   for(const f of [...e.target.files]){
@@ -5303,7 +5450,8 @@ async function sendNew(){
   nm.busy=true;const btn=$("nmSend"),label=btn.textContent;btn.disabled=true;btn.textContent="Sending…";btn.classList.add("busy");
   try{
     const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/send`,{method:"POST",body:JSON.stringify({to,cc,bcc,subject,body,from_address:from,files:nm.files.map(x=>({name:x.name,type:x.type,data:x.data}))})});
-    closeNewMail(true);
+    const did=nm.draftId;
+    closeNewMail(true);if(did)deleteDraftQuiet(did);
     if(r.queued)noteQueuedNew(r,aid,subject);else toast(`✓ Email sent from ${r.from}`,4500);
   }catch(er){toast(er.message,6000)}
   finally{nm.busy=false;btn.disabled=false;btn.textContent=label;btn.classList.remove("busy")}
@@ -5596,7 +5744,7 @@ function presentOriginal(o,c){
   $("attachmentScrim").classList.add("show");viewerPush();
 }
 $("newMailBtn").onclick=()=>openNewMail();$("mNewBtn").onclick=()=>openNewMail();
-$("nmClose").onclick=()=>closeNewMail();$("nmCancel").onclick=()=>closeNewMail();
+$("nmClose").onclick=requestCloseNewMail;$("nmCancel").onclick=requestCloseNewMail;
 $("nmSend").onclick=sendNew;$("nmForm").addEventListener("submit",e=>{e.preventDefault()});
 $("nmAttach").onclick=()=>$("nmFile").click();
 $("nmCcBtn").onclick=()=>{$("nmCcRow").hidden=false;nmFields().cc.input.focus()};
@@ -5762,10 +5910,10 @@ $("oauthScrim").onclick=closeOAuth;
 $("oauthAllow").onclick=finishOAuth;
 $("attachmentModalClose").onclick=closeAttachmentViewer;
 $("attachmentScrim").onclick=closeAttachmentViewer;
-$("composeClose").onclick=closeComposer;$("composeCancel").onclick=closeComposer;$("composeScrim").onclick=closeComposer;
+$("composeClose").onclick=requestCloseComposer;$("composeCancel").onclick=requestCloseComposer;$("composeScrim").onclick=requestCloseComposer;
 $("composeSend").onclick=sendReply;$("composeForm").addEventListener("submit",e=>{e.preventDefault();sendReply()});
 document.addEventListener("click",e=>{if(e.target.closest("[data-preview-only]")){e.preventDefault();toast(document.body.classList.contains("backend")?"Use the account pages for this":"Preview only: this works on your Enveliq server")}});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("docBox").hidden)closeDoc();else if(!$("picBox").hidden)closePic();else if($("newMail").classList.contains("open"))closeNewMail();else if($("compose").classList.contains("open"))closeComposer();else if($("attachmentModal").classList.contains("open"))closeAttachmentViewer()}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("docBox").hidden)closeDoc();else if(!$("picBox").hidden)closePic();else if($("newMail").classList.contains("open"))requestCloseNewMail();else if($("compose").classList.contains("open"))requestCloseComposer();else if($("attachmentModal").classList.contains("open"))closeAttachmentViewer()}});
 const setupBtn=document.getElementById("vaultSetupBtn");if(setupBtn)setupBtn.onclick=setupVault;
 const unlockBtn=document.getElementById("vaultUnlockBtn");if(unlockBtn)unlockBtn.onclick=unlockVault;
 const lockBtn=document.getElementById("vaultLockBtn");if(lockBtn)lockBtn.onclick=lockVault;

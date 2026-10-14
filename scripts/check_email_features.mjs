@@ -116,7 +116,9 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("an attachment shows as a chip", (await page.locator("#nmFiles").innerText()).includes("Booking.pdf"));
   await shot(page, "nm-filled");
   await page.click("#nmCancel");
-  check("Cancel with something typed asks again before throwing it away", (await page.locator("#nmCancel").innerText()).includes("Discard") && (await page.locator("#newMail").evaluate((e) => e.classList.contains("open"))));
+  check("Cancel with something typed asks whether to save it as a draft, and Keep writing returns to the email", (await page.locator("#dkAsk.open").count()) === 1 && (await page.locator("#newMail").evaluate((e) => e.classList.contains("open"))));
+  await page.click("#dkKeep");
+  check("Keep writing leaves the email as it was", (await page.locator("#dkAsk.open").count()) === 0 && (await page.inputValue("#nmSubject")) === "Dinner on Saturday");
   await page.click("#nmSend");
   await page.waitForFunction(() => !document.getElementById("newMail").classList.contains("open"));
   const sent = server.calls.find((c) => c[0] === "send")[1];
