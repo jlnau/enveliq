@@ -142,7 +142,7 @@ Under **Settings, Profile**, you can choose your own picture. New uploads of tra
 
 ## On a phone, emails open full screen
 
-On a phone, whichever layout is chosen in the View panel (List, Reading pane on the right, Reading pane below, One screen at a time, Cards), tapping an email opens it on its own, filling the whole screen. There is one **✕ Close** button at the top left. To read the next email, close this one and tap the next in the list; there are no Next and Previous buttons. **Reviewed**, **Archive** and **Bin** stay along the bottom. The layout you chose is not changed: on a bigger screen (or if you turn a tablet sideways) it comes back.
+On a phone, whichever layout is chosen in the View panel (List, Reading pane on the right, Reading pane below, One screen at a time, Cards), tapping an email opens it on its own, filling the whole screen. There is one **✕ Close** button at the top left. To read the next email, close this one and tap the next in the list; there are no Next and Previous buttons. **Reviewed**, **Archive** and **Bin** stay along the bottom. When you press **Reviewed**, **Archive** or **Bin**, the email closes at once and you are back in the list. The usual **Undo** bar still shows at the bottom for five seconds, so you can bring the email back. The layout you chose is not changed: on a bigger screen (or if you turn a tablet sideways) it comes back. Browser check: `scripts/check_phone_reader.mjs`.
 
 ## Reading pane on the right (computer)
 

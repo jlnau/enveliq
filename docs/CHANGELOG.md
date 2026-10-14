@@ -4,7 +4,9 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**On a phone, the email closes as soon as you press Reviewed, Archive or Bin.** Before, the full screen email stayed open until you pressed Close or the action finished. Now it closes at once and you are back in the list. The five-second **Undo** bar still shows, and Undo brings the email back. See `docs/INBOX.md`.
+
+**New rules for pull requests.** Every pull request description now starts with a clear list of everything in it, and it never names an author (no person, no AI) anywhere in its text. See `CLAUDE.md` and `.github/PULL_REQUEST_TEMPLATE.md`.
 
 ## v0.90 (2026-10-14)
 

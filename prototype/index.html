@@ -4454,7 +4454,8 @@ document.addEventListener("click",e=>{
     render();return;
   }
   const exp=e.target.closest("[data-expand]");if(exp){const key=exp.dataset.expand;expanded.has(key)?expanded.delete(key):expanded.add(key);render();return}
-  const a=e.target.closest("[data-status]");if(a){deckDir="act";const m=data.find(x=>x.id===+a.dataset.id&&x.owner===currentUser.id);if(m&&["reviewed","archived","trashed"].includes(a.dataset.status)){queueAction([m],a.dataset.status);return}if(m&&m.real){resolveRealOne(m,a.dataset.status,a);return}if(m){m.status=a.dataset.status;m.attachments=[];m.attachmentsPurged=true;closeAttachmentViewer();selected.delete(m.id);render();toast(m.status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${m.status} · attachment data purged`)}return}
+  const a=e.target.closest("[data-status]");if(a){deckDir="act";const m=data.find(x=>x.id===+a.dataset.id&&x.owner===currentUser.id);if(m&&["reviewed","archived","trashed"].includes(a.dataset.status)){if(readerOpen&&lay()==="screen")readerOpen=false;   // on a phone the email closes at once; the Undo bar still shows
+    queueAction([m],a.dataset.status);return}if(m&&m.real){resolveRealOne(m,a.dataset.status,a);return}if(m){m.status=a.dataset.status;m.attachments=[];m.attachmentsPurged=true;closeAttachmentViewer();selected.delete(m.id);render();toast(m.status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${m.status} · attachment data purged`)}return}
   const b=e.target.closest("[data-bulk]");if(b){queueAction([...selected].map(id=>data.find(x=>x.id===id&&x.owner===currentUser.id)),b.dataset.bulk);selMode=false;closeAttachmentViewer();return}
   if(e.target.closest("[data-need]")){filter="need";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();return}
   {const t=e.target.closest("[data-msg-open],[data-msg-new],[data-msg-back],[data-msg-send],[data-msg-mute],[data-msg-unsend],[data-msg-go]");

@@ -83,6 +83,21 @@ for (const layout of ["list", "right", "bottom", "screen", "deck"]) {
   await context.close();
 }
 
+// Reviewed, Archive and Bin inside the full screen email: it closes at once, the Undo bar still shows, and Undo brings the email back
+for (const [cls, word] of [["reviewed", "Marked reviewed"], ["archive", "Archived"], ["trash", "Moved to Bin"]]) {
+  const { page, context, errors } = await run("list", 390, 800);
+  await page.locator("article.mail", { hasText: "Plan for May" }).locator(".qmain").click();
+  await page.waitForSelector(".reader");
+  await page.locator(`.reader .ract .action.${cls}`).click();
+  check(`[${cls}] the full screen email closes straight away`, (await page.locator(".reader").count()) === 0);
+  check(`[${cls}] the Undo bar shows "${word}"`, (await page.locator("#undoBar .undobar").innerText()).includes(word));
+  await page.locator("#undoBar .undobar button").click();
+  await page.waitForSelector("article.mail", { hasText: "Plan for May" });
+  check(`[${cls}] Undo puts the email back in the list`, (await page.locator("article.mail", { hasText: "Plan for May" }).count()) === 1);
+  check(`[${cls}] no script errors`, errors.length === 0);
+  await context.close();
+}
+
 // A big screen keeps the chosen layout: "right" shows the reading pane beside the list and no full screen reader
 {
   const { page, context } = await run("right", 1300, 900);
