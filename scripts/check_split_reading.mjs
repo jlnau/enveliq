@@ -109,9 +109,8 @@ for (const theme of ["dark", "light"]) {
 }
 {
   const { page } = await open(390, 800, "dark", "right");
-  const list = await box(page, "#paneList"), reading = await box(page, "#readDock .reading");
-  check("on a phone the email comes under the list, as before", reading && reading.y >= list.b - 2);
   check("on a phone the page can still scroll", await page.evaluate(() => getComputedStyle(document.body).overflow !== "hidden"));
+  check("on a phone there is no side panel; an email opens full screen when tapped", (await page.locator("#readDock .reading").count()) === 0 && (await page.locator(".reader").count()) === 0 && await (async () => { await page.locator("article.mail .qmain").first().click(); return (await page.locator(".reader").count()) === 1; })());
   await page.context().close();
 }
 await b.close(); srv.close();

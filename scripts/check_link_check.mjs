@@ -118,6 +118,8 @@ const closeViewer = async (page) => { await page.keyboard.press("Escape"); await
 
 {
   const { page, errors, context } = await open(390, 800);
+  // On a phone an email now opens full screen (see check_phone_reader.mjs). This part checks sizes and fit inside an open email row, so it keeps the row layout.
+  await page.evaluate(() => { lay = () => view.layout; render(); });
   await expandAll(page);
   await openOriginal(page, "Your parcel is on hold");
   await page.locator(".link-row", { hasText: "parcel-help.example" }).locator("[data-link-ask]").click();

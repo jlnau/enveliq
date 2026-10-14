@@ -122,6 +122,7 @@ for (const [w, h] of [[360, 640], [390, 800]]) {
   const stayed = page.url().startsWith(ORIGIN) && (await page.locator("article.mail").count().catch(() => 0)) > 0;
   check(tag + "the phone's Back button closes it and stays on the inbox", stayed && !(await page.locator("#attachmentModal").evaluate((e) => e.classList.contains("open")).catch(() => true)));
   if (!stayed) { await page.goto(`${ORIGIN}/`); await page.waitForSelector("article.mail"); }
+  if (await page.locator(".reader").count()) await page.locator("[data-reader-close]").click();      // the email opened full screen behind the window; close it to get back to the list
 
   // New email
   await page.tap("#mNewBtn");
@@ -133,8 +134,8 @@ for (const [w, h] of [[360, 640], [390, 800]]) {
   await page.waitForFunction(() => !document.getElementById("newMail").classList.contains("open"));
 
   // Reply
-  if (!(await page.locator("article.mail [data-reply]").first().isVisible())) await page.locator("article.mail .qrow").first().click();
-  await page.locator("article.mail [data-reply]").first().click();
+  if (!(await page.locator(".reader").count())) await page.locator("article.mail .qrow").first().click();      // a phone opens an email full screen
+  await page.locator(".reader [data-reply]").first().click();
   await page.waitForSelector("#compose.open");
   check(tag + "the reply window fits the screen", await fits(page, "#compose"));
   check(tag + "the reply window's Close can be tapped (" + (await reachable(page, "#composeClose")) + ")", (await reachable(page, "#composeClose")) === "ok");

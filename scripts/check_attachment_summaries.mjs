@@ -26,6 +26,7 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
   const p = await b.newPage({ viewport: vp }); const errors = [];
   p.on("pageerror", (e) => errors.push(String(e)));
   await p.goto(url); await p.waitForTimeout(600);
+  if (name === "phone") await p.evaluate(() => { lay = () => view.layout; });      // a phone opens an email full screen now (check_phone_reader.mjs); this part checks the open row itself
   await p.evaluate(() => {
     const base = data.find((x) => x.status === "inbox" && x.owner === currentUser.id);
     data.forEach((m) => { m.attachments = []; });

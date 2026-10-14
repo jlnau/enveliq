@@ -97,6 +97,8 @@ const senderLine = (page) => page.locator(".email-head dt", { hasText: /^Sender$
 
 {
   const { page, errors, context } = await open(390, 800);
+  // On a phone an email now opens full screen (see check_phone_reader.mjs). This part checks sizes and fit inside an open email row, so it keeps the row layout.
+  await page.evaluate(() => { lay = () => view.layout; render(); });
   await expandAll(page);
   await openOriginal(page, "Your parcel is on hold");
   check("on a phone the sender line fits and the page does not scroll sideways", await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1 && document.querySelector(".email-head").scrollWidth <= document.querySelector(".email-head").clientWidth + 1));

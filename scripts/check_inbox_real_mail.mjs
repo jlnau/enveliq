@@ -601,14 +601,14 @@ await page.click('[data-theme-choice="dark"]');
   check("phone: when the Undo bar goes away the archive is sent to the mailbox", server.calls.slice(callsP).some((c) => c[0] === "resolve" && c[2].outcome === "archived"));
   const rows1 = await page.locator("article.mail").count();
   await page.locator("article.mail .qmain").first().click();
-  check("phone: tapping a row opens the email in place, with the details panel under the text", (await page.locator("article.mail.open .qside").count()) === 1 && (await page.locator("article.mail.open .qmainc").evaluate((e) => e.getBoundingClientRect().bottom <= document.querySelector("article.mail.open .qside").getBoundingClientRect().top + 1)));
+  check("phone: tapping a row opens the email full screen, with the details panel under the text", (await page.locator(".reader .qside").count()) === 1);
   const callsQ = server.calls.length;
-  await page.locator("article.mail.open .qbtns [data-status=reviewed]").click();
+  await page.locator(".reader .ract [data-status=reviewed]").click();
   await page.waitForSelector("#undoBar:not([hidden])");
   check("phone: the buttons inside an open email also wait for Undo", server.calls.length === callsQ && (await page.locator("article.mail.leaving").count()) === 1 && (await page.locator("article.mail:not(.leaving)").count()) === rows1 - 1);
   await page.click("#undoBar .undobar:last-child button");
   check("phone: …and Undo restores it", (await page.locator("article.mail").count()) === rows1);
-  await page.locator("article.mail.open .qmain").first().click();
+  if (await page.locator(".reader").count()) await page.locator("[data-reader-close]").click();      // close the full screen email
   // the top bar stays put; the greeting section is gone on a phone
   check("phone: no greeting section; the top bar holds the menu, logo, search and sync", !(await page.locator(".greet h2").isVisible()) && !(await page.locator("#inboxSubtitle").isVisible()) && (await page.locator("#mLogo").isVisible()) && (await page.locator("#mSearchBtn").isVisible()) && (await page.locator("#mSyncBtn").isVisible()) && !(await page.locator("#mAvatar").count()));
   check("phone: Inbox options are initially collapsed", (await page.locator("#fDate").isHidden()) && (await page.locator("#previewInboxOptions").getAttribute("aria-expanded")) === "false");
