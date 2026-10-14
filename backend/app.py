@@ -198,6 +198,16 @@ SSO_REDIRECT_URI = f"{PUBLIC_ORIGIN}/api/v1/auth/sso/callback"
 
 # Whenever the vault locks (manual, idle timer or key replacement), drop every
 # session and sign-in step, and wipe every decrypted preview held in RAM.
+def _principal_for(user_id: str):
+    """Who a remembered sign-in belongs to after a restart, or None if they are gone or switched off."""
+    try:
+        user = users.get(user_id)
+    except (KeyError, VaultLocked):
+        return None
+    return None if user.get("disabled") else users.principal(user)
+
+
+sessions.resolver = _principal_for
 vault.add_lock_listener(sessions.revoke_all)
 vault.add_lock_listener(flows.clear)
 vault.add_lock_listener(preview_leases.clear)

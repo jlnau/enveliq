@@ -186,3 +186,98 @@ def test_a_sign_in_that_still_has_to_set_up_a_second_factor_is_never_remembered(
     sessions = SessionManager(StubVault())
     s = sessions.create(principal(), state="enroll", remember_seconds=7 * DAY)
     assert s.remember_seconds == 0 and sessions.life_of(s) == 12 * 3600
+
+
+# ---- a remembered sign-in survives a restart (sessions otherwise live only in memory) ----
+
+class DictVault:
+    """A stand-in vault that keeps global records in a dict, like the encrypted one does."""
+    def __init__(self):
+        self.records = {}
+    def touch(self):
+        pass
+    def get_global(self, rid):
+        import copy
+        return copy.deepcopy(self.records.get(rid))
+    def set_global(self, rid, payload):
+        import copy
+        self.records[rid] = copy.deepcopy(payload)
+
+
+def restarted(vault, now):
+    """A fresh manager over the same stored records: what Enveliq looks like right after a restart."""
+    m = SessionManager(vault, clock=lambda: now[0])
+    m.resolver = lambda uid: Principal(user_id=uid, name="Sam", is_admin=False) if uid == "u1" else None
+    return m
+
+
+@pytest.fixture
+def wall():
+    return [1_000_000.0]
+
+
+def test_a_remembered_sign_in_is_still_valid_after_a_restart_and_keeps_its_limit(wall):
+    vault = DictVault()
+    first = SessionManager(vault, clock=lambda: wall[0])
+    s = first.create(principal(), remember_seconds=7 * DAY, auth_method="passkey")
+    stored = str(vault.records)
+    assert s.token not in stored and "u1" in stored                 # only a hash of the token is kept
+    wall[0] += 3 * DAY
+    after = restarted(vault, wall)
+    back = after.get(s.token)
+    assert back.principal.user_id == "u1" and back.remember_seconds == 7 * DAY and back.auth_method == "passkey" and back.state == "full"
+    wall[0] += 5 * DAY                                              # past 7 days from sign-in
+    with pytest.raises(HTTPException):
+        restarted(vault, wall).get(s.token)
+
+
+def test_an_ordinary_sign_in_does_not_survive_a_restart(wall):
+    vault = DictVault()
+    s = SessionManager(vault, clock=lambda: wall[0]).create(principal())
+    assert vault.records == {}
+    with pytest.raises(HTTPException):
+        restarted(vault, wall).get(s.token)
+
+
+def test_signing_out_or_changing_the_password_forgets_a_remembered_sign_in(wall):
+    vault = DictVault()
+    m = SessionManager(vault, clock=lambda: wall[0])
+    a = m.create(principal(), remember_seconds=DAY)
+    b = m.create(principal(), remember_seconds=DAY)
+    m.revoke(a.token)
+    with pytest.raises(HTTPException):
+        restarted(vault, wall).get(a.token)
+    assert restarted(vault, wall).get(b.token)
+    m.revoke_user("u1")
+    with pytest.raises(HTTPException):
+        restarted(vault, wall).get(b.token)
+
+
+def test_revoke_everyone_clears_them_but_a_vault_lock_does_not(wall):
+    vault = DictVault()
+    m = SessionManager(vault, clock=lambda: wall[0])
+    s = m.create(principal(), remember_seconds=DAY)
+    m.revoke_all()                                                  # what a vault lock does: memory only
+    assert restarted(vault, wall).get(s.token)
+    m.revoke_everyone()
+    with pytest.raises(HTTPException):
+        restarted(vault, wall).get(s.token)
+
+
+def test_a_remembered_sign_in_of_someone_gone_or_unknown_is_refused(wall):
+    vault = DictVault()
+    s = SessionManager(vault, clock=lambda: wall[0]).create(Principal(user_id="gone", name="X", is_admin=False), remember_seconds=DAY)
+    with pytest.raises(HTTPException):
+        restarted(vault, wall).get(s.token)
+    with pytest.raises(HTTPException):
+        restarted(vault, wall).get("not-a-real-token")
+
+
+def test_in_the_app_a_remembered_sign_in_survives_a_restart_and_a_plain_one_does_not(keyed):
+    appm, admin = keyed
+    admin.put("/api/v1/admin/auth-policy", json={"remember_days": 14})
+    kept, _ = login(appm, remember=True)
+    plain_c, _ = login(appm)
+    appm.sessions._sessions.clear()                                 # the process restarted: memory is gone
+    assert kept.get("/api/v1/me").status_code == 200
+    assert plain_c.get("/api/v1/me").status_code == 401

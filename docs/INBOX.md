@@ -77,7 +77,7 @@ The Enveliq version is a small grey line at the bottom of the left panel, above 
 
 ## Staying signed in
 
-Normally Enveliq signs you out after 30 minutes without use. If an administrator has turned on **Keep me signed in on this device** (Administration, Sign-in rules, from 1 to 14 days), the sign-in page shows a tick-box for it. Tick it only on a device that is yours. It needs Enveliq to unlock itself from a key file (see [Unlock by itself after a restart](VAULT_KEY.md)); restarting Enveliq still signs everyone out.
+Normally Enveliq signs you out after 30 minutes without use. If an administrator has turned on **Keep me signed in on this device** (Administration, Sign-in rules, from 1 to 14 days), the sign-in page shows a tick-box for it. Tick it only on a device that is yours. It needs Enveliq to unlock itself from a key file (see [Unlock by itself after a restart](VAULT_KEY.md)); a sign-in made with the tick also survives a restart of Enveliq (an update or a redeploy), until the days you chose are up. Sign-ins made without the tick end at a restart.
 
 ## Finding your way around
 
