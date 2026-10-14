@@ -77,7 +77,7 @@ The Enveliq version is a small grey line at the bottom of the left panel, above 
 
 ## Staying signed in
 
-Normally Enveliq signs you out after 30 minutes without use. If an administrator has turned on **Keep me signed in on this device** (Administration, Sign-in rules, from 1 to 14 days), the sign-in page shows a tick-box for it. Tick it only on a device that is yours. It needs Enveliq to unlock itself from a key file (see [Unlock by itself after a restart](VAULT_KEY.md)); restarting Enveliq still signs everyone out.
+Normally Enveliq signs you out after 30 minutes without use. If an administrator has turned on **Keep me signed in on this device** (Administration, Sign-in rules, from 1 to 14 days), the sign-in page shows a tick-box for it. Tick it only on a device that is yours. It needs Enveliq to unlock itself from a key file (see [Unlock by itself after a restart](VAULT_KEY.md)); a sign-in made with the tick also survives a restart of Enveliq (an update or a redeploy), until the days you chose are up. Sign-ins made without the tick end at a restart.
 
 ## Finding your way around
 
@@ -139,3 +139,11 @@ Open the account menu at the top right to choose **Dark**, **Light**, or **Syste
 ## Profile pictures
 
 Under **Settings, Profile**, you can choose your own picture. New uploads of transparent PNG images preserve the clear areas, so the panel colour shows through around and inside a logo. An image previously uploaded before this was fixed may have been saved with a white background; uploading the **original transparent PNG again** is the most reliable way to restore transparency. The **Remove white background** action in Settings, Profile is an optional repair for an older saved image, not something a correctly uploaded transparent image needs.
+
+## On a phone, emails open full screen
+
+On a phone, whichever layout is chosen in the View panel (List, Reading pane on the right, Reading pane below, One screen at a time, Cards), tapping an email opens it on its own, filling the whole screen. There is one **✕ Close** button at the top left. To read the next email, close this one and tap the next in the list; there are no Next and Previous buttons. **Reviewed**, **Archive** and **Bin** stay along the bottom. The layout you chose is not changed: on a bigger screen (or if you turn a tablet sideways) it comes back.
+
+## Reading pane on the right (computer)
+
+Choose **Reading pane on the right** in the View panel (the tab on the right edge). The open email fills the whole right side of the screen, from just under the search bar to the bottom of the window, and **Reviewed**, **Archive** and **Bin** stay along its bottom edge. The left column holds the page title, the four counts in one slim row, **Today** and **Coming up** side by side, the **Recent emails** bar and the list. **Today** shows its first two things; **Coming up** shows the soonest two, in a box the same height and shade (neither box has the round tick buttons in this view; use the Tasks page to mark things done), and **Coming up · N more** is a link to the Tasks page (in the other layouts it still folds open and closed). In Calm mode this view has no Calm mode bar on top and no icon in Start here, the cards are shorter, and Also important today sits under Later on the right. The left column scrolls by itself; the page does not. This applies to every page that lists emails. On a phone, or a window narrower than 900 pixels, the email appears under the list as before. The other layouts are unchanged. Browser check: `scripts/check_split_reading.mjs`.

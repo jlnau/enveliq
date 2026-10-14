@@ -162,6 +162,8 @@ const badge = (page, id) => page.locator("#" + id).innerText();
 
 {
   const { page, errors, context } = await open(390, 800);
+  // On a phone an email now opens full screen (see check_phone_reader.mjs). This part checks sizes and fit inside an open email row, so it keeps the row layout.
+  await page.evaluate(() => { lay = () => view.layout; render(); });
   await expandAll(page);
   await row(page, "Dentist on Monday").locator("[data-snooze]").click();
   const box = await page.locator("#snoozeMenu").boundingBox();

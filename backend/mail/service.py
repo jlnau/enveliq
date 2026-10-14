@@ -26,7 +26,7 @@ AI_CONFIG_RECORD = "ai_config"
 MAIL_METHODS = ("proton_bridge", "imap")   # account types that sync
 from . import scamcheck
 from . import subscriptions as subscriptions_mod
-from .parse import _addresses, clean, parse_headers, received_at_of, render_original, sending_identities, summarise_headers
+from .parse import _addresses, clean, forward_files, forward_quote, parse_headers, received_at_of, render_original, reply_quote, sending_identities, summarise_headers
 
 log = logging.getLogger("enveliq.mail")
 PLACEHOLDER_SUMMARY = "Not summarised yet."
@@ -772,24 +772,59 @@ class MailService:
 
     # ---------- reply ----------
 
-    def build_reply(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None) -> tuple[EmailMessage, str, list[str]]:
-        ctx = message.get("reply_context")
-        if not ctx or not ctx.get("reply_to"):
-            raise BridgeError("not_configured", "This email has no address to reply to.")
+    def _pick_from(self, account: dict[str, Any], from_address: str | None, delivered_to: str | None) -> str:
         identities = {i.lower(): i for i in sending_identities(account)}
         mailbox = str(account.get("email_address") or "")
         if from_address is not None:
             chosen = identities.get(from_address.lower())
             if chosen is None:
                 raise BridgeError("not_configured", "That address is not one this mailbox can send from.")
-        else:
-            # Reply from the address the email was sent to, if this mailbox can
-            # send from it; for forwarding aliases the mailbox address is used.
-            chosen = identities.get((ctx.get("delivered_to") or "").lower(), mailbox)
+            return chosen
+        # Reply from the address the email was sent to, if this mailbox can
+        # send from it; for forwarding aliases the mailbox address is used.
+        return identities.get((delivered_to or "").lower(), mailbox)
+
+    def _people(self, to: list[str], cc: list[str], bcc: list[str]) -> tuple[list[Address], list[Address], list[Address]]:
+        """Check every address, drop repeats (To wins over Cc, Cc over Bcc) and enforce the size limit."""
+        seen: set[str] = set()
+        out: list[list[Address]] = []
+        for group in (to, cc, bcc):
+            kept: list[Address] = []
+            for a in self._recipients(group):
+                key = a.addr_spec.lower()
+                if key not in seen:
+                    seen.add(key)
+                    kept.append(a)
+            out.append(kept)
+        if not any(out):
+            raise BridgeError("not_configured", "Add at least one person to send this to.")
+        if sum(len(g) for g in out) > self.MAX_RECIPIENTS:
+            raise BridgeError("not_configured", f"A message can go to at most {self.MAX_RECIPIENTS} people.")
+        return out[0], out[1], out[2]
+
+    def build_reply(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None,
+                    to: list[str] | None = None, cc: list[str] | None = None, bcc: list[str] | None = None,
+                    kind: str = "reply", add_original: bool = True) -> tuple[EmailMessage, str, list[str]]:
+        """A reply. Unless the person already put the original into their own message (add_original False), the whole
+        original email is fetched from the mailbox now and quoted under their words. It is never kept."""
+        ctx = message.get("reply_context")
+        if not ctx or not ctx.get("reply_to"):
+            raise BridgeError("not_configured", "This email has no address to reply to.")
+        if kind == "reply_all" and not ctx.get("cc"):
+            raise BridgeError("not_configured", "This email has no one on Cc, so there is no one else to reply to.")
+        chosen = self._pick_from(account, from_address, ctx.get("delivered_to"))
+        if to is None:
+            to = [ctx["reply_to"]] + (list(ctx.get("also_to") or []) if kind == "reply_all" else [])
+        if cc is None:
+            cc = list(ctx.get("cc") or []) if kind == "reply_all" else []
+        to_a, cc_a, bcc_a = self._people(to, cc, bcc or [])
 
         msg = EmailMessage(policy=SMTP_POLICY)
         msg["From"] = chosen
-        msg["To"] = ctx["reply_to"]
+        if to_a:
+            msg["To"] = to_a
+        if cc_a:
+            msg["Cc"] = cc_a
         subject = clean(message.get("subject"), 900) or "(no subject)"
         msg["Subject"] = subject if re.match(r"(?i)^re:", subject) else f"Re: {subject}"
         msg["Date"] = format_datetime(datetime.now(timezone.utc))
@@ -799,11 +834,56 @@ class MailService:
             msg["In-Reply-To"] = original_id
             refs = [r for r in ctx.get("references", []) if _ANGLE_ID.match(r)][-49:] + [original_id]
             msg["References"] = " ".join(refs)
-        msg.set_content(body.replace("\r\n", "\n"))
-        return msg, chosen, [ctx["reply_to"]]
+        text = body.replace("\r\n", "\n").rstrip()
+        if add_original:
+            try:
+                quoted = reply_quote(self.original_raw(account, message))
+            except BridgeError as err:
+                if err.code == "not_found":
+                    raise BridgeError("not_found", "Enveliq could not find the original email to quote, so nothing was sent. Sync and try again.") from None
+                raise
+            text = text + "\n\n" + quoted
+        msg.set_content(text)
+        return msg, chosen, [a.addr_spec for a in to_a + cc_a + bcc_a]
 
-    def reply(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None) -> str:
-        msg, chosen, recipients = self.build_reply(account, message, body, from_address)
+    def build_forward(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None,
+                      to: list[str], cc: list[str], bcc: list[str], keep_files: list[int] | None) -> tuple[EmailMessage, str, list[str]]:
+        """Forward an email: the original is fetched from the mailbox now, quoted under the person's note, and never kept.
+        keep_files are the numbers of the original's files to send along (None sends all of them)."""
+        ctx = message.get("reply_context") or {}
+        chosen = self._pick_from(account, from_address, ctx.get("delivered_to"))
+        to_a, cc_a, bcc_a = self._people(to, cc, bcc)
+        raw = self.original_raw(account, message)
+        original = parse_headers(raw)
+        quoted = forward_quote(raw)
+        msg = EmailMessage(policy=SMTP_POLICY)
+        msg["From"] = chosen
+        if to_a:
+            msg["To"] = to_a
+        if cc_a:
+            msg["Cc"] = cc_a
+        subject = clean(original.get("Subject"), 900) or clean(message.get("subject"), 900) or "(no subject)"
+        msg["Subject"] = subject if re.match(r"(?i)^fwd?:", subject) else f"Fwd: {subject}"
+        msg["Date"] = format_datetime(datetime.now(timezone.utc))
+        msg["Message-ID"] = make_msgid(domain=chosen.rsplit("@", 1)[1])
+        note = body.replace("\r\n", "\n").rstrip()
+        msg.set_content((note + "\n\n" if note else "") + quoted)
+        files = forward_files(raw, keep_files)
+        if len(files) > self.MAX_FILES:
+            raise BridgeError("too_large", f"Attach at most {self.MAX_FILES} files.")
+        total = 0
+        for data, name, ctype in files:
+            total += len(data)
+            if total > self.MAX_FILE_BYTES:
+                raise BridgeError("too_large", "Attachments can total at most 10 MB.")
+            ctype = ctype.lower()
+            main, _, sub = (ctype if _MIME.match(ctype) else "application/octet-stream").partition("/")
+            msg.add_attachment(data, maintype=main, subtype=sub, filename=clean(name, 200) or "attachment")
+        return msg, chosen, [a.addr_spec for a in to_a + cc_a + bcc_a]
+
+    def reply(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None,
+              built: tuple[EmailMessage, str, list[str]] | None = None) -> str:
+        msg, chosen, recipients = built or self.build_reply(account, message, body, from_address)
         self.bridge.send(self.target(account), msg, chosen, recipients)
         return chosen
 

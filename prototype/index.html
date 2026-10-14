@@ -601,6 +601,7 @@ body.vopen .vpanel{transform:none;visibility:visible;transition:transform .3s cu
 .mail.quiet.swiping{position:relative;overflow:hidden;user-select:none}.mail.quiet.swiping .qrow{position:relative;background:var(--panel);will-change:transform}.mail.quiet.swipeout .qrow{transition:transform .18s ease-out}
 .reader{position:fixed;inset:0;z-index:90;background:var(--bg);display:flex;flex-direction:column}
 .rtop{height:56px;flex:none;display:flex;align-items:center;gap:6px;padding:0 12px;border-bottom:1px solid var(--c-232a36)}.rtop b{font-size:15px;margin-left:4px}.rtop .sp{flex:1}
+.rbtn.rclose{width:auto;padding:0 14px;font-size:15px;font-weight:600;gap:6px;border-color:var(--line);background:var(--panel)}
 .rbtn{width:40px;height:40px;border-radius:11px;border:1px solid transparent;background:transparent;color:var(--text);font-size:22px;line-height:1;display:grid;place-items:center}.rbtn:hover:not(:disabled){background:var(--panel2);border-color:var(--line)}.rbtn:disabled{opacity:.3}
 .rbody{flex:1;overflow:auto;padding:16px 16px 24px;max-width:860px;width:100%;margin:0 auto;box-sizing:border-box}
 .rfrom{display:flex;align-items:center;gap:12px}.rfrom .dcav{width:40px;height:40px}.rbody h3{margin:14px 0 4px;font-size:22px;line-height:1.28;letter-spacing:-.01em}
@@ -1235,6 +1236,128 @@ html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sti
     -webkit-mask-image:linear-gradient(#000 0,#000 var(--cut,-1px),transparent var(--cut,-1px),transparent var(--cut2,-1px),#000 calc(var(--cut2,-1px) + var(--fade,36px)));
     mask-image:linear-gradient(#000 0,#000 var(--cut,-1px),transparent var(--cut,-1px),transparent var(--cut2,-1px),#000 calc(var(--cut2,-1px) + var(--fade,36px)))}
 }
+
+/* Reading panel on the right, all the way up to the top bar (computers and tablets, "Reading pane on the right" layout).
+   The title, the four counts, Today / Coming up and the list sit in a column on the left; the open email fills the whole right side.
+   The left column scrolls by itself; the page does not. Phones, and every other layout, are unchanged. */
+.read-dock{display:none}
+.preview-later.later-closed .preview-later-items{display:none!important}
+body.layout-right .panes.right{display:block}
+@media(max-width:900px){
+  .read-dock:not(:empty){display:block;padding:0 16px 90px}
+  body.layout-right .content{padding-bottom:12px}
+}
+@media(max-width:760px){.read-dock:not(:empty){padding:0 12px 90px}}
+body.booting #readDock{display:none!important}
+body.backend:not(.mail-ready) #readDock{visibility:hidden}
+body.preview-mobile-emails-closed #readDock{display:none!important}
+@media(min-width:901px){
+  html:has(body.split-read){scrollbar-gutter:auto}
+  html body.split-read{overflow:hidden;height:100vh;display:flex;flex-direction:column}
+  body.split-read .app{flex:1 1 auto;min-height:0;height:auto;grid-template-rows:minmax(0,1fr)}
+  body.split-read .sidebar{min-height:0}
+  body.split-read .main{min-height:0;height:100%;display:grid;grid-template-columns:minmax(320px,2fr) minmax(0,3fr);grid-template-rows:auto auto minmax(0,1fr);column-gap:16px}
+  body.split-read .main>.preview-toolbar{grid-column:1/-1;grid-row:1}
+  body.split-read .main>.mtop{display:none}
+  html body.split-read .main>.top{grid-column:1;grid-row:2;margin-left:24px;min-height:0!important;padding:0 0 10px!important;overflow:visible}
+  html body.split-read .main>.top .top-inner{min-height:0!important;align-items:flex-start!important}
+  html body.split-read .main>.content{grid-column:1;grid-row:3;margin:0 0 0 24px;padding:0 8px 24px 0;max-width:none;overflow-y:auto;min-height:0;scrollbar-width:thin}
+  html body.split-read .main>.read-dock{grid-column:2;grid-row:2/4;display:block;min-height:0;margin:0 24px 20px 0;padding:0;position:relative;z-index:1}
+  body.split-read .top .greet{height:34px;line-height:34px;top:0}
+  body.split-read .top h2{font-size:26px;margin:0;line-height:34px}
+  html body.split-read .top p{margin:2px 0 0;font-size:13px;line-height:1.35}
+  body.split-read .top .preview-calm-notice{position:static;max-width:none;margin:0 0 10px;padding:9px 12px;grid-template-columns:1fr auto}
+  body.split-read.stuck .main>.top,body.split-read.stuck .main>.content>*{-webkit-mask-image:none;mask-image:none}
+  /* the four counts: one slim row */
+  html body.split-read .preview-overview{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+  body.split-read .preview-stat{min-height:0;padding:8px 10px;align-items:center;gap:0}
+  body.split-read .preview-stat-icon{display:none}
+  body.split-read .preview-stat-copy{flex-direction:row;align-items:center;gap:8px}
+  body.split-read .preview-stat-copy b{order:0;font-size:20px;line-height:1}
+  body.split-read .preview-stat-copy strong{order:1;font-size:11.5px;font-weight:500;line-height:1.15}
+  body.split-read .preview-stat-copy small{display:none}
+  /* Today and Coming up side by side */
+  body.split-read #dueBars:not([hidden]){display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:8px;align-items:stretch;padding-bottom:12px}
+  body.split-read #dueBars>.preview-today-grid{grid-column:1;grid-row:1;grid-template-columns:minmax(0,1fr)!important;gap:8px!important}
+  body.split-read #dueBars>.preview-today-grid:only-child{grid-column:1/-1}
+  body.split-read #dueBars>.preview-later{grid-column:2;grid-row:1;margin-top:0!important}
+  html body.split-read .today-card,html body.split-read .preview-important,html body.split-read .preview-later{padding:10px 12px!important}
+  body.split-read .preview-today-grid>.today-card{height:100%;box-sizing:border-box}
+  body.split-read .today-card .preview-fold-content>.trow2:nth-child(n+3){display:none}                 /* Today has room for two things */
+  html body.split-read .preview-later .preview-later-items{display:block;margin-top:4px}
+  html body.split-read .preview-later .preview-later-items>.trow2{display:grid!important;width:auto!important;margin:0!important;padding:9px 6px!important;min-height:0!important;border:0;border-radius:0;background:none;grid-template-columns:28px minmax(0,1fr);row-gap:0}
+  html body.split-read .preview-later .preview-later-items>.trow2:nth-child(n+3){display:none!important}          /* Coming up shows the soonest two things */
+  body.split-read #dueBars .tick{display:none!important}                                                    /* no circles: the words get the room */
+  body.split-read #dueBars .trow2{grid-template-columns:minmax(0,1fr)!important}
+  body.split-read #dueBars .trow2 .twhen{grid-column:1!important;margin-top:0!important}
+  html body.split-read .preview-later .preview-later-items>.trow2{grid-template-columns:minmax(0,1fr)!important}
+  body.split-read .preview-later .trow2 .twhen{grid-column:2;margin-top:-4px;font-size:11px}
+  /* Coming up: the same shade as Today, and a link to the Tasks page (not a fold with an arrow) that shows only the soonest thing */
+  html body.split-read #dueBars>.preview-later{background:rgba(13,29,56,.62);border-color:var(--preview-border);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2)}
+  html[data-theme="light"] body.split-read #dueBars>.preview-later{background:rgba(255,255,255,.62)}
+  html body.split-read.calm #dueBars>.preview-later{background:linear-gradient(160deg,rgba(40,52,82,.84),rgba(30,40,66,.84));border-color:rgba(160,180,220,.16);border-radius:14px}
+  html[data-theme="light"] body.split-read.calm #dueBars>.preview-later{background:linear-gradient(160deg,#ffffff,#eef4ff);border-color:#d6e2f3}
+  body.split-read .preview-later .preview-fold-toggle{display:none}
+  html body.split-read .preview-later .preview-later-head>.tmore{padding:0!important;font-size:14px;font-weight:700;color:var(--accent);text-decoration:underline;cursor:pointer}
+  html body.split-read .preview-later.later-closed .preview-later-items{display:block!important}
+  /* Calm mode in this view: no icon in Start here, no Calm mode bar on top, shorter cards, and Also important today under Later on the right */
+  html body.split-read .top .preview-calm-notice{display:none!important}
+  html body.split-read.calm #dueBars:not([hidden]){gap:0 8px}
+  html body.split-read.calm #dueBars>.preview-today-grid{display:contents}
+  html body.split-read.calm #dueBars .today-card{grid-column:1;grid-row:1/span 2;border-radius:14px;padding:10px 12px!important}
+  html body.split-read.calm #dueBars>.preview-later{grid-column:2;grid-row:1}
+  html body.split-read.calm #dueBars .preview-important{grid-column:2;grid-row:2;margin-top:8px;display:block!important;border:1px solid var(--preview-border);border-radius:14px;padding:10px 12px!important}
+  html body.split-read.calm #dueBars:not(:has(.preview-later)) .preview-important{grid-row:1;margin-top:0}
+  html body.split-read.calm #dueBars:not(:has(.preview-later,.preview-important)) .today-card{grid-column:1/-1}
+  body.split-read.calm .preview-important .thead{margin:0 0 4px}
+  body.split-read.calm .preview-important .thead b{font-size:13px}
+  body.split-read.calm .preview-important .trow2{padding:4px 0!important}
+  body.split-read.calm .preview-important .ttl{white-space:normal;line-height:1.3}
+  body.split-read.calm .preview-focus-icon{display:none}
+  body.split-read.calm .preview-focus-card{grid-template-columns:minmax(0,1fr);gap:0;padding:8px 12px}
+  body.split-read.calm .preview-focus-copy strong{font-size:15px;line-height:1.3}
+  body.split-read.calm .preview-focus-copy p{margin:3px 0;font-size:12.5px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  body.split-read.calm .preview-focus-copy small{font-size:11px}
+  body.split-read.calm .preview-focus-actions{margin-top:6px;gap:6px}
+  body.split-read .preview-today-grid .thead{margin-bottom:6px}
+  body.split-read .preview-today-grid .thead b{font-size:14px}
+  body.split-read .preview-today-grid .trow2{min-height:0;grid-template-columns:28px minmax(0,1fr);row-gap:0}
+  body.split-read .preview-today-grid .trow2 .twhen{grid-column:2;margin-top:-4px;font-size:11px}
+  /* the Recent emails bar and the list */
+  html body.split-read .content>.preview-list-heading{position:sticky;top:0;margin:0 0 10px;padding:9px 14px}
+  body.split-read .preview-list-heading strong{font-size:15px}
+  body.split-read .panelist{height:auto;min-height:0;overflow:visible}
+  /* the open email fills the right side; Reviewed / Archive / Bin stay at the bottom */
+  body.split-read .reading{height:100%;min-height:0;display:flex;flex-direction:column}
+  body.split-read .reading .qdetail.split{flex:1 0 auto}
+  body.split-read .reading .qside{flex:1;display:flex;flex-direction:column}
+  body.split-read .reading .qbtns{margin-top:auto;position:sticky;bottom:0;background:var(--c-10151d);padding:12px 0 2px}
+}
+@media(min-width:901px) and (max-width:1100px){
+  body.split-read #dueBars:not([hidden]){grid-template-columns:minmax(0,1fr)}
+  body.split-read #dueBars>.preview-later{grid-column:1;grid-row:2}
+}
+/* Drafts page and the "Save this as a draft?" question */
+#draftPage{display:none;padding-top:14px}body.on-draft #draftPage{display:block}
+body.on-draft .filters,body.on-draft #list,body.on-draft .sample-banner,body.on-draft #dueBars,body.on-draft #shipBars,body.on-draft #subBars,body.on-draft #tripBars,body.on-draft #waitBars,body.on-draft #msgBars,body.on-draft #mTitleSub,body.on-draft #peek{display:none!important}
+.drow{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:0 0 10px;display:grid;gap:6px}
+.drow .dtop{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.drow .dkind{font-size:12px;border:1px solid var(--c-1f3f75);color:var(--c-bfe3ff);border-radius:999px;padding:1px 9px}
+.drow .dto{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.drow .dsub{font-weight:600}
+.drow .dprev{color:var(--muted);font-size:13.5px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}
+.drow .dmeta{color:var(--muted);font-size:12.5px}
+.drow .dact{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+#dkAsk{width:min(520px,94vw);z-index:63}#dkScrim{z-index:62}#dkAsk button{min-height:44px}#dkAsk .compose-body p{margin:0;line-height:1.5}
+/* On a phone the writing window is full screen (z-index 121). The small questions asked over it (save as a draft, check before sending, send warning) were left underneath it, so Close seemed to do nothing. They now sit above it as a sheet from the bottom, with big full-width buttons. */
+@media(max-width:760px){
+  #dkScrim,#whScrim{z-index:130}
+  #dkAsk,#whCheck,#sendWarn{z-index:131;left:0;right:0;top:auto;bottom:0;width:100%;height:auto;max-height:88dvh;overflow:auto;border:1px solid var(--c-343b4b);border-bottom:0;border-radius:18px 18px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.5);padding-bottom:env(safe-area-inset-bottom,0px)}
+  #dkAsk .compose-head,#whCheck .compose-head,#sendWarn .compose-head{position:static;padding:16px 18px 12px}
+  #dkAsk .compose-foot,#whCheck .compose-foot,#sendWarn .compose-foot{flex-direction:column-reverse;align-items:stretch;gap:8px}
+  #dkAsk .modal-actions,#whCheck .modal-actions,#sendWarn .modal-actions{flex-direction:column-reverse;margin-top:0;gap:8px}
+  #dkAsk .compose-foot button,#whCheck .compose-foot button,#sendWarn .compose-foot button{width:100%;min-height:48px;font-size:15px}
+}
 </style>
 </head>
 <body class="booting">
@@ -1262,6 +1385,7 @@ html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sti
     <button class="nav" data-filter="reviewed" title="Reviewed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.6 2.6L16 9.6"/></svg><span class="nav-label">Reviewed</span></button>
     <button class="nav" data-filter="archived" title="Archived"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4.5" rx="1"/><path d="M5 8.5V20h14V8.5"/><path d="M10 12.5h4"/></svg><span class="nav-label">Archived</span></button>
     <button class="nav" data-filter="sent" id="sentNav" title="Sent" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg><span class="nav-label">Sent</span></button>
+    <button class="nav" data-filter="drafts" id="draftNav" title="Drafts" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg><span class="nav-label">Drafts</span><span class="badge" id="draftBadge" hidden></span></button>
     <div class="more-nav" id="moreNav">
       <button class="nav more-toggle" id="moreToggle" type="button" aria-expanded="false" aria-controls="moreItems" title="More mailbox views"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3zM3 9h18"/><path class="more-chev" d="m9.5 13.2 2.5 2.4 2.5-2.4"/></svg><span class="nav-label">More</span><span class="more-arrow" aria-hidden="true">⌄</span></button>
       <div class="more-items" id="moreItems"></div>
@@ -1359,6 +1483,7 @@ html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sti
   <section id="subPage" aria-label="Subscriptions"></section>
   <section id="tripPage" aria-label="Trips"></section>
   <section id="waitPage" aria-label="Waiting for reply"></section>
+  <section id="draftPage" aria-label="Drafts"></section>
   <section id="msgPage" aria-label="Messages"></section>
   <div class="allfoot" id="allFoot" hidden>Last 14 days, 100 emails max.</div>
   <section id="sentView" class="sentview" aria-label="Sent" hidden>
@@ -1370,6 +1495,7 @@ html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sti
   </section>
   <div id="peek" class="peek" role="tooltip" hidden><div class="peek-in" id="peekIn"></div></div>
 </section>
+<aside class="read-dock" id="readDock"></aside>
 </main>
 </div>
 
@@ -1719,17 +1845,30 @@ html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sti
   </div>
   <form class="compose-body" id="composeForm">
     <div><label for="composeFrom">From</label><select id="composeFrom"></select><div class="compose-hint" id="composeFromHint"></div></div>
-    <div><label for="composeTo">To</label><input id="composeTo" readonly><div class="compose-hint" id="composeToHint"></div></div>
+    <div><label>To <span class="ccsw"><button type="button" id="cmCcBtn">Cc</button><button type="button" id="cmBccBtn">Bcc</button></span></label><div class="chips" id="cmTo" data-label="To"></div><div class="compose-hint" id="composeToHint"></div></div>
+    <div id="cmCcRow" hidden><label>Cc</label><div class="chips" id="cmCc" data-label="Cc"></div></div>
+    <div id="cmBccRow" hidden><label>Bcc</label><div class="chips" id="cmBcc" data-label="Bcc"></div></div>
+    <div class="compose-hint" id="cmCount" hidden></div>
+    <div class="compose-hint" id="cmAuto" hidden></div>
     <div><label for="composeSubject">Subject</label><input id="composeSubject"></div>
     <div class="saved-row" id="composeSavedRow" hidden><label for="composeSaved">Saved reply</label><select id="composeSaved"></select></div>
     <div><label for="composeText">Message</label><textarea id="composeText" placeholder="Write your reply"></textarea></div>
     <div class="wh" id="composeWh" hidden></div>
-    <details><summary>Original message (quoted below your reply)</summary><pre id="composeQuote"></pre></details>
+    <div id="cmFilesRow" hidden><label>Files from the original email</label><div class="nm-files" id="cmFiles"></div></div>
+    <details><summary id="composeQuoteTitle">Original message (quoted below your reply)</summary><pre id="composeQuote"></pre></details>
+    <div id="cmQuoteRow" hidden><button class="btn" type="button" id="cmQuoteIn">Put the original in my message</button><div class="compose-hint" id="cmQuoteHint">Adds the sender's email under your words so you can change or cut it. It is then not added a second time.</div></div>
   </form>
   <div class="compose-foot">
     <small>Prototype: nothing is sent. You always press Send yourself; the AI never sends mail.</small>
     <div class="modal-actions"><button class="btn" id="composeCancel">Cancel</button><button class="primary" id="composeSend">Send reply</button></div>
   </div>
+</div>
+
+<div class="compose-scrim" id="dkScrim"></div>
+<div class="compose" id="dkAsk" role="dialog" aria-modal="true" aria-labelledby="dkTitle">
+  <div class="compose-head"><div><h3 id="dkTitle">Save this as a draft?</h3><p id="dkSub"></p></div></div>
+  <div class="compose-body"><p id="dkText"></p></div>
+  <div class="compose-foot"><button class="btn" id="dkKeep" type="button">Keep writing</button><div class="modal-actions"><button class="btn" id="dkDiscard" type="button">Discard</button><button class="primary" id="dkSave" type="button">Save as draft</button></div></div>
 </div>
 
 <div class="compose-scrim wh-scrim" id="whScrim"></div>
@@ -1763,6 +1902,7 @@ html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sti
     <div><label for="nmText">Message</label><textarea id="nmText" maxlength="100000"></textarea></div>
     <div class="wh" id="nmWh" hidden></div>
     <div class="nm-files" id="nmFiles"></div>
+    <div class="compose-hint" id="nmAuto" hidden></div>
   </form>
   <div class="compose-foot">
     <span class="nm-attach"><button class="btn" id="nmAttach" type="button">Attach</button><input type="file" id="nmFile" multiple hidden></span>
@@ -1981,7 +2121,7 @@ let vaultMode=null; // "backend" | "preview"
 const previewVault={initialized:false,unlocked:false,salt:null,verifier:null};
 const expanded=new Set();
 // A refresh keeps you where you are: the page (in the address bar after #/) and which emails are open (this tab only).
-const PAGES=["all","action","tasks","attachments","reviewed","archived","sent","shipping","subscriptions","trips","waiting","messages"];
+const PAGES=["all","action","tasks","attachments","reviewed","archived","sent","drafts","shipping","subscriptions","trips","waiting","messages"];
 let stateReady=false;
 const rowKeyOf=id=>{const m=data.find(x=>String(x.id)===String(id));return m&&m.real?m.real.accountId+":"+m.real.messageId:null};
 function saveOpen(){
@@ -2015,7 +2155,7 @@ function openFromLink(raw,fromAddress,quiet){
   query="";$("search").value="";document.body.classList.remove("msearch");
   filter=isSnoozed(m)?"snoozed":m.status==="inbox"?"all":m.status;
   document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));
-  expanded.add(`row-${m.id}`);paneId=m.id;if(view.layout==="screen")readerOpen=true;
+  expanded.add(`row-${m.id}`);paneId=m.id;if(lay()==="screen")readerOpen=true;
   render();
   const el=document.querySelector(`[data-expand="row-${m.id}"],[data-pick="${m.id}"]`);if(el&&el.scrollIntoView)el.scrollIntoView({block:"center"});
   return true;
@@ -2030,10 +2170,11 @@ if("serviceWorker" in navigator){
 function restorePage(){
   const m=/^#\/(settings|admin)\/([a-z]*)$/.exec(location.hash||""),p=/^#\/([a-z]+)$/.exec(location.hash||"");
   if(p&&PAGES.includes(p[1])){
-    const want=p[1],ok={sent:feat.sent,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,messages:feat.messages}[want];
+    const want=p[1],ok={sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,messages:feat.messages}[want];
     if(want!=="all"&&ok!==false){
       filter=want;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===want));
       if(want==="sent")loadSent();
+      if(want==="drafts")loadDrafts();
       if(want==="messages")openMsgPage();
     }
   }
@@ -2068,11 +2209,13 @@ function loadView(){
   return v;
 }
 let view=loadView(),readerOpen=false,dueOpen=false,calmLaterOpen=true,waitClosedOpen=false,paneId=null,lastPaneIdx=0,lastRowIds=[],lastDeckShown=null,deckDir="next",lastReadId=null;
+// On a phone every email opens full screen (the "screen" layout), whatever layout was chosen for a bigger screen. The choice itself is kept.
+function lay(){return phoneQuery.matches?"screen":view.layout}
 function saveView(){try{localStorage.setItem("enveliq-view",JSON.stringify(view))}catch{}}
 function applyView(){
   readerOpen=false;
   const c=document.body.classList;
-  for(const l of VIEW_ALLOWED.layout)c.toggle("layout-"+l,view.layout===l);
+  for(const l of VIEW_ALLOWED.layout)c.toggle("layout-"+l,lay()===l);
   c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");
   document.querySelectorAll("#viewPanel [data-view]").forEach(b=>{const on=view[b.dataset.view]===b.dataset.val;b.classList.toggle("on",on);b.setAttribute("aria-checked",String(on))});
   const classic=view.layout==="list";
@@ -2080,7 +2223,7 @@ function applyView(){
   $("vOpen").disabled=$("vPeek").disabled=!classic;$("vOpenL").classList.toggle("off",!classic);$("vPeekL").classList.toggle("off",!classic);
 }
 function visible(m){
-  if(m.owner!==currentUser.id||filter==="sent"||filter==="tasks")return false;
+  if(m.owner!==currentUser.id||filter==="sent"||filter==="drafts"||filter==="tasks")return false;
   if(mailboxSel&&m.account!==mailboxSel)return false;
   if(filter==="snoozed"){if(!isSnoozed(m))return false}else if(isSnoozed(m))return false;      // a snoozed email waits out of sight until its time
   if(query&&!(`${m.sender} ${m.address} ${m.subject} ${m.summary} ${m.category}`.toLowerCase().includes(query.toLowerCase())))return false;
@@ -2140,7 +2283,7 @@ document.addEventListener("click",e=>{
   const m=b.dataset.searchOpen?data.find(x=>x.id===+b.dataset.searchOpen&&x.owner===currentUser.id):null;
   filter=m?(isSnoozed(m)?"snoozed":m.status==="inbox"?"all":m.status):b.dataset.searchGo;
   document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));
-  if(m){expanded.add(`row-${m.id}`);paneId=m.id;if(view.layout==="screen")readerOpen=true}
+  if(m){expanded.add(`row-${m.id}`);paneId=m.id;if(lay()==="screen")readerOpen=true}
   render();
   if(m){const el=document.querySelector(`[data-expand="row-${m.id}"],[data-pick="${m.id}"]`);if(el&&el.scrollIntoView)el.scrollIntoView({block:"center"})}
 });
@@ -2325,6 +2468,8 @@ const ICON_FOLD='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" str
 function previewFoldControl(section,open){
   return '<button class="preview-fold-toggle" type="button" data-preview-fold="'+section+'" aria-label="'+(open?'Collapse ':'Expand ')+section+'" aria-expanded="'+open+'">'+(open?'⌃':'⌄')+'</button>';
 }
+const splitNow=()=>document.body.classList.contains("split-read")&&window.matchMedia("(min-width:901px)").matches;          // the side-by-side view, where Coming up is a link to Tasks
+const goTasks=()=>{filter="tasks";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="tasks"));render()};
 function renderToday(){
   const box=$("dueBars"),open=openTasks(),now=open.filter(t=>t.days<=0);
   if(!now.length||filter==="tasks"||filter==="sent"){box.hidden=true;box.replaceChildren();return}
@@ -2335,8 +2480,8 @@ function renderToday(){
   const focusToggle=previewFoldControl(focusKey,previewMobileOpen[focusKey]);
   const urgent=important.length?'<section class="preview-important'+(mobile&&!previewMobileOpen.important?' mobile-folded':'')+'"><div class="thead"><b>Also important today</b><span class="preview-heading-actions"><button class="linkbtn" type="button" data-tasks-go>All tasks</button>'+previewFoldControl("important",previewMobileOpen.important)+'</span></div><div class="preview-fold-content">'+important.slice(0,previewMobileOpen.important?important.length:1).map(t=>taskRow(t,false)).join("")+'</div></section>':"";
   const laterOpen=mobile?previewMobileOpen.later:(calm?calmLaterOpen:dueOpen);
-  const laterRows=laterOpen?rest.slice(0,3):[];
-  const later=rest.length?'<section class="preview-later'+(mobile&&!previewMobileOpen.later?' mobile-folded':'')+'"><div class="preview-later-head"><button class="tmore" type="button" '+(mobile?'data-preview-fold="later" aria-expanded="'+previewMobileOpen.later+'"':(calm?'data-later-toggle':'data-due-toggle')+' aria-expanded="'+laterOpen+'"')+'>'+(calm?"Later":'Coming up · '+rest.length+' more')+'</button><span class="preview-heading-actions">'+(rest.length>3?'<button class="linkbtn" type="button" data-tasks-go>All tasks</button>':'')+(mobile?previewFoldControl("later",previewMobileOpen.later):'<button class="preview-fold-toggle always" type="button" '+(calm?'data-later-toggle':'data-due-toggle')+' aria-expanded="'+laterOpen+'" aria-label="'+(laterOpen?'Hide':'Show')+(calm?' later':' what is coming up')+'">'+ICON_FOLD+'</button>')+'</span></div><div class="preview-later-items preview-fold-content">'+laterRows.map(t=>taskRow(t,false)).join("")+'</div></section>':"";
+  const laterRows=rest.slice(0,laterOpen?3:2);          // the soonest one is always drawn; it is hidden while folded, except in the side-by-side view, which shows it
+  const later=rest.length?'<section class="preview-later'+(mobile&&!previewMobileOpen.later?' mobile-folded':'')+(laterOpen?'':' later-closed')+'"><div class="preview-later-head"><button class="tmore" type="button" '+(mobile?'data-preview-fold="later" aria-expanded="'+previewMobileOpen.later+'"':(calm?'data-later-toggle':'data-due-toggle')+' aria-expanded="'+laterOpen+'"')+'>'+(calm?"Later":'Coming up · '+rest.length+' more')+'</button><span class="preview-heading-actions">'+(rest.length>3?'<button class="linkbtn" type="button" data-tasks-go>All tasks</button>':'')+(mobile?previewFoldControl("later",previewMobileOpen.later):'<button class="preview-fold-toggle always" type="button" '+(calm?'data-later-toggle':'data-due-toggle')+' aria-expanded="'+laterOpen+'" aria-label="'+(laterOpen?'Hide':'Show')+(calm?' later':' what is coming up')+'">'+ICON_FOLD+'</button>')+'</span></div><div class="preview-later-items preview-fold-content">'+laterRows.map(t=>taskRow(t,false)).join("")+'</div></section>':"";
   box.innerHTML='<div class="preview-today-grid"><section class="today-card'+(mobile&&!previewMobileOpen[focusKey]?' mobile-folded':'')+'"><div class="thead"><b>'+title+'</b><span class="preview-heading-actions"><button class="linkbtn" type="button" data-tasks-go>Open Tasks</button>'+focusToggle+'</span></div><div class="preview-fold-content">'+(calm&&shown[0]?previewFocusTask(shown[0]):shown.map(t=>taskRow(t,false)).join(""))+'</div></section>'+urgent+'</div>'+later;
   box.hidden=false;
 }
@@ -2896,7 +3041,7 @@ function render(){
   window.__hidePeek&&window.__hidePeek();
   if(selMode&&(!selected.size||!isPhone()))selMode=false;
   document.body.classList.toggle("selecting",selMode);
-  document.body.classList.toggle("in-sent",filter==="sent");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="sent"?"Sent":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
+  document.body.classList.toggle("in-sent",filter==="sent");document.body.classList.toggle("on-draft",filter==="drafts");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="sent"?"Sent":filter==="drafts"?"Drafts":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
   const mine=userMessages().filter(m=>!m.extra);          // the quiet "All emails" entries are never counted
   if(!realMail)syncDemoTasks();else settleTasks();
   document.body.classList.toggle("on-tasks",filter==="tasks");
@@ -2906,29 +3051,29 @@ function render(){
   document.body.classList.toggle("on-wait",filter==="waiting");
   document.body.classList.toggle("on-msg",filter==="messages");
   saveOpen();syncHash();
-  renderToday();renderShipHome();renderSubHome();renderTripHome();renderWaitHome();renderMsgHome();if(filter==="messages")renderMsgPage();if(filter==="waiting")renderWaitPage();if(filter==="tasks")renderTasksPage();if(filter==="shipping")renderShipPage();if(filter==="subscriptions")renderSubPage();if(filter==="trips")renderTripPage();subNavSync();
+  renderToday();renderShipHome();renderSubHome();renderTripHome();renderWaitHome();renderMsgHome();if(filter==="messages")renderMsgPage();if(filter==="waiting")renderWaitPage();if(filter==="drafts")renderDraftPage();if(filter==="tasks")renderTasksPage();if(filter==="shipping")renderShipPage();if(filter==="subscriptions")renderSubPage();if(filter==="trips")renderTripPage();subNavSync();
   // The number is how many are being followed; it turns blue when one needs you (an order to confirm, a reply nobody has sent).
   {const os=shipOn()?(shipData.orders||[]).filter(o=>!(o.delivered_at&&o.ack)):[];const sb=$("shipBadge");if(sb){sb.textContent=os.length;sb.hidden=!os.length;sb.classList.toggle("hot",os.some(o=>o.needs_confirm||o.unsure))}}
   {const mb=$("msgBadge");if(mb){const n=msgOn()?msgSum.unread:0;mb.textContent=n;mb.hidden=!n;mb.classList.toggle("hot",n>0)}}
   {const ns=waitOn()?(waitData.notes||[]).filter(n=>n.state==="waiting"):[];const wb=$("waitBadge");if(wb){wb.textContent=ns.length;wb.hidden=!ns.length;wb.classList.toggle("hot",ns.some(n=>n.due))}}
   const asleep=mine.filter(isSnoozed);{const sn=$("snoozeNav"),sb=$("snoozeBadge");sn.hidden=!asleep.length&&filter!=="snoozed";sb.textContent=asleep.length;sb.hidden=!asleep.length}
   for(const [id,n] of [["allBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)).length],["actionBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)&&m.action).length],["attachBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)&&fileN(m)).length],["taskBadge",openTasks().length]]){const el=$(id);el.textContent=n;el.hidden=n===0}
-  $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent");
+  $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent"&&filter!=="drafts");
   document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",filter==="all"));{const fb=$("filterBy"),pick=["action","need","high","attachments"].includes(filter)?filter:"";fb.value=pick;fb.classList.toggle("active",!!pick)}
   $("selectedCount").textContent=selected.size;$("bulk").classList.toggle("show",selected.size>1||selMode);$("previewBulk").classList.toggle("show",selected.size>1||selMode);$("previewSelCount").textContent=selected.size;
   $("adminBtn").hidden=!currentUser.is_admin;$("userName").textContent=currentUser.name;$("userRole").textContent=currentUser.is_admin?"Administrator":"User";paintAvatar();previewSyncAccount();
   const inbox=mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)),needN=inbox.filter(m=>m.action||m.priority==="high").length;
   const hr=new Date().getHours(),first=String(currentUser.name||"").trim().split(/\s+/)[0];
   const greeting=(hr<12?"Good morning":hr<18?"Good afternoon":"Good evening")+(first?`, ${first}`:"");
-  const VIEW_NAMES={action:"Needs action",need:"Needs action",high:"Important",attachments:"Attachments",tasks:"Tasks",shipping:"Shipping",waiting:"Waiting for reply",reviewed:"Reviewed",archived:"Archived",subscriptions:"Subscriptions",trips:"Trips",messages:"Messages",sent:"Sent"};
+  const VIEW_NAMES={action:"Needs action",need:"Needs action",high:"Important",attachments:"Attachments",tasks:"Tasks",shipping:"Shipping",waiting:"Waiting for reply",reviewed:"Reviewed",archived:"Archived",subscriptions:"Subscriptions",trips:"Trips",messages:"Messages",sent:"Sent",drafts:"Drafts"};
   document.querySelector(".top-left h2").textContent=VIEW_NAMES[filter]||(filter==="all"&&calmOn()?"One thing at a time":filter==="all"?"My inbox":greeting);
   $("backInbox").hidden=filter==="all";
   $("previewCalmNotice").hidden=!(filter==="all"&&calmOn());
-  $("previewListHeading").hidden=["sent","tasks","shipping","waiting","subscriptions","trips","messages"].includes(filter);
+  $("previewListHeading").hidden=["sent","drafts","tasks","shipping","waiting","subscriptions","trips","messages"].includes(filter);
   previewSyncMenu();
   $("todayDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"});
   $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(calmOn()?(inbox.length?"One thing at a time. Important deadlines stay visible.":"Nothing waiting. Enjoy the quiet."):inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:(document.body.classList.contains("backend")&&!realMail?"No mailbox is connected yet":"All caught up"));
-  if(filter==="sent")$("inboxSubtitle").textContent="Your last 14 days of sent mail";
+  if(filter==="sent")$("inboxSubtitle").textContent="Your last 14 days of sent mail";if(filter==="drafts")$("inboxSubtitle").textContent="Emails you started and have not sent";
 
   previewRenderOverview(inbox,needN);
   const rows=data.filter(visible);
@@ -2940,7 +3085,7 @@ function render(){
   if(cmp)rows.sort(cmp);
   if(impSet.size)rows.sort((a,b)=>isImp(b)-isImp(a));          // a stable sort: important people first, the chosen order kept inside each group
   scheduleWake();
-  {const b=$("expandAll"),can=view.layout==="list"&&!["tasks","sent","shipping","subscriptions","trips","waiting","messages"].includes(filter)&&rows.length>0;
+  {const b=$("expandAll"),can=lay()==="list"&&!["tasks","sent","drafts","shipping","subscriptions","trips","waiting","messages"].includes(filter)&&rows.length>0;
    b.hidden=!can||selected.size>1;if(can){const all=view.rows==="open"||rows.every(m=>expanded.has(`row-${m.id}`));b.textContent=all?"Collapse all":"Expand all";b.dataset.mode=all?"collapse":"expand"}}
 const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5l-7.6 7.6a5 5 0 0 1-7-7l8-8a3.4 3.4 0 0 1 4.8 4.8l-8 8a1.8 1.8 0 0 1-2.5-2.5L14 7.2"/></svg>`,ICON_SNOOZE=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`,ICON_OK=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,ICON_ARCH=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg>`,ICON_BIN=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>`,ICON_REPLY=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 6 6v3"/></svg>`;
   const leaveStyle=m=>{          // an email waiting out its Undo: the line along its bottom runs for the time that is left
@@ -2956,15 +3101,15 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
     const quick=m.kept?"<span></span>":`<span class="qpair"><button class="action reviewed qic" data-id="${esc(m.id)}" data-status="reviewed" aria-label="Mark reviewed" title="Mark reviewed">${ICON_OK}</button><button class="action archive qic" data-id="${esc(m.id)}" data-status="archived" aria-label="Archive" title="Archive">${ICON_ARCH}</button><button class="action trash qic" data-id="${esc(m.id)}" data-status="trashed" aria-label="Bin" title="Bin">${ICON_BIN}</button></span>`;
     const category=m.action?"Needs action":m.priority==="high"?"High priority":"Information";
     const attCount=fileN(m)?`${fileN(m)} ${fileN(m)===1?"file":"files"}`:"None";
-    const replyBtn=(m.replyTo?`<button class="subtle" data-reply="${esc(m.id)}">${ICON_REPLY}Reply</button>`:"")+(m.kept?"":isSnoozed(m)?`<button class="subtle" data-unsnooze="${esc(m.id)}">${ICON_SNOOZE}Wake now</button>`:`<button class="subtle" data-snooze="${esc(m.id)}" aria-haspopup="menu">${ICON_SNOOZE}Snooze</button>`)||"<span></span>";
+    const replyBtn=(m.replyTo?`<button class="subtle" data-reply="${esc(m.id)}">${ICON_REPLY}Reply</button>`:"")+moreReplyBtns(m)+(m.kept?"":isSnoozed(m)?`<button class="subtle" data-unsnooze="${esc(m.id)}">${ICON_SNOOZE}Wake now</button>`:`<button class="subtle" data-snooze="${esc(m.id)}" aria-haspopup="menu">${ICON_SNOOZE}Snooze</button>`)||"<span></span>";
     const detail=m.kept
-      ?`<div class="qdetail"><div class="qfrom"><span class="addr">&lt;${esc(m.address)}&gt;</span></div><div class="qsummary">${esc(m.summary)}</div>${taskHtml}${attachmentsBlock(m)}<div class="kept-note">${m.status==="archived"?"Archived":"Marked reviewed"} in your mailbox. Kept here until ${esc(m.keptUntil)}.${m.replied?` You replied ${esc(m.repliedAt||"just now")}.`:""}</div><div class="actions">${m.replyTo?`<button class="action reply" data-reply="${esc(m.id)}">↩ Reply</button>`:""}<button class="action trash" data-id="${esc(m.id)}" data-status="expired">Remove from this list</button></div></div>`
+      ?`<div class="qdetail"><div class="qfrom"><span class="addr">&lt;${esc(m.address)}&gt;</span></div><div class="qsummary">${esc(m.summary)}</div>${taskHtml}${attachmentsBlock(m)}<div class="kept-note">${m.status==="archived"?"Archived":"Marked reviewed"} in your mailbox. Kept here until ${esc(m.keptUntil)}.${m.replied?` You replied ${esc(m.repliedAt||"just now")}.`:""}</div><div class="actions">${m.replyTo?`<button class="action reply" data-reply="${esc(m.id)}">↩ Reply</button>`:""}${moreReplyBtns(m,"action reply")}<button class="action trash" data-id="${esc(m.id)}" data-status="expired">Remove from this list</button></div></div>`
       :`<div class="qdetail split"><div class="qmainc">${scamHtml(m.scam)}${m.ungen&&m.real&&feat.all_mail&&allMail?genBlock(m):`<div class="qsummary">${esc(m.summary)}</div>`}${attachmentsBlock(m)}${taskHtml}<div class="qfill"></div><div class="qfoot"><span class="qleft">${replyBtn}${m.kept||!m.address?"":`<button class="subtle" data-important="${esc(m.id)}" aria-pressed="${isImp(m)}">&#9733; ${isImp(m)?"Not important":"Important person"}</button>`}${m.kept||!m.address||!realMail||isImp(m)?"":`<button class="subtle" data-rule="${esc(m.id)}">Always archive these</button>`}${unsubHtml(m.unsub,!!m.scam)}</span><button class="linkbtn view-email" data-open-email="${esc(m.id)}">View original email</button></div></div>
         <aside class="qside" aria-label="Email details"><div class="qkv"><span>From</span><span class="addr">${esc(m.address)}</span></div><div class="qkv"><span>Received</span><span>${esc(m.time)}</span></div>${m.replied?`<div class="qkv replied-kv"><span>Replied</span><span>${esc(m.repliedAt||"Just now")}</span></div>`:""}<div class="qkv"><span>Category</span><span>${esc(category)}</span></div><div class="qkv"><span>Attachments</span><span>${esc(attCount)}</span></div>
         <div class="qbtns"><button class="action reviewed" data-id="${esc(m.id)}" data-status="reviewed">${ICON_OK}Reviewed</button><div class="two"><button class="action archive" data-id="${esc(m.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(m.id)}" data-status="trashed">${ICON_BIN}Bin</button></div></div></aside></div>`;
     if(mode==="detail")return detail;
     const tog=mode==="pane"?`<button class="qtoggle" data-pick="${esc(m.id)}" aria-label="Show this email">Show email</button>`:view.rows==="open"?"":`<button class="qtoggle" data-expand="row-${esc(m.id)}" aria-expanded="${esc(open)}" aria-label="${open?"Hide":"Show"} the full email summary and actions">${open?"Hide":"Show"} details</button>`;
-    return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(m._pending?"leaving to-"+m._pending:"")} ${esc(mode==="pane"&&view.layout!=="screen"&&m.id===paneId?"current":"")}"${leaveStyle(m)}><div class="qrow">
+    return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(m._pending?"leaving to-"+m._pending:"")} ${esc(mode==="pane"&&lay()!=="screen"&&m.id===paneId?"current":"")}"${leaveStyle(m)}><div class="qrow">
       ${lead}
       <div class="sender">${flag}${esc(m.sender)}</div>
       <div class="qmain">${isImp(m)?'<span class="imp-pill" title="You marked this person as important">&#9733; Important</span>':""}${m.scam?'<span class="scam-pill" title="Something about this email looks odd. Open it to see what.">Be careful</span>':""}<span class="subject">${esc(m.subject)}</span></div>
@@ -2973,23 +3118,23 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
       ${tog}
     </div>${open?detail:""}</article>`;
   };
-  let listHtml;
+  let listHtml,dockHtml="";
   const prevScroll=document.getElementById("paneList"),prevTop=prevScroll?prevScroll.scrollTop:0,prevRead=document.querySelector(".reading"),prevReadTop=prevRead?prevRead.scrollTop:0;
   lastRowIds=rows.map(m=>m.id);
   if(!rows.length){listHtml=`<div class="empty">${query&&String(query).trim().length>=2&&filter!=="snoozed"?"Nothing in this view matches your search.":filter==="snoozed"?"Nothing is snoozed. Use Snooze on an email to set it aside until you need it.":realMail&&!data.some(m=>m.status==="inbox")?"You're all caught up. Press <strong>Sync mail</strong> to look for new unread email.":document.body.classList.contains("backend")&&!realMail?`Your mail will appear here once a mailbox is connected. <a href="/welcome">Set up your mailbox</a>`:`Nothing in this view for ${esc(currentUser.name)}.`}</div>`}
-  else if(view.layout==="list"){listHtml=`<div class="quiet-list">${rows.map(m=>quiet(m)).join("")}</div>`}
+  else if(lay()==="list"){listHtml=`<div class="quiet-list">${rows.map(m=>quiet(m)).join("")}</div>`}
   else{
     let idx=rows.findIndex(m=>m.id===paneId);
     if(idx<0)idx=Math.min(Math.max(lastPaneIdx,0),rows.length-1);
     const cur=rows[idx];paneId=cur.id;lastPaneIdx=idx;
-    if(view.layout==="screen"){
+    if(lay()==="screen"){
       listHtml=`<div class="quiet-list">${rows.map(m=>quiet(m,"pane")).join("")}</div>`;
       if(readerOpen){
         const prev=rows[idx-1],next=rows[idx+1];
         const act=cur.kept?"":`<div class="ract"><button class="action reviewed" data-id="${esc(cur.id)}" data-status="reviewed">${ICON_OK}Reviewed</button><button class="action archive" data-id="${esc(cur.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(cur.id)}" data-status="trashed">${ICON_BIN}Bin</button></div>`;
-        listHtml+=`<div class="reader" role="dialog" aria-modal="true" aria-label="${esc(cur.subject)}"><div class="rtop"><button class="rbtn" type="button" data-reader-close aria-label="Back to the list">‹</button><b>${idx+1} of ${rows.length}</b><span class="sp"></span><button class="rbtn" type="button" ${prev?`data-pick="${esc(prev.id)}"`:"disabled"} aria-label="Previous email">↑</button><button class="rbtn" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">↓</button></div><div class="rbody"><div class="rfrom"><span class="dcav" aria-hidden="true">${esc(String(cur.sender||"?").trim().charAt(0).toUpperCase())}</span><div><div class="dcfrom">${esc(cur.sender)}</div><div class="dcsub">${esc(cur.address)} · ${esc(cur.time)}</div></div></div><h3>${esc(cur.subject)}</h3>${quiet(cur,"detail")}</div>${act}</div>`;
+        listHtml+=`<div class="reader" role="dialog" aria-modal="true" aria-label="${esc(cur.subject)}"><div class="rtop">${isPhone()?`<button class="rbtn rclose" type="button" data-reader-close aria-label="Close this email">✕ Close</button>`:`<button class="rbtn" type="button" data-reader-close aria-label="Back to the list">‹</button><b>${idx+1} of ${rows.length}</b><span class="sp"></span><button class="rbtn" type="button" ${prev?`data-pick="${esc(prev.id)}"`:"disabled"} aria-label="Previous email">↑</button><button class="rbtn" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">↓</button>`}</div><div class="rbody"><div class="rfrom"><span class="dcav" aria-hidden="true">${esc(String(cur.sender||"?").trim().charAt(0).toUpperCase())}</span><div><div class="dcfrom">${esc(cur.sender)}</div><div class="dcsub">${esc(cur.address)} · ${esc(cur.time)}</div></div></div><h3>${esc(cur.subject)}</h3>${quiet(cur,"detail")}</div>${act}</div>`;
       }
-    }else if(view.layout==="deck"){
+    }else if(lay()==="deck"){
       const enter=lastDeckShown!==cur.id?` enter-${deckDir}`:"";lastDeckShown=cur.id;
       const prev=rows[idx-1],next=rows[idx+1],rest=Math.min(2,rows.length-idx-1);
       const dots=rows.length<=24?rows.map((m,i)=>`<i class="${i===idx?"on":""}"></i>`).join(""):"";
@@ -3000,11 +3145,18 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
         <button class="decknav next" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">›</button></div>
         ${act}<div class="deckdots" aria-hidden="true">${dots}</div></div>`;
     }else{
-      listHtml=`<div class="panes ${esc(view.layout)}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div><section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div></header>${quiet(cur,"detail")}</section></div>`;
+      const readingHtml=`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div></header>${quiet(cur,"detail")}</section>`;
+      if(lay()==="right"&&!["sent","drafts","tasks","shipping","waiting","subscriptions","trips","messages"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
+        dockHtml=readingHtml;
+        listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div></div>`;
+      }else listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div>${readingHtml}</div>`;
     }
   }
+  const leftBox=document.querySelector(".main>.content"),leftTop=leftBox?leftBox.scrollTop:0;
   $("list").innerHTML=searchMore(rows)+listHtml;
-  document.body.classList.toggle("reader-open",view.layout==="screen"&&readerOpen&&rows.length>0);
+  $("readDock").innerHTML=dockHtml;document.body.classList.toggle("split-read",!!dockHtml);
+  if(leftBox&&dockHtml){leftBox.scrollTop=leftTop;const c=document.querySelector("#paneList .current");if(c){const a=c.getBoundingClientRect(),b=leftBox.getBoundingClientRect(),hh=(document.getElementById("previewListHeading")||{offsetHeight:0}).offsetHeight;if(a.top<b.top+hh)leftBox.scrollTop+=a.top-b.top-hh-6;else if(a.bottom>b.bottom)leftBox.scrollTop+=a.bottom-b.bottom+6}}
+  document.body.classList.toggle("reader-open",lay()==="screen"&&readerOpen&&rows.length>0);
   if(!rows.length)readerOpen=false;
   syncMobileBar(inbox.length,needN);
   const pl=document.getElementById("paneList");
@@ -3081,7 +3233,7 @@ function openEmailViewer(id){
   $("attachmentViewer").scrollTop=0;
   $("attachmentModalSummary").textContent=`Summary: ${m.summary}`;
   $("viewerNote").textContent="Enveliq keeps only the encrypted summary. The full email stays in your mailbox and is shown here without saving it.";
-  $("viewerActions").innerHTML=unsubHtml(m.unsub)+`<button class="primary" data-reply="${esc(m.id)}">↩ Reply</button>`;
+  $("viewerActions").innerHTML=unsubHtml(m.unsub)+moreReplyBtns(m,"btn")+`<button class="primary" data-reply="${esc(m.id)}">↩ Reply</button>`;
   $("attachmentModal").classList.add("open");
   $("attachmentScrim").classList.add("show");viewerPush();
 }
@@ -3101,6 +3253,13 @@ let composing=null;
 const isNoReply=addr=>/(^|[._-])(no-?reply|do-?not-?reply|donotreply|notifications?)@/i.test(addr||"");
 function accountFor(m){
   return accounts.find(a=>a.owner===currentUser.id&&a.name===m.account)||accounts.find(a=>a.owner===currentUser.id);
+}
+// Reply all shows only when the email has people on Cc. Forward needs a real mailbox (the original is fetched when you forward it).
+const ICON_FWD=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5M20 9H10a6 6 0 0 0-6 6v3"/></svg>`;
+function moreReplyBtns(m,cls){
+  if(!m)return "";
+  const c=cls||"subtle";
+  return (m.replyTo&&m.replyCc&&m.replyCc.length?`<button class="${c}" data-reply-all="${esc(m.id)}">Reply all</button>`:"")+(m.real&&realMail?`<button class="${c}" data-forward="${esc(m.id)}">${ICON_FWD}Forward</button>`:"");
 }
 function planReply(m){
   const acct=accountFor(m);
@@ -3122,25 +3281,91 @@ function planReply(m){
     :`Replying only to the sender.`;
   return {acct,identities,to,from,fromHint,fromKind,toHint,noReply:isNoReply(to)};
 }
-function openComposer(id){
+const cm={fields:null,files:[],removed:0};
+function cmFields(){if(!cm.fields)cm.fields={to:chipField($("cmTo"),cmCount),cc:chipField($("cmCc"),cmCount),bcc:chipField($("cmBcc"),cmCount)};return cm.fields}
+const cmPeople=()=>{const f=cmFields(),seen=new Set(),n=[];for(const l of [f.to.items,f.cc.items,f.bcc.items])for(const p of l){const k=p.address.toLowerCase();if(!seen.has(k)){seen.add(k);n.push(p)}}return n};
+const peopleText=list=>list.length<2?(list[0]||""):`${list[0]} and ${list.length-1} ${list.length===2?"other":"others"}`;
+function cmCount(){
+  const el=$("cmCount");if(!el||!composing)return;
+  const n=cmPeople().length;
+  el.hidden=!(composing.mode!=="reply"&&n>1)&&!(n>2);
+  el.textContent=`This goes to ${n} people.`;
+}
+function paintCmFiles(){
+  $("cmFilesRow").hidden=!cm.files.length;
+  $("cmFiles").replaceChildren(...cm.files.map((f,i)=>{
+    const sp=document.createElement("span");sp.className="nm-file";
+    const b=document.createElement("b");b.textContent=f.name;const z=document.createElement("span");z.textContent=kb(f.size);
+    const x=document.createElement("button");x.type="button";x.textContent="×";x.setAttribute("aria-label","Leave out "+f.name);x.onclick=()=>{cm.files.splice(i,1);cm.removed++;paintCmFiles()};
+    sp.append(b,z,x);return sp;
+  }));
+}
+// mode: "reply", "reply_all" or "forward". pre (after Undo): the people it was going to.
+function openComposer(id,mode,pre){
+  mode=mode||"reply";
   const m=data.find(x=>x.id===Number(id)&&x.owner===currentUser.id);
   if(!m){toast("This email is no longer available");return}
   const plan=planReply(m);
-  composing={m,plan};
-  $("composeTitle").textContent=`Reply to ${m.sender}`;
+  if(mode==="reply_all"&&!(m.replyCc&&m.replyCc.length))mode="reply";
+  if(mode==="forward"&&!(m.real&&realMail))mode="reply";
+  composing={m,plan,mode,draftId:(pre&&pre.draftId)||null};
+  const f=cmFields();f.to.clear();f.cc.clear();f.bcc.clear();cm.files=[];cm.removed=0;paintCmFiles();
+  const word=mode==="forward"?"Forward":mode==="reply_all"?"Reply all to":"Reply to";
+  $("composeTitle").textContent=mode==="forward"?`Forward: ${m.subject}`:`${word} ${m.sender}`;
   $("composeContext").textContent=`${m.subject} · ${plan.acct?.name||m.account}`;
   $("composeFrom").innerHTML=plan.identities.map(a=>`<option value="${esc(a)}" ${a===plan.from?"selected":""}>${esc(a)}</option>`).join("");
-  const fh=$("composeFromHint");fh.textContent=plan.fromHint;fh.className="compose-hint"+(plan.fromKind==="alias"?" alias":plan.fromKind==="fallback"&&m.deliveredTo?" warn":"");
-  $("composeTo").value=plan.to;
+  const fh=$("composeFromHint");fh.textContent=mode==="forward"?plan.fromHint.replace(/Your reply/g,"Your forward").replace(/your reply/g,"your forward"):plan.fromHint;fh.className="compose-hint"+(plan.fromKind==="alias"?" alias":plan.fromKind==="fallback"&&m.deliveredTo?" warn":"");
   const th=$("composeToHint");
-  th.textContent=plan.noReply?`${plan.toHint} This looks like an address that doesn't accept replies, so your message may not be read.`:plan.toHint;
-  th.className="compose-hint"+(plan.noReply?" warn":m.viaAlias?" alias":"");
-  $("composeSubject").value=/^re:/i.test(m.subject)?m.subject:`Re: ${m.subject}`;
+  if(mode==="forward"){
+    th.textContent="Type a name or an address, then press Enter or Tab.";th.className="compose-hint";
+  }else{
+    th.textContent=mode==="reply_all"?"Goes to the sender, the other people the email was sent to, and everyone on Cc. You can take anyone off.":(plan.noReply?`${plan.toHint} This looks like an address that doesn't accept replies, so your message may not be read.`:plan.toHint);
+    th.className="compose-hint"+(mode==="reply"&&plan.noReply?" warn":mode==="reply"&&m.viaAlias?" alias":"");
+  }
+  if(pre){f.to.set(pre.to);f.cc.set(pre.cc);f.bcc.set(pre.bcc)}
+  else if(mode==="forward"){}
+  else{f.to.set([plan.to,...(mode==="reply_all"?m.replyAlsoTo||[]:[])]);if(mode==="reply_all")f.cc.set(m.replyCc)}
+  $("cmCcRow").hidden=!f.cc.items.length;$("cmBccRow").hidden=!f.bcc.items.length;
+  $("composeSubject").value=mode==="forward"?(/^fwd?:/i.test(m.subject)?m.subject:`Fwd: ${m.subject}`):(/^re:/i.test(m.subject)?m.subject:`Re: ${m.subject}`);
   $("composeText").value=withSig("");whReset("reply");paintSaved("composeSaved","composeSavedRow");
-  $("composeQuote").textContent=m.real?`On ${m.date||m.time}, ${m.sender} <${m.address}> wrote. Open "View email" to read the original.`:`On ${m.date||m.time}, ${m.sender} <${m.address}> wrote:\n`+(m.body||[m.summary]).map(par=>par.split("\n").map(l=>"> "+l).join("\n")).join("\n>\n");
+  if(pre&&pre.body!=null)$("composeText").value=pre.body;
+  if(pre&&pre.from&&plan.identities.includes(pre.from))$("composeFrom").value=pre.from;
+  $("composeText").placeholder=mode==="forward"?"Add a note (optional)":"Write your reply";
+  $("composeSend").textContent=mode==="forward"?"Send forward":"Send reply";
+  $("composeQuoteTitle").textContent=mode==="forward"?"The original email (added below your note when you send)":m.real?"The original email (added below your reply when you send)":"Original message (quoted below your reply)";
+  $("cmQuoteRow").hidden=mode==="forward"||!m.real;$("cmQuoteIn").disabled=false;
+  $("composeQuote").textContent=mode==="forward"?`The whole email from ${m.sender} <${m.address}> is added under your note when you press Send. It is fetched from your mailbox then and is not stored.`:m.real?`The whole email from ${m.sender} <${m.address}> is added under your reply when you press Send, so they always see what you are answering. It is fetched from your mailbox then and is not stored. Press "Put the original in my message" to add it to your message instead, where you can change it.`:`On ${m.date||m.time}, ${m.sender} <${m.address}> wrote:\n`+(m.body||[m.summary]).map(par=>par.split("\n").map(l=>"> "+l).join("\n")).join("\n>\n");
   closeAttachmentViewer();
+  cmCount();
+  composing.base=composeSnap();composing.saved=null;{const n=$("cmAuto");n.hidden=true;n.textContent=""}
   $("compose").classList.add("open");$("composeScrim").classList.add("show");
-  setTimeout(()=>{const t=$("composeText");t.focus();t.setSelectionRange(0,0)},0);
+  if(mode==="forward"){
+    setTimeout(()=>f.to.input.focus(),0);
+    const mine=composing;
+    secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/original`,{method:"GET",headers:{}})
+      .then(o=>{if(composing!==mine)return;cm.files=(o.attachments||[]).filter(a=>!a.inline).map(a=>({index:a.index,name:a.filename,size:a.size_bytes||0}));paintCmFiles()})
+      .catch(()=>{});
+  }else setTimeout(()=>{const t=$("composeText");t.focus();t.setSelectionRange(0,0)},0);
+}
+// The original email can sit inside the person's own message ("On <date>, <who> wrote:" then lines starting with ">"). When it does, Send does not add it a second time.
+const hasInlineQuote=t=>/^.{1,300} wrote:\n>/m.test(String(t||"").replace(/\r\n/g,"\n"));
+function quoteBlock(o){
+  const f=o.from||{},who=(f.name?`${f.name} <${f.address}>`:f.address)||"the sender";
+  const head=o.date?`On ${o.date}, ${who} wrote:`:`${who} wrote:`;
+  return head+"\n"+String(o.text||"").replace(/\r\n/g,"\n").replace(/^\n+|\n+$/g,"").split("\n").map(l=>l?"> "+l:">").join("\n");
+}
+async function quoteInline(){
+  if(!composing||composing.mode==="forward"||!composing.m.real)return;
+  const mine=composing,m=mine.m,btn=$("cmQuoteIn"),t=$("composeText");
+  if(hasInlineQuote(t.value)){toast("The original is already in your message");return}
+  btn.disabled=true;
+  try{
+    const o=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/original`,{method:"GET",headers:{}});
+    if(composing!==mine)return;
+    t.value=t.value.replace(/\s+$/,"")+"\n\n"+quoteBlock(o);
+    $("cmQuoteHint").textContent="The original is now in your message. Change or cut it as you like. It will not be added a second time.";
+    t.focus();t.setSelectionRange(0,0);t.scrollTop=0;
+  }catch(e){if(composing===mine){btn.disabled=false;toast("Could not get the original email. Try again.")}}
 }
 function closeComposer(){
   $("compose").classList.remove("open");$("composeScrim").classList.remove("show");composing=null;
@@ -3148,14 +3373,21 @@ function closeComposer(){
 let sendingReply=false,whPassed=false;
 function sendReply(){
   if(!composing)return;
+  const {m,plan,mode}=composing;
+  const f=cmFields();
+  if(!f.to.commit()||!f.cc.commit()||!f.bcc.commit())return;
   const text=$("composeText").value.trim();
-  if(isBare(text)){toast("Write your reply first");$("composeText").focus();return}
-  const {m,plan}=composing;
+  if(mode!=="forward"&&isBare(text)){toast("Write your reply first");$("composeText").focus();return}
   const from=$("composeFrom").value;
   if(!plan.identities.includes(from)){toast("Choose one of your sending addresses");return}
+  const people=cmPeople();
+  if(!people.length){toast("Add at least one person to send this to");f.to.input.focus();return}
+  if(people.length>50){toast("A message can go to at most 50 people");return}
+  const toList=f.to.items.map(p=>p.address),ccList=f.cc.items.map(p=>p.address),bccList=f.bcc.items.map(p=>p.address);
+  const who=peopleText(people.map(p=>p.address));
   const acct=plan.acct;
   if(m.real&&!sendingReply&&!whPassed&&whNeedsCheck("reply")){
-    whConfirm("reply",plan.to,text).then(ok=>{if(ok){whPassed=true;try{sendReply()}finally{whPassed=false}}});
+    whConfirm("reply",who,text).then(ok=>{if(ok){whPassed=true;try{sendReply()}finally{whPassed=false}}});
     return;
   }
   if(m.real){
@@ -3163,11 +3395,20 @@ function sendReply(){
     sendingReply=true;
     const btn=$("composeSend"),label=btn.textContent;
     btn.disabled=true;btn.textContent="Sending…";btn.classList.add("busy");$("composeText").readOnly=true;
-    secureBackendRequest(`/api/v1/accounts/${m.real.accountId}/messages/${m.real.messageId}/reply`,{method:"POST",body:JSON.stringify({body:text,from_address:from})})
-      .then(r=>{
-        closeComposer();
-        if(r.queued){noteQueuedReply(r,m);return}
-        m.replied=true;m.repliedAt=realTime(Date.now()/1000);render();toast(`✓ Reply sent from ${r.from} to ${plan.to}`,4500);
+    const base=`/api/v1/accounts/${m.real.accountId}/messages/${m.real.messageId}`;
+    // A plain reply with nothing changed lets the server use the sender's address exactly as it was received.
+    const inlineQuote=hasInlineQuote(text);
+    const plainDefault=!inlineQuote&&mode==="reply"&&!ccList.length&&!bccList.length&&toList.length===1&&toList[0]===plan.to;
+    const req=mode==="forward"
+      ?secureBackendRequest(base+"/forward",{method:"POST",body:JSON.stringify({body:text,from_address:from,to:toList,cc:ccList,bcc:bccList,keep_files:cm.files.map(x=>x.index)})})
+      :secureBackendRequest(base+"/reply",{method:"POST",body:JSON.stringify(plainDefault?{body:text,from_address:from}:{body:text,from_address:from,kind:mode,to:toList,cc:ccList,bcc:bccList,add_original:!inlineQuote})});
+    const tgt=composing;
+    req.then(async r=>{
+        await settleAuto();const did=tgt.draftId;
+        closeComposer();if(did)deleteDraftQuiet(did);
+        if(r.queued){noteQueuedReply(r,m,mode);return}
+        if(mode!=="forward"){m.replied=true;m.repliedAt=realTime(Date.now()/1000)}
+        render();toast(`✓ ${mode==="forward"?"Forward":"Reply"} sent from ${r.from} to ${who}`,4500);
       })
       .catch(er=>toast(er.message,6000))
       .finally(()=>{sendingReply=false;btn.disabled=false;btn.textContent=label;btn.classList.remove("busy");$("composeText").readOnly=false});
@@ -3175,10 +3416,12 @@ function sendReply(){
   }
   closeComposer();
   // Reply detection: with "Complete linked task after reply" on, the item resolves.
-  if(acct?.settings?.actions?.completeTaskOnReply!==false){m.status="reviewed";m.attachments=[];m.attachmentsPurged=true;selected.delete(m.id)}
-  m.replied=true;
+  if(mode!=="forward"){
+    if(acct?.settings?.actions?.completeTaskOnReply!==false){m.status="reviewed";m.attachments=[];m.attachmentsPurged=true;selected.delete(m.id)}
+    m.replied=true;
+  }
   render();
-  toast(`Reply sent from ${from} to ${plan.to} (prototype: nothing was sent)`);
+  toast(`${mode==="forward"?"Forward":"Reply"} sent from ${from} to ${who} (prototype: nothing was sent)`);
 }
 
 // On a phone the Back button should close a window, not leave Enveliq: opening one adds a history step, closing removes it.
@@ -4189,19 +4432,21 @@ let selAnchor=null,selShift=false;   // the email ticked last, and whether Shift
 document.addEventListener("click",e=>{if(e.target.matches&&e.target.matches("[data-select]"))selShift=e.shiftKey},true);
 document.addEventListener("keydown",e=>{const h=e.target&&e.target.closest&&e.target.closest(".ad-head");if(h&&e.target===h&&(e.key==="Enter"||e.key===" ")&&!e.isComposing){e.preventDefault();h.click()}});          // an attachment row opens from the keyboard
 document.addEventListener("click",e=>{
-  const due=e.target.closest("[data-due-open]");if(due){const id=due.dataset.dueOpen;filter="all";query="";$("search").value="";expanded.add(`row-${id}`);{const dm=data.find(x=>String(x.id)===id);if(dm){paneId=dm.id;if(view.layout==="screen")readerOpen=true}}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();const el=document.querySelector(`[data-expand="row-${CSS.escape(id)}"]`);el&&el.closest("article").scrollIntoView({block:"nearest",behavior:"smooth"});return}
-  const qrow=e.target.closest(".qrow");if(qrow&&!e.target.closest("button,input,a,label,select")){if(view.layout==="list"&&view.rows==="open")return;const t=qrow.querySelector("[data-expand],[data-pick]");if(t){t.click();return}}
+  const due=e.target.closest("[data-due-open]");if(due){const id=due.dataset.dueOpen;filter="all";query="";$("search").value="";expanded.add(`row-${id}`);{const dm=data.find(x=>String(x.id)===id);if(dm){paneId=dm.id;if(lay()==="screen")readerOpen=true}}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();const el=document.querySelector(`[data-expand="row-${CSS.escape(id)}"]`);el&&el.closest("article").scrollIntoView({block:"nearest",behavior:"smooth"});return}
+  const qrow=e.target.closest(".qrow");if(qrow&&!e.target.closest("button,input,a,label,select")){if(lay()==="list"&&view.rows==="open")return;const t=qrow.querySelector("[data-expand],[data-pick]");if(t){t.click();return}}
   if(e.target.closest("[data-reader-close]")){readerOpen=false;render();return}
-  const dt=e.target.closest("[data-due-toggle]");if(dt){dueOpen=!dueOpen;render();return}
+  const dt=e.target.closest("[data-due-toggle]");if(dt){if(splitNow()){goTasks();return}dueOpen=!dueOpen;render();return}
   const wct=e.target.closest("[data-wait-closed-toggle]");if(wct){waitClosedOpen=!waitClosedOpen;renderWaitPage();return}
-  const lt=e.target.closest("[data-later-toggle]");if(lt){calmLaterOpen=!calmLaterOpen;render();return}
-  const pk=e.target.closest("[data-pick]");if(pk){if(view.layout==="screen")readerOpen=true;const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;render();return}
+  const lt=e.target.closest("[data-later-toggle]");if(lt){if(splitNow()){goTasks();return}calmLaterOpen=!calmLaterOpen;render();return}
+  const pk=e.target.closest("[data-pick]");if(pk){if(lay()==="screen")readerOpen=true;const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;render();return}
   const retryAtt=e.target.closest("[data-att-retry]");if(retryAtt){const m=data.find(x=>x.id===+retryAtt.dataset.attRetry&&x.owner===currentUser.id);if(m&&m.real){retryAtt.disabled=true;secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/attachments/summarise`,{method:"POST",body:"{}"}).then(()=>{toast("Reading the files again. This can take a minute.",4000);m.attachments.forEach(a=>{if(a.state==="failed")a.state="working"});render()}).catch(er=>{retryAtt.disabled=false;toast(er.message,6000)})}return}
   const openAtt=e.target.closest("[data-open-attachment]");if(openAtt){openAttachmentViewer(openAtt.dataset.openAttachment);return}
   const openEmail=e.target.closest("[data-open-email]");if(openEmail){openEmailViewer(openEmail.dataset.openEmail);return}
   const ruleBtn=e.target.closest("[data-rule]");if(ruleBtn){const m=data.find(x=>x.id===Number(ruleBtn.dataset.rule)&&x.owner===currentUser.id);if(m)addRuleFor(m,ruleBtn);return}
   const impBtn=e.target.closest("[data-important]");if(impBtn){const m=data.find(x=>x.id===Number(impBtn.dataset.important)&&x.owner===currentUser.id);if(m)setImportant(m,!isImp(m));return}
   const replyBtn=e.target.closest("[data-reply]");if(replyBtn){openComposer(replyBtn.dataset.reply);return}
+  const replyAllBtn=e.target.closest("[data-reply-all]");if(replyAllBtn){openComposer(replyAllBtn.dataset.replyAll,"reply_all");return}
+  const fwdBtn=e.target.closest("[data-forward]");if(fwdBtn){openComposer(fwdBtn.dataset.forward,"forward");return}
   if(e.target.closest("#expandAll")){
     const b=$("expandAll");
     if(b.dataset.mode==="collapse"){for(const k of [...expanded])if(k.startsWith("row-"))expanded.delete(k);if(view.rows==="open"){view.rows="collapsed";saveView();applyView()}}
@@ -4223,7 +4468,7 @@ document.addEventListener("click",e=>{
      if(t.matches("[data-msg-unsend]")&&msgS.cur){msgReq(`/threads/${encodeURIComponent(msgS.cur.id)}/messages/${encodeURIComponent(t.dataset.msgUnsend)}`,"DELETE").then(async()=>{await loadMsgs();render()}).catch(er=>toast(er.message,5000));return}
    }}
   if(e.target.closest("[data-back-inbox]")){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();window.scrollTo({top:0});return}
-  const n=e.target.closest("[data-filter]");if(n){filter=n.dataset.filter;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="messages")openMsgPage();return}
+  const n=e.target.closest("[data-filter]");if(n){filter=n.dataset.filter;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="drafts")loadDrafts();if(filter==="messages")openMsgPage();return}
   const c=e.target.closest("[data-chip]");if(c){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();return}
   const wa=e.target.closest("[data-wait]");if(wa){waitAct(wa.dataset.waitId,wa.dataset.wait);return}
   const wn=e.target.closest("[data-wait-nudge]");if(wn){waitNudge(wn.dataset.waitNudge);return}
@@ -4428,7 +4673,7 @@ $("search").addEventListener("input",e=>{query=e.target.value;render()});
   }
   document.addEventListener("mouseover",e=>{
     const t=e.target.closest&&e.target.closest(".qrow .sender, .qrow .qmain");
-    if(!t||view.layout!=="list"||!view.peek){if(cur)hide();return}
+    if(!t||lay()!=="list"||!view.peek){if(cur)hide();return}
     const row=t.closest(".qrow");if(row===cur)return;
     hide();cur=row;timer=setTimeout(()=>show(row),window.__peekDelay);
   });
@@ -4474,7 +4719,7 @@ applySidebar();
 
 const moreItems=document.getElementById("moreItems"),moreToggle=document.getElementById("moreToggle");
 const sideNav=document.querySelector(".side-nav");
-for(const el of [document.getElementById("snoozeNav"),sideNav.querySelector('[data-filter="reviewed"]'),sideNav.querySelector('[data-filter="archived"]'),document.getElementById("sentNav"),document.getElementById("subNav"),document.getElementById("tripNav"),document.getElementById("msgNav")])if(el)moreItems.append(el);
+for(const el of [document.getElementById("snoozeNav"),sideNav.querySelector('[data-filter="reviewed"]'),sideNav.querySelector('[data-filter="archived"]'),document.getElementById("sentNav"),document.getElementById("draftNav"),document.getElementById("subNav"),document.getElementById("tripNav"),document.getElementById("msgNav")])if(el)moreItems.append(el);
 for(const el of [document.getElementById("shipNav"),document.getElementById("waitNav"),sideNav.querySelector('[data-filter="attachments"]'),document.getElementById("moreNav"),document.getElementById("sideSettings")])if(el)sideNav.append(el);
 let moreChoice;try{moreChoice=localStorage.getItem("enveliq-more-open")}catch{}
 function previewSyncMore(){
@@ -4597,7 +4842,7 @@ async function loadRealMail(me){
         subject:r.subject,time:realTime(r.received_at),date:r.received_at?new Date(r.received_at*1000).toLocaleString():"",received:r.received_at||0,
         summary:r.summary,priority:r.priority||"normal",category:r.category||"Email",action:!!r.action_required,status:r.state==="reviewed"||r.state==="archived"?r.state:"inbox",kept:r.state==="reviewed"||r.state==="archived",keptUntil:r.resolved_at?new Date((r.resolved_at+realPrefs.keep_days*86400)*1000).toLocaleDateString(undefined,{day:"numeric",month:"short"}):"",
         task:r.suggested_task&&r.suggested_task.title?{title:r.suggested_task.title,due:r.suggested_task.due||"",detail:r.suggested_task.detail||""}:null,attachments:(r.attachment_summaries||[]).map(a=>({name:a.filename,mime:a.mime_type||"",size:fmtBytes(a.size_bytes),pages:a.pages||0,index:a.index,state:a.state==="reading"?"working":a.state||"done",summary:a.summary||"",parts:(a.parts||[]).map(p=>({title:p.title||"",text:p.text})),note:a.note||"",reason:a.reason||"",real:true})),hasFiles:!!r.has_attachments,fileCount:Number.isInteger(r.attachment_count)?r.attachment_count:null,
-        replyTo:ctx.reply_to||null,deliveredTo:ctx.delivered_to||null,viaAlias:ctx.via_alias||null,unsub:r.unsubscribe||null,scam:r.scam_warning||null,real:{accountId:a.id,messageId:r.id},extra:!!r.from_all_mail,ungen:String(r.summary||"").startsWith("Not summarised yet"),snoozeUntil:r.snoozed_until?r.snoozed_until*1000:0,replied:!!r.replied_at,repliedAt:r.replied_at?realTime(r.replied_at):""});
+        replyTo:ctx.reply_to||null,replyCc:ctx.cc||[],replyAlsoTo:ctx.also_to||[],deliveredTo:ctx.delivered_to||null,viaAlias:ctx.via_alias||null,unsub:r.unsubscribe||null,scam:r.scam_warning||null,real:{accountId:a.id,messageId:r.id},extra:!!r.from_all_mail,ungen:String(r.summary||"").startsWith("Not summarised yet"),snoozeUntil:r.snoozed_until?r.snoozed_until*1000:0,replied:!!r.replied_at,repliedAt:r.replied_at?realTime(r.replied_at):""});
     }
   }
   items.sort((x,y)=>y.received-x.received);
@@ -4760,16 +5005,16 @@ async function bootBackendMode(){
 let outbox=[],outboxSkew=0,outboxTimer=null,outboxSeen=new Set(),outboxFirst=true,outboxLen=new Map();
 const sendLeft=it=>Math.max(0,Math.ceil((it.send_at*1000-(Date.now()+outboxSkew))/1000));
 function realMsgOf(it){return data.find(x=>x.real&&x.real.accountId===it.account_id&&x.real.messageId===it.message_id)}
-function noteQueuedReply(r,m){
+function noteQueuedReply(r,m,kind){
   outboxSkew=r.now*1000-Date.now();
-  outbox=outbox.filter(x=>x.id!==r.id).concat([{id:r.id,account_id:m.real.accountId,message_id:m.real.messageId,state:"pending",send_at:r.send_at,from:r.from,to:r.to,total:Math.max(1,r.send_at-r.now)}]);
+  outbox=outbox.filter(x=>x.id!==r.id).concat([{id:r.id,account_id:m.real.accountId,message_id:m.real.messageId,state:"pending",kind:kind==="forward"?"forward":kind==="reply_all"?"reply_all":"reply",send_at:r.send_at,from:r.from,to:r.to,people:r.people||1,total:Math.max(1,r.send_at-r.now)}]);
   outboxFirst=false;paintOutbox();
 }
 function paintOutbox(){
   const box=$("sendBar"),waiting=outbox.filter(i=>i.state==="pending"||i.state==="sending");
   box.hidden=!waiting.length;
   box.replaceChildren(...waiting.map(it=>{
-    const m=realMsgOf(it),who=m?m.sender:it.to,what=it.kind==="new"?"email":"reply",left=sendLeft(it),total=it.total||(outboxLen.get(it.id)||Math.max(left,1));
+    const m=realMsgOf(it),n=it.people||1,who=it.kind==="forward"||!m?(n>1?peopleText([it.to,...Array(n-1).fill("")]):it.to):m.sender,what=it.kind==="new"?"email":it.kind==="forward"?"forward":"reply",left=sendLeft(it),total=it.total||(outboxLen.get(it.id)||Math.max(left,1));
     if(!outboxLen.has(it.id))outboxLen.set(it.id,Math.max(left,1));
     const row=document.createElement("div");row.className="sendrow";
     const span=document.createElement("span");span.textContent=it.state==="sending"||left===0?`Sending your ${what} to ${who}…`:`Sending your ${what} to ${who} in ${left}s`;
@@ -4796,7 +5041,7 @@ async function undoSend(it){
         toast(`Email cancelled. Nothing was sent. Your text${(r.files||[]).length?" and attachments are":" is"} back in the box.`,5000);
       }else toast("Email cancelled. Nothing was sent.",3500);
     }
-    else if(m&&!composing){openComposer(m.id);$("composeText").value=r.body||"";if(r.from&&[...$("composeFrom").options].some(o=>o.value===r.from))$("composeFrom").value=r.from;toast("Reply cancelled. Nothing was sent. Your text is back in the box.",4000)}
+    else if(m&&!composing){openComposer(m.id,r.kind||"reply",r.to_list&&r.to_list.length?{to:r.to_list,cc:r.cc_list,bcc:r.bcc_list}:null);$("composeText").value=r.body||"";if(r.from&&[...$("composeFrom").options].some(o=>o.value===r.from))$("composeFrom").value=r.from;toast("Reply cancelled. Nothing was sent. Your text is back in the box.",4000)}
     else toast("Reply cancelled. Nothing was sent.",3500);
   }catch(er){toast(er.message||"Too late: that reply has already gone",4500);pollOutbox()}
 }
@@ -4828,7 +5073,8 @@ async function pollOutbox(){
 function applyFeatures(){
   const on=realMail&&accounts.length>0;
   $("newMailBtn").hidden=$("mNewBtn").hidden=!(on&&feat.compose);
-  $("sentNav").hidden=!(on&&feat.sent);
+  $("sentNav").hidden=!(on&&feat.sent);$("draftNav").hidden=!on;if(on&&!draftData.loaded)loadDrafts();
+  if(filter==="drafts"&&!on){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   $("shipNav").hidden=!(on&&feat.shipping);$("waitNav").hidden=!(on&&feat.waiting);subNavSync();
   if(filter==="waiting"&&!(on&&feat.waiting)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   if(filter==="trips"&&!(on&&feat.travel)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
@@ -4847,7 +5093,7 @@ const initialsOf=t=>(String(t).replace(/@.*/,"").split(/[\s._-]+/).filter(Boolea
 const kb=n=>n>=1048576?`${(n/1048576).toFixed(1)} MB`:`${Math.max(1,Math.round(n/1024))} KB`;
 
 // A box of recipient chips with suggestions from the address book.
-function chipField(box){
+function chipField(box,onChange){
   const state={items:[]};
   const input=document.createElement("input");input.type="text";input.autocomplete="off";input.spellcheck=false;input.setAttribute("aria-label",box.dataset.label||"Recipients");
   const sug=document.createElement("div");sug.className="suggest";sug.hidden=true;sug.setAttribute("role","listbox");
@@ -4862,6 +5108,7 @@ function chipField(box){
       x.onclick=e=>{e.stopPropagation();state.items=state.items.filter(q=>q!==p);paint();input.focus()};
       c.append(t,x);box.insertBefore(c,input);
     }
+    if(onChange)onChange();
   }
   function add(p){
     const a=String(p.address||"").trim();if(!addrOk(a))return false;
@@ -5029,6 +5276,157 @@ $("composeSaved").onchange=()=>insertSaved($("composeSaved"),$("composeText"));$
 $("composeText").addEventListener("input",()=>whLabel("reply"));
 $("nmText").addEventListener("input",()=>whLabel("new"));
 
+// ---- Drafts: unfinished emails kept on the server for 14 days (so they are still there if the browser is closed) ----
+let draftData={items:[],loaded:false,skew:0};
+const DRAFT_KIND={new:"New email",reply:"Reply",reply_all:"Reply all",forward:"Forward"};
+function paintDraftBadge(){const b=$("draftBadge");if(!b)return;const n=draftData.items.length;b.hidden=!n;b.textContent=n}
+async function loadDrafts(){
+  if(!realMail)return;
+  try{
+    const r=await secureBackendRequest("/api/v1/me/drafts",{method:"GET",headers:{}});
+    draftData={items:r.items||[],loaded:true,skew:r.now*1000-Date.now()};
+  }catch{draftData.loaded=true}
+  paintDraftBadge();if(filter==="drafts")renderDraftPage();
+}
+async function deleteDraftQuiet(id){
+  try{await secureBackendRequest(`/api/v1/me/drafts/${encodeURIComponent(id)}`,{method:"DELETE",headers:{}})}catch{}
+  draftData.items=draftData.items.filter(d=>d.id!==id);paintDraftBadge();if(filter==="drafts")renderDraftPage();
+}
+function renderDraftPage(){
+  const box=$("draftPage"),el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
+  const head=el("div","tp-head");head.append(el("h3",null,"Drafts"));
+  const sub=el("p","sp-sub","Emails you started and have not sent. Each one is kept for 14 days after you last saved it, even if you close the browser. Attachments are not kept.");
+  const out=[head,sub];
+  if(!draftData.items.length){
+    const c=el("div","focus-card");c.append(el("div","focus-big","No drafts"),el("div","focus-sub","When you close an email you are writing, you can choose Save as draft. It will wait for you here."));out.push(c);
+  }
+  for(const d of draftData.items){
+    const row=el("div","drow");
+    const top=el("div","dtop"),first=d.to[0]||d.cc[0]||d.bcc[0],n=d.to.length+d.cc.length+d.bcc.length;
+    const who=first?(parseAddr(first).name||parseAddr(first).address)+(n>1?` and ${n-1} ${n===2?"other":"others"}`:""):"(nobody yet)";
+    top.append(el("span","dkind",DRAFT_KIND[d.kind]||"Email"),el("span","dto",who),el("span","dmeta",realTime(d.updated)));
+    row.append(top,el("div","dsub",d.subject||"(no subject)"));
+    if(d.body.trim())row.append(el("div","dprev",d.body.trim().slice(0,300)));
+    const left=Math.max(1,Math.ceil((d.expires*1000-(Date.now()+draftData.skew))/86400000));
+    row.append(el("div","dmeta",`Kept ${left} more ${left===1?"day":"days"}`));
+    const act=el("div","dact");
+    const go=el("button","primary","Continue writing");go.type="button";go.dataset.draftOpen=d.id;
+    const del=el("button","btn","Delete");del.type="button";del.dataset.draftDel=d.id;
+    act.append(go,del);row.append(act);out.push(row);
+  }
+  box.replaceChildren(...out);
+}
+function openDraft(id){
+  const d=draftData.items.find(x=>x.id===id);if(!d)return;
+  const asNew=()=>openNewMail({account_id:d.account_id,to:d.to,cc:d.cc,bcc:d.bcc,subject:d.subject,body:d.body,from:d.from_address,draftId:d.id});
+  if(d.kind==="new"){asNew();return}
+  const m=data.find(x=>x.real&&x.real.accountId===d.account_id&&x.real.messageId===d.message_id&&x.owner===currentUser.id);
+  if(!m){toast("The email this answers is not in your list any more, so it opens as a new email.",5000);asNew();return}
+  openComposer(m.id,d.kind,{to:d.to,cc:d.cc,bcc:d.bcc,body:d.body,from:d.from_address,draftId:d.id});
+}
+let dkResolve=null;
+function draftAsk(what,hasDraft){
+  $("dkSub").textContent=what;
+  $("dkText").textContent=hasDraft?"This is already in Drafts, saved as you wrote. Save as draft keeps it there for 14 days. Discard deletes the draft.":"Save as draft keeps it in Drafts for 14 days, even if you close the browser. Discard throws it away.";
+  $("dkAsk").classList.add("open");$("dkScrim").classList.add("show");setTimeout(()=>$("dkSave").focus(),0);
+  return new Promise(res=>{dkResolve=res});
+}
+function dkDone(v){$("dkAsk").classList.remove("open");$("dkScrim").classList.remove("show");const r=dkResolve;dkResolve=null;if(r)r(v)}
+$("dkSave").onclick=()=>dkDone("save");$("dkDiscard").onclick=()=>dkDone("discard");$("dkKeep").onclick=()=>dkDone("keep");$("dkScrim").onclick=()=>dkDone("keep");
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("dkAsk").classList.contains("open")){e.stopPropagation();e.preventDefault();dkDone("keep")}},true);
+async function putDraft(id,body,keepalive){
+  let r;
+  const ka=keepalive?{keepalive:true}:{};
+  try{r=id?await secureBackendRequest(`/api/v1/me/drafts/${encodeURIComponent(id)}`,{method:"PUT",body:JSON.stringify(body),...ka}):await secureBackendRequest("/api/v1/me/drafts",{method:"POST",body:JSON.stringify(body),...ka})}
+  catch(er){
+    if(id&&/not there/i.test(er.message||""))r=await secureBackendRequest("/api/v1/me/drafts",{method:"POST",body:JSON.stringify(body),...ka});else throw er;
+  }
+  return r;
+}
+async function savedAsDraft(id,body){
+  try{await putDraft(id,body);toast("Saved to Drafts. Kept for 14 days.",4000);loadDrafts();return true}
+  catch(er){toast(er.message||"Could not save the draft",6000);return false}
+}
+const bareOrText=t=>isBare(t)?"":String(t).trim();
+function composeSnap(){
+  if(!composing)return "";
+  const f=cmFields();
+  return JSON.stringify([composing.mode,f.to.items.map(p=>p.address),f.cc.items.map(p=>p.address),f.bcc.items.map(p=>p.address),bareOrText($("composeText").value),cm.removed]);
+}
+const peopleOf=f=>[...f.items.map(addrText),...(addrOk(f.input.value.trim())?[f.input.value.trim()]:[])];     // an address typed but not yet turned into a chip counts too
+function composePayload(){
+  const {m,mode}=composing,f=cmFields();
+  return {kind:mode,account_id:m.real.accountId,message_id:m.real.messageId,from_address:$("composeFrom").value,to:peopleOf(f.to),cc:peopleOf(f.cc),bcc:peopleOf(f.bcc),subject:$("composeSubject").value,body:bareOrText($("composeText").value)};
+}
+function composeWorth(){
+  const f=cmFields(),mode=composing.mode;
+  return !isBare($("composeText").value)||(mode==="forward"&&f.to.items.length>0)||(mode==="reply"&&(f.cc.items.length>0||f.bcc.items.length>0));
+}
+function nmPayload(){
+  const f=nmFields(),[aid,from]=$("nmFrom").value.split("|");
+  return {kind:"new",account_id:aid,from_address:from,to:peopleOf(f.to),cc:peopleOf(f.cc),bcc:peopleOf(f.bcc),subject:$("nmSubject").value.trim(),body:bareOrText($("nmText").value)};
+}
+// While an email is being written it is saved to Drafts by itself every few seconds, and once more if the page is closed,
+// so closing the browser or losing power does not lose the words.
+let autoBusy=false;
+async function settleAuto(){for(let i=0;i<40&&autoBusy;i++)await new Promise(r=>setTimeout(r,100))}
+async function autosaveDrafts(keepalive){
+  if(!realMail||(autoBusy&&!keepalive))return;
+  let snap,payload,target,note;
+  if(composing&&composing.m.real&&$("compose").classList.contains("open")){
+    snap=composeSnap();if(snap===composing.base||snap===composing.saved||!composeWorth())return;
+    payload=composePayload();target=composing;note="cmAuto";
+  }else if($("newMail").classList.contains("open")){
+    snap=nmSnap();if(snap===nm.base||snap===nm.saved||!nmDirty())return;
+    payload=nmPayload();target=nm;note="nmAuto";
+  }else return;
+  autoBusy=true;
+  try{
+    const fresh=!target.draftId;
+    const r=await putDraft(target.draftId,payload,keepalive);
+    target.draftId=r.id;target.saved=snap;
+    const n=$(note);if(n){n.hidden=false;n.textContent="Saved to Drafts at "+new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})+". Kept for 14 days."}
+    if(fresh)loadDrafts();
+  }catch{}finally{autoBusy=false}
+}
+setInterval(()=>autosaveDrafts(false),3000);
+window.addEventListener("pagehide",()=>autosaveDrafts(true));
+async function requestCloseComposer(){
+  if(!composing)return;
+  const {m,mode}=composing;
+  if(!m.real||composeSnap()===composing.base){closeComposer();return}
+  const f=cmFields();f.to.commit(true);f.cc.commit(true);f.bcc.commit(true);
+  const a=await draftAsk(mode==="forward"?`Forward: ${m.subject}`:`${mode==="reply_all"?"Reply all":"Reply"} to ${m.sender}`,!!composing.draftId);
+  if(a==="keep")return;
+  if(a==="save"){
+    if(!(await savedAsDraft(composing.draftId,composePayload())))return;
+  }else if(composing.draftId)deleteDraftQuiet(composing.draftId);
+  closeComposer();
+}
+function nmSnap(){
+  const f=nmFields();
+  return JSON.stringify([$("nmFrom").value,f.to.items.map(p=>p.address),f.cc.items.map(p=>p.address),f.bcc.items.map(p=>p.address),$("nmSubject").value.trim(),bareOrText($("nmText").value),nm.files.length]);
+}
+async function requestCloseNewMail(){
+  if(!$("newMail").classList.contains("open"))return;
+  const f=nmFields();f.to.commit(true);f.cc.commit(true);f.bcc.commit(true);
+  if(!nmDirty()||nmSnap()===nm.base){closeNewMail();return}
+  const a=await draftAsk($("nmSubject").value.trim()||"New email",!!nm.draftId);
+  if(a==="keep")return;
+  if(a==="save"){
+    if(!(await savedAsDraft(nm.draftId,nmPayload())))return;
+    if(nm.files.length)toast("Saved to Drafts. Attachments are not kept in a draft, so add them again.",6000);
+  }else if(nm.draftId)deleteDraftQuiet(nm.draftId);
+  closeNewMail();
+}
+$("draftPage").addEventListener("click",e=>{
+  const o=e.target.closest("[data-draft-open]");if(o){openDraft(o.dataset.draftOpen);return}
+  const x=e.target.closest("[data-draft-del]");if(x){
+    if(x.dataset.armed){deleteDraftQuiet(x.dataset.draftDel);toast("Draft deleted",3000);return}
+    x.dataset.armed="1";x.textContent="Delete this draft?";setTimeout(()=>{if(x.isConnected){delete x.dataset.armed;x.textContent="Delete"}},4000);
+  }
+});
+
 // ---- New email ----
 const nm={files:[],busy:false,armed:false,fields:null};
 function nmFields(){if(!nm.fields)nm.fields={to:chipField($("nmTo")),cc:chipField($("nmCc")),bcc:chipField($("nmBcc"))};return nm.fields}
@@ -5044,7 +5442,7 @@ function paintNmFiles(){
 function openNewMail(pre){
   if(!realMail||!feat.compose||!accounts.length){toast("New email is not available");return}
   const f=nmFields();
-  f.to.clear();f.cc.clear();f.bcc.clear();nm.armed=false;
+  f.to.clear();f.cc.clear();f.bcc.clear();nm.armed=false;nm.draftId=(pre&&pre.draftId)||null;
   nm.files=((pre&&pre.files)||[]).map(x=>({name:x.name,type:x.type||"application/octet-stream",size:Math.floor(x.data.length*3/4)-(x.data.endsWith("==")?2:x.data.endsWith("=")?1:0),data:x.data}));
   paintNmFiles();
   $("nmCancel").textContent="Cancel";
@@ -5056,14 +5454,14 @@ function openNewMail(pre){
   f.to.set(pre&&pre.to);f.cc.set(pre&&pre.cc);f.bcc.set(pre&&pre.bcc);
   $("nmCcRow").hidden=!(pre&&pre.cc&&pre.cc.length);$("nmBccRow").hidden=!(pre&&pre.bcc&&pre.bcc.length);
   $("nmSubject").value=(pre&&pre.subject)||"";$("nmText").value=(pre&&pre.body)?pre.body:withSig("");whReset("new");paintSaved("nmSaved","nmSavedRow");
+  nm.base=nmSnap();nm.saved=null;{const n=$("nmAuto");n.hidden=true;n.textContent=""}
   const n=realPrefs.undo_send_seconds||0;
   $("nmHint").textContent=n>0?`Held for ${n} ${n===1?"second":"seconds"} so you can undo`:"Sent as soon as you press Send";
   $("newMail").classList.add("open");$("nmScrim").classList.add("show");
   setTimeout(()=>f.to.input.focus(),0);
 }
-function closeNewMail(force){
-  if(!force&&nmDirty()&&!nm.armed){nm.armed=true;$("nmCancel").textContent="Discard this email?";setTimeout(()=>{nm.armed=false;$("nmCancel").textContent="Cancel"},4000);return}
-  $("newMail").classList.remove("open");$("nmScrim").classList.remove("show");nm.files=[];nm.armed=false;nmWarned=false;
+function closeNewMail(){
+  $("newMail").classList.remove("open");$("nmScrim").classList.remove("show");nm.files=[];nm.armed=false;nmWarned=false;nm.draftId=null;
 }
 $("nmFile").addEventListener("change",async e=>{
   for(const f of [...e.target.files]){
@@ -5125,7 +5523,8 @@ async function sendNew(){
   nm.busy=true;const btn=$("nmSend"),label=btn.textContent;btn.disabled=true;btn.textContent="Sending…";btn.classList.add("busy");
   try{
     const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/send`,{method:"POST",body:JSON.stringify({to,cc,bcc,subject,body,from_address:from,files:nm.files.map(x=>({name:x.name,type:x.type,data:x.data}))})});
-    closeNewMail(true);
+    await settleAuto();const did=nm.draftId;
+    closeNewMail(true);if(did)deleteDraftQuiet(did);
     if(r.queued)noteQueuedNew(r,aid,subject);else toast(`✓ Email sent from ${r.from}`,4500);
   }catch(er){toast(er.message,6000)}
   finally{nm.busy=false;btn.disabled=false;btn.textContent=label;btn.classList.remove("busy")}
@@ -5413,16 +5812,18 @@ function presentOriginal(o,c){
   $("attachmentViewer").scrollTop=0;
   $("attachmentModalSummary").textContent="";
   $("viewerNote").textContent=c.sent?"This is a read-only copy from your Sent folder. Enveliq does not keep it.":"Enveliq keeps only the encrypted summary. The full email stays in your mailbox and is shown here without saving it.";
-  $("viewerActions").innerHTML=(c.sent?"":unsubHtml(o.unsubscribe||c.unsub,!!(o.warning||c.scam)))+(c.replyId?`<button class="primary" data-reply="${esc(c.replyId)}">↩ Reply</button>`:"");
+  $("viewerActions").innerHTML=(c.sent?"":unsubHtml(o.unsubscribe||c.unsub,!!(o.warning||c.scam)))+(c.replyId?moreReplyBtns(data.find(x=>x.id===c.replyId),"btn")+`<button class="primary" data-reply="${esc(c.replyId)}">↩ Reply</button>`:"");
   $("attachmentModal").classList.add("open");
   $("attachmentScrim").classList.add("show");viewerPush();
 }
 $("newMailBtn").onclick=()=>openNewMail();$("mNewBtn").onclick=()=>openNewMail();
-$("nmClose").onclick=()=>closeNewMail();$("nmCancel").onclick=()=>closeNewMail();
+$("nmClose").onclick=requestCloseNewMail;$("nmCancel").onclick=requestCloseNewMail;
 $("nmSend").onclick=sendNew;$("nmForm").addEventListener("submit",e=>{e.preventDefault()});
 $("nmAttach").onclick=()=>$("nmFile").click();
 $("nmCcBtn").onclick=()=>{$("nmCcRow").hidden=false;nmFields().cc.input.focus()};
 $("nmBccBtn").onclick=()=>{$("nmBccRow").hidden=false;nmFields().bcc.input.focus()};
+$("cmCcBtn").onclick=()=>{$("cmCcRow").hidden=false;cmFields().cc.input.focus()};
+$("cmBccBtn").onclick=()=>{$("cmBccRow").hidden=false;cmFields().bcc.input.focus()};
 $("sentRefresh").onclick=loadSent;
 $("sentBox").onchange=e=>{sentAcct=e.target.value;loadSent()};
 bootBackendMode().finally(()=>document.body.classList.remove("booting"));
@@ -5582,10 +5983,10 @@ $("oauthScrim").onclick=closeOAuth;
 $("oauthAllow").onclick=finishOAuth;
 $("attachmentModalClose").onclick=closeAttachmentViewer;
 $("attachmentScrim").onclick=closeAttachmentViewer;
-$("composeClose").onclick=closeComposer;$("composeCancel").onclick=closeComposer;$("composeScrim").onclick=closeComposer;
-$("composeSend").onclick=sendReply;$("composeForm").addEventListener("submit",e=>{e.preventDefault();sendReply()});
+$("composeClose").onclick=requestCloseComposer;$("composeCancel").onclick=requestCloseComposer;$("composeScrim").onclick=requestCloseComposer;
+$("cmQuoteIn").onclick=quoteInline;$("composeSend").onclick=sendReply;$("composeForm").addEventListener("submit",e=>{e.preventDefault();sendReply()});
 document.addEventListener("click",e=>{if(e.target.closest("[data-preview-only]")){e.preventDefault();toast(document.body.classList.contains("backend")?"Use the account pages for this":"Preview only: this works on your Enveliq server")}});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("docBox").hidden)closeDoc();else if(!$("picBox").hidden)closePic();else if($("newMail").classList.contains("open"))closeNewMail();else if($("compose").classList.contains("open"))closeComposer();else if($("attachmentModal").classList.contains("open"))closeAttachmentViewer()}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("docBox").hidden)closeDoc();else if(!$("picBox").hidden)closePic();else if($("newMail").classList.contains("open"))requestCloseNewMail();else if($("compose").classList.contains("open"))requestCloseComposer();else if($("attachmentModal").classList.contains("open"))closeAttachmentViewer()}});
 const setupBtn=document.getElementById("vaultSetupBtn");if(setupBtn)setupBtn.onclick=setupVault;
 const unlockBtn=document.getElementById("vaultUnlockBtn");if(unlockBtn)unlockBtn.onclick=unlockVault;
 const lockBtn=document.getElementById("vaultLockBtn");if(lockBtn)lockBtn.onclick=lockVault;
@@ -5607,7 +6008,7 @@ $("sidebar").addEventListener("click",e=>{if(e.target.closest(".nav:not(.more-to
 $("mSearchBtn").onclick=()=>{document.body.classList.add("msearch");$("search").focus()};
 $("mSearchBack").onclick=()=>{document.body.classList.remove("msearch");if(query){query="";$("search").value="";render()}};
 $("mSyncBtn").onclick=()=>$("syncBtn").click();
-phoneQuery.addEventListener("change",()=>{setMenu(false);document.body.classList.remove("msearch","scrolled");render()});
+phoneQuery.addEventListener("change",()=>{setMenu(false);document.body.classList.remove("msearch","scrolled");applyView();render()});
 function updateScrolled(){const h=document.querySelector("header.top");document.body.classList.toggle("scrolled",isPhone()&&h.getBoundingClientRect().bottom<60);
   const stuck=!isPhone()&&window.scrollY>6;document.body.classList.toggle("stuck",stuck);
   if(stuck){const bar=document.getElementById("previewToolbar").offsetHeight;document.body.style.setProperty("--fade",Math.min(36,window.scrollY)+"px");   // the soft edge grows over the first 36px of scrolling, so nothing dims before you move
@@ -5770,7 +6171,7 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Escape"&&readerOpen){readerOpen=false;render();return}
   if(e.key==="Escape"&&document.body.classList.contains("menu-open")){setMenu(false);return}
   if(e.key==="Escape"&&document.body.classList.contains("vopen")&&!$("compose").classList.contains("open")&&!$("attachmentModal").classList.contains("open")){setViewPanel(false);return}
-  if(view.layout!=="deck"||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(lay()!=="deck"||e.metaKey||e.ctrlKey||e.altKey)return;
   const t=e.target;if(t&&t.closest&&t.closest("input,select,textarea,[contenteditable],#compose,#viewPanel"))return;
   if($("compose").classList.contains("open")||$("attachmentModal").classList.contains("open"))return;
   const k=e.key.toLowerCase();

@@ -213,6 +213,8 @@ class ReplyContext(StrictModel):
                    mailbox and the alias service rewrites the sender.
     via_alias      Name of the alias service, when the email came through one.
     message_id / references   For In-Reply-To / References threading.
+    cc / also_to   The other people on the original email (Cc, and the rest of To), as bare
+                   addresses without our own, so "Reply all" can fill them in. Names are not kept.
     """
 
     reply_to: str = Field(min_length=3, max_length=998)
@@ -220,6 +222,18 @@ class ReplyContext(StrictModel):
     via_alias: str | None = Field(default=None, max_length=64)
     message_id: str | None = Field(default=None, max_length=998)
     references: list[str] = Field(default_factory=list, max_length=50)
+    cc: list[str] = Field(default_factory=list, max_length=20)
+    also_to: list[str] = Field(default_factory=list, max_length=20)
+
+    @field_validator("cc", "also_to")
+    @classmethod
+    def other_people(cls, values: list[str]) -> list[str]:
+        """Other people on the original email, kept as bare addresses only (for Reply all)."""
+        for v in values:
+            header_safe(v)
+            if not _EMAIL.match(v) or len(v) > 320:
+                raise ValueError("must be email addresses")
+        return values
 
     @field_validator("reply_to", "delivered_to")
     @classmethod

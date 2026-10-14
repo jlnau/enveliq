@@ -104,6 +104,14 @@ jobs:
         run: node scripts/check_sticky_header.mjs
       - name: Even gaps between the boxes on the main screen (made-up mail, no server)
         run: node scripts/check_main_gaps.mjs
+      - name: Reading pane on the right reaches the top bar (made-up mail, no server)
+        run: node scripts/check_split_reading.mjs
+      - name: Reply all, Forward and the To / Cc / Bcc chips (made-up mail, no server)
+        run: node scripts/check_reply_all_forward.mjs
+      - name: Drafts, and the Save as draft question when an email is closed (made-up mail, no server)
+        run: node scripts/check_drafts.mjs
+      - name: On a phone every email opens full screen, whatever layout is chosen (made-up mail, no server)
+        run: node scripts/check_phone_reader.mjs
       - name: No flash of the old layout on a quick refresh (page with its script switched off)
         run: node scripts/check_no_flash.mjs
       - name: Bigger email and attachment windows, and clickable links that ask first (simulated server)

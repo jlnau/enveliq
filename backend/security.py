@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import re
@@ -13,6 +14,9 @@ from typing import Any, Awaitable, Callable, Deque
 from fastapi import HTTPException, Request, status
 
 from .crypto_vault import Principal, SecureVault, VaultLocked
+
+
+REMEMBERED_RECORD = "remembered-sessions"
 
 
 class RedactingFilter(logging.Filter):
@@ -72,13 +76,68 @@ class SessionManager:
         ttl_seconds: int = 1800,
         max_lifetime_seconds: int = 12 * 3600,
         max_sessions: int = 32,
+        clock: Callable[[], float] = time.time,
     ):
         self.vault = vault
         self.ttl_seconds = ttl_seconds
         self.max_lifetime_seconds = max_lifetime_seconds
         self.max_sessions = max_sessions
+        self.clock = clock                      # wall clock, only for remembered sign-ins that must outlive a restart
+        # Set by the app: user id -> Principal, or None when that person is gone or disabled.
+        self.resolver: Callable[[str], Principal | None] | None = None
         self._sessions: dict[str, Session] = {}
         self._lock = threading.RLock()
+        self._plock = threading.Lock()          # guards the stored copy; never held together with _lock
+
+    # ---- remembered sign-ins survive a restart ----
+    # A "keep me signed in" session is also written, encrypted, into the vault under a hash of its token (never the
+    # token itself). After a restart Enveliq opens its own vault from the key file, finds the hash and carries on.
+    # Normal 12-hour sign-ins are never stored: they end with the restart, as before.
+
+    @staticmethod
+    def _hash(token: str) -> str:
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+    def _stored(self) -> dict[str, dict]:
+        items = (self.vault.get_global(REMEMBERED_RECORD) or {}).get("items") or {}
+        now = self.clock()
+        return {k: v for k, v in items.items() if isinstance(v, dict) and float(v.get("started", 0)) + int(v.get("seconds", 0)) > now}
+
+    def _store_edit(self, edit: Callable[[dict[str, dict]], None]) -> None:
+        """Change the stored copy. Best effort: a locked vault just means nothing is kept, and the sign-in still works until the next restart."""
+        try:
+            with self._plock:
+                on_disk = (self.vault.get_global(REMEMBERED_RECORD) or {}).get("items") or {}
+                items = self._stored()                       # also drops the ones that have run out
+                edit(items)
+                if items != on_disk:
+                    self.vault.set_global(REMEMBERED_RECORD, {"items": items})
+        except VaultLocked:
+            pass
+
+    def _restore(self, token: str) -> Session | None:
+        """A remembered sign-in from before a restart, or None."""
+        if not token or self.resolver is None:
+            return None
+        try:
+            with self._plock:
+                row = self._stored().get(self._hash(token))
+        except VaultLocked:
+            return None
+        if not row:
+            return None
+        principal = self.resolver(str(row.get("user_id", "")))
+        if principal is None:
+            self._store_edit(lambda items: items.pop(self._hash(token), None))
+            return None
+        seconds = int(row["seconds"])
+        elapsed = max(0.0, self.clock() - float(row["started"]))
+        now = time.monotonic()
+        session = Session(token=token, principal=principal, expires_at=now + seconds - elapsed, created_at=now - elapsed,
+                          state="full", auth_method=str(row.get("method", "passkey")), remember_seconds=seconds)
+        with self._lock:
+            self._sessions.setdefault(token, session)
+            return self._sessions[token]
 
     def life_of(self, session: Session) -> int:
         """The longest this session may last from sign-in, in seconds."""
@@ -100,6 +159,9 @@ class SessionManager:
                 oldest = min(self._sessions, key=lambda k: self._sessions[k].created_at)
                 self._sessions.pop(oldest, None)
             self._sessions[token] = session
+        if remember:
+            row = {"user_id": principal.user_id, "started": self.clock(), "seconds": remember, "method": auth_method}
+            self._store_edit(lambda items: items.__setitem__(self._hash(token), row))
         return session
 
     def _prune_locked(self, now: float) -> None:
@@ -110,17 +172,27 @@ class SessionManager:
         return session.expires_at < now or (now - session.created_at) > self.life_of(session)
 
     def revoke_all(self) -> None:
+        """Forget every sign-in held in memory (the vault locked). Remembered ones come back once it opens again."""
         with self._lock:
             self._sessions.clear()
+
+    def revoke_everyone(self) -> None:
+        """Sign everyone out for good, including remembered sign-ins kept across restarts."""
+        self.revoke_all()
+        self._store_edit(lambda items: items.clear())
 
     def revoke(self, token: str) -> None:
         with self._lock:
             self._sessions.pop(token, None)
+        if token:
+            self._store_edit(lambda items: items.pop(self._hash(token), None))
 
     def revoke_user(self, user_id: str, except_token: str | None = None) -> None:
         with self._lock:
             for key in [k for k, s in self._sessions.items() if s.principal.user_id == user_id and k != except_token]:
                 self._sessions.pop(key, None)
+        keep = self._hash(except_token) if except_token else None
+        self._store_edit(lambda items: [items.pop(k) for k in [k for k, v in items.items() if v.get("user_id") == user_id and k != keep]])
 
     def update_principal(self, token: str, principal: Principal) -> None:
         with self._lock:
@@ -139,12 +211,17 @@ class SessionManager:
         now = time.monotonic()
         with self._lock:
             session = self._sessions.get(token)
-            return None if session is None or self._expired(session, now) else session
+        if session is None:
+            session = self._restore(token)
+        return None if session is None or self._expired(session, now) else session
 
     def get(self, token: str) -> Session:
         now = time.monotonic()
         with self._lock:
             session = self._sessions.get(token) if token else None
+        if session is None and token:
+            session = self._restore(token)
+        with self._lock:
             if session is None or self._expired(session, now):
                 if token:
                     self._sessions.pop(token, None)
