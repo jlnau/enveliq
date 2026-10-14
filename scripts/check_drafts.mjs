@@ -179,6 +179,27 @@ await del.click();
 await page.waitForTimeout(300);
 check("pressing again deletes it", drafts.length === 2 && (await page.locator(".drow").count()) === 2);
 
+// On a phone the writing window is full screen: the question must sit above it, with every button on screen
+await page.setViewportSize({ width: 390, height: 780 });
+await page.goto(`${ORIGIN}/`);
+await page.waitForSelector("article.mail");
+const phoneRow = page.locator("article.mail", { hasText: "Plan for May" });
+await expand(phoneRow);
+await phoneRow.locator("[data-reply]").first().click();
+await page.fill("#composeText", "Typed on my phone.");
+await page.click("#composeClose");
+await page.waitForSelector("#dkAsk.open");
+const onTop = async (sel) => page.locator(sel).evaluate((el) => { const r = el.getBoundingClientRect(); const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return !!top && (top === el || el.contains(top)) && r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth; });
+await shot("ask_phone");
+check("on a phone the save-as-draft question shows above the full screen window", (await onTop("#dkSave")) && (await onTop("#dkDiscard")) && (await onTop("#dkKeep")));
+check("on a phone the question sits at the bottom of the screen as a sheet", await page.locator("#dkAsk").evaluate((el) => { const r = el.getBoundingClientRect(); return Math.abs(r.bottom - innerHeight) < 2 && r.height < innerHeight * 0.7; }));
+await page.click("#dkKeep");
+check("on a phone Keep writing goes back to the reply", (await asking()) === 0 && (await page.inputValue("#composeText")) === "Typed on my phone.");
+await page.click("#composeClose");
+await page.click("#dkSave");
+await page.waitForFunction(() => !document.getElementById("compose").classList.contains("open"));
+check("on a phone Save as draft keeps it and closes the window", drafts.some((d) => d.body === "Typed on my phone."));
+
 check("no script errors on the page", errors.length === 0);
 await browser.close();
 process.exit(failed ? 1 : 0);

@@ -1348,6 +1348,15 @@ body.on-draft .filters,body.on-draft #list,body.on-draft .sample-banner,body.on-
 .drow .dmeta{color:var(--muted);font-size:12.5px}
 .drow .dact{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
 #dkAsk{width:min(520px,94vw);z-index:63}#dkScrim{z-index:62}#dkAsk button{min-height:44px}#dkAsk .compose-body p{margin:0;line-height:1.5}
+/* On a phone the writing window is full screen (z-index 121). The small questions asked over it (save as a draft, check before sending, send warning) were left underneath it, so Close seemed to do nothing. They now sit above it as a sheet from the bottom, with big full-width buttons. */
+@media(max-width:760px){
+  #dkScrim,#whScrim{z-index:130}
+  #dkAsk,#whCheck,#sendWarn{z-index:131;left:0;right:0;top:auto;bottom:0;width:100%;height:auto;max-height:88dvh;overflow:auto;border:1px solid var(--c-343b4b);border-bottom:0;border-radius:18px 18px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.5);padding-bottom:env(safe-area-inset-bottom,0px)}
+  #dkAsk .compose-head,#whCheck .compose-head,#sendWarn .compose-head{position:static;padding:16px 18px 12px}
+  #dkAsk .compose-foot,#whCheck .compose-foot,#sendWarn .compose-foot{flex-direction:column-reverse;align-items:stretch;gap:8px}
+  #dkAsk .modal-actions,#whCheck .modal-actions,#sendWarn .modal-actions{flex-direction:column-reverse;margin-top:0;gap:8px}
+  #dkAsk .compose-foot button,#whCheck .compose-foot button,#sendWarn .compose-foot button{width:100%;min-height:48px;font-size:15px}
+}
 </style>
 </head>
 <body class="booting">

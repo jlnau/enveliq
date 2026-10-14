@@ -9,6 +9,7 @@
 - A draft is kept for **14 days after you last saved it**, then it is removed. It is kept on the server, so it is still there if you close the browser or switch device.
 - Attachments are **not** kept in a draft. If a New email has attachments when you save it, Enveliq says so; add them again when you continue. A forward's original files are fetched again when you send.
 - Closing an opened draft without changing anything asks nothing. Once you change a draft it is saved over by itself, so Discard on a changed draft deletes the draft.
+- **On a phone** the writing window fills the screen, so the question appears as a sheet from the bottom of the screen with three wide buttons: **Save as draft**, **Discard** and **Keep writing**. The "Send this?" check and the send warning appear the same way.
 
 ## How it works
 - Drafts are stored on the server as one encrypted record per person (`drafts:<user id>`), like the signature and saved replies. Only that person can read them; the Drafts page shows only your own.
