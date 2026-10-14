@@ -65,6 +65,7 @@ for (const [width, height, name] of [[1200, 1000, "desktop"], [390, 800, "phone"
   const { page, errors, context, host } = await open(width, height, "adminms", "#ms_redirect");
   const text = await host.text();
   check(name + ": the first step explains the 'directory has been deprecated' message and the Azure sign-up link", /ability to create applications outside of a directory has been deprecated/.test(text) && /Signing up for Azure/.test(text));
+  check(name + ": it starts with getting a free Azure account, and no longer sends people to Exchange Online", /Get a free Azure account/.test(text) && /Microsoft Graph/.test(text) && /offline_access/.test(text) && /not find "Office 365 Exchange Online"/.test(text) && !/tick IMAP\.AccessAsUser\.All/.test(text));
   check(name + ": it no longer promises that no card is ever needed", !/No subscription or card is needed/.test(text) && /card/.test(text));
   check(name + ": the page does not scroll sideways", await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
   await shot(page, "microsoft-" + name);

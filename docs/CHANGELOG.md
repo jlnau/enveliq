@@ -4,7 +4,25 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**The top of the inbox stays in view.** On a computer, the search / Sync mail / name bar and the "Recent emails" bar now stay at the top while you scroll a long list, so the controls are always in reach. Only the emails scroll. The top bar stays see-through, so the picture behind it always shows, and anything that scrolls up to it fades out softly instead of being cut off with a hard line. Phones are unchanged.
+
+**Even gaps on the main screen.** On a computer, the gap between Coming up and Recent emails (and between the delivery, subscription, trip and reply cards) was bigger than the rest. All the boxes on the main screen now sit the same small distance apart.
+
+**Simpler menu wording.** In the menu that opens when you click your name, **Settings** is now for everyone and opens your own settings (your profile is the first tab inside). The administrator item is called **Administration** and shows only for administrators. The extra "Profile settings" and "Manage users" items are gone; the Settings button in the left bar is unchanged.
+
+**Clearer Microsoft sign-in steps.** The steps in Administration, Microsoft sign-in (and `docs/MICROSOFT.md`) now start with getting a free Azure account, with the App registrations link first, and follow what Microsoft's current screens show: the account type wording, the Authentication Settings tab, and adding the email, offline_access and openid permissions. They also say plainly that "Office 365 Exchange Online" will not be in the list in a new directory and is not needed.
+
+**Bigger email and attachment windows, and clickable links.** The window that shows an original email, a PDF, a picture or another attachment now grows with your browser window instead of staying 960 by 820 pixels, and stays inside it, so a tall screen shows much more. PDF pages are drawn larger and fit the window. Web addresses in the text of an email can now be clicked: each one asks "This goes to <website>. Open it in a new tab?" first, and only addresses Enveliq has already checked (and that did not look odd) can be clicked. Phones are unchanged. Code and tests: `prototype/index.html`, `backend/mail/render.py` (pages drawn up to 1500 pixels instead of 1000; every other limit unchanged), `tests/test_render_service.py`, `scripts/check_viewer_size.mjs` (new, in CI). Docs: `docs/INBOX.md`, `docs/SCAM_WARNING.md`, `SECURITY.md`.
+
+**The Sent page now looks like the other pages.** It was missing the "Back to My inbox" button, and its title was smaller, in a different place and font. Sent now uses the same page header as Archived and the rest: the Back button, then the title, then a line saying what the page is ("Your last 14 days of sent mail"). The page also keeps room for its scroll bar, so nothing shifts sideways when the emails finish loading.
+
+**A cogwheel for Settings.** The Settings icon in the left menu was a sun. It is now the same standard cogwheel used in the menu under your name.
+
+**A maintenance guide.** New `docs/MAINTENANCE.md` for the maintainer: what Enveliq relies on (the database is one SQLite file, with no separate server), a weekly, per-release, monthly and twice-a-year routine, the GitHub security alerts to switch on, and why the preview build's tools should be pinned to exact versions. Documentation only; nothing in the app changes.
+
+**Nothing in the wrong place when you refresh quickly.** Refreshing used to show parts of the page for a split second before they had moved into place: the search box and the "?" button in their old spots, the Recent emails box out of position, and some menu buttons. Now only the background shows until everything is ready, then the whole page fades in together in its right place (a calm "Getting your inbox ready…" line still appears if it takes more than a moment). Phones get the same. The server was already telling the browser not to keep old copies of the page, so this was never an old file.
+
+Code and tests: `scripts/check_no_flash.mjs` (new, in CI), `scripts/check_no_sample_flash.mjs`, `web/static/auth.js` (Microsoft steps), `prototype/index.html` (menu wording, sticky bars and spacing, desktop only), `scripts/check_sticky_header.mjs` and `scripts/check_main_gaps.mjs` (new, in CI), `docs/INBOX.md`.
 
 ## v0.88 (2026-10-14)
 

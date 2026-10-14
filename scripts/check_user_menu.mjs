@@ -1,4 +1,4 @@
-// Browser check for the user menu, Profile settings, the tidied Settings/Administration menus and the password rules card.
+// Browser check for the user menu (Settings for everyone, Administration for administrators only), the tidied Settings/Administration menus and the password rules card.
 // The page is loaded from a pretend Enveliq server (Playwright intercepts requests); the real page scripts from web/static are used.
 //
 // Usage (needs Playwright and a Chromium build):
@@ -83,7 +83,7 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   await page.click("#userPill");
   await shot(page, "menu");
   const items = (await page.locator("#userMenu .menu-item").allInnerTexts()).map((t) => t.trim());
-  check("the menu preserves account settings and offers all three appearance modes", ["Profile settings", "Settings", "Manage users"].every(t=>items.includes(t)) && (await page.locator("[data-theme-choice]").count())===3 && (await page.locator("#previewCalmBtn").isVisible()));
+  check("the menu offers Settings and Administration (no Profile settings or Manage users), and all three appearance modes", ["Settings", "Administration"].every(t=>items.includes(t)) && !items.includes("Profile settings") && !items.includes("Manage users") && items.indexOf("Settings") < items.indexOf("Administration") && (await page.locator("[data-theme-choice]").count())===3 && (await page.locator("#previewCalmBtn").isVisible()));
   check("Sign out is in the menu too", (await page.locator("#userMenu button", { hasText: "Sign out" }).count()) === 1);
   await page.click('[data-theme-choice="light"]');
   check("Light mode works from the account menu", (await page.evaluate(() => document.documentElement.dataset.theme))==="light");
@@ -94,12 +94,13 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   check("Dark mode works from the menu", !(await page.evaluate(() => document.documentElement.dataset.theme)));
   await page.click("#userPill");
 
-  // Profile settings
+  // Settings (the same page for everyone) opens on the person's own settings, including the Profile page
   await page.click("#userPill");
-  await page.click("#profileBtn");
+  await page.click("#settingsBtn");
   await page.waitForSelector("#settings.open");
+  await page.click('[data-settings-tab="profile"]');
   await host(page, "profile").locator("text=Everything on this page is optional").waitFor({ timeout: 15000 });
-  check("Profile settings opens the Profile page", (await page.locator("#settingsHeading").innerText()).trim() === "Profile" && (await page.locator('[data-settings-tab="profile"].active').count()) === 1);
+  check("Settings has the Profile page", (await page.locator("#settingsHeading").innerText()).trim() === "Profile" && (await page.locator('[data-settings-tab="profile"].active').count()) === 1);
   const groups = (await page.locator("#settingsNav .settings-group").allTextContents()).map((t) => t.trim());
   check("Settings is grouped: You, Your mail, How it works for you, Help", groups.join("|") === "You|Your mail|How it works for you|Help");
   const tabs = (await page.locator("#settingsNav [data-settings-tab]").allInnerTexts()).map((t) => t.trim());
@@ -167,7 +168,7 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   const { page, errors } = await open(server);
   await page.click("#userPill");
   check("a normal user does not see Administration", await page.locator("#adminBtn").isHidden());
-  check("they still see Profile settings and Settings", (await page.locator("#profileBtn").isVisible()) && (await page.locator("#settingsBtn").isVisible()));
+  check("they still see Settings, and there is no Profile settings item", (await page.locator("#settingsBtn").isVisible()) && (await page.locator("#profileBtn").count()) === 0);
   check("no script errors (user)", errors.length === 0);
 }
 

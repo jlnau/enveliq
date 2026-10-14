@@ -142,3 +142,13 @@ def test_the_main_image_has_no_pdf_parser():
     root = Path(__file__).parent.parent
     assert "poppler" not in (root / "Dockerfile").read_text()
     assert "poppler-utils" in (root / "Dockerfile.render").read_text()
+
+
+def test_pages_are_drawn_large_enough_for_a_big_window_but_every_limit_still_holds():
+    # The viewer window follows the size of the browser, so pages are drawn at up to 1500 pixels on the long side
+    # (they used to be 1000). Nothing that bounds the work or the answer may have been loosened with it.
+    assert render.PAGE_LONG_SIDE == 1500
+    assert render.MAX_PAGES == 20
+    assert render.MAX_PAGE_PNG == 3 * 1024 * 1024
+    assert render.MAX_TOTAL_PNG == 24 * 1024 * 1024
+    assert render.WALL_SECONDS == 20 and render.CPU_SECONDS == 15 and render.MEMORY_BYTES == 1024 * 1024 * 1024
