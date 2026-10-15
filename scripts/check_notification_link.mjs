@@ -23,6 +23,7 @@ const authCss = fs.readFileSync(path.join(here, "..", "web", "static", "auth.css
 function makeServer() {
   let extra = false;
   const saved = [];
+  let mailSelection = null;
   const settings = { morning_on: true, morning_time: "08:00", due_on: true, repeat_hours: 2, repeat_max: 2, quiet_on: true, quiet_from: "21:00", quiet_to: "07:00", show_titles: true, mail_on: false, mail_details: false };
   const overview = () => ({ settings, tz: "Australia/Sydney", channels: [{ id: "browser", label: "This device (browser)", blurb: "A pop-up on this phone or computer, even when Enveliq is closed.", steps: ["Press Turn on for this device."], fields: [], enabled: false, allowed: true, configured: false, last_ok: null, last_error: null, devices: [] }] });                                 // a fourth email that "arrives" after the page loaded
   const handler = async (route) => {
@@ -44,6 +45,8 @@ function makeServer() {
     if (p === "/static/auth.css") return route.fulfill({ status: 200, contentType: "text/css", body: authCss });
     if (p === "/api/v1/me/notifications") return json(200, overview());
     if (p === "/api/v1/me/notifications/settings" && req.method() === "PUT") { const b = JSON.parse(req.postData()); saved.push(b); Object.assign(settings, b); return json(200, overview()); }
+    if (p === "/api/v1/me/mail-context" && req.method() === "GET") return json(200, { selection: mailSelection });
+    if (p === "/api/v1/me/mail-context" && req.method() === "PUT") { mailSelection = JSON.parse(req.postData()); if (!mailSelection.account_id) mailSelection = null; return json(200, { selection: mailSelection }); }
     if (p === "/api/v1/me/preferences") return json(200, { keep_reviewed: true, keep_archived: true, keep_days: 7, max_days: 14, instructions: "", undo_send_seconds: 0 });
     if (p === "/api/v1/me/features") return json(200, { effective: features, admin: features, user: features });
     if (p === "/api/v1/sync/status") return json(200, { enabled: true, minutes: 10, now: Date.now() / 1000, accounts: { a1: { ok: true, at: now } } });
@@ -51,7 +54,7 @@ function makeServer() {
     if (p === "/api/v1/me/shipping") return json(200, { enabled: false, orders: [], now });
     return json(404, { detail: "not found: " + p });
   };
-  return { handler, saved, arrive: () => { extra = true; } };
+  return { handler, saved, selection: () => mailSelection, arrive: () => { extra = true; } };
 }
 
 const browser = await chromium.launch();
@@ -70,6 +73,22 @@ async function open(server, query = "", { width = 1200, height = 900 } = {}) {
 }
 const shot = async (page, name) => { if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, name + ".png") }); };
 const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll("article.mail.open .subject")].map((e) => e.textContent.trim()));
+
+{
+  const server = makeServer();
+  const { page, context } = await open(server, "", { width: 1200, height: 800 });
+  await page.waitForSelector("article.mail");
+  await page.locator("article.mail").nth(1).click();
+  await page.waitForTimeout(400);
+  check("selected email is stored in per-user context", server.selection()?.message_id === "m2" || server.selection()?.message_id === "m1");
+  const selected = server.selection()?.message_id;
+  await page.reload();
+  await page.waitForSelector("article.mail");
+  await page.waitForTimeout(250);
+  check("selected email restores after refresh", await page.evaluate(() => paneId != null));
+  check("refresh retains the same selected message", server.selection()?.message_id === selected);
+  await page.close();await context.close();
+}
 
 {
   const { page, errors, context } = await open(makeServer());
