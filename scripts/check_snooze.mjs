@@ -148,7 +148,7 @@ const badge = (page, id) => page.locator("#" + id).innerText();
   await expandAll(page);
   await row(page, "Book club").locator("[data-snooze]").click();
   await page.locator("#snoozeMenu [data-snooze-pick]", { hasText: "Later today" }).click();
-  await page.waitForTimeout(200);
+  await row(page, "Book club").waitFor({state:"detached",timeout:3000});
   check("before its time it is out of sight", (await row(page, "Book club").count()) === 0);
   await page.clock.fastForward("03:10:00");
   await page.waitForTimeout(300);
