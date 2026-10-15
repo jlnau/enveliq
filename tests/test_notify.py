@@ -447,3 +447,17 @@ def test_mail_opened_shared_per_user_across_clients(env):
     assert client.get("/api/v1/me/mail-opened").json()["keys"].count(key) == 1
     assert appm.vault.get_message(aid, msg["id"]).get("state") == initial_state
     assert client.post("/api/v1/me/mail-opened", json={"account_id": aid, "message_id": "missing-message"}).status_code == 404
+
+
+def test_mail_view_preferences_stored_per_user_in_vault(env):
+    """Layout is stored in the vault, not a browser cookie or provider mailbox."""
+    appm, client, bridge, _ = env
+    assert client.get("/api/v1/me/mail-view").json() == {"view": None}
+    chosen = {"layout": "bottom", "density": "compact", "width": "full", "rows": "open", "peek": False}
+    response = client.put("/api/v1/me/mail-view", json=chosen)
+    assert response.status_code == 200, response.text
+    assert client.get("/api/v1/me/mail-view").json()["view"] == chosen
+    uid = appm.vault.list_users()[0]["id"]
+    assert appm.vault.get_global("mail-view-v1:" + uid) == chosen
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "layout": "invalid"}).status_code == 422
+    assert client.get("/api/v1/me/mail-view").json()["view"] == chosen
