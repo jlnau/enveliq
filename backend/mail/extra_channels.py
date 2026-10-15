@@ -169,10 +169,14 @@ def _send_browser(values: dict[str, Any], note: dict[str, Any], ctx: dict[str, A
             last = OutboundError("error", "The message could not be prepared.")
     for did in dead:
         remove_device(notifier, user_id, did)
+    if dead or last:
+        # One working device must not hide another device's failed test.
+        # Failed subscriptions may have been removed above after a 404/410.
+        if dead:
+            raise OutboundError("gone", "One or more browser devices no longer accept notifications and were removed. Turn notifications on again on those devices.")
+        raise last
     if not sent:
-        if dead and not last:
-            raise OutboundError("gone", "That device no longer accepts notifications. Turn them on again on the device.")
-        raise last or OutboundError("not_set", "No device is set up yet.")
+        raise OutboundError("not_set", "No device is set up yet.")
 
 
 register_extra("browser", {
