@@ -2271,7 +2271,8 @@ function openFromLink(raw,fromAddress,quiet){
   document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));
   captureMailPosition();
   expanded.add(`row-${m.id}`);paneId=m.id;enMarkOpened(m.id);if(lay()==="screen")readerOpen=true;
-  render();
+  if(!fromAddress){navPopping=true;try{render()}finally{navPopping=false}}
+  else render();
   saveMailContinuity();
   const el=document.querySelector(`[data-expand="row-${m.id}"],[data-pick="${m.id}"]`);if(el&&el.scrollIntoView&&lay()!=="screen")el.scrollIntoView({block:"center"});
   return true;
