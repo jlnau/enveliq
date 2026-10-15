@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Annotated, Any
+from threading import RLock
 
 from fastapi import APIRouter, Depends, HTTPException, Path as PathParam
 from pydantic import Field, field_validator
@@ -43,6 +44,11 @@ class SettingsBody(StrictModel):
     mail_details: bool | None = None
 
 
+class OpenedMessageBody(StrictModel):
+    account_id: str = Field(min_length=1, max_length=128)
+    message_id: str = Field(min_length=1, max_length=512)
+
+
 class DeviceBody(StrictModel):
     endpoint: str = Field(max_length=800)
     p256dh: str = Field(max_length=200)
@@ -62,6 +68,37 @@ def build_notify_router(ctx: Any) -> APIRouter:
     save_limit = SlidingWindowLimiter(max_events=60, window=60)
     test_limit = SlidingWindowLimiter(max_events=10, window=60)
     click_url = ctx.click_url
+
+    opened_lock = RLock()
+    opened_prefix = "enveliq-opened-v1:"
+
+    @router.get("/me/mail-opened")
+    def get_mail_opened(session: Session = Depends(session_dep)):
+        with opened_lock:
+            rec = ctx.vault.get_global(opened_prefix + session.principal.user_id) or {}
+        return {"keys": rec.get("keys", []) if isinstance(rec.get("keys"), list) else []}
+
+    @router.post("/me/mail-opened")
+    def record_mail_opened(body: OpenedMessageBody, session: Session = Depends(session_dep)):
+        user = session.principal.user_id
+        account = ctx.vault.get_account(body.account_id)
+        if not account or account.get("owner_user_id") != user:
+            raise HTTPException(status_code=404, detail="Email not found")
+        try:
+            message = ctx.vault.get_message(body.account_id, body.message_id)
+        except (KeyError, ValueError):
+            message = None
+        if not message:
+            raise HTTPException(status_code=404, detail="Email not found")
+        key = body.account_id + ":" + body.message_id
+        with opened_lock:
+            rec = ctx.vault.get_global(opened_prefix + user) or {}
+            keys = rec.get("keys", [])
+            keys = keys if isinstance(keys, list) else []
+            if key not in keys:
+                keys.append(key)
+                ctx.vault.set_global(opened_prefix + user, {"keys": keys[-20000:]})
+        return {"ok": True}
 
     @router.get("/me/notifications")
     def overview(session: Session = Depends(session_dep)):

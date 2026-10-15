@@ -427,3 +427,23 @@ def test_browser_device_test_only_targets_selected_device(env, monkeypatch):
     missing = client.post("/api/v1/me/notifications/browser/" + "c" * 12 + "/test")
     assert missing.status_code == 404
     assert sent == ["https://push.example/brave"]
+
+
+def test_mail_opened_shared_per_user_across_clients(env):
+    """A server-stored first-open marker survives requests and does not change mailbox state."""
+    appm, client, bridge, _ = env
+    aid = account(client, bridge)
+    client.post(f"/api/v1/accounts/{aid}/sync", json={})
+    messages = appm.vault.list_messages(aid)
+    assert messages
+    msg = messages[0]
+    initial_state = appm.vault.get_message(aid, msg["id"]).get("state")
+    key = aid + ":" + msg["id"]
+    assert key not in client.get("/api/v1/me/mail-opened").json()["keys"]
+    response = client.post("/api/v1/me/mail-opened", json={"account_id": aid, "message_id": msg["id"]})
+    assert response.status_code == 200, response.text
+    assert key in client.get("/api/v1/me/mail-opened").json()["keys"]
+    assert client.post("/api/v1/me/mail-opened", json={"account_id": aid, "message_id": msg["id"]}).status_code == 200
+    assert client.get("/api/v1/me/mail-opened").json()["keys"].count(key) == 1
+    assert appm.vault.get_message(aid, msg["id"]).get("state") == initial_state
+    assert client.post("/api/v1/me/mail-opened", json={"account_id": aid, "message_id": "missing-message"}).status_code == 404

@@ -506,7 +506,7 @@ await page.click('[data-theme-choice="dark"]');
   // reading pane on the right
   await page.click('#viewPanel [data-view=layout][data-val=right]');
   const rowsN = await page.locator(".panelist article.mail").count();
-  check("reading pane on the right: no email initially selected, no expanding rows", (await page.locator("#readDock .reading").count()) === 1 && (await page.locator("#readDock .reading").innerText()).trim() === "" && (await page.locator(".panelist article.mail.current").count()) === 0 && (await page.locator("article.mail.open").count()) === 0 && rowsN >= 2);
+  check("reading pane on the right: no email initially selected, no expanding rows", (await page.locator("#readDock .reading").count()) === 1 && (await page.locator("#readDock .enveliq-empty-actions .enveliq-empty-action").count()) === 4 && (await page.locator(".panelist article.mail.current").count()) === 0 && (await page.locator("article.mail.open").count()) === 0 && rowsN >= 2);
   const lb = await page.locator(".panelist").boundingBox(), rb = await page.locator(".reading").boundingBox();
   check("the list is on the left of the reading pane", lb.x + lb.width <= rb.x + 2);
   const second = (await page.locator(".panelist article.mail .subject").nth(1).innerText()).trim();
