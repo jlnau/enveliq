@@ -1303,12 +1303,18 @@ async function turnOnPush() {
 function browserCard(ch, redraw) {
   const status = ch.last_error ? h("span", { class: "pill off", text: "Last send failed" }) : ch.enabled && ch.devices.length ? h("span", { class: "pill on", text: `${ch.devices.length} ${ch.devices.length === 1 ? "device" : "devices"}` }) : h("span", { class: "pill", text: "Off" });
   const list = ch.devices.map(d => h("div", { class: "row" }, h("span", { text: d.label }),
+    h("button", { class: "btn small", type: "button", text: "Test", onclick: async e => {
+      const button = e.currentTarget; button.disabled = true;
+      try { await api(`/me/notifications/browser/${d.id}/test`, { method: "POST", body: {} }); toast(`Test sent to ${d.label}.`); }
+      catch (err) { toast(`Test failed for ${d.label}: ${err.message}`); }
+      finally { button.disabled = false; }
+    } }),
     h("button", { class: "btn small", type: "button", text: "Remove", onclick: async () => { try { await api(`/me/notifications/browser/${d.id}`, { method: "DELETE" }); toast("Removed"); redraw(); } catch (err) { toast(err.message); } } })));
   const body = h("div", { class: "chan-form" }, h("p", { class: "hint", text: ch.blurb }), h("ol", { class: "howto" }, ch.steps.map(t => h("li", { text: t }))),
     ...list, ch.last_error ? alertBox("bad", `The last send failed: ${ch.last_error}`) : null,
     h("div", { class: "row" },
       h("button", { class: "btn primary", type: "button", text: "Turn on for this device", onclick: async () => { try { await turnOnPush(); toast("Turned on for this device"); redraw(); } catch (err) { toast(err.message); } } }),
-      ch.devices.length ? h("button", { class: "btn", type: "button", text: "Send a test", onclick: async () => { try { await api("/me/notifications/channels/browser/test", { method: "POST", body: {} }); toast("Test sent. It should appear in a few seconds."); } catch (err) { toast(err.message); } redraw(); } }) : null));
+      null));
   return h("details", { class: "chan", open: !!(ch.devices.length || ch.last_error) }, h("summary", {}, h("strong", { text: ch.label }), " ", status), body);
 }
 function channelCard(ch, redraw) {
