@@ -109,7 +109,7 @@ const more = (page) => page.locator(".srch-more");
   await type(page, "electricity");
   await more(page).locator("[data-search-open]").first().click();
   await page.waitForTimeout(200);
-  check("choosing an email opens the list it is in, with the search cleared and the email open", (await page.locator("#search").inputValue()) === "" && (await page.locator('.nav[data-filter="reviewed"].active').count()) === 1 && /Your electricity bill/.test(await page.locator("article.mail.open").first().innerText()));
+  check("choosing an email opens the list it is in, with the search cleared and the email open", (await page.locator("#search").inputValue()) === "" && (await page.locator('.nav[data-filter="reviewed"].active').count()) === 1 && (await page.locator("article.mail.open", { hasText: "Your electricity bill" }).count()) === 1);
   await page.locator('.nav[data-filter="all"]').click();
   await type(page, "fence");
   await more(page).locator("[data-search-go]").first().click();
