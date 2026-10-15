@@ -2299,7 +2299,7 @@ const clipWords=m=>{const n=fileN(m),sure=m.attachments.length||m.fileCount!=nul
 function userMessages(){return data.filter(m=>m.owner===currentUser.id&&!m._pending)}
 let sortMode="newest",mailboxSel="";
 // ---- View options (saved in this browser) ----
-const VIEW_DEFAULT={layout:"list",density:"standard",width:"centered",rows:"collapsed",peek:true};
+const VIEW_DEFAULT={layout:"right",density:"standard",width:"centered",rows:"collapsed",peek:true};
 const VIEW_ALLOWED={layout:["list","right","bottom","screen","deck"],density:["compact","standard","roomy"],width:["centered","full"],rows:["collapsed","open"]};
 function loadView(){
   const v={...VIEW_DEFAULT};
@@ -2310,7 +2310,30 @@ function loadView(){
 let view=loadView(),readerOpen=false,dueOpen=false,calmLaterOpen=true,waitClosedOpen=false,paneId=null,lastPaneIdx=0,lastRowIds=[],lastDeckShown=null,deckDir="next",lastReadId=null;
 // On a phone every email opens full screen (the "screen" layout), whatever layout was chosen for a bigger screen. The choice itself is kept.
 function lay(){return phoneQuery.matches?"screen":view.layout}
-function saveView(){try{localStorage.setItem("enveliq-view",JSON.stringify(view))}catch{}}
+let viewSyncQueue=Promise.resolve(),viewServerReady=false;
+function saveView(){
+  try{localStorage.setItem("enveliq-view",JSON.stringify(view))}catch{}
+  if(!viewServerReady)return;
+  const snapshot={...view};
+  // Serialize changes, so slow network responses cannot restore older preferences.
+  viewSyncQueue=viewSyncQueue.catch(()=>{}).then(()=>secureBackendRequest("/api/v1/me/mail-view",{method:"PUT",body:JSON.stringify(snapshot)}));
+  viewSyncQueue.catch(error=>console.warn("Cannot save reading view preference",error));
+}
+async function loadServerView(){
+  const saved=await secureBackendRequest("/api/v1/me/mail-view",{method:"GET",headers:{}});
+  if(saved&&saved.view){
+    const v={...VIEW_DEFAULT};
+    for(const k of VIEW_ALLOWED)if(VIEW_ALLOWED[k].includes(saved.view[k]))v[k]=saved.view[k];
+    if(typeof saved.view.peek==="boolean")v.peek=saved.view.peek;
+    view=v;
+  }else{
+    // First upgrade: preserve the signed-in user's current device choice once.
+    const v={...view};
+    await secureBackendRequest("/api/v1/me/mail-view",{method:"PUT",body:JSON.stringify(v)});
+  }
+  viewServerReady=true;
+  applyView();
+}
 function applyView(){
   readerOpen=false;
   // Switching layouts starts with an unselected reading panel.
@@ -5468,6 +5491,7 @@ async function bootBackendMode(){
   // (The made-up mail is only for the hosted demo and the preview, which have no server.)
   data.length=0;accounts.length=0;
   document.body.classList.add("backend");
+  try{await loadServerView()}catch(error){console.warn("Mail layout preference could not be loaded",error)}
   prepareEmbedPanels();
   const menu=$("userMenu");
   const link=(href,text)=>{const a=document.createElement("a");a.href=href;a.className="user-option";a.textContent=text;return a};
