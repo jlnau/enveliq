@@ -65,6 +65,7 @@ async function open(width, height) {
   await context.route("**/*", handler);
   await page.goto(`${ORIGIN}/`);
   await page.waitForSelector("article.mail");
+  await page.evaluate(() => { view.layout = "list"; applyView(); render(); });   // the classic list; the default is now the reading panel on the right
   return { page, errors, context };
 }
 async function expandAll(page) {

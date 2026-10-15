@@ -29,6 +29,7 @@ const settle = (p) => p.waitForTimeout(350);
   const p = await b.newPage({ viewport: { width: 1180, height: 760 } }); const errors = [];
   p.on("pageerror", (e) => errors.push(String(e)));
   await p.goto(url); await p.waitForTimeout(600);
+  await p.evaluate(() => { view.layout = "list"; applyView(); render(); });   // the classic list; the default is now the reading panel on the right
   await p.evaluate(() => { const base = data.find((x) => x.status === "inbox" && x.owner === currentUser.id); ["Electricity bill", "Dentist on Friday", "School form"].forEach((t, i) => data.push({ ...base, id: 9000 + i, subject: t, attachments: i % 2 ? [] : base.attachments })); document.querySelector(".demo-banner")?.remove(); render(); });
   await p.mouse.move(5, 5); await settle(p);
   const rows = p.locator("article.mail"), pair = (i) => rows.nth(i).locator(".qpair"), time = (i) => rows.nth(i).locator(".time");
@@ -59,6 +60,7 @@ const settle = (p) => p.waitForTimeout(350);
 {
   const p = await b.newPage({ viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true });
   await p.goto(url); await p.waitForTimeout(600);
+  await p.evaluate(() => { view.layout = "list"; applyView(); render(); });   // the classic list; the default is now the reading panel on the right
   check("on a phone the row buttons stay out of the way (swiping is used)", (await p.locator("article.mail .qpair").first().evaluate((e) => getComputedStyle(e).display)) === "none");
   await p.close();
 }

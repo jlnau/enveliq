@@ -116,6 +116,7 @@ async function open(server, { width = 1200, height = 900 } = {}) {
   await page.addInitScript(() => { window.__opened = []; document.addEventListener("click", (e) => { const a = e.target.closest && e.target.closest("a[target=_blank]"); if (a) { window.__opened.push(a.href); e.preventDefault(); } }, true); });
   await page.goto(`${ORIGIN}/`);
   await page.waitForSelector("article.mail");
+  await page.evaluate(() => { view.layout = "list"; applyView(); render(); });   // these checks look at the classic list; the default is now the reading panel on the right
   return { page, errors, csp, context };
 }
 const shot = async (page, name) => { if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, name + ".png") }); };
