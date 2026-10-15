@@ -129,6 +129,19 @@ def build_notify_router(ctx: Any) -> APIRouter:
             raise HTTPException(status_code=422, detail=str(err)) from None
         return notifier.overview(user)
 
+    @router.post("/me/notifications/browser/{device_id}/test")
+    def browser_device_test(device_id: Annotated[str, PathParam(pattern=r"^[0-9a-f]{12}$")], session: Session = Depends(session_dep)):
+        user = session.principal.user_id
+        if not test_limit.allow(f"t:{user}"):
+            raise HTTPException(status_code=429, detail="Too many tests. Wait a minute.")
+        if not notifier.admin()["channels"].get("browser", True):
+            raise HTTPException(status_code=403, detail="Browser notifications have been disabled.")
+        try:
+            extra_channels.test_browser_device(notifier, user, device_id, click_url)
+        except OutboundError as err:
+            raise HTTPException(status_code=502 if err.code != "not_found" else 404, detail=err.message) from None
+        return {"ok": True}
+
     @router.delete("/me/notifications/browser/{device_id}")
     def browser_remove(device_id: Annotated[str, PathParam(pattern=r"^[0-9a-f]{12}$")], session: Session = Depends(session_dep)):
         extra_channels.remove_device(notifier, session.principal.user_id, device_id)
