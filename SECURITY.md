@@ -636,3 +636,8 @@ Rules are the first thing Enveliq does to a mailbox by itself, so they are delib
 ## Saved layout and opened emails
 
 Each person's saved layout (`mail-view-v1:<person>`) and the list of emails they have opened (`enveliq-opened-v1:<person>`, only mailbox and email ids) are kept in the encrypted vault and are read and written only for the signed-in person, from the session, never from anything the page sends. The "opened" route answers "not found" unless the mailbox belongs to that person and the email exists. Neither record holds any email text, and opening an email never changes its state at the mail provider. Both are cleared when a person is deleted. The per-device browser test route needs a session, is limited to ten tests a minute, and only reaches the caller's own registered devices.
+
+
+## Selected email continuity
+
+The last selected email is kept as its mailbox identifier and message identifier in the signed-in person's encrypted vault record. The server validates ownership before saving it and does not store an email body or attachment. Scroll positions remain in browser session storage, scoped to the current user, and are not sent to the server.
