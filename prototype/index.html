@@ -3480,10 +3480,26 @@ $("allSwitch").onclick=async()=>{
 let selMode=false;          // phone only: set by pressing and holding an email
 // First-open state is scoped to the Enveliq user and never writes to source mailboxes.
 const enNewKey=()=> "enveliq-opened-messages:"+String(currentUser.id);
+let enServerOpened=new Set();
 function enOpenSet(){try{return new Set(JSON.parse(localStorage.getItem(enNewKey())||"[]"))}catch{return new Set()}}
 function enMailKey(m){return m.real ? m.real.accountId+":"+m.real.messageId : "demo:"+m.id}
-function enOpened(m){return enOpenSet().has(enMailKey(m))}
-function enMarkOpened(id){const m=data.find(x=>String(x.id)===String(id)&&x.owner===currentUser.id);if(!m)return;const known=enOpenSet();known.add(enMailKey(m));try{localStorage.setItem(enNewKey(),JSON.stringify([...known]))}catch{}}
+function enOpened(m){return m.real&&document.body.classList.contains("backend")?enServerOpened.has(enMailKey(m)):enOpenSet().has(enMailKey(m))}
+async function enFetchOpened(){
+  if(!document.body.classList.contains("backend"))return;
+  try{
+    const result=await secureBackendRequest("/api/v1/me/mail-opened",{method:"GET",headers:{}});
+    enServerOpened=new Set(Array.isArray(result.keys)?result.keys:[]);
+  }catch(err){console.warn("Cannot load opened email state",err)}
+}
+function enMarkOpened(id){
+  const m=data.find(x=>String(x.id)===String(id)&&x.owner===currentUser.id);if(!m)return;
+  const key=enMailKey(m);
+  if(m.real&&document.body.classList.contains("backend")){
+    if(enServerOpened.has(key))return;
+    enServerOpened.add(key);
+    secureBackendRequest("/api/v1/me/mail-opened",{method:"POST",body:JSON.stringify({account_id:m.real.accountId,message_id:m.real.messageId})}).catch(err=>{enServerOpened.delete(key);render();console.warn("Cannot record opened email",err)});
+  }else{const known=enOpenSet();known.add(key);try{localStorage.setItem(enNewKey(),JSON.stringify([...known]))}catch{}}
+}
 function enEmptyReading(){return `<div class="enveliq-empty-wrap"><h2 class="enveliq-empty-title">Nothing selected</h2><p class="enveliq-empty-sub">Choose an email to read, reply, or take action.</p><div class="enveliq-empty-actions">
 <button type="button" class="enveliq-empty-action" data-en-action="read"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="m3 7 9 7 9-7"/></svg><strong>Read emails</strong><span>Focus on what matters most</span><span class="ea-arrow">→</span></button>
 <button type="button" class="enveliq-empty-action" data-en-action="tasks"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/></svg><strong>Open tasks</strong><span>Turn emails into tasks</span><span class="ea-arrow">→</span></button>
@@ -5294,6 +5310,7 @@ async function loadRealMail(me){
   const accts=[];
   try{realPrefs=await secureBackendRequest("/api/v1/me/preferences",{method:"GET",headers:{}})}catch{}
   try{feat=(await secureBackendRequest("/api/v1/me/features",{method:"GET",headers:{}})).effective}catch{}
+  await enFetchOpened();
   await whLoad();
   const wantAll=!!(feat.all_mail&&allMail);
   if(wantAll&&Date.now()-recentAt>300000){
