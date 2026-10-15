@@ -29,6 +29,7 @@ for (const calm of ["0", "1"]) for (const theme of ["dark", "light"]) {
   await ctx.addInitScript(([c, t]) => { try { localStorage.setItem("enveliq-calm", c); localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-theme", t); } catch {} }, [calm, theme]);
   const page = await ctx.newPage(); await page.goto(origin + "/"); await page.waitForSelector("article.mail"); await page.waitForTimeout(700);
   await page.evaluate(() => {
+    view.layout = "list"; view.rows = "open"; applyView(); render();
     tasksData.tasks = [{ id: "a", title: "Download and install new configurations", detail: "", sender: "Ultra.cc", state: "open", days: 0, due: "2026-10-14" }, { id: "b", title: "Second thing", detail: "", sender: "X", state: "open", days: 3, due: "2026-10-17" }, { id: "c", title: "Third thing", detail: "", sender: "Y", state: "open", days: 5, due: "2026-10-19" }];
     renderToday();
   });
