@@ -6538,7 +6538,7 @@ let menuTouchStart=null;
 document.addEventListener("touchstart",e=>{
   if(!isPhone()||e.touches.length!==1||document.body.classList.contains("reader-open"))return;
   const t=e.touches[0],opened=document.body.classList.contains("menu-open");
-  if((!opened&&t.clientX<=28)||(opened&&t.clientX<=$("sidebar").getBoundingClientRect().right)){
+  if((!opened&&t.clientX<=28)||(opened&&t.clientX<=Math.max($("sidebar").getBoundingClientRect().right,Math.min(300,window.innerWidth*.86)))){
     menuTouchStart={x:t.clientX,y:t.clientY,opened};
   }else menuTouchStart=null;
 },{passive:true});
