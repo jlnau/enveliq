@@ -121,6 +121,13 @@ const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll
   const { page, context } = await open(makeServer(), "?open=a1:m1", { width: 390, height: 800 });
   check("on a phone the link opens the email too (full screen)", await page.evaluate(() => (document.querySelector(".reader h3")?.textContent || "").trim()) === "Update on refund");
   await shot(page, "notification-link-phone");
+  await page.goBack();
+  await page.waitForTimeout(300);
+  check("Back from a fresh phone notification returns to the inbox without leaving Enveliq",
+    (await page.locator(".reader").count()) === 0 &&
+    (await page.locator("article.mail").count()) > 0 &&
+    new URL(page.url()).pathname === "/");
+
   await page.close(); await context.close();
 }
 
