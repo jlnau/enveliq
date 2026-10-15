@@ -33,7 +33,7 @@ const open = async (calm, collapsed) => {
   await p.goto(origin + "/"); await p.waitForTimeout(1200);
   await p.evaluate(() => { const d = (n) => { const x = new Date(); x.setDate(x.getDate() + n); return isoLocal(x); };
     for (const [i, t] of [[1, "Select next week's meals"], [10, "Pay the made-up invoice"]]) demoTasks.push({ id: "x" + i, demoId: null, owner: currentUser.id, title: t, detail: "", sender: "Example Sender", priority: "normal", due: d(i), remind_at: null, state: "open", reason: null, closed_at: null, account_id: "", message_id: "", received: 0 });
-    syncDemoTasks(); render(); });
+    syncDemoTasks(); view.layout = "list"; view.rows = "open"; applyView(); render(); });
   if (collapsed) { await p.click("#collapseToggle"); await p.waitForTimeout(450); }
   return [ctx, p];
 };
