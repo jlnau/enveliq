@@ -6,7 +6,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 **Return safely from Android email notifications.** A notification launch gives Back an inbox destination without closing Enveliq or changing ordinary navigation. Touches `prototype/index.html` and notification browser checks. See `docs/NOTIFICATIONS.md`.
 
-**Remember inbox position and selected email.** The inbox keeps its scroll position on each device through navigation and refresh; the selected email is saved privately in the encrypted vault for that signed-in person. Touches `prototype/index.html`, `backend/mail/notify_routes.py` and browser checks. See `docs/INBOX.md` and `SECURITY.md`.
+**Remember inbox position and selected email.** The inbox keeps its scroll position on each device through navigation and refresh; the selected email is saved privately in the encrypted vault for that signed-in person. Touches `prototype/index.html`, `backend/mail/notify_routes.py`, `backend/app.py`, browser and backend tests. The saved selection is also cleared when a user is deleted. See `docs/INBOX.md` and `SECURITY.md`.
 
 **Email action buttons are easier to spot.** Tag, Task, Reply and other controls inside an email have a fine oval outline without changing their size or spacing, in either appearance mode. Touches `prototype/index.html`, `scripts/check_back_button.mjs`. See `docs/INBOX.md`.
 
