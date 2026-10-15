@@ -181,3 +181,62 @@ def test_an_email_with_an_open_task_stays_even_when_read_elsewhere_until_the_tas
     client.post(f"/api/v1/me/tasks/{t['id']}/done")
     client.post(f"/api/v1/accounts/{aid}/sync", json={})
     assert all(x["id"] != m["id"] for x in client.get(f"/api/v1/accounts/{aid}/messages").json())
+
+
+def add_task(client, aid, mid, title="Ring the plumber when I get home", **extra):
+    return client.post("/api/v1/me/tasks", json={"account_id": aid, "message_id": mid, "title": title, **extra})
+
+
+def test_a_person_can_add_their_own_task_to_any_email(env):
+    appm, client, bridge, _ = env
+    aid = summarised(client, bridge)
+    tz = ZoneInfo("Australia/Sydney")
+    appm.taskbook.clock = lambda: datetime(2026, 10, 9, 10, 0, tzinfo=tz).timestamp()
+    msgs = client.get(f"/api/v1/accounts/{aid}/messages").json()
+    plain = next(m for m in msgs if not m.get("suggested_task"))          # an email the AI found nothing to do in
+    r = add_task(client, aid, plain["id"])
+    assert r.status_code == 200, r.text
+    mine = [t for t in r.json()["tasks"] if t["manual"]]
+    assert len(mine) == 1
+    t = mine[0]
+    assert t["title"] == "Ring the plumber when I get home" and t["state"] == "open" and t["due"] == "2026-10-09"
+    assert t["message_id"] == plain["id"] and t["account_id"] == aid and t["sender"]
+    assert len(add_task(client, aid, plain["id"], "Another one", on="2026-10-20").json()["tasks"]) == len(r.json()["tasks"]) + 1
+    assert any(x["title"] == "Another one" and x["due"] == "2026-10-20" for x in listing(client)["tasks"])
+
+
+def test_your_own_task_stays_when_the_email_is_dealt_with(env):
+    appm, client, bridge, _ = env
+    aid = summarised(client, bridge)
+    mid = client.get(f"/api/v1/accounts/{aid}/messages").json()[0]["id"]
+    tid = next(t["id"] for t in add_task(client, aid, mid).json()["tasks"] if t["manual"])
+    r = client.post(f"/api/v1/accounts/{aid}/messages/{mid}/resolve", json={"outcome": "binned"})
+    assert r.status_code == 204, r.text
+    t = next(x for x in listing(client)["tasks"] if x["id"] == tid)
+    assert t["state"] == "open"                                           # only the person finishes it
+    assert client.post(f"/api/v1/me/tasks/{tid}/done").status_code == 200
+    assert next(x for x in listing(client)["tasks"] if x["id"] == tid)["state"] == "done"
+
+
+def test_adding_a_task_checks_the_email_the_title_and_the_date(env):
+    appm, client, bridge, _ = env
+    aid = summarised(client, bridge)
+    mid = client.get(f"/api/v1/accounts/{aid}/messages").json()[0]["id"]
+    assert add_task(client, aid, mid, "   ").status_code == 422
+    assert add_task(client, aid, mid, on="2020-01-01").status_code == 422
+    assert add_task(client, aid, mid, on="not a date").status_code == 422
+    assert add_task(client, aid, "no-such-email").status_code == 404
+    assert add_task(client, "00000000-0000-4000-8000-000000000000", mid).status_code == 404       # not one of this person's mailboxes
+    assert client.post("/api/v1/me/tasks", json={"account_id": aid, "message_id": mid, "title": "x", "extra": 1}).status_code == 422
+
+
+def test_your_own_task_needs_a_signed_in_person_and_is_limited(env):
+    appm, client, bridge, _ = env
+    from fastapi.testclient import TestClient
+    assert TestClient(appm.app).post("/api/v1/me/tasks", json={"account_id": "a", "message_id": "b", "title": "c"}).status_code in (401, 403)
+    aid = summarised(client, bridge)
+    mid = client.get(f"/api/v1/accounts/{aid}/messages").json()[0]["id"]
+    for i in range(T.MAX_MANUAL_OPEN):
+        book = appm.taskbook
+        book.add(appm.vault.list_accounts()[0]["owner_user_id"], aid, mid, f"Thing {i}")
+    assert add_task(client, aid, mid).status_code == 422

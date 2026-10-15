@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import secrets
 import threading
 import time
 from datetime import date, datetime, timedelta, timezone
@@ -24,6 +25,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 RECORD_PREFIX = "tasks:"
 CLOSED_KEEP_SECONDS = 36 * 3600
 MAX_TASKS = 500
+MAX_MANUAL_OPEN = 200
 STATE_OPEN, STATE_DONE, STATE_REMOVED = "open", "done", "removed"
 REASONS = {
     "you": "Done",
@@ -187,7 +189,7 @@ class TaskBook:
                     changed = True
             known_accounts = {a["id"] for a in accounts}
             for tid, t in list(items.items()):
-                if t["state"] != STATE_OPEN:
+                if t["state"] != STATE_OPEN or t.get("manual"):        # a task the person made by hand stays until they finish it
                     continue
                 m = live.get(tid)
                 reason = None
@@ -225,7 +227,7 @@ class TaskBook:
         with self._lock:
             book = self._load(user_id)
             t = book["items"].get(task_id(account_id, message_id))
-            if not t or t["state"] != STATE_OPEN:
+            if not t or t["state"] != STATE_OPEN or t.get("manual"):
                 return
             self._close(t, reason, self.clock())
             self._save(user_id, book)
@@ -250,7 +252,7 @@ class TaskBook:
                 "id": t["id"], "account_id": t["account_id"], "message_id": t["message_id"], "title": t["title"], "detail": t["detail"],
                 "sender": t["sender"], "priority": t["priority"], "due": t["due"], "days": (due - today).days, "remind_at": t["remind_at"],
                 "state": t["state"], "reason": t["reason"], "reason_text": REASONS.get(t["reason"] or "", ""), "closed_at": t["closed_at"],
-                "moved": t["moved"],
+                "moved": t["moved"], "manual": bool(t.get("manual")),
             })
         rows.sort(key=lambda r: (r["state"] != STATE_OPEN, max(r["days"], 0), 0 if r["priority"] == "high" else 1, r["days"], -self._received(book, r["id"])))
         return {"today": today.isoformat(), "tz": book["tz"], "now": now, "tasks": rows}
@@ -276,6 +278,57 @@ class TaskBook:
             return [dict(t) for t in self._load(user_id)["items"].values() if t["state"] == STATE_OPEN]
 
     # ---------- the person's own changes ----------
+
+    def add(self, user_id: str, account_id: str, message_id: str, title: str, *, on: str | None = None) -> dict[str, Any]:
+        """A task the person writes themselves for one of their own emails (for example "ring the plumber when I get home").
+        It does not close by itself when the email is dealt with: only the person finishes it. `on` is YYYY-MM-DD, today when
+        left out. Raises KeyError when the email is not one of this person's, ValueError for a bad title, date or a full list."""
+        from .service import MAIL_METHODS
+        title = clean(title, 300)
+        if not title:
+            raise ValueError("no title")
+        now = self.clock()
+        with self._lock:
+            try:
+                mine = {a["id"] for a in self.vault.list_accounts() if a.get("owner_user_id") == user_id and a.get("auth_method") in MAIL_METHODS}
+            except Exception:
+                raise KeyError(account_id) from None
+            if account_id not in mine:
+                raise KeyError(account_id)
+            try:
+                msg = next((m for m in self.vault.list_messages(account_id) if m["id"] == message_id), None)
+            except Exception:
+                msg = None
+            if msg is None:
+                raise KeyError(message_id)
+            book = self._load(user_id)
+            items: dict[str, dict[str, Any]] = book["items"]
+            if sum(1 for t in items.values() if t.get("manual") and t["state"] == STATE_OPEN) >= MAX_MANUAL_OPEN:
+                raise ValueError("too many")
+            today = self._today(book, now)
+            if on:
+                try:
+                    due = date.fromisoformat(on)
+                except ValueError:
+                    raise ValueError("bad date") from None
+                if not today <= due <= today + timedelta(days=366):
+                    raise ValueError("date out of range")
+            else:
+                due = today
+            tid = "t" + secrets.token_hex(11) + "0"
+            while tid in items:
+                tid = "t" + secrets.token_hex(11) + "0"
+            items[tid] = {
+                "id": tid, "account_id": account_id, "message_id": message_id, "title": title, "detail": "",
+                "sender": clean(msg.get("sender_display") or msg.get("sender_address"), 200),
+                "priority": "normal", "received": msg.get("received_at") or 0,
+                "due": due.isoformat(), "remind_at": None, "state": STATE_OPEN, "reason": None,
+                "created_at": now, "closed_at": None, "moved": False, "ext": {}, "manual": True,
+            }
+            self._save(user_id, book)
+            out = dict(items[tid])
+        self._emit(user_id, out, "added")
+        return out
 
     def act(self, user_id: str, tid: str, action: str, *, to: str | None = None, on: str | None = None) -> dict[str, Any]:
         """done | reopen | remove | not_today | move (to: later_today, tomorrow, weekend, next_week, date; on: YYYY-MM-DD)."""

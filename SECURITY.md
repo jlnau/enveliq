@@ -44,6 +44,7 @@ These rules are architecture requirements, not UI preferences.
 - A task is found again from its email by a hash of the mailbox and message ids, so one email can never make two tasks, and a task the person removed is not made again.
 - Tasks are made by the server from summaries it already holds; the AI model gets no new tools or access. The title and detail are cleaned of control characters and shown only as text in the page.
 - Time zones come from the browser but are accepted only if they are a real zone name; anything else means UTC.
+- A person can add a task of their own to any email (`POST /api/v1/me/tasks`). The server accepts it only for an email in one of that person's own mailboxes (anything else answers "not found"), cleans the title of control characters, limits it to 300 characters and the date to the coming year, allows at most 200 open tasks of this kind, and rate-limits it like the other task routes. It is stored in the person's own encrypted task record with the rest; no email text is copied into it. It is shown only as text.
 
 ## Reminders and outgoing requests (v0.43)
 
