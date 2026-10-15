@@ -55,6 +55,7 @@ const rowOf = (page, subject) => page.locator("article.mail", { hasText: subject
 const widths = () => ({ vw: innerWidth, doc: document.documentElement.scrollWidth, rbody: document.querySelector(".rbody") ? document.querySelector(".rbody").scrollWidth : 0, rbodyClient: document.querySelector(".rbody") ? document.querySelector(".rbody").clientWidth : 0 });
 for (const w of [320, 360, 390, 412]) {
   const { page, context, errors } = await run(w, 800);
+  if (process.env.WIDE_FONT) await page.addStyleTag({ content: '*{font-family:"DejaVu Sans",sans-serif!important}' });
   await page.evaluate(() => { document.getElementById("syncBtn").hidden = false; document.getElementById("mSyncBtn").hidden = false; });
   check(`${w}px: every button in the top bar is fully on the screen, Sync included`, await page.evaluate(() => { const bs = [...document.querySelectorAll("#mTop .mbtn")].filter((b) => !b.hidden && b.getBoundingClientRect().width > 0); return bs.length >= 3 && bs.every((b) => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }) && !!bs.find((b) => b.id === "mSyncBtn"); }));
   check(`${w}px: New email and News feeds are not in the top bar`, (await page.locator("#mNewBtn, #mRssBtn").count()) === 0);
