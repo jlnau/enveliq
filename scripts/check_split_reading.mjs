@@ -60,12 +60,12 @@ for (const theme of ["dark", "light"]) {
   check(t + "Coming up has no arrow to fold it", (await page.locator("#dueBars .preview-later .preview-fold-toggle").evaluate((e) => getComputedStyle(e).display)) === "none");
   check(t + "the Coming up box is the same height as the Today box", Math.abs(t2.h - l2.h) <= 2);
   check(t + `the first email in the list starts high up (at ${Math.round(list.y)}, it did not move down)`, list.y < 640);
-  check(t + "no email is selected on first opening", (await page.locator("#readDock .reading").innerText()).trim() === "" && await page.locator("#paneList article.current").count() === 0);
+  check(t + "calendar appears while no email is selected", (await page.locator("#readDock .reading .rc-grid").count()) === 1 && await page.locator("#paneList article.current").count() === 0);
   await page.locator("#paneList article.mail .qmain").first().click();
   const btn = await box(page, "#readDock .reading .qbtns .reviewed");
   check(t + "selecting an email shows Reviewed, Archive and Bin at the bottom", btn && btn.b <= dock.b && btn.b >= dock.b - 80);
   await page.reload(); await page.waitForSelector("#paneList article.mail");
-  check(t + "refresh returns the reading pane to blank", (await page.locator("#readDock .reading").innerText()).trim() === "" && await page.locator("#paneList article.current").count() === 0);
+  check(t + "refresh restores the calendar with no selected email", (await page.locator("#readDock .reading .rc-grid").count()) === 1 && await page.locator("#paneList article.current").count() === 0);
   // Demo tasks are in memory, so a reload removes the temporary Coming up rows.
   // Restore them before the remaining layout/navigation checks.
   await page.evaluate(() => {
