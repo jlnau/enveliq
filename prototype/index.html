@@ -695,6 +695,7 @@ body.calm .today-card{border-color:transparent;background:var(--panel)}
 
 #shipPage{display:none;padding-top:14px}body.on-ship #shipPage{display:block}body.on-ship .filters,body.on-ship #list,body.on-ship .sample-banner,body.on-ship #dueBars,body.on-ship #shipBars,body.on-ship #subBars,body.on-ship #tripBars,body.on-ship #waitBars{display:none!important}
 .sp-sub{color:var(--muted);margin:-6px 0 14px;max-width:660px}
+.shipadd{max-width:520px}.shipadd label{display:block;font-size:13px;font-weight:600;margin:0 0 5px}.shipadd input[type=text],.shipadd select,.ostatus{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--text);padding:9px 10px;font:inherit}.ostatus{width:auto;max-width:100%}.sa-err{margin:0;color:var(--bad,#c0392b);font-size:13.5px}
 .ocard{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px 16px;margin-bottom:12px;display:grid;gap:10px}
 .ocard.arrive{background:#0f2429;border-color:#1f5560}.ocard.unsure{border-style:dashed;border-color:var(--faint)}
 .ohead{display:flex;gap:10px 14px;flex-wrap:wrap;align-items:flex-start}.otitle{flex:1 1 260px;min-width:0}
@@ -2640,7 +2641,7 @@ document.addEventListener("keydown",e=>{if(e.target&&e.target.id==="mgText"&&e.k
 const shipDay=iso=>{const d=new Date(iso+"T00:00:00");return isNaN(d)?"":d.toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short"})};
 const shipWhen=ts=>{const d=new Date(ts*1000);return isNaN(d)?"":d.toLocaleString("en-AU",{weekday:"short",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"})};
 function shipStatus(o){
-  const label={ordered:"Ordered",shipped:"Shipped",out_for_delivery:"Out for delivery",delivered:"Delivered"}[o.status]||"Ordered";
+  const label={ordered:o.manual?"Waiting to be shipped":"Ordered",shipped:"Shipped",out_for_delivery:"Out for delivery",delivered:"Delivered"}[o.status]||"Ordered";
   if(o.status==="delivered")return o.delivered_at?`Delivered · ${shipWhen(o.delivered_at)}`:"Delivered";
   return o.expected?`${label} · due ${shipDay(o.expected)}`:label;
 }
@@ -2661,9 +2662,50 @@ function shipNoteHtml(o){
   }
   return o.note?`<div class="onote">${esc(o.note)}</div>`:"";
 }
+const SHIP_HAND=[["ordered","Waiting to be shipped"],["shipped","Shipped"],["out_for_delivery","Out for delivery"],["delivered","Delivered"]];
+let shipAdd={open:false,shop:"",tracking:"",status:"ordered",err:"",busy:false};
+function shipAddHtml(){
+  if(!shipAdd.open)return `<div class="oact" style="margin:0 0 12px"><button class="obtn blue" type="button" data-ship-add-open>Add a parcel</button><span class="meta">For a parcel that did not start from an email.</span></div>`;
+  const f=shipAdd;
+  return `<form class="ocard shipadd" data-ship-add-form novalidate><b>Add a parcel</b>
+    <div><label for="saShop">Who is it from?</label><input id="saShop" data-ship-add="shop" type="text" maxlength="60" autocomplete="off" value="${esc(f.shop)}" placeholder="For example: Corner Hardware"></div>
+    <div><label for="saTrack">Tracking number (if you have one)</label><input id="saTrack" data-ship-add="tracking" type="text" maxlength="60" autocomplete="off" value="${esc(f.tracking)}"></div>
+    <div><label for="saStatus">Where is it up to?</label><select id="saStatus" data-ship-add="status">${SHIP_HAND.map(([v,l])=>`<option value="${v}"${f.status===v?" selected":""}>${l}</option>`).join("")}</select></div>
+    ${f.err?`<p class="sa-err" role="alert">${esc(f.err)}</p>`:""}
+    <div class="oact"><button class="obtn blue" type="submit"${f.busy?" disabled":""}>Add parcel</button><button class="olink" type="button" data-ship-add-cancel>Cancel</button></div></form>`;
+}
+async function shipAddSave(){
+  const f=shipAdd;if(f.busy)return;
+  if(!f.shop.trim()){f.err="Write who the parcel is from.";render();const i=$("saShop");if(i)i.focus();return}
+  f.busy=true;f.err="";
+  try{const r=await secureBackendRequest("/api/v1/me/shipping",{method:"POST",body:JSON.stringify({shop:f.shop.trim(),tracking:f.tracking.trim()||null,status:f.status})});
+    if(r&&Array.isArray(r.orders))shipData=r;shipAdd={open:false,shop:"",tracking:"",status:"ordered",err:"",busy:false};toast("Parcel added");
+  }catch(er){f.busy=false;f.err=er.message||"Could not add that. Try again."}
+  render();
+}
+document.addEventListener("input",e=>{const k=e.target&&e.target.dataset&&e.target.dataset.shipAdd;if(k&&(k==="shop"||k==="tracking")){shipAdd[k]=e.target.value;shipAdd.err=""}});
+document.addEventListener("change",async e=>{
+  const t=e.target;if(!t||!t.dataset)return;
+  if(t.dataset.shipAdd==="status"){shipAdd.status=t.value;return}
+  if(t.dataset.shipStatus){
+    try{const r=await secureBackendRequest(`/api/v1/me/shipping/${encodeURIComponent(t.dataset.shipStatus)}/status`,{method:"PUT",body:JSON.stringify({status:t.value})});if(r&&Array.isArray(r.orders))shipData=r}
+    catch(er){toast(er.message,5000);await fetchShipping()}
+    render();
+  }
+});
+document.addEventListener("submit",e=>{if(e.target&&e.target.matches&&e.target.matches("[data-ship-add-form]")){e.preventDefault();shipAddSave()}});
+document.addEventListener("click",e=>{
+  if(e.target.closest&&e.target.closest("[data-ship-add-open]")){shipAdd={...shipAdd,open:true,err:""};render();const i=$("saShop");if(i)i.focus();return}
+  if(e.target.closest&&e.target.closest("[data-ship-add-cancel]")){shipAdd={open:false,shop:"",tracking:"",status:"ordered",err:"",busy:false};render();return}
+});
 function orderCard(o){
   const head=`<div class="ohead"><div class="otitle"><span class="oshop">${esc(o.shop||"An order")}</span>${o.order_number?`<span class="onum">Order ${esc(o.order_number)}</span>`:""}${o.items||o.total?`<div class="oitems">${esc(o.items||"")}${o.items&&o.total?" · ":""}${esc(o.total||"")}</div>`:""}${shipNoteHtml(o)}</div>`;
   if(o.unsure)return `<article class="ocard unsure">${head}</div><div>Is this an order? Enveliq found no order or tracking number in this email, so it is not sure.</div><div class="oact"><button class="obtn blue" type="button" data-ship="track" data-ship-id="${esc(o.id)}">Yes, track it</button><button class="obtn" type="button" data-ship="not_order" data-ship-id="${esc(o.id)}">Not an order</button></div></article>`;
+  if(o.manual){                  // a parcel you typed in yourself: you say where it is up to, and you can remove it
+    const sel=`<select class="ostatus" data-ship-status="${esc(o.id)}" aria-label="Where is it up to?">${SHIP_HAND.map(([v,l])=>`<option value="${v}"${o.status===v?" selected":""}>${l}</option>`).join("")}</select>`;
+    const pillM=`<div><span class="opill${o.status!=="ordered"?" teal":""}">${esc(shipStatus(o))}</span></div>`;
+    return `<article class="ocard">${head}</div>${pillM}</div>${shipStages(o)}<div class="oact">${sel}${trackBtn(o)}${o.tracking?`<span class="meta">Tracking ${esc(o.tracking)}</span><button class="olink" type="button" data-ship-copy="${esc(o.id)}">Copy number</button>`:""}<button class="olink" type="button" data-ship-note="${esc(o.id)}" aria-expanded="${shipNoteOpen.has(o.id)}">${o.note?"Edit note":"Note"}</button><button class="olink" type="button" data-ship="remove" data-ship-id="${esc(o.id)}">Remove</button></div></article>`;
+  }
   const arrived=o.needs_confirm,done=o.delivered_at&&!arrived;
   const pill=`<div><span class="opill${o.status!=="ordered"?" teal":""}">${esc(shipStatus(o))}</span>${o.delayed&&o.prev_expected?`<div class="odelay">Delayed. It was ${esc(shipDay(o.prev_expected))}.</div>`:""}</div>`;
   const n=(o.events||[]).length,open=shipOpen.has(o.id);
@@ -2713,7 +2755,7 @@ function linkShipEmails(){
 function renderShipPage(){
   const box=$("shipPage"),os=shipData.orders||[];
   const tn=shipTrackable().length;
-  const head='<div class="tp-head"><h3>Shipping</h3></div><p class="sp-sub">Your online orders, followed from the emails you get. Each new email about the same order updates its card.</p>'+(tn>1?`<div class="oact" style="margin:0 0 12px"><button class="obtn blue" type="button" data-ship-trackall>Track all (${Math.min(tn,10)})</button><span class="meta">Opens each parcel on its way in its carrier's own page. If only one opens, allow pop-ups for Enveliq.</span></div>`:"");
+  const head='<div class="tp-head"><h3>Shipping</h3></div><p class="sp-sub">Your online orders, followed from the emails you get. Each new email about the same order updates its card.</p>'+shipAddHtml()+(tn>1?`<div class="oact" style="margin:0 0 12px"><button class="obtn blue" type="button" data-ship-trackall>Track all (${Math.min(tn,10)})</button><span class="meta">Opens each parcel on its way in its carrier's own page. If only one opens, allow pop-ups for Enveliq.</span></div>`:"");
   if(!os.length){box.innerHTML=head+'<div class="focus-card"><div class="focus-big">No orders to follow</div><div class="focus-sub">When an email says you ordered something, it shows up here by itself.</div></div>'+carriersBox();return}
   box.innerHTML=head+os.map(orderCard).join("")+'<p class="sp-sub">Arrived orders stay here for 14 days, then are forgotten. "Track" opens the carrier\'s own page in a new tab. Enveliq never contacts the carrier.</p>'+carriersBox();
   linkShipEmails();

@@ -48,6 +48,17 @@ function makeServer(opts = {}) {
     if (p === "/api/v1/me/features") return json(200, { effective: features, admin: features, user: features });
     if (p === "/api/v1/sync/status") return json(200, { enabled: true, minutes: 10, now: Date.now() / 1000, accounts: { a1: { ok: true, at: now } } });
     if (p === "/api/v1/me/outbox") return json(200, { now: Date.now() / 1000, items: [] });
+    if (p === "/api/v1/me/shipping" && req.method() === "POST") {
+      const b = JSON.parse(req.postData()); calls.push(["add", b]);
+      if (b.tracking && b.tracking.length < 8) return json(422, { detail: "That tracking number does not look right. It needs 8 to 40 letters or digits." });
+      orders.push({ id: "s" + String(orders.length + 1).padStart(23, "1"), shop: b.shop, order_number: null, carrier: null, tracking: b.tracking ? b.tracking.toUpperCase() : null, items: null, status: b.status, expected: null, expected_text: null, prev_expected: null, delayed: false, delivered_at: b.status === "delivered" ? now : null, ack: b.status === "delivered" ? "got_it" : null, unsure: false, manual: true, needs_confirm: false, track_url: null, updated: now, events: [], note: "" });
+      return json(200, { enabled: true, orders, now, carriers: carriersView() });
+    }
+    const sm = p.match(/^\/api\/v1\/me\/shipping\/(s[0-9a-f]{23})\/status$/);
+    if (sm && req.method() === "PUT") {
+      const o = orders.find((x) => x.id === sm[1]); o.status = JSON.parse(req.postData()).status; calls.push(["status", sm[1], o.status]);
+      return json(200, { enabled: true, orders, now, carriers: carriersView() });
+    }
     if (p === "/api/v1/me/shipping") { calls.push(["list"]); return json(200, features.shipping ? { enabled: true, orders, now, carriers: carriersView() } : { enabled: false, orders: [], now }); }
     if (p === "/api/v1/shipping/carriers" && req.method() === "POST") {
       const b = JSON.parse(req.postData()); calls.push(["carrier-add", b]);
@@ -84,7 +95,7 @@ function makeServer(opts = {}) {
       calls.push([a[2], a[1]]);
       const o = orders.find((x) => x.id === a[1]);
       if (a[2] === "confirm") o.ack = "got_it"; if (a[2] === "not_yet") o.snoozed = true; if (a[2] === "track") o.unsure = false;
-      if (a[2] === "not_order") orders = orders.filter((x) => x !== o);
+      if (a[2] === "not_order" || a[2] === "remove") orders = orders.filter((x) => x !== o);
       recompute();
       return json(200, { enabled: true, orders, now, carriers: carriersView() });
     }
@@ -254,6 +265,48 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   const z = page.locator(".carchip", { hasText: "Zippy Post" }), m = page.locator(".carchip", { hasText: "My Courier" });
   check("you can remove only the carriers you added", (await z.locator("[data-carrier-remove]").count()) === 0 && (await m.locator("[data-carrier-remove]").count()) === 1);
   check("only an administrator is offered Edit", (await page.locator("[data-carrier-edit]").count()) === 0);
+  await page.close(); await context.close();
+}
+
+// A parcel added by hand: sender, tracking number and where it is up to
+{
+  const server = makeServer();
+  const { page, errors, context } = await open(server);
+  await page.click("#shipNav");
+  await page.waitForSelector("#shipPage .ocard");
+  const before = await page.locator("#shipPage .ocard").count();
+  check("the Shipping page has an Add a parcel button", (await page.locator("[data-ship-add-open]").innerText()).includes("Add a parcel"));
+  await page.click("[data-ship-add-open]");
+  check("it opens a form with the three fields", (await page.locator("#saShop").count()) === 1 && (await page.locator("#saTrack").count()) === 1 && (await page.locator("#saStatus option").allInnerTexts()).join("|") === "Waiting to be shipped|Shipped|Out for delivery|Delivered");
+  check("the cursor starts in the first box", await page.evaluate(() => document.activeElement && document.activeElement.id === "saShop"));
+  await shot(page, "ship-add-form");
+  await page.click("[data-ship-add-form] button[type=submit]");
+  check("an empty sender is not sent and says why", !server.calls.some((c) => c[0] === "add") && /who the parcel is from/i.test(await page.locator(".sa-err").innerText()));
+  await page.fill("#saShop", "Corner Hardware");
+  await page.fill("#saTrack", "12");
+  await page.click("[data-ship-add-form] button[type=submit]");
+  await page.waitForFunction(() => /does not look right/.test(document.querySelector(".sa-err")?.innerText || ""));
+  check("a tracking number the server refuses shows its message and keeps what you typed", /does not look right/.test(await page.locator(".sa-err").innerText()) && (await page.inputValue("#saShop")) === "Corner Hardware");
+  await page.fill("#saTrack", "ab-1234-5678");
+  await page.selectOption("#saStatus", "ordered");
+  await page.click("[data-ship-add-form] button[type=submit]");
+  await page.waitForFunction(() => !document.querySelector("[data-ship-add-form]"));
+  const add = server.calls.filter((c) => c[0] === "add").pop();
+  check("the parcel is sent with sender, tracking number and status", add[1].shop === "Corner Hardware" && add[1].tracking === "ab-1234-5678" && add[1].status === "ordered");
+  check("the new parcel is on the page as 'Waiting to be shipped'", (await page.locator("#shipPage .ocard").count()) === before + 1 && /Corner Hardware/.test(await page.locator("#shipPage").innerText()) && /Waiting to be shipped/.test(await page.locator("#shipPage").innerText()));
+  const card = page.locator("#shipPage .ocard", { hasText: "Corner Hardware" });
+  check("it shows its tracking number and has no 'Not an order' or email count", /AB-1234-5678/.test(await card.innerText()) && !/Not an order|matched/.test(await card.innerText()));
+  await card.locator("select.ostatus").selectOption("shipped");
+  await page.waitForFunction(() => [...document.querySelectorAll("#shipPage .ocard")].some((c) => /Corner Hardware/.test(c.innerText) && /Shipped/.test(c.querySelector(".opill")?.innerText || "")));
+  check("you can change where it is up to", server.calls.some((c) => c[0] === "status" && c[2] === "shipped") && /Shipped/.test(await page.locator("#shipPage .ocard", { hasText: "Corner Hardware" }).locator(".opill").innerText()));
+  await page.locator("#shipPage .ocard", { hasText: "Corner Hardware" }).locator('[data-ship="remove"]').click();
+  await page.waitForFunction((n) => document.querySelectorAll("#shipPage .ocard").length === n, before);
+  check("Remove takes the parcel off the list", !/Corner Hardware/.test(await page.locator("#shipPage").innerText()));
+  await page.click("[data-ship-add-open]");
+  await page.click("[data-ship-add-cancel]");
+  check("Cancel closes the form without sending", (await page.locator("[data-ship-add-form]").count()) === 0 && server.calls.filter((c) => c[0] === "add").length === 2);
+  check("no script errors", errors.length === 0);
+  await shot(page, "ship-add");
   await page.close(); await context.close();
 }
 

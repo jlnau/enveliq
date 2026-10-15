@@ -15,7 +15,7 @@ from . import shipping as S
 from .limits import SlidingWindowLimiter
 
 OrderId = Annotated[str, PathParam(pattern=r"^s[0-9a-f]{23}$")]
-Action = Annotated[str, PathParam(pattern=r"^(confirm|not_yet|not_order|track|undo)$")]
+Action = Annotated[str, PathParam(pattern=r"^(confirm|not_yet|not_order|track|undo|remove)$")]
 
 
 CarrierId = Annotated[str, PathParam(pattern=r"^c[0-9a-f]{16}$")]
@@ -29,6 +29,21 @@ class CarrierBody(StrictModel):
 
 class NoteBody(StrictModel):
     note: str = Field(max_length=600)
+
+
+class HandOrderBody(StrictModel):
+    shop: str = Field(max_length=80)
+    tracking: str | None = Field(default=None, max_length=80)
+    status: str = Field(max_length=20)
+
+
+class StatusBody(StrictModel):
+    status: str = Field(max_length=20)
+
+
+HAND_ERRORS = {"no shop": "Write who the parcel is from.", "bad tracking": "That tracking number does not look right. It needs 8 to 40 letters or digits.",
+               "bad status": "Choose where the parcel is up to.", "already listed": "That tracking number is already on your list.",
+               "full": "Your shipping list is full. Remove an order first.", "not by hand": "Only orders you added yourself can be changed by hand."}
 
 
 def build_shipping_router(ctx: Any) -> APIRouter:
@@ -45,6 +60,32 @@ def build_shipping_router(ctx: Any) -> APIRouter:
         response.headers["Cache-Control"] = "no-store"
         return book.view(user)
 
+    @router.post("/me/shipping")
+    def add_order(body: HandOrderBody, response: Response, session: Session = Depends(session_dep)):
+        user = session.principal.user_id
+        if not limit.allow(f"ship:{user}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        if not book.enabled(user):
+            raise HTTPException(status_code=403, detail="Shipping is switched off.")
+        response.headers["Cache-Control"] = "no-store"
+        try:
+            return book.add_by_hand(user, body.shop, body.tracking, body.status)
+        except ValueError as err:
+            raise HTTPException(status_code=422, detail=HAND_ERRORS.get(str(err), "That order is not possible.")) from None
+
+    @router.put("/me/shipping/{order_id}/status")
+    def order_status(order_id: OrderId, body: StatusBody, response: Response, session: Session = Depends(session_dep)):
+        user = session.principal.user_id
+        if not limit.allow(f"ship:{user}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        response.headers["Cache-Control"] = "no-store"
+        try:
+            return book.set_status(user, order_id, body.status)
+        except KeyError:
+            raise HTTPException(status_code=404, detail="That order is no longer on your list.") from None
+        except ValueError as err:
+            raise HTTPException(status_code=422, detail=HAND_ERRORS.get(str(err), "That change is not possible.")) from None
+
     @router.post("/me/shipping/{order_id}/{action}")
     def change_order(order_id: OrderId, action: Action, response: Response, session: Session = Depends(session_dep)):
         user = session.principal.user_id
@@ -55,8 +96,8 @@ def build_shipping_router(ctx: Any) -> APIRouter:
             return book.act(user, order_id, action)
         except KeyError:
             raise HTTPException(status_code=404, detail="That order is no longer on your list.") from None
-        except ValueError:
-            raise HTTPException(status_code=422, detail="That change is not possible yet.") from None
+        except ValueError as err:
+            raise HTTPException(status_code=422, detail=HAND_ERRORS.get(str(err), "That change is not possible yet.")) from None
 
     @router.put("/me/shipping/{order_id}/note")
     def order_note(order_id: OrderId, body: NoteBody, response: Response, session: Session = Depends(session_dep)):

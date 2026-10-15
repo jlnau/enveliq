@@ -6,6 +6,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 **On a phone, the email closes as soon as you press Reviewed, Archive or Bin.** Before, the full screen email stayed open until you pressed Close or the action finished. Now it closes at once and you are back in the list. The five-second **Undo** bar still shows, and Undo brings the email back. See `docs/INBOX.md`.
 
+**Add a parcel by hand on the Shipping page.** A new **Add a parcel** form takes who the parcel is from, a tracking number (if you have one) and where it is up to. You move it along yourself from its card, and **Remove** takes it off. See `docs/INBOX.md`.
+
 **Back button stays inside Enveliq.** Going to another section (Sent, Reviewed, Tasks and so on) now adds a step to the browser's history, so Back, or a phone's back gesture, returns to the section you were in before instead of leaving the site. Forward works, and Back closes Settings if it is open. See `docs/INBOX.md`.
 
 **A Task button on every email.** Even when the AI found no task, you can press **Task**, write what you want to remember (for example "ring the plumber when I get home"), pick a day and add it. It shows as **Your task** and does not finish by itself when you deal with the email; only you finish it. A small box for it opens above the full screen email on a phone, and the Snooze box there is now also shown above it (it was hidden underneath). See `docs/INBOX.md` and `SECURITY.md`.

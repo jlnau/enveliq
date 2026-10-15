@@ -452,3 +452,82 @@ def test_an_administrator_can_correct_a_saved_carrier(book):
     book.update_carrier(cid, "Zippy Postal", "https://track.zippy.example/other/{n}")       # keeping its own name is fine
     with pytest.raises(KeyError):
         book.update_carrier("c" + "0" * 16, "Nobody", "https://x.example/{n}")
+
+
+# ---------- an order the person types in by hand ----------
+
+def test_an_order_can_be_added_by_hand_and_followed_by_hand(book):
+    rows = book.add_by_hand("u1", "  Corner   Hardware ", "", "ordered")["orders"]
+    assert len(rows) == 1
+    o = rows[0]
+    assert o["shop"] == "Corner Hardware" and o["status"] == "ordered" and o["manual"] and o["tracking"] is None
+    assert o["events"] == [] and not o["unsure"] and not o["needs_confirm"] and not o["delivered_at"]
+    oid = o["id"]
+    o = book.set_status("u1", oid, "shipped")["orders"][0]
+    assert o["status"] == "shipped" and not o["delivered_at"]
+    o = book.set_status("u1", oid, "delivered")["orders"][0]
+    assert o["status"] == "delivered" and o["delivered_at"] and o["ack"] == "got_it" and not o["needs_confirm"]     # they said so themselves: nothing to confirm
+    o = book.set_status("u1", oid, "out_for_delivery")["orders"][0]
+    assert o["status"] == "out_for_delivery" and not o["delivered_at"] and not o["ack"]
+    assert book.act("u1", oid, "remove")["orders"] == []
+    assert book.vault_.g["ship:u1"]["dismissed"] == {}                           # removing one you made up is not "not an order": nothing is remembered
+
+
+def test_a_tracking_number_is_checked_and_not_added_twice(book):
+    o = book.add_by_hand("u1", "Brightwater Books", "hf 9984-210", "shipped")["orders"][0]
+    assert o["tracking"] == "HF9984210"
+    with pytest.raises(ValueError, match="already listed"):
+        book.add_by_hand("u1", "Another shop", "HF-9984210", "shipped")
+    for bad, why in (("123", "bad tracking"), ("not a number", "bad tracking")):
+        with pytest.raises(ValueError, match=why):
+            book.add_by_hand("u1", "Shop", bad, "shipped")
+    with pytest.raises(ValueError, match="no shop"):
+        book.add_by_hand("u1", "   ", "", "shipped")
+    with pytest.raises(ValueError, match="bad status"):
+        book.add_by_hand("u1", "Shop", "", "lost")
+    assert len(book.view("u1")["orders"]) == 1
+
+
+def test_an_order_from_an_email_is_not_changed_by_hand(book):
+    assert seen(book, 1, ship("shipped"), "On its way", NOW - 1000)
+    oid = book.view("u1")["orders"][0]["id"]
+    with pytest.raises(ValueError, match="not by hand"):
+        book.set_status("u1", oid, "delivered")
+    with pytest.raises(ValueError, match="not by hand"):
+        book.act("u1", oid, "remove")                                            # the emails decide, and "Not an order" is the way to drop it
+    with pytest.raises(KeyError):
+        book.set_status("u1", "s" + "0" * 23, "shipped")
+    with pytest.raises(KeyError):
+        book.set_status("u2", oid, "shipped")                                    # someone else's order is not found
+
+
+def test_a_hand_order_can_be_matched_to_nothing_else_and_kept_apart_per_person(book):
+    book.add_by_hand("u1", "Corner Hardware", "", "ordered")
+    assert book.view("u2")["orders"] == []
+
+
+def test_the_hand_order_routes(env):
+    appm, client, bridge, _ = env
+    r = client.post("/api/v1/me/shipping", json={"shop": "Corner Hardware", "tracking": "AB12345678", "status": "ordered"})
+    assert r.status_code == 200 and r.headers["cache-control"] == "no-store"
+    o = next(x for x in r.json()["orders"] if x["shop"] == "Corner Hardware")
+    assert o["manual"] and o["status"] == "ordered" and o["tracking"] == "AB12345678"
+    assert client.post("/api/v1/me/shipping", json={"shop": "", "status": "ordered"}).status_code == 422
+    assert client.post("/api/v1/me/shipping", json={"shop": "X", "tracking": "12", "status": "ordered"}).status_code == 422
+    assert client.post("/api/v1/me/shipping", json={"shop": "X", "status": "lost"}).status_code == 422
+    assert client.post("/api/v1/me/shipping", json={"shop": "X", "status": "ordered", "extra": 1}).status_code == 422
+    assert client.post("/api/v1/me/shipping", json={"shop": "Y", "tracking": "ab-1234-5678", "status": "shipped"}).status_code == 422     # same number again
+    r = client.put(f"/api/v1/me/shipping/{o['id']}/status", json={"status": "shipped"})
+    assert r.status_code == 200 and next(x for x in r.json()["orders"] if x["id"] == o["id"])["status"] == "shipped"
+    assert client.put(f"/api/v1/me/shipping/{o['id']}/status", json={"status": "lost"}).status_code == 422
+    assert client.put("/api/v1/me/shipping/s" + "0" * 23 + "/status", json={"status": "shipped"}).status_code == 404
+    assert client.post(f"/api/v1/me/shipping/{o['id']}/remove").status_code == 200
+    assert all(x["id"] != o["id"] for x in client.get("/api/v1/me/shipping").json()["orders"])
+
+
+def test_the_hand_order_routes_need_a_signed_in_person(env):
+    appm, _, _, _ = env
+    from fastapi.testclient import TestClient
+    anon = TestClient(appm.app)
+    assert anon.post("/api/v1/me/shipping", json={"shop": "X", "status": "ordered"}).status_code in (401, 403)
+    assert anon.put("/api/v1/me/shipping/s" + "0" * 23 + "/status", json={"status": "shipped"}).status_code in (401, 403)
