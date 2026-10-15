@@ -1,0 +1,32 @@
+name: Sync Reading Calendar Experiment
+on:
+  push:
+    branches:
+      - experiment/reading-calendar
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: sync-reading-calendar
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/reading-calendar
+          fetch-depth: 0
+      - name: Fast-forward experimental preview
+        run: |
+          set -euo pipefail
+          git fetch origin refs/heads/experiment/reading-calendar refs/heads/preview/reading-calendar
+          SOURCE="$(git rev-parse refs/remotes/origin/experiment/reading-calendar)"
+          TARGET="$(git rev-parse refs/remotes/origin/preview/reading-calendar)"
+          git merge-base --is-ancestor "$TARGET" "$SOURCE" || { echo "::error::Diverged preview branch; refusing to overwrite"; exit 1; }
+          if [ "$SOURCE" != "$TARGET" ]; then git push origin "$SOURCE:refs/heads/preview/reading-calendar"; fi
+      - name: Build isolated preview images
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run build-reading-calendar-preview.yml --repo "${{ github.repository }}" --ref preview/reading-calendar
