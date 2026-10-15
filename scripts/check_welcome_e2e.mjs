@@ -85,6 +85,7 @@ check("first sync shows no stray 'null' text", !(await page.locator("body").inne
 await shot("welcome-3");
 await page.click("text=Open my inbox");
 await page.waitForSelector("body.real-mail article.mail");
+await page.evaluate(() => { view.layout = "list"; applyView(); render(); });      // the classic list, where each row opens in place; the default is now the reading panel on the right
 const rowCount = await page.locator("article.mail").count();
 for (let i = 0; i < rowCount; i++) await page.locator("article.mail:not(.open) .qmain").first().click();
 check("the inbox shows the mail from both mailboxes with AI summaries (read by opening each row)", rowCount === 6 && (await page.locator("#list").innerText()).includes("Dentist appointment on Friday"));
