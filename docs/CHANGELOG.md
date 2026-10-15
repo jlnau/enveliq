@@ -4,6 +4,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+No changes recorded yet.
+
+## v0.91 (2026-10-15)
+
 **New guide: Notifications, webhooks and news feeds.** A plain-words page in the install guides (and on the website) that shows how to make a key, send a note with a webhook or a WebSocket, test it with `curl`, connect Home Assistant step by step (RESTful Command, a test, then an automation that forwards every new Home Assistant notification), rotate the key, and follow websites with news feeds. It uses only made-up example addresses and keys. Touches `docs/install/notifications.md`, `docs/install/README.md`, `docs/README.md`, `website/build.mjs`.
 
 **Services can now send you a note with a plain web request (webhook).** Tools that cannot keep a WebSocket open (Node-RED, n8n, Uptime Kuma, a Home Assistant `rest_command`) can `POST` a JSON note to `/api/v1/inbound/webhook` with `Authorization: Bearer YOUR-KEY`. It is for everyone: the same key from the bell's **Show how to connect** fold, the same limits, and the note lands only in that person's bell. It also answers on the local network address. The fold in the bell now explains it. Touches `backend/mail/inbound_routes.py`, `backend/security.py`, `backend/app.py`, `prototype/index.html`. Tests in `tests/test_inbound.py` and `scripts/check_bell.mjs`. See `docs/NOTIFICATIONS.md`, `SECURITY.md`.
