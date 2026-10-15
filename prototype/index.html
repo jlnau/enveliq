@@ -6553,7 +6553,7 @@ document.addEventListener("touchend",e=>{
 document.addEventListener("touchcancel",()=>{menuTouchStart=null},{passive:true});
 $("menuBtn").onclick=()=>setMenu(!document.body.classList.contains("menu-open"));
 $("menuScrim").onclick=()=>setMenu(false);
-$("sidebar").addEventListener("click",e=>{if(e.target.closest(".nav:not(.more-toggle)"))setMenu(false)});
+$("sidebar").addEventListener("click",e=>{if(e.target.closest(".nav:not(.more-toggle)")){setMenu(false,true);mobileMenuHistory=false;if(history.state&&history.state.enveliqMenu)try{history.replaceState({...history.state,enveliqMenu:0},"")}catch{}}});
 $("mSearchBtn").onclick=()=>{document.body.classList.add("msearch");$("search").focus()};
 $("mSearchBack").onclick=()=>{document.body.classList.remove("msearch");if(query){query="";$("search").value="";render()}};
 $("mSyncBtn").onclick=()=>$("syncBtn").click();
