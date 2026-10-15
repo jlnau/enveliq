@@ -4,7 +4,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**Swipe to open and close the mobile sidebar.** On a phone, swipe in from the left screen edge to open the menu, and swipe left across the menu to close it. The browser or phone Back button also closes the menu without leaving the current page. Touches `prototype/index.html`, `scripts/check_back_button.mjs`. See `docs/INBOX.md`.
 
 ## v0.91 (2026-10-15)
 
