@@ -156,6 +156,10 @@ At the top of the Shipping page, **Add a parcel** opens a small form for a parce
 
 When more than one of your mailboxes is connected, each email in the list carries a small coloured label with the mailbox's name (for example "Proton test" or "Gmail test"), and the open email has a **Mailbox** line in its details with the same label. Each mailbox keeps its own colour. Hold the pointer over a label (or long-press it) to see the provider and the address. With only one mailbox there is no label, so a single mailbox stays uncluttered. On a phone the label shows in the list and in the full screen email. Browser check: `scripts/check_mailbox_label.mjs`.
 
+## Renaming a mailbox
+
+The name you gave a mailbox when you connected it (for example "Proton Test") can be changed at any time. Open **Mailboxes**, press **Rename** on that mailbox, type the new name and press **Save name**. **Cancel** keeps the old one. The new name shows straight away on the Mailboxes page, in the mailbox label on each email, and in the mailbox lists. Only the name changes: your mail, summaries, tasks, tags and settings stay as they are, and you do not have to connect again. Only the person who connected a mailbox can rename it.
+
 ## Searching your tasks
 
 The Tasks page has a **Search your tasks** box under its title. Type part of a task's words (its title, its details or who it is from; capital letters do not matter) and the page lists only the tasks that have them, open ones under **To do** and finished ones under **Done**, with a line saying how many match. Clear the box to get your usual view back. It works in the Focus, List and Calendar views. Browser check: `scripts/check_task_search.mjs`.

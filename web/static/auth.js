@@ -1791,6 +1791,22 @@ async function mailboxesPage(me, diagId) {
       try { await api(`/accounts/${a.id}`, { method: "DELETE" }); toast("Mailbox removed"); mailboxesPage(me); } catch (er) { toast(er.message); }
     }) });
     const diag = h("button", { class: "btn small", type: "button", text: "Diagnostics", onclick: () => mailboxesPage(me, a.id) });
+    // Rename: the name is only a label. It is shown on the mail list and in reports; nothing else changes.
+    const nameSlot = h("div", {});
+    const rename = h("button", { class: "btn small", type: "button", text: "Rename", "aria-label": `Rename ${a.display_name}`, onclick: () => {
+      const box = h("input", { id: `rn_${a.id}`, type: "text", maxlength: 128, value: a.display_name, "aria-label": "New name for this mailbox", autocomplete: "off" });
+      const form = h("form", { class: "row rename-form" }, box,
+        h("button", { class: "btn small primary", type: "submit", text: "Save name" }),
+        h("button", { class: "btn small", type: "button", text: "Cancel", onclick: () => nameSlot.replaceChildren() }));
+      onSubmit(form, async () => {
+        const name = box.value.trim();
+        if (!name) { status.replaceChildren(alertBox("bad", "Type a name for this mailbox.")); return; }
+        if (name === a.display_name) { nameSlot.replaceChildren(); return; }
+        await api(`/accounts/${a.id}`, { method: "PATCH", body: { display_name: name } });
+        toast("Mailbox renamed"); mailboxesPage(me);
+      });
+      nameSlot.replaceChildren(form); box.focus(); box.select();
+    } });
     const aiOn = !!(a.settings && a.settings.ai_summaries);
     const aiToggle = ai.configured ? h("button", { class: "btn small", type: "button", text: aiOn ? "Turn AI summaries off" : "Turn AI summaries on", onclick: e => run(e.target, async () => {
       await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), ai_summaries: !aiOn } } });
@@ -1816,8 +1832,8 @@ async function mailboxesPage(me, diagId) {
       toast(autoOn ? "Automatic sync is off" : "Automatic sync is on"); mailboxesPage(me);
     }) }) : null;
     return h("section", { class: "section" },
-      h("div", { class: "item" }, h("div", {}, h("strong", { text: a.display_name }), h("div", { class: "meta", text: `${a.email_address} · ${a.auth_method === "proton_bridge" ? `Proton Bridge at ${a.server}:${a.port}` : `${a.provider} (app password)`}${ai.configured ? ` · AI summaries ${aiOn ? "on" : "off"}` : ""}` }), h("div", { class: "hint", text: autoNote })),
-        isMail(a) ? h("div", { class: "row" }, check, sync, autoToggle, aiToggle, waitToggle, diag, remove) : h("div", { class: "row" }, remove)), status);
+      h("div", { class: "item" }, h("div", {}, h("strong", { text: a.display_name }), h("div", { class: "meta", text: `${a.email_address} · ${a.auth_method === "proton_bridge" ? `Proton Bridge at ${a.server}:${a.port}` : `${a.provider} (app password)`}${ai.configured ? ` · AI summaries ${aiOn ? "on" : "off"}` : ""}` }), h("div", { class: "hint", text: autoNote }), nameSlot),
+        isMail(a) ? h("div", { class: "row" }, check, sync, rename, autoToggle, aiToggle, waitToggle, diag, remove) : h("div", { class: "row" }, rename, remove)), status);
   });
 
   show(...chrome(me, "mailboxes",
