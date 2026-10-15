@@ -303,10 +303,32 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.waitForFunction((n) => document.querySelectorAll("#shipPage .ocard").length === n, before);
   check("Remove takes the parcel off the list", !/Corner Hardware/.test(await page.locator("#shipPage").innerText()));
   await page.click("[data-ship-add-open]");
-  await page.click("[data-ship-add-cancel]");
+  await page.click(".sf-foot [data-ship-add-cancel]");
   check("Cancel closes the form without sending", (await page.locator("[data-ship-add-form]").count()) === 0 && server.calls.filter((c) => c[0] === "add").length === 2);
   check("no script errors", errors.length === 0);
   await shot(page, "ship-add");
+  await page.close(); await context.close();
+}
+
+// On a phone the form fills the screen: title and Close fixed at the top, the buttons fixed at the bottom
+{
+  const server = makeServer();
+  const { page, errors, context } = await open(server, { width: 390, height: 640 });
+  await page.evaluate(() => { filter = "shipping"; render(); });
+  await page.waitForSelector("[data-ship-add-open]");
+  await page.click("[data-ship-add-open]");
+  await page.waitForSelector("[data-ship-add-form]");
+  const box = await page.locator("[data-ship-add-form]").boundingBox();
+  check("phone: the form fills the whole screen", box.x <= 1 && box.y <= 1 && box.width >= 388 && box.height >= 638);
+  const parts = await page.evaluate(() => { const r = (s) => document.querySelector(s).getBoundingClientRect(); const t = r(".shipadd .sf-top"), f = r(".shipadd .sf-foot"); return { topY: t.top, footBottom: f.bottom, closeShown: getComputedStyle(document.querySelector(".shipadd .sf-close")).display !== "none" }; });
+  check("phone: the title bar is at the top and the buttons are at the bottom", parts.topY <= 1 && parts.footBottom >= 639 && parts.closeShown);
+  await shot(page, "ship-add-phone");
+  await page.evaluate(() => { const b = document.querySelector(".shipadd .sf-body"); b.style.minHeight = "0"; const pad = document.createElement("div"); pad.style.height = "1200px"; b.append(pad); b.scrollTop = b.scrollHeight; });
+  const after = await page.evaluate(() => { const t = document.querySelector(".shipadd .sf-top").getBoundingClientRect(), f = document.querySelector(".shipadd .sf-foot").getBoundingClientRect(); return { top: t.top, foot: f.bottom }; });
+  check("phone: after scrolling the form the Close and Add parcel buttons are still in view", after.top <= 1 && after.foot >= 639);
+  await page.click(".shipadd .sf-close");
+  check("phone: the Close button closes the form", (await page.locator("[data-ship-add-form]").count()) === 0);
+  check("no script errors", errors.length === 0);
   await page.close(); await context.close();
 }
 

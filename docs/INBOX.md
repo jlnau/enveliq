@@ -152,6 +152,10 @@ Every email has a **Task** button beside Reply and Snooze (and in the full scree
 
 At the top of the Shipping page, **Add a parcel** opens a small form for a parcel that did not start from an email: **Who is it from?** (required), **Tracking number** (if you have one) and **Where is it up to?** (Waiting to be shipped, Shipped, Out for delivery or Delivered). The parcel appears as a card like the others, marked "Waiting to be shipped" and so on. Because no emails follow it, you move it along yourself with the **Where is it up to?** list on its card, and **Remove** takes it off the list (nothing is remembered about it afterwards). A parcel you mark Delivered is not asked "did it arrive?". A tracking number must be 8 to 40 letters or digits, and the same number cannot be added twice. There is no carrier box, so no Track button is offered for these cards; the number is shown with a **Copy number** button. Server: `POST /api/v1/me/shipping`, `PUT /api/v1/me/shipping/<id>/status` and the `remove` action (`backend/mail/shipping.py`, `shipping_routes.py`). Checks: `tests/test_shipping.py` and `scripts/check_shipping.mjs`.
 
+## Forms on a phone
+
+A form or pop-up that asks you to type something (Add a parcel, Task, and the ones to come) opens full screen on a phone. The title and **✕ Close** stay fixed at the top, the buttons (Add parcel, Add task) stay fixed at the bottom, and only the middle scrolls, so you never have to hunt for them. On a computer they are small boxes as before. `scripts/check_shipping.mjs` and `scripts/check_task_add.mjs` check this.
+
 ## The Back button
 
 Moving to another section (Sent, Reviewed, Tasks and so on) adds a step to the browser's history, so the **Back** button of the browser, or a phone's back gesture, returns to the section you were in before, inside Enveliq, instead of leaving it. **Forward** works too. Back also closes Settings and Administration if they are open. Moving between the tabs of Settings does not add steps, so one Back leaves Settings. Opening or closing an email does not add steps. `scripts/check_back_button.mjs` checks this.

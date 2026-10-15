@@ -21,6 +21,7 @@ Project: **Enveliq** ("Turn email into clarity."), a private, self-hosted email-
 - Every change people can see must be documented in the matching `docs/*.md` guide, and in `SECURITY.md` when it touches data, sign-in or privacy. Add each change to the Unreleased section of `docs/CHANGELOG.md` as you go, in plain words, so the release notes are ready. Do not edit the README recent-changes list.
 - Write backend tests for backend changes (`tests/`). Write or update a browser check (`scripts/check_*.mjs`) for page changes, and add new ones to `.github/workflows/ci.yml`.
 - Do not invent requirements, options or behaviour that was not asked for. Do not remove features while tidying; move or fold them.
+- **On a phone, every form or pop-up that asks for input opens full screen.** The title and a Close button are fixed at the top and the action buttons (Save, Add, Send and so on) are fixed at the bottom, so they can always be reached; only the middle scrolls. Use the shared `.sheetform` / `.sf-top` / `.sf-body` / `.sf-foot` classes in `prototype/index.html`, and add a phone-size check for it.
 
 ## Branches and pull requests
 - Never push to `main`. Work on a feature branch (`feat/...`, `fix/...`, `docs/...`, `chore/...`) and open a pull request into `main`. The maintainer reviews and merges.

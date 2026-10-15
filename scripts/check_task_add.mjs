@@ -119,6 +119,8 @@ const open = async (page, subject) => {
   const box = await page.locator("#taskAddMenu").boundingBox();
   check("on a phone the Task box fits on the screen", !!box && box.x >= 0 && box.x + box.width <= 391 && box.y >= 0 && box.y + box.height <= 801);
   if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "task_add_phone.png") });
+  const full = await page.locator("#taskAddMenu").boundingBox();
+  check("on a phone the Task form fills the whole screen with Close at the top and the buttons at the bottom", full.x <= 1 && full.y <= 1 && full.width >= 388 && full.height >= 798 && (await page.locator("#taskAddMenu .sf-close").isVisible()) && (await page.locator("#taskAddMenu .sf-foot").boundingBox()).y + (await page.locator("#taskAddMenu .sf-foot").boundingBox()).height >= 799);
   check("on a phone the Task box is above the full screen email", await page.evaluate(() => { const r = document.getElementById("taskAddMenu").getBoundingClientRect(); const el = document.elementFromPoint(r.left + r.width / 2, r.top + 20); return !!el && !!el.closest("#taskAddMenu"); }));
   check("no script errors", errors.length === 0);
   await context.close();

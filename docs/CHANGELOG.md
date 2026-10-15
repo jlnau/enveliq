@@ -6,6 +6,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 **On a phone, the email closes as soon as you press Reviewed, Archive or Bin.** Before, the full screen email stayed open until you pressed Close or the action finished. Now it closes at once and you are back in the list. The five-second **Undo** bar still shows, and Undo brings the email back. See `docs/INBOX.md`.
 
+**Forms fill the screen on a phone.** The new Add a parcel form and the new Task form open full screen on a phone, with the title and a **✕ Close** button fixed at the top and the buttons fixed at the bottom, so they can always be reached. This is now a standing rule for every new form (`CLAUDE.md`).
+
 **Add a parcel by hand on the Shipping page.** A new **Add a parcel** form takes who the parcel is from, a tracking number (if you have one) and where it is up to. You move it along yourself from its card, and **Remove** takes it off. See `docs/INBOX.md`.
 
 **Back button stays inside Enveliq.** Going to another section (Sent, Reviewed, Tasks and so on) now adds a step to the browser's history, so Back, or a phone's back gesture, returns to the section you were in before instead of leaving the site. Forward works, and Back closes Settings if it is open. See `docs/INBOX.md`.
