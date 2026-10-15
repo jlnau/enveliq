@@ -2323,7 +2323,7 @@ async function loadServerView(){
   const saved=await secureBackendRequest("/api/v1/me/mail-view",{method:"GET",headers:{}});
   if(saved&&saved.view){
     const v={...VIEW_DEFAULT};
-    for(const k of VIEW_ALLOWED)if(VIEW_ALLOWED[k].includes(saved.view[k]))v[k]=saved.view[k];
+    for(const k of Object.keys(VIEW_ALLOWED))if(VIEW_ALLOWED[k].includes(saved.view[k]))v[k]=saved.view[k];
     if(typeof saved.view.peek==="boolean")v.peek=saved.view.peek;
     view=v;
   }else{
