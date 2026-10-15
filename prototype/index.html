@@ -3939,7 +3939,7 @@ function readerHistorySync(){
   else if(!want&&readerHistory){readerHistory=false;try{if(history.state&&history.state.enveliqReader)history.back()}catch{}}
 }
 // (Back from a window opened over an email lands on the email's own step: nothing to close.)
-window.addEventListener("popstate",()=>{if(viewerHistory){viewerHistory=false;closeAttachmentViewer(true);return}if(readerHistory){if(history.state&&history.state.enveliqReader)return;readerHistory=false;readerOpen=false;render();return}if(stateReady&&(location.hash||"")!==wantedHash())applyHashNav()});   // only when the address names a different section than the one showing
+window.addEventListener("popstate",()=>{if(mobileMenuHistory){mobileMenuHistory=false;setMenu(false,true);return}if(viewerHistory){viewerHistory=false;closeAttachmentViewer(true);return}if(readerHistory){if(history.state&&history.state.enveliqReader)return;readerHistory=false;readerOpen=false;render();return}if(stateReady&&(location.hash||"")!==wantedHash())applyHashNav()});   // only when the address names a different section than the one showing
 function closeAttachmentViewer(fromBack){
   if(!document.getElementById("attachmentModal"))return;
   if(viewerHistory&&fromBack!==true){viewerHistory=false;try{history.back()}catch{}}
@@ -6516,7 +6516,41 @@ function syncMobileBar(n,need){
   $("fDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short"});
   $("mSyncBtn").hidden=$("syncBtn").hidden;
 }
-function setMenu(open){document.body.classList.toggle("menu-open",open);const b=$("menuBtn");b.setAttribute("aria-expanded",String(open));b.setAttribute("aria-label",open?"Close the menu":"Open the menu")}
+// The phone menu owns a history entry so the hardware or browser Back key closes it.
+let mobileMenuHistory=false;
+function setMenu(open,fromBack=false){
+  if(open&&!isPhone())return;
+  const wasOpen=document.body.classList.contains("menu-open");
+  if(open&&!wasOpen){
+    try{history.pushState({enveliqMenu:1},"");mobileMenuHistory=true}catch{}
+  }else if(!open&&wasOpen&&mobileMenuHistory){
+    mobileMenuHistory=false;
+    if(!fromBack&&history.state&&history.state.enveliqMenu)try{history.back()}catch{}
+  }
+  document.body.classList.toggle("menu-open",open);
+  const b=$("menuBtn");
+  b.setAttribute("aria-expanded",String(open));
+  b.setAttribute("aria-label",open?"Close the menu":"Open the menu");
+}
+// A deliberate edge swipe opens the drawer; a swipe left inside it closes it.
+// Ignore vertical scrolling and gestures that begin inside other controls.
+let menuTouchStart=null;
+document.addEventListener("touchstart",e=>{
+  if(!isPhone()||e.touches.length!==1||document.body.classList.contains("reader-open"))return;
+  const t=e.touches[0],opened=document.body.classList.contains("menu-open");
+  if((!opened&&t.clientX<=28)||(opened&&t.clientX<=$("sidebar").getBoundingClientRect().right)){
+    menuTouchStart={x:t.clientX,y:t.clientY,opened};
+  }else menuTouchStart=null;
+},{passive:true});
+document.addEventListener("touchend",e=>{
+  if(!menuTouchStart||!isPhone()||!e.changedTouches.length)return;
+  const start=menuTouchStart;menuTouchStart=null;
+  const t=e.changedTouches[0],dx=t.clientX-start.x,dy=t.clientY-start.y;
+  if(Math.abs(dx)<65||Math.abs(dx)<Math.abs(dy)*1.4)return;
+  if(!start.opened&&dx>0)setMenu(true);
+  if(start.opened&&dx<0)setMenu(false);
+},{passive:true});
+document.addEventListener("touchcancel",()=>{menuTouchStart=null},{passive:true});
 $("menuBtn").onclick=()=>setMenu(!document.body.classList.contains("menu-open"));
 $("menuScrim").onclick=()=>setMenu(false);
 $("sidebar").addEventListener("click",e=>{if(e.target.closest(".nav:not(.more-toggle)"))setMenu(false)});
