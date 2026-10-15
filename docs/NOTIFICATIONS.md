@@ -39,6 +39,8 @@ The number on the bell adds the unread notes and the unread chat messages. Openi
 
 ### How a service sends you a note
 
+A step-by-step guide with Home Assistant is in [Notifications, webhooks and news feeds](install/notifications.md).
+
 A service connects to Enveliq's **WebSocket door** at `/api/v1/inbound/ws` and sends short plain-text notes. It proves who it is with a **key that you make for yourself**. In the bell, open **Show how to connect Home Assistant or another service**, press **Make a key**, and copy the key (it is shown once, then never again; a new key replaces the old one, and **Remove my key** switches it off). The key belongs to you only: it can add notes to your own bell and nothing else.
 
 1. Connect to `ws://YOUR-SERVER-IP:8765/api/v1/inbound/ws` on your own network (or `wss://your-address/api/v1/inbound/ws` from outside, if your proxy passes WebSockets through).

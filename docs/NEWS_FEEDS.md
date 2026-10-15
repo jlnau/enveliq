@@ -11,6 +11,8 @@ Follow websites you like (blogs, news, anything with an RSS or Atom feed) and se
 - The first time a feed is added, what it already holds is the starting point and does not count as new. Only entries that appear afterwards do.
 - On a phone the pop-up fills the screen, with **✕ Close** fixed at the top and the buttons fixed at the bottom (see [Forms on a phone](INBOX.md)).
 
+A short guide that also covers notifications from other services is in [Notifications, webhooks and news feeds](install/notifications.md).
+
 ## Each person's own
 
 Every person follows their own feeds. Nobody else, including an administrator, can see them. A feed id from another person answers "not found".

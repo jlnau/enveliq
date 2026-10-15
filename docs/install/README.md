@@ -40,7 +40,8 @@ Every guide uses the same ready-made install file: [`install/docker-compose.yml`
 2. [**Connect your email**](after-install.md#step-4-connect-your-email) (Gmail, Outlook, iCloud, Yahoo, Proton and others).
 3. [**Open Enveliq from your phone and other devices**](../ACCESS.md).
 4. [**Turn on AI summaries**](../AI_SUMMARIES.md).
-5. [**Back up, update and uninstall**](maintenance.md).
+5. [**Notifications, webhooks and news feeds**](notifications.md): let Home Assistant and other services send notes, and follow websites.
+6. [**Back up, update and uninstall**](maintenance.md).
 
 If anything goes wrong, [Troubleshooting](troubleshooting.md) lists the common problems and the fix for each.
 

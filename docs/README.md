@@ -17,6 +17,7 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 - [Connect my email](install/after-install.md#step-4-connect-your-email), with extra help for [Outlook and Microsoft 365](MICROSOFT.md), [Proton Mail](PROTON_BRIDGE.md) and [other email services](EMAIL_SERVICES.md)
 - [Turn on AI summaries](AI_SUMMARIES.md)
 - [Open Enveliq on my phone and away from home](ACCESS.md)
+- [Notifications, webhooks and news feeds](install/notifications.md) (let Home Assistant send notes to Enveliq)
 - [Update, back up and uninstall](install/maintenance.md)
 - [Something is not working](install/troubleshooting.md)
 
