@@ -1,4 +1,5 @@
 name: Build UI Preview
+# Experiment uses an isolated image tag to avoid overwriting the v0.91 preview.
 on:
   push:
     branches:
