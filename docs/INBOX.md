@@ -10,6 +10,10 @@ The Tag, Task, Reply and other email actions have a fine oval outline so they ar
 
 Swipe inward from the left edge of the screen to open the mailbox menu. Swipe left across the open menu to close it. The browser Back button, including the phone's system Back button, closes the open menu rather than leaving the current page. The menu button and the dimmed area outside the menu still work as before.
 
+## Returning to the same place
+
+Enveliq remembers where you were in the inbox and the email you had selected. When you return from reading a message, or refresh the page, it restores the list position on that device. The selected email is remembered for your own account in the encrypted vault, so your other devices can find the same email. Scroll positions stay on the device because phone and desktop screens have different sizes. If the email is no longer available, the inbox still works normally.
+
 ## When new mail appears
 
 If the mailbox uses AI summaries, a new email is not shown in your inbox until its summary, and the summaries of any attached files, are ready. A small bar at the bottom of the page shows the AI queue (*1 being written, 2 waiting*). If a summary fails after a few tries, the email is shown anyway with **Could not summarise** and a **Try again** button. [The AI guide](AI_SUMMARIES.md#the-ai-queue) has the details.
