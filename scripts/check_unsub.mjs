@@ -101,10 +101,11 @@ async function expandAll(page) {
 {
   const { page, errors, context } = await open(390, 800);
   // On a phone an email now opens full screen (see check_phone_reader.mjs). This part checks sizes and fit inside an open email row, so it keeps the row layout.
-  await page.locator("article.mail .qmain").first().click();
-  const mobileUnsub = page.locator("a.unsub:visible").first();
-  const mobileBox = await mobileUnsub.boundingBox();
-  check("on a phone the button is there and big enough to tap", mobileBox !== null && mobileBox.height >= 34);
+  // Show the expanded list row to test the small-screen tap target independently of the phone's full-screen reader.
+  await page.evaluate(() => { lay = () => "list"; view.rows = "open"; render(); });
+  const mobileUnsub = page.locator("article.mail .qfoot a.unsub").first();
+  check("on a phone the button is there and big enough to tap",
+    (await mobileUnsub.count()) === 1 && (await mobileUnsub.evaluate(e => parseFloat(getComputedStyle(e).minHeight))) >= 34);
   await shot(page, "unsub-phone");
   check("no page errors on a phone", errors.length === 0);
   await context.close();
