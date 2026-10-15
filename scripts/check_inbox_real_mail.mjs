@@ -519,7 +519,7 @@ await page.click('[data-theme-choice="dark"]');
   const callsBefore = server.calls.length;
   await page.locator(".reading [data-status=reviewed]").click();
   await page.waitForTimeout(1500);
-  check("Reviewed in the reading pane works and the pane moves on to another email", server.calls.slice(callsBefore).some((c) => c[0] === "resolve" && c[2].outcome === "reviewed") && (await page.locator(".reading .rhead h3").count()) === 1);
+  check("Reviewed in the reading pane works and clears the selection", server.calls.slice(callsBefore).some((c) => c[0] === "resolve" && c[2].outcome === "reviewed") && (await page.locator(".reading .rhead h3").count()) === 0 && (await page.locator(".panelist article.mail.current").count()) === 0);
   // reading pane below
   await page.click('#viewPanel [data-view=layout][data-val=bottom]');
   const pb = await page.locator(".panelist").boundingBox(), rb2 = await page.locator(".reading").boundingBox();
