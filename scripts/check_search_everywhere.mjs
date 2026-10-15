@@ -73,6 +73,9 @@ async function open(width, height) {
   await context.route("**/*", handler);
   await page.goto(`${ORIGIN}/`);
   await page.waitForSelector("article.mail");
+  // Check opening a search result in the expanded email list, regardless of
+  // the user preference that is currently chosen by default.
+  await page.evaluate(() => { view.layout = "list"; view.rows = "open"; applyView(); render(); });
   await page.waitForTimeout(500);
   return { page, errors, context };
 }
