@@ -301,6 +301,7 @@ await page.click('[data-theme-choice="dark"]');
   check("the details panel also says when you replied", (await newsRow.locator(".replied-kv").count()) === 1);
   await page.reload();
   await page.waitForSelector("article.mail");
+  await page.evaluate(() => { view.layout = "list"; applyView(); render(); });
   check("Replied is still there after a refresh (kept by the server)", (await page.locator("article.mail", { hasText: "Weekly news" }).locator(".qrow .time .replied").count()) === 1);
 
   // Sending feedback: the button says Sending... while the server works
@@ -336,6 +337,7 @@ await page.click('[data-theme-choice="dark"]');
   await page.locator("#closeSettings").click();
   await page.reload();
   await page.waitForSelector("#sendBar .sendrow", { timeout: 4000 });
+  await page.evaluate(() => { view.layout = "list"; applyView(); render(); });
   check("the bar comes back after a refresh", await page.locator("#sendBar .sendrow").isVisible());
   await page.locator("#sendBar button").click();
   await page.waitForSelector("#compose.open");
@@ -553,7 +555,7 @@ await page.click('[data-theme-choice="dark"]');
   await page.click("#viewTab");
   await page.waitForTimeout(450);
   await page.click("#viewReset");
-  check("Reset to default brings back the classic list", (await page.locator("body.layout-list").count()) === 1 && (await page.locator(".quiet-list article.mail").count()) >= 1);
+  check("Reset to default brings back the right reading panel", (await page.locator("body.layout-right").count()) === 1 && (await page.locator("#readDock .enveliq-empty-actions .enveliq-empty-action").count()) === 4);
   await page.click("#viewTab");
   await page.waitForTimeout(450);
   check("the panel slides away again", await panelHidden());
