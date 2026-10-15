@@ -57,6 +57,11 @@ class MailViewBody(StrictModel):
     peek: bool
 
 
+class MailContextBody(StrictModel):
+    account_id: str | None = Field(default=None, max_length=128)
+    message_id: str | None = Field(default=None, max_length=512)
+
+
 class DeviceBody(StrictModel):
     endpoint: str = Field(max_length=800)
     p256dh: str = Field(max_length=200)
@@ -119,6 +124,30 @@ def build_notify_router(ctx: Any) -> APIRouter:
         view = body.model_dump()
         ctx.vault.set_global("mail-view-v1:" + session.principal.user_id, view)
         return {"view": view}
+
+    @router.get("/me/mail-context")
+    def get_mail_context(session: Session = Depends(session_dep)):
+        saved = ctx.vault.get_global("mail-context-v1:" + session.principal.user_id)
+        return {"selection": saved if isinstance(saved, dict) else None}
+
+    @router.put("/me/mail-context")
+    def put_mail_context(body: MailContextBody, session: Session = Depends(session_dep)):
+        selection = None
+        if body.account_id is not None or body.message_id is not None:
+            if not body.account_id or not body.message_id:
+                raise HTTPException(status_code=422, detail="Both message identifiers are required")
+            account = ctx.vault.get_account(body.account_id)
+            if not account or account.get("owner_user_id") != session.principal.user_id:
+                raise HTTPException(status_code=404, detail="Email not found")
+            try:
+                message = ctx.vault.get_message(body.account_id, body.message_id)
+            except (KeyError, ValueError):
+                message = None
+            if not message:
+                raise HTTPException(status_code=404, detail="Email not found")
+            selection = {"account_id": body.account_id, "message_id": body.message_id}
+        ctx.vault.set_global("mail-context-v1:" + session.principal.user_id, selection or {})
+        return {"selection": selection}
 
     @router.get("/me/notifications")
     def overview(session: Session = Depends(session_dep)):
