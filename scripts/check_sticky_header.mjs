@@ -68,7 +68,10 @@ async function open(width, height, theme) {
   const page = await context.newPage();
   const errors = []; page.on("pageerror", (e) => errors.push(String(e)));
   await context.route("**/*", handler);
-  await page.goto(`${ORIGIN}/`); await page.waitForSelector("article.mail"); await page.waitForTimeout(500);
+  await page.goto(`${ORIGIN}/`); await page.waitForSelector("article.mail");
+  // This check targets the scrolling classic inbox, not the split reader.
+  await page.evaluate(() => { view.layout = "list"; view.rows = "open"; applyView(); render(); });
+  await page.waitForTimeout(500);
   return { page, errors, context };
 }
 const rect = (page, sel) => page.evaluate((s) => { const r = document.querySelector(s).getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom), height: Math.round(r.height) }; }, sel);
