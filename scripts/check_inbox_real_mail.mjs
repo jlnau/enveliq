@@ -653,7 +653,7 @@ await page.click('[data-theme-choice="dark"]');
     const ok = g.height < 55 && g.y + g.height <= sub.y + 2 && se.y + se.height <= g.y + 2 && (await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
     check(`new header is tidy at ${w}px wide: search above title, nothing overlaps or runs off`, ok);
   }
-  check("back on a wide screen the left panel and row buttons return", (await page.locator("#sidebar").isVisible()) && (await page.locator(".qpair").first().isVisible()));
+  check("back on a wide screen the left sidebar and default reading pane return", (await page.locator("#sidebar").isVisible()) && (await page.locator("body.layout-right").count()) === 1);
   check("no script errors on the page", errors.length === 0);
 }
 
