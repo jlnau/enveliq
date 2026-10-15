@@ -126,8 +126,19 @@ const visibleBtn = (page) => page.locator("[data-rss-open]:visible").first();
   await page.waitForSelector("#rssPop:not([hidden])");
   const full = await page.locator("#rssPop").boundingBox();
   check("on a phone the feed pop-up fills the whole screen", full.x <= 1 && full.y <= 1 && full.width >= 388 && full.height >= 798);
-  const close = await page.locator("#rssPop .sf-top .sf-close").boundingBox(), foot = await page.locator("#rssPop .sf-foot button[type=submit]").boundingBox();
-  check("Close is fixed at the top and the buttons at the bottom", close.y < 80 && foot.y > 600 && foot.y + foot.height <= 801);
+  // Fetching feeds can redraw the popup after it opens. Measure both controls
+  // together so a redraw cannot detach one between separate locator calls.
+  await page.waitForFunction(() => {
+    const top = document.querySelector("#rssPop .sf-top .sf-close");
+    const bottom = document.querySelector("#rssPop .sf-foot button[type=submit]");
+    return top && bottom && top.getClientRects().length && bottom.getClientRects().length;
+  });
+  const controlsFit = await page.evaluate(() => {
+    const close = document.querySelector("#rssPop .sf-top .sf-close")?.getBoundingClientRect();
+    const foot = document.querySelector("#rssPop .sf-foot button[type=submit]")?.getBoundingClientRect();
+    return Boolean(close && foot && close.y < 80 && foot.y > 600 && foot.bottom <= window.innerHeight + 1);
+  });
+  check("Close is fixed at the top and the buttons at the bottom", controlsFit);
   if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "rss_phone.png") });
   await page.locator("#rssPop [data-rss-close]").click();
   check("Close closes it", await page.locator("#rssPop").isHidden());
