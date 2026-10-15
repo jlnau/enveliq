@@ -2327,9 +2327,9 @@ async function loadServerView(){
     if(typeof saved.view.peek==="boolean")v.peek=saved.view.peek;
     view=v;
   }else{
-    // First upgrade: preserve the signed-in user's current device choice once.
-    const v={...view};
-    await secureBackendRequest("/api/v1/me/mail-view",{method:"PUT",body:JSON.stringify(v)});
+    // First sign-in has no server preference: never inherit a different user's browser choice.
+    view={...VIEW_DEFAULT};
+    await secureBackendRequest("/api/v1/me/mail-view",{method:"PUT",body:JSON.stringify(view)});
   }
   viewServerReady=true;
   applyView();
