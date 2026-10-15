@@ -182,6 +182,13 @@ class FakeBridge:
                         n = len(bridge.in_folder(self.cur))
                         mode = "READ-ONLY" if cmd == "EXAMINE" else "READ-WRITE"
                         w(f"* {n} EXISTS\r\n* OK [UIDVALIDITY {bridge.uidvalidity}] ok\r\n{tag} OK [{mode}] done\r\n".encode())
+                    elif cmd == "CREATE":
+                        name = args.strip().strip('"')
+                        if any(n == name for _f, n in bridge.folders):
+                            w(f"{tag} NO [ALREADYEXISTS] exists\r\n".encode())
+                        else:
+                            bridge.folders.append(("\\HasNoChildren", name))
+                            w(f"{tag} OK created\r\n".encode())
                     elif cmd == "LIST":
                         for flags, name in bridge.folders:
                             w(f'* LIST ({flags}) "/" "{name}"\r\n'.encode())
@@ -202,6 +209,9 @@ class FakeBridge:
                 inbox = bridge.in_folder(self.cur)
                 if sub == "SEARCH":
                     hits = [u for u in inbox if "UNSEEN" not in rest or "\\Seen" not in bridge.messages[u]["flags"]]
+                    wanted = re.search(r'HEADER Message-ID "([^"]+)"', rest)
+                    if wanted:
+                        hits = [u for u in hits if f"Message-ID: {wanted.group(1)}".encode() in bridge.messages[u]["raw"]]
                     w(("* SEARCH " + " ".join(map(str, hits)) + f"\r\n{tag} OK done\r\n").encode())
                 elif sub == "FETCH":
                     uidset, _, items = rest.partition(" ")

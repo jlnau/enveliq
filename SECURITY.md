@@ -222,6 +222,13 @@ These rules are architecture requirements, not UI preferences.
 
 - **Parcels typed in by hand.** `POST /api/v1/me/shipping` adds an order in the person's own `ship:<user id>` record, with the same limits as an order made from an email: the sender is cut to 60 characters and stripped of control characters, the tracking number must be 8 to 40 letters or digits and is not added twice, the status is one of four fixed words, and the list has the same cap as before. Changing the status or removing such an order works only on orders marked as entered by hand; for orders made from emails the server answers that the emails decide. Another person's order answers "not found".
 
+## Tags (labels)
+
+- **What is kept.** A list of tag names on each email's encrypted record (at most 20 per email, 40 characters each), removed with the email. The mailbox's own list of tags is read live when the Tags window opens and is not stored. No email text is read to do this, and tag names are not sent to the AI.
+- **Who can use it.** Only the signed-in owner of the mailbox, over session routes with a rate limit and `Cache-Control: no-store`; another person's mailbox or email answers "not found". A switch off (administrator or person) answers "switched off". Bodies are strict (no extra fields, the on/off value must be a true boolean).
+- **Changes in the real mailbox.** Adding or removing a tag is the only write, made over the mailbox's existing connection and rules (same destination checks, pinned certificate, one operation per mailbox at a time). Tag names are checked on the server (length, characters, no `/`, quotes or control characters, not a folder name such as Inbox or Trash) and sent to the mailbox quoted and encoded, so a name cannot add a command. Removing a Proton label deletes only the copy in that label's folder; the email itself is never moved or deleted by this feature.
+- **Audit log.** Records that a tag was made, added or removed and on which email, never the tag's name.
+
 ## News feeds
 
 - **What is kept.** One encrypted record per person (`rss:<user id>`): feed addresses and names, and for the newest 25 entries of each feed a title, up to 1,500 characters of plain text, a link, a date and a new flag. At most 20 feeds per person. No page is stored.

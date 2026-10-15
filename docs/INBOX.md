@@ -154,7 +154,7 @@ At the top of the Shipping page, **Add a parcel** opens a small form for a parce
 
 ## Forms on a phone
 
-A form or pop-up that asks you to type something (Add a parcel, Task, and the ones to come) opens full screen on a phone. The title and **✕ Close** stay fixed at the top, the buttons (Add parcel, Add task) stay fixed at the bottom, and only the middle scrolls, so you never have to hunt for them. On a computer they are small boxes as before. `scripts/check_shipping.mjs` and `scripts/check_task_add.mjs` check this.
+A form or pop-up that asks you to type something (Add a parcel, Task, News feeds, Tags, and the ones to come) opens full screen on a phone. The title and **✕ Close** stay fixed at the top, the buttons (Add parcel, Add task) stay fixed at the bottom, and only the middle scrolls, so you never have to hunt for them. On a computer they are small boxes as before. `scripts/check_shipping.mjs` and `scripts/check_task_add.mjs` check this.
 
 ## The Back button
 

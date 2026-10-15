@@ -41,6 +41,7 @@ class FeaturesBody(StrictModel):
     messages: bool | None = None
     write_help: bool | None = None
     rss: bool | None = None
+    tags: bool | None = None
 
 
 class FollowBody(StrictModel):

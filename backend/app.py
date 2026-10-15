@@ -32,6 +32,9 @@ from .mail.extra_routes import build_extra_router
 from .mail.task_routes import build_task_router
 from .mail.shipping import ShipBook
 from .mail.rss import RssBook, RssRefresher
+from .mail import features
+from .mail.tags import TagService
+from .mail.tag_routes import build_tag_router
 from .mail.rss_routes import build_rss_router
 from .mail.important import ImportantPeople
 from .mail.important_routes import build_important_router
@@ -611,6 +614,8 @@ tripbook = TripBook(vault, taskbook.timezone_of)
 messagebook = MessageBook(vault, users)
 writehelpbook = WriteHelpBook(vault)
 mail_service.shipments = shipbook
+tagservice = TagService(mail_service, vault, lambda user: bool(user) and features.effective(vault, user)['tags'])
+mail_service.tags_sync = tagservice.sync
 mail_service.subscriptions = subbook
 mail_service.trips = tripbook
 waitbook = WaitBook(vault)
@@ -654,7 +659,7 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, subscriptions=subbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, tags=tagservice, subscriptions=subbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))
@@ -662,6 +667,7 @@ app.include_router(build_extra_router(mail_ctx))          # after the main route
 app.include_router(build_task_router(mail_ctx))
 app.include_router(build_shipping_router(mail_ctx))
 app.include_router(build_rss_router(mail_ctx))
+app.include_router(build_tag_router(mail_ctx))
 app.include_router(build_subscriptions_router(mail_ctx))
 app.include_router(build_important_router(mail_ctx))
 app.include_router(build_saved_writing_router(mail_ctx))

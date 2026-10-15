@@ -99,6 +99,7 @@ class MailService:
         self.holds: Any = None                    # set by the application: (account, message) pairs that have an open task and must not be removed
         self.check_id: Any = None                 # set by the application: the id of the mailbox that is the check address (mail/checkbox.py)
         self.on_people: Any = None                # set by the application: told which senders were seen, to build the address book
+        self.tags_sync: Any = None                # set by the application: brings the emails' tags in line with the mailbox (mail/tags.py)
         self.on_new: Any = None                   # set by the application: told which emails just arrived (sender and subject), to apply the person's rules
         self.ai_source = "environment" if self.env_ai.enabled else "none"
         self.locks = AccountLocks()
@@ -293,6 +294,11 @@ class MailService:
                         vault.update_message(account_id, stored["id"], data)
                     except (ValueError, KeyError):
                         continue
+                if self.tags_sync:
+                    try:
+                        self.tags_sync(s, account, validity)
+                    except Exception:
+                        log.warning("tags could not be read after a sync", exc_info=True)        # tags never break a sync
         finally:
             lock.release()
         if people and self.on_people:

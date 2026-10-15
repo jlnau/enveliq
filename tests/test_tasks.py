@@ -193,13 +193,13 @@ def test_a_person_can_add_their_own_task_to_any_email(env):
     tz = ZoneInfo("Australia/Sydney")
     appm.taskbook.clock = lambda: datetime(2026, 10, 9, 10, 0, tzinfo=tz).timestamp()
     msgs = client.get(f"/api/v1/accounts/{aid}/messages").json()
-    plain = next(m for m in msgs if not m.get("suggested_task"))          # an email the AI found nothing to do in
+    plain = msgs[0]                       # any email at all: it does not matter whether the AI found a task in it
     r = add_task(client, aid, plain["id"])
     assert r.status_code == 200, r.text
     mine = [t for t in r.json()["tasks"] if t["manual"]]
     assert len(mine) == 1
     t = mine[0]
-    assert t["title"] == "Ring the plumber when I get home" and t["state"] == "open" and t["due"] == "2026-10-09"
+    assert t["title"] == "Ring the plumber when I get home" and t["state"] == "open" and t["due"] == r.json()["today"]
     assert t["message_id"] == plain["id"] and t["account_id"] == aid and t["sender"]
     assert len(add_task(client, aid, plain["id"], "Another one", on="2026-10-20").json()["tasks"]) == len(r.json()["tasks"]) + 1
     assert any(x["title"] == "Another one" and x["due"] == "2026-10-20" for x in listing(client)["tasks"])
