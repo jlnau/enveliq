@@ -38,7 +38,13 @@ def _depth(value: Any, level: int = 0) -> int:
     return level
 
 
+# The colour a person may give a mailbox's label. The page turns each name into a hue; nothing else is accepted.
+MAILBOX_COLORS = ("blue", "green", "orange", "pink", "red", "teal", "purple", "lime")
+
+
 def validate_settings_blob(value: dict[str, Any]) -> dict[str, Any]:
+    if "color" in value and value["color"] not in MAILBOX_COLORS + ("", None):
+        raise ValueError("unknown mailbox colour")
     if len(json.dumps(value, default=str)) > 50_000:
         raise ValueError("settings payload too large")
     if _depth(value) > _MAX_SETTINGS_DEPTH:

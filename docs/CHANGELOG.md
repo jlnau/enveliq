@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**You can choose the colour of each mailbox's label.** On the Mailboxes page, a **Label colour** drop-down on each mailbox (Automatic, Blue, Green, Orange, Pink, Red, Teal, Purple, Lime) sets the colour of the small label that shows which mailbox an email came from. Stored with the mailbox's settings as `color`; the server accepts only those names. Touches `web/static/auth.js`, `auth.css`, `backend/models.py`, `prototype/index.html`. Tests in `tests/test_hardening.py`, `scripts/check_mailbox_label.mjs` and `scripts/check_mailbox_e2e.mjs`. See `docs/INBOX.md`.
+
 **You can rename a mailbox.** Press **Rename** on a mailbox on the Mailboxes page, type a new name and press **Save name**; the name changes everywhere it is shown, including the label on each email, and nothing else changes. Only the person who connected the mailbox can do it. Uses the existing `PATCH /api/v1/accounts/{id}`; touches `web/static/auth.js`. Tests in `tests/test_hardening.py`, browser check in `scripts/check_mailbox_e2e.mjs`. See `docs/INBOX.md`.
 
 **Notification bell, and a WebSocket door for Home Assistant.** A bell at the top right, beside the news-feed icon, collects notes sent to you by Home Assistant and other services on your network, and your unread chat messages, in one drop-down (full screen on a phone). Services connect to a new WebSocket door with a key you make for yourself in the bell, and the door also works on the machine's local network address, so it still works when Cloudflare sits in front of the public address. See `docs/NOTIFICATIONS.md`, `docs/NETWORK_ACCESS.md` and `SECURITY.md`. A new library, `websockets`, is added to `requirements.txt`.

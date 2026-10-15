@@ -2692,7 +2692,10 @@ let tagUi={open:false,id:null,names:null,supported:true,canCreate:true,busy:fals
 function tagsOn(m){return !!(realMail&&feat.tags&&m&&m.real&&m.status==="inbox"&&!m.kept)}
 // Which mailbox an email came from. Shown only when more than one mailbox is connected, so a single mailbox stays uncluttered.
 function multiBox(){return realMail&&accounts.filter(a=>a.owner===currentUser.id).length>1}
-function boxHue(id){let h=0;for(const c of String(id))h=(h*31+c.charCodeAt(0))>>>0;return[210,150,35,300,0,180,260,80][h%8]}
+const BOX_COLORS={blue:210,green:150,orange:35,pink:300,red:0,teal:180,purple:260,lime:80};
+function boxHue(id){
+  const a=accounts.find(x=>x.id===id);if(a&&a.color&&BOX_COLORS[a.color]!==undefined)return BOX_COLORS[a.color];     // the colour the person chose on the Mailboxes page
+  let h=0;for(const c of String(id))h=(h*31+c.charCodeAt(0))>>>0;return Object.values(BOX_COLORS)[h%8]}
 function boxChip(m){
   if(!m.real||!multiBox())return "";
   const a=accounts.find(x=>x.id===m.real.accountId),name=(a&&a.name)||m.account||"Mailbox",tip=[a&&a.provider,name,a&&a.address].filter(Boolean).join(" · ");
@@ -5256,7 +5259,7 @@ async function loadRealMail(me){
     const identities=[a.email_address,...((a.settings&&a.settings.send_identities)||[])].filter((v,i,arr)=>v&&arr.indexOf(v)===i);
     const msgs=(await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(a.id)}/messages`,{method:"GET",headers:{}})).filter(r=>wantAll||!r.from_all_mail);
     const isBridge=a.auth_method==="proton_bridge";
-    accts.push({id:a.id,providerId:isBridge?"proton":(a.settings&&a.settings.provider_id)||"imap",owner:me.id,provider:a.provider||"Email",method:isBridge?"Proton Bridge":"App password (IMAP)",name:a.display_name,address:a.email_address,identities,
+    accts.push({id:a.id,color:(a.settings&&a.settings.color)||"",providerId:isBridge?"proton":(a.settings&&a.settings.provider_id)||"imap",owner:me.id,provider:a.provider||"Email",method:isBridge?"Proton Bridge":"App password (IMAP)",name:a.display_name,address:a.email_address,identities,
       status:"Connected",visibility:"private",server:a.server,port:String(a.port),username:a.username,security:isBridge?"STARTTLS / pinned Bridge certificate":"Encrypted (TLS), certificate checked",
       lastSync:"",lastSuccess:"",connectedAt:"",processed:msgs.length,settings:defaultAccountSettings()});
     for(const r of msgs){

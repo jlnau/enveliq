@@ -57,6 +57,7 @@ const rowOf = (page, subject) => page.locator("article.mail", { hasText: subject
   const { page, context, errors } = await run(1300, 900);
   check("with two mailboxes each email in the list says which one it came from", (await rowOf(page, "Proton mailbox").locator(".qmain .mbox").innerText()).trim() === "Proton test" && (await rowOf(page, "Gmail mailbox").locator(".qmain .mbox").innerText()).trim() === "Gmail test");
   check("the two mailboxes get different colours", await page.evaluate(() => { const a = [...document.querySelectorAll(".qmain .mbox")].map((e) => e.style.getPropertyValue("--bh")); return a.length === 2 && a[0] !== a[1]; }));
+  check("a mailbox with no chosen colour gets an automatic one that is a number", await page.evaluate(() => /^\d+$/.test(document.querySelector(".qmain .mbox").style.getPropertyValue("--bh").trim())));
   check("the label's hover text names the provider and the address", /Gmail/.test(await rowOf(page, "Gmail mailbox").locator(".mbox").getAttribute("title")) && /me2@example.invalid/.test(await rowOf(page, "Gmail mailbox").locator(".mbox").getAttribute("title")));
   await rowOf(page, "Gmail mailbox").locator(".qmain").click();
   await page.waitForSelector("article.mail.open .qside");
@@ -74,6 +75,16 @@ const rowOf = (page, subject) => page.locator("article.mail", { hasText: subject
   if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "mailbox_label_phone.png") });
   check("no script errors", errors.length === 0);
   await context.close();
+}
+{
+  gmail.settings = { ...gmail.settings, color: "red" };
+  proton.settings = { ...proton.settings, color: "teal" };
+  const { page, context, errors } = await run(1300, 900);
+  const hues = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("article.mail")].map((a) => [a.innerText.includes("Gmail mailbox") ? "gmail" : "proton", a.querySelector(".qmain .mbox").style.getPropertyValue("--bh").trim()])));
+  check("a colour chosen on the Mailboxes page is the one the label uses (red 0, teal 180)", hues.gmail === "0" && hues.proton === "180");
+  check("no script errors", errors.length === 0);
+  await context.close();
+  delete gmail.settings.color; delete proton.settings.color;
 }
 {
   accounts = [proton];

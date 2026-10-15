@@ -1752,6 +1752,7 @@ async function writingHelpSection() {
 }
 // ---------- mailboxes (Proton Bridge and app-password services) ----------
 const BRIDGE_ERRORS = { ok: "Working" };
+const MAILBOX_COLOR_CHOICES = [["", "Automatic"], ["blue", "Blue"], ["green", "Green"], ["orange", "Orange"], ["pink", "Pink"], ["red", "Red"], ["teal", "Teal"], ["purple", "Purple"], ["lime", "Lime"]];
 async function mailboxesPage(me, diagId) {
   const accounts = (await api("/accounts")).filter(a => a.owner_user_id === me.id);
   const auto = await api("/sync/status").catch(() => ({ enabled: false, accounts: {} }));
@@ -1807,6 +1808,14 @@ async function mailboxesPage(me, diagId) {
       });
       nameSlot.replaceChildren(form); box.focus(); box.select();
     } });
+    // Colour of the small label that shows which mailbox an email came from. "Automatic" lets Enveliq pick one.
+    const colorSel = h("select", { id: `col_${a.id}`, "aria-label": `Label colour for ${a.display_name}`, onchange: e => run(e.target, async () => {
+      const color = e.target.value;
+      await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), color } } });
+      a.settings = { ...(a.settings || {}), color };
+      toast(color ? `Label colour set to ${color}` : "Label colour is automatic");
+    }) }, MAILBOX_COLOR_CHOICES.map(([v, t]) => h("option", { value: v, text: t, selected: ((a.settings && a.settings.color) || "") === v })));
+    const colorField = h("label", { class: "color-pick" }, "Label colour ", colorSel);
     const aiOn = !!(a.settings && a.settings.ai_summaries);
     const aiToggle = ai.configured ? h("button", { class: "btn small", type: "button", text: aiOn ? "Turn AI summaries off" : "Turn AI summaries on", onclick: e => run(e.target, async () => {
       await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), ai_summaries: !aiOn } } });
@@ -1832,7 +1841,7 @@ async function mailboxesPage(me, diagId) {
       toast(autoOn ? "Automatic sync is off" : "Automatic sync is on"); mailboxesPage(me);
     }) }) : null;
     return h("section", { class: "section" },
-      h("div", { class: "item" }, h("div", {}, h("strong", { text: a.display_name }), h("div", { class: "meta", text: `${a.email_address} · ${a.auth_method === "proton_bridge" ? `Proton Bridge at ${a.server}:${a.port}` : `${a.provider} (app password)`}${ai.configured ? ` · AI summaries ${aiOn ? "on" : "off"}` : ""}` }), h("div", { class: "hint", text: autoNote }), nameSlot),
+      h("div", { class: "item" }, h("div", {}, h("strong", { text: a.display_name }), h("div", { class: "meta", text: `${a.email_address} · ${a.auth_method === "proton_bridge" ? `Proton Bridge at ${a.server}:${a.port}` : `${a.provider} (app password)`}${ai.configured ? ` · AI summaries ${aiOn ? "on" : "off"}` : ""}` }), h("div", { class: "hint", text: autoNote }), colorField, nameSlot),
         isMail(a) ? h("div", { class: "row" }, check, sync, rename, autoToggle, aiToggle, waitToggle, diag, remove) : h("div", { class: "row" }, rename, remove)), status);
   });
 

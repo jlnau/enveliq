@@ -160,6 +160,10 @@ When more than one of your mailboxes is connected, each email in the list carrie
 
 The name you gave a mailbox when you connected it (for example "Proton Test") can be changed at any time. Open **Mailboxes**, press **Rename** on that mailbox, type the new name and press **Save name**. **Cancel** keeps the old one. The new name shows straight away on the Mailboxes page, in the mailbox label on each email, and in the mailbox lists. Only the name changes: your mail, summaries, tasks, tags and settings stay as they are, and you do not have to connect again. Only the person who connected a mailbox can rename it.
 
+### Choosing the label's colour
+
+On the same Mailboxes card, the **Label colour** drop-down picks the colour of that mailbox's label: Blue, Green, Orange, Pink, Red, Teal, Purple or Lime. **Automatic** (the start) lets Enveliq choose one for you. The choice is saved at once and shows in the mail list and in the open email the next time the inbox loads. It is only a colour; nothing else about the mailbox changes.
+
 ## Searching your tasks
 
 The Tasks page has a **Search your tasks** box under its title. Type part of a task's words (its title, its details or who it is from; capital letters do not matter) and the page lists only the tasks that have them, open ones under **To do** and finished ones under **Done**, with a line saying how many match. Clear the box to get your usual view back. It works in the Focus, List and Calendar views. Browser check: `scripts/check_task_search.mjs`.

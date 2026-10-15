@@ -43,6 +43,17 @@ check("the new name is shown on the Mailboxes page", (await page.locator("strong
 await page.reload();
 await page.waitForSelector("strong:text-is('Personal Proton')");
 check("the new name is kept after reloading", true);
+// Label colour: a drop-down on the mailbox card, saved on the server, and refused if it is not one of the offered colours.
+check("the colour drop-down starts on Automatic", (await page.locator("select[id^='col_']").inputValue()) === "");
+await page.selectOption("select[id^='col_']", "purple");
+await page.waitForSelector("text=Label colour set to purple");
+if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/mailbox-colour.png` });
+await page.reload();
+await page.waitForSelector("select[id^='col_']");
+check("the chosen colour is kept after reloading", (await page.locator("select[id^='col_']").inputValue()) === "purple");
+await page.selectOption("select[id^='col_']", "");
+await page.waitForSelector("text=Label colour is automatic");
+check("Automatic can be chosen again", true);
 await page.click("button:has-text('Diagnostics')");
 await page.waitForSelector("text=Quarterly update");
 check("Diagnostics lists the unread emails", (await page.locator(".msg").count()) === 3);

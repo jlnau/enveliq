@@ -212,3 +212,7 @@ ol.guide-steps li > p{margin:2px 0 0}
 a.btn{text-decoration:none}
 .sv-block{margin-top:26px}.sv-block:first-child{margin-top:0}
 .sv-block>textarea,.sv-block>input,.sv-block>.row,.sv-block>.ab-list{margin-top:12px}
+
+/* Label colour drop-down on a mailbox card: small, on one line. */
+.color-pick{display:flex;align-items:center;gap:8px;margin:8px 0 2px;font-weight:600}
+.color-pick select{width:auto;min-width:9em}

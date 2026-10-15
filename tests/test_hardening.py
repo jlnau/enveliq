@@ -442,3 +442,17 @@ def test_only_the_owner_can_rename_a_mailbox(env):
     r = cara.patch(f"/api/v1/accounts/{account_id}", json={"display_name": "Mine now"})
     assert r.status_code == 404
     assert appm.vault.get_account(account_id)["display_name"] == IMAP_ACCOUNT["display_name"]
+
+
+def test_a_mailbox_label_colour_is_one_of_the_offered_names(env):
+    appm, client, token = env
+    account_id = make_account(client, token)
+    keep = dict(appm.vault.get_account(account_id)["settings"])
+    r = client.patch(f"/api/v1/accounts/{account_id}", headers=auth(token), json={"settings": {**keep, "color": "teal"}})
+    assert r.status_code == 200 and r.json()["settings"]["color"] == "teal"
+    assert appm.vault.get_account(account_id)["password"] == "original-app-password"
+    for bad in ("#ff0000", "red; background:url(x)", "chartreuse", 5):
+        r = client.patch(f"/api/v1/accounts/{account_id}", headers=auth(token), json={"settings": {**keep, "color": bad}})
+        assert r.status_code == 422, bad
+    assert appm.vault.get_account(account_id)["settings"]["color"] == "teal"
+    assert client.patch(f"/api/v1/accounts/{account_id}", headers=auth(token), json={"settings": {**keep, "color": ""}}).status_code == 200
