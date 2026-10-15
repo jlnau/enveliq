@@ -2,6 +2,10 @@
 
 The small things that make the inbox calm to use.
 
+## Buttons inside an email
+
+The Tag, Task, Reply and other email actions have a fine oval outline so they are easier to recognise as buttons. The outline is drawn inside each existing button, without changing its size or spacing. The same design works in light and dark mode.
+
 ## Opening the menu on a phone
 
 Swipe inward from the left edge of the screen to open the mailbox menu. Swipe left across the open menu to close it. The browser Back button, including the phone's system Back button, closes the open menu rather than leaving the current page. The menu button and the dimmed area outside the menu still work as before.
