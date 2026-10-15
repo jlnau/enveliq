@@ -21,14 +21,14 @@ const nowS = Math.floor(NOW.getTime() / 1000);
 const base = { priority: "normal", category: "Information", action_required: false, state: "unread", snoozed_until: null };
 const ctx = (id) => ({ reply_to: "x@example.invalid", delivered_to: null, via_alias: null, message_id: `<${id}@x>`, references: [] });
 const messages = [
-  { ...base, id: "m-a", subject: "Dentist on Monday", sender_display: "Brightwater Dental", sender_address: "clinic@example.invalid", received_at: nowS - 300, reply_context: ctx("a"), summary: "Reminds you of a check-up on Monday at 10:30." },
-  { ...base, id: "m-b", subject: "Your electricity bill", sender_display: "Northside Power", sender_address: "bills@example.invalid", received_at: nowS - 90000, reply_context: ctx("b"), summary: "Your bill is ready and due in two weeks.", state: "reviewed", resolved_at: nowS - 3600 },
-  { ...base, id: "m-c", subject: "Photos from the trip", sender_display: "Alice", sender_address: "alice@example.invalid", received_at: nowS - 200000, reply_context: ctx("c"), summary: "Shares the holiday photos and asks about dinner.", state: "archived", resolved_at: nowS - 7200 },
-  { ...base, id: "m-d", subject: "Book club", sender_display: "Kim", sender_address: "kim@example.invalid", received_at: nowS - 400, reply_context: ctx("d"), summary: "Asks which book to read next.", snoozed_until: nowS + 86400 },
-  { ...base, id: "m-e", subject: "<img src=x onerror=window.__pwned=1>Offer", sender_display: "Odd Sender", sender_address: "odd@example.invalid", received_at: nowS - 500, reply_context: ctx("e"), summary: "A <b>special</b> offer for the trip.", state: "reviewed", resolved_at: nowS - 100 },
+  { ...base, id: 101, subject: "Dentist on Monday", sender_display: "Brightwater Dental", sender_address: "clinic@example.invalid", received_at: nowS - 300, reply_context: ctx("a"), summary: "Reminds you of a check-up on Monday at 10:30." },
+  { ...base, id: 102, subject: "Your electricity bill", sender_display: "Northside Power", sender_address: "bills@example.invalid", received_at: nowS - 90000, reply_context: ctx("b"), summary: "Your bill is ready and due in two weeks.", state: "reviewed", resolved_at: nowS - 3600 },
+  { ...base, id: 103, subject: "Photos from the trip", sender_display: "Alice", sender_address: "alice@example.invalid", received_at: nowS - 200000, reply_context: ctx("c"), summary: "Shares the holiday photos and asks about dinner.", state: "archived", resolved_at: nowS - 7200 },
+  { ...base, id: 104, subject: "Book club", sender_display: "Kim", sender_address: "kim@example.invalid", received_at: nowS - 400, reply_context: ctx("d"), summary: "Asks which book to read next.", snoozed_until: Math.floor(Date.now() / 1000) + 86400 },
+  { ...base, id: 105, subject: "<img src=x onerror=window.__pwned=1>Offer", sender_display: "Odd Sender", sender_address: "odd@example.invalid", received_at: nowS - 500, reply_context: ctx("e"), summary: "A <b>special</b> offer for the trip.", state: "reviewed", resolved_at: nowS - 100 },
 ];
 const tasks = { today: "2026-10-14", tasks: [
-  { id: "t1", title: "Ring to confirm the check-up", state: "open", due: "2026-10-15", days: 1, priority: "normal", sender: "Brightwater Dental", received: nowS - 300, account_id: "a1", message_id: "m-a" },
+  { id: "t1", title: "Ring to confirm the check-up", state: "open", due: "2026-10-15", days: 1, priority: "normal", sender: "Brightwater Dental", received: nowS - 300, account_id: "a1", message_id: 101 },
   { id: "t2", title: "Buy a trip insurance policy", state: "open", due: "2026-10-20", days: 6, priority: "normal", sender: "Alice", received: nowS - 200, account_id: "a1", message_id: "gone" },
 ] };
 const orders = [
@@ -73,6 +73,9 @@ async function open(width, height) {
   await context.route("**/*", handler);
   await page.goto(`${ORIGIN}/`);
   await page.waitForSelector("article.mail");
+  // Check opening a search result in the expanded email list, regardless of
+  // the user preference that is currently chosen by default.
+  await page.evaluate(() => { view.layout = "list"; view.rows = "open"; applyView(); render(); });
   await page.waitForTimeout(500);
   return { page, errors, context };
 }
@@ -106,7 +109,7 @@ const more = (page) => page.locator(".srch-more");
   await type(page, "electricity");
   await more(page).locator("[data-search-open]").first().click();
   await page.waitForTimeout(200);
-  check("choosing an email opens the list it is in, with the search cleared and the email open", (await page.locator("#search").inputValue()) === "" && (await page.locator('.nav[data-filter="reviewed"].active').count()) === 1 && /Your electricity bill/.test(await page.locator("article.mail.open").first().innerText()));
+  check("choosing an email opens the list it is in, with the search cleared and the email open", (await page.locator("#search").inputValue()) === "" && (await page.locator('.nav[data-filter="reviewed"].active').count()) === 1 && (await page.locator("article.mail.open", { hasText: "Your electricity bill" }).count()) === 1);
   await page.locator('.nav[data-filter="all"]').click();
   await type(page, "fence");
   await more(page).locator("[data-search-go]").first().click();

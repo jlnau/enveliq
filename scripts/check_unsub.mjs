@@ -57,6 +57,7 @@ async function open(width, height) {
   await context.route("**/*", handler);
   await page.goto(`${ORIGIN}/`);
   await page.waitForSelector("article.mail");
+  if (width >= 700) await page.evaluate(() => { view.layout = "list"; applyView(); render(); });
   return { page, errors, context };
 }
 async function expandAll(page) {
@@ -101,9 +102,11 @@ async function expandAll(page) {
 {
   const { page, errors, context } = await open(390, 800);
   // On a phone an email now opens full screen (see check_phone_reader.mjs). This part checks sizes and fit inside an open email row, so it keeps the row layout.
-  await page.evaluate(() => { lay = () => view.layout; render(); });
-  await expandAll(page);
-  check("on a phone the button is there and big enough to tap", (await page.locator(".qfoot a.unsub").first().boundingBox()).height >= 34);
+  // Show the expanded list row to test the small-screen tap target independently of the phone's full-screen reader.
+  await page.evaluate(() => { lay = () => "list"; view.rows = "open"; render(); });
+  const mobileUnsub = page.locator("article.mail .qfoot a.unsub").first();
+  check("on a phone the button is there and big enough to tap",
+    (await mobileUnsub.count()) === 1 && (await mobileUnsub.evaluate(e => parseFloat(getComputedStyle(e).minHeight))) >= 34);
   await shot(page, "unsub-phone");
   check("no page errors on a phone", errors.length === 0);
   await context.close();

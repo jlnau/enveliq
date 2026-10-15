@@ -32,7 +32,7 @@ const open = async (vp, dueToday, theme) => {
   await p.goto(origin + "/"); await p.waitForTimeout(1200);
   await p.evaluate((n) => { demoTasks.length = 0; for (const m of data) m.task = null;
     for (let i = 0; i < n; i++) demoTasks.push({ id: "t" + i, demoId: null, owner: currentUser.id, title: "Made-up task " + i, detail: "Example detail", sender: "Example Sender", priority: "normal", due: isoLocal(new Date()), remind_at: null, state: "open", reason: null, closed_at: null, account_id: "", message_id: "", received: 0 });
-    syncDemoTasks(); render(); }, dueToday);
+    syncDemoTasks(); view.layout = "list"; view.rows = "open"; applyView(); render(); }, dueToday);
   await p.waitForTimeout(300);
   return p;
 };

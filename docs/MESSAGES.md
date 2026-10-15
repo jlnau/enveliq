@@ -42,6 +42,10 @@ Messages are encrypted at rest in Enveliq's vault, like everything else it keeps
 - **Settings > Reminders:** one extra choice, "Tell me about new messages", off by default. If you switch it on it uses the reminder channels you already set up, and it says only *"You have a new message in Enveliq"*, never the words (unless you have chosen to show titles).
 - **Profile:** a switch for "Show me in the people list".
 
+## The bell
+
+Unread chat messages also count on the **bell** at the top right of the inbox, which opens a drop-down with a line for them and a **Read messages** button, next to notes from Home Assistant and other services (see [NOTIFICATIONS.md](NOTIFICATIONS.md)). The bell only shows how many are unread and from whom; it never shows other people's messages.
+
 ## What an administrator sees
 
 - **Administration > Features:** *Messages* on or off, like the other optional features.

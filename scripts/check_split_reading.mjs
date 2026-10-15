@@ -60,8 +60,21 @@ for (const theme of ["dark", "light"]) {
   check(t + "Coming up has no arrow to fold it", (await page.locator("#dueBars .preview-later .preview-fold-toggle").evaluate((e) => getComputedStyle(e).display)) === "none");
   check(t + "the Coming up box is the same height as the Today box", Math.abs(t2.h - l2.h) <= 2);
   check(t + `the first email in the list starts high up (at ${Math.round(list.y)}, it did not move down)`, list.y < 640);
+  check(t + "no email is selected on first opening", (await page.locator("#readDock .enveliq-empty-actions .enveliq-empty-action").count()) === 4 && await page.locator("#paneList article.current").count() === 0);
+  check(t + "unopened emails have blue glow", await page.locator("#paneList article.mail.enveliq-new").count() > 0);
+  await page.locator("#paneList article.mail .qmain").first().click();
+  check(t + "opening email clears its glow", await page.locator("#paneList article.mail").first().evaluate(e => !e.classList.contains("enveliq-new")));
   const btn = await box(page, "#readDock .reading .qbtns .reviewed");
-  check(t + "Reviewed, Archive and Bin sit at the bottom of the email panel", btn && btn.b <= dock.b && btn.b >= dock.b - 80);
+  check(t + "selecting an email shows Reviewed, Archive and Bin at the bottom", btn && btn.b <= dock.b && btn.b >= dock.b - 80);
+  await page.reload(); await page.waitForSelector("#paneList article.mail");
+  check(t + "refresh returns the reading pane to blank", (await page.locator("#readDock .enveliq-empty-actions .enveliq-empty-action").count()) === 4 && await page.locator("#paneList article.current").count() === 0);
+  check(t + "demo resets temporary opened state after refresh", await page.locator("#paneList article.mail.enveliq-new").count() > 0);
+  // Demo tasks are in memory, so a reload removes the temporary Coming up rows.
+  // Restore them before the remaining layout/navigation checks.
+  await page.evaluate(() => {
+    tasksData.tasks = [{ id: "a", title: "Download and install new configurations", detail: "", sender: "Ultra.cc", state: "open", days: 0, due: "2026-10-14" }, { id: "a2", title: "Renew the domain", detail: "", sender: "Z", state: "open", days: 0, due: "2026-10-14" }, { id: "a3", title: "A third thing today", detail: "", sender: "Z", state: "open", days: 0, due: "2026-10-14" }, { id: "b", title: "Second thing", detail: "", sender: "X", state: "open", days: 3, due: "2026-10-17" }, { id: "c", title: "Third thing", detail: "", sender: "Y", state: "open", days: 5, due: "2026-10-19" }, { id: "d", title: "Fourth thing", detail: "", sender: "Y", state: "open", days: 6, due: "2026-10-20" }];
+    dueOpen = false; renderToday();
+  });
   if (theme === "dark") {
     await page.locator("#dueBars .preview-later .tmore").click(); await page.waitForTimeout(250);
     check("clicking Coming up goes to the Tasks page, it does not fold", await page.evaluate(() => document.body.classList.contains("on-tasks")));

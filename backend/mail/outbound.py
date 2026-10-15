@@ -119,9 +119,9 @@ class _PinnedTLS(http.client.HTTPSConnection):
         self.sock = self._context.wrap_socket(sock, server_hostname=self.host)
 
 
-def request(method: str, url: str, *, allow: list[str], headers: dict[str, str] | None = None, body: bytes | None = None,
-            json_body: Any = None, form: dict[str, str] | None = None, timeout: float = TIMEOUT) -> tuple[int, bytes]:
-    """One request. Returns (status, first 64 KB of the reply). Never follows a redirect."""
+def request_full(method: str, url: str, *, allow: list[str], headers: dict[str, str] | None = None, body: bytes | None = None,
+                 json_body: Any = None, form: dict[str, str] | None = None, timeout: float = TIMEOUT, max_bytes: int = MAX_REPLY) -> tuple[int, dict[str, str], bytes]:
+    """One request. Returns (status, reply headers in lower case, the first `max_bytes` of the reply). Never follows a redirect."""
     scheme, host, port, ip, path, _ = check_target(url, allow)
     hdrs = {"User-Agent": "Enveliq", "Accept": "application/json, text/plain, */*", **(headers or {})}
     if json_body is not None:
@@ -134,10 +134,17 @@ def request(method: str, url: str, *, allow: list[str], headers: dict[str, str] 
     try:
         conn.request(method, path, body=body, headers=hdrs)
         resp = conn.getresponse()
-        return resp.status, resp.read(MAX_REPLY)
+        return resp.status, {k.lower(): v for k, v in resp.getheaders()}, resp.read(max_bytes)
     except ssl.SSLError:
         raise OutboundError("tls", "The secure connection could not be trusted (check the certificate).") from None
     except (OSError, http.client.HTTPException):
         raise OutboundError("unreachable", "Could not reach it.") from None
     finally:
         conn.close()
+
+
+def request(method: str, url: str, *, allow: list[str], headers: dict[str, str] | None = None, body: bytes | None = None,
+            json_body: Any = None, form: dict[str, str] | None = None, timeout: float = TIMEOUT) -> tuple[int, bytes]:
+    """One request. Returns (status, first 64 KB of the reply). Never follows a redirect."""
+    status, _, data = request_full(method, url, allow=allow, headers=headers, body=body, json_body=json_body, form=form, timeout=timeout)
+    return status, data

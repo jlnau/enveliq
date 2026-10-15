@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Annotated, Any
+from threading import RLock
 
 from fastapi import APIRouter, Depends, HTTPException, Path as PathParam
 from pydantic import Field, field_validator
@@ -43,6 +44,19 @@ class SettingsBody(StrictModel):
     mail_details: bool | None = None
 
 
+class OpenedMessageBody(StrictModel):
+    account_id: str = Field(min_length=1, max_length=128)
+    message_id: str = Field(min_length=1, max_length=512)
+
+
+class MailViewBody(StrictModel):
+    layout: str = Field(pattern=r"^(list|right|bottom|screen|deck)$")
+    density: str = Field(pattern=r"^(compact|standard|roomy)$")
+    width: str = Field(pattern=r"^(centered|full)$")
+    rows: str = Field(pattern=r"^(collapsed|open)$")
+    peek: bool
+
+
 class DeviceBody(StrictModel):
     endpoint: str = Field(max_length=800)
     p256dh: str = Field(max_length=200)
@@ -62,6 +76,49 @@ def build_notify_router(ctx: Any) -> APIRouter:
     save_limit = SlidingWindowLimiter(max_events=60, window=60)
     test_limit = SlidingWindowLimiter(max_events=10, window=60)
     click_url = ctx.click_url
+
+    opened_lock = RLock()
+    opened_prefix = "enveliq-opened-v1:"
+
+    @router.get("/me/mail-opened")
+    def get_mail_opened(session: Session = Depends(session_dep)):
+        with opened_lock:
+            rec = ctx.vault.get_global(opened_prefix + session.principal.user_id) or {}
+        return {"keys": rec.get("keys", []) if isinstance(rec.get("keys"), list) else []}
+
+    @router.post("/me/mail-opened")
+    def record_mail_opened(body: OpenedMessageBody, session: Session = Depends(session_dep)):
+        user = session.principal.user_id
+        account = ctx.vault.get_account(body.account_id)
+        if not account or account.get("owner_user_id") != user:
+            raise HTTPException(status_code=404, detail="Email not found")
+        try:
+            message = ctx.vault.get_message(body.account_id, body.message_id)
+        except (KeyError, ValueError):
+            message = None
+        if not message:
+            raise HTTPException(status_code=404, detail="Email not found")
+        key = body.account_id + ":" + body.message_id
+        with opened_lock:
+            rec = ctx.vault.get_global(opened_prefix + user) or {}
+            keys = rec.get("keys", [])
+            keys = keys if isinstance(keys, list) else []
+            if key not in keys:
+                keys.append(key)
+                ctx.vault.set_global(opened_prefix + user, {"keys": keys[-20000:]})
+        return {"ok": True}
+
+    # User-owned, encrypted vault preference: survives container restarts and browser changes.
+    @router.get("/me/mail-view")
+    def get_mail_view(session: Session = Depends(session_dep)):
+        saved = ctx.vault.get_global("mail-view-v1:" + session.principal.user_id)
+        return {"view": saved if isinstance(saved, dict) and saved else None}
+
+    @router.put("/me/mail-view")
+    def put_mail_view(body: MailViewBody, session: Session = Depends(session_dep)):
+        view = body.model_dump()
+        ctx.vault.set_global("mail-view-v1:" + session.principal.user_id, view)
+        return {"view": view}
 
     @router.get("/me/notifications")
     def overview(session: Session = Depends(session_dep)):
@@ -128,6 +185,19 @@ def build_notify_router(ctx: Any) -> APIRouter:
         except ValueError as err:
             raise HTTPException(status_code=422, detail=str(err)) from None
         return notifier.overview(user)
+
+    @router.post("/me/notifications/browser/{device_id}/test")
+    def browser_device_test(device_id: Annotated[str, PathParam(pattern=r"^[0-9a-f]{12}$")], session: Session = Depends(session_dep)):
+        user = session.principal.user_id
+        if not test_limit.allow(f"t:{user}"):
+            raise HTTPException(status_code=429, detail="Too many tests. Wait a minute.")
+        if not notifier.admin()["channels"].get("browser", True):
+            raise HTTPException(status_code=403, detail="Browser notifications have been disabled.")
+        try:
+            extra_channels.test_browser_device(notifier, user, device_id, click_url)
+        except OutboundError as err:
+            raise HTTPException(status_code=502 if err.code != "not_found" else 404, detail=err.message) from None
+        return {"ok": True}
 
     @router.delete("/me/notifications/browser/{device_id}")
     def browser_remove(device_id: Annotated[str, PathParam(pattern=r"^[0-9a-f]{12}$")], session: Session = Depends(session_dep)):

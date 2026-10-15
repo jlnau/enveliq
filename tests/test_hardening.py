@@ -418,3 +418,41 @@ def test_framework_versions_are_past_known_advisories():
 
     assert ver(starlette.__version__) >= (1, 1, 0)
     assert ver(pyasn1.__version__) >= (0, 6, 4)
+
+
+def test_a_mailbox_can_be_renamed_and_nothing_else_changes(env):
+    appm, client, token = env
+    account_id = make_account(client, token)
+    before = appm.vault.get_account(account_id)
+    r = client.patch(f"/api/v1/accounts/{account_id}", headers=auth(token), json={"display_name": "  Personal  "})
+    assert r.status_code == 200
+    assert r.json()["display_name"] == "Personal"
+    after = appm.vault.get_account(account_id)
+    assert after["display_name"] == "Personal"
+    assert {k: v for k, v in after.items() if k != "display_name"} == {k: v for k, v in before.items() if k != "display_name"}
+    for bad in ("", "   ", "x" * 129):
+        assert client.patch(f"/api/v1/accounts/{account_id}", headers=auth(token), json={"display_name": bad}).status_code == 422
+    assert appm.vault.get_account(account_id)["display_name"] == "Personal"
+
+
+def test_only_the_owner_can_rename_a_mailbox(env):
+    appm, client, token = env
+    account_id = make_account(client, token)
+    cara = _second_user(appm, client)
+    r = cara.patch(f"/api/v1/accounts/{account_id}", json={"display_name": "Mine now"})
+    assert r.status_code == 404
+    assert appm.vault.get_account(account_id)["display_name"] == IMAP_ACCOUNT["display_name"]
+
+
+def test_a_mailbox_label_colour_is_one_of_the_offered_names(env):
+    appm, client, token = env
+    account_id = make_account(client, token)
+    keep = dict(appm.vault.get_account(account_id)["settings"])
+    r = client.patch(f"/api/v1/accounts/{account_id}", headers=auth(token), json={"settings": {**keep, "color": "teal"}})
+    assert r.status_code == 200 and r.json()["settings"]["color"] == "teal"
+    assert appm.vault.get_account(account_id)["password"] == "original-app-password"
+    for bad in ("#ff0000", "red; background:url(x)", "chartreuse", 5):
+        r = client.patch(f"/api/v1/accounts/{account_id}", headers=auth(token), json={"settings": {**keep, "color": bad}})
+        assert r.status_code == 422, bad
+    assert appm.vault.get_account(account_id)["settings"]["color"] == "teal"
+    assert client.patch(f"/api/v1/accounts/{account_id}", headers=auth(token), json={"settings": {**keep, "color": ""}}).status_code == 200

@@ -64,6 +64,7 @@ async function open(server, query = "", { width = 1200, height = 900 } = {}) {
   await context.route(`${ORIGIN}/**`, server.handler);
   await page.goto(`${ORIGIN}/${query}`);
   await page.waitForSelector("article.mail");
+  await page.evaluate(() => { if (innerWidth > 700) { view.layout = "list"; applyView(); render(); } });   // the desktop part looks at the classic list; the default is now the reading panel on the right
   await page.waitForTimeout(300);
   return { page, errors, context };
 }

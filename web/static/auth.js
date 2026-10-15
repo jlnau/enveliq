@@ -1236,6 +1236,8 @@ const FEATURE_HINTS = {
   subscriptions: "Follows your subscriptions and free trials. When a summary finds that an email is about one, Enveliq keeps the service, the price as written, how often it is charged and the renewal or trial-end date (never the email) in a Subscriptions list, shows what is coming up on Home, and can send a reminder a few days before. The AI only copies what the email says; Enveliq works out every date itself. Emails that carry a Be careful warning are never filed. No extra AI request is made.",
   travel: "Follows your trips. When a summary finds that an email is a booking, change or cancellation for a flight, a stay or a hire car, Enveliq keeps the provider, booking reference, places and dates and times (never the email) in a Trips list, groups them into trips, and can add them to the calendar you set up for tasks. The AI only copies what the email says; Enveliq works out every date and the grouping itself. Emails that carry a Be careful warning are never filed. No extra AI request is made.",
   waiting: "Follows the emails you send. For each mailbox you switch it on for, each new sent email is shown to your AI model once to decide whether you are waiting for an answer. Emails already in Sent when you switch it on are not read; an older email can be followed by hand from Sent. Enveliq keeps only who it went to, the subject, the date and a one-line note, never the email. A reply closes the note by itself, and after a few days with no reply it shows on Home. Off until you switch it on for a mailbox.",
+  tags: "Shows the tags (labels) your mail service already has on each email, lets a person put a tag on an email or take it off, and make a new tag. Every change is also made in the real mailbox (Proton labels, Gmail labels, or keywords on other services; Outlook is not supported). Only tag names are kept in Enveliq, encrypted, with the email's summary; nothing is sent to the AI. Each person must also turn it on for themselves.",
+  rss: "Lets each person follow news feeds (RSS and Atom) and see new entries in a pop-up. Enveliq reads each feed from the server about every half hour, through the same careful outbound path as other calls. A feed on your own network needs its address on the local allow list (Administration, Reminders). Only a short plain-text version of the newest entries is kept, encrypted, for that person alone.",
   write_help: "Adds a button to the reply box and the New email box. It asks your AI model to write a reply or check one. The AI sees the email being answered and the person's draft, shows its suggestion in a separate box, and never sends or changes anything itself. Nothing is stored. Each person must also turn it on for themselves, and may add their own writing instructions, under Settings, AI instructions. If your AI model is a cloud service, that text goes to it.",
   messages: "Short messages between the people who use this Enveliq, one to one or in a small group. Each conversation is kept encrypted on this server and only the people in it can open it. Administrators cannot read other people's messages, and they are never shown to the AI model. Plain text only.",
   shipping: "Follows your online orders. When a summary finds that an email is about an order or a delivery, Enveliq keeps the shop, order number, carrier, tracking number, expected date and a few words about the items (never the email) in a Shipping list, and asks you on Home to confirm when a parcel is delivered. No extra AI request is made."
@@ -1280,7 +1282,7 @@ function ago(ts) {
 
 function deviceLabel() {
   const ua = navigator.userAgent || "";
-  const browser = /Edg\//.test(ua) ? "Edge" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "Browser";
+  const browser = (navigator.brave || ua.includes("Brave/")) ? "Brave" : /Edg\//.test(ua) ? "Edge" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "Browser";
   const os = /Android/.test(ua) ? "Android" : /iPhone|iPad/.test(ua) ? "iPhone or iPad" : /Windows/.test(ua) ? "Windows" : /Mac OS/.test(ua) ? "Mac" : /Linux/.test(ua) ? "Linux" : "this device";
   return `${browser} on ${os}`;
 }
@@ -1293,20 +1295,33 @@ async function turnOnPush() {
   await navigator.serviceWorker.ready;
   const { public_key } = await api("/me/notifications/browser/key");
   let sub = await reg.pushManager.getSubscription();
-  if (sub) { try { await sub.unsubscribe(); } catch { /* subscribe again below */ } }
-  sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64urlToBuf(public_key) });
+  const key = b64urlToBuf(public_key);
+  const existingKey = sub?.options?.applicationServerKey;
+  const sameKey = existingKey && Array.from(new Uint8Array(existingKey)).join(",") === Array.from(new Uint8Array(key)).join(",");
+  if (sub && !sameKey) {
+    // Keep a healthy subscription; replace one only when its VAPID key changed.
+    await sub.unsubscribe();
+    sub = null;
+  }
+  if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
   const j = sub.toJSON();
   await api("/me/notifications/browser", { method: "POST", body: { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, label: deviceLabel() } });
 }
 function browserCard(ch, redraw) {
   const status = ch.last_error ? h("span", { class: "pill off", text: "Last send failed" }) : ch.enabled && ch.devices.length ? h("span", { class: "pill on", text: `${ch.devices.length} ${ch.devices.length === 1 ? "device" : "devices"}` }) : h("span", { class: "pill", text: "Off" });
   const list = ch.devices.map(d => h("div", { class: "row" }, h("span", { text: d.label }),
+    h("button", { class: "btn small", type: "button", text: "Test", onclick: async e => {
+      const button = e.currentTarget; button.disabled = true;
+      try { await api(`/me/notifications/browser/${d.id}/test`, { method: "POST", body: {} }); toast(`Test sent to ${d.label}.`); }
+      catch (err) { toast(`Test failed for ${d.label}: ${err.message}`); }
+      finally { button.disabled = false; }
+    } }),
     h("button", { class: "btn small", type: "button", text: "Remove", onclick: async () => { try { await api(`/me/notifications/browser/${d.id}`, { method: "DELETE" }); toast("Removed"); redraw(); } catch (err) { toast(err.message); } } })));
   const body = h("div", { class: "chan-form" }, h("p", { class: "hint", text: ch.blurb }), h("ol", { class: "howto" }, ch.steps.map(t => h("li", { text: t }))),
     ...list, ch.last_error ? alertBox("bad", `The last send failed: ${ch.last_error}`) : null,
     h("div", { class: "row" },
       h("button", { class: "btn primary", type: "button", text: "Turn on for this device", onclick: async () => { try { await turnOnPush(); toast("Turned on for this device"); redraw(); } catch (err) { toast(err.message); } } }),
-      ch.devices.length ? h("button", { class: "btn", type: "button", text: "Send a test", onclick: async () => { try { await api("/me/notifications/channels/browser/test", { method: "POST", body: {} }); toast("Test sent. It should appear in a few seconds."); } catch (err) { toast(err.message); } redraw(); } }) : null));
+      null));
   return h("details", { class: "chan", open: !!(ch.devices.length || ch.last_error) }, h("summary", {}, h("strong", { text: ch.label }), " ", status), body);
 }
 function channelCard(ch, redraw) {
@@ -1750,6 +1765,7 @@ async function writingHelpSection() {
 }
 // ---------- mailboxes (Proton Bridge and app-password services) ----------
 const BRIDGE_ERRORS = { ok: "Working" };
+const MAILBOX_COLOR_CHOICES = [["", "Automatic"], ["blue", "Blue"], ["green", "Green"], ["orange", "Orange"], ["pink", "Pink"], ["red", "Red"], ["teal", "Teal"], ["purple", "Purple"], ["lime", "Lime"]];
 async function mailboxesPage(me, diagId) {
   const accounts = (await api("/accounts")).filter(a => a.owner_user_id === me.id);
   const auto = await api("/sync/status").catch(() => ({ enabled: false, accounts: {} }));
@@ -1789,6 +1805,30 @@ async function mailboxesPage(me, diagId) {
       try { await api(`/accounts/${a.id}`, { method: "DELETE" }); toast("Mailbox removed"); mailboxesPage(me); } catch (er) { toast(er.message); }
     }) });
     const diag = h("button", { class: "btn small", type: "button", text: "Diagnostics", onclick: () => mailboxesPage(me, a.id) });
+    // Rename: the name is only a label. It is shown on the mail list and in reports; nothing else changes.
+    const nameSlot = h("div", {});
+    const rename = h("button", { class: "btn small", type: "button", text: "Rename", "aria-label": `Rename ${a.display_name}`, onclick: () => {
+      const box = h("input", { id: `rn_${a.id}`, type: "text", maxlength: 128, value: a.display_name, "aria-label": "New name for this mailbox", autocomplete: "off" });
+      const form = h("form", { class: "row rename-form" }, box,
+        h("button", { class: "btn small primary", type: "submit", text: "Save name" }),
+        h("button", { class: "btn small", type: "button", text: "Cancel", onclick: () => nameSlot.replaceChildren() }));
+      onSubmit(form, async () => {
+        const name = box.value.trim();
+        if (!name) { status.replaceChildren(alertBox("bad", "Type a name for this mailbox.")); return; }
+        if (name === a.display_name) { nameSlot.replaceChildren(); return; }
+        await api(`/accounts/${a.id}`, { method: "PATCH", body: { display_name: name } });
+        toast("Mailbox renamed"); mailboxesPage(me);
+      });
+      nameSlot.replaceChildren(form); box.focus(); box.select();
+    } });
+    // Colour of the small label that shows which mailbox an email came from. "Automatic" lets Enveliq pick one.
+    const colorSel = h("select", { id: `col_${a.id}`, "aria-label": `Label colour for ${a.display_name}`, onchange: e => run(e.target, async () => {
+      const color = e.target.value;
+      await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), color } } });
+      a.settings = { ...(a.settings || {}), color };
+      toast(color ? `Label colour set to ${color}` : "Label colour is automatic");
+    }) }, MAILBOX_COLOR_CHOICES.map(([v, t]) => h("option", { value: v, text: t, selected: ((a.settings && a.settings.color) || "") === v })));
+    const colorField = h("label", { class: "color-pick" }, "Label colour ", colorSel);
     const aiOn = !!(a.settings && a.settings.ai_summaries);
     const aiToggle = ai.configured ? h("button", { class: "btn small", type: "button", text: aiOn ? "Turn AI summaries off" : "Turn AI summaries on", onclick: e => run(e.target, async () => {
       await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), ai_summaries: !aiOn } } });
@@ -1814,8 +1854,8 @@ async function mailboxesPage(me, diagId) {
       toast(autoOn ? "Automatic sync is off" : "Automatic sync is on"); mailboxesPage(me);
     }) }) : null;
     return h("section", { class: "section" },
-      h("div", { class: "item" }, h("div", {}, h("strong", { text: a.display_name }), h("div", { class: "meta", text: `${a.email_address} · ${a.auth_method === "proton_bridge" ? `Proton Bridge at ${a.server}:${a.port}` : `${a.provider} (app password)`}${ai.configured ? ` · AI summaries ${aiOn ? "on" : "off"}` : ""}` }), h("div", { class: "hint", text: autoNote })),
-        isMail(a) ? h("div", { class: "row" }, check, sync, autoToggle, aiToggle, waitToggle, diag, remove) : h("div", { class: "row" }, remove)), status);
+      h("div", { class: "item" }, h("div", {}, h("strong", { text: a.display_name }), h("div", { class: "meta", text: `${a.email_address} · ${a.auth_method === "proton_bridge" ? `Proton Bridge at ${a.server}:${a.port}` : `${a.provider} (app password)`}${ai.configured ? ` · AI summaries ${aiOn ? "on" : "off"}` : ""}` }), h("div", { class: "hint", text: autoNote }), colorField, nameSlot),
+        isMail(a) ? h("div", { class: "row" }, check, sync, rename, autoToggle, aiToggle, waitToggle, diag, remove) : h("div", { class: "row" }, rename, remove)), status);
   });
 
   show(...chrome(me, "mailboxes",

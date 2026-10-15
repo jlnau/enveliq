@@ -64,6 +64,8 @@ async function open(width, height) {
   await context.route("**/*", handler);
   await page.goto(`${ORIGIN}/`);
   await page.waitForSelector("article.mail");
+  // The snooze controls live on expanded mail rows in the list layout.
+  await page.evaluate(() => { view.layout = "list"; view.rows = "open"; applyView(); render(); });
   await page.clock.pauseAt(NOW);              // time stands still at 10:00 until a check moves it
   return { page, errors, context };
 }
@@ -148,7 +150,7 @@ const badge = (page, id) => page.locator("#" + id).innerText();
   await expandAll(page);
   await row(page, "Book club").locator("[data-snooze]").click();
   await page.locator("#snoozeMenu [data-snooze-pick]", { hasText: "Later today" }).click();
-  await page.waitForTimeout(200);
+  await row(page, "Book club").waitFor({state:"detached",timeout:3000});
   check("before its time it is out of sight", (await row(page, "Book club").count()) === 0);
   await page.clock.fastForward("03:10:00");
   await page.waitForTimeout(300);

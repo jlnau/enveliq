@@ -34,6 +34,7 @@ const NAV = [
   ] },
   { title: "After you install", items: [
     ["docs/install/after-install.md", "First-time setup"],
+    ["docs/install/notifications.md", "Notifications and webhooks"],
     ["docs/install/maintenance.md", "Update, back up and remove"],
     ["docs/install/troubleshooting.md", "Troubleshooting"],
   ] },

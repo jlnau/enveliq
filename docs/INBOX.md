@@ -142,7 +142,51 @@ Under **Settings, Profile**, you can choose your own picture. New uploads of tra
 
 ## On a phone, emails open full screen
 
-On a phone, whichever layout is chosen in the View panel (List, Reading pane on the right, Reading pane below, One screen at a time, Cards), tapping an email opens it on its own, filling the whole screen. There is one **✕ Close** button at the top left. To read the next email, close this one and tap the next in the list; there are no Next and Previous buttons. **Reviewed**, **Archive** and **Bin** stay along the bottom. The layout you chose is not changed: on a bigger screen (or if you turn a tablet sideways) it comes back.
+On a phone, whichever layout is chosen in the View panel (List, Reading pane on the right, Reading pane below, One screen at a time, Cards), tapping an email opens it on its own, filling the whole screen. There is one **✕ Close** button at the top left. To read the next email, close this one and tap the next in the list; there are no Next and Previous buttons. **Reviewed**, **Archive** and **Bin** stay along the bottom. When you press **Reviewed**, **Archive** or **Bin**, the email closes at once and you are back in the list. The usual **Undo** bar still shows at the bottom for five seconds, so you can bring the email back. The layout you chose is not changed: on a bigger screen (or if you turn a tablet sideways) it comes back. Browser check: `scripts/check_phone_reader.mjs`.
+
+## Adding your own task to an email
+
+Every email has a **Task** button beside Reply and Snooze (and in the full screen email on a phone), even when the AI found nothing to do. Press it, write what you want to remember (for example "ring the plumber when I get home"), choose a day (today unless you pick another) and press **Add task**. Enter does the same, and Escape or **Cancel** closes the box without adding anything. The task shows under the email as **Your task** and on the Tasks page with the AI's tasks. An email can have several tasks. Unlike a task the AI made, yours does **not** finish by itself when you reply to, archive or bin the email: only you finish it (tick it on the Tasks page). The email is kept in Enveliq while one of your own tasks on it is open, like any email with an open task. Your task text is stored only in your own encrypted task record. Server: `POST /api/v1/me/tasks` (`backend/mail/task_routes.py`, `TaskBook.add` in `backend/mail/tasks.py`). Checks: `tests/test_tasks.py` and `scripts/check_task_add.mjs`.
+
+## Adding a parcel by hand (Shipping)
+
+At the top of the Shipping page, **Add a parcel** opens a small form for a parcel that did not start from an email: **Who is it from?** (required), **Tracking number** (if you have one) and **Where is it up to?** (Waiting to be shipped, Shipped, Out for delivery or Delivered). The parcel appears as a card like the others, marked "Waiting to be shipped" and so on. Because no emails follow it, you move it along yourself with the **Where is it up to?** list on its card, and **Remove** takes it off the list (nothing is remembered about it afterwards). A parcel you mark Delivered is not asked "did it arrive?". A tracking number must be 8 to 40 letters or digits, and the same number cannot be added twice. There is no carrier box, so no Track button is offered for these cards; the number is shown with a **Copy number** button. Server: `POST /api/v1/me/shipping`, `PUT /api/v1/me/shipping/<id>/status` and the `remove` action (`backend/mail/shipping.py`, `shipping_routes.py`). Checks: `tests/test_shipping.py` and `scripts/check_shipping.mjs`.
+
+## The phone's top bar
+
+On a phone the top bar holds only the menu button, the logo, the bell, Search and Sync, so all of them are always on the screen. **New email** (the pencil) and **News feeds** are in the menu instead: open it with the three lines at the top left. New email is at the top of the menu, and News feeds sits above Settings with its number badge. An email that is open full screen never makes the page wider than the screen, so the page no longer looks zoomed in: long words and addresses wrap, the browser is told not to enlarge text by itself, and a double tap does not zoom (pinching still works).
+
+## Your first view, and remembering it
+
+When someone signs in for the first time, the inbox starts with the **reading panel on the right**: the list on the left and the open email beside it. Any change you make under **View** (layout, spacing, width, open rows, preview) is saved for you on the server, encrypted, and used on every device you sign in from. It survives restarts and updates, and nobody else's choice ever changes yours. **Reset** in the View panel goes back to the first view. The right and bottom reading panels start with nothing selected ("Nothing selected", with a few quick actions) and clear again after a refresh. On a phone every email still opens full screen.
+
+## New emails glow until you open them
+
+An email you have not opened yet has a soft blue glow. Opening it, from the list or from a notification link, clears the glow, and that is remembered on all your devices. It is only a mark inside Enveliq: nothing changes in your mail provider.
+
+## Which mailbox an email came from
+
+When more than one of your mailboxes is connected, each email in the list carries a small coloured label with the mailbox's name (for example "Proton test" or "Gmail test"), and the open email has a **Mailbox** line in its details with the same label. Each mailbox keeps its own colour. Hold the pointer over a label (or long-press it) to see the provider and the address. With only one mailbox there is no label, so a single mailbox stays uncluttered. On a phone the label shows in the list and in the full screen email. Browser check: `scripts/check_mailbox_label.mjs`.
+
+## Renaming a mailbox
+
+The name you gave a mailbox when you connected it (for example "Proton Test") can be changed at any time. Open **Mailboxes**, press **Rename** on that mailbox, type the new name and press **Save name**. **Cancel** keeps the old one. The new name shows straight away on the Mailboxes page, in the mailbox label on each email, and in the mailbox lists. Only the name changes: your mail, summaries, tasks, tags and settings stay as they are, and you do not have to connect again. Only the person who connected a mailbox can rename it.
+
+### Choosing the label's colour
+
+On the same Mailboxes card, the **Label colour** drop-down picks the colour of that mailbox's label: Blue, Green, Orange, Pink, Red, Teal, Purple or Lime. **Automatic** (the start) lets Enveliq choose one for you. The choice is saved at once and shows in the mail list and in the open email the next time the inbox loads. It is only a colour; nothing else about the mailbox changes.
+
+## Searching your tasks
+
+The Tasks page has a **Search your tasks** box under its title. Type part of a task's words (its title, its details or who it is from; capital letters do not matter) and the page lists only the tasks that have them, open ones under **To do** and finished ones under **Done**, with a line saying how many match. Clear the box to get your usual view back. It works in the Focus, List and Calendar views. Browser check: `scripts/check_task_search.mjs`.
+
+## Forms on a phone
+
+A form or pop-up that asks you to type something (Add a parcel, Task, News feeds, Tags, and the ones to come) opens full screen on a phone. The title and **✕ Close** stay fixed at the top, the buttons (Add parcel, Add task) stay fixed at the bottom, and only the middle scrolls, so you never have to hunt for them. On a computer they are small boxes as before. `scripts/check_shipping.mjs` and `scripts/check_task_add.mjs` check this.
+
+## The Back button
+
+Moving to another section (Sent, Reviewed, Tasks and so on) adds a step to the browser's history, so the **Back** button of the browser, or a phone's back gesture, returns to the section you were in before, inside Enveliq, instead of leaving it. **Forward** works too. Back also closes Settings and Administration if they are open. Moving between the tabs of Settings does not add steps, so one Back leaves Settings. On a computer, opening or closing an email does not add steps. **On a phone, an email that is open full screen has its own step**: Back (or the back gesture) closes the email and shows the list again, instead of leaving Enveliq. Closing it with the **✕ Close** button, or with Reviewed, Archive or Bin, leaves no extra step behind. `scripts/check_back_button.mjs` checks this.
 
 ## Reading pane on the right (computer)
 

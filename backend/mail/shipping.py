@@ -37,7 +37,8 @@ MAX_EVENTS = 30
 KINDS = ("order_confirmed", "shipped", "out_for_delivery", "delivered", "delayed")
 STATUS_OF = {"order_confirmed": "ordered", "shipped": "shipped", "out_for_delivery": "out_for_delivery", "delivered": "delivered", "delayed": "shipped"}
 RANK = {"ordered": 0, "shipped": 1, "out_for_delivery": 2, "delivered": 3}
-ACTIONS = ("confirm", "not_yet", "not_order", "track", "undo")
+ACTIONS = ("confirm", "not_yet", "not_order", "track", "undo", "remove")
+HAND_STATUSES = ("ordered", "shipped", "out_for_delivery", "delivered")      # what a person can pick for an order they enter by hand
 
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
@@ -340,7 +341,7 @@ class ShipBook:
             "id": o["id"], "shop": o.get("shop"), "order_number": o.get("order"), "carrier": o.get("carrier"), "tracking": o.get("tracking"),
             "items": o.get("items"), "total": o.get("total"), "note": o.get("note") or "", "status": o.get("status"), "expected": o.get("expected"), "expected_text": o.get("expected_text"),
             "prev_expected": o.get("prev_expected"), "delayed": bool(o.get("delayed")) and not delivered, "delivered_at": o.get("delivered_at"),
-            "ack": o.get("ack"), "unsure": bool(o.get("unsure")),
+            "ack": o.get("ack"), "unsure": bool(o.get("unsure")), "manual": bool(o.get("manual")),
             "needs_confirm": delivered and not o.get("unsure") and not o.get("ack") and float(o.get("snooze_until") or 0) <= now,
             "track_url": track_url(o.get("carrier"), o.get("tracking"), shared), "updated": o.get("updated"),
             "events": [{"at": e["at"], "kind": e["kind"], "subject": e["subject"], "m": e.get("m")} for e in reversed(o.get("events") or [])],
@@ -366,6 +367,58 @@ class ShipBook:
                 "carriers": {"fixed": FIXED_NAMES, "shared": [{"id": i["id"], "name": i["name"], "mine": i["by"] == user_id} for i in shared]}}
 
     # ---------- what the person can do ----------
+
+    def add_by_hand(self, user_id: str, shop: Any, tracking: Any, status: Any) -> dict[str, Any]:
+        """An order the person types in themselves (not from an email): who it is from, an optional tracking number and where it is up to.
+        Raises ValueError with a short reason: "no shop", "bad tracking", "bad status", "already listed" or "full"."""
+        shop_text = clean(shop, 60)
+        if not shop_text:
+            raise ValueError("no shop")
+        if status not in HAND_STATUSES:
+            raise ValueError("bad status")
+        raw_tracking = clean(tracking, 60) if isinstance(tracking, str) else ""
+        tkey = tracking_key(raw_tracking) if raw_tracking else None
+        if raw_tracking and not tkey:
+            raise ValueError("bad tracking")
+        now = self.clock()
+        with self._lock:
+            book = self._load(user_id)
+            self._purge(book, now)
+            if tkey and any(o.get("tracking_key") == tkey for o in book["orders"].values()):
+                raise ValueError("already listed")
+            if len(book["orders"]) >= MAX_ORDERS:
+                raise ValueError("full")
+            oid = "s" + secrets.token_hex(12)[:23]
+            delivered = status == "delivered"
+            book["orders"][oid] = {
+                "id": oid, "shop": shop_text, "shop_key": shop_key(shop_text), "order": None, "order_key": None, "carrier": None,
+                "tracking": tkey, "tracking_key": tkey, "items": None, "status": status, "expected": None, "expected_text": None, "prev_expected": None,
+                "delayed": False, "delivered_at": now if delivered else None, "ack": "got_it" if delivered else None, "ack_at": now if delivered else None,
+                "snooze_until": 0, "unsure": False, "first_seen": now, "updated": now, "events": [], "manual": True,
+            }
+            self._save(user_id, book)
+        return self.view(user_id)
+
+    def set_status(self, user_id: str, oid: str, status: Any) -> dict[str, Any]:
+        """Change where an order is up to. Only for orders the person entered by hand: for the others the emails decide."""
+        if status not in HAND_STATUSES:
+            raise ValueError("bad status")
+        now = self.clock()
+        with self._lock:
+            book = self._load(user_id)
+            order = book["orders"].get(oid)
+            if order is None:
+                raise KeyError(oid)
+            if not order.get("manual"):
+                raise ValueError("not by hand")
+            order["status"], order["updated"] = status, now
+            if status == "delivered":
+                order["delivered_at"] = order.get("delivered_at") or now
+                order["ack"], order["ack_at"] = "got_it", now
+            else:
+                order["delivered_at"], order["ack"], order["ack_at"] = None, None, None
+            self._save(user_id, book)
+        return self.view(user_id)
 
     def set_note(self, user_id: str, oid: str, text: Any) -> dict[str, Any]:
         """The person's own few words about an order ("new headphones"). Plain text, cut to 500 characters, kept with the order."""
@@ -401,6 +454,10 @@ class ShipBook:
                 order["snooze_until"] = now + SNOOZE
             elif action == "track":
                 order["unsure"] = False
+            elif action == "remove":
+                if not order.get("manual"):
+                    raise ValueError("not by hand")
+                del book["orders"][oid]                  # an order the person made up themselves simply goes; nothing is remembered about it
             elif action == "not_order":
                 for key, prefix in ((order.get("order_key"), "o"), (order.get("tracking_key"), "t")):
                     if key:

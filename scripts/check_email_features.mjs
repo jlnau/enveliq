@@ -209,7 +209,19 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 
   await fill("Photos", "Here you go.\n> the attached one is old\nSee you soon.");
   await page.click("#nmSend");
-  await page.waitForFunction(() => !document.getElementById("newMail").classList.contains("open"));
+  try {
+    await page.waitForFunction(() => !document.getElementById("newMail").classList.contains("open"), null, { timeout: 8000 });
+  } catch (err) {
+    const state = await page.evaluate(() => ({
+      warning: document.getElementById("sendWarn").classList.contains("open"),
+      warningText: document.getElementById("sendWarnList").innerText,
+      confirmation: document.getElementById("whCheck").classList.contains("open"),
+      sendDisabled: document.getElementById("nmSend").disabled,
+      subject: document.getElementById("nmSubject").value,
+      body: document.getElementById("nmText").value
+    }));
+    throw new Error("Quoted attachment email did not close: " + JSON.stringify(state), { cause: err });
+  }
   check("a quoted line that says 'attached' does not count", sends() === 3);
 
   await fill("Hello", "Just checking in.");
@@ -247,7 +259,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 {
   const server = makeServer({ features: { compose: false, sent: false, address_book: false, media: false } });
   const { page } = await open(server);
-  check("with everything off there is no New email button, no Sent and no pencil on a phone", (await page.locator("#newMailBtn").isHidden()) && (await page.locator("#sentNav").isHidden()) && (await page.locator("#mNewBtn").isHidden()));
+  check("with everything off there is no New email button and no Sent", (await page.locator("#newMailBtn").isHidden()) && (await page.locator("#sentNav").isHidden()));
   await page.locator("article.mail .subject").first().click().catch(() => {});
   await page.evaluate(() => openRealEmail(data.find((m) => m.real)));
   await page.waitForSelector("#attachmentModal.open");
@@ -269,7 +281,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 {
   const server = makeServer();
   const { page, csp } = await open(server, { width: 390, height: 800 });
-  check("the pencil is in the top bar on a phone", await page.locator("#mNewBtn").isVisible());
+  check("the pencil is no longer in the phone top bar", (await page.locator("#mNewBtn").count()) === 0);
   await page.click("#menuBtn");
   await page.click("#moreToggle");
   check("More expands without closing the phone navigation", await page.evaluate(() => document.body.classList.contains("menu-open")) && (await page.locator("#moreToggle").getAttribute("aria-expanded")) === "true");
@@ -279,7 +291,9 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("the phone title says Sent", (await page.locator("#mTitle b").innerText()) === "Sent");
   check("no horizontal scroll on Sent", await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
   await shot(page, "sent-phone");
-  await page.click("#mNewBtn");
+  await page.click("#menuBtn");
+  check("New email is at the top of the slide-out menu on a phone", await page.locator("#newMailBtn").isVisible());
+  await page.click("#newMailBtn");
   check("New email fits the phone", await page.evaluate(() => { const r = document.getElementById("newMail").getBoundingClientRect(); return r.left >= 0 && r.right <= window.innerWidth; }));
   await shot(page, "nm-phone");
   check("no Content-Security-Policy violations", csp.length === 0);

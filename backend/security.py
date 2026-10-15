@@ -378,6 +378,46 @@ class _BodyTooLarge(HTTPException):
         super().__init__(status_code=413, detail="Request too large")
 
 
+def private_host(host_header: str) -> bool:
+    """True when a Host header is the address of a machine on a private network (192.168.x.x, 10.x.x.x, 172.16-31.x.x, fc00::/7) or this machine.
+    Names are never accepted here, only addresses, and link-local addresses (169.254.x.x) are refused."""
+    import ipaddress
+    host = (host_header or "").strip()
+    if host.startswith("["):
+        host = host[1:host.find("]")] if "]" in host else ""
+    elif host.count(":") == 1:
+        host = host.split(":", 1)[0]
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return (ip.is_private or ip.is_loopback) and not (ip.is_link_local or ip.is_unspecified or ip.is_multicast)
+
+
+class HostGuardMiddleware:
+    """Answers only to the host names Enveliq was told about (like Starlette's TrustedHostMiddleware), with one exception:
+    the WebSocket door (and its plain POST twin) for other services also answers on a private network address, so Home Assistant can reach it by the
+    machine's local IP address without going through the public name. Every other path still needs a listed name."""
+
+    def __init__(self, app: ASGIApp, allowed_hosts: list[str], local_ip_path: str, local_ip_post_path: str | None = None):
+        from starlette.middleware.trustedhost import TrustedHostMiddleware
+        self.app = app
+        self.trusted = TrustedHostMiddleware(app, allowed_hosts=allowed_hosts)
+        self.local_ip_path = local_ip_path
+        self.local_ip_post_path = local_ip_post_path
+
+    async def __call__(self, scope, receive, send):
+        door = (scope.get("type") == "websocket" and scope.get("path") == self.local_ip_path) or (
+            self.local_ip_post_path is not None and scope.get("type") == "http" and scope.get("method") == "POST"
+            and scope.get("path") == self.local_ip_post_path)
+        if door:
+            headers = {k.decode("latin-1").lower(): v.decode("latin-1") for k, v in scope.get("headers", [])}
+            if private_host(headers.get("host", "")):
+                await self.app(scope, receive, send)
+                return
+        await self.trusted(scope, receive, send)
+
+
 class RequestGuardMiddleware:
     """Pure ASGI guard that runs before any request body is parsed.
 

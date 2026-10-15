@@ -64,6 +64,9 @@ async function open(width, height) {
   await context.route("**/*", handler);
   await page.goto(`${ORIGIN}/`);
   await page.waitForSelector("article.mail");
+  // The current default layout can collapse the email rows. Use the expanded
+  // list so the link checks exercise the original-email viewer itself.
+  await page.evaluate(() => { view.layout = "list"; view.rows = "open"; applyView(); render(); });
   return { page, errors, context };
 }
 async function expandAll(page) {

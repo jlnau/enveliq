@@ -317,6 +317,28 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 .snz-menu{position:fixed;z-index:60;width:min(280px,calc(100vw - 24px));padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);box-shadow:var(--shadow)}.snz-menu[hidden]{display:none}
 .snz-title{padding:6px 10px 4px;font-size:12px;font-weight:700;color:var(--muted)}.snz-menu button[data-snooze-pick]{display:flex;width:100%;justify-content:space-between;align-items:baseline;gap:12px;border:0;background:transparent;color:var(--text);padding:10px;border-radius:8px;font-size:14px;text-align:left;min-height:44px}.snz-menu button[data-snooze-pick]:hover,.snz-menu button[data-snooze-pick]:focus-visible{background:var(--panel2)}.snz-menu small{color:var(--muted);font-size:12px;white-space:nowrap}
 .snz-date{padding:8px 10px 6px;border-top:1px solid var(--line);margin-top:4px;font-size:13px}.snz-date label{display:block;margin-bottom:6px;color:var(--muted);font-size:12px;font-weight:700}.snz-date span{display:flex;gap:8px}.snz-date input{flex:1;min-width:0;min-height:40px;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:6px 8px;font:inherit}.snz-date button{min-height:40px;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:0 14px;font:inherit;font-weight:600}
+.rssbtn{position:relative;display:grid;place-items:center;width:30px;height:30px;border:1px solid var(--line);border-radius:50%;background:transparent;color:var(--muted);padding:0;cursor:pointer}.rssbtn[hidden]{display:none!important}.rssbtn svg{width:17px;height:17px}.rssbtn:hover{color:var(--text)}
+.rssbadge{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--accent,#3b6ea8);color:#fff;font-size:11px;font-weight:700;line-height:18px;text-align:center}.rssbadge[hidden]{display:none}
+.popcard{position:fixed;z-index:130;top:64px;right:20px;width:min(580px,calc(100vw - 24px));max-height:calc(100vh - 90px);display:flex;flex-direction:column;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.35);overflow:hidden}.popcard[hidden]{display:none!important}
+.popcard .sf-top{flex:none;padding:12px 16px;border-bottom:1px solid var(--line)}.popcard .sf-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:14px 16px;align-content:start;gap:14px}.popcard .sf-foot{flex:none;padding:12px 16px;border-top:1px solid var(--line);background:var(--bg);flex-wrap:wrap}
+.popcard .sf-close{display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font:inherit;cursor:pointer}
+.rss-feed h4{margin:0 0 6px;font-size:14px;color:var(--muted);font-weight:650}.rss-feed h4 .rss-n{color:var(--accent,#3b6ea8);margin-left:6px}
+.rss-item{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);margin:0 0 8px}.rss-item.new{border-left:3px solid var(--accent,#3b6ea8)}.rss-item b{display:block;margin:0 0 4px}.rss-item p{margin:0 0 6px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text)}.rss-item .meta{font-size:12px;color:var(--faint)}.rss-item a{font-size:13px}
+.bellpop{width:min(400px,calc(100vw - 24px))}.bellpop code{overflow-wrap:anywhere;font-size:12.5px}.bellpop .bell-key{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 0}.bellpop .bell-key input{flex:1 1 200px;min-width:0;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);padding:9px 10px;font:12.5px ui-monospace,monospace}.bell-x{border:0;background:transparent;color:var(--muted);text-decoration:underline;padding:4px 6px;cursor:pointer;font:inherit;font-size:13px}.bellpop details>.pop-note{margin:10px 0 0;line-height:1.5}.bellpop details .rss-add{margin-top:12px}
+.rss-err{color:var(--c-e7d39a,#b7791f);font-size:13px;margin:0 0 6px}.pop-note{color:var(--muted);margin:0}
+.rss-add{display:flex;gap:8px;flex-wrap:wrap}.rss-add input{flex:1 1 220px;min-width:0;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);padding:9px 10px;font:inherit}
+.rss-list{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}.rss-list li{display:flex;gap:8px;align-items:center;justify-content:space-between}.rss-list span{overflow-wrap:anywhere;min-width:0}
+.tag-find input{width:100%;box-sizing:border-box;min-height:40px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);font:inherit;font-size:14px}
+.tag-info-back{position:absolute;inset:0;z-index:2;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.55);border-radius:inherit}.tag-info{width:min(380px,100%);box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:10px;box-shadow:0 12px 36px rgba(0,0,0,.4)}.tag-info p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}.tag-info .obtn{justify-self:start}
+.popcard details summary{cursor:pointer;color:var(--muted)}
+.mtags{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.mtag{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid var(--line);border-radius:99px;padding:2px 10px;font-size:12px;color:var(--muted);background:var(--panel)}
+.qkv .mbox{margin-right:0}
+.mbox{display:inline-flex;align-items:center;gap:5px;max-width:9.5em;vertical-align:middle;margin-right:8px;padding:1px 9px 1px 7px;border-radius:99px;font-size:12px;line-height:1.5;color:var(--text);border:1px solid hsl(var(--bh) 55% 55% / .55);background:hsl(var(--bh) 60% 50% / .16)}.mbox i{flex:none;width:8px;height:8px;border-radius:50%;background:hsl(var(--bh) 70% 55%)}.mbox-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mtags.inrow{display:inline-flex;flex-wrap:nowrap;margin:0 0 0 8px;vertical-align:middle;gap:4px}.mtags.inrow .mtag{flex:none;max-width:110px}
+@media(max-width:760px){.mtags.inrow{display:none}}
+.tagrow{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);margin:0 0 8px;cursor:pointer}.tagrow input{width:20px;height:20px;flex:none}.tagrow span{overflow-wrap:anywhere}
+.tag-new{display:flex;gap:8px;flex-wrap:wrap}.tag-new input{flex:1 1 220px;min-width:0;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);padding:9px 10px;font:inherit}
+.snz-menu{z-index:125}.task-add{width:min(320px,calc(100vw - 24px));padding:12px}.task-add label{display:block;font-size:13px;font-weight:600;margin:0 0 6px}.task-add input[type=text],.task-add input[type=date]{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);padding:9px 10px;font:inherit}.task-add .sf-top{margin:0 0 10px}.task-add .ta-row{margin-top:0}.task-add .sf-body{gap:10px}.task-add .ta-btns{justify-content:flex-end;margin-top:12px}.task-add .ta-btns button{border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--text);padding:9px 14px;font:inherit;cursor:pointer}.task-add .ta-btns button.primary{background:var(--accent,#3b6ea8);border-color:transparent;color:#fff}
 @media(max-width:640px){.snz-menu{left:12px!important;right:12px;top:auto!important;bottom:12px;width:auto}}
 .scam-note{max-width:100%;overflow-wrap:anywhere}@media(max-width:640px){.scam-note{padding:9px 12px;font-size:13px}.scam-note b{font-size:13.5px}.scam-pill{margin:0 6px 0 0;font-size:11px;padding:0 7px}}
 .imp-pill{display:inline-block;flex:none;margin:0 8px 0 0;padding:0 8px;border:1px solid var(--accent);border-radius:99px;color:var(--accent);font-size:11.5px;font-weight:600;line-height:18px;vertical-align:middle}
@@ -693,7 +715,23 @@ body.calm .today-card{border-color:transparent;background:var(--panel)}
 #tasksPage{display:none;padding-top:14px}body.on-tasks #tasksPage{display:block}body.on-tasks .filters,body.on-tasks #list,body.on-tasks .sample-banner{display:none!important}
 
 #shipPage{display:none;padding-top:14px}body.on-ship #shipPage{display:block}body.on-ship .filters,body.on-ship #list,body.on-ship .sample-banner,body.on-ship #dueBars,body.on-ship #shipBars,body.on-ship #subBars,body.on-ship #tripBars,body.on-ship #waitBars{display:none!important}
+
+/* Forms that ask for input: a normal box on a computer; on a phone they fill the screen with the title and Close fixed at the top and the buttons fixed at the bottom */
+.sf-top{display:flex;align-items:center;justify-content:space-between;gap:12px}.sf-close{display:none}.sf-body{display:grid;gap:12px}.sf-foot{display:flex;gap:8px;align-items:center}
+@media(max-width:760px){
+  .sheetform,#taskAddMenu{position:fixed!important;inset:0!important;z-index:130!important;width:auto!important;max-width:none!important;height:auto!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:var(--bg)!important;display:flex!important;flex-direction:column!important;gap:0!important;overflow:hidden!important}
+  #taskAddMenu[hidden]{display:none!important}
+  .popcard{max-height:none!important}.popcard .sf-top{padding:10px 16px}.popcard .sf-close{min-height:44px}.tag-new input{font-size:16px;min-height:44px}.tagrow{min-height:48px}.popcard .sf-foot{padding:12px 16px calc(12px + env(safe-area-inset-bottom))}.popcard .rss-add input{font-size:16px;min-height:44px}.mbtn.rssbtn{width:40px;height:40px;border-radius:11px;border-color:transparent}.mbtn.rssbtn svg{width:22px;height:22px}.rssbadge{top:2px;right:0}#tasksPage .tsearch input,#tagPop .tag-find input{font-size:16px;min-height:44px}.bell-x{min-height:44px;padding:4px 10px}.bellpop .bell-key input{font-size:16px;min-height:44px}
+  .sheetform .sf-top,#taskAddMenu .sf-top{flex:none;padding:10px 16px;border-bottom:1px solid var(--line);font-size:16px}
+  .sheetform .sf-close,#taskAddMenu .sf-close{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font:inherit;cursor:pointer}
+  .sheetform .sf-body,#taskAddMenu .sf-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:16px;align-content:start;gap:16px}
+  .sheetform .sf-foot,#taskAddMenu .sf-foot{flex:none;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--bg)}
+  .sheetform .sf-foot>button,#taskAddMenu .sf-foot>button{flex:1;min-height:48px;font-size:16px}
+  .sheetform .sf-foot .olink{border:1px solid var(--line);border-radius:10px;text-decoration:none;color:var(--text)}
+  .sheetform input[type=text],.sheetform select,#taskAddMenu input{font-size:16px;min-height:44px}
+}
 .sp-sub{color:var(--muted);margin:-6px 0 14px;max-width:660px}
+.shipadd{max-width:520px}.shipadd label{display:block;font-size:13px;font-weight:600;margin:0 0 5px}.shipadd input[type=text],.shipadd select,.ostatus{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--text);padding:9px 10px;font:inherit}.ostatus{width:auto;max-width:100%}.sa-err{margin:0;color:var(--bad,#c0392b);font-size:13.5px}
 .ocard{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px 16px;margin-bottom:12px;display:grid;gap:10px}
 .ocard.arrive{background:#0f2429;border-color:#1f5560}.ocard.unsure{border-style:dashed;border-color:var(--faint)}
 .ohead{display:flex;gap:10px 14px;flex-wrap:wrap;align-items:flex-start}.otitle{flex:1 1 260px;min-width:0}
@@ -776,6 +814,7 @@ body.on-ship #waitBars{display:none!important}
 .waitcard{border:1px dashed #6a5220;background:#241d10;border-radius:14px;padding:12px 14px;margin-bottom:12px}
 .waitcard .thead b{color:#f0b24a}.waitrow{display:grid;gap:6px;padding:10px 0;border-top:1px solid #4a3a18}.waitrow:first-of-type{border-top:0}
 .waitrow .wb{display:flex;gap:8px;flex-wrap:wrap}
+.tsearch{margin:0 0 12px}.tsearch input{width:100%;box-sizing:border-box;min-height:40px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);font:inherit;font-size:14px}.tsearch-n{color:var(--muted);font-size:13px;margin:0 0 10px}
 .tp-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}.tp-head h3{margin:0;font-size:20px}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}.seg button{border:0;background:transparent;color:var(--muted);padding:7px 14px}.seg button.on{background:var(--panel3);color:var(--text);font-weight:700}
 .cal-nav{display:flex;align-items:center;gap:10px;margin:6px 0 10px}.cal-title{min-width:150px;text-align:center;font-size:16px}
@@ -1358,11 +1397,41 @@ body.on-draft .filters,body.on-draft #list,body.on-draft .sample-banner,body.on-
   #dkAsk .modal-actions,#whCheck .modal-actions,#sendWarn .modal-actions{flex-direction:column-reverse;margin-top:0;gap:8px}
   #dkAsk .compose-foot button,#whCheck .compose-foot button,#sendWarn .compose-foot button{width:100%;min-height:48px;font-size:15px}
 }
+/* Phones: nothing inside an open email may make the page wider than the screen (that made the page look zoomed in).
+   Long words and addresses wrap, the text is not enlarged by the browser, and a double tap does not zoom. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
+@media(max-width:760px){
+  html,body{max-width:100%;overflow-x:clip}
+  .reader{max-width:100%;overflow-x:hidden}
+  .rbody{min-width:0;max-width:100%;overflow-x:hidden;overflow-wrap:anywhere}
+  .rbody .qdetail,.rbody .qdetail *{min-width:0;max-width:100%}
+  .rbody .tltitle,.rbody .qkv>span{min-width:0;overflow-wrap:anywhere}
+  .ract{padding-left:10px;padding-right:10px;gap:6px}.ract .action{min-width:0;padding-left:4px;padding-right:4px;gap:6px}
+}
+.nav.sidenews{display:none}
+@media(max-width:760px){.nav.sidenews{display:flex}.nav.sidenews[hidden]{display:none!important}}
+
+/* Experimental Enveliq-only first-open treatment (no provider flags). */
+.mail.quiet.enveliq-new{position:relative;isolation:isolate;border-radius:11px;box-shadow:inset 0 0 0 1px rgba(79,142,255,.65),0 0 10px 1px rgba(54,116,245,.24),0 0 20px rgba(54,116,245,.10);background:linear-gradient(90deg,rgba(49,104,205,.11),transparent 62%)}
+.mail.quiet.enveliq-new .subject{font-weight:760}
+.mail.quiet.enveliq-new.current{box-shadow:inset 3px 0 0 var(--accent),0 0 10px rgba(54,116,245,.19)}
+.reading.enveliq-empty{padding:24px;display:flex;align-items:center;justify-content:center;min-height:0}
+.enveliq-empty-wrap{width:100%;max-width:860px;text-align:center}
+.enveliq-empty-title{font-size:clamp(22px,2.1vw,31px);font-weight:700;letter-spacing:-.025em;margin:0 0 10px}
+.enveliq-empty-sub{font-size:14px;color:var(--muted);margin:0 0 35px}
+.enveliq-empty-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
+.enveliq-empty-action{appearance:none;text-align:left;min-width:0;min-height:158px;padding:20px 16px 15px;border:1px solid var(--c-232a36);border-radius:13px;background:var(--panel);color:inherit;display:flex;flex-direction:column;gap:11px;cursor:pointer;font:inherit;transition:border-color .15s,background .15s}
+.enveliq-empty-action:hover,.enveliq-empty-action:focus-visible{border-color:var(--accent);background:rgba(70,115,210,.08)}
+.enveliq-empty-action svg{width:25px;height:25px;stroke:var(--accent);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.enveliq-empty-action strong{font-size:13px;font-weight:650}
+.enveliq-empty-action span{font-size:12px;line-height:1.5;color:var(--muted)}
+.enveliq-empty-action .ea-arrow{align-self:flex-end;margin-top:auto;font-size:19px;color:var(--muted)}
+@media(max-width:1250px){.enveliq-empty-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.enveliq-empty-action{min-height:135px}.reading.enveliq-empty{padding:14px}}
 </style>
 </head>
 <body class="booting">
 <div class="app">
-<div class="snz-menu" id="snoozeMenu" role="menu" aria-label="Snooze until" hidden></div>
+<div class="snz-menu" id="snoozeMenu" role="menu" aria-label="Snooze until" hidden></div><div class="snz-menu task-add" id="taskAddMenu" role="dialog" aria-label="Add a task" hidden></div><div class="popcard sheetform" id="rssPop" role="dialog" aria-modal="true" aria-labelledby="rssTitle" hidden></div><div class="popcard sheetform" id="tagPop" role="dialog" aria-modal="true" aria-labelledby="tagTitle" hidden></div><div class="popcard sheetform bellpop" id="bellPop" role="dialog" aria-modal="true" aria-labelledby="bellTitle" hidden></div>
 <aside class="sidebar" id="sidebar">
   <button class="collapse-toggle" id="collapseToggle" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 6-6 6 6 6"/></svg></button>
   <div class="brand"><img class="brand-wordmark" src="data:image/webp;base64,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" alt="Enveliq"><img class="brand-mark" src="data:image/webp;base64,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" alt="Enveliq"><small><b>Turn email into clarity.</b></small></div>
@@ -1390,6 +1459,7 @@ body.on-draft .filters,body.on-draft #list,body.on-draft .sample-banner,body.on-
       <button class="nav more-toggle" id="moreToggle" type="button" aria-expanded="false" aria-controls="moreItems" title="More mailbox views"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3zM3 9h18"/><path class="more-chev" d="m9.5 13.2 2.5 2.4 2.5-2.4"/></svg><span class="nav-label">More</span><span class="more-arrow" aria-hidden="true">⌄</span></button>
       <div class="more-items" id="moreItems"></div>
     </div>
+    <button class="nav sidenews" id="sideRss" type="button" data-rss-open aria-haspopup="dialog" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5a14 14 0 0 1 14 14M5 11a8 8 0 0 1 8 8"/><circle cx="6" cy="18" r="1.4" fill="currentColor" stroke="none"/></svg><span class="nav-label">News feeds</span><span class="badge hot rssbadge" hidden></span></button>
     <button class="nav" id="sideSettings" type="button" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="nav-label">Settings</span></button>
   </nav>
   <a class="updnote" id="updNote" target="_blank" rel="noopener noreferrer" hidden><span class="updic" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 11l6-6 6 6"/></svg></span><span class="updtx"><b id="updVer">A new version is out</b><small>See what's new</small></span></a>
@@ -1410,6 +1480,8 @@ body.on-draft .filters,body.on-draft #list,body.on-draft .sample-banner,body.on-
 <div class="preview-toolbar" id="previewToolbar">
   <div class="preview-toolbar-search" id="previewSearchSlot"></div>
   <div class="preview-toolbar-actions">
+    <button class="rssbtn" id="bellBtn" type="button" data-bell-open aria-haspopup="dialog" aria-label="Notifications" title="Notifications" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="rssbadge" hidden></span></button>
+    <button class="rssbtn" id="rssBtn" type="button" data-rss-open aria-label="News feeds" title="News feeds" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5a14 14 0 0 1 14 14M5 11a8 8 0 0 1 8 8"/><circle cx="6" cy="18" r="1.4" fill="currentColor"/></svg><span class="rssbadge" hidden></span></button>
     <a class="preview-help" href="https://enveliq.app/docs/" target="_blank" rel="noopener noreferrer" aria-label="Help and support" title="Help and support">?</a>
     <div id="previewAccountSlot"></div>
   </div>
@@ -1420,7 +1492,7 @@ body.on-draft .filters,body.on-draft #list,body.on-draft .sample-banner,body.on-
   <img class="mlogo" id="mLogo" alt="Enveliq">
   <div class="mtitle" id="mTitle"><b>Inbox</b><small id="mTitleSub"></small></div>
   <span class="msp"></span>
-  <button class="mbtn" id="mNewBtn" type="button" aria-label="New email" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="m14.5 7.5 3 3"/></svg></button>
+  <button class="mbtn rssbtn" id="mBellBtn" type="button" data-bell-open aria-haspopup="dialog" aria-label="Notifications" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="rssbadge" hidden></span></button>
   <button class="mbtn" id="mSearchBtn" type="button" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/></svg></button>
   <button class="mbtn" id="mSyncBtn" type="button" aria-label="Sync mail" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14-4M4 4v4h4M4 13a8 8 0 0 0 14 4M20 20v-4h-4"/></svg></button>
   </div>
@@ -2112,7 +2184,7 @@ const emailDetails={
 for(const m of data)Object.assign(m,emailDetails[m.id]||{});
 
 let selected=new Set(),filter="all",query="",provider="compatible";
-let feat={compose:false,address_book:false,sent:false,media:false,all_mail:false,shipping:false,subscriptions:false,travel:false,waiting:false,messages:false,write_help:false};
+let feat={compose:false,address_book:false,sent:false,media:false,all_mail:false,shipping:false,subscriptions:false,travel:false,waiting:false,messages:false,write_help:false,rss:false,tags:false};
 let allMail=false,recentAt=0,sq={items:[],waiting:0,writing:0},sqTimer=null,sqDoneSeen=new Set();
 try{allMail=localStorage.getItem("enveliq-all-mail")==="1"}catch{}
 let manageTabsScrollLeft=0;
@@ -2122,7 +2194,7 @@ const previewVault={initialized:false,unlocked:false,salt:null,verifier:null};
 const expanded=new Set();
 // A refresh keeps you where you are: the page (in the address bar after #/) and which emails are open (this tab only).
 const PAGES=["all","action","tasks","attachments","reviewed","archived","sent","drafts","shipping","subscriptions","trips","waiting","messages"];
-let stateReady=false;
+let stateReady=false,navPopping=false;
 const rowKeyOf=id=>{const m=data.find(x=>String(x.id)===String(id));return m&&m.real?m.real.accountId+":"+m.real.messageId:null};
 function saveOpen(){
   if(!stateReady)return;
@@ -2139,8 +2211,35 @@ function wantedHash(){
 function syncHash(){
   if(!stateReady)return;
   const h=wantedHash();
-  if((location.hash||"")===h||/^#google-calendar=/.test(location.hash||""))return;
-  try{history.replaceState(history.state,"",location.pathname+location.search+h)}catch{}
+  const now=location.hash||"";
+  if(now===h||/^#google-calendar=/.test(now))return;
+  // Going to another section adds a step to the browser's history, so the Back button (or a phone's back gesture) returns to the
+  // section you were in before instead of leaving Enveliq. Moving between tabs inside Settings, or answering Back itself, only rewrites the address.
+  const inSettings=x=>/^#\/(settings|admin)\//.test(x);
+  const url=location.pathname+location.search+h;
+  try{if(navPopping||(inSettings(now)&&inSettings(h)))history.replaceState(history.state,"",url);else history.pushState(null,"",url)}catch{}
+}
+// Back / Forward: show the section the address names, without adding another step.
+function applyHashNav(){
+  const h=location.hash||"",sm=/^#\/(settings|admin)\/([a-z]*)$/.exec(h),isOpen=$("settings").classList.contains("open");
+  navPopping=true;
+  try{
+    if(sm&&!(sm[1]==="admin"&&!currentUser.is_admin)){
+      if(!isOpen||(sm[1]==="admin")!==(settingsMode==="admin"))openSettings(sm[1]);
+      const b=sm[2]&&document.querySelector(`[data-settings-tab="${sm[2]}"]`);if(b)b.click();
+      return;
+    }
+    if(isOpen)closeSettings();
+    const pm=/^#\/([a-z]+)$/.exec(h);let want=pm&&PAGES.includes(pm[1])?pm[1]:"all";
+    const ok={sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,messages:feat.messages}[want];
+    if(want!=="all"&&ok===false)want="all";
+    filter=want;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===want));
+    closeSnoozeMenu();readerOpen=false;if(want==="all")paneId=null;render();
+    if(want==="sent")loadSent();
+    if(want==="drafts")loadDrafts();
+    if(want==="messages")openMsgPage();
+    window.scrollTo({top:0});
+  }finally{navPopping=false}
 }
 // A notification (or a link) can name one email: /?open=<mailbox id>:<email id>. The page moves to that email.
 function openFromLink(raw,fromAddress,quiet){
@@ -2155,7 +2254,7 @@ function openFromLink(raw,fromAddress,quiet){
   query="";$("search").value="";document.body.classList.remove("msearch");
   filter=isSnoozed(m)?"snoozed":m.status==="inbox"?"all":m.status;
   document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));
-  expanded.add(`row-${m.id}`);paneId=m.id;if(lay()==="screen")readerOpen=true;
+  expanded.add(`row-${m.id}`);paneId=m.id;enMarkOpened(m.id);if(lay()==="screen")readerOpen=true;
   render();
   const el=document.querySelector(`[data-expand="row-${m.id}"],[data-pick="${m.id}"]`);if(el&&el.scrollIntoView)el.scrollIntoView({block:"center"});
   return true;
@@ -2200,7 +2299,7 @@ const clipWords=m=>{const n=fileN(m),sure=m.attachments.length||m.fileCount!=nul
 function userMessages(){return data.filter(m=>m.owner===currentUser.id&&!m._pending)}
 let sortMode="newest",mailboxSel="";
 // ---- View options (saved in this browser) ----
-const VIEW_DEFAULT={layout:"list",density:"standard",width:"centered",rows:"collapsed",peek:true};
+const VIEW_DEFAULT={layout:"right",density:"standard",width:"centered",rows:"collapsed",peek:true};
 const VIEW_ALLOWED={layout:["list","right","bottom","screen","deck"],density:["compact","standard","roomy"],width:["centered","full"],rows:["collapsed","open"]};
 function loadView(){
   const v={...VIEW_DEFAULT};
@@ -2211,9 +2310,34 @@ function loadView(){
 let view=loadView(),readerOpen=false,dueOpen=false,calmLaterOpen=true,waitClosedOpen=false,paneId=null,lastPaneIdx=0,lastRowIds=[],lastDeckShown=null,deckDir="next",lastReadId=null;
 // On a phone every email opens full screen (the "screen" layout), whatever layout was chosen for a bigger screen. The choice itself is kept.
 function lay(){return phoneQuery.matches?"screen":view.layout}
-function saveView(){try{localStorage.setItem("enveliq-view",JSON.stringify(view))}catch{}}
+let viewSyncQueue=Promise.resolve(),viewServerReady=false;
+function saveView(){
+  try{localStorage.setItem("enveliq-view",JSON.stringify(view))}catch{}
+  if(!viewServerReady)return;
+  const snapshot={...view};
+  // Serialize changes, so slow network responses cannot restore older preferences.
+  viewSyncQueue=viewSyncQueue.catch(()=>{}).then(()=>secureBackendRequest("/api/v1/me/mail-view",{method:"PUT",body:JSON.stringify(snapshot)}));
+  viewSyncQueue.catch(error=>console.warn("Cannot save reading view preference",error));
+}
+async function loadServerView(){
+  const saved=await secureBackendRequest("/api/v1/me/mail-view",{method:"GET",headers:{}});
+  if(saved&&saved.view){
+    const v={...VIEW_DEFAULT};
+    for(const k of Object.keys(VIEW_ALLOWED))if(VIEW_ALLOWED[k].includes(saved.view[k]))v[k]=saved.view[k];
+    if(typeof saved.view.peek==="boolean")v.peek=saved.view.peek;
+    view=v;
+  }else{
+    // First sign-in has no server preference: never inherit a different user's browser choice.
+    view={...VIEW_DEFAULT};
+    await secureBackendRequest("/api/v1/me/mail-view",{method:"PUT",body:JSON.stringify(view)});
+  }
+  viewServerReady=true;
+  applyView();
+}
 function applyView(){
   readerOpen=false;
+  // Switching layouts starts with an unselected reading panel.
+  paneId=null;lastReadId=null;
   const c=document.body.classList;
   for(const l of VIEW_ALLOWED.layout)c.toggle("layout-"+l,lay()===l);
   c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");
@@ -2226,12 +2350,13 @@ function visible(m){
   if(m.owner!==currentUser.id||filter==="sent"||filter==="drafts"||filter==="tasks")return false;
   if(mailboxSel&&m.account!==mailboxSel)return false;
   if(filter==="snoozed"){if(!isSnoozed(m))return false}else if(isSnoozed(m))return false;      // a snoozed email waits out of sight until its time
-  if(query&&!(`${m.sender} ${m.address} ${m.subject} ${m.summary} ${m.category}`.toLowerCase().includes(query.toLowerCase())))return false;
+  if(query&&!(`${m.sender} ${m.address} ${m.subject} ${m.summary} ${m.category} ${(m.tags||[]).join(" ")}`.toLowerCase().includes(query.toLowerCase())))return false;
   if(filter==="all"&&m.status!=="inbox")return false;
   if(filter==="action"&&!(m.status==="inbox"&&m.action))return false;
   if(filter==="need"&&!(m.status==="inbox"&&(m.action||m.priority==="high")))return false;
   if(filter==="high"&&!(m.status==="inbox"&&m.priority==="high"))return false;
   if(filter==="attachments"&&!(m.status==="inbox"&&fileN(m)))return false;
+  if(filter.startsWith("tag:")&&!(m.status==="inbox"&&(m.tags||[]).includes(filter.slice(4))))return false;
   if(filter==="reviewed"&&m.status!=="reviewed")return false;
   if(filter==="archived"&&m.status!=="archived")return false;
   if(filter==="snoozed"&&m.status!=="inbox")return false;
@@ -2331,6 +2456,49 @@ document.addEventListener("click",e=>{
   if(snoozeFor!==null&&!(e.target.closest&&e.target.closest("#snoozeMenu")))closeSnoozeMenu();
 });
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&snoozeFor!==null){const id=snoozeFor;closeSnoozeMenu();const b=document.querySelector(`[data-snooze="${id}"]`);if(b)b.focus();e.stopPropagation()}},true);
+// Task: write a task of your own on any email, for example "ring the plumber when I get home". It stays until you finish it.
+let taskAddFor=null;
+function closeTaskAdd(){const m=$("taskAddMenu");if(m)m.hidden=true;taskAddFor=null}
+function openTaskAdd(btn,id){
+  const m=data.find(x=>x.id===+id&&x.owner===currentUser.id);if(!m)return;
+  closeSnoozeMenu();taskAddFor=m.id;
+  const menu=$("taskAddMenu"),today=isoLocal(new Date()),max=isoLocal(new Date(Date.now()+365*86400000));
+  menu.innerHTML=`<div class="sf-top"><b>Add a task</b><button class="sf-close" type="button" data-task-add-cancel aria-label="Close this form">✕ Close</button></div>`
+    +`<div class="sf-body"><div><label for="taText">What do you want to remember to do?</label><input id="taText" type="text" maxlength="300" autocomplete="off" placeholder="For example: ring the plumber"></div>`
+    +`<div class="ta-row"><label for="taDate">When</label><input id="taDate" type="date" value="${today}" min="${today}" max="${max}"></div></div>`
+    +`<div class="sf-foot ta-btns"><button type="button" data-task-add-cancel>Cancel</button><button type="button" class="primary" data-task-add-save>Add task</button></div>`;
+  menu.hidden=false;
+  const r=btn.getBoundingClientRect(),w=Math.min(320,innerWidth-24);
+  menu.style.width=w+"px";menu.style.left=Math.max(12,Math.min(r.left,innerWidth-w-12))+"px";
+  const below=r.bottom+8,h=menu.offsetHeight;
+  menu.style.top=(below+h>innerHeight-8?Math.max(8,r.top-h-8):below)+"px";
+  $("taText").focus();
+}
+async function saveTaskAdd(){
+  const m=data.find(x=>x.id===taskAddFor&&x.owner===currentUser.id);if(!m)return;
+  const title=$("taText").value.replace(/\s+/g," ").trim(),on=$("taDate").value||null;
+  if(!title){toast("Write what you want to remember.");$("taText").focus();return}
+  if(m.real&&realMail){
+    try{tasksData=await secureBackendRequest("/api/v1/me/tasks",{method:"POST",body:JSON.stringify({account_id:m.real.accountId,message_id:m.real.messageId,title,on})})}
+    catch(er){toast(er.message||"Could not add that. Try again.",5000);return}
+  }else{
+    const t={id:"d"+m.id+"-"+Date.now(),demoId:m.id,manual:true,owner:m.owner,title,detail:"",sender:m.sender,priority:"normal",due:on||isoLocal(new Date()),remind_at:null,state:"open",reason:null,closed_at:null,account_id:"",message_id:"",received:m.received||0};
+    demoTasks.push(t);syncDemoTasks();
+  }
+  closeTaskAdd();render();toast("Added to your tasks");
+}
+document.addEventListener("click",e=>{
+  const open=e.target.closest&&e.target.closest("[data-task-add]");
+  if(open){const was=taskAddFor===+open.dataset.taskAdd&&!$("taskAddMenu").hidden;closeTaskAdd();if(!was)openTaskAdd(open,open.dataset.taskAdd);return}
+  if(e.target.closest&&e.target.closest("[data-task-add-save]")){saveTaskAdd();return}
+  if(e.target.closest&&e.target.closest("[data-task-add-cancel]")){const id=taskAddFor;closeTaskAdd();const b=document.querySelector(`[data-task-add="${id}"]`);if(b)b.focus();return}
+  if(taskAddFor!==null&&!(e.target.closest&&e.target.closest("#taskAddMenu")))closeTaskAdd();
+});
+document.addEventListener("keydown",e=>{
+  if(taskAddFor===null)return;
+  if(e.key==="Escape"){const id=taskAddFor;closeTaskAdd();const b=document.querySelector(`[data-task-add="${id}"]`);if(b)b.focus();e.stopPropagation()}
+  else if(e.key==="Enter"&&e.target&&e.target.id==="taText"){e.preventDefault();saveTaskAdd()}
+},true);
 function disclosure(key,label,preview,body){
   const open=expanded.has(key);
   return `<div class="disclosure ${esc(open?"open":"")}"><button class="disclosure-head" data-expand="${esc(key)}">
@@ -2383,7 +2551,7 @@ window.__parseDue=parseDue;
 const phoneQuery=window.matchMedia("(max-width:760px)");
 function isPhone(){return phoneQuery.matches}
 // ---- Tasks: made from the summaries by the server; shown as the Today card, the Tasks page and a line inside each email ----
-let tasksData={today:"",tasks:[]},taskMode=(()=>{try{const v=localStorage.getItem("enveliq-task-mode");return v==="list"||v==="calendar"?v:"focus"}catch{return"focus"}})(),calMonth="",calDay="",taskMoveFor=null,demoTasks=[];
+let taskQuery="",tasksData={today:"",tasks:[]},taskMode=(()=>{try{const v=localStorage.getItem("enveliq-task-mode");return v==="list"||v==="calendar"?v:"focus"}catch{return"focus"}})(),calMonth="",calDay="",taskMoveFor=null,demoTasks=[];
 const REASON_TEXT={you:"Done",replied:"Done by itself · you replied",handled:"Done by itself · the email was dealt with",gone:"Done by itself · the email left your inbox"};
 const isoLocal=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 function taskOrder(a,b){return (a.state!=="open")-(b.state!=="open")||Math.max(a.days,0)-Math.max(b.days,0)||(a.priority==="high"?0:1)-(b.priority==="high"?0:1)||a.days-b.days||(b.received||0)-(a.received||0)}
@@ -2395,13 +2563,13 @@ function taskWhen(t){
   return t.days<7?wd:`${wd} ${dm}`;
 }
 const openTasks=()=>tasksData.tasks.filter(t=>t.state==="open");
-function taskFor(m){return m.real?tasksData.tasks.find(t=>t.account_id===m.real.accountId&&t.message_id===m.real.messageId):tasksData.tasks.find(t=>t.demoId===m.id)}
+function tasksFor(m){return tasksData.tasks.filter(t=>m.real?(t.account_id===m.real.accountId&&t.message_id===m.real.messageId):t.demoId===m.id)}   // every task on this email: the one the AI found and any you added
 function taskMsg(t){return t.demoId?data.find(m=>m.id===t.demoId):data.find(m=>m.real&&m.real.accountId===t.account_id&&m.real.messageId===t.message_id)}
 function syncDemoTasks(){
   const today=new Date();today.setHours(0,0,0,0);
   for(const m of data){
     if(m.owner!==currentUser.id||!m.task)continue;
-    let t=demoTasks.find(x=>x.demoId===m.id);
+    let t=demoTasks.find(x=>x.demoId===m.id&&!x.manual);
     if(!t&&m.status==="inbox"){const d=parseDue(m.task.due,m.received?m.received*1000:Date.now())||today;t={id:"d"+m.id,demoId:m.id,owner:m.owner,title:m.task.title,detail:m.task.detail||"",sender:m.sender,priority:m.priority||"normal",due:isoLocal(d),remind_at:null,state:"open",reason:null,closed_at:null,account_id:"",message_id:"",received:m.received||0};demoTasks.push(t)}
     if(t&&t.state==="open"&&m.status!=="inbox"){t.state="done";t.reason="handled";t.closed_at=Date.now()/1000}
   }
@@ -2432,7 +2600,7 @@ async function refreshTasks(){await fetchTasks();render()}
 function settleTasks(){
   if(!realMail||!data.length)return;
   for(const t of tasksData.tasks){
-    if(t.state!=="open")continue;
+    if(t.state!=="open"||t.manual)continue;           // a task you wrote yourself stays until you finish it
     const m=taskMsg(t),why=!m?"gone":m.status!=="inbox"?"handled":m.replied?"replied":"";
     if(why){t.state="done";t.reason=why;t.reason_text=REASON_TEXT[why]}
   }
@@ -2452,7 +2620,7 @@ function moveBar(t){
 }
 function taskLine(t){
   const open=t.state==="open";
-  return `<div class="taskline"><div class="tlhead"><span class="tpill ${open?"auto":"ok"}">${open?"Task added":"Task done"}</span><b class="tltitle">${esc(t.title)}</b>${open?`<span class="tpill soft">${esc(taskWhen(t))}</span>`:`<span class="tpill">${esc(t.reason_text||"Done")}</span>`}<span class="tlsp"></span>${open?`<button class="tbtn" type="button" data-task-movetoggle="${esc(t.id)}" aria-expanded="${taskMoveFor===t.id}">Move</button><button class="tbtn" type="button" data-task-act="remove" data-task-id="${esc(t.id)}">Remove</button>`:`<button class="tbtn" type="button" data-task-act="reopen" data-task-id="${esc(t.id)}">Undo</button>`}</div>${t.detail?`<div class="detail-text">${esc(t.detail)}</div>`:""}${open&&taskMoveFor===t.id?moveBar(t):""}</div>`;
+  return `<div class="taskline"><div class="tlhead"><span class="tpill ${open?"auto":"ok"}">${open?(t.manual?"Your task":"Task added"):"Task done"}</span><b class="tltitle">${esc(t.title)}</b>${open?`<span class="tpill soft">${esc(taskWhen(t))}</span>`:`<span class="tpill">${esc(t.reason_text||"Done")}</span>`}<span class="tlsp"></span>${open?`<button class="tbtn" type="button" data-task-movetoggle="${esc(t.id)}" aria-expanded="${taskMoveFor===t.id}">Move</button><button class="tbtn" type="button" data-task-act="remove" data-task-id="${esc(t.id)}">Remove</button>`:`<button class="tbtn" type="button" data-task-act="reopen" data-task-id="${esc(t.id)}">Undo</button>`}</div>${t.detail?`<div class="detail-text">${esc(t.detail)}</div>`:""}${open&&taskMoveFor===t.id?moveBar(t):""}</div>`;
 }
 function taskRow(t,fin){
   const m=taskMsg(t);
@@ -2521,15 +2689,23 @@ function renderTasksPage(){
   const box=$("tasksPage"),open=openTasks(),fin=tasksData.tasks.filter(t=>t.state==="done");
   const head=`<div class="tp-head"><h3>Tasks</h3><div class="seg" role="group" aria-label="How to show tasks"><button type="button" data-task-mode="focus" class="${taskMode==="focus"?"on":""}">Focus</button><button type="button" data-task-mode="list" class="${taskMode==="list"?"on":""}">List</button><button type="button" data-task-mode="calendar" class="${taskMode==="calendar"?"on":""}">Calendar</button></div>${isBackend()?'<button class="linkbtn" type="button" data-reminder-settings>Reminder settings</button>':""}</div>`;
   const finished=fin.length?`<div class="tgroup"><h4>Done</h4>${fin.map(t=>taskRow(t,true)).join("")}</div>`:"";
-  if(taskMode==="calendar"){box.innerHTML=head+calendarHtml();return}
-  if(!open.length){box.innerHTML=head+`<div class="focus-card"><div class="focus-big">Nothing needs doing</div><div class="focus-sub">New tasks appear here by themselves when an email needs a reply or an action.</div></div><div style="height:18px"></div>`+finished;return}
+  const find=`<div class="tsearch"><input type="search" id="taskSearch" maxlength="80" autocomplete="off" spellcheck="false" placeholder="Search your tasks" aria-label="Search your tasks by typing part of their text" value="${esc(taskQuery)}"></div>`;
+  const q=taskQuery.trim().toLowerCase();
+  if(q){          // typing part of a task's words lists every task that has them, open or done
+    const hit=t=>[t.title,t.detail,t.sender].some(v=>String(v||"").toLowerCase().includes(q));
+    const a=open.filter(hit),b=fin.filter(hit);
+    box.innerHTML=head+find+(a.length||b.length?`<p class="tsearch-n" role="status">${a.length+b.length} ${a.length+b.length===1?"task matches":"tasks match"}</p>`+(a.length?`<div class="tgroup"><h4>To do</h4>${a.map(t=>taskRow(t,false)).join("")}</div>`:"")+(b.length?`<div class="tgroup"><h4>Done</h4>${b.map(t=>taskRow(t,true)).join("")}</div>`:""):`<p class="tsearch-n" role="status">No task has those words. Try a shorter piece of the word.</p>`);
+    return;
+  }
+  if(taskMode==="calendar"){box.innerHTML=head+find+calendarHtml();return}
+  if(!open.length){box.innerHTML=head+find+`<div class="focus-card"><div class="focus-big">Nothing needs doing</div><div class="focus-sub">New tasks appear here by themselves when an email needs a reply or an action.</div></div><div style="height:18px"></div>`+finished;return}
   if(taskMode==="list"){
     const today=open.filter(t=>t.days<=0),later=open.filter(t=>t.days>0);
-    box.innerHTML=head+(today.length?`<div class="tgroup"><h4>Today</h4>${today.map(t=>taskRow(t,false)).join("")}</div>`:"")+(later.length?`<div class="tgroup"><h4>Later</h4>${later.map(t=>taskRow(t,false)).join("")}</div>`:"")+finished;
+    box.innerHTML=head+find+(today.length?`<div class="tgroup"><h4>Today</h4>${today.map(t=>taskRow(t,false)).join("")}</div>`:"")+(later.length?`<div class="tgroup"><h4>Later</h4>${later.map(t=>taskRow(t,false)).join("")}</div>`:"")+finished;
     return;
   }
   const t=open[0],m=taskMsg(t),nowN=open.filter(x=>x.days<=0).length,next=open.slice(1,3).map(x=>x.title).join(" · ");
-  box.innerHTML=head+`<div class="focus-card"><span class="tpill">Next up${nowN?` · 1 of ${nowN} today`:""}</span><div class="focus-big">${esc(t.title)}</div>${t.detail?`<div class="focus-sub">${esc(t.detail)}</div>`:""}<div class="focus-sub">${esc(t.sender?"From "+t.sender+" · ":"")}${esc(taskWhen(t))}</div><div class="fbtns">${m?`<button class="fbtn pri" type="button" data-due-open="${esc(m.id)}">Open the email</button>`:""}<button class="fbtn" type="button" data-task-act="done" data-task-id="${esc(t.id)}">Done</button><button class="fbtn" type="button" data-task-act="not_today" data-task-id="${esc(t.id)}">Not today</button><button class="fbtn" type="button" data-task-movetoggle="${esc(t.id)}" aria-expanded="${taskMoveFor===t.id}">Move…</button></div>${taskMoveFor===t.id?moveBar(t):""}${next?`<div class="focus-next">Then: ${esc(next)}</div>`:""}</div><div style="height:18px"></div>`+finished;
+  box.innerHTML=head+find+`<div class="focus-card"><span class="tpill">Next up${nowN?` · 1 of ${nowN} today`:""}</span><div class="focus-big">${esc(t.title)}</div>${t.detail?`<div class="focus-sub">${esc(t.detail)}</div>`:""}<div class="focus-sub">${esc(t.sender?"From "+t.sender+" · ":"")}${esc(taskWhen(t))}</div><div class="fbtns">${m?`<button class="fbtn pri" type="button" data-due-open="${esc(m.id)}">Open the email</button>`:""}<button class="fbtn" type="button" data-task-act="done" data-task-id="${esc(t.id)}">Done</button><button class="fbtn" type="button" data-task-act="not_today" data-task-id="${esc(t.id)}">Not today</button><button class="fbtn" type="button" data-task-movetoggle="${esc(t.id)}" aria-expanded="${taskMoveFor===t.id}">Move…</button></div>${taskMoveFor===t.id?moveBar(t):""}${next?`<div class="focus-next">Then: ${esc(next)}</div>`:""}</div><div style="height:18px"></div>`+finished;
 }
 // ---- Shipping: orders followed from the emails that arrive ----
 // Only facts are kept (shop, numbers, carrier, dates). Plain text only; the Track link is used only when it is https.
@@ -2561,6 +2737,251 @@ async function fetchShipping(){
 }
 async function refreshShipping(){const a=document.activeElement;if(a&&a.matches&&a.matches('#shipPage textarea, #shipPage input'))return;await fetchShipping();render()}
 setInterval(()=>{if(realMail&&feat.shipping&&!document.hidden)refreshShipping()},60000);
+
+
+// ---------- Tags: the labels your mail service already has ----------
+// Each email can carry the tags from the real mailbox (Proton labels, Gmail labels, keywords). Changes are made in the mailbox too.
+const TAG_SEARCH_FROM=8;         // the search box appears when there are more tags than this
+let tagUi={open:false,id:null,names:null,supported:true,canCreate:true,busy:false,loading:false,err:"",name:"",info:false,q:""};
+function tagsOn(m){return !!(realMail&&feat.tags&&m&&m.real&&m.status==="inbox"&&!m.kept)}
+// Which mailbox an email came from. Shown only when more than one mailbox is connected, so a single mailbox stays uncluttered.
+function multiBox(){return realMail&&accounts.filter(a=>a.owner===currentUser.id).length>1}
+const BOX_COLORS={blue:210,green:150,orange:35,pink:300,red:0,teal:180,purple:260,lime:80};
+function boxHue(id){
+  const a=accounts.find(x=>x.id===id);if(a&&a.color&&BOX_COLORS[a.color]!==undefined)return BOX_COLORS[a.color];     // the colour the person chose on the Mailboxes page
+  let h=0;for(const c of String(id))h=(h*31+c.charCodeAt(0))>>>0;return Object.values(BOX_COLORS)[h%8]}
+function boxChip(m){
+  if(!m.real||!multiBox())return "";
+  const a=accounts.find(x=>x.id===m.real.accountId),name=(a&&a.name)||m.account||"Mailbox",tip=[a&&a.provider,name,a&&a.address].filter(Boolean).join(" · ");
+  return `<span class="mbox" style="--bh:${boxHue(m.real.accountId)}" title="Mailbox: ${esc(tip)}"><i aria-hidden="true"></i><span class="mbox-n">${esc(name)}</span></span>`;
+}
+function tagChips(m,limit){
+  const t=m.tags||[];if(!t.length)return "";
+  const shown=limit?t.slice(0,limit):t,more=limit&&t.length>limit?`<span class="mtag">+${t.length-limit}</span>`:"";
+  const inner=shown.map(n=>`<span class="mtag">${esc(n)}</span>`).join("")+more,label=esc("Tags: "+t.join(", "));
+  return limit?`<span class="mtags inrow" role="group" aria-label="${label}">${inner}</span>`:`<div class="mtags" role="group" aria-label="${label}">${inner}</div>`;
+}
+function tagFilterOptions(fb){
+  const names=new Set();for(const m of data)if(m.owner===currentUser.id&&m.status==="inbox")for(const n of(m.tags||[]))names.add(n);
+  const want=[...names].sort((a,b)=>a.localeCompare(b)).map(n=>"tag:"+n);
+  const have=[...fb.options].filter(o=>o.value.startsWith("tag:")).map(o=>o.value);
+  if(want.join("\n")===have.join("\n"))return;
+  have.forEach(v=>{const o=[...fb.options].find(x=>x.value===v);if(o)o.remove()});
+  for(const v of want){const o=document.createElement("option");o.value=v;o.textContent="Tag: "+v.slice(4);fb.append(o)}
+}
+function tagMsg(){return data.find(x=>x.id===tagUi.id&&x.owner===currentUser.id)}
+function tagPopPaint(keep){
+  const m=$("tagPop"),mail=tagMsg();if(!m)return;
+  const sc=keep&&m.querySelector(".sf-body")?m.querySelector(".sf-body").scrollTop:0;
+  const have=new Set(((mail&&mail.tags)||[]).map(x=>x.toLowerCase()));
+  let body;
+  if(tagUi.loading)body='<p class="pop-note">Looking at your tags…</p>';
+  else if(!tagUi.supported)body='<p class="pop-note">Your email service does not keep tags that Enveliq can reach, so they cannot be shown or changed here.</p>';
+  else{
+    const all=tagUi.names||[],q=(tagUi.q||"").trim().toLowerCase(),shownNames=all.map((n,i)=>[n,i]).filter(([n])=>!q||n.toLowerCase().includes(q));
+    const find=all.length>TAG_SEARCH_FROM?`<div class="tag-find"><input type="search" id="tagFind" data-tag-find maxlength="40" autocomplete="off" spellcheck="false" placeholder="Search your tags" aria-label="Search your tags by typing part of a name" value="${esc(tagUi.q||"")}"></div>`:"";
+    const rows=all.length?(shownNames.length?shownNames.map(([n,i])=>`<label class="tagrow" for="tg${i}"><input id="tg${i}" type="checkbox" data-tag-toggle="${esc(n)}"${have.has(n.toLowerCase())?" checked":""}${tagUi.busy?" disabled":""}><span>${esc(n)}</span></label>`).join(""):'<p class="pop-note" role="status">No tag has those letters. Try fewer letters.</p>'):'<p class="pop-note">You have no tags yet.'+(tagUi.canCreate?" Make one below.":"")+"</p>";
+    body=find+rows+(tagUi.canCreate?`<div><label for="tagNew"><b>Make a new tag</b></label><div class="tag-new"><input id="tagNew" data-tag-name type="text" maxlength="40" autocomplete="off" placeholder="For example: Taxes" value="${esc(tagUi.name)}"></div></div>`:'<p class="pop-note">This email service does not let Enveliq make new tags.</p>');
+  }
+  m.innerHTML=`<form data-tag-form novalidate style="display:contents">
+    <div class="sf-top"><b id="tagTitle">Tags</b><button class="sf-close" type="button" data-tag-close aria-label="Close tags">✕ Close</button></div>
+    <div class="sf-body">${mail?`<p class="pop-note">${esc(mail.subject)}</p>`:""}${body}${tagUi.err?`<p class="sa-err" role="alert">${esc(tagUi.err)}</p>`:""}<p class="pop-note"><button class="olink" type="button" data-tag-info aria-haspopup="dialog">Always tag or filter this sender.</button></p></div>
+    <div class="sf-foot">${tagUi.supported&&tagUi.canCreate&&!tagUi.loading?`<button class="obtn blue" type="submit"${tagUi.busy?" disabled":""}>${tagUi.busy?"Working…":"Make tag"}</button>`:""}<button class="obtn" type="button" data-tag-close>Done</button></div></form>`+
+    (tagUi.info?`<div class="tag-info-back"><div class="tag-info" role="dialog" aria-modal="true" aria-labelledby="tagInfoTitle"><b id="tagInfoTitle">Always tag emails from one sender</b><p>To tag every email from a sender automatically, set up a filter in your email provider (Proton Mail, Gmail, Microsoft or another service).</p><p>Sign in to your provider, open its Filters settings, and make a filter that says: from this sender, add this tag. Enveliq shows the tag on those emails the next time it checks your mail.</p><button class="obtn blue" type="button" data-tag-info-close>Got it</button></div></div>`:"");
+  const b=m.querySelector(".sf-body");if(b&&sc)b.scrollTop=sc;
+}
+async function tagOpen(id){
+  const mail=data.find(x=>x.id===+id&&x.owner===currentUser.id);if(!mail||!tagsOn(mail))return;
+  tagUi={open:true,id:mail.id,names:null,supported:true,canCreate:true,busy:false,loading:true,err:"",name:"",info:false,q:""};
+  $("tagPop").hidden=false;tagPopPaint(false);const c=$("tagPop").querySelector(".sf-close");if(c)c.focus();
+  try{const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(mail.real.accountId)}/tags`,{method:"GET",headers:{}});
+    tagUi.supported=!!r.supported;tagUi.names=r.names||[];tagUi.canCreate=!!r.can_create}
+  catch(er){tagUi.err=er.message||"Could not read your tags. Try again."}
+  tagUi.loading=false;if(tagUi.open)tagPopPaint(false);
+}
+function tagClose(){if(!tagUi.open)return;tagUi.open=false;$("tagPop").hidden=true;const b=document.querySelector(`[data-tag-open="${tagUi.id}"]`);if(b)b.focus()}
+async function tagCall(fn){
+  if(tagUi.busy)return;tagUi.busy=true;tagUi.err="";tagPopPaint(true);
+  try{await fn();return true}catch(er){tagUi.err=er.message||"That did not work. Try again."}
+  finally{tagUi.busy=false;if(tagUi.open)tagPopPaint(true);render()}
+}
+async function tagSet(mail,name,on){
+  const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(mail.real.accountId)}/messages/${encodeURIComponent(mail.real.messageId)}/tags`,{method:"PUT",body:JSON.stringify({name,on})});
+  mail.tags=Array.isArray(r.tags)?r.tags.map(String):[];
+}
+document.addEventListener("change",e=>{
+  const t=e.target.closest?e.target.closest("[data-tag-toggle]"):null;if(!t)return;
+  const mail=tagMsg();if(!mail)return;const on=t.checked;
+  tagCall(async()=>{try{await tagSet(mail,t.dataset.tagToggle,on)}catch(er){t.checked=!on;throw er}});
+});
+document.addEventListener("input",e=>{if(e.target&&e.target.matches&&e.target.matches("[data-tag-name]")){tagUi.name=e.target.value;tagUi.err=""}});
+document.addEventListener("submit",e=>{
+  if(!(e.target&&e.target.matches&&e.target.matches("[data-tag-form]")))return;e.preventDefault();
+  const mail=tagMsg();if(!mail)return;const name=tagUi.name.replace(/\s+/g," ").trim();
+  if(!name){tagUi.err="Write a name for the tag.";tagPopPaint(true);const i=$("tagNew");if(i)i.focus();return}
+  tagCall(async()=>{
+    const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(mail.real.accountId)}/tags`,{method:"POST",body:JSON.stringify({name})});
+    tagUi.names=r.names||tagUi.names;tagUi.canCreate=!!r.can_create;tagUi.name="";
+    await tagSet(mail,r.name||name,true);toast("Tag added");
+  });
+});
+document.addEventListener("input",e=>{
+  if(!e.target||!e.target.matches||!e.target.matches("[data-tag-find]"))return;
+  const pos=e.target.selectionStart;tagUi.q=e.target.value;tagPopPaint(true);
+  const i=$("tagFind");if(i){i.focus();try{i.setSelectionRange(pos,pos)}catch{}}
+});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target&&e.target.matches&&e.target.matches("[data-tag-find]"))e.preventDefault()},true);
+document.addEventListener("click",e=>{
+  const t=e.target.closest?e.target:null;if(!t)return;
+  const open=t.closest("[data-tag-open]");if(open){tagOpen(open.dataset.tagOpen);return}
+  if(t.closest("[data-tag-info]")){tagUi.info=true;tagPopPaint(true);const g=$("tagPop").querySelector("[data-tag-info-close]");if(g)g.focus();return}
+  if(t.closest("[data-tag-info-close]")){tagUi.info=false;tagPopPaint(true);const b=$("tagPop").querySelector("[data-tag-info]");if(b)b.focus();return}
+  if(t.closest("[data-tag-close]")){tagClose();return}
+  if(tagUi.open&&window.innerWidth>760&&!t.closest("#tagPop"))tagClose();
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&tagUi.open){e.stopPropagation();if(tagUi.info){tagUi.info=false;tagPopPaint(true);const b=$("tagPop").querySelector("[data-tag-info]");if(b)b.focus()}else tagClose()}},true);
+
+// ---------- The bell: notes from Home Assistant and other services, and your chat messages ----------
+let bellData={items:[],unread:0,key_made:null,ws_path:"/api/v1/inbound/ws",webhook_path:"/api/v1/inbound/webhook"},bellUi={open:false,busy:false,err:"",key:"",copied:false};
+const bellOn=()=>!!realMail;
+function bellCount(){return bellOn()?(bellData.unread||0)+(msgOn()?msgSum.unread||0:0):0}
+function bellPaint(){
+  const on=bellOn(),n=bellCount();
+  document.querySelectorAll("[data-bell-open]").forEach(b=>{b.hidden=!on;b.setAttribute("aria-label",n?`Notifications, ${n} new`:"Notifications");
+    const bd=b.querySelector(".rssbadge");if(bd){bd.hidden=!n;bd.textContent=n>99?"99+":String(n)}});
+  if(!on&&bellUi.open)bellClose(false);
+}
+async function fetchBell(){
+  if(!bellOn()){bellData={items:[],unread:0,key_made:null,ws_path:bellData.ws_path};bellPaint();return}
+  try{const r=await secureBackendRequest("/api/v1/me/bell",{method:"GET",headers:{}});if(r&&Array.isArray(r.items)){bellData=r;if(bellUi.open)bellPopPaint(true)}}catch{}
+  bellPaint();
+}
+setInterval(()=>{if(bellOn()&&!document.hidden&&!bellUi.busy)fetchBell()},30000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&bellOn())fetchBell()});
+function bellWhen(t){if(!t)return "";const sec=Math.max(0,Date.now()/1000-t);if(sec<60)return "Just now";if(sec<3600)return Math.floor(sec/60)+" min ago";const d=new Date(t*1000);return msgSameDay(d,new Date())?msgClock(t):d.toLocaleDateString("en-AU",{day:"numeric",month:"short"})}
+function bellPopPaint(keep){
+  const m=$("bellPop");if(!m)return;
+  const sc=keep&&m.querySelector(".sf-body")?m.querySelector(".sf-body").scrollTop:0;
+  const open=keep&&m.querySelector("details")?m.querySelector("details").open:false;
+  const path=bellData.ws_path||"/api/v1/inbound/ws",hook=bellData.webhook_path||"/api/v1/inbound/webhook";
+  const chat=msgOn()&&msgSum.unread?(()=>{const L=msgSum.latest||[],names=[...new Set(L.map(x=>x.from.name))];
+    return `<section class="rss-feed" aria-label="Messages"><h4>Messages</h4><article class="rss-item new"><b>${msgSum.unread} unread ${msgSum.unread===1?"message":"messages"}${names.length?" from "+esc(names.join(", ")):""}</b><button class="obtn blue" type="button" data-msg-go>Read messages</button></article></section>`})():"";
+  const notes=(bellData.items||[]).map(i=>`<article class="rss-item${i.unread?" new":""}">${i.title?`<b>${esc(i.title)}</b>`:""}${i.message?`<p>${esc(i.message)}</p>`:""}<span class="meta">From ${esc(i.source||"a service on your network")} · ${esc(bellWhen(i.at))}</span> <button class="bell-x" type="button" data-bell-dismiss="${esc(i.id)}" aria-label="Dismiss ${esc(i.title||"this note")}">Dismiss</button></article>`).join("");
+  const none=!chat&&!notes?'<p class="pop-note">Nothing new. Notes from Home Assistant and other services on your network, and messages from the people here, show up in this list.</p>':"";
+  const keyBox=bellUi.key?`<p class="pop-note"><b>Copy this key now.</b> Enveliq shows it only once. Paste it into Home Assistant or the other service.</p><div class="bell-key"><input id="bellKey" type="text" readonly spellcheck="false" autocomplete="off" aria-label="Your new key" value="${esc(bellUi.key)}"><button class="obtn" type="button" data-bell-copy>${bellUi.copied?"Copied":"Copy"}</button></div>`:"";
+  const host=location.host,secure=location.protocol==="https:";
+  m.innerHTML=`<div style="display:contents">
+    <div class="sf-top"><b id="bellTitle">Notifications</b><button class="sf-close" type="button" data-bell-close aria-label="Close notifications">✕ Close</button></div>
+    <div class="sf-body">${chat}${notes?`<section class="rss-feed" aria-label="From other services"><h4>From Home Assistant and other services</h4>${notes}</section>`:""}${none}
+      <details${open?" open":""}><summary>Show how to connect Home Assistant or another service</summary>
+        <p class="pop-note">A service sends short notes to Enveliq through a WebSocket. Make a key for yourself, then give the service the address and the key. Notes it sends land in this list, only for you.</p>
+        <p class="pop-note">On your own network use this machine's local address, so it works even when the public address sits behind Cloudflare: <code>ws://YOUR-SERVER-IP:8765${esc(path)}</code>. From outside, use <code>${secure?"wss":"ws"}://${esc(host)}${esc(path)}</code> if your proxy allows WebSockets.</p>
+        <p class="pop-note">First send <code>{"type":"auth","token":"YOUR-KEY"}</code>, then <code>{"type":"notify","title":"Washer finished","message":"Empty it"}</code>. A new key replaces the old one.</p>
+        <p class="pop-note"><b>Or send a plain web request (webhook).</b> If the service cannot keep a WebSocket open (Node-RED, n8n, Uptime Kuma), send a <code>POST</code> to <code>${secure?"https":"http"}://${esc(host)}${esc(hook)}</code> with the header <code>Authorization: Bearer YOUR-KEY</code> and a JSON body such as <code>{"title":"Washer finished","message":"Empty it"}</code>. On your own network use <code>http://YOUR-SERVER-IP:8765${esc(hook)}</code>. It uses the same key, and the notes land in this same list.</p>
+        ${keyBox}${bellUi.err?`<p class="sa-err" role="alert">${esc(bellUi.err)}</p>`:""}
+        <p class="pop-note">${bellData.key_made?"You have a key.":"You have no key yet."}</p>
+        <div class="rss-add"><button class="obtn" type="button" data-bell-key${bellUi.busy?" disabled":""}>${bellData.key_made?"Make a new key":"Make a key"}</button>${bellData.key_made?`<button class="obtn" type="button" data-bell-key-remove${bellUi.busy?" disabled":""}>Remove my key</button>`:""}</div>
+      </details>
+    </div>
+    <div class="sf-foot"><button class="obtn" type="button" data-bell-read${bellData.unread?"":" disabled"}>Mark all as read</button><button class="obtn" type="button" data-bell-clear${(bellData.items||[]).length?"":" disabled"}>Clear the list</button><button class="obtn" type="button" data-bell-close>Done</button></div></div>`;
+  const b=m.querySelector(".sf-body");if(b&&sc)b.scrollTop=sc;
+}
+function bellOpen(){
+  bellUi={...bellUi,open:true,err:"",copied:false};$("bellPop").hidden=false;bellPopPaint(false);
+  const c=$("bellPop").querySelector(".sf-close");if(c)c.focus();
+  fetchBell();if(msgOn())fetchMsgSummary().then(()=>{bellPaint();if(bellUi.open)bellPopPaint(true)});
+}
+async function bellClose(markRead=true){
+  if(!bellUi.open)return;bellUi.open=false;bellUi.key="";$("bellPop").hidden=true;
+  const b=[...document.querySelectorAll("[data-bell-open]")].find(x=>x.offsetParent!==null);
+  if(markRead&&bellData.unread){try{await secureBackendRequest("/api/v1/me/bell/read",{method:"POST",body:"{}"})}catch{}await fetchBell()}
+  if(b)b.focus();
+}
+async function bellCall(path,opts,after){
+  if(bellUi.busy)return;bellUi.busy=true;bellUi.err="";bellPopPaint(true);
+  try{const r=await secureBackendRequest(path,opts);if(after)after(r);await fetchBell();return true}
+  catch(er){bellUi.err=er.message||"That did not work. Try again."}
+  finally{bellUi.busy=false;bellPaint();bellPopPaint(true)}
+}
+document.addEventListener("click",async e=>{
+  const t=e.target.closest?e.target:null;if(!t)return;
+  if(t.closest("[data-bell-open]")){if(bellUi.open)bellClose();else bellOpen();return}
+  if(t.closest("[data-bell-close]")){bellClose();return}
+  if(t.closest("[data-msg-go]")&&bellUi.open){bellClose(false);return}
+  const dis=t.closest("[data-bell-dismiss]");if(dis){bellCall("/api/v1/me/bell/"+encodeURIComponent(dis.dataset.bellDismiss),{method:"DELETE",headers:{}});return}
+  if(t.closest("[data-bell-clear]")){bellCall("/api/v1/me/bell",{method:"DELETE",headers:{}});return}
+  if(t.closest("[data-bell-read]")){bellCall("/api/v1/me/bell/read",{method:"POST",body:"{}"});return}
+  if(t.closest("[data-bell-key]")){bellCall("/api/v1/me/bell/key",{method:"POST",body:"{}"},r=>{bellUi.key=(r&&r.key)||"";bellUi.copied=false}).then(()=>{const k=$("bellKey");if(k){k.scrollIntoView({block:"nearest"});k.select()}});return}
+  if(t.closest("[data-bell-key-remove]")){bellUi.key="";bellCall("/api/v1/me/bell/key",{method:"DELETE",headers:{}});return}
+  if(t.closest("[data-bell-copy]")){bellUi.copied=await copyText(bellUi.key);if(bellUi.copied)toast("Key copied");bellPopPaint(true);return}
+  if(bellUi.open&&window.innerWidth>760&&!t.closest("#bellPop"))bellClose();
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&bellUi.open){e.stopPropagation();bellClose()}},true);
+
+// ---------- News feeds (RSS and Atom) ----------
+let rssData={enabled:false,feeds:[],new:0},rssUi={open:false,url:"",err:"",busy:false};
+function rssPaint(){
+  const on=!!(realMail&&feat.rss);const n=on?(rssData.new||0):0;
+  document.querySelectorAll("[data-rss-open]").forEach(b=>{b.hidden=!on;b.setAttribute("aria-label",n?`News feeds, ${n} new`:"News feeds");
+    const bd=b.querySelector(".rssbadge");if(bd){bd.hidden=!n;bd.textContent=n>99?"99+":String(n)}});
+  if(!on&&rssUi.open)rssClose(false);
+}
+async function fetchRss(){
+  if(!realMail||!feat.rss){rssData={enabled:false,feeds:[],new:0};rssPaint();return}
+  try{const r=await secureBackendRequest("/api/v1/me/rss",{method:"GET",headers:{}});if(r&&Array.isArray(r.feeds)){rssData=r;if(rssUi.open)rssPopPaint(true)}}catch{}
+  rssPaint();
+}
+setInterval(()=>{if(realMail&&feat.rss&&!document.hidden&&!rssUi.busy)fetchRss()},120000);
+function rssWhen(t){if(!t)return "";const d=new Date(t*1000);return isNaN(d)?"":d.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"})}
+function rssPopPaint(keep){
+  const m=$("rssPop");if(!m)return;
+  const sc=keep&&m.querySelector(".sf-body")?m.querySelector(".sf-body").scrollTop:0;
+  const feeds=rssData.feeds||[];const withItems=feeds.filter(f=>f.items&&f.items.length);
+  const entries=withItems.length?withItems.map(f=>`<section class="rss-feed" aria-label="${esc(f.title)}"><h4>${esc(f.title)}${f.new?`<span class="rss-n">${f.new} new</span>`:""}</h4>${f.error?`<p class="rss-err">Could not check this feed just now. ${esc(f.error)}</p>`:""}${f.items.map(i=>`<article class="rss-item${i.new?" new":""}"><b>${esc(i.title)}</b>${i.text?`<p>${esc(i.text)}</p>`:""}<span class="meta">${esc(rssWhen(i.at))}${i.new?" · New":""}</span>${i.link?` <a href="${esc(i.link)}" target="_blank" rel="noopener noreferrer">Read on the site</a>`:""}</article>`).join("")}</section>`).join("")
+    :`<p class="pop-note">${feeds.length?"Nothing to show yet. Press Check now in a moment.":"You are not following any feeds yet. Paste a feed address below to start."}</p>`;
+  const list=feeds.length?`<ul class="rss-list">${feeds.map(f=>`<li><span>${esc(f.title)}</span><button class="sf-close" type="button" data-rss-remove="${esc(f.id)}" aria-label="Stop following ${esc(f.title)}">Remove</button></li>`).join("")}</ul>`:"";
+  m.innerHTML=`<form data-rss-form novalidate style="display:contents">
+    <div class="sf-top"><b id="rssTitle">News feeds</b><button class="sf-close" type="button" data-rss-close aria-label="Close news feeds">✕ Close</button></div>
+    <div class="sf-body">${entries}
+      <div><label for="rssUrl"><b>Follow a feed</b></label><div class="rss-add"><input id="rssUrl" data-rss-url type="text" inputmode="url" autocomplete="off" maxlength="600" placeholder="https://example.com/feed.xml" value="${esc(rssUi.url)}"></div>
+      ${rssUi.err?`<p class="sa-err" role="alert">${esc(rssUi.err)}</p>`:""}
+      ${list?`<details><summary>Show the feeds you follow</summary>${list}</details>`:""}</div>
+    </div>
+    <div class="sf-foot"><button class="obtn blue" type="submit"${rssUi.busy?" disabled":""}>${rssUi.busy?"Working…":"Add feed"}</button><button class="obtn" type="button" data-rss-check${rssUi.busy||!feeds.length?" disabled":""}>Check now</button><button class="obtn" type="button" data-rss-seen${rssData.new?"":" disabled"}>Mark all as read</button></div></form>`;
+  const b=m.querySelector(".sf-body");if(b&&sc)b.scrollTop=sc;
+}
+function rssOpen(){rssUi={...rssUi,open:true,err:""};$("rssPop").hidden=false;rssPopPaint(false);const c=$("rssPop").querySelector(".sf-close");if(c)c.focus();fetchRss()}
+async function rssClose(markRead=true){
+  if(!rssUi.open)return;rssUi.open=false;$("rssPop").hidden=true;
+  const b=document.querySelector("[data-rss-open]:not([hidden])");
+  if(markRead&&rssData.new){try{const r=await secureBackendRequest("/api/v1/me/rss/seen",{method:"POST",body:"{}"});if(r&&Array.isArray(r.feeds))rssData=r}catch{}rssPaint()}
+  if(b&&b.offsetParent!==null)b.focus();
+}
+async function rssCall(path,opts,okMsg){
+  if(rssUi.busy)return;rssUi.busy=true;rssUi.err="";rssPopPaint(true);
+  try{const r=await secureBackendRequest(path,opts);if(r&&Array.isArray(r.feeds))rssData=r;if(okMsg)toast(okMsg);return true}
+  catch(er){rssUi.err=er.message||"That did not work. Try again."}
+  finally{rssUi.busy=false;rssPaint();rssPopPaint(true)}
+}
+document.addEventListener("input",e=>{if(e.target&&e.target.matches&&e.target.matches("[data-rss-url]")){rssUi.url=e.target.value;rssUi.err=""}});
+document.addEventListener("submit",async e=>{
+  if(!(e.target&&e.target.matches&&e.target.matches("[data-rss-form]")))return;e.preventDefault();
+  if(!rssUi.url.trim()){rssUi.err="Paste the web address of the feed.";rssPopPaint(true);const i=$("rssUrl");if(i)i.focus();return}
+  const ok=await rssCall("/api/v1/me/rss/feeds",{method:"POST",body:JSON.stringify({url:rssUi.url.trim()})},"Feed added");
+  if(ok){rssUi.url="";rssPopPaint(true)}
+});
+document.addEventListener("click",async e=>{
+  const t=e.target.closest?e.target:null;if(!t)return;
+  if(t.closest("[data-rss-open]")){if(rssUi.open)rssClose();else rssOpen();return}
+  if(t.closest("[data-rss-close]")){rssClose();return}
+  const rm=t.closest("[data-rss-remove]");
+  if(rm){await rssCall(`/api/v1/me/rss/feeds/${encodeURIComponent(rm.dataset.rssRemove)}`,{method:"DELETE"},"Stopped following that feed");return}
+  if(t.closest("[data-rss-check]")){await rssCall("/api/v1/me/rss/refresh",{method:"POST",body:"{}"},"Checked");return}
+  if(t.closest("[data-rss-seen]")){await rssCall("/api/v1/me/rss/seen",{method:"POST",body:"{}"});return}
+  if(rssUi.open&&window.innerWidth>760&&!t.closest("#rssPop"))rssClose();
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&rssUi.open){e.stopPropagation();rssClose()}},true);
+
 async function shipAct(id,action){
   try{const r=await secureBackendRequest(`/api/v1/me/shipping/${encodeURIComponent(id)}/${action}`,{method:"POST",body:"{}"});if(r&&Array.isArray(r.orders))shipData=r}catch(er){toast(er.message,5000);await fetchShipping()}
   render();
@@ -2570,7 +2991,7 @@ document.addEventListener("keydown",e=>{if(e.target&&e.target.id==="mgText"&&e.k
 const shipDay=iso=>{const d=new Date(iso+"T00:00:00");return isNaN(d)?"":d.toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short"})};
 const shipWhen=ts=>{const d=new Date(ts*1000);return isNaN(d)?"":d.toLocaleString("en-AU",{weekday:"short",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"})};
 function shipStatus(o){
-  const label={ordered:"Ordered",shipped:"Shipped",out_for_delivery:"Out for delivery",delivered:"Delivered"}[o.status]||"Ordered";
+  const label={ordered:o.manual?"Waiting to be shipped":"Ordered",shipped:"Shipped",out_for_delivery:"Out for delivery",delivered:"Delivered"}[o.status]||"Ordered";
   if(o.status==="delivered")return o.delivered_at?`Delivered · ${shipWhen(o.delivered_at)}`:"Delivered";
   return o.expected?`${label} · due ${shipDay(o.expected)}`:label;
 }
@@ -2591,9 +3012,53 @@ function shipNoteHtml(o){
   }
   return o.note?`<div class="onote">${esc(o.note)}</div>`:"";
 }
+const SHIP_HAND=[["ordered","Waiting to be shipped"],["shipped","Shipped"],["out_for_delivery","Out for delivery"],["delivered","Delivered"]];
+let shipAdd={open:false,shop:"",tracking:"",status:"ordered",err:"",busy:false};
+function shipAddHtml(){
+  if(!shipAdd.open)return `<div class="oact" style="margin:0 0 12px"><button class="obtn blue" type="button" data-ship-add-open>Add a parcel</button><span class="meta">For a parcel that did not start from an email.</span></div>`;
+  const f=shipAdd;
+  return `<form class="ocard shipadd sheetform" data-ship-add-form novalidate role="dialog" aria-modal="true" aria-labelledby="saTitle">
+    <div class="sf-top"><b id="saTitle">Add a parcel</b><button class="sf-close" type="button" data-ship-add-cancel aria-label="Close this form">✕ Close</button></div>
+    <div class="sf-body">
+    <div><label for="saShop">Who is it from?</label><input id="saShop" data-ship-add="shop" type="text" maxlength="60" autocomplete="off" value="${esc(f.shop)}" placeholder="For example: Corner Hardware"></div>
+    <div><label for="saTrack">Tracking number (if you have one)</label><input id="saTrack" data-ship-add="tracking" type="text" maxlength="60" autocomplete="off" value="${esc(f.tracking)}"></div>
+    <div><label for="saStatus">Where is it up to?</label><select id="saStatus" data-ship-add="status">${SHIP_HAND.map(([v,l])=>`<option value="${v}"${f.status===v?" selected":""}>${l}</option>`).join("")}</select></div>
+    ${f.err?`<p class="sa-err" role="alert">${esc(f.err)}</p>`:""}
+    </div>
+    <div class="sf-foot"><button class="obtn blue" type="submit"${f.busy?" disabled":""}>Add parcel</button><button class="olink" type="button" data-ship-add-cancel>Cancel</button></div></form>`;
+}
+async function shipAddSave(){
+  const f=shipAdd;if(f.busy)return;
+  if(!f.shop.trim()){f.err="Write who the parcel is from.";render();const i=$("saShop");if(i)i.focus();return}
+  f.busy=true;f.err="";
+  try{const r=await secureBackendRequest("/api/v1/me/shipping",{method:"POST",body:JSON.stringify({shop:f.shop.trim(),tracking:f.tracking.trim()||null,status:f.status})});
+    if(r&&Array.isArray(r.orders))shipData=r;shipAdd={open:false,shop:"",tracking:"",status:"ordered",err:"",busy:false};toast("Parcel added");
+  }catch(er){f.busy=false;f.err=er.message||"Could not add that. Try again."}
+  render();
+}
+document.addEventListener("input",e=>{const k=e.target&&e.target.dataset&&e.target.dataset.shipAdd;if(k&&(k==="shop"||k==="tracking")){shipAdd[k]=e.target.value;shipAdd.err=""}});
+document.addEventListener("change",async e=>{
+  const t=e.target;if(!t||!t.dataset)return;
+  if(t.dataset.shipAdd==="status"){shipAdd.status=t.value;return}
+  if(t.dataset.shipStatus){
+    try{const r=await secureBackendRequest(`/api/v1/me/shipping/${encodeURIComponent(t.dataset.shipStatus)}/status`,{method:"PUT",body:JSON.stringify({status:t.value})});if(r&&Array.isArray(r.orders))shipData=r}
+    catch(er){toast(er.message,5000);await fetchShipping()}
+    render();
+  }
+});
+document.addEventListener("submit",e=>{if(e.target&&e.target.matches&&e.target.matches("[data-ship-add-form]")){e.preventDefault();shipAddSave()}});
+document.addEventListener("click",e=>{
+  if(e.target.closest&&e.target.closest("[data-ship-add-open]")){shipAdd={...shipAdd,open:true,err:""};render();const i=$("saShop");if(i)i.focus();return}
+  if(e.target.closest&&e.target.closest("[data-ship-add-cancel]")){shipAdd={open:false,shop:"",tracking:"",status:"ordered",err:"",busy:false};render();return}
+});
 function orderCard(o){
   const head=`<div class="ohead"><div class="otitle"><span class="oshop">${esc(o.shop||"An order")}</span>${o.order_number?`<span class="onum">Order ${esc(o.order_number)}</span>`:""}${o.items||o.total?`<div class="oitems">${esc(o.items||"")}${o.items&&o.total?" · ":""}${esc(o.total||"")}</div>`:""}${shipNoteHtml(o)}</div>`;
   if(o.unsure)return `<article class="ocard unsure">${head}</div><div>Is this an order? Enveliq found no order or tracking number in this email, so it is not sure.</div><div class="oact"><button class="obtn blue" type="button" data-ship="track" data-ship-id="${esc(o.id)}">Yes, track it</button><button class="obtn" type="button" data-ship="not_order" data-ship-id="${esc(o.id)}">Not an order</button></div></article>`;
+  if(o.manual){                  // a parcel you typed in yourself: you say where it is up to, and you can remove it
+    const sel=`<select class="ostatus" data-ship-status="${esc(o.id)}" aria-label="Where is it up to?">${SHIP_HAND.map(([v,l])=>`<option value="${v}"${o.status===v?" selected":""}>${l}</option>`).join("")}</select>`;
+    const pillM=`<div><span class="opill${o.status!=="ordered"?" teal":""}">${esc(shipStatus(o))}</span></div>`;
+    return `<article class="ocard">${head}</div>${pillM}</div>${shipStages(o)}<div class="oact">${sel}${trackBtn(o)}${o.tracking?`<span class="meta">Tracking ${esc(o.tracking)}</span><button class="olink" type="button" data-ship-copy="${esc(o.id)}">Copy number</button>`:""}<button class="olink" type="button" data-ship-note="${esc(o.id)}" aria-expanded="${shipNoteOpen.has(o.id)}">${o.note?"Edit note":"Note"}</button><button class="olink" type="button" data-ship="remove" data-ship-id="${esc(o.id)}">Remove</button></div></article>`;
+  }
   const arrived=o.needs_confirm,done=o.delivered_at&&!arrived;
   const pill=`<div><span class="opill${o.status!=="ordered"?" teal":""}">${esc(shipStatus(o))}</span>${o.delayed&&o.prev_expected?`<div class="odelay">Delayed. It was ${esc(shipDay(o.prev_expected))}.</div>`:""}</div>`;
   const n=(o.events||[]).length,open=shipOpen.has(o.id);
@@ -2643,7 +3108,7 @@ function linkShipEmails(){
 function renderShipPage(){
   const box=$("shipPage"),os=shipData.orders||[];
   const tn=shipTrackable().length;
-  const head='<div class="tp-head"><h3>Shipping</h3></div><p class="sp-sub">Your online orders, followed from the emails you get. Each new email about the same order updates its card.</p>'+(tn>1?`<div class="oact" style="margin:0 0 12px"><button class="obtn blue" type="button" data-ship-trackall>Track all (${Math.min(tn,10)})</button><span class="meta">Opens each parcel on its way in its carrier's own page. If only one opens, allow pop-ups for Enveliq.</span></div>`:"");
+  const head='<div class="tp-head"><h3>Shipping</h3></div><p class="sp-sub">Your online orders, followed from the emails you get. Each new email about the same order updates its card.</p>'+shipAddHtml()+(tn>1?`<div class="oact" style="margin:0 0 12px"><button class="obtn blue" type="button" data-ship-trackall>Track all (${Math.min(tn,10)})</button><span class="meta">Opens each parcel on its way in its carrier's own page. If only one opens, allow pop-ups for Enveliq.</span></div>`:"");
   if(!os.length){box.innerHTML=head+'<div class="focus-card"><div class="focus-big">No orders to follow</div><div class="focus-sub">When an email says you ordered something, it shows up here by itself.</div></div>'+carriersBox();return}
   box.innerHTML=head+os.map(orderCard).join("")+'<p class="sp-sub">Arrived orders stay here for 14 days, then are forgotten. "Track" opens the carrier\'s own page in a new tab. Enveliq never contacts the carrier.</p>'+carriersBox();
   linkShipEmails();
@@ -3037,6 +3502,36 @@ $("allSwitch").onclick=async()=>{
   b.disabled=false;render();
 };
 let selMode=false;          // phone only: set by pressing and holding an email
+// First-open state is scoped to the Enveliq user and never writes to source mailboxes.
+// Demo is deliberately ephemeral; real accounts use the encrypted server vault.
+let enDemoOpened=new Set();
+let enServerOpened=new Set();
+function enOpenSet(){return enDemoOpened}
+function enMailKey(m){return m.real ? m.real.accountId+":"+m.real.messageId : "demo:"+m.id}
+function enOpened(m){return m.real&&document.body.classList.contains("backend")?enServerOpened.has(enMailKey(m)):enOpenSet().has(enMailKey(m))}
+async function enFetchOpened(){
+  if(!document.body.classList.contains("backend"))return;
+  try{
+    const result=await secureBackendRequest("/api/v1/me/mail-opened",{method:"GET",headers:{}});
+    enServerOpened=new Set(Array.isArray(result.keys)?result.keys:[]);
+  }catch(err){console.warn("Cannot load opened email state",err)}
+}
+function enMarkOpened(id){
+  const m=data.find(x=>String(x.id)===String(id)&&x.owner===currentUser.id);if(!m)return;
+  const key=enMailKey(m);
+  if(m.real&&document.body.classList.contains("backend")){
+    if(enServerOpened.has(key))return;
+    enServerOpened.add(key);
+    secureBackendRequest("/api/v1/me/mail-opened",{method:"POST",body:JSON.stringify({account_id:m.real.accountId,message_id:m.real.messageId})}).catch(err=>{enServerOpened.delete(key);render();console.warn("Cannot record opened email",err)});
+  }else enDemoOpened.add(key)
+}
+function enEmptyReading(){return `<div class="enveliq-empty-wrap"><h2 class="enveliq-empty-title">Nothing selected</h2><p class="enveliq-empty-sub">Choose an email to read, reply, or take action.</p><div class="enveliq-empty-actions">
+<button type="button" class="enveliq-empty-action" data-en-action="read"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="m3 7 9 7 9-7"/></svg><strong>Read emails</strong><span>Focus on what matters most</span><span class="ea-arrow">→</span></button>
+<button type="button" class="enveliq-empty-action" data-en-action="tasks"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/></svg><strong>Open tasks</strong><span>Turn emails into tasks</span><span class="ea-arrow">→</span></button>
+<button type="button" class="enveliq-empty-action" data-en-action="draft"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5M9 12h8M9 16h6"/></svg><strong>Continue draft</strong><span>Pick up where you left off</span><span class="ea-arrow">→</span></button>
+<button type="button" class="enveliq-empty-action" data-en-action="subscriptions"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 16a4 4 0 0 1 5 4"/></svg><strong>Check subscriptions</strong><span>Find and manage low-value email</span><span class="ea-arrow">→</span></button>
+</div></div>`}
+document.addEventListener("click",e=>{const btn=e.target.closest("[data-en-action]");if(!btn)return;const type=btn.dataset.enAction;if(type==="read"){document.querySelector("#paneList article.mail .qmain")?.click();return}const target={tasks:"tasks",draft:"drafts",subscriptions:"subscriptions"}[type];if(target)document.querySelector('.nav[data-filter="'+target+'"]')?.click()});
 function render(){
   window.__hidePeek&&window.__hidePeek();
   if(selMode&&(!selected.size||!isPhone()))selMode=false;
@@ -3055,11 +3550,12 @@ function render(){
   // The number is how many are being followed; it turns blue when one needs you (an order to confirm, a reply nobody has sent).
   {const os=shipOn()?(shipData.orders||[]).filter(o=>!(o.delivered_at&&o.ack)):[];const sb=$("shipBadge");if(sb){sb.textContent=os.length;sb.hidden=!os.length;sb.classList.toggle("hot",os.some(o=>o.needs_confirm||o.unsure))}}
   {const mb=$("msgBadge");if(mb){const n=msgOn()?msgSum.unread:0;mb.textContent=n;mb.hidden=!n;mb.classList.toggle("hot",n>0)}}
+  bellPaint();
   {const ns=waitOn()?(waitData.notes||[]).filter(n=>n.state==="waiting"):[];const wb=$("waitBadge");if(wb){wb.textContent=ns.length;wb.hidden=!ns.length;wb.classList.toggle("hot",ns.some(n=>n.due))}}
   const asleep=mine.filter(isSnoozed);{const sn=$("snoozeNav"),sb=$("snoozeBadge");sn.hidden=!asleep.length&&filter!=="snoozed";sb.textContent=asleep.length;sb.hidden=!asleep.length}
   for(const [id,n] of [["allBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)).length],["actionBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)&&m.action).length],["attachBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)&&fileN(m)).length],["taskBadge",openTasks().length]]){const el=$(id);el.textContent=n;el.hidden=n===0}
   $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent"&&filter!=="drafts");
-  document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",filter==="all"));{const fb=$("filterBy"),pick=["action","need","high","attachments"].includes(filter)?filter:"";fb.value=pick;fb.classList.toggle("active",!!pick)}
+  document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",filter==="all"));{const fb=$("filterBy");tagFilterOptions(fb);const pick=["action","need","high","attachments"].includes(filter)||[...fb.options].some(o=>o.value===filter)?filter:"";fb.value=pick;fb.classList.toggle("active",!!pick)}
   $("selectedCount").textContent=selected.size;$("bulk").classList.toggle("show",selected.size>1||selMode);$("previewBulk").classList.toggle("show",selected.size>1||selMode);$("previewSelCount").textContent=selected.size;
   $("adminBtn").hidden=!currentUser.is_admin;$("userName").textContent=currentUser.name;$("userRole").textContent=currentUser.is_admin?"Administrator":"User";paintAvatar();previewSyncAccount();
   const inbox=mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)),needN=inbox.filter(m=>m.action||m.priority==="high").length;
@@ -3094,25 +3590,25 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
   };
   const quiet=(m,mode)=>{
     const open=mode==="pane"?false:(view.rows==="open"||expanded.has(`row-${m.id}`));
-    const tk=taskFor(m),taskHtml=tk?taskLine(tk):"";
+    const taskHtml=tasksFor(m).map(taskLine).join("");
     
     const flag=!m.kept&&(m.action||m.priority==="high")?`<span class="flag" title="Needs action" aria-label="Needs action"></span>`:"";
     const lead=m.kept?"<span></span>":`<input class="check" type="checkbox" data-select="${esc(m.id)}" aria-label="Select ${esc(m.subject)}" ${esc(selected.has(m.id)?"checked":"")}>`;
     const quick=m.kept?"<span></span>":`<span class="qpair"><button class="action reviewed qic" data-id="${esc(m.id)}" data-status="reviewed" aria-label="Mark reviewed" title="Mark reviewed">${ICON_OK}</button><button class="action archive qic" data-id="${esc(m.id)}" data-status="archived" aria-label="Archive" title="Archive">${ICON_ARCH}</button><button class="action trash qic" data-id="${esc(m.id)}" data-status="trashed" aria-label="Bin" title="Bin">${ICON_BIN}</button></span>`;
     const category=m.action?"Needs action":m.priority==="high"?"High priority":"Information";
     const attCount=fileN(m)?`${fileN(m)} ${fileN(m)===1?"file":"files"}`:"None";
-    const replyBtn=(m.replyTo?`<button class="subtle" data-reply="${esc(m.id)}">${ICON_REPLY}Reply</button>`:"")+moreReplyBtns(m)+(m.kept?"":isSnoozed(m)?`<button class="subtle" data-unsnooze="${esc(m.id)}">${ICON_SNOOZE}Wake now</button>`:`<button class="subtle" data-snooze="${esc(m.id)}" aria-haspopup="menu">${ICON_SNOOZE}Snooze</button>`)||"<span></span>";
+    const replyBtn=(m.replyTo?`<button class="subtle" data-reply="${esc(m.id)}">${ICON_REPLY}Reply</button>`:"")+moreReplyBtns(m)+(m.kept?"":isSnoozed(m)?`<button class="subtle" data-unsnooze="${esc(m.id)}">${ICON_SNOOZE}Wake now</button>`:`<button class="subtle" data-snooze="${esc(m.id)}" aria-haspopup="menu">${ICON_SNOOZE}Snooze</button>`)+`<button class="subtle" data-task-add="${esc(m.id)}" aria-haspopup="dialog">Task</button>`+(tagsOn(m)?`<button class="subtle" data-tag-open="${esc(m.id)}" aria-haspopup="dialog">Tags</button>`:"");
     const detail=m.kept
-      ?`<div class="qdetail"><div class="qfrom"><span class="addr">&lt;${esc(m.address)}&gt;</span></div><div class="qsummary">${esc(m.summary)}</div>${taskHtml}${attachmentsBlock(m)}<div class="kept-note">${m.status==="archived"?"Archived":"Marked reviewed"} in your mailbox. Kept here until ${esc(m.keptUntil)}.${m.replied?` You replied ${esc(m.repliedAt||"just now")}.`:""}</div><div class="actions">${m.replyTo?`<button class="action reply" data-reply="${esc(m.id)}">↩ Reply</button>`:""}${moreReplyBtns(m,"action reply")}<button class="action trash" data-id="${esc(m.id)}" data-status="expired">Remove from this list</button></div></div>`
-      :`<div class="qdetail split"><div class="qmainc">${scamHtml(m.scam)}${m.ungen&&m.real&&feat.all_mail&&allMail?genBlock(m):`<div class="qsummary">${esc(m.summary)}</div>`}${attachmentsBlock(m)}${taskHtml}<div class="qfill"></div><div class="qfoot"><span class="qleft">${replyBtn}${m.kept||!m.address?"":`<button class="subtle" data-important="${esc(m.id)}" aria-pressed="${isImp(m)}">&#9733; ${isImp(m)?"Not important":"Important person"}</button>`}${m.kept||!m.address||!realMail||isImp(m)?"":`<button class="subtle" data-rule="${esc(m.id)}">Always archive these</button>`}${unsubHtml(m.unsub,!!m.scam)}</span><button class="linkbtn view-email" data-open-email="${esc(m.id)}">View original email</button></div></div>
-        <aside class="qside" aria-label="Email details"><div class="qkv"><span>From</span><span class="addr">${esc(m.address)}</span></div><div class="qkv"><span>Received</span><span>${esc(m.time)}</span></div>${m.replied?`<div class="qkv replied-kv"><span>Replied</span><span>${esc(m.repliedAt||"Just now")}</span></div>`:""}<div class="qkv"><span>Category</span><span>${esc(category)}</span></div><div class="qkv"><span>Attachments</span><span>${esc(attCount)}</span></div>
+      ?`<div class="qdetail"><div class="qfrom">${boxChip(m)}<span class="addr">&lt;${esc(m.address)}&gt;</span></div>${tagChips(m)}<div class="qsummary">${esc(m.summary)}</div>${taskHtml}${attachmentsBlock(m)}<div class="kept-note">${m.status==="archived"?"Archived":"Marked reviewed"} in your mailbox. Kept here until ${esc(m.keptUntil)}.${m.replied?` You replied ${esc(m.repliedAt||"just now")}.`:""}</div><div class="actions">${m.replyTo?`<button class="action reply" data-reply="${esc(m.id)}">↩ Reply</button>`:""}${moreReplyBtns(m,"action reply")}<button class="action reply" data-task-add="${esc(m.id)}" aria-haspopup="dialog">Task</button><button class="action trash" data-id="${esc(m.id)}" data-status="expired">Remove from this list</button></div></div>`
+      :`<div class="qdetail split"><div class="qmainc">${scamHtml(m.scam)}${tagChips(m)}${m.ungen&&m.real&&feat.all_mail&&allMail?genBlock(m):`<div class="qsummary">${esc(m.summary)}</div>`}${attachmentsBlock(m)}${taskHtml}<div class="qfill"></div><div class="qfoot"><span class="qleft">${replyBtn}${m.kept||!m.address?"":`<button class="subtle" data-important="${esc(m.id)}" aria-pressed="${isImp(m)}">&#9733; ${isImp(m)?"Not important":"Important person"}</button>`}${m.kept||!m.address||!realMail||isImp(m)?"":`<button class="subtle" data-rule="${esc(m.id)}">Always archive these</button>`}${unsubHtml(m.unsub,!!m.scam)}</span><button class="linkbtn view-email" data-open-email="${esc(m.id)}">View original email</button></div></div>
+        <aside class="qside" aria-label="Email details"><div class="qkv"><span>From</span><span class="addr">${esc(m.address)}</span></div>${multiBox()&&m.real?`<div class="qkv"><span>Mailbox</span><span>${boxChip(m)}</span></div>`:""}<div class="qkv"><span>Received</span><span>${esc(m.time)}</span></div>${m.replied?`<div class="qkv replied-kv"><span>Replied</span><span>${esc(m.repliedAt||"Just now")}</span></div>`:""}<div class="qkv"><span>Category</span><span>${esc(category)}</span></div><div class="qkv"><span>Attachments</span><span>${esc(attCount)}</span></div>
         <div class="qbtns"><button class="action reviewed" data-id="${esc(m.id)}" data-status="reviewed">${ICON_OK}Reviewed</button><div class="two"><button class="action archive" data-id="${esc(m.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(m.id)}" data-status="trashed">${ICON_BIN}Bin</button></div></div></aside></div>`;
     if(mode==="detail")return detail;
     const tog=mode==="pane"?`<button class="qtoggle" data-pick="${esc(m.id)}" aria-label="Show this email">Show email</button>`:view.rows==="open"?"":`<button class="qtoggle" data-expand="row-${esc(m.id)}" aria-expanded="${esc(open)}" aria-label="${open?"Hide":"Show"} the full email summary and actions">${open?"Hide":"Show"} details</button>`;
-    return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(m._pending?"leaving to-"+m._pending:"")} ${esc(mode==="pane"&&lay()!=="screen"&&m.id===paneId?"current":"")}"${leaveStyle(m)}><div class="qrow">
+    return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(m._pending?"leaving to-"+m._pending:"")} ${esc(mode==="pane"&&lay()!=="screen"&&m.id===paneId?"current":"")} ${!enOpened(m)?"enveliq-new":""}"${leaveStyle(m)}><div class="qrow">
       ${lead}
       <div class="sender">${flag}${esc(m.sender)}</div>
-      <div class="qmain">${isImp(m)?'<span class="imp-pill" title="You marked this person as important">&#9733; Important</span>':""}${m.scam?'<span class="scam-pill" title="Something about this email looks odd. Open it to see what.">Be careful</span>':""}<span class="subject">${esc(m.subject)}</span></div>
+      <div class="qmain">${boxChip(m)}${isImp(m)?'<span class="imp-pill" title="You marked this person as important">&#9733; Important</span>':""}${m.scam?'<span class="scam-pill" title="Something about this email looks odd. Open it to see what.">Be careful</span>':""}<span class="subject">${esc(m.subject)}</span>${tagChips(m,2)}</div>
       <div class="time">${fileN(m)?`<span class="clip" role="img" aria-label="${esc(clipWords(m))}" title="${esc(clipWords(m))}">${ICON_CLIP}</span>`:""}<span class="time-text">${esc(m.time)}</span>${m.replied?'<span class="replied">↩ Replied</span>':""}${isSnoozed(m)?`<span class="snz">Snoozed until ${esc(snoozeWhen(m.snoozeUntil))}</span>`:wokeBack(m)?'<span class="snz back">↺ Back from snooze</span>':""}</div>
       ${open?"<span></span>":quick}
       ${tog}
@@ -3125,8 +3621,10 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
   else if(lay()==="list"){listHtml=`<div class="quiet-list">${rows.map(m=>quiet(m)).join("")}</div>`}
   else{
     let idx=rows.findIndex(m=>m.id===paneId);
-    if(idx<0)idx=Math.min(Math.max(lastPaneIdx,0),rows.length-1);
-    const cur=rows[idx];paneId=cur.id;lastPaneIdx=idx;
+    const split=lay()==="right"||lay()==="bottom";
+    if(idx<0&&!split)idx=Math.min(Math.max(lastPaneIdx,0),rows.length-1);
+    const cur=idx>=0?rows[idx]:null;
+    if(cur){paneId=cur.id;lastPaneIdx=idx;}
     if(lay()==="screen"){
       listHtml=`<div class="quiet-list">${rows.map(m=>quiet(m,"pane")).join("")}</div>`;
       if(readerOpen){
@@ -3145,7 +3643,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
         <button class="decknav next" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">›</button></div>
         ${act}<div class="deckdots" aria-hidden="true">${dots}</div></div>`;
     }else{
-      const readingHtml=`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div></header>${quiet(cur,"detail")}</section>`;
+      const readingHtml=cur?`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div></header>${quiet(cur,"detail")}</section>`:`<section class="reading enveliq-empty" aria-label="No email selected">${enEmptyReading()}</section>`;
       if(lay()==="right"&&!["sent","drafts","tasks","shipping","waiting","subscriptions","trips","messages"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
         dockHtml=readingHtml;
         listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div></div>`;
@@ -3158,6 +3656,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
   if(leftBox&&dockHtml){leftBox.scrollTop=leftTop;const c=document.querySelector("#paneList .current");if(c){const a=c.getBoundingClientRect(),b=leftBox.getBoundingClientRect(),hh=(document.getElementById("previewListHeading")||{offsetHeight:0}).offsetHeight;if(a.top<b.top+hh)leftBox.scrollTop+=a.top-b.top-hh-6;else if(a.bottom>b.bottom)leftBox.scrollTop+=a.bottom-b.bottom+6}}
   document.body.classList.toggle("reader-open",lay()==="screen"&&readerOpen&&rows.length>0);
   if(!rows.length)readerOpen=false;
+  readerHistorySync();
   syncMobileBar(inbox.length,needN);
   const pl=document.getElementById("paneList");
   if(pl){pl.scrollTop=prevTop;const c=pl.querySelector(".current");if(c){const top=c.offsetTop,bot=top+c.offsetHeight;if(top<pl.scrollTop)pl.scrollTop=top;else if(bot>pl.scrollTop+pl.clientHeight)pl.scrollTop=bot-pl.clientHeight}}
@@ -3427,7 +3926,20 @@ function sendReply(){
 // On a phone the Back button should close a window, not leave Enveliq: opening one adds a history step, closing removes it.
 let viewerHistory=false;
 function viewerPush(){if(viewerHistory)return;try{history.pushState({enveliqViewer:1},"");viewerHistory=true}catch{}}
-window.addEventListener("popstate",()=>{if(viewerHistory){viewerHistory=false;closeAttachmentViewer(true)}});
+document.addEventListener("input",e=>{
+  if(!e.target||e.target.id!=="taskSearch")return;
+  const pos=e.target.selectionStart;taskQuery=e.target.value;renderTasksPage();
+  const i=$("taskSearch");if(i){i.focus();try{i.setSelectionRange(pos,pos)}catch{}}
+});
+// Same for an email opened full screen on a phone: Back closes the email and shows the list again.
+let readerHistory=false;
+function readerHistorySync(){
+  const want=document.body.classList.contains("reader-open");
+  if(want&&!readerHistory){try{history.pushState({enveliqReader:1},"");readerHistory=true}catch{}}
+  else if(!want&&readerHistory){readerHistory=false;try{if(history.state&&history.state.enveliqReader)history.back()}catch{}}
+}
+// (Back from a window opened over an email lands on the email's own step: nothing to close.)
+window.addEventListener("popstate",()=>{if(viewerHistory){viewerHistory=false;closeAttachmentViewer(true);return}if(readerHistory){if(history.state&&history.state.enveliqReader)return;readerHistory=false;readerOpen=false;render();return}if(stateReady&&(location.hash||"")!==wantedHash())applyHashNav()});   // only when the address names a different section than the one showing
 function closeAttachmentViewer(fromBack){
   if(!document.getElementById("attachmentModal"))return;
   if(viewerHistory&&fromBack!==true){viewerHistory=false;try{history.back()}catch{}}
@@ -4438,7 +4950,7 @@ document.addEventListener("click",e=>{
   const dt=e.target.closest("[data-due-toggle]");if(dt){if(splitNow()){goTasks();return}dueOpen=!dueOpen;render();return}
   const wct=e.target.closest("[data-wait-closed-toggle]");if(wct){waitClosedOpen=!waitClosedOpen;renderWaitPage();return}
   const lt=e.target.closest("[data-later-toggle]");if(lt){if(splitNow()){goTasks();return}calmLaterOpen=!calmLaterOpen;render();return}
-  const pk=e.target.closest("[data-pick]");if(pk){if(lay()==="screen")readerOpen=true;const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;render();return}
+  const pk=e.target.closest("[data-pick]");if(pk){if(lay()==="screen")readerOpen=true;const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;enMarkOpened(nid);render();return}
   const retryAtt=e.target.closest("[data-att-retry]");if(retryAtt){const m=data.find(x=>x.id===+retryAtt.dataset.attRetry&&x.owner===currentUser.id);if(m&&m.real){retryAtt.disabled=true;secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/attachments/summarise`,{method:"POST",body:"{}"}).then(()=>{toast("Reading the files again. This can take a minute.",4000);m.attachments.forEach(a=>{if(a.state==="failed")a.state="working"});render()}).catch(er=>{retryAtt.disabled=false;toast(er.message,6000)})}return}
   const openAtt=e.target.closest("[data-open-attachment]");if(openAtt){openAttachmentViewer(openAtt.dataset.openAttachment);return}
   const openEmail=e.target.closest("[data-open-email]");if(openEmail){openEmailViewer(openEmail.dataset.openEmail);return}
@@ -4453,8 +4965,9 @@ document.addEventListener("click",e=>{
     else for(const m of data.filter(visible))expanded.add(`row-${m.id}`);
     render();return;
   }
-  const exp=e.target.closest("[data-expand]");if(exp){const key=exp.dataset.expand;expanded.has(key)?expanded.delete(key):expanded.add(key);render();return}
-  const a=e.target.closest("[data-status]");if(a){deckDir="act";const m=data.find(x=>x.id===+a.dataset.id&&x.owner===currentUser.id);if(m&&["reviewed","archived","trashed"].includes(a.dataset.status)){queueAction([m],a.dataset.status);return}if(m&&m.real){resolveRealOne(m,a.dataset.status,a);return}if(m){m.status=a.dataset.status;m.attachments=[];m.attachmentsPurged=true;closeAttachmentViewer();selected.delete(m.id);render();toast(m.status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${m.status} · attachment data purged`)}return}
+  const exp=e.target.closest("[data-expand]");if(exp){const key=exp.dataset.expand;if(!expanded.has(key))enMarkOpened(key.replace(/^row-/,""));expanded.has(key)?expanded.delete(key):expanded.add(key);render();return}
+  const a=e.target.closest("[data-status]");if(a){deckDir="act";const m=data.find(x=>x.id===+a.dataset.id&&x.owner===currentUser.id);if(m&&["reviewed","archived","trashed"].includes(a.dataset.status)){if(readerOpen&&lay()==="screen")readerOpen=false;   // on a phone the email closes at once; the Undo bar still shows
+    queueAction([m],a.dataset.status);return}if(m&&m.real){resolveRealOne(m,a.dataset.status,a);return}if(m){m.status=a.dataset.status;m.attachments=[];m.attachmentsPurged=true;closeAttachmentViewer();selected.delete(m.id);render();toast(m.status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${m.status} · attachment data purged`)}return}
   const b=e.target.closest("[data-bulk]");if(b){queueAction([...selected].map(id=>data.find(x=>x.id===id&&x.owner===currentUser.id)),b.dataset.bulk);selMode=false;closeAttachmentViewer();return}
   if(e.target.closest("[data-need]")){filter="need";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();return}
   {const t=e.target.closest("[data-msg-open],[data-msg-new],[data-msg-back],[data-msg-send],[data-msg-mute],[data-msg-unsend],[data-msg-go]");
@@ -4467,8 +4980,8 @@ document.addEventListener("click",e=>{
      if(t.matches("[data-msg-mute]")&&msgS.cur){msgReq(`/threads/${encodeURIComponent(msgS.cur.id)}/mute`,"PUT",{muted:!msgS.cur.muted}).then(async()=>{await loadMsgs();await fetchMsgSummary();render()}).catch(er=>toast(er.message,5000));return}
      if(t.matches("[data-msg-unsend]")&&msgS.cur){msgReq(`/threads/${encodeURIComponent(msgS.cur.id)}/messages/${encodeURIComponent(t.dataset.msgUnsend)}`,"DELETE").then(async()=>{await loadMsgs();render()}).catch(er=>toast(er.message,5000));return}
    }}
-  if(e.target.closest("[data-back-inbox]")){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();window.scrollTo({top:0});return}
-  const n=e.target.closest("[data-filter]");if(n){filter=n.dataset.filter;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="drafts")loadDrafts();if(filter==="messages")openMsgPage();return}
+  if(e.target.closest("[data-back-inbox]")){paneId=null;filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();window.scrollTo({top:0});return}
+  const n=e.target.closest("[data-filter]");if(n){filter=n.dataset.filter;if(filter==="all")paneId=null;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="drafts")loadDrafts();if(filter==="messages")openMsgPage();return}
   const c=e.target.closest("[data-chip]");if(c){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();return}
   const wa=e.target.closest("[data-wait]");if(wa){waitAct(wa.dataset.waitId,wa.dataset.wait);return}
   const wn=e.target.closest("[data-wait-nudge]");if(wn){waitNudge(wn.dataset.waitNudge);return}
@@ -4822,6 +5335,7 @@ async function loadRealMail(me){
   const accts=[];
   try{realPrefs=await secureBackendRequest("/api/v1/me/preferences",{method:"GET",headers:{}})}catch{}
   try{feat=(await secureBackendRequest("/api/v1/me/features",{method:"GET",headers:{}})).effective}catch{}
+  await enFetchOpened();
   await whLoad();
   const wantAll=!!(feat.all_mail&&allMail);
   if(wantAll&&Date.now()-recentAt>300000){
@@ -4833,7 +5347,7 @@ async function loadRealMail(me){
     const identities=[a.email_address,...((a.settings&&a.settings.send_identities)||[])].filter((v,i,arr)=>v&&arr.indexOf(v)===i);
     const msgs=(await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(a.id)}/messages`,{method:"GET",headers:{}})).filter(r=>wantAll||!r.from_all_mail);
     const isBridge=a.auth_method==="proton_bridge";
-    accts.push({id:a.id,providerId:isBridge?"proton":(a.settings&&a.settings.provider_id)||"imap",owner:me.id,provider:a.provider||"Email",method:isBridge?"Proton Bridge":"App password (IMAP)",name:a.display_name,address:a.email_address,identities,
+    accts.push({id:a.id,color:(a.settings&&a.settings.color)||"",providerId:isBridge?"proton":(a.settings&&a.settings.provider_id)||"imap",owner:me.id,provider:a.provider||"Email",method:isBridge?"Proton Bridge":"App password (IMAP)",name:a.display_name,address:a.email_address,identities,
       status:"Connected",visibility:"private",server:a.server,port:String(a.port),username:a.username,security:isBridge?"STARTTLS / pinned Bridge certificate":"Encrypted (TLS), certificate checked",
       lastSync:"",lastSuccess:"",connectedAt:"",processed:msgs.length,settings:defaultAccountSettings()});
     for(const r of msgs){
@@ -4841,7 +5355,7 @@ async function loadRealMail(me){
       items.push({id:0,owner:me.id,account:a.display_name,sender:r.sender_display||r.sender_address||"Unknown sender",address:r.sender_address||"",
         subject:r.subject,time:realTime(r.received_at),date:r.received_at?new Date(r.received_at*1000).toLocaleString():"",received:r.received_at||0,
         summary:r.summary,priority:r.priority||"normal",category:r.category||"Email",action:!!r.action_required,status:r.state==="reviewed"||r.state==="archived"?r.state:"inbox",kept:r.state==="reviewed"||r.state==="archived",keptUntil:r.resolved_at?new Date((r.resolved_at+realPrefs.keep_days*86400)*1000).toLocaleDateString(undefined,{day:"numeric",month:"short"}):"",
-        task:r.suggested_task&&r.suggested_task.title?{title:r.suggested_task.title,due:r.suggested_task.due||"",detail:r.suggested_task.detail||""}:null,attachments:(r.attachment_summaries||[]).map(a=>({name:a.filename,mime:a.mime_type||"",size:fmtBytes(a.size_bytes),pages:a.pages||0,index:a.index,state:a.state==="reading"?"working":a.state||"done",summary:a.summary||"",parts:(a.parts||[]).map(p=>({title:p.title||"",text:p.text})),note:a.note||"",reason:a.reason||"",real:true})),hasFiles:!!r.has_attachments,fileCount:Number.isInteger(r.attachment_count)?r.attachment_count:null,
+        task:r.suggested_task&&r.suggested_task.title?{title:r.suggested_task.title,due:r.suggested_task.due||"",detail:r.suggested_task.detail||""}:null,attachments:(r.attachment_summaries||[]).map(a=>({name:a.filename,mime:a.mime_type||"",size:fmtBytes(a.size_bytes),pages:a.pages||0,index:a.index,state:a.state==="reading"?"working":a.state||"done",summary:a.summary||"",parts:(a.parts||[]).map(p=>({title:p.title||"",text:p.text})),note:a.note||"",reason:a.reason||"",real:true})),tags:Array.isArray(r.tags)?r.tags.map(String):[],hasFiles:!!r.has_attachments,fileCount:Number.isInteger(r.attachment_count)?r.attachment_count:null,
         replyTo:ctx.reply_to||null,replyCc:ctx.cc||[],replyAlsoTo:ctx.also_to||[],deliveredTo:ctx.delivered_to||null,viaAlias:ctx.via_alias||null,unsub:r.unsubscribe||null,scam:r.scam_warning||null,real:{accountId:a.id,messageId:r.id},extra:!!r.from_all_mail,ungen:String(r.summary||"").startsWith("Not summarised yet"),snoozeUntil:r.snoozed_until?r.snoozed_until*1000:0,replied:!!r.replied_at,repliedAt:r.replied_at?realTime(r.replied_at):""});
     }
   }
@@ -4859,7 +5373,7 @@ async function loadRealMail(me){
     box.value=keep;box.hidden=false;
   }else{mailboxSel="";box.hidden=true}
   selected.clear();realMail=true;applyFeatures();
-  await fetchTasks();await fetchShipping();await fetchSubs();await fetchTrips();await fetchWaiting();await fetchImportant();await fetchSaved();      // after realMail is set, so the first load already has the person's tasks
+  await fetchTasks();await fetchShipping();await fetchRss();await fetchBell();await fetchSubs();await fetchTrips();await fetchWaiting();await fetchImportant();await fetchSaved();      // after realMail is set, so the first load already has the person's tasks
   document.body.classList.add("real-mail");
   $("syncBtn").hidden=false;
   return true;
@@ -4978,6 +5492,7 @@ async function bootBackendMode(){
   // (The made-up mail is only for the hosted demo and the preview, which have no server.)
   data.length=0;accounts.length=0;
   document.body.classList.add("backend");
+  try{await loadServerView()}catch(error){console.warn("Mail layout preference could not be loaded",error)}
   prepareEmbedPanels();
   const menu=$("userMenu");
   const link=(href,text)=>{const a=document.createElement("a");a.href=href;a.className="user-option";a.textContent=text;return a};
@@ -5071,8 +5586,8 @@ async function pollOutbox(){
 // Each one can be switched off by the administrator or by the person (see /api/v1/me/features).
 // Everything here is fetched when asked for and kept only in this page's memory.
 function applyFeatures(){
-  const on=realMail&&accounts.length>0;
-  $("newMailBtn").hidden=$("mNewBtn").hidden=!(on&&feat.compose);
+  const on=realMail&&accounts.length>0;rssPaint();
+  $("newMailBtn").hidden=!(on&&feat.compose);
   $("sentNav").hidden=!(on&&feat.sent);$("draftNav").hidden=!on;if(on&&!draftData.loaded)loadDrafts();
   if(filter==="drafts"&&!on){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   $("shipNav").hidden=!(on&&feat.shipping);$("waitNav").hidden=!(on&&feat.waiting);subNavSync();
@@ -5816,7 +6331,7 @@ function presentOriginal(o,c){
   $("attachmentModal").classList.add("open");
   $("attachmentScrim").classList.add("show");viewerPush();
 }
-$("newMailBtn").onclick=()=>openNewMail();$("mNewBtn").onclick=()=>openNewMail();
+$("newMailBtn").onclick=()=>openNewMail();
 $("nmClose").onclick=requestCloseNewMail;$("nmCancel").onclick=requestCloseNewMail;
 $("nmSend").onclick=sendNew;$("nmForm").addEventListener("submit",e=>{e.preventDefault()});
 $("nmAttach").onclick=()=>$("nmFile").click();

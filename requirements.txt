@@ -4,6 +4,8 @@ fastapi==0.141.1
 # Pinned directly: versions before 1.1.0 have published advisories.
 starlette==1.7.0
 uvicorn==0.54.0
+# The WebSocket door for Home Assistant and other local services (uvicorn needs a WebSocket library to speak it).
+websockets==15.0.1
 cryptography==50.0.1
 pydantic==2.13.5
 httpx==0.28.1            # talks to your OpenID Connect provider

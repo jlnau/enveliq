@@ -41,6 +41,7 @@ for (const [name, vp] of [["desktop", { width: 1280, height: 800 }], ["phone", {
   p.on("console", (m) => { if (/Content.Security.Policy/i.test(m.text())) problems.push(m.text().slice(0, 160)); });
   await p.addInitScript(() => document.addEventListener("securitypolicyviolation", (e) => console.log("Content-Security-Policy violation: " + e.violatedDirective + " " + e.blockedURI)));
   await p.goto(url); await p.waitForTimeout(800);
+  await p.evaluate(() => { view.layout = "list"; applyView(); render(); });   // the classic list; the default is now the reading panel on the right
   if (name === "phone") await p.evaluate(() => { lay = () => view.layout; render(); });      // a phone opens an email full screen now (check_phone_reader.mjs); this part checks the open row itself
   const banner = (await p.locator(".demo-banner").innerText()).toLowerCase();
   ok(name + ": a banner says the mail is made up and nothing is saved", banner.includes("made up") && banner.includes("nothing") && await p.locator(".demo-banner").isVisible());

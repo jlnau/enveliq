@@ -395,3 +395,69 @@ def test_a_cancelled_subscription_is_not_announced(due):
     appm.subbook.act(uid, sid, "cancelled")
     at(8, 1)
     assert not [n for n in sent if "Streamly" in n["title"]]
+
+
+def test_browser_device_test_only_targets_selected_device(env, monkeypatch):
+    from backend.mail import extra_channels
+
+    appm, client, _, _ = env
+    user_id = appm.vault.list_users()[0]["id"]
+    subs = [
+        {"id": "a" * 12, "label": "Android", "endpoint": "https://push.example/android", "p256dh": "key", "auth": "secret"},
+        {"id": "b" * 12, "label": "Brave", "endpoint": "https://push.example/brave", "p256dh": "key", "auth": "secret"},
+    ]
+    appm.notifier.set_values(user_id, "browser", {"subs": json.dumps(subs)}, enabled=True)
+    monkeypatch.setattr(extra_channels, "encrypt", lambda *args: b"encrypted")
+    monkeypatch.setattr(extra_channels, "vapid_header", lambda *args: "vapid")
+    monkeypatch.setattr(extra_channels, "vapid_key", lambda *args: object())
+    monkeypatch.setattr(extra_channels, "b64d", lambda *args: b"key")
+
+    sent = []
+    def fake_request(method, url, **kwargs):
+        sent.append(url)
+        return 201, b""
+    monkeypatch.setattr(outbound, "request", fake_request)
+
+    url = "/api/v1/me/notifications/browser/" + "b" * 12 + "/test"
+    response = client.post(url)
+    assert response.status_code == 200, response.text
+    assert sent == ["https://push.example/brave"]
+    assert len(extra_channels.devices(appm.notifier.get_values(user_id, "browser"))) == 2
+
+    missing = client.post("/api/v1/me/notifications/browser/" + "c" * 12 + "/test")
+    assert missing.status_code == 404
+    assert sent == ["https://push.example/brave"]
+
+
+def test_mail_opened_shared_per_user_across_clients(env):
+    """A server-stored first-open marker survives requests and does not change mailbox state."""
+    appm, client, bridge, _ = env
+    aid = account(client, bridge)
+    client.post(f"/api/v1/accounts/{aid}/sync", json={})
+    messages = appm.vault.list_messages(aid)
+    assert messages
+    msg = messages[0]
+    initial_state = appm.vault.get_message(aid, msg["id"]).get("state")
+    key = aid + ":" + msg["id"]
+    assert key not in client.get("/api/v1/me/mail-opened").json()["keys"]
+    response = client.post("/api/v1/me/mail-opened", json={"account_id": aid, "message_id": msg["id"]})
+    assert response.status_code == 200, response.text
+    assert key in client.get("/api/v1/me/mail-opened").json()["keys"]
+    assert client.post("/api/v1/me/mail-opened", json={"account_id": aid, "message_id": msg["id"]}).status_code == 200
+    assert client.get("/api/v1/me/mail-opened").json()["keys"].count(key) == 1
+    assert appm.vault.get_message(aid, msg["id"]).get("state") == initial_state
+    assert client.post("/api/v1/me/mail-opened", json={"account_id": aid, "message_id": "missing-message"}).status_code == 404
+
+
+def test_mail_view_preferences_stored_per_user_in_vault(env):
+    """Layout is stored in the vault, not a browser cookie or provider mailbox."""
+    appm, client, bridge, _ = env
+    assert client.get("/api/v1/me/mail-view").json() == {"view": None}
+    chosen = {"layout": "bottom", "density": "compact", "width": "full", "rows": "open", "peek": False}
+    response = client.put("/api/v1/me/mail-view", json=chosen)
+    assert response.status_code == 200, response.text
+    assert client.get("/api/v1/me/mail-view").json()["view"] == chosen
+    uid = appm.vault.list_users()[0]["id"]
+    assert appm.vault.get_global("mail-view-v1:" + uid) == chosen
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "layout": "invalid"}).status_code == 422
+    assert client.get("/api/v1/me/mail-view").json()["view"] == chosen

@@ -85,6 +85,7 @@ check("first sync shows no stray 'null' text", !(await page.locator("body").inne
 await shot("welcome-3");
 await page.click("text=Open my inbox");
 await page.waitForSelector("body.real-mail article.mail");
+await page.evaluate(() => { view.layout = "list"; applyView(); render(); });      // the classic list, where each row opens in place; the default is now the reading panel on the right
 const rowCount = await page.locator("article.mail").count();
 for (let i = 0; i < rowCount; i++) await page.locator("article.mail:not(.open) .qmain").first().click();
 check("the inbox shows the mail from both mailboxes with AI summaries (read by opening each row)", rowCount === 6 && (await page.locator("#list").innerText()).includes("Dentist appointment on Friday"));
@@ -169,7 +170,7 @@ await page.click("#userPill");
 await page.click("#settingsBtn");
 await page.click("[data-settings-tab=general]");
 await page.waitForSelector("#settings .embed-host >> #uf_sent");
-check("General settings has a switch for each optional feature, all on", (await page.locator("#settings .embed-host >> input[id^=uf_]").count()) === 11 && (await page.locator("#settings .embed-host >> input[id^=uf_]:checked").count()) === 11);
+check("General settings has a switch for each optional feature, all on", (await page.locator("#settings .embed-host >> input[id^=uf_]").count()) === 13 && (await page.locator("#settings .embed-host >> input[id^=uf_]:checked").count()) === 13);
 await page.click("[data-settings-tab=addressbook]");
 await page.waitForSelector("#settings .embed-host >> .ab-row");
 check("the address book lists people seen and written to", (await page.locator("#settings .embed-host >> .ab-row").count()) >= 4 && (await page.locator("#settings .embed-host >> .ab-list").innerText()).includes("alice@example.invalid"));
@@ -252,7 +253,7 @@ await page.click("#adminBtn");
 await page.waitForSelector("#settings.open .embed-host >> text=Add a person");
 await page.click("[data-settings-tab=adminfeatures]");
 await page.waitForSelector("#settings .embed-host >> #fe_compose");
-check("Administration > Features has a switch for each feature", (await page.locator("#settings .embed-host >> input[id^=fe_]").count()) === 11);
+check("Administration > Features has a switch for each feature", (await page.locator("#settings .embed-host >> input[id^=fe_]").count()) === 13);
 await page.locator("#settings .embed-host >> #fe_compose").uncheck();
 await page.locator("#settings .embed-host >> #fe_address_book").uncheck();
 await Promise.all([page.waitForResponse((r) => r.url().includes("/admin/features") && r.request().method() === "PUT" && r.status() === 200), page.locator("#settings [data-settings-panel]:not([hidden]) .embed-host >> button:has-text('Save')").click()]);

@@ -3,10 +3,10 @@ from __future__ import annotations
 import ipaddress
 import json
 import re
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 from urllib.parse import urlsplit
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, StrictBool, field_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, StrictBool, StringConstraints, field_validator
 
 _HOSTNAME = re.compile(r"^(?=.{1,253}$)(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.(?!-)[A-Za-z0-9-]{1,63}(?<!-))*\.?$")
 _EMAIL = re.compile(r"^[^@\s<>\"'`]{1,64}@[^@\s<>\"'`]{1,255}$")
@@ -38,7 +38,13 @@ def _depth(value: Any, level: int = 0) -> int:
     return level
 
 
+# The colour a person may give a mailbox's label. The page turns each name into a hue; nothing else is accepted.
+MAILBOX_COLORS = ("blue", "green", "orange", "pink", "red", "teal", "purple", "lime")
+
+
 def validate_settings_blob(value: dict[str, Any]) -> dict[str, Any]:
+    if "color" in value and value["color"] not in MAILBOX_COLORS + ("", None):
+        raise ValueError("unknown mailbox colour")
     if len(json.dumps(value, default=str)) > 50_000:
         raise ValueError("settings payload too large")
     if _depth(value) > _MAX_SETTINGS_DEPTH:
@@ -327,6 +333,8 @@ class RetainedMessageCreate(StrictModel):
     resolved_at: float | None = Field(default=None, ge=0, le=4_102_444_800)
     # Listed by the "All emails" switch (recent mail that is not in the unread list).
     from_all_mail: bool = False
+    # The mail service's own tags (labels, keywords) on this email: names only, kept in step with the mailbox (see backend/mail/tags.py).
+    tags: list[Annotated[str, StringConstraints(min_length=1, max_length=40)]] = Field(default_factory=list, max_length=20)
     # When you last replied to this email from Enveliq (a Unix timestamp).
     replied_at: float | None = Field(default=None, ge=0, le=4_102_444_800)
     # Snoozed: kept out of the inbox list until this Unix time. Only Enveliq's own list changes; the real mailbox is left alone.

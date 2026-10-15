@@ -17,6 +17,7 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 - [Connect my email](install/after-install.md#step-4-connect-your-email), with extra help for [Outlook and Microsoft 365](MICROSOFT.md), [Proton Mail](PROTON_BRIDGE.md) and [other email services](EMAIL_SERVICES.md)
 - [Turn on AI summaries](AI_SUMMARIES.md)
 - [Open Enveliq on my phone and away from home](ACCESS.md)
+- [Notifications, webhooks and news feeds](install/notifications.md) (let Home Assistant send notes to Enveliq)
 - [Update, back up and uninstall](install/maintenance.md)
 - [Something is not working](install/troubleshooting.md)
 
@@ -41,6 +42,8 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 - [Signature and saved replies](SAVED_REPLIES.md) (your signature, and short texts you use often)
 - [Mail rules](MAIL_RULES.md) (archive new email from a sender you choose, automatically)
 - [Your inbox, day to day](INBOX.md) (the paperclip, ticking several emails, the version number, staying signed in)
+- [Tags](TAGS.md) (the labels from your mail service, shown on emails and changeable from Enveliq)
+- [News feeds](NEWS_FEEDS.md) (follow websites with RSS or Atom; a badge shows what is new)
 - [Trips](TRIPS.md) (flights, stays and hire cars, put together and added to your calendar)
 - [Messages between people](MESSAGES.md)
 - [Chat with a Hermes agent](AGENT.md)

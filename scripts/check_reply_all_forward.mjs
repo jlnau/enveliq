@@ -48,6 +48,7 @@ page.on("pageerror", (e) => errors.push(String(e)));
 await context.route(`${ORIGIN}/**`, handler);
 await page.goto(`${ORIGIN}/`);
 await page.waitForSelector("article.mail");
+await page.evaluate(() => { view.layout = "list"; view.rows = "open"; applyView(); render(); });
 const expand = async (row) => { if (!(await row.evaluate((e) => e.classList.contains("open")))) await row.locator(".qmain").click(); };
 const chips = (sel) => page.locator(`${sel} .pchip span`).allInnerTexts();
 const shot = async (name) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, name + ".png") }); };

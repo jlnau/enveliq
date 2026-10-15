@@ -66,6 +66,7 @@ async function open(width, height) {
   await context.route("**/*", handler);
   await page.goto(`${ORIGIN}/`);
   await page.waitForSelector("article.mail");
+  await page.evaluate(() => { view.layout = "list"; applyView(); render(); });
   return { page, errors, context };
 }
 async function expandAll(page) {

@@ -14,7 +14,6 @@ from urllib.parse import urlsplit
 
 from fastapi import Depends, FastAPI, HTTPException, Path as PathParam, Request, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -31,6 +30,13 @@ from .mail.routes import build_mail_router
 from .mail.extra_routes import build_extra_router
 from .mail.task_routes import build_task_router
 from .mail.shipping import ShipBook
+from .mail.inbound import InboundBook
+from .mail.inbound_routes import WEBHOOK_PATH as INBOUND_WEBHOOK_PATH, WS_PATH as INBOUND_WS_PATH, build_inbound_router
+from .mail.rss import RssBook, RssRefresher
+from .mail import features
+from .mail.tags import TagService
+from .mail.tag_routes import build_tag_router
+from .mail.rss_routes import build_rss_router
 from .mail.important import ImportantPeople
 from .mail.important_routes import build_important_router
 from .mail.rules import Rules
@@ -96,6 +102,7 @@ from .models import (
 )
 from .security import (
     FlowStore,
+    HostGuardMiddleware,
     RedactingFilter,
     RequestGuardMiddleware,
     Session,
@@ -352,6 +359,7 @@ async def lifespan(_: FastAPI):
     auto_sync.start()
     backups.start()
     reminders.start()
+    rss_refresher.start()
     sync.start()
     reporter.start()
     reporter.event("app_started")
@@ -362,6 +370,7 @@ async def lifespan(_: FastAPI):
         auto_sync.stop()
         backups.stop()
         reminders.stop()
+        rss_refresher.stop()
         sync.stop()
         outbox.stop()
         vault.stop_idle_watchdog()
@@ -369,7 +378,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Enveliq", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
+app.add_middleware(HostGuardMiddleware, allowed_hosts=ALLOWED_HOSTS, local_ip_path=INBOUND_WS_PATH, local_ip_post_path=INBOUND_WEBHOOK_PATH)
 # Added last, so it runs first: size, type and origin checks happen before
 # anything parses the request.
 app.add_middleware(RequestGuardMiddleware, max_body_bytes=MAX_BODY_BYTES, allowed_origins=ALLOWED_ORIGINS)
@@ -489,11 +498,14 @@ def remember_seconds() -> int:
 def delete_user_data(user_id: str) -> None:
     """Remove every mailbox a user owns, with its messages and previews, and the person's own messages to other people."""
     messagebook.forget_user(user_id)
+    inboundbook.forget_user(user_id)
     writehelpbook.forget_user(user_id)
     importantbook.forget_user(user_id)
     savedbook.forget_user(user_id)
     draftbook.forget_user(user_id)
     rulebook.forget_user(user_id)
+    vault.set_global("enveliq-opened-v1:" + user_id, {})          # which emails this person has opened (the new-mail glow)
+    vault.set_global("mail-view-v1:" + user_id, {})               # their saved layout
     for account in vault.list_accounts():
         if account.get("owner_user_id") == user_id:
             preview_leases.purge_account(account["id"])
@@ -596,6 +608,9 @@ mail_service.check_id = checkbox.account_id
 auto_sync.checker = checkbox
 taskbook = TaskBook(vault)
 shipbook = ShipBook(vault)
+rssbook = RssBook(vault)
+inboundbook = InboundBook(vault)
+rss_refresher = RssRefresher(vault, rssbook)
 subbook = SubBook(vault, taskbook.timezone_of)
 importantbook = ImportantPeople(vault)
 savedbook = SavedWriting(vault)
@@ -605,6 +620,8 @@ tripbook = TripBook(vault, taskbook.timezone_of)
 messagebook = MessageBook(vault, users)
 writehelpbook = WriteHelpBook(vault)
 mail_service.shipments = shipbook
+tagservice = TagService(mail_service, vault, lambda user: bool(user) and features.effective(vault, user)['tags'])
+mail_service.tags_sync = tagservice.sync
 mail_service.subscriptions = subbook
 mail_service.trips = tripbook
 waitbook = WaitBook(vault)
@@ -648,13 +665,15 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, subscriptions=subbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))
 app.include_router(build_extra_router(mail_ctx))          # after the main router: shares its send limits
 app.include_router(build_task_router(mail_ctx))
 app.include_router(build_shipping_router(mail_ctx))
+app.include_router(build_rss_router(mail_ctx))
+app.include_router(build_tag_router(mail_ctx))
 app.include_router(build_subscriptions_router(mail_ctx))
 app.include_router(build_important_router(mail_ctx))
 app.include_router(build_saved_writing_router(mail_ctx))
@@ -702,6 +721,7 @@ app.include_router(build_backup_router(SimpleNamespace(
     vault=vault, users=users, sessions=sessions, backups=backups, login_limiter=login_limiter, exporter=exporter,
     admin_session=admin_session, full_session=full_session)))
 app.include_router(build_messages_router(mail_ctx))
+app.include_router(build_inbound_router(mail_ctx))
 app.include_router(build_writehelp_router(mail_ctx))
 app.include_router(build_notify_router(mail_ctx))
 app.include_router(build_agent_router(mail_ctx))

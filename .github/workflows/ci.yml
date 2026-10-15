@@ -112,6 +112,22 @@ jobs:
         run: node scripts/check_drafts.mjs
       - name: On a phone every email opens full screen, whatever layout is chosen (made-up mail, no server)
         run: node scripts/check_phone_reader.mjs
+      - name: The Back button returns to the previous section inside the app (made-up mail, no server)
+        run: node scripts/check_back_button.mjs
+      - name: A Task button on every email adds a task of your own (made-up mail, no server)
+        run: node scripts/check_task_add.mjs
+      - name: News feeds, the badge at the top and the pop-up, on desktop and phone (made-up feeds, no server)
+        run: node scripts/check_rss.mjs
+      - name: Tags from the mail service, the Tags button, pop-up and filter, on desktop and phone (made-up mail, no server)
+        run: node scripts/check_tags.mjs
+      - name: The notification bell, its drop-down and the key for Home Assistant, on desktop and phone (made-up notes, no server)
+        run: node scripts/check_bell.mjs
+      - name: A label on each email says which mailbox it came from when there are several (made-up mail, no server)
+        run: node scripts/check_mailbox_label.mjs
+      - name: Searching your tasks by typing part of their words (made-up tasks, no server)
+        run: node scripts/check_task_search.mjs
+      - name: On a phone an open email is never wider than the screen, so the page does not look zoomed in (made-up mail, no server)
+        run: node scripts/check_phone_width.mjs
       - name: No flash of the old layout on a quick refresh (page with its script switched off)
         run: node scripts/check_no_flash.mjs
       - name: Bigger email and attachment windows, and clickable links that ask first (simulated server)

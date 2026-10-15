@@ -4,7 +4,55 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**New guide: Notifications, webhooks and news feeds.** A plain-words page in the install guides (and on the website) that shows how to make a key, send a note with a webhook or a WebSocket, test it with `curl`, connect Home Assistant step by step (RESTful Command, a test, then an automation that forwards every new Home Assistant notification), rotate the key, and follow websites with news feeds. It uses only made-up example addresses and keys. Touches `docs/install/notifications.md`, `docs/install/README.md`, `docs/README.md`, `website/build.mjs`.
+
+**Services can now send you a note with a plain web request (webhook).** Tools that cannot keep a WebSocket open (Node-RED, n8n, Uptime Kuma, a Home Assistant `rest_command`) can `POST` a JSON note to `/api/v1/inbound/webhook` with `Authorization: Bearer YOUR-KEY`. It is for everyone: the same key from the bell's **Show how to connect** fold, the same limits, and the note lands only in that person's bell. It also answers on the local network address. The fold in the bell now explains it. Touches `backend/mail/inbound_routes.py`, `backend/security.py`, `backend/app.py`, `prototype/index.html`. Tests in `tests/test_inbound.py` and `scripts/check_bell.mjs`. See `docs/NOTIFICATIONS.md`, `SECURITY.md`.
+
+**The reading panel on the right is now the first view, and each person's view is remembered.** Someone who signs in for the first time starts with the **reading panel on the right**. After that, the layout, density, width, open-rows and preview choices are saved for that person on the server (encrypted), so they survive restarts, updates and a change of browser, and one person's choice is never copied to another. The right and bottom reading panels start with nothing selected and say "Nothing selected" with a few quick actions (such as Read emails and Open tasks), and they clear again after a refresh. Touches `backend/mail/notify_routes.py` (`GET` and `PUT /api/v1/me/mail-view`), `prototype/index.html`. Tests in `tests/test_notify.py`. See `docs/INBOX.md`.
+
+**New emails glow blue until you open them, on every device.** An email you have not opened yet shows a soft blue glow. Which emails you have opened is kept per person on the server (encrypted) so it is the same on your phone and your computer, and it never changes anything in your mail provider (nothing is marked read there). Opening an email from a notification link counts as opening it. Touches `backend/mail/notify_routes.py` (`GET` and `POST /api/v1/me/mail-opened`), `prototype/index.html`. Tests in `tests/test_notify.py`.
+
+**Phone and browser notifications are quicker and easier to test.** A new-mail alert is sent as soon as each summarised email is visible, instead of waiting for the whole batch. In Settings each registered browser device has its own **Test** button, so you can test one phone without notifying the others; a failed test is reported even when another device worked, and registering the same browser again keeps its working subscription. Touches `backend/mail/extra_channels.py`, `extra_routes.py`, `notify_routes.py` (`POST /api/v1/me/notifications/browser/{device_id}/test`). Tests in `tests/test_notify.py`.
+
+**Deleting a person also clears their saved layout and opened-email list.** Touches `backend/app.py`. Test in `tests/test_inbound.py`.
+
+**Maintenance: the test branch follows the version branch by itself.** `.github/workflows/sync-v091-preview.yml` copies each push on `feat/v0.91` to `preview/v0.91` (it refuses to overwrite anything not already on the version branch) and starts the preview build.
+
+**The phone's top bar is less crowded, and an open email no longer looks zoomed in.** On a phone, **New email** (the pencil) and **News feeds** moved from the top bar into the menu, so the bell, Search and Sync always fit on the screen (Sync was being pushed off the right edge). Inside an open email, long words, addresses and the task line now wrap instead of widening the page, which is what made it look zoomed in; the browser is also told not to enlarge text on its own and a double tap no longer zooms. Touches `prototype/index.html`. Browser check `scripts/check_phone_width.mjs` (new); `check_email_features`, `check_phone_overlays` and `check_bell` updated. See `docs/INBOX.md`.
+
+**You can choose the colour of each mailbox's label.** On the Mailboxes page, a **Label colour** drop-down on each mailbox (Automatic, Blue, Green, Orange, Pink, Red, Teal, Purple, Lime) sets the colour of the small label that shows which mailbox an email came from. Stored with the mailbox's settings as `color`; the server accepts only those names. Touches `web/static/auth.js`, `auth.css`, `backend/models.py`, `prototype/index.html`. Tests in `tests/test_hardening.py`, `scripts/check_mailbox_label.mjs` and `scripts/check_mailbox_e2e.mjs`. See `docs/INBOX.md`.
+
+**You can rename a mailbox.** Press **Rename** on a mailbox on the Mailboxes page, type a new name and press **Save name**; the name changes everywhere it is shown, including the label on each email, and nothing else changes. Only the person who connected the mailbox can do it. Uses the existing `PATCH /api/v1/accounts/{id}`; touches `web/static/auth.js`. Tests in `tests/test_hardening.py`, browser check in `scripts/check_mailbox_e2e.mjs`. See `docs/INBOX.md`.
+
+**Notification bell, and a WebSocket door for Home Assistant.** A bell at the top right, beside the news-feed icon, collects notes sent to you by Home Assistant and other services on your network, and your unread chat messages, in one drop-down (full screen on a phone). Services connect to a new WebSocket door with a key you make for yourself in the bell, and the door also works on the machine's local network address, so it still works when Cloudflare sits in front of the public address. See `docs/NOTIFICATIONS.md`, `docs/NETWORK_ACCESS.md` and `SECURITY.md`. A new library, `websockets`, is added to `requirements.txt`.
+
+**A label shows which mailbox each email came from.** With more than one mailbox connected, every email in the list, and the open email, carries a small coloured label with the mailbox's name. With one mailbox there is no label. See `docs/INBOX.md`.
+
+**On a phone, Back closes an open email.** An email open full screen now has its own step in the history, so the back button or gesture closes it and shows the list instead of leaving Enveliq. See `docs/INBOX.md`.
+
+**Search in the Tags window, and a note about always tagging a sender.** When you have more than 8 tags, a search box at the top of the Tags window keeps only the tags that have the letters you type. A new note, "Always tag or filter this sender.", opens a small pop-up that explains this is done by making a filter at your email provider. See `docs/TAGS.md`.
+
+**Search your tasks.** The Tasks page has a box to find tasks by typing part of their words. See `docs/INBOX.md`.
+
+**News feed entries are removed after 14 days.** See `docs/NEWS_FEEDS.md`.
+
+**Tags from your mail service.** Enveliq now shows the tags (labels) your mailbox already has on each email, with a **Tags** button on every inbox email to put a tag on or take it off, and to make a new tag. Each change is also made in the real mailbox: Proton labels, Gmail labels, or keywords on other services (Outlook is not supported). The Filter list gets a **Tag: …** choice and Search finds emails by tag. Tags are read again after each automatic sync, so changes made in your mail app show up here. Only tag names are kept, with the email's encrypted summary, and nothing goes to the AI. An administrator or each person can switch it off. New guide: [TAGS.md](TAGS.md). Touches `backend/mail/tags.py`, `tag_routes.py`, `service.py` (a step at the end of a sync), `models.py` (a `tags` list on an email), `features.py`, `prototype/index.html`.
+
+**News feeds (RSS and Atom).** A feed icon at the top of the screen shows a number badge when a feed you follow has new entries. Press it to read their text in a pop-up (full screen on a phone), add a feed by pasting its address, remove one, or check now. Every person follows their own feeds; nobody else can see them. Enveliq reads the feeds from the server about every half hour through the same careful outbound path as reminders, keeps only a short plain-text version of the newest entries (encrypted), and shows feed text only as plain text. An administrator or each person can switch it off. New guide: [NEWS_FEEDS.md](NEWS_FEEDS.md). Touches `backend/mail/rss.py`, `rss_routes.py`, `outbound.py` (a variant that also returns reply headers, so redirects can be followed and checked by hand), `features.py`, `prototype/index.html`.
+
+**On a phone, the email closes as soon as you press Reviewed, Archive or Bin.** Before, the full screen email stayed open until you pressed Close or the action finished. Now it closes at once and you are back in the list. The five-second **Undo** bar still shows, and Undo brings the email back. See `docs/INBOX.md`.
+
+**Forms fill the screen on a phone.** The new Add a parcel form and the new Task form open full screen on a phone, with the title and a **✕ Close** button fixed at the top and the buttons fixed at the bottom, so they can always be reached. This is now a standing rule for every new form (`CLAUDE.md`).
+
+**Add a parcel by hand on the Shipping page.** A new **Add a parcel** form takes who the parcel is from, a tracking number (if you have one) and where it is up to. You move it along yourself from its card, and **Remove** takes it off. See `docs/INBOX.md`.
+
+**Back button stays inside Enveliq.** Going to another section (Sent, Reviewed, Tasks and so on) now adds a step to the browser's history, so Back, or a phone's back gesture, returns to the section you were in before instead of leaving the site. Forward works, and Back closes Settings if it is open. See `docs/INBOX.md`.
+
+**A Task button on every email.** Even when the AI found no task, you can press **Task**, write what you want to remember (for example "ring the plumber when I get home"), pick a day and add it. It shows as **Your task** and does not finish by itself when you deal with the email; only you finish it. A small box for it opens above the full screen email on a phone, and the Snooze box there is now also shown above it (it was hidden underneath). See `docs/INBOX.md` and `SECURITY.md`.
+
+**Project settings file.** A small `.claude/settings.json` is added so that commit messages and pull request descriptions carry no tool or author lines. Nothing changes in the app.
+
+**New rules for pull requests.** Every pull request description now starts with a clear list of everything in it, and it never names an author (no person, no AI) anywhere in its text. See `CLAUDE.md` and `.github/PULL_REQUEST_TEMPLATE.md`.
 
 ## v0.90 (2026-10-14)
 

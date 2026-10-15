@@ -168,6 +168,9 @@ async function open(server, { seen = true } = {}) {
   check("wording: 1 second, 59 seconds, 1 minute, minutes, hours", await page.evaluate(() => { const f = window.__syncAgoText; return f(1000) === "Synced 1 second ago" && f(59999) === "Synced 59 seconds ago" && f(60000) === "Synced 1 minute ago" && f(5 * 60000) === "Synced 5 minutes ago" && f(3600000) === "Synced 1 hour ago" && f(3 * 3600000) === "Synced 3 hours ago"; }));
   check("hostile sender and subject ran no code", (await page.evaluate(() => window.__pwned)) === undefined && (await page.locator("article.mail img").count()) === 0);
 
+  check("first sign-in defaults to right-side reading pane", await page.evaluate(() => view.layout === "right"));
+  // The following legacy checks deliberately exercise the optional classic list layout.
+  await page.evaluate(() => { view.layout = "list"; applyView(); render(); });
   // Layout: mail that needs nothing is a quiet row with one Reviewed button; the rest is behind the chevron
   check("every email is one thin row, not grouped", (await page.locator(".grp").count()) === 0 && (await page.locator("article.mail.quiet").count()) === 3);
   const rights = await page.locator("article.mail .time").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().right)));
@@ -260,6 +263,8 @@ await page.click('[data-theme-choice="light"]');
   if (process.env.SHOT_LIGHT) await page.screenshot({ path: process.env.SHOT_LIGHT });
   await page.reload();
   await page.waitForSelector("article.mail");
+  // A fresh browser reload restores the new right-panel default; these assertions target classic list.
+  await page.evaluate(() => { view.layout = "list"; applyView(); render(); });
   check("light mode is remembered after reload", (await page.evaluate(() => document.documentElement.dataset.theme)) === "light");
   await page.click("#userPill");
 await page.click('[data-theme-choice="dark"]');
@@ -296,6 +301,7 @@ await page.click('[data-theme-choice="dark"]');
   check("the details panel also says when you replied", (await newsRow.locator(".replied-kv").count()) === 1);
   await page.reload();
   await page.waitForSelector("article.mail");
+  await page.evaluate(() => { view.layout = "list"; applyView(); render(); });
   check("Replied is still there after a refresh (kept by the server)", (await page.locator("article.mail", { hasText: "Weekly news" }).locator(".qrow .time .replied").count()) === 1);
 
   // Sending feedback: the button says Sending... while the server works
@@ -331,6 +337,7 @@ await page.click('[data-theme-choice="dark"]');
   await page.locator("#closeSettings").click();
   await page.reload();
   await page.waitForSelector("#sendBar .sendrow", { timeout: 4000 });
+  await page.evaluate(() => { view.layout = "list"; applyView(); render(); });
   check("the bar comes back after a refresh", await page.locator("#sendBar .sendrow").isVisible());
   await page.locator("#sendBar button").click();
   await page.waitForSelector("#compose.open");
@@ -506,8 +513,7 @@ await page.click('[data-theme-choice="dark"]');
   // reading pane on the right
   await page.click('#viewPanel [data-view=layout][data-val=right]');
   const rowsN = await page.locator(".panelist article.mail").count();
-  const first = (await page.locator(".panelist article.mail.current .subject").innerText()).trim();
-  check("reading pane on the right: list on the left, the current email shown on the right, no expanding rows", (await page.locator("#readDock .reading").count()) === 1 && (await page.locator(".reading .rhead h3").innerText()).trim() === first && (await page.locator("article.mail.open").count()) === 0 && rowsN >= 2);
+  check("reading pane on the right: no email initially selected, no expanding rows", (await page.locator("#readDock .reading").count()) === 1 && (await page.locator("#readDock .enveliq-empty-actions .enveliq-empty-action").count()) === 4 && (await page.locator(".panelist article.mail.current").count()) === 0 && (await page.locator("article.mail.open").count()) === 0 && rowsN >= 2);
   const lb = await page.locator(".panelist").boundingBox(), rb = await page.locator(".reading").boundingBox();
   check("the list is on the left of the reading pane", lb.x + lb.width <= rb.x + 2);
   const second = (await page.locator(".panelist article.mail .subject").nth(1).innerText()).trim();
@@ -520,7 +526,7 @@ await page.click('[data-theme-choice="dark"]');
   const callsBefore = server.calls.length;
   await page.locator(".reading [data-status=reviewed]").click();
   await page.waitForTimeout(1500);
-  check("Reviewed in the reading pane works and the pane moves on to another email", server.calls.slice(callsBefore).some((c) => c[0] === "resolve" && c[2].outcome === "reviewed") && (await page.locator(".reading .rhead h3").count()) === 1);
+  check("Reviewed in the reading pane works and clears the selection", server.calls.slice(callsBefore).some((c) => c[0] === "resolve" && c[2].outcome === "reviewed") && (await page.locator(".reading .rhead h3").count()) === 0 && (await page.locator(".panelist article.mail.current").count()) === 0);
   // reading pane below
   await page.click('#viewPanel [data-view=layout][data-val=bottom]');
   const pb = await page.locator(".panelist").boundingBox(), rb2 = await page.locator(".reading").boundingBox();
@@ -549,7 +555,7 @@ await page.click('[data-theme-choice="dark"]');
   await page.click("#viewTab");
   await page.waitForTimeout(450);
   await page.click("#viewReset");
-  check("Reset to default brings back the classic list", (await page.locator("body.layout-list").count()) === 1 && (await page.locator(".quiet-list article.mail").count()) >= 1);
+  check("Reset to default brings back the right reading panel", (await page.locator("body.layout-right").count()) === 1 && (await page.locator("#readDock .enveliq-empty-actions .enveliq-empty-action").count()) === 4);
   await page.click("#viewTab");
   await page.waitForTimeout(450);
   check("the panel slides away again", await panelHidden());
@@ -634,10 +640,9 @@ await page.click('[data-theme-choice="dark"]');
   check("full screen: on a phone there are no Next or Previous arrows (Close is the way to the next email)", (await page.locator(".rtop [data-pick]").count()) === 0);
   await page.locator(".ract [data-status=trashed]").click();
   await page.waitForSelector("#undoBar:not([hidden])");
+  check("full screen: Bin closes the email at once and returns to the list", (await page.locator(".reader").count()) === 0 && (await page.locator("article.mail").count()) >= 1);
   await page.click("#undoBar .undobar:last-child button");
-  check("full screen: Bin waits for Undo as well", (await page.locator(".rbody h3").count()) === 1);
-  await page.locator("[data-reader-close]").click();
-  check("full screen: Close returns to the list", (await page.locator(".reader").count()) === 0 && (await page.locator("article.mail").count()) >= 1);
+  check("full screen: Bin waits for Undo as well", (await page.locator("article.mail").count()) >= 1);
   await page.evaluate(() => { view = { ...VIEW_DEFAULT }; saveView(); applyView(); render(); });
   await page.setViewportSize({ width: 1200, height: 900 });
   await page.waitForTimeout(300);
@@ -648,7 +653,7 @@ await page.click('[data-theme-choice="dark"]');
     const ok = g.height < 55 && g.y + g.height <= sub.y + 2 && se.y + se.height <= g.y + 2 && (await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
     check(`new header is tidy at ${w}px wide: search above title, nothing overlaps or runs off`, ok);
   }
-  check("back on a wide screen the left panel and row buttons return", (await page.locator("#sidebar").isVisible()) && (await page.locator(".qpair").first().isVisible()));
+  check("back on a wide screen the left sidebar and default reading pane return", (await page.locator("#sidebar").isVisible()) && (await page.locator("body.layout-right").count()) === 1);
   check("no script errors on the page", errors.length === 0);
 }
 

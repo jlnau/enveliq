@@ -74,6 +74,7 @@ async function open(server, { width = 1200, height = 900, light = false, ctxObj 
   if (!ctxObj) await context.route(`${ORIGIN}/**`, server.handler);
   await page.goto(`${ORIGIN}/`);
   await page.waitForSelector("article.mail");
+  await page.evaluate(() => { view.layout = "list"; applyView(); render(); });   // these checks look at the classic list; the default is now the reading panel on the right
   return { page, errors, csp, context };
 }
 const shot = async (page, name) => { if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, name + ".png") }); };

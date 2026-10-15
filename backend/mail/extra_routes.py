@@ -40,6 +40,8 @@ class FeaturesBody(StrictModel):
     waiting: bool | None = None
     messages: bool | None = None
     write_help: bool | None = None
+    rss: bool | None = None
+    tags: bool | None = None
 
 
 class FollowBody(StrictModel):
@@ -167,22 +169,15 @@ def build_extra_router(ctx: Any) -> APIRouter:
 
     # ---------- all emails: the last 14 days of the inbox, and Generate summary ----------
 
-    ready_alerts: dict[str, list[dict[str, Any]]] = {}      # new-mail facts per person, sent together when their line of work is empty
-    ready_lock = threading.Lock()
-
     def announce(account: dict[str, Any], items: list[dict[str, Any]]) -> None:
+        """Alert only after release makes an email visible, without waiting for other summaries."""
         user = account.get("owner_user_id")
-        if not user:
+        if not user or not items:
             return
-        with ready_lock:
-            ready_alerts.setdefault(user, []).extend(items)
-            if queue.listing(user)["waiting"]:
-                return                                   # more are on the way: one message for the lot
-            out = ready_alerts.pop(user, [])
         alerts = getattr(ctx.auto_sync, "mail_alerts", None)
-        if out and alerts is not None:
+        if alerts is not None:
             try:
-                alerts.send(user, out)
+                alerts.send(user, items)
             except Exception:
                 log.info("new-mail alert failed")
 

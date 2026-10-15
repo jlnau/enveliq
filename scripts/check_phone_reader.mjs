@@ -63,7 +63,9 @@ const run = async (layout, width, height) => {
   await page.waitForSelector("article.mail");
   return { page, context, errors };
 };
-const fills = (page) => page.locator(".reader").evaluate((el) => { const r = el.getBoundingClientRect(); return r.left <= 1 && r.top <= 1 && r.width >= innerWidth - 2 && r.height >= innerHeight - 2; }).catch(() => false);
+const fillsNow = (page) => page.locator(".reader").evaluate((el) => { const r = el.getBoundingClientRect(); return r.left <= 1 && r.top <= 1 && r.width >= innerWidth - 2 && r.height >= innerHeight - 2; }).catch(() => false);
+// The page may still be sliding in when the reader first appears, so wait a moment before saying it does not fill the screen.
+const fills = async (page) => { for (let i = 0; i < 20; i++) { if (await fillsNow(page)) return true; await page.waitForTimeout(100); } return false; };
 
 for (const layout of ["list", "right", "bottom", "screen", "deck"]) {
   const { page, context, errors } = await run(layout, 390, 800);
@@ -80,6 +82,21 @@ for (const layout of ["list", "right", "bottom", "screen", "deck"]) {
   await page.waitForSelector(".reader");
   check(`[${layout}] the next email is opened from the list`, (await page.locator(".reader h3").innerText()).includes("Third one"));
   check(`[${layout}] no script errors`, errors.length === 0);
+  await context.close();
+}
+
+// Reviewed, Archive and Bin inside the full screen email: it closes at once, the Undo bar still shows, and Undo brings the email back
+for (const [cls, word] of [["reviewed", "Marked reviewed"], ["archive", "Archived"], ["trash", "Moved to Bin"]]) {
+  const { page, context, errors } = await run("list", 390, 800);
+  await page.locator("article.mail", { hasText: "Plan for May" }).locator(".qmain").click();
+  await page.waitForSelector(".reader");
+  await page.locator(`.reader .ract .action.${cls}`).click();
+  check(`[${cls}] the full screen email closes straight away`, (await page.locator(".reader").count()) === 0);
+  check(`[${cls}] the Undo bar shows "${word}"`, (await page.locator("#undoBar .undobar").innerText()).includes(word));
+  await page.locator("#undoBar .undobar button").click();
+  await page.waitForSelector("article.mail", { hasText: "Plan for May" });
+  check(`[${cls}] Undo puts the email back in the list`, (await page.locator("article.mail", { hasText: "Plan for May" }).count()) === 1);
+  check(`[${cls}] no script errors`, errors.length === 0);
   await context.close();
 }
 

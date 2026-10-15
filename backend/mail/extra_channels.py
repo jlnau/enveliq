@@ -150,8 +150,12 @@ def _send_browser(values: dict[str, Any], note: dict[str, Any], ctx: dict[str, A
     origin = getattr(notifier, "origin", "")
     payload = json.dumps({"title": note["title"], "body": note["body"], "url": note.get("url") or note.get("path") or "/"}, ensure_ascii=False).encode()
     stored = notifier.get_values(user_id, "browser")
+    chosen = ctx.get("device_id")
+    targets = [d for d in devices(stored) if not chosen or d["id"] == chosen]
+    if chosen and not targets:
+        raise OutboundError("not_found", "This browser device is no longer registered.")
     sent, last, dead = 0, None, []
-    for d in devices(stored):
+    for d in targets:
         try:
             body = encrypt(payload, b64d(d["p256dh"]), b64d(d["auth"]))
             code, _ = outbound.request("POST", d["endpoint"], allow=[], body=body, headers={
@@ -169,10 +173,20 @@ def _send_browser(values: dict[str, Any], note: dict[str, Any], ctx: dict[str, A
             last = OutboundError("error", "The message could not be prepared.")
     for did in dead:
         remove_device(notifier, user_id, did)
+    if dead or last:
+        # One working device must not hide another device's failed test.
+        # Failed subscriptions may have been removed above after a 404/410.
+        if dead:
+            raise OutboundError("gone", "One or more browser devices no longer accept notifications and were removed. Turn notifications on again on those devices.")
+        raise last
     if not sent:
-        if dead and not last:
-            raise OutboundError("gone", "That device no longer accepts notifications. Turn them on again on the device.")
-        raise last or OutboundError("not_set", "No device is set up yet.")
+        raise OutboundError("not_set", "No device is set up yet.")
+
+
+def test_browser_device(notifier: Notifier, user_id: str, device_id: str, origin: str) -> None:
+    """Send a push exclusively to the selected registered device."""
+    _send_browser({}, {"title": "Enveliq test", "body": "This is how a notification will look on this device.", "url": origin or None},
+                  {"notifier": notifier, "user_id": user_id, "vault": notifier.vault, "device_id": device_id})
 
 
 register_extra("browser", {
