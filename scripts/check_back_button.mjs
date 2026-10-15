@@ -113,6 +113,14 @@ await page.waitForSelector("article.mail");
 const before = await page.evaluate(() => history.length);
 await page.locator("article.mail").first().locator(".qmain").click();
 await page.waitForSelector(".reader");
+check("email action buttons have oval inset outlines without borders changing their size", await page.evaluate(()=>{
+  const buttons=[...document.querySelectorAll(".qfoot .subtle")];
+  if(!buttons.length)return false;
+  return buttons.every(b=>{
+    const style=getComputedStyle(b);
+    return style.borderTopWidth==="0px"&&parseFloat(style.borderTopLeftRadius)>15&&style.boxShadow.includes("inset");
+  });
+}));
 check("an email opens full screen on a phone", (await page.locator(".reader").count()) === 1);
 check("opening it adds one step to the history", (await page.evaluate(() => history.length)) === before + 1);
 await page.goBack();
