@@ -58,6 +58,8 @@ const handler = async (route) => {
   return json(404, { detail: "not found" });
 };
 
+// Things on the page settle a moment after a click (fetches, sliding in), so look again for up to 3 seconds before judging.
+const settled = async (read, ok) => { let v; for (let i = 0; i < 60; i++) { v = await read(); if (ok(v)) return v; await new Promise((r) => setTimeout(r, 50)); } return v; };
 const browser = await chromium.launch();
 const run = async (width, height) => {
   const context = await browser.newContext({ viewport: { width, height } });
@@ -115,10 +117,11 @@ const run = async (width, height) => {
   await page.waitForFunction(() => document.querySelectorAll("#bellPop [data-bell-dismiss]").length === 0);
   check("Clear the list empties the notes", calls.some((c) => c[0] === "clear"));
   await page.keyboard.press("Escape");
-  check("Escape closes the drop-down", await page.locator("#bellPop").isHidden());
+  check("Escape closes the drop-down", await settled(() => page.locator("#bellPop").isHidden(), (v) => v === true));
   await page.locator("#bellBtn").click();
+  await page.waitForSelector("#bellPop:not([hidden])");
   await page.mouse.click(300, 600);
-  check("clicking elsewhere closes it on a computer", await page.locator("#bellPop").isHidden());
+  check("clicking elsewhere closes it on a computer", await settled(() => page.locator("#bellPop").isHidden(), (v) => v === true));
   check("no script errors", errors.length === 0);
   await context.close();
 }
@@ -128,7 +131,7 @@ const run = async (width, height) => {
   notes = []; chatUnread = 0;
   const { page, context, errors } = await run(1300, 900);
   await page.waitForSelector("#bellBtn:not([hidden])");
-  check("with nothing new there is no badge", await page.locator("#bellBtn .rssbadge").isHidden());
+  check("with nothing new there is no badge", await settled(() => page.locator("#bellBtn .rssbadge").isHidden(), (v) => v === true));
   await page.locator("#bellBtn").click();
   await page.waitForSelector("#bellPop:not([hidden])");
   check("an empty list says so in plain words", /Nothing new/.test(await page.locator("#bellPop").innerText()));
@@ -145,9 +148,10 @@ const run = async (width, height) => {
   check("on a phone the bell is in the top bar, fully on the screen", mb.y < 56 && mb.x >= 0 && mb.x + mb.width <= 390);
   await page.locator("#mBellBtn").click();
   await page.waitForSelector("#bellPop:not([hidden]) .rss-item");
-  const full = await page.locator("#bellPop").boundingBox();
+  const full = await settled(() => page.locator("#bellPop").boundingBox(), (b) => b && b.x <= 1 && b.y <= 1 && b.width >= 388 && b.height >= 798);
   check("on a phone the notifications fill the whole screen", full.x <= 1 && full.y <= 1 && full.width >= 388 && full.height >= 798);
-  const close = await page.locator("#bellPop .sf-top .sf-close").boundingBox(), done = await page.locator("#bellPop .sf-foot [data-bell-close]").boundingBox();
+  const place = async () => ({ close: await page.locator("#bellPop .sf-top .sf-close").boundingBox(), done: await page.locator("#bellPop .sf-foot [data-bell-close]").boundingBox() });
+  const { close, done } = await settled(place, (r) => r.close && r.done && r.close.y < 80 && r.done.y > 600 && r.done.y + r.done.height <= 801);
   check("Close is fixed at the top and Done at the bottom", close.y < 80 && done.y > 600 && done.y + done.height <= 801);
   if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "bell_phone.png") });
   await page.locator("#bellPop summary").click();
@@ -156,7 +160,7 @@ const run = async (width, height) => {
   check("on a phone the key box is easy to use (large text)", (await page.locator("#bellKey").evaluate((e) => parseFloat(getComputedStyle(e).fontSize))) >= 16);
   if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "bell_key_phone.png") });
   await page.locator("#bellPop .sf-foot [data-bell-close]").click();
-  check("Done closes it", await page.locator("#bellPop").isHidden());
+  check("Done closes it", await settled(() => page.locator("#bellPop").isHidden(), (v) => v === true));
   check("no script errors", errors.length === 0);
   await context.close();
 }
