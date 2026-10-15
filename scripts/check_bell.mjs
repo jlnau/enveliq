@@ -99,6 +99,7 @@ const run = async (width, height) => {
   check("the fold stayed open after making the key", (await page.locator("#bellPop details").evaluate((d) => d.open)) === true);
   if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "bell_key_desktop.png") });
   await page.locator("[data-bell-close]").first().click();
+  for (let i = 0; i < 40 && !calls.some((c) => c[0] === "read"); i++) await page.waitForTimeout(50);      // the request is sent a moment after the click
   check("closing the drop-down marks the notes as read", calls.some((c) => c[0] === "read"));
   await page.waitForFunction(() => document.querySelector("#bellBtn .rssbadge").textContent.trim() === "2");
   check("the badge keeps only the unread chat messages", true);
