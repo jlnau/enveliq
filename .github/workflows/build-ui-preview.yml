@@ -34,5 +34,5 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           push: true
-          tags: ${{ matrix.image }}:${{ github.ref_name == 'preview/reading-panel-glow' && 'ui-reading-panel-glow' || 'ui-preview' }}
+          tags: ${{ matrix.image }}:ui-preview
           platforms: linux/amd64
