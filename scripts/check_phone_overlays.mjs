@@ -125,7 +125,8 @@ for (const [w, h] of [[360, 640], [390, 800]]) {
   if (await page.locator(".reader").count()) await page.locator("[data-reader-close]").click();      // the email opened full screen behind the window; close it to get back to the list
 
   // New email
-  await page.tap("#mNewBtn");
+  await page.tap("#menuBtn");
+  await page.tap("#newMailBtn");
   await page.waitForSelector("#newMail.open");
   check(tag + "New email fits the screen", await fits(page, "#newMail"));
   check(tag + "New email's Close can be tapped (" + (await reachable(page, "#nmClose")) + ")", (await reachable(page, "#nmClose")) === "ok");

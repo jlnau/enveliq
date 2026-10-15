@@ -4,7 +4,7 @@ Follow websites you like (blogs, news, anything with an RSS or Atom feed) and se
 
 ## What you see
 
-- A small **feed icon** sits at the top of the screen (on a phone, in the top bar). When something new has arrived, a **number badge** shows how many new entries there are.
+- A small **feed icon** sits at the top of the screen. On a phone it is not in the top bar (that keeps the bar uncrowded); open the menu (the three lines at the top left) and press **News feeds**, which shows the same number badge. When something new has arrived, a **number badge** shows how many new entries there are.
 - Press it to open a pop-up with the text of the entries, grouped by feed, newest first. New ones have a coloured edge and say "New". Each entry has a **Read on the site** link that opens the site in a new tab.
 - When you close the pop-up, the new entries count as read and the badge clears. **Mark all as read** does the same without closing.
 - **Follow a feed:** paste the feed's web address and press **Add feed** (or Enter). Under **Show the feeds you follow** you can **Remove** one. **Check now** reads your feeds at once (at most once a minute).

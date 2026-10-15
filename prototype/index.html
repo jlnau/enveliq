@@ -1397,6 +1397,18 @@ body.on-draft .filters,body.on-draft #list,body.on-draft .sample-banner,body.on-
   #dkAsk .modal-actions,#whCheck .modal-actions,#sendWarn .modal-actions{flex-direction:column-reverse;margin-top:0;gap:8px}
   #dkAsk .compose-foot button,#whCheck .compose-foot button,#sendWarn .compose-foot button{width:100%;min-height:48px;font-size:15px}
 }
+/* Phones: nothing inside an open email may make the page wider than the screen (that made the page look zoomed in).
+   Long words and addresses wrap, the text is not enlarged by the browser, and a double tap does not zoom. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
+@media(max-width:760px){
+  html,body{max-width:100%;overflow-x:clip}
+  .reader{max-width:100%;overflow-x:hidden}
+  .rbody{min-width:0;max-width:100%;overflow-x:hidden;overflow-wrap:anywhere}
+  .rbody .qdetail,.rbody .qdetail *{min-width:0;max-width:100%}
+  .rbody .tltitle,.rbody .qkv>span{min-width:0;overflow-wrap:anywhere}
+}
+.nav.sidenews{display:none}
+@media(max-width:760px){.nav.sidenews{display:flex}.nav.sidenews[hidden]{display:none!important}}
 </style>
 </head>
 <body class="booting">
@@ -1429,6 +1441,7 @@ body.on-draft .filters,body.on-draft #list,body.on-draft .sample-banner,body.on-
       <button class="nav more-toggle" id="moreToggle" type="button" aria-expanded="false" aria-controls="moreItems" title="More mailbox views"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3zM3 9h18"/><path class="more-chev" d="m9.5 13.2 2.5 2.4 2.5-2.4"/></svg><span class="nav-label">More</span><span class="more-arrow" aria-hidden="true">⌄</span></button>
       <div class="more-items" id="moreItems"></div>
     </div>
+    <button class="nav sidenews" id="sideRss" type="button" data-rss-open aria-haspopup="dialog" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5a14 14 0 0 1 14 14M5 11a8 8 0 0 1 8 8"/><circle cx="6" cy="18" r="1.4" fill="currentColor" stroke="none"/></svg><span class="nav-label">News feeds</span><span class="badge hot rssbadge" hidden></span></button>
     <button class="nav" id="sideSettings" type="button" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="nav-label">Settings</span></button>
   </nav>
   <a class="updnote" id="updNote" target="_blank" rel="noopener noreferrer" hidden><span class="updic" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 11l6-6 6 6"/></svg></span><span class="updtx"><b id="updVer">A new version is out</b><small>See what's new</small></span></a>
@@ -1461,9 +1474,7 @@ body.on-draft .filters,body.on-draft #list,body.on-draft .sample-banner,body.on-
   <img class="mlogo" id="mLogo" alt="Enveliq">
   <div class="mtitle" id="mTitle"><b>Inbox</b><small id="mTitleSub"></small></div>
   <span class="msp"></span>
-  <button class="mbtn" id="mNewBtn" type="button" aria-label="New email" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="m14.5 7.5 3 3"/></svg></button>
   <button class="mbtn rssbtn" id="mBellBtn" type="button" data-bell-open aria-haspopup="dialog" aria-label="Notifications" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="rssbadge" hidden></span></button>
-  <button class="mbtn rssbtn" id="mRssBtn" type="button" data-rss-open aria-label="News feeds" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5a14 14 0 0 1 14 14M5 11a8 8 0 0 1 8 8"/><circle cx="6" cy="18" r="1.4" fill="currentColor"/></svg><span class="rssbadge" hidden></span></button>
   <button class="mbtn" id="mSearchBtn" type="button" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/></svg></button>
   <button class="mbtn" id="mSyncBtn" type="button" aria-label="Sync mail" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14-4M4 4v4h4M4 13a8 8 0 0 0 14 4M20 20v-4h-4"/></svg></button>
   </div>
@@ -5498,7 +5509,7 @@ async function pollOutbox(){
 // Everything here is fetched when asked for and kept only in this page's memory.
 function applyFeatures(){
   const on=realMail&&accounts.length>0;rssPaint();
-  $("newMailBtn").hidden=$("mNewBtn").hidden=!(on&&feat.compose);
+  $("newMailBtn").hidden=!(on&&feat.compose);
   $("sentNav").hidden=!(on&&feat.sent);$("draftNav").hidden=!on;if(on&&!draftData.loaded)loadDrafts();
   if(filter==="drafts"&&!on){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   $("shipNav").hidden=!(on&&feat.shipping);$("waitNav").hidden=!(on&&feat.waiting);subNavSync();
@@ -6242,7 +6253,7 @@ function presentOriginal(o,c){
   $("attachmentModal").classList.add("open");
   $("attachmentScrim").classList.add("show");viewerPush();
 }
-$("newMailBtn").onclick=()=>openNewMail();$("mNewBtn").onclick=()=>openNewMail();
+$("newMailBtn").onclick=()=>openNewMail();
 $("nmClose").onclick=requestCloseNewMail;$("nmCancel").onclick=requestCloseNewMail;
 $("nmSend").onclick=sendNew;$("nmForm").addEventListener("submit",e=>{e.preventDefault()});
 $("nmAttach").onclick=()=>$("nmFile").click();

@@ -30,7 +30,7 @@ When the mailbox uses AI summaries, the alert is sent once the new email is read
 
 ## The bell, and messages from Home Assistant and other services
 
-At the top right of the inbox, beside the news-feed icon, a **bell** collects two things in one drop-down (a full-screen window on a phone):
+At the top right of the inbox, beside the news-feed icon (on a phone the bell stays in the top bar and the news feeds are in the menu), a **bell** collects two things in one drop-down (a full-screen window on a phone):
 
 * **Notes sent to you by other services** on your network, such as Home Assistant ("Washer finished"). Each shows its title, its text, where it came from and when. **Dismiss** removes one, **Mark all as read** and **Clear the list** do what they say. Only the newest 100 are kept.
 * **Your chat messages** from the people who share this Enveliq (see [MESSAGES.md](MESSAGES.md)): a line saying how many are unread and from whom, with a **Read messages** button.

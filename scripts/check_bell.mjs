@@ -139,8 +139,8 @@ const run = async (width, height) => {
   notes = [{ id: "n0000000000000001", title: "Washer finished", message: "Empty it.", source: "Home Assistant", at: now - 90, unread: true }]; chatUnread = 1;
   const { page, context, errors } = await run(390, 800);
   await page.waitForSelector("#mBellBtn:not([hidden])");
-  const mb = await page.locator("#mBellBtn").boundingBox(), mr = await page.locator("#mRssBtn").boundingBox();
-  check("on a phone the bell is in the top bar beside the news-feed icon", Math.abs(mb.y - mr.y) < 3 && mb.x < mr.x);
+  const mb = await page.locator("#mBellBtn").boundingBox();
+  check("on a phone the bell is in the top bar, fully on the screen", mb.y < 56 && mb.x >= 0 && mb.x + mb.width <= 390);
   await page.locator("#mBellBtn").click();
   await page.waitForSelector("#bellPop:not([hidden]) .rss-item");
   const full = await page.locator("#bellPop").boundingBox();
