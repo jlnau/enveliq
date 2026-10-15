@@ -2386,6 +2386,8 @@ async function restoreMailContinuity(){
   let local={};
   try{local=JSON.parse(sessionStorage.getItem(continuityStorageKey())||"{}")}catch{}
   const fromNotification=new URL(location.href).searchParams.has("open");
+  const navType=performance.getEntriesByType("navigation")[0]?.type;
+  const restorePosition=navType==="reload"||navType==="back_forward";
   const chosen=fromNotification?null:(saved||local.selection);
   if(chosen&&chosen.account_id&&chosen.message_id){
     const m=data.find(x=>x.real&&x.owner===currentUser.id&&x.real.accountId===chosen.account_id&&x.real.messageId===chosen.message_id);
@@ -2393,12 +2395,12 @@ async function restoreMailContinuity(){
   }
   continuityRestoring=true;
   try{
-    if(!fromNotification&&local.filter&&PAGES.includes(local.filter)){
+    if(!fromNotification&&restorePosition&&local.filter&&PAGES.includes(local.filter)){
       filter=local.filter;
       document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));
     }
     render();
-    if(!fromNotification){
+    if(!fromNotification&&restorePosition){
       const list=document.getElementById("paneList"),content=document.querySelector(".main>.content");
       if(list&&Number.isFinite(local.listTop))list.scrollTop=local.listTop;
       if(content&&Number.isFinite(local.contentTop))content.scrollTop=local.contentTop;
