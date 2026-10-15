@@ -137,6 +137,18 @@ const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll
 }
 
 {
+  const { page, context } = await open(makeServer(), "", { width: 390, height: 800 });
+  const original = await page.evaluate(() => ({ filter, paneId }));
+  await page.evaluate((url) => navigator.serviceWorker.dispatchEvent(new MessageEvent("message", { data: { type: "enveliq-open", url } })), `${ORIGIN}/?open=a1:m2`);
+  await page.waitForSelector(".reader");
+  check("notification can open an email while the phone inbox is running", await page.locator(".reader").count() === 1);
+  await page.goBack();
+  await page.waitForTimeout(300);
+  check("Back from notification returns to the original phone inbox", await page.evaluate(({f,p}) => !document.body.classList.contains("reader-open") && filter === f && paneId === p, { f: original.filter, p: original.paneId }));
+  await page.close();await context.close();
+}
+
+{
   const { page, context } = await open(makeServer(), "?open=a1:m1", { width: 390, height: 800 });
   check("on a phone the link opens the email too (full screen)", await page.evaluate(() => (document.querySelector(".reader h3")?.textContent || "").trim()) === "Update on refund");
   await shot(page, "notification-link-phone");
