@@ -41,6 +41,7 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 - [Signature and saved replies](SAVED_REPLIES.md) (your signature, and short texts you use often)
 - [Mail rules](MAIL_RULES.md) (archive new email from a sender you choose, automatically)
 - [Your inbox, day to day](INBOX.md) (the paperclip, ticking several emails, the version number, staying signed in)
+- [News feeds](NEWS_FEEDS.md) (follow websites with RSS or Atom; a badge shows what is new)
 - [Trips](TRIPS.md) (flights, stays and hire cars, put together and added to your calendar)
 - [Messages between people](MESSAGES.md)
 - [Chat with a Hermes agent](AGENT.md)

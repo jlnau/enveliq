@@ -31,6 +31,8 @@ from .mail.routes import build_mail_router
 from .mail.extra_routes import build_extra_router
 from .mail.task_routes import build_task_router
 from .mail.shipping import ShipBook
+from .mail.rss import RssBook, RssRefresher
+from .mail.rss_routes import build_rss_router
 from .mail.important import ImportantPeople
 from .mail.important_routes import build_important_router
 from .mail.rules import Rules
@@ -352,6 +354,7 @@ async def lifespan(_: FastAPI):
     auto_sync.start()
     backups.start()
     reminders.start()
+    rss_refresher.start()
     sync.start()
     reporter.start()
     reporter.event("app_started")
@@ -362,6 +365,7 @@ async def lifespan(_: FastAPI):
         auto_sync.stop()
         backups.stop()
         reminders.stop()
+        rss_refresher.stop()
         sync.stop()
         outbox.stop()
         vault.stop_idle_watchdog()
@@ -596,6 +600,8 @@ mail_service.check_id = checkbox.account_id
 auto_sync.checker = checkbox
 taskbook = TaskBook(vault)
 shipbook = ShipBook(vault)
+rssbook = RssBook(vault)
+rss_refresher = RssRefresher(vault, rssbook)
 subbook = SubBook(vault, taskbook.timezone_of)
 importantbook = ImportantPeople(vault)
 savedbook = SavedWriting(vault)
@@ -648,13 +654,14 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, subscriptions=subbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, subscriptions=subbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))
 app.include_router(build_extra_router(mail_ctx))          # after the main router: shares its send limits
 app.include_router(build_task_router(mail_ctx))
 app.include_router(build_shipping_router(mail_ctx))
+app.include_router(build_rss_router(mail_ctx))
 app.include_router(build_subscriptions_router(mail_ctx))
 app.include_router(build_important_router(mail_ctx))
 app.include_router(build_saved_writing_router(mail_ctx))

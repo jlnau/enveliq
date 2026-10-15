@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**News feeds (RSS and Atom).** A feed icon at the top of the screen shows a number badge when a feed you follow has new entries. Press it to read their text in a pop-up (full screen on a phone), add a feed by pasting its address, remove one, or check now. Every person follows their own feeds; nobody else can see them. Enveliq reads the feeds from the server about every half hour through the same careful outbound path as reminders, keeps only a short plain-text version of the newest entries (encrypted), and shows feed text only as plain text. An administrator or each person can switch it off. New guide: [NEWS_FEEDS.md](NEWS_FEEDS.md). Touches `backend/mail/rss.py`, `rss_routes.py`, `outbound.py` (a variant that also returns reply headers, so redirects can be followed and checked by hand), `features.py`, `prototype/index.html`.
+
 **On a phone, the email closes as soon as you press Reviewed, Archive or Bin.** Before, the full screen email stayed open until you pressed Close or the action finished. Now it closes at once and you are back in the list. The five-second **Undo** bar still shows, and Undo brings the email back. See `docs/INBOX.md`.
 
 **Forms fill the screen on a phone.** The new Add a parcel form and the new Task form open full screen on a phone, with the title and a **✕ Close** button fixed at the top and the buttons fixed at the bottom, so they can always be reached. This is now a standing rule for every new form (`CLAUDE.md`).

@@ -40,6 +40,7 @@ class FeaturesBody(StrictModel):
     waiting: bool | None = None
     messages: bool | None = None
     write_help: bool | None = None
+    rss: bool | None = None
 
 
 class FollowBody(StrictModel):

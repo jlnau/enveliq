@@ -172,6 +172,7 @@ All the guides are listed, by what you want to do, in the [**documentation index
 [Search](docs/SEARCH.md) ·
 [Subscriptions](docs/SUBSCRIPTIONS.md) ·
 [Trips](docs/TRIPS.md) ·
+[News feeds](docs/NEWS_FEEDS.md) ·
 [Backup and restore](docs/BACKUP.md) ·
 [New versions](docs/UPDATES.md) ·
 [The demo](docs/DEMO.md) ·
