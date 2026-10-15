@@ -114,12 +114,12 @@ def _same(a: str, b: str) -> bool:
     return a.casefold() == b.casefold()
 
 
-def _tidy(names: list[str]) -> list[str]:
+def _tidy(names: list[str], limit: int | None = MAX_PER_MESSAGE) -> list[str]:
     seen: dict[str, str] = {}
     for n in names:
         if n and n.casefold() not in seen:
             seen[n.casefold()] = n
-    return sorted(seen.values(), key=str.casefold)[:MAX_PER_MESSAGE]
+    return sorted(seen.values(), key=str.casefold)[:limit]
 
 
 # ---------- reading an IMAP reply ----------
@@ -176,7 +176,7 @@ def read_tags(s: Any, dialect: str) -> dict[str, Any]:
     """{'names': [...], 'can_create': bool} for the open session."""
     if dialect == "proton":
         names = [utf7_decode(n)[len(PROTON_PREFIX):] for _f, n in s._folders() if utf7_decode(n).startswith(PROTON_PREFIX) and len(utf7_decode(n)) > len(PROTON_PREFIX)]
-        return {"names": _tidy([n for n in names if "/" not in n]), "can_create": True}
+        return {"names": _tidy([n for n in names if "/" not in n], limit=None), "can_create": True}
     if dialect == "gmail":
         names = []
         for flags, raw in s._folders():
@@ -184,7 +184,7 @@ def read_tags(s: Any, dialect: str) -> dict[str, Any]:
             if name.upper() == "INBOX" or name.startswith(("[Gmail]", "[Google Mail]")) or name.startswith("CATEGORY_") or flags & _GMAIL_SPECIAL:
                 continue
             names.append(name)
-        return {"names": _tidy(names), "can_create": True}
+        return {"names": _tidy(names, limit=None), "can_create": True}
     s.select_inbox(readonly=False)           # a read-only open reports no permanent flags
     try:
         _typ, data = s.imap.response("PERMANENTFLAGS")
@@ -194,7 +194,7 @@ def read_tags(s: Any, dialect: str) -> dict[str, Any]:
     for item in data or []:
         if isinstance(item, bytes):
             flags += (_paren_list("PERMANENTFLAGS " + item.decode("utf-8", "replace"), "PERMANENTFLAGS") or [])
-    return {"names": _tidy([f for f in flags if _is_user_keyword(f)]), "can_create": "\\*" in flags}
+    return {"names": _tidy([f for f in flags if _is_user_keyword(f)], limit=None), "can_create": "\\*" in flags}
 
 
 def create_tag(s: Any, dialect: str, name: str) -> None:
@@ -312,7 +312,7 @@ class TagService:
                 create_tag(s, dialect, name)
                 now = read_tags(s, dialect)
                 if dialect == "keywords":
-                    now = {"names": _tidy([*now["names"], name]), "can_create": now["can_create"]}      # it exists once it is first used
+                    now = {"names": _tidy([*now["names"], name], limit=None), "can_create": now["can_create"]}      # it exists once it is first used
                 return {"supported": True, "name": name, **now}
         finally:
             lock.release()

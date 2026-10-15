@@ -484,3 +484,15 @@ def test_the_audit_log_records_that_a_tag_changed_but_never_its_name(env):
     client.put(f"/api/v1/accounts/{aid}/messages/{mid}/tags", json={"name": "Secret plans", "on": True})
     assert {e["event"] for e in seen} >= {"tag_created", "message_tagged"}
     assert "Secret plans" not in repr(seen)
+
+
+def test_a_long_list_of_tags_in_the_mailbox_is_shown_whole():
+    names = [f"Tag {chr(97 + i // 3)}{i % 3}" for i in range(60)]
+    folders = [("\\HasNoChildren", "INBOX")] + [("\\HasNoChildren", "Labels/" + n) for n in names]
+    imap = MemImap(folders, [inbox(11, "<a@example.invalid>")])
+    svc = service(imap, MemVault())
+    assert svc.overview(PROTON)["names"] == sorted(names, key=str.casefold)             # all 60, not just the first 20
+    gm = MemImap([("\\HasNoChildren", "INBOX")] + [("\\HasNoChildren", n) for n in names], [])
+    assert len(service(gm, MemVault()).overview(GMAIL)["names"]) == 60
+    kw = MemImap([("\\HasNoChildren", "INBOX")], [], permanent="(\\Seen " + " ".join(f"K{i}" for i in range(40)) + " \\*)")
+    assert len(service(kw, MemVault()).overview(OTHER)["names"]) == 40
