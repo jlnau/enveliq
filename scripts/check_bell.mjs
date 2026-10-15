@@ -93,6 +93,7 @@ const run = async (width, height) => {
   await page.locator("#bellPop summary").click();
   const how = await page.locator("#bellPop").innerText();
   check("the fold explains the local address and the first messages to send", /ws:\/\/YOUR-SERVER-IP:8765\/api\/v1\/inbound\/ws/.test(how) && /"type":"auth"/.test(how) && /"type":"notify"/.test(how));
+  check("the fold also explains the plain web request (webhook) and the same key", /plain web request \(webhook\)/.test(how) && /POST/.test(how) && /Authorization: Bearer YOUR-KEY/.test(how) && /https?:\/\/[^ ]+\/api\/v1\/inbound\/webhook/.test(how) && /http:\/\/YOUR-SERVER-IP:8765\/api\/v1\/inbound\/webhook/.test(how));
   await page.locator("#bellPop [data-bell-key]").click();
   await page.waitForSelector("#bellKey");
   check("making a key shows it once, ready to copy", (await page.locator("#bellKey").inputValue()) === "evq_TESTKEY-not-a-real-key" && /only once/.test(await page.locator("#bellPop").innerText()));

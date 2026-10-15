@@ -396,17 +396,21 @@ def private_host(host_header: str) -> bool:
 
 class HostGuardMiddleware:
     """Answers only to the host names Enveliq was told about (like Starlette's TrustedHostMiddleware), with one exception:
-    the WebSocket door for other services also answers on a private network address, so Home Assistant can reach it by the
+    the WebSocket door (and its plain POST twin) for other services also answers on a private network address, so Home Assistant can reach it by the
     machine's local IP address without going through the public name. Every other path still needs a listed name."""
 
-    def __init__(self, app: ASGIApp, allowed_hosts: list[str], local_ip_path: str):
+    def __init__(self, app: ASGIApp, allowed_hosts: list[str], local_ip_path: str, local_ip_post_path: str | None = None):
         from starlette.middleware.trustedhost import TrustedHostMiddleware
         self.app = app
         self.trusted = TrustedHostMiddleware(app, allowed_hosts=allowed_hosts)
         self.local_ip_path = local_ip_path
+        self.local_ip_post_path = local_ip_post_path
 
     async def __call__(self, scope, receive, send):
-        if scope.get("type") == "websocket" and scope.get("path") == self.local_ip_path:
+        door = (scope.get("type") == "websocket" and scope.get("path") == self.local_ip_path) or (
+            self.local_ip_post_path is not None and scope.get("type") == "http" and scope.get("method") == "POST"
+            and scope.get("path") == self.local_ip_post_path)
+        if door:
             headers = {k.decode("latin-1").lower(): v.decode("latin-1") for k, v in scope.get("headers", [])}
             if private_host(headers.get("host", "")):
                 await self.app(scope, receive, send)

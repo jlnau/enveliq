@@ -295,3 +295,92 @@ def test_deleting_a_person_also_clears_their_saved_layout_and_opened_emails(env)
     assert r.status_code in (200, 204), r.text
     assert not appm.vault.get_global("mail-view-v1:" + uid)
     assert not appm.vault.get_global("enveliq-opened-v1:" + uid)
+
+
+HOOK = "/api/v1/inbound/webhook"
+
+
+def test_a_service_can_send_a_note_with_a_plain_post(env):
+    appm, client = env
+    key = make_key(client)
+    anon = TestClient(appm.app)                                              # no sign-in: only the key
+    r = anon.post(HOOK, json={"title": "Washer finished", "message": "Empty it", "source": "Node-RED"}, headers={"Authorization": f"Bearer {key}"})
+    assert r.status_code == 200 and r.json() == {"ok": True} and r.headers["cache-control"] == "no-store"
+    body = client.get("/api/v1/me/bell").json()
+    assert body["webhook_path"] == HOOK and body["unread"] == 1
+    assert body["items"][0]["title"] == "Washer finished" and body["items"][0]["source"] == "Node-RED"
+    assert key not in json.dumps(body)
+
+
+def test_the_post_door_turns_away_a_missing_wrong_or_misplaced_key(env):
+    appm, client = env
+    key = make_key(client)
+    anon = TestClient(appm.app)
+    assert anon.post(HOOK, json={"title": "x"}).status_code == 401
+    assert anon.post(HOOK, json={"title": "x"}, headers={"Authorization": "Bearer evq_wrong"}).status_code == 401
+    assert anon.post(HOOK, json={"title": "x"}, headers={"Authorization": key}).status_code == 401               # needs the word Bearer
+    assert anon.post(f"{HOOK}?key={key}", json={"title": "x"}).status_code == 401                                  # a key in the address is never read
+    assert anon.post(HOOK, json={"title": "x", "token": key}).status_code == 401                                  # nor one in the body
+    assert client.get("/api/v1/me/bell").json()["items"] == []
+    assert anon.get(HOOK).status_code in (404, 405)                                                                 # it only takes POST
+
+
+def test_the_post_door_gives_plain_reasons_for_bad_notes(env):
+    appm, client = env
+    key = make_key(client)
+    anon = TestClient(appm.app)
+    h = {"Authorization": f"Bearer {key}"}
+    assert anon.post(HOOK, json={}, headers=h).status_code == 400
+    assert anon.post(HOOK, json=["a list"], headers=h).status_code == 400
+    r = anon.post(HOOK, json={"title": "t" * 101}, headers=h)
+    assert r.status_code == 400 and "too long" in r.json()["detail"]
+    assert anon.post(HOOK, content=b"title=x", headers={**h, "Content-Type": "application/x-www-form-urlencoded"}).status_code == 415
+    assert anon.post(HOOK, json={"title": "a", "message": "m" * 5000}, headers=h).status_code in (400, 413)
+    assert client.get("/api/v1/me/bell").json()["items"] == []
+
+
+def test_the_post_door_is_rate_limited_per_key(env):
+    appm, client = env
+    key = make_key(client)
+    anon = TestClient(appm.app)
+    h = {"Authorization": f"Bearer {key}"}
+    codes = [anon.post(HOOK, json={"title": f"n{i}"}, headers=h).status_code for i in range(I.MAX_PER_MINUTE + 3)]
+    assert codes[: I.MAX_PER_MINUTE] == [200] * I.MAX_PER_MINUTE and codes[-1] == 429
+
+
+def test_a_post_note_lands_only_in_the_keys_own_bell_and_a_disabled_person_is_refused(env):
+    from helpers import create_user
+    appm, client = env
+    create_user(client, "second")
+    uid = next(u["id"] for u in appm.vault.list_users() if u.get("username") == "second")
+    other_key = appm.inboundbook.make_key(uid)
+    anon = TestClient(appm.app)
+    assert anon.post(HOOK, json={"title": "for the second person"}, headers={"Authorization": f"Bearer {other_key}"}).status_code == 200
+    assert client.get("/api/v1/me/bell").json()["items"] == []
+    assert [i["title"] for i in appm.inboundbook.view(uid)["items"]] == ["for the second person"]
+    user = appm.vault.get_user(uid)
+    appm.vault.update_user(uid, {**{k: v for k, v in user.items() if k != "id"}, "disabled": True})
+    assert anon.post(HOOK, json={"title": "again"}, headers={"Authorization": f"Bearer {other_key}"}).status_code == 401
+
+
+def test_a_new_key_cuts_off_the_old_one_for_the_post_door_too(env):
+    appm, client = env
+    old = make_key(client)
+    new = make_key(client)
+    anon = TestClient(appm.app)
+    assert anon.post(HOOK, json={"title": "x"}, headers={"Authorization": f"Bearer {old}"}).status_code == 401
+    assert anon.post(HOOK, json={"title": "x"}, headers={"Authorization": f"Bearer {new}"}).status_code == 200
+
+
+def test_the_post_door_also_answers_on_the_local_address_but_nothing_else_does(env):
+    appm, client = env
+    key = make_key(client)
+    lan = TestClient(appm.app, base_url="http://192.168.1.50:8765")
+    assert lan.post(HOOK, json={"title": "Over the LAN"}, headers={"Authorization": f"Bearer {key}"}).status_code == 200
+    assert client.get("/api/v1/me/bell").json()["items"][0]["title"] == "Over the LAN"
+    assert lan.get("/api/v1/health").status_code == 400
+    assert lan.get("/api/v1/me/bell").status_code == 400
+    assert lan.post("/api/v1/me/bell/key", json={}).status_code == 400
+    for host in ("http://evil.example.com", "http://8.8.8.8:8765", "http://169.254.169.254"):
+        bad = TestClient(appm.app, base_url=host)
+        assert bad.post(HOOK, json={"title": "x"}, headers={"Authorization": f"Bearer {key}"}).status_code == 400

@@ -32,7 +32,7 @@ refused on purpose. To allow more names, add `ENVELIQ_ALLOWED_HOSTS` and `ENVELI
 
 ## A local address for Home Assistant and other services
 
-The WebSocket door that lets Home Assistant send notes to Enveliq (see [NOTIFICATIONS.md](NOTIFICATIONS.md)) also answers on the machine's private network address, such as `ws://192.168.1.50:8765/api/v1/inbound/ws`, even though you normally reach Enveliq by its public name behind Cloudflare. For that you only need `ENVELIQ_PUBLISH=0.0.0.0` (the first line above); `ENVELIQ_PUBLIC_URL` can stay your https name. Everything else on that address is still refused.
+The WebSocket door (and its plain `POST` twin, the webhook) that lets Home Assistant and other services send notes to Enveliq (see [NOTIFICATIONS.md](NOTIFICATIONS.md)) also answers on the machine's private network address, such as `ws://192.168.1.50:8765/api/v1/inbound/ws` or `http://192.168.1.50:8765/api/v1/inbound/webhook`, even though you normally reach Enveliq by its public name behind Cloudflare. For that you only need `ENVELIQ_PUBLISH=0.0.0.0` (the first line above); `ENVELIQ_PUBLIC_URL` can stay your https name. Everything else on that address is still refused.
 
 ## What you give up
 

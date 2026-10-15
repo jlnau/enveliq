@@ -2842,7 +2842,7 @@ document.addEventListener("click",e=>{
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&tagUi.open){e.stopPropagation();if(tagUi.info){tagUi.info=false;tagPopPaint(true);const b=$("tagPop").querySelector("[data-tag-info]");if(b)b.focus()}else tagClose()}},true);
 
 // ---------- The bell: notes from Home Assistant and other services, and your chat messages ----------
-let bellData={items:[],unread:0,key_made:null,ws_path:"/api/v1/inbound/ws"},bellUi={open:false,busy:false,err:"",key:"",copied:false};
+let bellData={items:[],unread:0,key_made:null,ws_path:"/api/v1/inbound/ws",webhook_path:"/api/v1/inbound/webhook"},bellUi={open:false,busy:false,err:"",key:"",copied:false};
 const bellOn=()=>!!realMail;
 function bellCount(){return bellOn()?(bellData.unread||0)+(msgOn()?msgSum.unread||0:0):0}
 function bellPaint(){
@@ -2863,7 +2863,7 @@ function bellPopPaint(keep){
   const m=$("bellPop");if(!m)return;
   const sc=keep&&m.querySelector(".sf-body")?m.querySelector(".sf-body").scrollTop:0;
   const open=keep&&m.querySelector("details")?m.querySelector("details").open:false;
-  const path=bellData.ws_path||"/api/v1/inbound/ws";
+  const path=bellData.ws_path||"/api/v1/inbound/ws",hook=bellData.webhook_path||"/api/v1/inbound/webhook";
   const chat=msgOn()&&msgSum.unread?(()=>{const L=msgSum.latest||[],names=[...new Set(L.map(x=>x.from.name))];
     return `<section class="rss-feed" aria-label="Messages"><h4>Messages</h4><article class="rss-item new"><b>${msgSum.unread} unread ${msgSum.unread===1?"message":"messages"}${names.length?" from "+esc(names.join(", ")):""}</b><button class="obtn blue" type="button" data-msg-go>Read messages</button></article></section>`})():"";
   const notes=(bellData.items||[]).map(i=>`<article class="rss-item${i.unread?" new":""}">${i.title?`<b>${esc(i.title)}</b>`:""}${i.message?`<p>${esc(i.message)}</p>`:""}<span class="meta">From ${esc(i.source||"a service on your network")} · ${esc(bellWhen(i.at))}</span> <button class="bell-x" type="button" data-bell-dismiss="${esc(i.id)}" aria-label="Dismiss ${esc(i.title||"this note")}">Dismiss</button></article>`).join("");
@@ -2877,6 +2877,7 @@ function bellPopPaint(keep){
         <p class="pop-note">A service sends short notes to Enveliq through a WebSocket. Make a key for yourself, then give the service the address and the key. Notes it sends land in this list, only for you.</p>
         <p class="pop-note">On your own network use this machine's local address, so it works even when the public address sits behind Cloudflare: <code>ws://YOUR-SERVER-IP:8765${esc(path)}</code>. From outside, use <code>${secure?"wss":"ws"}://${esc(host)}${esc(path)}</code> if your proxy allows WebSockets.</p>
         <p class="pop-note">First send <code>{"type":"auth","token":"YOUR-KEY"}</code>, then <code>{"type":"notify","title":"Washer finished","message":"Empty it"}</code>. A new key replaces the old one.</p>
+        <p class="pop-note"><b>Or send a plain web request (webhook).</b> If the service cannot keep a WebSocket open (Node-RED, n8n, Uptime Kuma), send a <code>POST</code> to <code>${secure?"https":"http"}://${esc(host)}${esc(hook)}</code> with the header <code>Authorization: Bearer YOUR-KEY</code> and a JSON body such as <code>{"title":"Washer finished","message":"Empty it"}</code>. On your own network use <code>http://YOUR-SERVER-IP:8765${esc(hook)}</code>. It uses the same key, and the notes land in this same list.</p>
         ${keyBox}${bellUi.err?`<p class="sa-err" role="alert">${esc(bellUi.err)}</p>`:""}
         <p class="pop-note">${bellData.key_made?"You have a key.":"You have no key yet."}</p>
         <div class="rss-add"><button class="obtn" type="button" data-bell-key${bellUi.busy?" disabled":""}>${bellData.key_made?"Make a new key":"Make a key"}</button>${bellData.key_made?`<button class="obtn" type="button" data-bell-key-remove${bellUi.busy?" disabled":""}>Remove my key</button>`:""}</div>

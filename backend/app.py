@@ -31,7 +31,7 @@ from .mail.extra_routes import build_extra_router
 from .mail.task_routes import build_task_router
 from .mail.shipping import ShipBook
 from .mail.inbound import InboundBook
-from .mail.inbound_routes import WS_PATH as INBOUND_WS_PATH, build_inbound_router
+from .mail.inbound_routes import WEBHOOK_PATH as INBOUND_WEBHOOK_PATH, WS_PATH as INBOUND_WS_PATH, build_inbound_router
 from .mail.rss import RssBook, RssRefresher
 from .mail import features
 from .mail.tags import TagService
@@ -378,7 +378,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Enveliq", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
-app.add_middleware(HostGuardMiddleware, allowed_hosts=ALLOWED_HOSTS, local_ip_path=INBOUND_WS_PATH)
+app.add_middleware(HostGuardMiddleware, allowed_hosts=ALLOWED_HOSTS, local_ip_path=INBOUND_WS_PATH, local_ip_post_path=INBOUND_WEBHOOK_PATH)
 # Added last, so it runs first: size, type and origin checks happen before
 # anything parses the request.
 app.add_middleware(RequestGuardMiddleware, max_body_bytes=MAX_BODY_BYTES, allowed_origins=ALLOWED_ORIGINS)

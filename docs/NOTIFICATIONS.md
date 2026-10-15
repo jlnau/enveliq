@@ -47,11 +47,19 @@ A service connects to Enveliq's **WebSocket door** at `/api/v1/inbound/ws` and s
 
 Limits: a title up to 100 characters, a message up to 500, a source up to 40, 4,000 characters in one message, 30 notes a minute, and 5 open connections per person. Text is cleaned and shown only as plain text, never as a web page or a link, and the bell always says where a note came from.
 
+### Or send a plain web request (webhook)
+
+Some tools (Node-RED, n8n, Uptime Kuma, a Home Assistant `rest_command`) can send a web request but cannot keep a WebSocket open. For them there is a second door at `/api/v1/inbound/webhook`. It is available to everyone who is signed in: the same **Make a key** button in the bell makes the key, and the **Show how to connect** fold in the bell explains it.
+
+Send a `POST` to `https://your-address/api/v1/inbound/webhook` (or `http://YOUR-SERVER-IP:8765/api/v1/inbound/webhook` on your own network) with the header `Authorization: Bearer YOUR-KEY` and a JSON body such as `{"title":"Washer finished","message":"Empty it","source":"Node-RED"}`. Enveliq answers `{"ok":true}`, or a plain reason: `401` the key is not accepted (missing, wrong, replaced, removed, or the person is switched off), `400` the note was not acceptable, `413` too big, `415` the body was not JSON, `429` too many (at most 30 notes a minute per person, shared with the WebSocket door), `503` Enveliq is locked.
+
+The key is only read from the `Authorization` header, never from the address or the body. The note lands in the bell of the person who made the key, with the same limits and the same plain-text cleaning as the WebSocket door. Extra fields such as `priority` or `url` are ignored.
+
 ### It works over the local IP address
 
-Cloudflare's protection sits in front of the public address and can stop a service from reaching it. The door therefore also answers on the machine's **local network address** (for example `192.168.1.50`), where Cloudflare is not involved. This is the one place Enveliq accepts a bare address instead of its public name, and only for this door and only for addresses on a private network (`192.168.x.x`, `10.x.x.x`, `172.16.x.x` to `172.31.x.x`, `fc00::/7` and this machine); every other page and every other address still needs the public name you set. To make the door reachable on your network, publish the port beyond the machine itself: set `ENVELIQ_PUBLISH=0.0.0.0` in `.env` (or the Arcane project's variables) and redeploy; see [NETWORK_ACCESS.md](NETWORK_ACCESS.md). A host name instead of an address (for example `enveliq.local`) must be listed in `ENVELIQ_ALLOWED_HOSTS`.
+Cloudflare's protection sits in front of the public address and can stop a service from reaching it. The doors (the WebSocket and the webhook) therefore also answer on the machine's **local network address** (for example `192.168.1.50`), where Cloudflare is not involved. This is the one place Enveliq accepts a bare address instead of its public name, and only for this door and only for addresses on a private network (`192.168.x.x`, `10.x.x.x`, `172.16.x.x` to `172.31.x.x`, `fc00::/7` and this machine); every other page and every other address still needs the public name you set. To make the door reachable on your network, publish the port beyond the machine itself: set `ENVELIQ_PUBLISH=0.0.0.0` in `.env` (or the Arcane project's variables) and redeploy; see [NETWORK_ACCESS.md](NETWORK_ACCESS.md). A host name instead of an address (for example `enveliq.local`) must be listed in `ENVELIQ_ALLOWED_HOSTS`.
 
-Server: `backend/mail/inbound.py`, `backend/mail/inbound_routes.py` (the door and `/api/v1/me/bell`), `backend/security.py` (`HostGuardMiddleware`). Checks: `tests/test_inbound.py`, `scripts/check_bell.mjs`.
+Server: `backend/mail/inbound.py`, `backend/mail/inbound_routes.py` (the WebSocket door, the webhook and `/api/v1/me/bell`), `backend/security.py` (`HostGuardMiddleware`). Checks: `tests/test_inbound.py`, `scripts/check_bell.mjs`.
 
 ## Install Enveliq as an app
 

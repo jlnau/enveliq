@@ -6,7 +6,7 @@ import json
 import time
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Response, WebSocket
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, WebSocket
 from fastapi import Path as PathParam
 from starlette.concurrency import run_in_threadpool
 
@@ -16,6 +16,7 @@ from . import inbound as I
 from .limits import SlidingWindowLimiter
 
 WS_PATH = "/api/v1/inbound/ws"
+WEBHOOK_PATH = "/api/v1/inbound/webhook"      # the same door for services that can only send a plain POST
 AUTH_WAIT = 10          # seconds a new connection has to show its key
 IDLE_WAIT = 120         # seconds of silence before the door closes (a service keeps it open with "ping")
 
@@ -29,6 +30,7 @@ def build_inbound_router(ctx: Any) -> APIRouter:
     page_limit = SlidingWindowLimiter(max_events=240, window=60)
     key_limit = SlidingWindowLimiter(max_events=10, window=60)
     tries = SlidingWindowLimiter(max_events=20, window=60)                     # connection attempts per network address
+    hook_tries = SlidingWindowLimiter(max_events=120, window=60)               # POSTs per network address (a busy service sends many)
     per_key = SlidingWindowLimiter(max_events=I.MAX_PER_MINUTE, window=60)
     open_doors: dict[str, int] = {}
 
@@ -43,7 +45,7 @@ def build_inbound_router(ctx: Any) -> APIRouter:
     def mine(response: Response, session: Session = Depends(session_dep)):
         user = person(session)
         response.headers["Cache-Control"] = "no-store"
-        return {**book.view(user), "ws_path": WS_PATH}
+        return {**book.view(user), "ws_path": WS_PATH, "webhook_path": WEBHOOK_PATH}
 
     @router.post("/api/v1/me/bell/read", status_code=204)
     def read_all(session: Session = Depends(session_dep)):
@@ -95,6 +97,39 @@ def build_inbound_router(ctx: Any) -> APIRouter:
         except KeyError:
             return None
         return None if record.get("disabled") else user
+
+    @router.post(WEBHOOK_PATH)
+    async def webhook(request: Request):
+        """A service that cannot hold a WebSocket open sends one note as a POST. Same key, same limits, same bell."""
+        peer = request.client.host if request.client else "?"
+        if not hook_tries.allow(f"hook:{peer}"):
+            raise HTTPException(status_code=429, detail="Too many tries. Wait a minute.")
+        header = request.headers.get("authorization", "")
+        token = header[7:].strip() if header.lower().startswith("bearer ") else None
+        try:
+            user = await run_in_threadpool(who, token)
+        except VaultLocked:
+            raise HTTPException(status_code=503, detail="Enveliq is locked. Unlock it, then try again.")
+        if not user:
+            raise HTTPException(status_code=401, detail="That key is not accepted.", headers={"WWW-Authenticate": "Bearer"})
+        if not per_key.allow(f"ws-key:{user}"):
+            raise HTTPException(status_code=429, detail=f"Slow down. At most {I.MAX_PER_MINUTE} notes a minute.")
+        raw = await request.body()
+        if len(raw) > I.MAX_FRAME:
+            raise HTTPException(status_code=413, detail="That message is too big.")
+        try:
+            msg = json.loads(raw)
+        except ValueError:
+            msg = None
+        if not isinstance(msg, dict):
+            raise HTTPException(status_code=400, detail='Send JSON such as {"title": "Washer finished", "message": "Empty it"}.')
+        try:
+            await run_in_threadpool(book.add, user, msg.get("title"), msg.get("message"), msg.get("source"))
+        except I.InboundError as err:
+            raise HTTPException(status_code=400, detail=str(err))
+        except VaultLocked:
+            raise HTTPException(status_code=503, detail="Enveliq is locked. Unlock it, then try again.")
+        return Response(content='{"ok":true}', media_type="application/json", headers={"Cache-Control": "no-store"})
 
     @router.websocket(WS_PATH)
     async def door(ws: WebSocket):
