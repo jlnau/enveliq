@@ -49,6 +49,14 @@ class OpenedMessageBody(StrictModel):
     message_id: str = Field(min_length=1, max_length=512)
 
 
+class MailViewBody(StrictModel):
+    layout: str = Field(pattern=r"^(list|right|bottom|screen|deck)$")
+    density: str = Field(pattern=r"^(compact|standard|roomy)$")
+    width: str = Field(pattern=r"^(centered|full)$")
+    rows: str = Field(pattern=r"^(collapsed|open)$")
+    peek: bool
+
+
 class DeviceBody(StrictModel):
     endpoint: str = Field(max_length=800)
     p256dh: str = Field(max_length=200)
@@ -99,6 +107,18 @@ def build_notify_router(ctx: Any) -> APIRouter:
                 keys.append(key)
                 ctx.vault.set_global(opened_prefix + user, {"keys": keys[-20000:]})
         return {"ok": True}
+
+    # User-owned, encrypted vault preference: survives container restarts and browser changes.
+    @router.get("/me/mail-view")
+    def get_mail_view(session: Session = Depends(session_dep)):
+        saved = ctx.vault.get_global("mail-view-v1:" + session.principal.user_id)
+        return {"view": saved if isinstance(saved, dict) else None}
+
+    @router.put("/me/mail-view")
+    def put_mail_view(body: MailViewBody, session: Session = Depends(session_dep)):
+        view = body.model_dump()
+        ctx.vault.set_global("mail-view-v1:" + session.principal.user_id, view)
+        return {"view": view}
 
     @router.get("/me/notifications")
     def overview(session: Session = Depends(session_dep)):
