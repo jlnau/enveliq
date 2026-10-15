@@ -2254,7 +2254,7 @@ function openFromLink(raw,fromAddress,quiet){
   query="";$("search").value="";document.body.classList.remove("msearch");
   filter=isSnoozed(m)?"snoozed":m.status==="inbox"?"all":m.status;
   document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));
-  expanded.add(`row-${m.id}`);paneId=m.id;if(lay()==="screen")readerOpen=true;
+  expanded.add(`row-${m.id}`);paneId=m.id;enMarkOpened(m.id);if(lay()==="screen")readerOpen=true;
   render();
   const el=document.querySelector(`[data-expand="row-${m.id}"],[data-pick="${m.id}"]`);if(el&&el.scrollIntoView)el.scrollIntoView({block:"center"});
   return true;
@@ -4924,7 +4924,7 @@ document.addEventListener("click",e=>{
     else for(const m of data.filter(visible))expanded.add(`row-${m.id}`);
     render();return;
   }
-  const exp=e.target.closest("[data-expand]");if(exp){const key=exp.dataset.expand;expanded.has(key)?expanded.delete(key):expanded.add(key);render();return}
+  const exp=e.target.closest("[data-expand]");if(exp){const key=exp.dataset.expand;if(!expanded.has(key))enMarkOpened(key.replace(/^row-/,""));expanded.has(key)?expanded.delete(key):expanded.add(key);render();return}
   const a=e.target.closest("[data-status]");if(a){deckDir="act";const m=data.find(x=>x.id===+a.dataset.id&&x.owner===currentUser.id);if(m&&["reviewed","archived","trashed"].includes(a.dataset.status)){if(readerOpen&&lay()==="screen")readerOpen=false;   // on a phone the email closes at once; the Undo bar still shows
     queueAction([m],a.dataset.status);return}if(m&&m.real){resolveRealOne(m,a.dataset.status,a);return}if(m){m.status=a.dataset.status;m.attachments=[];m.attachmentsPurged=true;closeAttachmentViewer();selected.delete(m.id);render();toast(m.status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${m.status} · attachment data purged`)}return}
   const b=e.target.closest("[data-bulk]");if(b){queueAction([...selected].map(id=>data.find(x=>x.id===id&&x.owner===currentUser.id)),b.dataset.bulk);selMode=false;closeAttachmentViewer();return}
