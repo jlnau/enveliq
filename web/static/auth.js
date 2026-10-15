@@ -1282,7 +1282,7 @@ function ago(ts) {
 
 function deviceLabel() {
   const ua = navigator.userAgent || "";
-  const browser = /Edg\//.test(ua) ? "Edge" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "Browser";
+  const browser = /Brave\\//.test(ua) ? "Brave" : /Edg\//.test(ua) ? "Edge" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "Browser";
   const os = /Android/.test(ua) ? "Android" : /iPhone|iPad/.test(ua) ? "iPhone or iPad" : /Windows/.test(ua) ? "Windows" : /Mac OS/.test(ua) ? "Mac" : /Linux/.test(ua) ? "Linux" : "this device";
   return `${browser} on ${os}`;
 }
@@ -1295,8 +1295,15 @@ async function turnOnPush() {
   await navigator.serviceWorker.ready;
   const { public_key } = await api("/me/notifications/browser/key");
   let sub = await reg.pushManager.getSubscription();
-  if (sub) { try { await sub.unsubscribe(); } catch { /* subscribe again below */ } }
-  sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64urlToBuf(public_key) });
+  const key = b64urlToBuf(public_key);
+  const existingKey = sub?.options?.applicationServerKey;
+  const sameKey = existingKey && Array.from(new Uint8Array(existingKey)).join(",") === Array.from(new Uint8Array(key)).join(",");
+  if (sub && !sameKey) {
+    // Keep a healthy subscription; replace one only when its VAPID key changed.
+    await sub.unsubscribe();
+    sub = null;
+  }
+  if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
   const j = sub.toJSON();
   await api("/me/notifications/browser", { method: "POST", body: { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, label: deviceLabel() } });
 }
