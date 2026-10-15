@@ -170,7 +170,7 @@ On a phone the top bar holds only the menu button, the logo, the bell, Search an
 
 ## Your first view, and remembering it
 
-When someone signs in for the first time, the inbox starts with the **reading panel on the right**: the list on the left and the open email beside it. Any change you make under **View** (layout, spacing, width, open rows, preview) is saved for you on the server, encrypted, and used on every device you sign in from. It survives restarts and updates, and nobody else's choice ever changes yours. **Reset** in the View panel goes back to the first view. The right and bottom reading panels start with nothing selected ("Nothing selected", with a few quick actions) and clear again after a refresh. On a phone every email still opens full screen.
+When someone signs in for the first time, the inbox starts with the **reading panel on the right**: the list on the left and the open email beside it. Any change you make under **View** (layout, spacing, width, open rows, preview) is saved for you on the server, encrypted, and used on every device you sign in from. It survives restarts and updates, and nobody else's choice ever changes yours. **Reset** in the View panel goes back to the first view. The right and bottom reading panels begin with nothing selected for a person who has never opened an email. After someone selects an email, that choice is remembered through refreshes and across their signed-in devices if the message is still available. On a phone every email still opens full screen.
 
 ## New emails glow until you open them
 
