@@ -1410,6 +1410,35 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 }
 .nav.sidenews{display:none}
 @media(max-width:760px){.nav.sidenews{display:flex}.nav.sidenews[hidden]{display:none!important}}
+
+/* Experimental calendar in the otherwise empty reading panel. */
+.reading.rc-empty{padding:24px;min-height:0}
+.rc-wrap{max-width:780px;margin:0 auto;color:var(--text)}
+.rc-kicker{font-size:12px;color:var(--muted);margin:0 0 10px}
+.rc-wrap h2{font-size:25px;letter-spacing:-.03em;margin:0 0 4px}
+.rc-sub{color:var(--muted);font-size:13px;margin:0 0 24px}
+.rc-card{border:1px solid var(--c-232a36);border-radius:14px;padding:20px;background:var(--panel);margin-bottom:14px}
+.rc-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:17px}
+.rc-top h3{margin:0;font-size:18px}
+.rc-nav{display:flex;gap:5px;align-items:center}
+.rc-nav button{border:1px solid var(--c-232a36);background:transparent;color:inherit;border-radius:8px;padding:6px 11px;cursor:pointer}
+.rc-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;text-align:center}
+.rc-dow{color:var(--muted);font-size:11px;padding:6px 0}
+.rc-day{border:1px solid transparent;border-radius:9px;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:transparent;color:inherit;cursor:pointer;font:inherit}
+.rc-day:hover{background:var(--c-232a36)}
+.rc-day.rc-selected{background:var(--accent);color:white}
+.rc-day.rc-today:not(.rc-selected){border-color:var(--accent)}
+.rc-day small{width:5px;height:5px;background:#62ba97;border-radius:50%}
+.rc-day.rc-selected small{background:white}
+.rc-items{display:flex;flex-direction:column;gap:0}
+.rc-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--c-232a36);font-size:13px}
+.rc-item:last-child{border-bottom:0}
+.rc-item i{height:8px;width:8px;border-radius:50%;background:var(--accent);flex:none}
+.rc-muted{color:var(--muted)}
+.rc-bottom{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.rc-bottom h4{font-size:14px;margin:0 0 8px}
+.rc-link{background:none;border:0;padding:10px 0;color:var(--accent);cursor:pointer;text-align:left;font:inherit}
+@media(max-width:1100px){.reading.rc-empty{padding:13px}.rc-card{padding:12px}.rc-bottom{grid-template-columns:1fr}.rc-day{min-height:36px}}
 </style>
 </head>
 <body class="booting">
@@ -3461,6 +3490,34 @@ $("allSwitch").onclick=async()=>{
   b.disabled=false;render();
 };
 let selMode=false;          // phone only: set by pressing and holding an email
+let rcMonth="",rcDay="";
+function readingCalendar(){
+  const today=tasksData.today||isoLocal(new Date());
+  if(!rcMonth)rcMonth=today.slice(0,7);
+  const [year,month]=rcMonth.split("-").map(Number);
+  const start=new Date(year,month-1,1);
+  const pad=(start.getDay()+6)%7;
+  const total=new Date(year,month,0).getDate();
+  if(!rcDay||rcDay.slice(0,7)!==rcMonth)rcDay=rcMonth===today.slice(0,7)?today:rcMonth+"-01";
+  const all=tasksData.tasks.filter(t=>t.state==="open");
+  const selected=all.filter(t=>t.due===rcDay);
+  const upcoming=all.filter(t=>t.due>today).sort((a,b)=>a.due.localeCompare(b.due)).slice(0,3);
+  const label=start.toLocaleDateString("en-AU",{month:"long",year:"numeric"});
+  const dates=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d=>`<span class="rc-dow">${d}</span>`).join("")+
+    Array(pad).fill('<span></span>').join("")+
+    Array.from({length:total},(_,i)=>{const date=rcMonth+"-"+String(i+1).padStart(2,"0");return `<button type="button" class="rc-day${date===rcDay?" rc-selected":""}${date===today?" rc-today":""}" data-rc-day="${date}" aria-label="${date}"><span>${i+1}</span>${all.some(t=>t.due===date)?'<small></small>':""}</button>`}).join("");
+  const item=t=>`<div class="rc-item"><i></i><span>${esc(t.title)}</span></div>`;
+  return `<div class="rc-wrap"><div class="rc-kicker">YOUR CALENDAR · READING PANEL</div><h2>Nothing selected</h2><p class="rc-sub">Choose an email to read, or take a look at your day.</p>
+    <div class="rc-card"><div class="rc-top"><h3>${esc(label)}</h3><div class="rc-nav"><button data-rc-nav="-1" aria-label="Previous month">‹</button><button data-rc-nav="1" aria-label="Next month">›</button><button data-rc-nav="today">Today</button></div></div>
+    <div class="rc-grid">${dates}</div><div class="rc-items"><p class="rc-muted">${esc(new Date(rcDay+"T00:00:00").toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"}))}</p>${selected.length?selected.map(item).join(""):'<p class="rc-muted">No tasks scheduled for this day.</p>'}</div></div>
+    <div class="rc-bottom"><div class="rc-card"><h4>Due today</h4>${all.filter(t=>t.due===today).slice(0,4).map(item).join("")||'<p class="rc-muted">Nothing due today.</p>'}</div><div class="rc-card"><h4>Coming up</h4>${upcoming.map(item).join("")||'<p class="rc-muted">No upcoming tasks.</p>'}<button class="rc-link" type="button" data-rc-tasks>View all tasks →</button></div></div></div>`;
+}
+document.addEventListener("click",e=>{
+  const nav=e.target.closest("[data-rc-nav]");
+  if(nav){const v=nav.dataset.rcNav;if(v==="today"){rcMonth=(tasksData.today||isoLocal(new Date())).slice(0,7);rcDay="";}else{const [y,m]=rcMonth.split("-").map(Number);const d=new Date(y,m-1+Number(v),1);rcMonth=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");rcDay="";}render();return;}
+  const day=e.target.closest("[data-rc-day]");if(day){rcDay=day.dataset.rcDay;render();return;}
+  if(e.target.closest("[data-rc-tasks]")){document.querySelector('.nav[data-filter="tasks"]')?.click();}
+});
 function render(){
   window.__hidePeek&&window.__hidePeek();
   if(selMode&&(!selected.size||!isPhone()))selMode=false;
@@ -3572,7 +3629,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
         <button class="decknav next" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">›</button></div>
         ${act}<div class="deckdots" aria-hidden="true">${dots}</div></div>`;
     }else{
-      const readingHtml=cur?`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div></header>${quiet(cur,"detail")}</section>`:`<section class="reading" aria-label="Selected email"></section>`;
+      const readingHtml=cur?`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div></header>${quiet(cur,"detail")}</section>`:`<section class="reading rc-empty" aria-label="Calendar while no email selected">${readingCalendar()}</section>`;
       if(lay()==="right"&&!["sent","drafts","tasks","shipping","waiting","subscriptions","trips","messages"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
         dockHtml=readingHtml;
         listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div></div>`;
