@@ -168,6 +168,9 @@ async function open(server, { seen = true } = {}) {
   check("wording: 1 second, 59 seconds, 1 minute, minutes, hours", await page.evaluate(() => { const f = window.__syncAgoText; return f(1000) === "Synced 1 second ago" && f(59999) === "Synced 59 seconds ago" && f(60000) === "Synced 1 minute ago" && f(5 * 60000) === "Synced 5 minutes ago" && f(3600000) === "Synced 1 hour ago" && f(3 * 3600000) === "Synced 3 hours ago"; }));
   check("hostile sender and subject ran no code", (await page.evaluate(() => window.__pwned)) === undefined && (await page.locator("article.mail img").count()) === 0);
 
+  check("first sign-in defaults to right-side reading pane", await page.evaluate(() => view.layout === "right"));
+  // The following legacy checks deliberately exercise the optional classic list layout.
+  await page.evaluate(() => { view.layout = "list"; applyView(); render(); });
   // Layout: mail that needs nothing is a quiet row with one Reviewed button; the rest is behind the chevron
   check("every email is one thin row, not grouped", (await page.locator(".grp").count()) === 0 && (await page.locator("article.mail.quiet").count()) === 3);
   const rights = await page.locator("article.mail .time").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().right)));
