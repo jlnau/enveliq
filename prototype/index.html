@@ -1410,6 +1410,23 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 }
 .nav.sidenews{display:none}
 @media(max-width:760px){.nav.sidenews{display:flex}.nav.sidenews[hidden]{display:none!important}}
+
+/* Experimental Enveliq-only first-open treatment (no provider flags). */
+.mail.quiet.enveliq-new{position:relative;isolation:isolate;border-radius:11px;box-shadow:inset 0 0 0 1px rgba(79,142,255,.65),0 0 10px 1px rgba(54,116,245,.24),0 0 20px rgba(54,116,245,.10);background:linear-gradient(90deg,rgba(49,104,205,.11),transparent 62%)}
+.mail.quiet.enveliq-new .sender,.mail.quiet.enveliq-new .subject{font-weight:650}
+.mail.quiet.enveliq-new.current{box-shadow:inset 3px 0 0 var(--accent),0 0 10px rgba(54,116,245,.19)}
+.reading.enveliq-empty{padding:24px;display:flex;align-items:center;justify-content:center;min-height:0}
+.enveliq-empty-wrap{width:100%;max-width:860px;text-align:center}
+.enveliq-empty-title{font-size:clamp(22px,2.1vw,31px);font-weight:700;letter-spacing:-.025em;margin:0 0 10px}
+.enveliq-empty-sub{font-size:14px;color:var(--muted);margin:0 0 35px}
+.enveliq-empty-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
+.enveliq-empty-action{appearance:none;text-align:left;min-width:0;min-height:158px;padding:20px 16px 15px;border:1px solid var(--c-232a36);border-radius:13px;background:var(--panel);color:inherit;display:flex;flex-direction:column;gap:11px;cursor:pointer;font:inherit;transition:border-color .15s,background .15s}
+.enveliq-empty-action:hover,.enveliq-empty-action:focus-visible{border-color:var(--accent);background:rgba(70,115,210,.08)}
+.enveliq-empty-action svg{width:25px;height:25px;stroke:var(--accent);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.enveliq-empty-action strong{font-size:13px;font-weight:650}
+.enveliq-empty-action span{font-size:12px;line-height:1.5;color:var(--muted)}
+.enveliq-empty-action .ea-arrow{align-self:flex-end;margin-top:auto;font-size:19px;color:var(--muted)}
+@media(max-width:1250px){.enveliq-empty-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.enveliq-empty-action{min-height:135px}.reading.enveliq-empty{padding:14px}}
 </style>
 </head>
 <body class="booting">
@@ -3461,6 +3478,19 @@ $("allSwitch").onclick=async()=>{
   b.disabled=false;render();
 };
 let selMode=false;          // phone only: set by pressing and holding an email
+// First-open state is scoped to the Enveliq user and never writes to source mailboxes.
+const enNewKey=()=> "enveliq-opened-messages:"+String(currentUser.id);
+function enOpenSet(){try{return new Set(JSON.parse(localStorage.getItem(enNewKey())||"[]"))}catch{return new Set()}}
+function enMailKey(m){return m.real ? m.real.accountId+":"+m.real.messageId : "demo:"+m.id}
+function enOpened(m){return enOpenSet().has(enMailKey(m))}
+function enMarkOpened(id){const m=data.find(x=>String(x.id)===String(id)&&x.owner===currentUser.id);if(!m)return;const known=enOpenSet();known.add(enMailKey(m));try{localStorage.setItem(enNewKey(),JSON.stringify([...known]))}catch{}}
+function enEmptyReading(){return `<div class="enveliq-empty-wrap"><h2 class="enveliq-empty-title">Nothing selected</h2><p class="enveliq-empty-sub">Choose an email to read, reply, or take action.</p><div class="enveliq-empty-actions">
+<button type="button" class="enveliq-empty-action" data-en-action="read"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="m3 7 9 7 9-7"/></svg><strong>Read emails</strong><span>Focus on what matters most</span><span class="ea-arrow">→</span></button>
+<button type="button" class="enveliq-empty-action" data-en-action="tasks"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/></svg><strong>Open tasks</strong><span>Turn emails into tasks</span><span class="ea-arrow">→</span></button>
+<button type="button" class="enveliq-empty-action" data-en-action="draft"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5M9 12h8M9 16h6"/></svg><strong>Continue draft</strong><span>Pick up where you left off</span><span class="ea-arrow">→</span></button>
+<button type="button" class="enveliq-empty-action" data-en-action="subscriptions"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 16a4 4 0 0 1 5 4"/></svg><strong>Check subscriptions</strong><span>Find and manage low-value email</span><span class="ea-arrow">→</span></button>
+</div></div>`}
+document.addEventListener("click",e=>{const btn=e.target.closest("[data-en-action]");if(!btn)return;const type=btn.dataset.enAction;if(type==="read"){document.querySelector("#paneList article.mail .qmain")?.click();return}const target={tasks:"tasks",draft:"drafts",subscriptions:"subscriptions"}[type];if(target)document.querySelector('.nav[data-filter="'+target+'"]')?.click()});
 function render(){
   window.__hidePeek&&window.__hidePeek();
   if(selMode&&(!selected.size||!isPhone()))selMode=false;
@@ -3534,7 +3564,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
         <div class="qbtns"><button class="action reviewed" data-id="${esc(m.id)}" data-status="reviewed">${ICON_OK}Reviewed</button><div class="two"><button class="action archive" data-id="${esc(m.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(m.id)}" data-status="trashed">${ICON_BIN}Bin</button></div></div></aside></div>`;
     if(mode==="detail")return detail;
     const tog=mode==="pane"?`<button class="qtoggle" data-pick="${esc(m.id)}" aria-label="Show this email">Show email</button>`:view.rows==="open"?"":`<button class="qtoggle" data-expand="row-${esc(m.id)}" aria-expanded="${esc(open)}" aria-label="${open?"Hide":"Show"} the full email summary and actions">${open?"Hide":"Show"} details</button>`;
-    return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(m._pending?"leaving to-"+m._pending:"")} ${esc(mode==="pane"&&lay()!=="screen"&&m.id===paneId?"current":"")}"${leaveStyle(m)}><div class="qrow">
+    return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(m._pending?"leaving to-"+m._pending:"")} ${esc(mode==="pane"&&lay()!=="screen"&&m.id===paneId?"current":""} ${!enOpened(m)?"enveliq-new":"")}"${leaveStyle(m)}><div class="qrow">
       ${lead}
       <div class="sender">${flag}${esc(m.sender)}</div>
       <div class="qmain">${boxChip(m)}${isImp(m)?'<span class="imp-pill" title="You marked this person as important">&#9733; Important</span>':""}${m.scam?'<span class="scam-pill" title="Something about this email looks odd. Open it to see what.">Be careful</span>':""}<span class="subject">${esc(m.subject)}</span>${tagChips(m,2)}</div>
@@ -3572,7 +3602,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
         <button class="decknav next" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">›</button></div>
         ${act}<div class="deckdots" aria-hidden="true">${dots}</div></div>`;
     }else{
-      const readingHtml=cur?`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div></header>${quiet(cur,"detail")}</section>`:`<section class="reading" aria-label="Selected email"></section>`;
+      const readingHtml=cur?`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div></header>${quiet(cur,"detail")}</section>`:`<section class="reading enveliq-empty" aria-label="No email selected">${enEmptyReading()}</section>`;
       if(lay()==="right"&&!["sent","drafts","tasks","shipping","waiting","subscriptions","trips","messages"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
         dockHtml=readingHtml;
         listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div></div>`;
@@ -4879,7 +4909,7 @@ document.addEventListener("click",e=>{
   const dt=e.target.closest("[data-due-toggle]");if(dt){if(splitNow()){goTasks();return}dueOpen=!dueOpen;render();return}
   const wct=e.target.closest("[data-wait-closed-toggle]");if(wct){waitClosedOpen=!waitClosedOpen;renderWaitPage();return}
   const lt=e.target.closest("[data-later-toggle]");if(lt){if(splitNow()){goTasks();return}calmLaterOpen=!calmLaterOpen;render();return}
-  const pk=e.target.closest("[data-pick]");if(pk){if(lay()==="screen")readerOpen=true;const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;render();return}
+  const pk=e.target.closest("[data-pick]");if(pk){if(lay()==="screen")readerOpen=true;const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;enMarkOpened(nid);render();return}
   const retryAtt=e.target.closest("[data-att-retry]");if(retryAtt){const m=data.find(x=>x.id===+retryAtt.dataset.attRetry&&x.owner===currentUser.id);if(m&&m.real){retryAtt.disabled=true;secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/attachments/summarise`,{method:"POST",body:"{}"}).then(()=>{toast("Reading the files again. This can take a minute.",4000);m.attachments.forEach(a=>{if(a.state==="failed")a.state="working"});render()}).catch(er=>{retryAtt.disabled=false;toast(er.message,6000)})}return}
   const openAtt=e.target.closest("[data-open-attachment]");if(openAtt){openAttachmentViewer(openAtt.dataset.openAttachment);return}
   const openEmail=e.target.closest("[data-open-email]");if(openEmail){openEmailViewer(openEmail.dataset.openEmail);return}
