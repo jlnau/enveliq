@@ -395,3 +395,35 @@ def test_a_cancelled_subscription_is_not_announced(due):
     appm.subbook.act(uid, sid, "cancelled")
     at(8, 1)
     assert not [n for n in sent if "Streamly" in n["title"]]
+
+
+def test_browser_device_test_only_targets_selected_device(env, monkeypatch):
+    from backend.mail import extra_channels
+
+    appm, client, _, _ = env
+    user_id = appm.vault.list_users()[0]["id"]
+    subs = [
+        {"id": "a" * 12, "label": "Android", "endpoint": "https://push.example/android", "p256dh": "key", "auth": "secret"},
+        {"id": "b" * 12, "label": "Brave", "endpoint": "https://push.example/brave", "p256dh": "key", "auth": "secret"},
+    ]
+    appm.notifier.set_values(user_id, "browser", {"subs": json.dumps(subs)}, enabled=True)
+    monkeypatch.setattr(extra_channels, "encrypt", lambda *args: b"encrypted")
+    monkeypatch.setattr(extra_channels, "vapid_header", lambda *args: "vapid")
+    monkeypatch.setattr(extra_channels, "vapid_key", lambda *args: object())
+    monkeypatch.setattr(extra_channels, "b64d", lambda *args: b"key")
+
+    sent = []
+    def fake_request(method, url, **kwargs):
+        sent.append(url)
+        return 201, b""
+    monkeypatch.setattr(outbound, "request", fake_request)
+
+    url = "/api/v1/me/notifications/browser/" + "b" * 12 + "/test"
+    response = client.post(url)
+    assert response.status_code == 200, response.text
+    assert sent == ["https://push.example/brave"]
+    assert len(extra_channels.devices(appm.notifier.get_values(user_id, "browser"))) == 2
+
+    missing = client.post("/api/v1/me/notifications/browser/" + "c" * 12 + "/test")
+    assert missing.status_code == 404
+    assert sent == ["https://push.example/brave"]
