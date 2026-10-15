@@ -263,6 +263,8 @@ await page.click('[data-theme-choice="light"]');
   if (process.env.SHOT_LIGHT) await page.screenshot({ path: process.env.SHOT_LIGHT });
   await page.reload();
   await page.waitForSelector("article.mail");
+  // A fresh browser reload restores the new right-panel default; these assertions target classic list.
+  await page.evaluate(() => { view.layout = "list"; applyView(); render(); });
   check("light mode is remembered after reload", (await page.evaluate(() => document.documentElement.dataset.theme)) === "light");
   await page.click("#userPill");
 await page.click('[data-theme-choice="dark"]');
