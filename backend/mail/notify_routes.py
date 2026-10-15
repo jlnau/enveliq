@@ -128,7 +128,7 @@ def build_notify_router(ctx: Any) -> APIRouter:
     @router.get("/me/mail-context")
     def get_mail_context(session: Session = Depends(session_dep)):
         saved = ctx.vault.get_global("mail-context-v1:" + session.principal.user_id)
-        return {"selection": saved if isinstance(saved, dict) else None}
+        return {"selection": saved if isinstance(saved, dict) and saved else None}
 
     @router.put("/me/mail-context")
     def put_mail_context(body: MailContextBody, session: Session = Depends(session_dep)):
