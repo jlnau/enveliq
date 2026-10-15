@@ -16,6 +16,10 @@ Each channel has the same four steps: follow the short guide on its card, fill i
 
 Only the task title and a link back to Enveliq are sent, never the email text. If a send fails, Enveliq tries again after 5 minutes. A task that is done, removed or whose email was dealt with stops sending at once.
 
+## Back after opening a notification
+
+On Android, opening an email from a notification and pressing Back returns to the Enveliq inbox, instead of leaving the application. If Enveliq was already showing another screen, Back returns to that screen where possible. The notification does not make duplicate history steps when a second notification is opened.
+
 ## New email alerts
 
 Switch on **Tell me when new email arrives** in **Settings, Notifications** and Enveliq sends one short message each time it finds new email for you, to the places you chose under *Where to send reminders*. It is off until you switch it on.
