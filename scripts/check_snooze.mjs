@@ -64,6 +64,8 @@ async function open(width, height) {
   await context.route("**/*", handler);
   await page.goto(`${ORIGIN}/`);
   await page.waitForSelector("article.mail");
+  // The snooze controls live on expanded mail rows in the list layout.
+  await page.evaluate(() => { view.layout = "list"; view.rows = "open"; applyView(); render(); });
   await page.clock.pauseAt(NOW);              // time stands still at 10:00 until a check moves it
   return { page, errors, context };
 }
