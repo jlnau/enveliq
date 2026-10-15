@@ -504,6 +504,8 @@ def delete_user_data(user_id: str) -> None:
     savedbook.forget_user(user_id)
     draftbook.forget_user(user_id)
     rulebook.forget_user(user_id)
+    vault.set_global("enveliq-opened-v1:" + user_id, {})          # which emails this person has opened (the new-mail glow)
+    vault.set_global("mail-view-v1:" + user_id, {})               # their saved layout
     for account in vault.list_accounts():
         if account.get("owner_user_id") == user_id:
             preview_leases.purge_account(account["id"])

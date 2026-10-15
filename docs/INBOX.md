@@ -156,6 +156,14 @@ At the top of the Shipping page, **Add a parcel** opens a small form for a parce
 
 On a phone the top bar holds only the menu button, the logo, the bell, Search and Sync, so all of them are always on the screen. **New email** (the pencil) and **News feeds** are in the menu instead: open it with the three lines at the top left. New email is at the top of the menu, and News feeds sits above Settings with its number badge. An email that is open full screen never makes the page wider than the screen, so the page no longer looks zoomed in: long words and addresses wrap, the browser is told not to enlarge text by itself, and a double tap does not zoom (pinching still works).
 
+## Your first view, and remembering it
+
+When someone signs in for the first time, the inbox starts with the **reading panel on the right**: the list on the left and the open email beside it. Any change you make under **View** (layout, spacing, width, open rows, preview) is saved for you on the server, encrypted, and used on every device you sign in from. It survives restarts and updates, and nobody else's choice ever changes yours. **Reset** in the View panel goes back to the first view. The right and bottom reading panels start with nothing selected ("Nothing selected", with a few quick actions) and clear again after a refresh. On a phone every email still opens full screen.
+
+## New emails glow until you open them
+
+An email you have not opened yet has a soft blue glow. Opening it, from the list or from a notification link, clears the glow, and that is remembered on all your devices. It is only a mark inside Enveliq: nothing changes in your mail provider.
+
 ## Which mailbox an email came from
 
 When more than one of your mailboxes is connected, each email in the list carries a small coloured label with the mailbox's name (for example "Proton test" or "Gmail test"), and the open email has a **Mailbox** line in its details with the same label. Each mailbox keeps its own colour. Hold the pointer over a label (or long-press it) to see the provider and the address. With only one mailbox there is no label, so a single mailbox stays uncluttered. On a phone the label shows in the list and in the full screen email. Browser check: `scripts/check_mailbox_label.mjs`.

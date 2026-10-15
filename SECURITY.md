@@ -631,3 +631,7 @@ Rules are the first thing Enveliq does to a mailbox by itself, so they are delib
 - **How it acts.** Through the same code as the Reviewed and Archive buttons: the mailbox is changed first, and only if that works is a card kept for a few days (the person's usual setting). If the mailbox cannot be changed the email simply stays in the inbox. The audit log notes `by: rule`.
 - **What is kept.** Senders and subject words the person chose, one encrypted record per person (`rules:<user id>`), at most 50. Part of Export my data; forgotten when the person is removed. Only that person can read or change them.
 - Requests are validated (`extra: forbid`, address and website patterns, length limits, id pattern), rate limited and `no-store`.
+
+## Saved layout and opened emails
+
+Each person's saved layout (`mail-view-v1:<person>`) and the list of emails they have opened (`enveliq-opened-v1:<person>`, only mailbox and email ids) are kept in the encrypted vault and are read and written only for the signed-in person, from the session, never from anything the page sends. The "opened" route answers "not found" unless the mailbox belongs to that person and the email exists. Neither record holds any email text, and opening an email never changes its state at the mail provider. Both are cleared when a person is deleted. The per-device browser test route needs a session, is limited to ten tests a minute, and only reaches the caller's own registered devices.

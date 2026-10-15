@@ -100,3 +100,7 @@ The administrator can also switch individual channels off for everyone (**Admini
 * Nothing arrives but the test says sent: check the app's own settings (phone do-not-disturb, topic spelled the same).
 
 Reminders are only sent while Enveliq is unlocked, because tasks live in the encrypted vault. After a restart, unlock it as usual.
+
+## Testing one browser device
+
+Every browser device you have turned notifications on for has its own **Test** button, which sends the test only to that device. If a device no longer accepts notifications it is removed and you are told, even when another device worked. A new-mail alert goes out as soon as each summarised email is visible.

@@ -112,7 +112,7 @@ def build_notify_router(ctx: Any) -> APIRouter:
     @router.get("/me/mail-view")
     def get_mail_view(session: Session = Depends(session_dep)):
         saved = ctx.vault.get_global("mail-view-v1:" + session.principal.user_id)
-        return {"view": saved if isinstance(saved, dict) else None}
+        return {"view": saved if isinstance(saved, dict) and saved else None}
 
     @router.put("/me/mail-view")
     def put_mail_view(body: MailViewBody, session: Session = Depends(session_dep)):
