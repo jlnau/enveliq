@@ -209,7 +209,19 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 
   await fill("Photos", "Here you go.\n> the attached one is old\nSee you soon.");
   await page.click("#nmSend");
-  await page.waitForFunction(() => !document.getElementById("newMail").classList.contains("open"));
+  try {
+    await page.waitForFunction(() => !document.getElementById("newMail").classList.contains("open"), null, { timeout: 8000 });
+  } catch (err) {
+    const state = await page.evaluate(() => ({
+      warning: document.getElementById("sendWarn").classList.contains("open"),
+      warningText: document.getElementById("sendWarnList").innerText,
+      confirmation: document.getElementById("whCheck").classList.contains("open"),
+      sendDisabled: document.getElementById("nmSend").disabled,
+      subject: document.getElementById("nmSubject").value,
+      body: document.getElementById("nmText").value
+    }));
+    throw new Error("Quoted attachment email did not close: " + JSON.stringify(state), { cause: err });
+  }
   check("a quoted line that says 'attached' does not count", sends() === 3);
 
   await fill("Hello", "Just checking in.");
