@@ -461,3 +461,26 @@ def test_mail_view_preferences_stored_per_user_in_vault(env):
     assert appm.vault.get_global("mail-view-v1:" + uid) == chosen
     assert client.put("/api/v1/me/mail-view", json={**chosen, "layout": "invalid"}).status_code == 422
     assert client.get("/api/v1/me/mail-view").json()["view"] == chosen
+
+
+def test_mail_context_is_private_and_validated(env):
+    """Remember only an email reference belonging to the signed-in person."""
+    appm, client, bridge, _ = env
+    aid = account(client, bridge)
+    client.post(f"/api/v1/accounts/{aid}/sync", json={})
+    messages = appm.vault.list_messages(aid)
+    assert messages
+    mid = messages[0]["id"]
+    assert client.get("/api/v1/me/mail-context").json() == {"selection": None}
+    chosen = {"account_id": aid, "message_id": mid}
+    response = client.put("/api/v1/me/mail-context", json=chosen)
+    assert response.status_code == 200, response.text
+    assert client.get("/api/v1/me/mail-context").json()["selection"] == chosen
+    uid = appm.vault.list_users()[0]["id"]
+    assert appm.vault.get_global("mail-context-v1:" + uid) == chosen
+    assert client.put("/api/v1/me/mail-context", json={"account_id": aid, "message_id": "missing"}).status_code == 404
+    assert client.put("/api/v1/me/mail-context", json={"account_id": "other-account", "message_id": mid}).status_code == 404
+    assert client.put("/api/v1/me/mail-context", json={"account_id": aid}).status_code == 422
+    assert client.get("/api/v1/me/mail-context").json()["selection"] == chosen
+    assert client.put("/api/v1/me/mail-context", json={"account_id": None, "message_id": None}).status_code == 200
+    assert client.get("/api/v1/me/mail-context").json() == {"selection": None}
