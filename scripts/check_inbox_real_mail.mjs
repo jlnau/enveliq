@@ -563,7 +563,17 @@ await page.click('[data-theme-choice="dark"]');
   await page.setViewportSize({ width: 420, height: 820 });
   await page.waitForTimeout(400);
   await page.evaluate(() => { window.__undoMs = 900; window.__peekDelay = 100; });
-  check("phone: the left panel is gone; a top bar with a menu button, logo and avatar takes its place", !(await page.locator("#sidebar").isVisible()) && (await page.locator("#mTop").isVisible()) && (await page.locator("#menuBtn").isVisible()) && (await page.locator("#mLogo").isVisible()));
+  await page.waitForFunction(() => {
+    const visible = id => { const e=document.getElementById(id);return !!e&&!!e.getClientRects().length&&getComputedStyle(e).visibility!=="hidden" };
+    return !visible("sidebar")&&visible("mTop")&&visible("menuBtn")&&visible("mLogo");
+  },null,{timeout:1800}).catch(()=>{});
+  const phoneHeader = await page.evaluate(() => {
+    const state=id=>{const e=document.getElementById(id);if(!e)return {missing:true};const r=e.getBoundingClientRect();return {display:getComputedStyle(e).display,visibility:getComputedStyle(e).visibility,width:r.width,height:r.height,src:e.getAttribute("src")?.slice(0,30)||null}};
+    return {sidebar:state("sidebar"),top:state("mTop"),menu:state("menuBtn"),logo:state("mLogo"),body:document.body.className};
+  });
+  const phoneHeaderOk=!(await page.locator("#sidebar").isVisible())&&(await page.locator("#mTop").isVisible())&&(await page.locator("#menuBtn").isVisible())&&(await page.locator("#mLogo").isVisible());
+  if(!phoneHeaderOk)console.log("Phone header diagnostics:",JSON.stringify(phoneHeader));
+  check("phone: the left panel is gone; a top bar with a menu button, logo and avatar takes its place",phoneHeaderOk);
   await page.click("#menuBtn");
   await page.waitForTimeout(450);
   check("phone: the menu button slides the menu out from the left, with labels", (await page.locator("#sidebar").isVisible()) && (await page.locator("#sidebar").innerText()).includes("Needs action") && (await page.locator("#menuBtn").getAttribute("aria-expanded")) === "true");
