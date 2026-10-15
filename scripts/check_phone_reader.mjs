@@ -63,7 +63,9 @@ const run = async (layout, width, height) => {
   await page.waitForSelector("article.mail");
   return { page, context, errors };
 };
-const fills = (page) => page.locator(".reader").evaluate((el) => { const r = el.getBoundingClientRect(); return r.left <= 1 && r.top <= 1 && r.width >= innerWidth - 2 && r.height >= innerHeight - 2; }).catch(() => false);
+const fillsNow = (page) => page.locator(".reader").evaluate((el) => { const r = el.getBoundingClientRect(); return r.left <= 1 && r.top <= 1 && r.width >= innerWidth - 2 && r.height >= innerHeight - 2; }).catch(() => false);
+// The page may still be sliding in when the reader first appears, so wait a moment before saying it does not fill the screen.
+const fills = async (page) => { for (let i = 0; i < 20; i++) { if (await fillsNow(page)) return true; await page.waitForTimeout(100); } return false; };
 
 for (const layout of ["list", "right", "bottom", "screen", "deck"]) {
   const { page, context, errors } = await run(layout, 390, 800);
