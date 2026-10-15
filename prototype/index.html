@@ -2276,9 +2276,31 @@ function openFromLink(raw,fromAddress,quiet){
   const el=document.querySelector(`[data-expand="row-${m.id}"],[data-pick="${m.id}"]`);if(el&&el.scrollIntoView&&lay()!=="screen")el.scrollIntoView({block:"center"});
   return true;
 }
+// Only notification navigation records an originating view; ordinary Back
+// continues to use the existing section and reader history logic.
+let notificationReturn=null;
+function rememberNotificationOrigin(){
+  if(notificationReturn)return;
+  const list=document.getElementById("paneList"),content=document.querySelector(".main>.content");
+  notificationReturn={filter,paneId,top:window.scrollY,listTop:list?.scrollTop||0,contentTop:content?.scrollTop||0};
+}
+function restoreNotificationOrigin(){
+  if(!notificationReturn)return false;
+  const origin=notificationReturn;notificationReturn=null;
+  filter=origin.filter;paneId=origin.paneId;
+  document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));
+  navPopping=true;
+  try{render()}finally{navPopping=false}
+  const list=document.getElementById("paneList"),content=document.querySelector(".main>.content");
+  if(list)list.scrollTop=origin.listTop;
+  if(content)content.scrollTop=origin.contentTop;
+  window.scrollTo(0,origin.top);
+  return true;
+}
 if("serviceWorker" in navigator){
   navigator.serviceWorker.addEventListener("message",async e=>{
     const d=e.data;if(!d||d.type!=="enveliq-open"||typeof d.url!=="string"||!stateReady||!window.__me)return;
+    rememberNotificationOrigin();
     let found=openFromLink(d.url,false,true);
     if(!found){try{await loadRealMail(window.__me)}catch{}found=openFromLink(d.url)}   // the email may have arrived since the list was last read
   });
@@ -4021,7 +4043,7 @@ function readerHistorySync(){
   else if(!want&&readerHistory){readerHistory=false;try{if(history.state&&history.state.enveliqReader)history.back()}catch{}}
 }
 // (Back from a window opened over an email lands on the email's own step: nothing to close.)
-window.addEventListener("popstate",()=>{if(mobileMenuHistory){mobileMenuHistory=false;setMenu(false,true);return}if(viewerHistory){viewerHistory=false;closeAttachmentViewer(true);return}if(readerHistory){if(history.state&&history.state.enveliqReader)return;readerHistory=false;readerOpen=false;render();return}if(stateReady&&(location.hash||"")!==wantedHash())applyHashNav()});   // only when the address names a different section than the one showing
+window.addEventListener("popstate",()=>{if(mobileMenuHistory){mobileMenuHistory=false;setMenu(false,true);return}if(viewerHistory){viewerHistory=false;closeAttachmentViewer(true);return}if(readerHistory){if(history.state&&history.state.enveliqReader)return;readerHistory=false;readerOpen=false;if(!restoreNotificationOrigin())render();return}if(stateReady&&(location.hash||"")!==wantedHash())applyHashNav()});   // only when the address names a different section than the one showing
 function closeAttachmentViewer(fromBack){
   if(!document.getElementById("attachmentModal"))return;
   if(viewerHistory&&fromBack!==true){viewerHistory=false;try{history.back()}catch{}}
