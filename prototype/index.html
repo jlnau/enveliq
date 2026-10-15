@@ -2252,7 +2252,16 @@ function openFromLink(raw,fromAddress,quiet){
   let u;try{u=new URL(raw,location.href)}catch{return false}
   if(u.origin!==location.origin||u.pathname!=="/")return false;
   const want=u.searchParams.get("open");if(!want)return false;
-  if(fromAddress){try{history.replaceState(history.state,"",location.pathname+location.hash)}catch{}}
+  if(fromAddress){
+    // A fresh notification tab needs an inbox entry beneath its reader entry.
+    // Never preserve the notification query in the return destination.
+    try{history.replaceState({enveliqInbox:1},"",location.pathname+location.hash)}catch{}
+  }else if(readerOpen&&readerHistory){
+    // Opening a second notification while a reader is already open must not
+    // append another synthetic reader entry.
+    readerOpen=false;readerHistory=false;
+    try{if(history.state&&history.state.enveliqReader)history.replaceState({enveliqInbox:1},"")}catch{}
+  }
   const i=want.indexOf(":");if(i<1)return false;
   const acct=want.slice(0,i),mid=want.slice(i+1);
   const m=data.find(x=>x.real&&x.real.accountId===acct&&x.real.messageId===mid&&x.owner===currentUser.id);
@@ -2262,6 +2271,7 @@ function openFromLink(raw,fromAddress,quiet){
   document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));
   expanded.add(`row-${m.id}`);paneId=m.id;enMarkOpened(m.id);if(lay()==="screen")readerOpen=true;
   render();
+  saveMailContinuity();
   const el=document.querySelector(`[data-expand="row-${m.id}"],[data-pick="${m.id}"]`);if(el&&el.scrollIntoView)el.scrollIntoView({block:"center"});
   return true;
 }
@@ -2314,6 +2324,70 @@ function loadView(){
   return v;
 }
 let view=loadView(),readerOpen=false,dueOpen=false,calmLaterOpen=true,waitClosedOpen=false,paneId=null,lastPaneIdx=0,lastRowIds=[],lastDeckShown=null,deckDir="next",lastReadId=null;
+// Navigation continuity is scoped to a signed-in person and this browser tab.
+// Only the selected message key is synced to the encrypted server vault.
+let mailContinuityReady=false,continuityLastKey="",continuityWrite=Promise.resolve(),continuityRestoring=false;
+function continuityStorageKey(){return "enveliq-position-v1:"+String(currentUser&&currentUser.id||"anonymous")}
+function captureMailPosition(){
+  if(!mailContinuityReady||continuityRestoring)return;
+  try{
+    const previous=JSON.parse(sessionStorage.getItem(continuityStorageKey())||"{}");
+    const list=document.getElementById("paneList");
+    const content=document.querySelector(".main>.content");
+    const selected=data.find(m=>String(m.id)===String(paneId));
+    const row=list&&list.querySelector(".current");
+    const next={...previous,filter,layout:lay(),top:window.scrollY,
+      listTop:list?list.scrollTop:(previous.listTop||0),
+      contentTop:content?content.scrollTop:(previous.contentTop||0),
+      anchor:row?String(paneId):previous.anchor,
+      selection:selected&&selected.real?{account_id:selected.real.accountId,message_id:selected.real.messageId}:null};
+    sessionStorage.setItem(continuityStorageKey(),JSON.stringify(next));
+  }catch{}
+}
+function saveMailContinuity(){
+  if(!mailContinuityReady||continuityRestoring||!realMail)return;
+  captureMailPosition();
+  const m=data.find(x=>String(x.id)===String(paneId)&&x.real&&x.owner===currentUser.id);
+  const key=m?m.real.accountId+":"+m.real.messageId:"";
+  if(key===continuityLastKey)return;
+  continuityLastKey=key;
+  const body=m?{account_id:m.real.accountId,message_id:m.real.messageId}:{account_id:null,message_id:null};
+  continuityWrite=continuityWrite.catch(()=>{}).then(()=>secureBackendRequest("/api/v1/me/mail-context",{method:"PUT",body:JSON.stringify(body)}));
+  continuityWrite.catch(e=>console.warn("Could not save email selection",e));
+}
+async function restoreMailContinuity(){
+  let saved=null;
+  try{saved=(await secureBackendRequest("/api/v1/me/mail-context",{method:"GET"})).selection}catch{}
+  let local={};
+  try{local=JSON.parse(sessionStorage.getItem(continuityStorageKey())||"{}")}catch{}
+  const fromNotification=new URL(location.href).searchParams.has("open");
+  const chosen=fromNotification?null:(saved||local.selection);
+  if(chosen&&chosen.account_id&&chosen.message_id){
+    const m=data.find(x=>x.real&&x.owner===currentUser.id&&x.real.accountId===chosen.account_id&&x.real.messageId===chosen.message_id);
+    if(m){paneId=m.id;continuityLastKey=chosen.account_id+":"+chosen.message_id}
+  }
+  continuityRestoring=true;
+  try{
+    if(!fromNotification&&local.filter&&PAGES.includes(local.filter)){
+      filter=local.filter;
+      document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));
+    }
+    render();
+    if(!fromNotification){
+      const list=document.getElementById("paneList"),content=document.querySelector(".main>.content");
+      if(list&&Number.isFinite(local.listTop))list.scrollTop=local.listTop;
+      if(content&&Number.isFinite(local.contentTop))content.scrollTop=local.contentTop;
+      if(Number.isFinite(local.top))window.scrollTo(0,local.top);
+    }
+  }finally{continuityRestoring=false;mailContinuityReady=true}
+}
+document.addEventListener("scroll",e=>{
+  if(!mailContinuityReady)return;
+  const target=e.target;
+  if(target===document||target===document.getElementById("paneList")||target===document.querySelector(".main>.content"))captureMailPosition();
+},true);
+window.addEventListener("pagehide",captureMailPosition);
+
 // On a phone every email opens full screen (the "screen" layout), whatever layout was chosen for a bigger screen. The choice itself is kept.
 function lay(){return phoneQuery.matches?"screen":view.layout}
 let viewSyncQueue=Promise.resolve(),viewServerReady=false;
@@ -3667,6 +3741,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
   const pl=document.getElementById("paneList");
   if(pl){pl.scrollTop=prevTop;const c=pl.querySelector(".current");if(c){const top=c.offsetTop,bot=top+c.offsetHeight;if(top<pl.scrollTop)pl.scrollTop=top;else if(bot>pl.scrollTop+pl.clientHeight)pl.scrollTop=bot-pl.clientHeight}}
   const rd=document.querySelector(".reading");if(rd&&lastReadId===paneId)rd.scrollTop=prevReadTop;lastReadId=paneId;
+  saveMailContinuity();
 }
 let currentAttachmentView=null;
 function openAttachmentViewer(spec){
@@ -5510,7 +5585,7 @@ async function bootBackendMode(){
   menu.append(out);$("menuSep").hidden=false;
   render();
   try{
-    window.__me=me;if(await loadRealMail(me)){restoreOpen();restorePage();openFromLink(location.href,true);stateReady=true;$("syncBtn").onclick=()=>syncRealMail(me);render();startAutoRefresh(me);pollOutbox();pollSummaries(true)}
+    window.__me=me;if(await loadRealMail(me)){restoreOpen();restorePage();await restoreMailContinuity();openFromLink(location.href,true);stateReady=true;$("syncBtn").onclick=()=>syncRealMail(me);render();startAutoRefresh(me);pollOutbox();pollSummaries(true)}
     else{stateReady=true;
       // A brand-new install: show the setup guide once, in this browser.
       let first=false;
