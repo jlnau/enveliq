@@ -6,6 +6,8 @@ Enveliq shows the tags your email service already has on each email, lets you pu
 
 - A tag on an email shows as a small label next to its subject (two at most in the list, all of them when the email is open).
 - Every email in your inbox has a **Tags** button beside Reply, Snooze and Task. It opens a list of your tags with a tick box for each. Tick one to put it on this email, untick it to take it off. The change is made in your mailbox straight away.
+- **Search your tags.** When you have more than 8 tags, a search box appears at the top of the Tags window. Type part of a name (capital letters do not matter) and only the tags that have those letters stay in the list. Clear the box to see them all again. Enter in the search box does nothing, so it never makes a tag by accident. A short list has no search box.
+- **Always tag or filter this sender.** At the bottom of the Tags window, this note opens a small pop-up that explains how to tag every email from one sender automatically: set up a filter in your email provider (Proton Mail, Gmail, Microsoft or another service), saying "from this sender, add this tag". Enveliq shows the tag on those emails the next time it checks your mail. Enveliq cannot read or make a provider's filters, because the mail connection it uses has no way to do that.
 - **Make a new tag**: write a name and press **Make tag**. It is made in your mailbox and put on this email.
 - **Filter** (under the inbox options) has a **Tag: …** choice for each tag your inbox emails have, to show only those emails. Search also finds emails by their tags.
 - On a phone the Tags window fills the screen, with **✕ Close** fixed at the top and the buttons at the bottom (see [Forms on a phone](INBOX.md)).

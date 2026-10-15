@@ -17,7 +17,7 @@ Every person follows their own feeds. Nobody else, including an administrator, c
 
 ## What is kept
 
-One encrypted record per person (`rss:<user id>`): the feed address and name, and for each of the newest 25 entries a title, up to 1,500 characters of plain text, a link, a date and whether it is new. At most 20 feeds. Entries the site no longer lists are dropped. Nothing is kept in the page except what is shown.
+One encrypted record per person (`rss:<user id>`): the feed address and name, and for each of the newest 25 entries a title, up to 1,500 characters of plain text, a link, a date and whether it is new. At most 20 feeds. Entries the site no longer lists are dropped, and **an entry is removed once it is more than 14 days old** (by the date the site gave it, or the day Enveliq first saw it if the site gave none). A site that still lists an old entry does not bring it back. The badge and the pop-up never count or show an entry older than 14 days. Nothing is kept in the page except what is shown.
 
 ## How Enveliq reads a feed
 

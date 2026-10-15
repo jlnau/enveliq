@@ -4,6 +4,18 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Notification bell, and a WebSocket door for Home Assistant.** A bell at the top right, beside the news-feed icon, collects notes sent to you by Home Assistant and other services on your network, and your unread chat messages, in one drop-down (full screen on a phone). Services connect to a new WebSocket door with a key you make for yourself in the bell, and the door also works on the machine's local network address, so it still works when Cloudflare sits in front of the public address. See `docs/NOTIFICATIONS.md`, `docs/NETWORK_ACCESS.md` and `SECURITY.md`. A new library, `websockets`, is added to `requirements.txt`.
+
+**A label shows which mailbox each email came from.** With more than one mailbox connected, every email in the list, and the open email, carries a small coloured label with the mailbox's name. With one mailbox there is no label. See `docs/INBOX.md`.
+
+**On a phone, Back closes an open email.** An email open full screen now has its own step in the history, so the back button or gesture closes it and shows the list instead of leaving Enveliq. See `docs/INBOX.md`.
+
+**Search in the Tags window, and a note about always tagging a sender.** When you have more than 8 tags, a search box at the top of the Tags window keeps only the tags that have the letters you type. A new note, "Always tag or filter this sender.", opens a small pop-up that explains this is done by making a filter at your email provider. See `docs/TAGS.md`.
+
+**Search your tasks.** The Tasks page has a box to find tasks by typing part of their words. See `docs/INBOX.md`.
+
+**News feed entries are removed after 14 days.** See `docs/NEWS_FEEDS.md`.
+
 **Tags from your mail service.** Enveliq now shows the tags (labels) your mailbox already has on each email, with a **Tags** button on every inbox email to put a tag on or take it off, and to make a new tag. Each change is also made in the real mailbox: Proton labels, Gmail labels, or keywords on other services (Outlook is not supported). The Filter list gets a **Tag: …** choice and Search finds emails by tag. Tags are read again after each automatic sync, so changes made in your mail app show up here. Only tag names are kept, with the email's encrypted summary, and nothing goes to the AI. An administrator or each person can switch it off. New guide: [TAGS.md](TAGS.md). Touches `backend/mail/tags.py`, `tag_routes.py`, `service.py` (a step at the end of a sync), `models.py` (a `tags` list on an email), `features.py`, `prototype/index.html`.
 
 **News feeds (RSS and Atom).** A feed icon at the top of the screen shows a number badge when a feed you follow has new entries. Press it to read their text in a pop-up (full screen on a phone), add a feed by pasting its address, remove one, or check now. Every person follows their own feeds; nobody else can see them. Enveliq reads the feeds from the server about every half hour through the same careful outbound path as reminders, keeps only a short plain-text version of the newest entries (encrypted), and shows feed text only as plain text. An administrator or each person can switch it off. New guide: [NEWS_FEEDS.md](NEWS_FEEDS.md). Touches `backend/mail/rss.py`, `rss_routes.py`, `outbound.py` (a variant that also returns reply headers, so redirects can be followed and checked by hand), `features.py`, `prototype/index.html`.

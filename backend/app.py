@@ -14,7 +14,6 @@ from urllib.parse import urlsplit
 
 from fastapi import Depends, FastAPI, HTTPException, Path as PathParam, Request, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -31,6 +30,8 @@ from .mail.routes import build_mail_router
 from .mail.extra_routes import build_extra_router
 from .mail.task_routes import build_task_router
 from .mail.shipping import ShipBook
+from .mail.inbound import InboundBook
+from .mail.inbound_routes import WS_PATH as INBOUND_WS_PATH, build_inbound_router
 from .mail.rss import RssBook, RssRefresher
 from .mail import features
 from .mail.tags import TagService
@@ -101,6 +102,7 @@ from .models import (
 )
 from .security import (
     FlowStore,
+    HostGuardMiddleware,
     RedactingFilter,
     RequestGuardMiddleware,
     Session,
@@ -376,7 +378,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Enveliq", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
+app.add_middleware(HostGuardMiddleware, allowed_hosts=ALLOWED_HOSTS, local_ip_path=INBOUND_WS_PATH)
 # Added last, so it runs first: size, type and origin checks happen before
 # anything parses the request.
 app.add_middleware(RequestGuardMiddleware, max_body_bytes=MAX_BODY_BYTES, allowed_origins=ALLOWED_ORIGINS)
@@ -496,6 +498,7 @@ def remember_seconds() -> int:
 def delete_user_data(user_id: str) -> None:
     """Remove every mailbox a user owns, with its messages and previews, and the person's own messages to other people."""
     messagebook.forget_user(user_id)
+    inboundbook.forget_user(user_id)
     writehelpbook.forget_user(user_id)
     importantbook.forget_user(user_id)
     savedbook.forget_user(user_id)
@@ -604,6 +607,7 @@ auto_sync.checker = checkbox
 taskbook = TaskBook(vault)
 shipbook = ShipBook(vault)
 rssbook = RssBook(vault)
+inboundbook = InboundBook(vault)
 rss_refresher = RssRefresher(vault, rssbook)
 subbook = SubBook(vault, taskbook.timezone_of)
 importantbook = ImportantPeople(vault)
@@ -659,7 +663,7 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, tags=tagservice, subscriptions=subbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))
@@ -715,6 +719,7 @@ app.include_router(build_backup_router(SimpleNamespace(
     vault=vault, users=users, sessions=sessions, backups=backups, login_limiter=login_limiter, exporter=exporter,
     admin_session=admin_session, full_session=full_session)))
 app.include_router(build_messages_router(mail_ctx))
+app.include_router(build_inbound_router(mail_ctx))
 app.include_router(build_writehelp_router(mail_ctx))
 app.include_router(build_notify_router(mail_ctx))
 app.include_router(build_agent_router(mail_ctx))

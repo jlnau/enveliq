@@ -86,6 +86,7 @@ const openRow = async (page, subject) => {
   await page.waitForSelector("#tagPop:not([hidden]) .tagrow");
   const names = await page.locator("#tagPop .tagrow span").allInnerTexts();
   check("the pop-up lists the tags the mailbox already has", names.join(",") === "Taxes,Work");
+  check("a short list of tags has no search box", (await page.locator("#tagFind").count()) === 0);
   check("a tag the email does not have is not ticked", (await page.locator('#tagPop [data-tag-toggle="Taxes"]').isChecked()) === false);
   await page.locator('#tagPop [data-tag-toggle="Taxes"]').check();
   await page.waitForFunction(() => [...document.querySelectorAll("article.mail")].some((a) => /Another one/.test(a.innerText) && /Taxes/.test(a.innerText)));
@@ -103,6 +104,18 @@ const openRow = async (page, subject) => {
   await page.keyboard.press("Enter");
   await page.waitForSelector("#tagPop .sa-err");
   check("a tag name that is not allowed says why, in plain words", /letters, digits/.test(await page.locator("#tagPop .sa-err").innerText()));
+  check("the pop-up has a note about always tagging a sender", /Always tag or filter this sender/.test(await page.locator("#tagPop [data-tag-info]").innerText()));
+  check("the note is not open until it is pressed", (await page.locator("#tagPop .tag-info").count()) === 0);
+  await page.locator("#tagPop [data-tag-info]").click();
+  await page.waitForSelector("#tagPop .tag-info");
+  const info = await page.locator("#tagPop .tag-info").innerText();
+  check("pressing it explains that the filter is set up at the email provider", /filter in your email provider/.test(info) && /Proton Mail, Gmail, Microsoft/.test(info) && /add this tag/.test(info));
+  if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "tags_info_desktop.png") });
+  await page.keyboard.press("Escape");
+  check("Escape closes only the note and leaves the tags open", (await page.locator("#tagPop .tag-info").count()) === 0 && (await page.locator("#tagPop").isVisible()));
+  await page.locator("#tagPop [data-tag-info]").click();
+  await page.locator("#tagPop [data-tag-info-close]").click();
+  check("Got it closes the note and leaves the tags open", (await page.locator("#tagPop .tag-info").count()) === 0 && (await page.locator("#tagPop").isVisible()));
   if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "tags_desktop.png") });
   await page.keyboard.press("Escape");
   check("Escape closes the pop-up", await page.locator("#tagPop").isHidden());
@@ -138,6 +151,58 @@ const openRow = async (page, subject) => {
   canCreate = true; supported = true;
 }
 
+// A long list of tags can be searched by typing part of a name
+{
+  tagNames = Array.from({ length: 30 }, (_, i) => `Tag ${String(i + 1).padStart(2, "0")}`).concat(["Holidays", "Home"]).sort();
+  const { page, context, errors } = await run(1300, 900);
+  const row = await openRow(page, "Third one");
+  await row.locator("[data-tag-open]").click();
+  await page.waitForSelector("#tagPop:not([hidden]) .tagrow");
+  check("with a long list the pop-up has a search box", (await page.locator("#tagFind").getAttribute("placeholder")) === "Search your tags");
+  check("every tag is listed until something is typed", (await page.locator("#tagPop .tagrow").count()) === 32);
+  await page.locator("#tagFind").pressSequentially("ho", { delay: 40 });
+  await page.waitForFunction(() => document.querySelectorAll("#tagPop .tagrow").length === 2);
+  check("typing part of a name keeps only the tags that have it, whatever the capitals", (await page.locator("#tagPop .tagrow span").allInnerTexts()).join(",") === "Holidays,Home");
+  check("the box keeps what was typed and the cursor stays in it", (await page.locator("#tagFind").inputValue()) === "ho" && (await page.evaluate(() => document.activeElement && document.activeElement.id)) === "tagFind");
+  const makes = calls.filter((c) => c[0] === "make").length;
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  check("pressing Enter in the search box does not try to make a tag", (await page.locator("#tagPop .sa-err").count()) === 0 && calls.filter((c) => c[0] === "make").length === makes);
+  await page.locator('#tagPop [data-tag-toggle="Holidays"]').check();
+  await page.waitForFunction(() => [...document.querySelectorAll("article.mail")].some((a) => /Third one/.test(a.innerText) && /Holidays/.test(a.innerText)));
+  check("a tag found this way can be put on the email", calls.some((c) => c[0] === "set" && c[1] === "m-third" && c[2] === "Holidays" && c[3] === true));
+  check("the search is still there after ticking", (await page.locator("#tagFind").inputValue()) === "ho" && (await page.locator("#tagPop .tagrow").count()) === 2);
+  await page.locator("#tagFind").fill("zzz");
+  await page.waitForFunction(() => /No tag has those letters/.test(document.getElementById("tagPop").innerText));
+  check("when nothing matches it says so kindly", true);
+  if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "tags_search_desktop.png") });
+  await page.locator("#tagFind").fill("");
+  await page.waitForFunction(() => document.querySelectorAll("#tagPop .tagrow").length === 32);
+  check("clearing the box brings every tag back", true);
+  await page.keyboard.press("Escape");
+  await row.locator("[data-tag-open]").click();
+  await page.waitForSelector("#tagPop:not([hidden]) .tagrow");
+  check("opening the pop-up again starts with an empty search", (await page.locator("#tagFind").inputValue()) === "");
+  check("no script errors", errors.length === 0);
+  await context.close();
+}
+{
+  const { page, context, errors } = await run(390, 800);
+  await page.locator("article.mail", { hasText: "Another one" }).locator(".qmain").click();
+  await page.waitForSelector(".reader [data-tag-open]");
+  await page.locator(".reader [data-tag-open]").click();
+  await page.waitForSelector("#tagPop:not([hidden]) #tagFind");
+  check("on a phone the search box uses large text so the phone does not zoom in", (await page.locator("#tagFind").evaluate((e) => parseFloat(getComputedStyle(e).fontSize))) >= 16);
+  await page.locator("#tagFind").fill("hol");
+  await page.waitForFunction(() => document.querySelectorAll("#tagPop .tagrow").length === 1);
+  const close = await page.locator("#tagPop .sf-top .sf-close").boundingBox();
+  check("on a phone Close stays fixed at the top while searching", close.y < 80);
+  if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "tags_search_phone.png") });
+  check("no script errors", errors.length === 0);
+  await context.close();
+  tagNames = ["Taxes", "Work"];
+}
+
 // On a phone the pop-up fills the screen with Close at the top and the buttons at the bottom
 {
   const { page, context, errors } = await run(390, 800);
@@ -151,6 +216,12 @@ const openRow = async (page, subject) => {
   check("Close is fixed at the top and the buttons at the bottom", close.y < 80 && foot.y > 600 && foot.y + foot.height <= 801);
   check("on a phone the pop-up is above the full screen email", await page.evaluate(() => { const r = document.getElementById("tagPop").getBoundingClientRect(); const el = document.elementFromPoint(r.left + r.width / 2, r.top + 30); return !!el && !!el.closest("#tagPop"); }));
   if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "tags_phone.png") });
+  await page.locator("#tagPop [data-tag-info]").click();
+  await page.waitForSelector("#tagPop .tag-info");
+  const card = await page.locator("#tagPop .tag-info").boundingBox();
+  check("on a phone the note about filters fits on the screen", card.x >= 0 && card.x + card.width <= 390 && card.y >= 0 && card.y + card.height <= 800);
+  if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "tags_info_phone.png") });
+  await page.locator("#tagPop [data-tag-info-close]").click();
   await page.locator("#tagPop .sf-foot [data-tag-close]").click();
   check("Done closes it", await page.locator("#tagPop").isHidden());
   check("no script errors", errors.length === 0);

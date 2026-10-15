@@ -28,6 +28,31 @@ When the mailbox uses AI summaries, the alert is sent once the new email is read
 * It speaks about mail Enveliq fetches by itself (Administration, Automatic sync). Mail you fetch by pressing **Sync mail** is not announced, because you are already looking at it, and neither is the first read of a mailbox you have just connected.
 * Tapping the message opens Enveliq at that email when there is one, or at your inbox when there are several.
 
+## The bell, and messages from Home Assistant and other services
+
+At the top right of the inbox, beside the news-feed icon, a **bell** collects two things in one drop-down (a full-screen window on a phone):
+
+* **Notes sent to you by other services** on your network, such as Home Assistant ("Washer finished"). Each shows its title, its text, where it came from and when. **Dismiss** removes one, **Mark all as read** and **Clear the list** do what they say. Only the newest 100 are kept.
+* **Your chat messages** from the people who share this Enveliq (see [MESSAGES.md](MESSAGES.md)): a line saying how many are unread and from whom, with a **Read messages** button.
+
+The number on the bell adds the unread notes and the unread chat messages. Opening the drop-down and closing it marks the notes as read; chat messages stay unread until you read them in Messages.
+
+### How a service sends you a note
+
+A service connects to Enveliq's **WebSocket door** at `/api/v1/inbound/ws` and sends short plain-text notes. It proves who it is with a **key that you make for yourself**. In the bell, open **Show how to connect Home Assistant or another service**, press **Make a key**, and copy the key (it is shown once, then never again; a new key replaces the old one, and **Remove my key** switches it off). The key belongs to you only: it can add notes to your own bell and nothing else.
+
+1. Connect to `ws://YOUR-SERVER-IP:8765/api/v1/inbound/ws` on your own network (or `wss://your-address/api/v1/inbound/ws` from outside, if your proxy passes WebSockets through).
+2. Send `{"type":"auth","token":"YOUR-KEY"}` first. Enveliq answers `{"type":"auth_ok"}`. (A client that can set headers may send `Authorization: Bearer YOUR-KEY` instead and skip this step.)
+3. Send notes: `{"type":"notify","title":"Washer finished","message":"Empty it","source":"Home Assistant"}`. Enveliq answers `{"type":"ok"}` or `{"type":"error","message":"…"}` with the reason. `{"type":"ping"}` answers `{"type":"pong"}`; the door closes after two minutes of silence, so send a ping now and then.
+
+Limits: a title up to 100 characters, a message up to 500, a source up to 40, 4,000 characters in one message, 30 notes a minute, and 5 open connections per person. Text is cleaned and shown only as plain text, never as a web page or a link, and the bell always says where a note came from.
+
+### It works over the local IP address
+
+Cloudflare's protection sits in front of the public address and can stop a service from reaching it. The door therefore also answers on the machine's **local network address** (for example `192.168.1.50`), where Cloudflare is not involved. This is the one place Enveliq accepts a bare address instead of its public name, and only for this door and only for addresses on a private network (`192.168.x.x`, `10.x.x.x`, `172.16.x.x` to `172.31.x.x`, `fc00::/7` and this machine); every other page and every other address still needs the public name you set. To make the door reachable on your network, publish the port beyond the machine itself: set `ENVELIQ_PUBLISH=0.0.0.0` in `.env` (or the Arcane project's variables) and redeploy; see [NETWORK_ACCESS.md](NETWORK_ACCESS.md). A host name instead of an address (for example `enveliq.local`) must be listed in `ENVELIQ_ALLOWED_HOSTS`.
+
+Server: `backend/mail/inbound.py`, `backend/mail/inbound_routes.py` (the door and `/api/v1/me/bell`), `backend/security.py` (`HostGuardMiddleware`). Checks: `tests/test_inbound.py`, `scripts/check_bell.mjs`.
+
 ## Install Enveliq as an app
 
 On Android (Chrome or Edge) open Enveliq at its `https://` address, open the browser menu and choose **Install app** (or **Add to Home screen**). Enveliq then has its own icon and opens in its own window. On an iPhone or iPad use **Share, Add to Home Screen**; that is also what lets an iPhone receive browser notifications. On a computer, Chrome and Edge show an install icon in the address bar.

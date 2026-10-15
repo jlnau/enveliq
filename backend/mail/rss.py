@@ -36,6 +36,8 @@ log = logging.getLogger("enveliq.rss")
 RECORD_PREFIX = "rss:"
 MAX_FEEDS = 20
 MAX_ITEMS = 25                     # entries kept per feed
+KEEP_DAYS = 14                     # an entry older than this is removed
+MAX_GONE = 200                     # ids of removed entries remembered per feed
 MAX_BODY = 512 * 1024              # bytes read from a feed
 MAX_TEXT = 1500
 MAX_TITLE = 200
@@ -197,6 +199,12 @@ def parse_feed(data: bytes, base: str, now: float) -> dict[str, Any]:
 
 # ---------- the book ----------
 
+def current(items: list[dict[str, Any]], now: float) -> list[dict[str, Any]]:
+    """The entries that are not older than KEEP_DAYS (by the date the site gave, or the day Enveliq first saw it)."""
+    cutoff = now - KEEP_DAYS * 86400
+    return [i for i in items if float(i.get("at") or 0) >= cutoff]
+
+
 class RssBook:
     def __init__(self, vault: Any, clock: Callable[[], float] = time.time, fetcher: Callable[[str], bytes] | None = None):
         self.vault = vault
@@ -267,7 +275,7 @@ class RssBook:
             fid = "r" + secrets.token_hex(8)
             name = parsed["title"] or (urlsplit(final).hostname or "Feed")
             book["feeds"][fid] = {"id": fid, "url": url, "title": name, "added": now, "checked": now, "error": "",
-                                  "items": [{**i, "unread": False} for i in parsed["items"]]}
+                                  "items": [{**i, "unread": False} for i in current(parsed["items"], now)]}
             self._save(user_id, book)
         return self.view(user_id)
 
@@ -280,11 +288,22 @@ class RssBook:
             self._save(user_id, book)
         return self.view(user_id)
 
+    @staticmethod
+    def _expire(feed: dict[str, Any], now: float) -> None:
+        """Remove entries older than KEEP_DAYS. Their ids are remembered, so a site that still lists one does not bring it back."""
+        keep = current(feed.get("items", []), now)
+        kept = {i["key"] for i in keep}
+        gone = [i["key"] for i in feed.get("items", []) if i["key"] not in kept]
+        feed["items"] = keep
+        if gone:
+            feed["gone"] = (list(feed.get("gone", [])) + gone)[-MAX_GONE:]
+
     def _merge(self, feed: dict[str, Any], parsed: dict[str, Any], now: float) -> None:
-        known = {i["key"] for i in feed.get("items", [])}
-        fresh = [{**i, "unread": True} for i in parsed["items"] if i["key"] not in known]
+        self._expire(feed, now)
+        known = {i["key"] for i in feed.get("items", [])} | set(feed.get("gone", []))
+        fresh = [{**i, "unread": True} for i in current(parsed["items"], now) if i["key"] not in known]
         keep = {i["key"]: i for i in parsed["items"]}
-        old = [i for i in feed.get("items", []) if i["key"] in keep]          # still listed by the site
+        old = current([i for i in feed.get("items", []) if i["key"] in keep], now)          # still listed by the site, and not too old
         merged = fresh + old
         merged.sort(key=lambda i: i.get("at") or 0, reverse=True)
         feed["items"] = merged[:MAX_ITEMS]
@@ -315,6 +334,7 @@ class RssBook:
             else:
                 feed["checked"] = now
                 feed["error"] = error
+                self._expire(feed, now)
             self._save(user_id, book)
 
     def refresh(self, user_id: str, *, force: bool = False) -> dict[str, Any]:
@@ -343,10 +363,11 @@ class RssBook:
     # reading
     def view(self, user_id: str) -> dict[str, Any]:
         book = self._load(user_id)
+        now = self.clock()
         feeds, new = [], 0
         for feed in sorted(book["feeds"].values(), key=lambda f: float(f.get("added") or 0)):
             items = [{"title": i["title"], "text": i.get("text", ""), "link": i.get("link", ""), "at": i.get("at"), "new": bool(i.get("unread"))}
-                     for i in feed.get("items", [])]
+                     for i in current(feed.get("items", []), now)]
             count = sum(1 for i in items if i["new"])
             new += count
             feeds.append({"id": feed["id"], "title": feed.get("title") or feed.get("url"), "url": feed["url"], "checked": feed.get("checked"),
@@ -354,7 +375,8 @@ class RssBook:
         return {"enabled": self.enabled(user_id), "new": new, "feeds": feeds, "max_feeds": MAX_FEEDS}
 
     def count_new(self, user_id: str) -> int:
-        return sum(1 for f in self._load(user_id)["feeds"].values() for i in f.get("items", []) if i.get("unread"))
+        now = self.clock()
+        return sum(1 for f in self._load(user_id)["feeds"].values() for i in current(f.get("items", []), now) if i.get("unread"))
 
 
 class RssRefresher:

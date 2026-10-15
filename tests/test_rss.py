@@ -237,3 +237,29 @@ def test_it_needs_a_signed_in_person(env):
     assert anon.get("/api/v1/me/rss").status_code in (401, 403)
     assert anon.post("/api/v1/me/rss/feeds", json={"url": "https://feeds.example.com/rss"}).status_code in (401, 403)
     assert anon.post("/api/v1/me/rss/seen").status_code in (401, 403)
+
+
+def test_entries_older_than_14_days_are_removed():
+    url = "https://feeds.example.com/age"
+    old = b"Mon, 01 Sep 2026 08:00:00 GMT"          # about three weeks before NOW
+    doc = (b'<?xml version="1.0"?><rss version="2.0"><channel><title>Age</title><link>https://feeds.example.com/</link>'
+           b'<item><title>Ancient</title><guid>a1</guid><pubDate>' + old + b'</pubDate><description>Old.</description></item>'
+           b'<item><title>Recent</title><guid>a2</guid><pubDate>Fri, 18 Sep 2026 08:00:00 GMT</pubDate><description>New.</description></item>'
+           b'<item><title>Undated</title><guid>a3</guid><description>No date.</description></item></channel></rss>')
+    docs = {url: doc}
+    b = make(docs)
+    titles = lambda: [i["title"] for i in b.view("u1")["feeds"][0]["items"]]            # noqa: E731
+    b.add_feed("u1", url)
+    assert sorted(titles()) == ["Recent", "Undated"]                                   # the old one is never kept
+    b.clock_["t"] += 10 * 86400
+    b.refresh("u1")
+    assert "Recent" in titles()
+    b.clock_["t"] += 5 * 86400                                                          # now 15 days on: Recent and Undated are too old
+    b.refresh("u1")
+    assert titles() == []
+    stored = b.vault.get_global("rss:u1")["feeds"]
+    assert all(f["items"] == [] for f in stored.values())                              # removed from storage, not just hidden
+    b.clock_["t"] += 3600
+    docs[url] = doc
+    b.refresh("u1", force=True)
+    assert titles() == []                                                              # still listed by the site, still too old

@@ -39,6 +39,7 @@ def build_config() -> dict:
         "limit_concurrency": 64,
         "timeout_keep_alive": 5,
         "h11_max_incomplete_event_size": 16 * 1024,
+        "ws_max_size": 16 * 1024,          # the WebSocket door takes short notes only
     }
 
 

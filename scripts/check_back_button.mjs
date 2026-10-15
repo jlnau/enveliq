@@ -104,7 +104,7 @@ await page.goBack();
 await page.waitForTimeout(300);
 check("Back closes Settings and returns to the section before it", (await page.locator("#settings.open").count()) === 0 && (await active()) === "reviewed" && (await alive()));
 
-// a phone: opening an email and closing it does not add history steps, and Back still stays in the app
+// a phone: an email opens full screen, and Back closes it (back to the list) instead of leaving Enveliq
 await page.setViewportSize({ width: 390, height: 800 });
 await page.waitForTimeout(200);
 await page.locator("#menuBtn").click();
@@ -112,8 +112,26 @@ await page.locator('.nav[data-filter="all"]').first().click();
 await page.waitForSelector("article.mail");
 const before = await page.evaluate(() => history.length);
 await page.locator("article.mail").first().locator(".qmain").click();
-await page.waitForTimeout(250);
-check("opening an email does not add to the history", (await page.evaluate(() => history.length)) === before);
+await page.waitForSelector(".reader");
+check("an email opens full screen on a phone", (await page.locator(".reader").count()) === 1);
+check("opening it adds one step to the history", (await page.evaluate(() => history.length)) === before + 1);
+await page.goBack();
+await page.waitForTimeout(300);
+check("Back closes the email and shows the list again", (await page.locator(".reader").count()) === 0 && (await page.locator("article.mail").count()) > 0 && (await alive()));
+check("the list is still the inbox", (await active()) === "all");
+// closing with the Close button leaves nothing behind: Back from the list stays inside Enveliq's own pages
+await page.locator("article.mail").first().locator(".qmain").click();
+await page.waitForSelector(".reader");
+await page.locator("[data-reader-close]").click();
+await page.waitForTimeout(300);
+check("the Close button closes the email", (await page.locator(".reader").count()) === 0 && (await alive()));
+check("closing it leaves no extra step marked as an open email", (await page.evaluate(() => !(history.state && history.state.enveliqReader))));
+// opening a second email, then Back twice: closed, and still in the app
+await page.locator("article.mail").nth(1).locator(".qmain").click();
+await page.waitForSelector(".reader");
+await page.goBack();
+await page.waitForTimeout(300);
+check("Back closes a second email too", (await page.locator(".reader").count()) === 0 && (await alive()));
 check("no script errors", errors.length === 0);
 await browser.close();
 if (failed) process.exit(1);

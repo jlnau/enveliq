@@ -152,13 +152,21 @@ Every email has a **Task** button beside Reply and Snooze (and in the full scree
 
 At the top of the Shipping page, **Add a parcel** opens a small form for a parcel that did not start from an email: **Who is it from?** (required), **Tracking number** (if you have one) and **Where is it up to?** (Waiting to be shipped, Shipped, Out for delivery or Delivered). The parcel appears as a card like the others, marked "Waiting to be shipped" and so on. Because no emails follow it, you move it along yourself with the **Where is it up to?** list on its card, and **Remove** takes it off the list (nothing is remembered about it afterwards). A parcel you mark Delivered is not asked "did it arrive?". A tracking number must be 8 to 40 letters or digits, and the same number cannot be added twice. There is no carrier box, so no Track button is offered for these cards; the number is shown with a **Copy number** button. Server: `POST /api/v1/me/shipping`, `PUT /api/v1/me/shipping/<id>/status` and the `remove` action (`backend/mail/shipping.py`, `shipping_routes.py`). Checks: `tests/test_shipping.py` and `scripts/check_shipping.mjs`.
 
+## Which mailbox an email came from
+
+When more than one of your mailboxes is connected, each email in the list carries a small coloured label with the mailbox's name (for example "Proton test" or "Gmail test"), and the open email has a **Mailbox** line in its details with the same label. Each mailbox keeps its own colour. Hold the pointer over a label (or long-press it) to see the provider and the address. With only one mailbox there is no label, so a single mailbox stays uncluttered. On a phone the label shows in the list and in the full screen email. Browser check: `scripts/check_mailbox_label.mjs`.
+
+## Searching your tasks
+
+The Tasks page has a **Search your tasks** box under its title. Type part of a task's words (its title, its details or who it is from; capital letters do not matter) and the page lists only the tasks that have them, open ones under **To do** and finished ones under **Done**, with a line saying how many match. Clear the box to get your usual view back. It works in the Focus, List and Calendar views. Browser check: `scripts/check_task_search.mjs`.
+
 ## Forms on a phone
 
 A form or pop-up that asks you to type something (Add a parcel, Task, News feeds, Tags, and the ones to come) opens full screen on a phone. The title and **✕ Close** stay fixed at the top, the buttons (Add parcel, Add task) stay fixed at the bottom, and only the middle scrolls, so you never have to hunt for them. On a computer they are small boxes as before. `scripts/check_shipping.mjs` and `scripts/check_task_add.mjs` check this.
 
 ## The Back button
 
-Moving to another section (Sent, Reviewed, Tasks and so on) adds a step to the browser's history, so the **Back** button of the browser, or a phone's back gesture, returns to the section you were in before, inside Enveliq, instead of leaving it. **Forward** works too. Back also closes Settings and Administration if they are open. Moving between the tabs of Settings does not add steps, so one Back leaves Settings. Opening or closing an email does not add steps. `scripts/check_back_button.mjs` checks this.
+Moving to another section (Sent, Reviewed, Tasks and so on) adds a step to the browser's history, so the **Back** button of the browser, or a phone's back gesture, returns to the section you were in before, inside Enveliq, instead of leaving it. **Forward** works too. Back also closes Settings and Administration if they are open. Moving between the tabs of Settings does not add steps, so one Back leaves Settings. On a computer, opening or closing an email does not add steps. **On a phone, an email that is open full screen has its own step**: Back (or the back gesture) closes the email and shows the list again, instead of leaving Enveliq. Closing it with the **✕ Close** button, or with Reviewed, Archive or Bin, leaves no extra step behind. `scripts/check_back_button.mjs` checks this.
 
 ## Reading pane on the right (computer)
 
