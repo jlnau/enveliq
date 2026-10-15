@@ -1,0 +1,32 @@
+name: Sync Reading Panel Glow Preview
+on:
+  push:
+    branches:
+      - experiment/reading-panel-glow
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: sync-reading-panel-glow
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/reading-panel-glow
+          fetch-depth: 0
+      - name: Fast-forward preview branch safely
+        run: |
+          set -euo pipefail
+          git fetch origin refs/heads/experiment/reading-panel-glow refs/heads/preview/reading-panel-glow
+          SOURCE="$(git rev-parse refs/remotes/origin/experiment/reading-panel-glow)"
+          TARGET="$(git rev-parse refs/remotes/origin/preview/reading-panel-glow)"
+          git merge-base --is-ancestor "$TARGET" "$SOURCE" || { echo "::error::Preview diverged; not overwriting existing commits"; exit 1; }
+          if [ "$SOURCE" != "$TARGET" ]; then git push origin "$SOURCE:refs/heads/preview/reading-panel-glow"; fi
+      - name: Request isolated preview build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run build-ui-preview.yml --repo "${{ github.repository }}" --ref preview/reading-panel-glow
