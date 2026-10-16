@@ -96,6 +96,20 @@ const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll
 
 {
   const server = makeServer();
+  const { page, errors, context } = await open(server);
+  const selectedBefore = await page.evaluate(() => paneId);
+  check("real-mail mode starts a live SSE connection", await page.evaluate(() => !!liveEvents));
+  server.arrive();
+  await page.evaluate(() => liveEvents.dispatchEvent(new MessageEvent("changed", {data:"{}"})));
+  await page.waitForFunction(() => [...document.querySelectorAll("article.mail .subject")].some(x => x.textContent.includes("Fourth email")), null, {timeout:10000});
+  check("SSE event refreshes the inbox without reloading the page", (await page.locator("article.mail").count()) === 4);
+  check("SSE refresh preserves selected email", await page.evaluate(id => paneId === id, selectedBefore));
+  check("live refresh creates no script errors", errors.length === 0);
+  await page.close();await context.close();
+}
+
+{
+  const server = makeServer();
   const { page, context, errors } = await open(server);
   await page.evaluate(() => openSettings("settings","mailalerts"));
   await page.waitForSelector('#mailAlertAccounts input[data-mail-alert-account]');
