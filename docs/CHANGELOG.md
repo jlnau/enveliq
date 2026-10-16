@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Attachment summaries stay in the selected email.** Opening or closing an attachment disclosure no longer clears the right hand reading pane. Touches `prototype/index.html` and `scripts/check_attachment_summaries.mjs`. See `docs/INBOX.md`.
+
 **Consistent action feedback with an optional popup switch.** Success confirmations use the existing unobtrusive toast and matching icon styling. Tag additions and removals and inbox synchronisation report their actual results. The View panel offers **Show action confirmations**, enabled by default and remembered privately per person. Turning it off hides routine success messages, not errors, pending sending or Undo. Touches `prototype/index.html`, `backend/mail/notify_routes.py`, `scripts/check_inbox_real_mail.mjs` and `tests/test_notify.py`. See `docs/INBOX.md`.
 
 **Return safely from Android email notifications.** A notification launch gives Back an inbox destination without closing Enveliq or changing ordinary navigation. Touches `prototype/index.html` and notification browser checks. See `docs/NOTIFICATIONS.md`.
