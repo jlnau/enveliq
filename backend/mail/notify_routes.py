@@ -136,7 +136,10 @@ def build_notify_router(ctx: Any) -> APIRouter:
         if body.account_id is not None or body.message_id is not None:
             if not body.account_id or not body.message_id:
                 raise HTTPException(status_code=422, detail="Both message identifiers are required")
-            account = ctx.vault.get_account(body.account_id)
+            try:
+                account = ctx.vault.get_account(body.account_id)
+            except (KeyError, ValueError):
+                account = None
             if not account or account.get("owner_user_id") != session.principal.user_id:
                 raise HTTPException(status_code=404, detail="Email not found")
             try:
