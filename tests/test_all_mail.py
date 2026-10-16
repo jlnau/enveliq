@@ -1,4 +1,4 @@
-"""All emails: the last 14 days of the inbox as quiet entries, Generate summary, and the line it waits in."""
+"""All emails: the last 60 days of the inbox as quiet entries, Generate summary, and the line it waits in."""
 from __future__ import annotations
 
 import time
@@ -30,7 +30,7 @@ def env(tmp_path):
 
 
 def with_read_mail(bridge):
-    for uid, subject, days in ((601, "Read yesterday", 1), (602, "Read last week", 9), (603, "Read long ago", 30)):
+    for uid, subject, days in ((601, "Read yesterday", 1), (602, "Read last week", 9), (603, "Read long ago", 30), (604, "Read outside window", 75)):
         bridge.add(uid, read_mail(subject, days, f"r{uid}", SECRET_WORDS))
         bridge.messages[uid]["flags"].add("\\Seen")
 
@@ -45,17 +45,17 @@ def wait_done(appm, client, timeout=10):
     raise AssertionError("the queue did not finish")
 
 
-def test_recent_mail_is_listed_quietly_and_only_for_14_days(env):
+def test_recent_mail_is_listed_quietly_and_only_for_60_days(env):
     _, client, bridge, model = env
     aid = account(client, bridge)
     client.post(f"/api/v1/accounts/{aid}/sync", json={})
     with_read_mail(bridge)
     r = client.post(f"/api/v1/accounts/{aid}/inbox/recent")
     assert r.status_code == 200, r.text
-    assert r.json()["added"] == 2
+    assert r.json()["added"] == 3
     msgs = messages(client, aid)
     assert msgs["Read yesterday"]["from_all_mail"] is True and msgs["Read yesterday"]["summary"].startswith("Not summarised yet")
-    assert "Read long ago" not in msgs and msgs["Quarterly update"]["from_all_mail"] is False        # the unread ones keep their normal place
+    assert "Read long ago" in msgs and "Read outside window" not in msgs and msgs["Quarterly update"]["from_all_mail"] is False        # the unread ones keep their normal place
     assert client.post(f"/api/v1/accounts/{aid}/inbox/recent").json()["added"] == 0                  # nothing is added twice
     assert model.requests == []                                                                      # listing never calls the AI
 
