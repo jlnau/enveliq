@@ -108,7 +108,7 @@ await page.click("#settingsBtn");
 await page.click("[data-settings-tab=accounts]");
 await page.waitForSelector("#settings.open .embed-host >> text=Connected", { timeout: 15000 }).catch(() => {});
 await page.waitForSelector("#settings.open .embed-host >> text=Add a mailbox", { timeout: 15000 });
-check("Settings has only personal sections", (await page.locator("#settingsNav button").allInnerTexts()).join("|") === "Profile|Sign-in & security|Email accounts|Address book|Important people|Signature & saved replies|Mail rules|Calendar & to-do|General|Notifications|AI instructions|Setup guide");
+check("Settings has only personal sections", (await page.locator("#settingsNav button").allInnerTexts()).join("|") === "Profile|Sign-in & security|Email accounts|Address book|Important people|Signature & saved replies|Mail rules|Calendar & to-do|General|Notifications|Email alerts|AI instructions|Setup guide");
 check("Settings > My email accounts shows both mailboxes and the add form", (await page.locator("#settings .embed-host >> .provider").count()) >= 7 && (await page.locator("#settings .embed-host >> text=Check connection").count()) === 2);
 await page.click("[data-settings-tab=signin]");
 await page.waitForSelector("#settings .embed-host >> text=Authenticator app");
