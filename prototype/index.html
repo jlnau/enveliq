@@ -7039,7 +7039,7 @@ document.addEventListener("keydown",e=>{
   const k=e.key.toLowerCase();
   const go=sel=>{const el=document.querySelector(sel);if(el&&!el.disabled){e.preventDefault();el.click()}};
   if(k==="arrowright")go(".decknav.next");else if(k==="arrowleft")go(".decknav.prev");
-  
+  else if(k==="a")go('.deckact [data-status="archived"]');
 });
 // Inbox keyboard shortcuts are deliberately separate from the header help link.
 function keyboardShortcutsKey(){
