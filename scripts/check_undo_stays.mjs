@@ -45,6 +45,24 @@ const lineScale = (p) => p.evaluate(() => { const a = document.querySelector("ar
   check("list: Undo puts it back, no longer greyed", (await p.locator("article.leaving").count()) === 0 && (await p.locator("article.mail").count()) === rows - 1);
   check("list: no script errors", errors.length === 0); await p.close();
 }
+// 2. Finishing one action must not close a different email's original viewer
+{
+  const p = await b.newPage({ viewport: { width: 1180, height: 820 } }); const errors = []; p.on("pageerror", (e) => errors.push(String(e)));
+  await p.goto(url); await p.waitForTimeout(600);
+  await p.evaluate(() => {
+    window.__undoMs = 700;
+    const inbox = data.filter((x) => x.status === "inbox" && x.owner === currentUser.id);
+    const acted = inbox[0], viewed = inbox.find((x) => x.id !== acted.id && x.body);
+    queueAction([acted], "trashed");
+    openEmailViewer(viewed.id);
+    window.__viewerRegression = { acted: acted.id, viewed: viewed.id, subject: viewed.subject };
+  });
+  check("viewer isolation: a different original email is open during the countdown", await p.evaluate(() => document.getElementById("attachmentModal").classList.contains("open") && document.getElementById("attachmentModalName").textContent === window.__viewerRegression.subject));
+  await p.waitForTimeout(1000);
+  check("viewer isolation: completing Bin does not close the different original email", await p.evaluate(() => document.getElementById("attachmentModal").classList.contains("open") && document.getElementById("attachmentModalName").textContent === window.__viewerRegression.subject));
+  check("viewer isolation: the pending action still completes only for its own email", await p.evaluate(() => !data.some((x) => x.id === window.__viewerRegression.acted && x.status === "inbox")));
+  check("viewer isolation: no script errors", errors.length === 0); await p.close();
+}
 // 2. Reduced motion: still greyed, no pulsing
 {
   const p = await b.newPage({ viewport: { width: 1180, height: 820 }, reducedMotion: "reduce" });
