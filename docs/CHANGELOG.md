@@ -4,7 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**Pending email actions no longer interrupt another email you are reading.** When the five second Reviewed, Archive or Bin countdown finishes, Enveliq now updates only the email that action belongs to. A different email or original email viewer opened during the countdown stays open. Touches `prototype/index.html`, `scripts/check_undo_stays.mjs` and `docs/INBOX.md`.
+
 
 ## v0.92 (2026-10-16)
 
