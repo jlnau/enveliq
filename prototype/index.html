@@ -2346,8 +2346,8 @@ const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replac
 let toastTimer=null;
 function feedbackKind(t){
   const message=String(t||"");
-  if(/^(Could not|Cannot|Failed|Unable|Error|Wrong |This email is no longer|That email is no longer|Sync failed|The original email is no longer)/i.test(message))return "error";
-  if(/^(Tag added|Added to your tasks|Back in your inbox|Snoozed until|.* sent from |.* is now an important person|Saved |Inbox is up to date|Sync complete|✓ )/i.test(message))return "success";
+  if(/(?:could not|cannot|failed|unable|error|wrong |no longer available|try again|too late|not found|not sent|sync failed)/i.test(message))return "error";
+  if(/^(Tag (added|removed)|Added to your tasks|Back in your inbox|Snoozed until|.* sent from |.* is now an important person|Saved |Inbox is up to date|Inbox updated|Mailbox sync completed|Sync complete|Connection test successful|Moved to Bin|Archived in your mailbox|Marked read in your mailbox|Removed from this list|✓ )/i.test(message))return "success";
   return "info";
 }
 function toast(t,ms=1500,kind){
@@ -5578,7 +5578,7 @@ async function resolveRealOne(m,status,button,quiet){
     if(keep){m.status=status;m.kept=true;m.keptUntil=new Date(Date.now()+realPrefs.keep_days*86400000).toLocaleDateString(undefined,{day:"numeric",month:"short"});m.attachments=[]}
     else{const ix=data.indexOf(m);if(ix>=0)data.splice(ix,1)}
     selected.delete(m.id);if(quiet)return true;closeAttachmentViewer();render();refreshTasks();
-    toast(status==="trashed"?"Moved to Bin in your mailbox":status==="expired"?"Removed from this list":(status==="archived"?"Archived in your mailbox":"Marked read in your mailbox")+(keep?`. Kept in ${status==="archived"?"Archived":"Reviewed"} for ${realPrefs.keep_days} day${realPrefs.keep_days===1?"":"s"}`:""));
+    toast(status==="trashed"?"Moved to Bin in your mailbox":status==="expired"?"Removed from this list":(status==="archived"?"Archived in your mailbox":"Marked read in your mailbox")+(keep?`. Kept in ${status==="archived"?"Archived":"Reviewed"} for ${realPrefs.keep_days} day${realPrefs.keep_days===1?"":"s"}`:""),2600,"success");
     return true;
   }catch(er){
     button.disabled=false;button.classList.remove("working");button.textContent=label;
@@ -5706,12 +5706,12 @@ async function pollOutbox(){
     if(outboxFirst)continue;                      // finished before this page loaded: the list already knows
     const m=realMsgOf(it);
     if(it.kind==="new"){
-      if(it.state==="sent")toast(`✓ Email sent from ${it.from} to ${it.to}`,4500);
-      else toast(`Your email${it.subject?` “${it.subject}”`:""} to ${it.to} could not be sent (${it.error||"failed"}). Copy your text and try again.`,8000);
+      if(it.state==="sent")toast(`Email sent from ${it.from} to ${it.to}`,4500,"success");
+      else toast(`Your email${it.subject?` “${it.subject}”`:""} to ${it.to} could not be sent (${it.error||"failed"}). Copy your text and try again.`,8000,"error");
       continue;
     }
-    if(it.state==="sent"){if(m){m.replied=true;m.repliedAt=realTime(Date.now()/1000);changed=true}toast(`✓ Reply sent from ${it.from} to ${it.to}`,4500)}
-    else toast(`Your reply to ${m?m.sender:it.to} could not be sent (${it.error||"failed"}). Copy your text and try again.`,8000);
+    if(it.state==="sent"){if(m){m.replied=true;m.repliedAt=realTime(Date.now()/1000);changed=true}toast(`Reply sent from ${it.from} to ${it.to}`,4500,"success")}
+    else toast(`Your reply to ${m?m.sender:it.to} could not be sent (${it.error||"failed"}). Copy your text and try again.`,8000,"error");
   }
   outboxFirst=false;
   if(changed)render();
