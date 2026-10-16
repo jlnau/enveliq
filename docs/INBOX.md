@@ -20,6 +20,10 @@ Enveliq uses the same small feedback message for routine actions, including tagg
 
 In **View → Feedback**, **Show action confirmations** starts on. Turn it off if you prefer not to see routine success popups. Important errors, Undo buttons and sending countdowns always remain visible. The preference is saved for your own account in the encrypted vault and applies on all your devices.
 
+## Live updates between devices
+
+While Enveliq is open, Server-Sent Events tell each signed-in browser when mail metadata changes. New emails, tags, reviewed and archived states, deleted messages, mailbox folder changes and opened indicators refresh automatically without reloading the page. The events contain no email contents or subjects. Enveliq re-reads only your own mailbox data with the existing authentication and permissions. The connection reconnects automatically, and a one-minute check plus visibility and network-return checks recover from dropped connections. An open email and the inbox scroll location stay in place where the email remains available.
+
 ## Returning to the same place
 
 Enveliq remembers where you were in the inbox and the email you had selected. When you return from reading a message, or refresh the page, it restores the list position on that device. The selected email is remembered for your own account in the encrypted vault, so your other devices can find the same email. Scroll positions stay on the device because phone and desktop screens have different sizes. If the email is no longer available, the inbox still works normally.
