@@ -494,3 +494,23 @@ def test_mail_context_is_private_and_validated(env):
     assert client.get("/api/v1/me/mail-context").json()["selection"] == chosen
     assert client.put("/api/v1/me/mail-context", json={"account_id": None, "message_id": None}).status_code == 200
     assert client.get("/api/v1/me/mail-context").json() == {"selection": None}
+
+
+def test_new_mail_alert_preference_modes_and_account_mutes(env):
+    """An owner can configure modes and mute their own mailbox, not another mailbox."""
+    appm, client, bridge, _ = env
+    aid = account(client, bridge)
+    path = "/api/v1/me/notifications/settings"
+    get = lambda: client.get("/api/v1/me/notifications").json()["settings"]
+    assert get()["mail_filter"] == "all"
+    assert get()["mail_muted_accounts"] == []
+    response = client.put(path, json={"mail_on": True, "mail_filter": "important", "mail_muted_accounts": [aid]})
+    assert response.status_code == 200, response.text
+    assert get()["mail_filter"] == "important"
+    assert get()["mail_muted_accounts"] == [aid]
+    response = client.put(path, json={"mail_filter": "action", "mail_muted_accounts": []})
+    assert response.status_code == 200, response.text
+    assert get()["mail_filter"] == "action" and not get()["mail_muted_accounts"]
+    assert client.put(path, json={"mail_filter": "everything"}).status_code == 422
+    assert client.put(path, json={"mail_muted_accounts": ["unknown-mailbox"]}).status_code == 404
+    assert get()["mail_filter"] == "action"
