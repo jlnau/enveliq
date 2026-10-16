@@ -46,7 +46,7 @@ function makeServer() {
     if (p === "/static/auth.css") return route.fulfill({ status: 200, contentType: "text/css", body: authCss });
     if (p === "/api/v1/me/notifications") return json(200, overview());
     if (p === "/api/v1/me/notifications/settings" && req.method() === "PUT") {
-      const changes = JSON.parse(req.postData());Object.assign(settings,changes);notificationChanges.push(changes);return json(200,overview());
+      const changes = JSON.parse(req.postData());Object.assign(settings,changes);notificationChanges.push(changes);saved.push(changes);return json(200,overview());
     }
     if (p === "/api/v1/me/notifications/settings" && req.method() === "PUT") { const b = JSON.parse(req.postData()); saved.push(b); Object.assign(settings, b); return json(200, overview()); }
     if (p === "/api/v1/me/mail-context" && req.method() === "GET") return json(200, { selection: mailSelection });
