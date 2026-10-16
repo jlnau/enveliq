@@ -466,12 +466,12 @@ class MailService:
 
     # ---------- all emails (recent mail that is not in the unread list) ----------
 
-    ALL_DAYS = 14
-    ALL_LIMIT = 100
+    ALL_DAYS = 60
+    ALL_LIMIT = None  # All matching inbox messages, with no count cap
 
     def keep_recent(self, vault: Any, account: dict[str, Any]) -> dict[str, int]:
-        """Add the last 14 days of the inbox (newest 100) to the list as quiet entries: sender, subject and date only,
-        read from the headers. Mail already listed is left alone. Entries older than 14 days are dropped. Nothing is
+        """Add the last 60 days of the inbox (with no count cap) as quiet entries: sender, subject and date only,
+        read from the headers. Mail already listed is left alone. Entries older than 60 days are dropped. Nothing is
         summarised here: that only happens when the person presses Generate summary."""
         self._not_check_address(account)
         target = self.target(account)
