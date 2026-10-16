@@ -532,13 +532,13 @@ class _ImapSession:
             self.uidvalidity = 0
         return self.uidvalidity
 
-    def recent_uids(self, since_days: int, limit: int) -> list[int]:
+    def recent_uids(self, since_days: int, limit: int | None = None) -> list[int]:
         """Newest emails in the open folder from the last few days (read or not)."""
         since = date.today() - timedelta(days=since_days)
         stamp = f"{since.day:02d}-{_MONTHS[since.month - 1]}-{since.year}"
         data = self._call("search", self.imap.uid, "SEARCH", None, "SINCE", stamp)
         uids = sorted((int(x) for x in (data[0] or b"").split() if x.isdigit()), reverse=True)
-        return uids[:limit]
+        return uids[:limit] if limit is not None else uids
 
     def unseen_uids(self, since_days: int, limit: int) -> list[int]:
         since = date.today() - timedelta(days=since_days)
