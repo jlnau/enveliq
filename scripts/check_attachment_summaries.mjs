@@ -69,7 +69,7 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
   await rows.nth(0).locator(".ad-head").click();
   if (shots) await mail.screenshot({ path: path.join(shots, `attachments-${name}.png`) });
   if(name==="desktop"){
-    await p.evaluate(() => {view.layout="right";applyView();paneId=9201;render()});
+    await p.evaluate(() => {expanded.delete("att-9201-0");view.layout="right";applyView();paneId=9201;render()});
     const reading=p.locator("#readDock");
     const attachment=reading.locator(".ad-row").first();
     check("reading pane shows the selected email before expanding an attachment",await reading.locator(".ad-head").count()===4 && await p.evaluate(()=>paneId===9201));
