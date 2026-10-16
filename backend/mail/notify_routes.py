@@ -1,7 +1,13 @@
 """Reminder channels: setting them up, testing them, and the administrator's rules."""
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
+import asyncio
+import hashlib
+import json
+
+from fastapi import Request
+from fastapi.responses import StreamingResponse
 from threading import RLock
 
 from fastapi import APIRouter, Depends, HTTPException, Path as PathParam
@@ -42,6 +48,8 @@ class SettingsBody(StrictModel):
     show_titles: bool | None = None
     mail_on: bool | None = None
     mail_details: bool | None = None
+    mail_filter: Literal["all", "important", "action"] | None = None
+    mail_muted_accounts: list[str] | None = Field(default=None, max_length=100)
 
 
 class OpenedMessageBody(StrictModel):
@@ -55,6 +63,12 @@ class MailViewBody(StrictModel):
     width: str = Field(pattern=r"^(centered|full)$")
     rows: str = Field(pattern=r"^(collapsed|open)$")
     peek: bool
+    action_feedback: bool = True
+
+
+class MailContextBody(StrictModel):
+    account_id: str | None = Field(default=None, max_length=128)
+    message_id: str | None = Field(default=None, max_length=512)
 
 
 class DeviceBody(StrictModel):
@@ -78,7 +92,80 @@ def build_notify_router(ctx: Any) -> APIRouter:
     click_url = ctx.click_url
 
     opened_lock = RLock()
+    # Share recent fingerprints among the same person's browser connections.
+    fingerprint_lock = RLock()
+    fingerprint_cache: dict[str, tuple[float, str]] = {}
+
     opened_prefix = "enveliq-opened-v1:"
+
+    def mail_fingerprint(user_id: str) -> str:
+        """Hash metadata only, never expose message content in the event stream."""
+        rows = []
+        for account in ctx.vault.list_accounts():
+            if account.get("owner_user_id") != user_id:
+                continue
+            aid = account["id"]
+            try:
+                for m in ctx.vault.list_messages(aid):
+                    rows.append((aid, str(m.get("id", "")), str(m.get("state", "")),
+                                 str(m.get("folder", "")), str(m.get("mailbox", "")),
+                                 str(m.get("snoozed_until", "")), str(m.get("replied_at", "")),
+                                 tuple(sorted(str(t) for t in (m.get("tags") or []))),
+                                 str(m.get("summary", "")), str(m.get("ai_pending", ""))))
+            except (KeyError, ValueError):
+                continue
+        rows.sort(key=lambda row: (row[0], row[1]))
+        opened = ctx.vault.get_global("enveliq-opened-v1:" + user_id) or {}
+        keys = opened.get("keys", []) if isinstance(opened, dict) else []
+        rows.append(("opened", tuple(sorted(str(k) for k in keys))))
+        return hashlib.sha256(json.dumps(rows, separators=(",", ":"), ensure_ascii=True).encode()).hexdigest()
+
+    def cached_mail_fingerprint(user_id: str) -> str:
+        # Avoid walking the entire mailbox once per open browser connection.
+        import time
+        with fingerprint_lock:
+            now = time.monotonic()
+            cached = fingerprint_cache.get(user_id)
+            if cached and now - cached[0] < 3:
+                return cached[1]
+            value = mail_fingerprint(user_id)
+            fingerprint_cache[user_id] = (now, value)
+            # Remove expired entries if the cache grows beyond its normal size.
+            if len(fingerprint_cache) > 256:
+                for uid, (stamp, _) in list(fingerprint_cache.items()):
+                    if now - stamp > 60:
+                        fingerprint_cache.pop(uid, None)
+            return value
+
+    @router.get("/me/mail-events")
+    async def mail_events(request: Request, session: Session = Depends(session_dep)):
+        """Same-origin one-way change hints; EventSource automatically reconnects."""
+        user_id = session.principal.user_id
+
+        async def stream():
+            last = await asyncio.to_thread(cached_mail_fingerprint, user_id)
+            yield "retry: 3000\nevent: ready\ndata: {}\n\n"
+            ticks = 0
+            while not await request.is_disconnected():
+                await asyncio.sleep(4)
+                if await request.is_disconnected():
+                    return
+                try:
+                    fingerprint = await asyncio.to_thread(cached_mail_fingerprint, user_id)
+                except Exception:
+                    yield "event: reconnect\ndata: {}\n\n"
+                    return
+                if fingerprint != last:
+                    last = fingerprint
+                    yield "event: changed\ndata: {}\n\n"
+                ticks += 1
+                if ticks % 5 == 0:
+                    yield ": heartbeat\n\n"
+
+        return StreamingResponse(stream(), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no",
+                                          "Content-Security-Policy": "default-src 'none'"})
+
 
     @router.get("/me/mail-opened")
     def get_mail_opened(session: Session = Depends(session_dep)):
@@ -116,9 +203,39 @@ def build_notify_router(ctx: Any) -> APIRouter:
 
     @router.put("/me/mail-view")
     def put_mail_view(body: MailViewBody, session: Session = Depends(session_dep)):
-        view = body.model_dump()
-        ctx.vault.set_global("mail-view-v1:" + session.principal.user_id, view)
+        # Preserve optional preferences when older clients submit their legacy view.
+        key = "mail-view-v1:" + session.principal.user_id
+        previous = ctx.vault.get_global(key)
+        view = {**(previous if isinstance(previous, dict) else {}), **body.model_dump(exclude_unset=True)}
+        ctx.vault.set_global(key, view)
         return {"view": view}
+
+    @router.get("/me/mail-context")
+    def get_mail_context(session: Session = Depends(session_dep)):
+        saved = ctx.vault.get_global("mail-context-v1:" + session.principal.user_id)
+        return {"selection": saved if isinstance(saved, dict) and saved else None}
+
+    @router.put("/me/mail-context")
+    def put_mail_context(body: MailContextBody, session: Session = Depends(session_dep)):
+        selection = None
+        if body.account_id is not None or body.message_id is not None:
+            if not body.account_id or not body.message_id:
+                raise HTTPException(status_code=422, detail="Both message identifiers are required")
+            try:
+                account = ctx.vault.get_account(body.account_id)
+            except (KeyError, ValueError):
+                account = None
+            if not account or account.get("owner_user_id") != session.principal.user_id:
+                raise HTTPException(status_code=404, detail="Email not found")
+            try:
+                message = ctx.vault.get_message(body.account_id, body.message_id)
+            except (KeyError, ValueError):
+                message = None
+            if not message:
+                raise HTTPException(status_code=404, detail="Email not found")
+            selection = {"account_id": body.account_id, "message_id": body.message_id}
+        ctx.vault.set_global("mail-context-v1:" + session.principal.user_id, selection or {})
+        return {"selection": selection}
 
     @router.get("/me/notifications")
     def overview(session: Session = Depends(session_dep)):
@@ -166,7 +283,12 @@ def build_notify_router(ctx: Any) -> APIRouter:
         user = session.principal.user_id
         if not save_limit.allow(f"n:{user}"):
             raise HTTPException(status_code=429, detail="Too many changes. Wait a minute.")
-        notifier.save_settings(user, body.model_dump(exclude_none=True))
+        changed = body.model_dump(exclude_none=True)
+        if "mail_muted_accounts" in changed:
+            allowed = {a["id"] for a in ctx.vault.list_accounts() if a.get("owner_user_id") == user}
+            if any(not isinstance(aid, str) or aid not in allowed for aid in changed["mail_muted_accounts"]):
+                raise HTTPException(status_code=404, detail="Mailbox not found")
+        notifier.save_settings(user, changed)
         return notifier.overview(user)
 
     @router.get("/me/notifications/browser/key")

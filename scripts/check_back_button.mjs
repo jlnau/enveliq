@@ -113,6 +113,14 @@ await page.waitForSelector("article.mail");
 const before = await page.evaluate(() => history.length);
 await page.locator("article.mail").first().locator(".qmain").click();
 await page.waitForSelector(".reader");
+check("email action buttons have oval inset outlines without borders changing their size", await page.evaluate(()=>{
+  const buttons=[...document.querySelectorAll(".qfoot .subtle")];
+  if(!buttons.length)return false;
+  return buttons.every(b=>{
+    const style=getComputedStyle(b);
+    return style.borderTopWidth==="0px"&&parseFloat(style.borderTopLeftRadius)>15&&style.boxShadow.includes("inset");
+  });
+}));
 check("an email opens full screen on a phone", (await page.locator(".reader").count()) === 1);
 check("opening it adds one step to the history", (await page.evaluate(() => history.length)) === before + 1);
 await page.goBack();
@@ -132,6 +140,24 @@ await page.waitForSelector(".reader");
 await page.goBack();
 await page.waitForTimeout(300);
 check("Back closes a second email too", (await page.locator(".reader").count()) === 0 && (await alive()));
+// Phone menu: Back closes the sidebar without leaving the current view.
+await page.locator("#menuBtn").click();
+check("mobile menu opens", await page.locator("body.menu-open").count() === 1);
+await page.goBack();
+await page.waitForTimeout(250);
+check("Back closes the mobile menu", await page.locator("body.menu-open").count() === 0 && (await active()) === "all" && (await alive()));
+const swipe = async (fromX,toX)=>{
+  await page.evaluate(({fromX,toX})=>{
+    const make=(type,x)=>new TouchEvent(type,{bubbles:true,cancelable:true,touches:type==="touchend"?[]:[new Touch({identifier:1,target:document.body,clientX:x,clientY:280})],changedTouches:[new Touch({identifier:1,target:document.body,clientX:x,clientY:280})]});
+    document.dispatchEvent(make("touchstart",fromX));
+    document.dispatchEvent(make("touchend",toX));
+  },{fromX,toX});
+};
+await swipe(8,155);
+check("edge swipe opens the sidebar", await page.locator("body.menu-open").count() === 1);
+await swipe(220,45);
+await page.waitForTimeout(200);
+check("left swipe closes the sidebar", await page.locator("body.menu-open").count() === 0 && (await alive()));
 check("no script errors", errors.length === 0);
 await browser.close();
 if (failed) process.exit(1);

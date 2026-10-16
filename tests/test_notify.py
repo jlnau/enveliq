@@ -461,3 +461,68 @@ def test_mail_view_preferences_stored_per_user_in_vault(env):
     assert appm.vault.get_global("mail-view-v1:" + uid) == chosen
     assert client.put("/api/v1/me/mail-view", json={**chosen, "layout": "invalid"}).status_code == 422
     assert client.get("/api/v1/me/mail-view").json()["view"] == chosen
+    # Success feedback starts enabled for older and first-time preferences.
+    enabled = {**chosen, "action_feedback": True}
+    assert client.put("/api/v1/me/mail-view", json=enabled).status_code == 200
+    assert client.get("/api/v1/me/mail-view").json()["view"]["action_feedback"] is True
+    disabled = {**chosen, "action_feedback": False}
+    response = client.put("/api/v1/me/mail-view", json=disabled)
+    assert response.status_code == 200, response.text
+    assert client.get("/api/v1/me/mail-view").json()["view"] == disabled
+    assert appm.vault.get_global("mail-view-v1:" + uid)["action_feedback"] is False
+    # A browser still using the old payload must not erase newer preferences.
+    assert client.put("/api/v1/me/mail-view", json=chosen).status_code == 200
+    assert client.get("/api/v1/me/mail-view").json()["view"] == disabled
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "action_feedback": "invalid"}).status_code == 422
+
+
+def test_mail_context_is_private_and_validated(env):
+    """Remember only an email reference belonging to the signed-in person."""
+    appm, client, bridge, _ = env
+    aid = account(client, bridge)
+    client.post(f"/api/v1/accounts/{aid}/sync", json={})
+    messages = appm.vault.list_messages(aid)
+    assert messages
+    mid = messages[0]["id"]
+    assert client.get("/api/v1/me/mail-context").json() == {"selection": None}
+    chosen = {"account_id": aid, "message_id": mid}
+    response = client.put("/api/v1/me/mail-context", json=chosen)
+    assert response.status_code == 200, response.text
+    assert client.get("/api/v1/me/mail-context").json()["selection"] == chosen
+    uid = appm.vault.list_users()[0]["id"]
+    assert appm.vault.get_global("mail-context-v1:" + uid) == chosen
+    assert client.put("/api/v1/me/mail-context", json={"account_id": aid, "message_id": "missing"}).status_code == 404
+    assert client.put("/api/v1/me/mail-context", json={"account_id": "other-account", "message_id": mid}).status_code == 404
+    assert client.put("/api/v1/me/mail-context", json={"account_id": aid}).status_code == 422
+    assert client.get("/api/v1/me/mail-context").json()["selection"] == chosen
+    assert client.put("/api/v1/me/mail-context", json={"account_id": None, "message_id": None}).status_code == 200
+    assert client.get("/api/v1/me/mail-context").json() == {"selection": None}
+
+
+def test_new_mail_alert_preference_modes_and_account_mutes(env):
+    """An owner can configure modes and mute their own mailbox, not another mailbox."""
+    appm, client, bridge, _ = env
+    aid = account(client, bridge)
+    path = "/api/v1/me/notifications/settings"
+    get = lambda: client.get("/api/v1/me/notifications").json()["settings"]
+    assert get()["mail_filter"] == "all"
+    assert get()["mail_muted_accounts"] == []
+    response = client.put(path, json={"mail_on": True, "mail_filter": "important", "mail_muted_accounts": [aid]})
+    assert response.status_code == 200, response.text
+    assert get()["mail_filter"] == "important"
+    assert get()["mail_muted_accounts"] == [aid]
+    response = client.put(path, json={"mail_filter": "action", "mail_muted_accounts": []})
+    assert response.status_code == 200, response.text
+    assert get()["mail_filter"] == "action" and not get()["mail_muted_accounts"]
+    assert client.put(path, json={"mail_filter": "everything"}).status_code == 422
+    assert client.put(path, json={"mail_muted_accounts": ["unknown-mailbox"]}).status_code == 404
+    assert get()["mail_filter"] == "action"
+
+
+def test_live_mail_events_require_sign_in(env):
+    """Mailbox stream cannot be opened without a full authenticated session."""
+    from fastapi.testclient import TestClient
+    appm, _, _, _ = env
+    unauthenticated = TestClient(appm.app)
+    response = unauthenticated.get("/api/v1/me/mail-events")
+    assert response.status_code in (401, 403)

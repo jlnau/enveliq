@@ -2,6 +2,32 @@
 
 The small things that make the inbox calm to use.
 
+## Buttons inside an email
+
+The Tag, Task, Reply and other email actions have a fine oval outline so they are easier to recognise as buttons. The outline is drawn inside each existing button, without changing its size or spacing. The same design works in light and dark mode.
+
+## Opening the menu on a phone
+
+Swipe inward from the left edge of the screen to open the mailbox menu. Swipe left across the open menu to close it. The browser Back button, including the phone's system Back button, closes the open menu rather than leaving the current page. The menu button and the dimmed area outside the menu still work as before.
+
+## Action confirmations## Attachment summaries in the reading pane
+
+Expanding an attachment's AI summary keeps the current email selected in the reading pane. The summary arrow only opens or closes that attachment's details; it does not close the email. This also works when the attachment is collapsed again.
+
+
+
+Enveliq uses the same small feedback message for routine actions, including tagging and syncing. A successful action shows a short confirmation, while a failure explains what went wrong. Sending and replying continue to use the existing Undo Send countdown, and archive, Reviewed and Bin keep their existing Undo bars; these are never replaced by a success message.
+
+In **View → Feedback**, **Show action confirmations** starts on. Turn it off if you prefer not to see routine success popups. Important errors, Undo buttons and sending countdowns always remain visible. The preference is saved for your own account in the encrypted vault and applies on all your devices.
+
+## Live updates between devices
+
+While Enveliq is open, Server-Sent Events tell each signed-in browser when mail metadata changes. New emails, tags, reviewed and archived states, deleted messages, mailbox folder changes and opened indicators refresh automatically without reloading the page. The events contain no email contents or subjects. Enveliq re-reads only your own mailbox data with the existing authentication and permissions. The connection reconnects automatically, and a one-minute check plus visibility and network-return checks recover from dropped connections. An open email and the inbox scroll location stay in place where the email remains available.
+
+## Returning to the same place
+
+Enveliq remembers where you were in the inbox and the email you had selected. When you return from reading a message, or refresh the page, it restores the list position on that device. The selected email is remembered for your own account in the encrypted vault, so your other devices can find the same email. Scroll positions stay on the device because phone and desktop screens have different sizes. If the email is no longer available, the inbox still works normally.
+
 ## When new mail appears
 
 If the mailbox uses AI summaries, a new email is not shown in your inbox until its summary, and the summaries of any attached files, are ready. A small bar at the bottom of the page shows the AI queue (*1 being written, 2 waiting*). If a summary fails after a few tries, the email is shown anyway with **Could not summarise** and a **Try again** button. [The AI guide](AI_SUMMARIES.md#the-ai-queue) has the details.
@@ -158,7 +184,7 @@ On a phone the top bar holds only the menu button, the logo, the bell, Search an
 
 ## Your first view, and remembering it
 
-When someone signs in for the first time, the inbox starts with the **reading panel on the right**: the list on the left and the open email beside it. Any change you make under **View** (layout, spacing, width, open rows, preview) is saved for you on the server, encrypted, and used on every device you sign in from. It survives restarts and updates, and nobody else's choice ever changes yours. **Reset** in the View panel goes back to the first view. The right and bottom reading panels start with nothing selected ("Nothing selected", with a few quick actions) and clear again after a refresh. On a phone every email still opens full screen.
+When someone signs in for the first time, the inbox starts with the **reading panel on the right**: the list on the left and the open email beside it. Any change you make under **View** (layout, spacing, width, open rows, preview) is saved for you on the server, encrypted, and used on every device you sign in from. It survives restarts and updates, and nobody else's choice ever changes yours. **Reset** in the View panel goes back to the first view. The right and bottom reading panels begin with nothing selected for a person who has never opened an email. After someone selects an email, that choice is remembered through refreshes and across their signed-in devices if the message is still available. On a phone every email still opens full screen.
 
 ## New emails glow until you open them
 

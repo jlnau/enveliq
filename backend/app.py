@@ -506,6 +506,7 @@ def delete_user_data(user_id: str) -> None:
     rulebook.forget_user(user_id)
     vault.set_global("enveliq-opened-v1:" + user_id, {})          # which emails this person has opened (the new-mail glow)
     vault.set_global("mail-view-v1:" + user_id, {})               # their saved layout
+    vault.set_global("mail-context-v1:" + user_id, {})            # last selected email
     for account in vault.list_accounts():
         if account.get("owner_user_id") == user_id:
             preview_leases.purge_account(account["id"])
@@ -629,7 +630,7 @@ mail_service.waits = waitbook
 notifier = Notifier(vault)
 _click = "" if _pub.hostname in ("localhost", "127.0.0.1", "::1") else PUBLIC_ORIGIN
 reminders = Reminders(vault, taskbook, notifier, _click)
-auto_sync.mail_alerts = MailAlerts(notifier, _click, taskbook.timezone_of)
+auto_sync.mail_alerts = MailAlerts(notifier, _click, taskbook.timezone_of, important=importantbook)
 reminders.subs = subbook
 sync = Sync(vault, taskbook, notifier, PUBLIC_ORIGIN)
 backups = BackupManager(vault, DATA_DIR / "backups")

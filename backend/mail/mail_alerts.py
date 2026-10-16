@@ -22,8 +22,9 @@ MAX_LISTED = 3
 
 
 class MailAlerts:
-    def __init__(self, notifier: Notifier, click_url: str, timezone_of: Callable[[str], str], clock: Callable[[], float] = time.time):
+    def __init__(self, notifier: Notifier, click_url: str, timezone_of: Callable[[str], str], clock: Callable[[], float] = time.time, important: Any = None):
         self.notifier, self.click_url, self.timezone_of, self.clock = notifier, click_url, timezone_of, clock
+        self.important = important
 
     @staticmethod
     def _path(account_id: str, message_id: str | None) -> str:
@@ -57,6 +58,15 @@ class MailAlerts:
         try:
             st = self.notifier.settings(user_id)
             if not st["mail_on"] or not self.notifier.has_any(user_id):
+                return 0
+            muted = set(st.get("mail_muted_accounts", []))
+            new = [m for m in new if m.get("account_id") not in muted]
+            mode = st.get("mail_filter", "all")
+            if mode == "important":
+                new = [m for m in new if self.important is not None and self.important.contains(user_id, m.get("sender_address"))]
+            elif mode == "action":
+                new = [m for m in new if m.get("action_required") is True]
+            if not new:
                 return 0
             if st["quiet_on"]:
                 local = datetime.fromtimestamp(self.clock(), zone(self.timezone_of(user_id)))

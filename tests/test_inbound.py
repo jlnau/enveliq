@@ -291,10 +291,12 @@ def test_deleting_a_person_also_clears_their_saved_layout_and_opened_emails(env)
     uid = next(u["id"] for u in appm.vault.list_users() if u.get("username") == "second")
     appm.vault.set_global("mail-view-v1:" + uid, {"layout": "list", "density": "compact", "width": "full", "rows": "open", "peek": False})
     appm.vault.set_global("enveliq-opened-v1:" + uid, {"keys": ["a1:m1", "a1:m2"]})
+    appm.vault.set_global("mail-context-v1:" + uid, {"account_id": "a1", "message_id": "m1"})
     r = client.delete(f"/api/v1/admin/users/{uid}")
     assert r.status_code in (200, 204), r.text
     assert not appm.vault.get_global("mail-view-v1:" + uid)
     assert not appm.vault.get_global("enveliq-opened-v1:" + uid)
+    assert not appm.vault.get_global("mail-context-v1:" + uid)
 
 
 HOOK = "/api/v1/inbound/webhook"

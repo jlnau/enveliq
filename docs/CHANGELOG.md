@@ -4,7 +4,21 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**Live mailbox changes across active browsers.** A new authenticated SSE stream updates the inbox when messages, tags, reviewed/archived/deleted state, mailbox folder locations or opened markers change. Auto-reconnect and a periodic fallback preserve continuity, while ordinary mailbox sync remains responsible for fetching provider mail. Touches `backend/mail/notify_routes.py`, `prototype/index.html` and tests. See `docs/INBOX.md`, `docs/ARCHITECTURE.md` and `SECURITY.md`.
+
+**Personal new-email alert filters and mailbox muting.** In Settings → Email alerts, each person can select all mail, Important people, or Needs action notifications and mute notifications from individual connected mailboxes. Existing channels and quiet hours are unchanged. Filtering is performed on the server before sending. Touches `backend/mail/{notify.py,notify_routes.py,mail_alerts.py,scheduler.py}`, `backend/app.py`, `prototype/index.html`, tests and docs. See `docs/NOTIFICATIONS.md` and `SECURITY.md`.
+
+**Attachment summaries stay in the selected email.** Opening or closing an attachment disclosure no longer clears the right hand reading pane. Touches `prototype/index.html` and `scripts/check_attachment_summaries.mjs`. See `docs/INBOX.md`.
+
+**Consistent action feedback with an optional popup switch.** Success confirmations use the existing unobtrusive toast and matching icon styling. Tag additions and removals and inbox synchronisation report their actual results. The View panel offers **Show action confirmations**, enabled by default and remembered privately per person. Turning it off hides routine success messages, not errors, pending sending or Undo. Touches `prototype/index.html`, `backend/mail/notify_routes.py`, `scripts/check_inbox_real_mail.mjs` and `tests/test_notify.py`. See `docs/INBOX.md`.
+
+**Return safely from Android email notifications.** A notification launch gives Back an inbox destination without closing Enveliq or changing ordinary navigation. Touches `prototype/index.html` and notification browser checks. See `docs/NOTIFICATIONS.md`.
+
+**Remember inbox position and selected email.** The inbox keeps its scroll position on each device through navigation and refresh; the selected email is saved privately in the encrypted vault for that signed-in person. Touches `prototype/index.html`, `backend/mail/notify_routes.py`, `backend/app.py`, browser and backend tests. The saved selection is also cleared when a user is deleted. See `docs/INBOX.md` and `SECURITY.md`.
+
+**Email action buttons are easier to spot.** Tag, Task, Reply and other controls inside an email have a fine oval outline without changing their size or spacing, in either appearance mode. Touches `prototype/index.html`, `scripts/check_back_button.mjs`. See `docs/INBOX.md`.
+
+**Swipe to open and close the mobile sidebar.** On a phone, swipe in from the left screen edge to open the menu, and swipe left across the menu to close it. The browser or phone Back button also closes the menu without leaving the current page. Touches `prototype/index.html`, `scripts/check_back_button.mjs`. See `docs/INBOX.md`.
 
 ## v0.91 (2026-10-15)
 

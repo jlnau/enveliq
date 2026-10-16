@@ -155,6 +155,27 @@ async function open(server, { seen = true } = {}) {
   await page.waitForSelector("article.mail");
   const subjects = await page.locator("article.mail .subject").allInnerTexts();
   check("shows the three synced emails, newest first", subjects.length === 3 && subjects[0] === "Weekly news" && subjects[2] === "Older statement");
+  // Copy controls use the already loaded message and never make a network request.
+  await page.evaluate(() => {
+    const first = data.find(m => m.real);
+    paneId = first.id;
+    render();
+    window.__copyOriginal = copyText;
+    copyText = async text => { window.__copiedMailDetail = text; return true; };
+  });
+  check("desktop: selected email offers copy controls", await page.locator(".reading .mail-copy-controls [data-copy-field=all]").count() === 1);
+  await page.locator(".reading [data-copy-field=address]").click();
+  check("copy sender address", await page.evaluate(() => window.__copiedMailDetail === data.find(m => m.id === paneId).address));
+  await page.locator(".reading [data-copy-field=subject]").click();
+  check("copy subject", await page.evaluate(() => window.__copiedMailDetail === data.find(m => m.id === paneId).subject));
+  await page.locator(".reading [data-copy-field=all]").click();
+  check("copy all details in labelled lines", await page.evaluate(() => {
+    const m = data.find(x => x.id === paneId), t = window.__copiedMailDetail;
+    return t.includes("Sender: " + m.address) && t.includes("Subject: " + m.subject) &&
+      t.includes("Message reference: " + m.real.messageId) && t.includes("\n");
+  }));
+  await page.evaluate(() => { copyText = window.__copyOriginal; delete window.__copyOriginal; });
+
   check("sample emails are gone", !(await page.locator("#list").innerText()).includes("Skyline Air"));
   check("sample banner is hidden", !(await page.locator(".sample-banner").isVisible()));
   check("plain http on another address shows a warning (this test page is http://enveliq.test), but not localhost or https", (await page.locator("#httpBanner").isVisible()) && (await page.locator("#httpBanner").innerText()).includes("not encrypted") && await page.evaluate(() => window.__isPlainHttp("http:", "192.168.1.50") && window.__isPlainHttp("http:", "enveliq.lan") && !window.__isPlainHttp("http:", "localhost") && !window.__isPlainHttp("http:", "127.0.0.1") && !window.__isPlainHttp("https:", "enveliq.example.com")));
@@ -489,6 +510,19 @@ await page.click('[data-theme-choice="dark"]');
   await page.click("#viewTab");
   await page.waitForTimeout(450);
   check("clicking the tab slides the panel out; the default layout is the classic list", !(await panelHidden()) && (await page.locator('#viewPanel [data-view=layout][data-val=list]').getAttribute("aria-checked")) === "true");
+  // Action feedback is a personal display preference, not a switch for Undo or errors.
+  check("action confirmations default to on", await page.locator("#vActionFeedback").isChecked());
+  await page.evaluate(() => toast("Inbox is up to date",1800,"success"));
+  check("a successful sync uses the existing toast", await page.locator("#toast.show[data-kind=success]").count()===1);
+  await page.locator("#vActionFeedback").uncheck();
+  check("switching off saves the personal preference", await page.evaluate(() => view.action_feedback===false));
+  await page.evaluate(() => { document.getElementById("toast").classList.remove("show");toast("Tag added",1800,"success"); });
+  check("routine success popups can be hidden", await page.locator("#toast.show").count()===0);
+  await page.evaluate(() => toast("Could not sync your inbox. Try again.",2500,"error"));
+  check("errors remain visible even with confirmations off", await page.locator("#toast.show[data-kind=error]").count()===1);
+  await page.locator("#vActionFeedback").check();
+  check("switching confirmations back on takes effect immediately", await page.evaluate(() => view.action_feedback===true));
+  await page.evaluate(() => document.getElementById("toast").classList.remove("show"));
   const rowH = async () => (await page.locator("article.mail .qrow").first().boundingBox()).height;
   const h0 = await rowH();
   await page.click('#viewPanel [data-view=density][data-val=compact]');
@@ -563,7 +597,17 @@ await page.click('[data-theme-choice="dark"]');
   await page.setViewportSize({ width: 420, height: 820 });
   await page.waitForTimeout(400);
   await page.evaluate(() => { window.__undoMs = 900; window.__peekDelay = 100; });
-  check("phone: the left panel is gone; a top bar with a menu button, logo and avatar takes its place", !(await page.locator("#sidebar").isVisible()) && (await page.locator("#mTop").isVisible()) && (await page.locator("#menuBtn").isVisible()) && (await page.locator("#mLogo").isVisible()));
+  await page.waitForFunction(() => {
+    const visible = id => { const e=document.getElementById(id);return !!e&&!!e.getClientRects().length&&getComputedStyle(e).visibility!=="hidden" };
+    return !visible("sidebar")&&visible("mTop")&&visible("menuBtn")&&visible("mLogo");
+  },null,{timeout:1800}).catch(()=>{});
+  const phoneHeader = await page.evaluate(() => {
+    const state=id=>{const e=document.getElementById(id);if(!e)return {missing:true};const r=e.getBoundingClientRect();return {display:getComputedStyle(e).display,visibility:getComputedStyle(e).visibility,width:r.width,height:r.height,src:e.getAttribute("src")?.slice(0,30)||null}};
+    return {sidebar:state("sidebar"),top:state("mTop"),menu:state("menuBtn"),logo:state("mLogo"),body:document.body.className};
+  });
+  const phoneHeaderOk=!(await page.locator("#sidebar").isVisible())&&(await page.locator("#mTop").isVisible())&&(await page.locator("#menuBtn").isVisible())&&(await page.locator("#mLogo").isVisible());
+  if(!phoneHeaderOk)console.log("Phone header diagnostics:",JSON.stringify(phoneHeader));
+  check("phone: the left panel is gone; a top bar with a menu button, logo and avatar takes its place",phoneHeaderOk);
   await page.click("#menuBtn");
   await page.waitForTimeout(450);
   check("phone: the menu button slides the menu out from the left, with labels", (await page.locator("#sidebar").isVisible()) && (await page.locator("#sidebar").innerText()).includes("Needs action") && (await page.locator("#menuBtn").getAttribute("aria-expanded")) === "true");
@@ -608,6 +652,18 @@ await page.click('[data-theme-choice="dark"]');
   const rows1 = await page.locator("article.mail").count();
   await page.locator("article.mail .qmain").first().click();
   check("phone: tapping a row opens the email full screen, with the details panel under the text", (await page.locator(".reader .qside").count()) === 1);
+  check("phone: sender details menu contains clipboard actions", await page.locator(".reader .rfrom .mail-copy-menu summary").count() === 1);
+  await page.evaluate(() => { window.__copyOriginal = copyText; copyText = async value => { window.__copiedMailDetail = value; return true; }; });
+  await page.locator(".reader .rfrom .mail-copy-menu summary").click();
+  await page.locator(".reader .rfrom [data-copy-field=all]").click();
+  check("phone: one action copies sender subject and message reference", await page.evaluate(() => {
+    const m = data.find(x => x.id === paneId), value = window.__copiedMailDetail;
+    return !!m?.real && value.includes("Sender: " + m.address) &&
+      value.includes("Subject: " + m.subject) &&
+      value.includes("Message reference: " + m.real.messageId);
+  }));
+  await page.evaluate(() => { copyText = window.__copyOriginal; delete window.__copyOriginal; });
+
   const callsQ = server.calls.length;
   await page.locator(".reader .ract [data-status=reviewed]").click();
   await page.waitForSelector("#undoBar:not([hidden])");

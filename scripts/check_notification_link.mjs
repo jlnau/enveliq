@@ -23,6 +23,8 @@ const authCss = fs.readFileSync(path.join(here, "..", "web", "static", "auth.css
 function makeServer() {
   let extra = false;
   const saved = [];
+  let mailSelection = null;
+  const notificationChanges = [];
   const settings = { morning_on: true, morning_time: "08:00", due_on: true, repeat_hours: 2, repeat_max: 2, quiet_on: true, quiet_from: "21:00", quiet_to: "07:00", show_titles: true, mail_on: false, mail_details: false };
   const overview = () => ({ settings, tz: "Australia/Sydney", channels: [{ id: "browser", label: "This device (browser)", blurb: "A pop-up on this phone or computer, even when Enveliq is closed.", steps: ["Press Turn on for this device."], fields: [], enabled: false, allowed: true, configured: false, last_ok: null, last_error: null, devices: [] }] });                                 // a fourth email that "arrives" after the page loaded
   const handler = async (route) => {
@@ -43,7 +45,12 @@ function makeServer() {
     if (p === "/embed.js") return route.fulfill({ status: 200, contentType: "text/javascript", body: embed });
     if (p === "/static/auth.css") return route.fulfill({ status: 200, contentType: "text/css", body: authCss });
     if (p === "/api/v1/me/notifications") return json(200, overview());
+    if (p === "/api/v1/me/notifications/settings" && req.method() === "PUT") {
+      const changes = JSON.parse(req.postData());Object.assign(settings,changes);notificationChanges.push(changes);saved.push(changes);return json(200,overview());
+    }
     if (p === "/api/v1/me/notifications/settings" && req.method() === "PUT") { const b = JSON.parse(req.postData()); saved.push(b); Object.assign(settings, b); return json(200, overview()); }
+    if (p === "/api/v1/me/mail-context" && req.method() === "GET") return json(200, { selection: mailSelection });
+    if (p === "/api/v1/me/mail-context" && req.method() === "PUT") { mailSelection = JSON.parse(req.postData()); if (!mailSelection.account_id) mailSelection = null; return json(200, { selection: mailSelection }); }
     if (p === "/api/v1/me/preferences") return json(200, { keep_reviewed: true, keep_archived: true, keep_days: 7, max_days: 14, instructions: "", undo_send_seconds: 0 });
     if (p === "/api/v1/me/features") return json(200, { effective: features, admin: features, user: features });
     if (p === "/api/v1/sync/status") return json(200, { enabled: true, minutes: 10, now: Date.now() / 1000, accounts: { a1: { ok: true, at: now } } });
@@ -51,7 +58,7 @@ function makeServer() {
     if (p === "/api/v1/me/shipping") return json(200, { enabled: false, orders: [], now });
     return json(404, { detail: "not found: " + p });
   };
-  return { handler, saved, arrive: () => { extra = true; } };
+  return { handler, saved, notificationChanges, selection: () => mailSelection, arrive: () => { extra = true; } };
 }
 
 const browser = await chromium.launch();
@@ -70,6 +77,56 @@ async function open(server, query = "", { width = 1200, height = 900 } = {}) {
 }
 const shot = async (page, name) => { if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, name + ".png") }); };
 const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll("article.mail.open .subject")].map((e) => e.textContent.trim()));
+
+{
+  const server = makeServer();
+  const { page, context } = await open(server, "", { width: 1200, height: 800 });
+  await page.waitForSelector("article.mail");
+  await page.locator("article.mail").nth(1).click();
+  await page.waitForTimeout(400);
+  check("selected email is stored in per-user context", server.selection()?.message_id === "m2" || server.selection()?.message_id === "m1");
+  const selected = server.selection()?.message_id;
+  await page.reload();
+  await page.waitForSelector("article.mail");
+  await page.waitForTimeout(250);
+  check("selected email restores after refresh", await page.evaluate(() => paneId != null));
+  check("refresh retains the same selected message", server.selection()?.message_id === selected);
+  await page.close();await context.close();
+}
+
+{
+  const server = makeServer();
+  const { page, errors, context } = await open(server);
+  const selectedBefore = await page.evaluate(() => paneId);
+  check("real-mail mode starts a live SSE connection", await page.evaluate(() => !!liveEvents));
+  server.arrive();
+  await page.evaluate(() => liveEvents.dispatchEvent(new MessageEvent("changed", {data:"{}"})));
+  await page.waitForFunction(() => [...document.querySelectorAll("article.mail .subject")].some(x => x.textContent.includes("Fourth email")), null, {timeout:10000});
+  check("SSE event refreshes the inbox without reloading the page", (await page.locator("article.mail").count()) === 4);
+  check("SSE refresh preserves selected email", await page.evaluate(id => paneId === id, selectedBefore));
+  check("live refresh creates no script errors", errors.length === 0);
+  await page.close();await context.close();
+}
+
+{
+  const server = makeServer();
+  const { page, context, errors } = await open(server);
+  await page.evaluate(() => openSettings("settings","mailalerts"));
+  await page.waitForSelector('#mailAlertAccounts input[data-mail-alert-account]');
+  check("email alerts are in the existing personal Settings",await page.locator('[data-settings-tab="mailalerts"].active').count()===1);
+  check("all new emails is the default mode", await page.locator('input[name="mailAlertMode"][value="all"]').isChecked());
+  await page.locator('input[name="mailAlertMode"][value="action"]').check();
+  await page.waitForFunction(() => document.getElementById("mailAlertStatus").textContent === "Saved");
+  check("action-only mode is saved to the notification endpoint",server.notificationChanges.some(x=>x.mail_filter==="action"));
+  await page.locator('#mailAlertAccounts input[data-mail-alert-account]').uncheck();
+  await page.waitForFunction(() => document.getElementById("mailAlertStatus").textContent === "Saved");
+  check("disabling notifications for one mailbox does not disable the channel",server.notificationChanges.some(x=>Array.isArray(x.mail_muted_accounts)&&x.mail_muted_accounts.includes("a1")));
+  await page.evaluate(() => loadMailAlertPrefs());
+  await page.waitForTimeout(150);
+  check("saved filter and mailbox mute restore in Settings",await page.locator('input[name="mailAlertMode"][value="action"]').isChecked()&&!(await page.locator('#mailAlertAccounts input[data-mail-alert-account]').isChecked()));
+  check("no script errors in email alert preferences",errors.length===0);
+  await page.close();await context.close();
+}
 
 {
   const { page, errors, context } = await open(makeServer());
@@ -118,9 +175,51 @@ const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll
 }
 
 {
+  const { page, context } = await open(makeServer(), "", { width: 390, height: 800 });
+  const original = await page.evaluate(() => ({ filter, paneId }));
+  await page.evaluate((url) => navigator.serviceWorker.dispatchEvent(new MessageEvent("message", { data: { type: "enveliq-open", url } })), `${ORIGIN}/?open=a1:m2`);
+  await page.waitForSelector(".reader");
+  check("notification can open an email while the phone inbox is running", await page.locator(".reader").count() === 1);
+  await page.goBack();
+  await page.waitForTimeout(300);
+  check("Back from notification returns to the original phone inbox", await page.evaluate(({f,p}) => !document.body.classList.contains("reader-open") && filter === f && paneId === p, { f: original.filter, p: original.paneId }));
+  await page.close();await context.close();
+}
+
+{
+  const { page, context, errors } = await open(makeServer(), "", { width: 390, height: 800 });
+  await page.locator("article.mail").first().locator(".qmain").click();
+  await page.waitForSelector(".reader");
+  const previous = await page.evaluate(() => paneId);
+  const before = await page.evaluate(() => history.length);
+  await page.evaluate((url) => navigator.serviceWorker.dispatchEvent(new MessageEvent("message", {
+    data: { type: "enveliq-open", url }
+  })), `${ORIGIN}/?open=a1:m2`);
+  await page.waitForFunction(() => document.querySelector(".reader h3")?.textContent?.trim() === "Second email");
+  check("notification opened over a reader adds its own Back step", await page.evaluate(() => history.length) === before + 1);
+  await page.goBack();
+  await page.waitForTimeout(300);
+  check("Back restores the previously opened email", await page.evaluate(id => readerOpen && paneId === id && document.body.classList.contains("reader-open"), previous));
+  await page.goBack();
+  await page.waitForTimeout(300);
+  check("second Back returns to inbox without closing Enveliq", await page.evaluate(() => !readerOpen && !!document.querySelector("article.mail")));
+  check("no navigation script errors", errors.length === 0);
+  await page.close(); await context.close();
+}
+
+{
   const { page, context } = await open(makeServer(), "?open=a1:m1", { width: 390, height: 800 });
   check("on a phone the link opens the email too (full screen)", await page.evaluate(() => (document.querySelector(".reader h3")?.textContent || "").trim()) === "Update on refund");
+  check("cold notification creates an inbox entry and an active reader entry", await page.evaluate(() =>
+    history.length >= 3 && history.state?.enveliqReader === 1 && document.body.classList.contains("reader-open")));
   await shot(page, "notification-link-phone");
+  await page.goBack();
+  await page.waitForTimeout(300);
+  check("Back from a fresh phone notification returns to the inbox without leaving Enveliq",
+    (await page.locator(".reader").count()) === 0 &&
+    (await page.locator("article.mail").count()) > 0 &&
+    new URL(page.url()).pathname === "/");
+
   await page.close(); await context.close();
 }
 

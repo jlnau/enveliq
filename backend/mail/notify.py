@@ -21,7 +21,7 @@ from .outbound import OutboundError
 RECORD_PREFIX = "notify:"
 SETTINGS_DEFAULT = {"morning_on": True, "morning_time": "08:00", "due_on": True, "repeat_hours": 2, "repeat_max": 2,
                     "quiet_on": True, "quiet_from": "21:00", "quiet_to": "07:00", "show_titles": True,
-                    "mail_on": False, "mail_details": False}
+                    "mail_on": False, "mail_details": False, "mail_filter": "all", "mail_muted_accounts": []}
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _TIME = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
@@ -306,6 +306,11 @@ class Notifier:
         for k, lo, hi in (("repeat_hours", 1, 12), ("repeat_max", 0, 5)):
             if isinstance(raw.get(k), int) and not isinstance(raw.get(k), bool):
                 out[k] = max(lo, min(hi, raw[k]))
+        if raw.get("mail_filter") in ("all", "important", "action"):
+            out["mail_filter"] = raw["mail_filter"]
+        muted = raw.get("mail_muted_accounts")
+        if isinstance(muted, list):
+            out["mail_muted_accounts"] = [x for x in muted if isinstance(x, str) and len(x) <= 128][:100]
         return out
 
     def save_settings(self, user_id: str, body: dict[str, Any]) -> dict[str, Any]:

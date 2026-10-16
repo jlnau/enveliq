@@ -16,6 +16,18 @@ Each channel has the same four steps: follow the short guide on its card, fill i
 
 Only the task title and a link back to Enveliq are sent, never the email text. If a send fails, Enveliq tries again after 5 minutes. A task that is done, removed or whose email was dealt with stops sending at once.
 
+## Choose which email alerts you receive
+
+Under your own **Settings → Email alerts** (not Administration), you can switch new-email alerts on or off and choose **All new emails**, **Important people only**, or **Needs action only**. All new emails is the default filtering mode; new-email delivery itself retains its existing opt-in setting. Important people uses your existing Important people list; Needs action uses the message's existing action-required classification, without inventing a new classifier. If an email has not been classified as requiring action, it does not generate a Needs action alert.
+
+Each connected mailbox has its own notification switch, enabled by default. Muting a mailbox stops new-email notifications from that mailbox but does not disconnect it, hide mail, disable tasks or change mail syncing. These settings are saved per person and apply across devices.
+
+Your existing notification channels, channel permissions, privacy options and quiet hours continue to work exactly as before. Filtering is applied **before** a new-email alert is constructed, so a notification with one qualifying email opens that email; a notification with several qualifying emails opens the inbox.
+
+## Back after opening a notification
+
+On Android, opening an email from a notification and pressing Back returns to the Enveliq inbox, instead of leaving the application. If Enveliq was already showing another screen, Back returns to that screen where possible. The notification does not make duplicate history steps when a second notification is opened.
+
 ## New email alerts
 
 Switch on **Tell me when new email arrives** in **Settings, Notifications** and Enveliq sends one short message each time it finds new email for you, to the places you chose under *Where to send reminders*. It is off until you switch it on.

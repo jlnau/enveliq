@@ -150,7 +150,7 @@ class AutoSync:
         except Exception:
             return []
         fresh.sort(key=lambda m: m.get("received_at") or 0, reverse=True)
-        return [{"account_id": account["id"], "id": m["id"], "sender_display": m.get("sender_display"), "subject": m.get("subject"), "priority": m.get("priority")} for m in fresh]
+        return [{"account_id": account["id"], "id": m["id"], "sender_display": m.get("sender_display"), "sender_address": m.get("sender_address"), "subject": m.get("subject"), "priority": m.get("priority"), "action_required": m.get("action_required")} for m in fresh]
 
     def _sync_one(self, account: dict[str, Any]) -> None:
         aid = account["id"]
