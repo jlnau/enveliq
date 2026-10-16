@@ -2,16 +2,17 @@
   <img src="brand/enveliq-logo-full.png" alt="Enveliq" width="360">
 </p>
 
-<h3 align="center">Turn email into clarity.</h3>
+<h3 align="center">Less inbox. More of what actually matters.</h3>
 
 <p align="center">
-  A private email assistant that runs on your own computer.<br>
-  It reads your inbox for you, tells you what needs a reply, and keeps everything else out of your way.
+  A private, self hosted AI email assistant that turns inbox noise into useful summaries, tasks and reminders.<br>
+  Run it on your own computer, server or homelab. Choose your AI, keep control of your data, and see what actually needs your attention.
 </p>
 
 <p align="center">
   <a href="docs/install/README.md"><b>Install it</b></a> ·
   <a href="#what-you-get">What you get</a> ·
+  <a href="#built-for-your-own-infrastructure">Self hosted AI</a> ·
   <a href="#install">Install options</a> ·
   <a href="#questions">Questions</a> ·
   <a href="docs/README.md">All guides</a>
@@ -23,23 +24,29 @@
 
 ## Why Enveliq?
 
-Email piles up. Most of it does not matter, but a few messages do: the bill due on Friday, the school form, the parcel that has not arrived, the question someone is waiting for you to answer. Finding those few means opening every message.
+Most inboxes are not difficult because there is too much email. They are difficult because the handful of messages that matter are buried in everything else.
 
-Enveliq does that sorting for you, calmly and in plain words, and **it does it on your own computer, not in somebody else's cloud.**
+A bill is due. Someone needs an answer. A parcel is on its way. A free trial is about to renew. Between those are newsletters, receipts, automated notices and plenty of things that can wait.
 
-- **Know what needs you.** Each email gets a short summary and a clear label. Things that need action are pulled to the top. The rest can wait.
-- **Nothing falls through the cracks.** Enveliq keeps a list of tasks it found in your email, parcels on their way, and emails where you are still waiting for an answer.
-- **Calm by design.** The redesigned inbox has a compact dashboard, with optional Calm mode that shows one priority at a time and hides extra counts. On a phone, task sections can be folded so your email is easier to reach.
-- **Private by design.** Your email is never copied into Enveliq. It stores only short, encrypted summaries, on your own machine. There is no account with us, no tracking and no ads. [How that works](#your-privacy)
-- **For the whole household.** Everyone gets their own sign-in and their own private view. Nobody, administrators included, can read another person's mail.
-- **You choose the AI.** Use a cloud AI service, or run one on your own network so that nothing leaves your home.
+**Enveliq reads the noise so you can focus on the parts that matter.**
+
+It summarises incoming mail, brings important messages to your attention and helps you keep track of tasks, deliveries, subscriptions, trips and unanswered conversations. All without turning email into another system you have to manage.
+
+And unlike another hosted inbox service, **Enveliq runs on infrastructure you control.** It is built for people who value privacy and ownership, whether you run a full homelab, experiment with local AI agents, use Home Assistant, or just want a quieter inbox for a busy life.
+
+- **Know what needs you.** Short AI summaries and clear labels help you spot the emails that deserve your attention. Everything else can wait.
+- **Remember the important bits.** Tasks, due dates, deliveries and messages awaiting a reply stay visible without you having to keep them all in your head.
+- **Make room to think.** The compact inbox and optional Calm mode put attention where it is useful instead of piling on more numbers and notifications.
+- **Keep your data under your control.** Enveliq stores encrypted summaries and structured results on your own machine, not a second copy of your entire mailbox. [How that works](#your-privacy)
+- **Share the server, not the inbox.** Household members have their own private accounts and views, including from administrators.
+- **Choose the AI.** Connect a supported cloud service or run a compatible AI model on your own network.
 
 ## What you get
 
 | | |
 |---|---|
-| **Summaries** | A one or two line summary of every email, written by the AI you choose and always labelled as AI. |
-| **Needs action** | Emails that want something from you float to the top. |
+| **Summaries** | A short, plain language summary of each email from the AI you choose, clearly labelled as AI generated. |
+| **Needs action** | Messages that need a reply, decision or action are brought to your attention. |
 | **Tasks** | Things to do, found in your email, with due dates. You can send them to your calendar or to-do list. |
 | **Shipping** | Your online orders followed from the emails you get, with a simple "Did it arrive?" |
 | **Subscriptions** | Renewals and free trials followed from your email, with a reminder a few days before so a free trial never turns into a charge by surprise. |
@@ -47,7 +54,7 @@ Enveliq does that sorting for you, calmly and in plain words, and **it does it o
 | **Waiting for reply** | Reminds you of emails you sent that nobody has answered. |
 | **Attachments** | Summaries of PDFs and other attachments, and a safe preview. The files themselves are never kept. |
 | **Writing help** | Optional. The AI suggests a reply, or checks one you wrote. It only suggests: you decide what is sent. |
-| **Reminders** | Gentle nudges by browser notification, email or Home Assistant. |
+| **Reminders** | Useful reminders through browser notifications, email or Home Assistant. |
 | **Messages** | A small private chat between the people in your household. |
 | **Be careful flag** | A calm note on an email that looks like a scam, and a plain line saying whether your email provider could confirm who sent it, so you do not have to judge. |
 | **Unsubscribe** | One button to leave a mailing list, when the sender allows it. |
@@ -59,6 +66,24 @@ Enveliq does that sorting for you, calmly and in plain words, and **it does it o
 </p>
 
 *The pictures use made-up example data.*
+
+## Built for your own infrastructure
+
+Enveliq is a **self hosted AI email assistant**. Run it on a Linux server, a mini PC, a NAS, Raspberry Pi, Proxmox, Unraid, TrueNAS, Synology or Docker Desktop. It fits naturally into an existing homelab, but you do not need to be a homelab expert to use it.
+
+### Your AI, your choice
+
+Use a supported cloud AI provider, or connect a compatible model running locally on your own network. If you already work with local LLMs, private AI agents or an on premises AI setup, Enveliq can be another service in the environment you control.
+
+You may be exploring tools such as Hermes or building your own personal AI workflows. Enveliq does not claim a direct Hermes integration: it offers a private, self hosted place to handle the email side of everyday life.
+
+### Home Assistant friendly
+
+Enveliq supports [reminders through Home Assistant](docs/NOTIFICATIONS.md), so useful things surfaced from your inbox can reach the notification system you already use at home.
+
+### Built for busy lives, too
+
+You do not need a rack of servers to benefit. The goal is simple: open Enveliq, see what matters, deal with it and get on with your day. Your email should take less of your attention, not more.
 
 ## Install
 
@@ -97,6 +122,10 @@ Not sure? Start at [**Install Enveliq**](docs/install/README.md), which also lis
 6. [**Update, back up and uninstall**](docs/install/maintenance.md).
 
 ## Your privacy
+
+Self hosting matters because you should be able to choose where your data lives and where your AI processes it. Enveliq does not keep a permanent copy of your raw emails or attachments. Original messages remain with your email provider.
+
+If you use a cloud AI provider, the content sent for processing goes to that provider under its privacy terms. If you use a compatible model on your own network, AI processing can stay within your own environment.
 
 - **Raw emails and attachments are never stored.** Enveliq keeps only short summaries and structured results, encrypted.
 - **Everything is locked in an encrypted vault** (AES-256-GCM, with the key protected by Argon2id) on your own machine.
@@ -155,6 +184,30 @@ Any computer that can run Docker: Windows, Mac, Linux, a NAS, a mini PC, a Proxm
 <summary><b>How do I get help, or report a problem?</b></summary>
 
 Start with [Troubleshooting](docs/install/troubleshooting.md). If that does not solve it, open an issue on this page. Please do not paste real email, passwords or keys into an issue. To report a security problem, see [SECURITY.md](SECURITY.md).
+</details>
+
+<details>
+<summary><b>Is Enveliq self hosted?</b></summary>
+
+Yes. Enveliq runs on your computer, server or NAS using Docker, with installation guides for several common homelab platforms. Your Enveliq data stays on the machine where you install it.
+</details>
+
+<details>
+<summary><b>Can I use local AI or an on premises model?</b></summary>
+
+Yes. You can use a compatible AI model running on your own network instead of sending email content to a commercial cloud AI provider. See [AI summaries](docs/AI_SUMMARIES.md) for supported configuration options.
+</details>
+
+<details>
+<summary><b>Does Enveliq integrate with Home Assistant?</b></summary>
+
+Enveliq can send reminders through Home Assistant, so email related notifications can join the system you already use around your home. See [Reminders](docs/NOTIFICATIONS.md).
+</details>
+
+<details>
+<summary><b>Does Enveliq integrate directly with Hermes?</b></summary>
+
+There is no documented direct Hermes integration. Enveliq can still be useful alongside a Hermes or other AI agent setup as a separate, self hosted email assistant.
 </details>
 
 ## More guides
