@@ -1439,6 +1439,13 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 .enveliq-empty-action span{font-size:12px;line-height:1.5;color:var(--muted)}
 .enveliq-empty-action .ea-arrow{align-self:flex-end;margin-top:auto;font-size:19px;color:var(--muted)}
 @media(max-width:1250px){.enveliq-empty-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.enveliq-empty-action{min-height:135px}.reading.enveliq-empty{padding:14px}}
+.mail-copy-controls{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.mail-copy-action{font-size:11px!important;padding:3px 8px!important;opacity:.75}
+.mail-copy-action:hover,.mail-copy-action:focus-visible{opacity:1}
+.mail-copy-menu{margin-top:7px;font-size:12px}
+.mail-copy-menu summary{cursor:pointer;width:max-content;opacity:.8}
+.mail-copy-options{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+@media(max-width:700px){.mail-copy-controls{display:none}}
 </style>
 </head>
 <body class="booting">
@@ -3732,6 +3739,12 @@ function render(){
   scheduleWake();
   {const b=$("expandAll"),can=lay()==="list"&&!["tasks","sent","drafts","shipping","subscriptions","trips","waiting","messages"].includes(filter)&&rows.length>0;
    b.hidden=!can||selected.size>1;if(can){const all=view.rows==="open"||rows.every(m=>expanded.has(`row-${m.id}`));b.textContent=all?"Collapse all":"Expand all";b.dataset.mode=all?"collapse":"expand"}}
+  const copyMailButtons=(m,mobile=false)=>{
+    const id=esc(m.id);
+    const actions=[["address","Copy sender address"],["subject","Copy subject"],...(m.real?[["reference","Copy message reference"]]:[]),["all","Copy email details"]];
+    const buttons=actions.map(([field,label])=>`<button type="button" class="subtle mail-copy-action" data-copy-mail="${id}" data-copy-field="${field}">${label}</button>`).join("");
+    return mobile?`<details class="mail-copy-menu"><summary aria-label="Sender details and copy options">Sender details</summary><div class="mail-copy-options">${buttons}</div></details>`:`<span class="mail-copy-controls" aria-label="Copy email details">${buttons}</span>`;
+  };
 const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5l-7.6 7.6a5 5 0 0 1-7-7l8-8a3.4 3.4 0 0 1 4.8 4.8l-8 8a1.8 1.8 0 0 1-2.5-2.5L14 7.2"/></svg>`,ICON_SNOOZE=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`,ICON_OK=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,ICON_ARCH=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg>`,ICON_BIN=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>`,ICON_REPLY=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 6 6v3"/></svg>`;
   const leaveStyle=m=>{          // an email waiting out its Undo: the line along its bottom runs for the time that is left
     if(!m._pending)return "";const e=pendingActs.find(x=>x.ms.includes(m));if(!e)return "";
@@ -3750,7 +3763,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
     const detail=m.kept
       ?`<div class="qdetail"><div class="qfrom">${boxChip(m)}<span class="addr">&lt;${esc(m.address)}&gt;</span></div>${tagChips(m)}<div class="qsummary">${esc(m.summary)}</div>${taskHtml}${attachmentsBlock(m)}<div class="kept-note">${m.status==="archived"?"Archived":"Marked reviewed"} in your mailbox. Kept here until ${esc(m.keptUntil)}.${m.replied?` You replied ${esc(m.repliedAt||"just now")}.`:""}</div><div class="actions">${m.replyTo?`<button class="action reply" data-reply="${esc(m.id)}">↩ Reply</button>`:""}${moreReplyBtns(m,"action reply")}<button class="action reply" data-task-add="${esc(m.id)}" aria-haspopup="dialog">Task</button><button class="action trash" data-id="${esc(m.id)}" data-status="expired">Remove from this list</button></div></div>`
       :`<div class="qdetail split"><div class="qmainc">${scamHtml(m.scam)}${tagChips(m)}${m.ungen&&m.real&&feat.all_mail&&allMail?genBlock(m):`<div class="qsummary">${esc(m.summary)}</div>`}${attachmentsBlock(m)}${taskHtml}<div class="qfill"></div><div class="qfoot"><span class="qleft">${replyBtn}${m.kept||!m.address?"":`<button class="subtle" data-important="${esc(m.id)}" aria-pressed="${isImp(m)}">&#9733; ${isImp(m)?"Not important":"Important person"}</button>`}${m.kept||!m.address||!realMail||isImp(m)?"":`<button class="subtle" data-rule="${esc(m.id)}">Always archive these</button>`}${unsubHtml(m.unsub,!!m.scam)}</span><button class="linkbtn view-email" data-open-email="${esc(m.id)}">View original email</button></div></div>
-        <aside class="qside" aria-label="Email details"><div class="qkv"><span>From</span><span class="addr">${esc(m.address)}</span></div>${multiBox()&&m.real?`<div class="qkv"><span>Mailbox</span><span>${boxChip(m)}</span></div>`:""}<div class="qkv"><span>Received</span><span>${esc(m.time)}</span></div>${m.replied?`<div class="qkv replied-kv"><span>Replied</span><span>${esc(m.repliedAt||"Just now")}</span></div>`:""}<div class="qkv"><span>Category</span><span>${esc(category)}</span></div><div class="qkv"><span>Attachments</span><span>${esc(attCount)}</span></div>
+        <aside class="qside" aria-label="Email details"><div class="qkv"><span>From</span><span class="addr">${esc(m.address)}</span></div>${copyMailButtons(m,lay()==="screen")}${multiBox()&&m.real?`<div class="qkv"><span>Mailbox</span><span>${boxChip(m)}</span></div>`:""}<div class="qkv"><span>Received</span><span>${esc(m.time)}</span></div>${m.replied?`<div class="qkv replied-kv"><span>Replied</span><span>${esc(m.repliedAt||"Just now")}</span></div>`:""}<div class="qkv"><span>Category</span><span>${esc(category)}</span></div><div class="qkv"><span>Attachments</span><span>${esc(attCount)}</span></div>
         <div class="qbtns"><button class="action reviewed" data-id="${esc(m.id)}" data-status="reviewed">${ICON_OK}Reviewed</button><div class="two"><button class="action archive" data-id="${esc(m.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(m.id)}" data-status="trashed">${ICON_BIN}Bin</button></div></div></aside></div>`;
     if(mode==="detail")return detail;
     const tog=mode==="pane"?`<button class="qtoggle" data-pick="${esc(m.id)}" aria-label="Show this email">Show email</button>`:view.rows==="open"?"":`<button class="qtoggle" data-expand="row-${esc(m.id)}" aria-expanded="${esc(open)}" aria-label="${open?"Hide":"Show"} the full email summary and actions">${open?"Hide":"Show"} details</button>`;
@@ -3779,7 +3792,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
       if(readerOpen){
         const prev=rows[idx-1],next=rows[idx+1];
         const act=cur.kept?"":`<div class="ract"><button class="action reviewed" data-id="${esc(cur.id)}" data-status="reviewed">${ICON_OK}Reviewed</button><button class="action archive" data-id="${esc(cur.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(cur.id)}" data-status="trashed">${ICON_BIN}Bin</button></div>`;
-        listHtml+=`<div class="reader" role="dialog" aria-modal="true" aria-label="${esc(cur.subject)}"><div class="rtop">${isPhone()?`<button class="rbtn rclose" type="button" data-reader-close aria-label="Close this email">✕ Close</button>`:`<button class="rbtn" type="button" data-reader-close aria-label="Back to the list">‹</button><b>${idx+1} of ${rows.length}</b><span class="sp"></span><button class="rbtn" type="button" ${prev?`data-pick="${esc(prev.id)}"`:"disabled"} aria-label="Previous email">↑</button><button class="rbtn" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">↓</button>`}</div><div class="rbody"><div class="rfrom"><span class="dcav" aria-hidden="true">${esc(String(cur.sender||"?").trim().charAt(0).toUpperCase())}</span><div><div class="dcfrom">${esc(cur.sender)}</div><div class="dcsub">${esc(cur.address)} · ${esc(cur.time)}</div></div></div><h3>${esc(cur.subject)}</h3>${quiet(cur,"detail")}</div>${act}</div>`;
+        listHtml+=`<div class="reader" role="dialog" aria-modal="true" aria-label="${esc(cur.subject)}"><div class="rtop">${isPhone()?`<button class="rbtn rclose" type="button" data-reader-close aria-label="Close this email">✕ Close</button>`:`<button class="rbtn" type="button" data-reader-close aria-label="Back to the list">‹</button><b>${idx+1} of ${rows.length}</b><span class="sp"></span><button class="rbtn" type="button" ${prev?`data-pick="${esc(prev.id)}"`:"disabled"} aria-label="Previous email">↑</button><button class="rbtn" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">↓</button>`}</div><div class="rbody"><div class="rfrom"><span class="dcav" aria-hidden="true">${esc(String(cur.sender||"?").trim().charAt(0).toUpperCase())}</span><div><div class="dcfrom">${esc(cur.sender)}</div><div class="dcsub">${esc(cur.address)} · ${esc(cur.time)}</div>${copyMailButtons(cur,true)}</div></div><h3>${esc(cur.subject)}</h3>${quiet(cur,"detail")}</div>${act}</div>`;
       }
     }else if(lay()==="deck"){
       const enter=lastDeckShown!==cur.id?` enter-${deckDir}`:"";lastDeckShown=cur.id;
@@ -3792,7 +3805,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
         <button class="decknav next" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">›</button></div>
         ${act}<div class="deckdots" aria-hidden="true">${dots}</div></div>`;
     }else{
-      const readingHtml=cur?`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div></header>${quiet(cur,"detail")}</section>`:`<section class="reading enveliq-empty" aria-label="No email selected">${enEmptyReading()}</section>`;
+      const readingHtml=cur?`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div>${copyMailButtons(cur)}</header>${quiet(cur,"detail")}</section>`:`<section class="reading enveliq-empty" aria-label="No email selected">${enEmptyReading()}</section>`;
       if(lay()==="right"&&!["sent","drafts","tasks","shipping","waiting","subscriptions","trips","messages"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
         dockHtml=readingHtml;
         listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div></div>`;
@@ -5149,6 +5162,19 @@ document.addEventListener("click",e=>{
   const wct=e.target.closest("[data-wait-closed-toggle]");if(wct){waitClosedOpen=!waitClosedOpen;renderWaitPage();return}
   const lt=e.target.closest("[data-later-toggle]");if(lt){if(splitNow()){goTasks();return}calmLaterOpen=!calmLaterOpen;render();return}
   const pk=e.target.closest("[data-pick]");if(pk){if(lay()==="screen"){captureMailPosition();readerOpen=true}const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;enMarkOpened(nid);render();return}
+  const copyButton=e.target.closest("[data-copy-mail]");
+  if(copyButton){
+    const m=data.find(x=>String(x.id)===copyButton.dataset.copyMail&&x.owner===currentUser.id);
+    if(!m){toast("Email no longer available",3500,"error");return}
+    const ref=m.real?.messageId||"";
+    const values={address:m.address||"",subject:m.subject||"",reference:ref,
+      all:[m.address?"Sender: "+m.address:"",m.subject?"Subject: "+m.subject:"",ref?"Message reference: "+ref:""].filter(Boolean).join("\\n")};
+    const field=copyButton.dataset.copyField;
+    const value=values[field];
+    if(!value){toast("This detail is not available",3000,"error");return}
+    copyText(value).then(ok=>toast(ok?"Copied to clipboard":"Could not copy. Check clipboard permissions.",2200,ok?"info":"error"));
+    return;
+  }
   const retryAtt=e.target.closest("[data-att-retry]");if(retryAtt){const m=data.find(x=>x.id===+retryAtt.dataset.attRetry&&x.owner===currentUser.id);if(m&&m.real){retryAtt.disabled=true;secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/attachments/summarise`,{method:"POST",body:"{}"}).then(()=>{toast("Reading the files again. This can take a minute.",4000);m.attachments.forEach(a=>{if(a.state==="failed")a.state="working"});render()}).catch(er=>{retryAtt.disabled=false;toast(er.message,6000)})}return}
   const openAtt=e.target.closest("[data-open-attachment]");if(openAtt){openAttachmentViewer(openAtt.dataset.openAttachment);return}
   const openEmail=e.target.closest("[data-open-email]");if(openEmail){openEmailViewer(openEmail.dataset.openEmail);return}
