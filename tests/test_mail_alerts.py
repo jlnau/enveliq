@@ -129,3 +129,40 @@ def test_the_pages_link_the_manifest_and_the_icons_exist():
     for icon in MANIFEST["icons"]:
         assert (ROOT / "brand/web" / Path(icon["src"]).name).is_file()
         assert re.fullmatch(r"/brand/enveliq-icon[\w-]*\.png", icon["src"])
+
+
+class FakeImportant:
+    def contains(self, user_id, address):
+        return user_id == "u1" and address == "teacher@example.invalid"
+
+
+def test_important_people_only_uses_personal_important_list():
+    n = FakeNotifier(mail_filter="important")
+    important_mail = {**mail(1), "sender_address": "teacher@example.invalid"}
+    ordinary = {**mail(2), "sender_address": "other@example.invalid"}
+    a = alerts(n)
+    a.important = FakeImportant()
+    assert a.send("u1", [ordinary]) == 0 and not n.sent
+    assert a.send("u1", [ordinary, important_mail]) == 1
+    assert n.sent[-1]["path"].endswith(important_mail["id"])
+    assert a.send("other-user", [important_mail]) == 0
+
+
+def test_action_only_requires_explicit_action_flag():
+    n = FakeNotifier(mail_filter="action")
+    a = alerts(n)
+    assert a.send("u1", [mail(1)]) == 0
+    assert a.send("u1", [{**mail(2), "action_required": False}]) == 0
+    assert a.send("u1", [{**mail(3), "action_required": True}]) == 1
+    assert n.sent[-1]["path"].endswith(mail(3)["id"])
+
+
+def test_muted_mailboxes_do_not_deliver_in_any_mode():
+    n = FakeNotifier(mail_filter="all", mail_muted_accounts=["acct1"])
+    a = alerts(n)
+    assert a.send("u1", [mail(1)]) == 0 and not n.sent
+    allowed = {**mail(2), "account_id": "acct2"}
+    assert a.send("u1", [mail(1), allowed]) == 1
+    assert n.sent[-1]["path"].startswith("/?open=acct2:")
+    n.s["quiet_on"] = True
+    assert alerts(n, hour=23).send("u1", [allowed]) == 0
