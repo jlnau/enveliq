@@ -6326,6 +6326,9 @@ async function sendNew(){
   try{
     const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/send`,{method:"POST",body:JSON.stringify({to,cc,bcc,subject,body,from_address:from,files:nm.files.map(x=>({name:x.name,type:x.type,data:x.data}))})});
     await settleAuto();const did=nm.draftId;
+    // A new compose can open as soon as this one closes. Clear the send
+    // guard before making the close visible so its first Send is never lost.
+    nm.busy=false;
     closeNewMail(true);if(did)deleteDraftQuiet(did);
     if(r.queued)noteQueuedNew(r,aid,subject);else toast(`✓ Email sent from ${r.from}`,4500);
   }catch(er){toast(er.message,6000)}
