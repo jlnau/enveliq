@@ -470,6 +470,9 @@ def test_mail_view_preferences_stored_per_user_in_vault(env):
     assert response.status_code == 200, response.text
     assert client.get("/api/v1/me/mail-view").json()["view"] == disabled
     assert appm.vault.get_global("mail-view-v1:" + uid)["action_feedback"] is False
+    # A browser still using the old payload must not erase newer preferences.
+    assert client.put("/api/v1/me/mail-view", json=chosen).status_code == 200
+    assert client.get("/api/v1/me/mail-view").json()["view"] == disabled
     assert client.put("/api/v1/me/mail-view", json={**chosen, "action_feedback": "invalid"}).status_code == 422
 
 
