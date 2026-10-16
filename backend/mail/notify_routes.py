@@ -112,6 +112,9 @@ def build_notify_router(ctx: Any) -> APIRouter:
             except (KeyError, ValueError):
                 continue
         rows.sort(key=lambda row: (row[0], row[1]))
+        opened = ctx.vault.get_global("enveliq-opened-v1:" + user_id) or {}
+        keys = opened.get("keys", []) if isinstance(opened, dict) else []
+        rows.append(("opened", tuple(sorted(str(k) for k in keys))))
         return hashlib.sha256(json.dumps(rows, separators=(",", ":"), ensure_ascii=True).encode()).hexdigest()
 
     @router.get("/me/mail-events")
