@@ -155,6 +155,27 @@ async function open(server, { seen = true } = {}) {
   await page.waitForSelector("article.mail");
   const subjects = await page.locator("article.mail .subject").allInnerTexts();
   check("shows the three synced emails, newest first", subjects.length === 3 && subjects[0] === "Weekly news" && subjects[2] === "Older statement");
+  // Copy controls use the already loaded message and never make a network request.
+  await page.evaluate(() => {
+    const first = data.find(m => m.real);
+    paneId = first.id;
+    render();
+    window.__copyOriginal = copyText;
+    copyText = async text => { window.__copiedMailDetail = text; return true; };
+  });
+  check("desktop: selected email offers copy controls", await page.locator(".reading .mail-copy-controls [data-copy-field=all]").count() === 1);
+  await page.locator(".reading [data-copy-field=address]").click();
+  check("copy sender address", await page.evaluate(() => window.__copiedMailDetail === data.find(m => m.id === paneId).address));
+  await page.locator(".reading [data-copy-field=subject]").click();
+  check("copy subject", await page.evaluate(() => window.__copiedMailDetail === data.find(m => m.id === paneId).subject));
+  await page.locator(".reading [data-copy-field=all]").click();
+  check("copy all details in labelled lines", await page.evaluate(() => {
+    const m = data.find(x => x.id === paneId), t = window.__copiedMailDetail;
+    return t.includes("Sender: " + m.address) && t.includes("Subject: " + m.subject) &&
+      t.includes("Message reference: " + m.real.messageId) && t.includes("\\n");
+  }));
+  await page.evaluate(() => { copyText = window.__copyOriginal; delete window.__copyOriginal; });
+
   check("sample emails are gone", !(await page.locator("#list").innerText()).includes("Skyline Air"));
   check("sample banner is hidden", !(await page.locator(".sample-banner").isVisible()));
   check("plain http on another address shows a warning (this test page is http://enveliq.test), but not localhost or https", (await page.locator("#httpBanner").isVisible()) && (await page.locator("#httpBanner").innerText()).includes("not encrypted") && await page.evaluate(() => window.__isPlainHttp("http:", "192.168.1.50") && window.__isPlainHttp("http:", "enveliq.lan") && !window.__isPlainHttp("http:", "localhost") && !window.__isPlainHttp("http:", "127.0.0.1") && !window.__isPlainHttp("https:", "enveliq.example.com")));
