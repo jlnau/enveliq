@@ -295,6 +295,22 @@ jobs:
       - name: Setup guide against a fake Bridge and a fake AI model
         run: python scripts/welcome_e2e.py
 
+  # One result called "Browser checks", so a rule that requires that name keeps working now the checks are split in three.
+  # It passes when the three parts passed or were skipped because nothing they cover changed.
+  browser:
+    name: Browser checks
+    needs: [browser1, browser2, browser3]
+    if: always()
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS || '["ubuntu-24.04"]') }}
+    timeout-minutes: 5
+    steps:
+      - name: All three parts passed or were not needed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          case "$RESULTS" in *failure*|*cancelled*) exit 1 ;; esac
+
   website:
     needs: changes
     if: needs.changes.outputs.website == 'true'
@@ -431,7 +447,7 @@ jobs:
   publish:
     name: Publish images
     if: github.event_name == 'release'
-    needs: [tests, browser1, browser2, browser3, website, docker, audit]
+    needs: [tests, browser, website, docker, audit]
     runs-on: ${{ fromJSON(vars.RUNNER_LABELS || '["ubuntu-24.04"]') }}
     timeout-minutes: 20
     permissions:
