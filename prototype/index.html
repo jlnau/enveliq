@@ -1454,6 +1454,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border-color:#e5eaf2;color:var(--text)}
 .mail.quiet:not(.open) .qsummary:has(.qsummary-copy){background:none;border:0;padding:0;margin:0}
 @media(max-width:700px){.qsummary:has(.qsummary-copy){padding:9px 11px}}
+.shortcut-rows{margin:15px 0;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.shortcut-rows>div{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:11px 14px;border-bottom:1px solid var(--line)}
+.shortcut-rows>div:last-child{border-bottom:0}
+.shortcut-rows kbd{display:inline-grid;place-items:center;min-width:34px;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--text);font:700 13px system-ui,sans-serif}
 </style>
 </head>
 <body class="booting">
@@ -1865,6 +1869,22 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
       <section data-settings-panel="setup" hidden></section>
       <section data-settings-panel="sync" hidden></section>
       <section data-settings-panel="general" hidden></section>
+      <section data-settings-panel="shortcuts" hidden>
+        <div class="section-card">
+          <h4>Keyboard shortcuts</h4>
+          <p>Optional desktop keyboard commands for navigating your inbox. They never run while you type in a field or use a dialog.</p>
+          <label class="toggle-row" for="keyboardShortcutsOn"><span><strong>Enable keyboard shortcuts</strong><small>Turn these commands off at any time.</small></span><input id="keyboardShortcutsOn" type="checkbox" checked></label>
+          <div class="shortcut-rows" aria-label="Available shortcuts">
+            <div><span>Search</span><kbd>/</kbd></div>
+            <div><span>Next message</span><kbd>J</kbd></div>
+            <div><span>Previous message</span><kbd>K</kbd></div>
+            <div><span>Reply to selected message</span><kbd>R</kbd></div>
+            <div><span>Archive selected message</span><kbd>E</kbd></div>
+            <div><span>Open this help page</span><kbd>?</kbd></div>
+          </div>
+          <p>Keyboard commands only work while you are in the desktop inbox. The question mark in the top header still opens the help website.</p>
+        </div>
+      </section>
       <section data-settings-panel="reminders" hidden></section>
       <section data-settings-panel="mailalerts" hidden>
         <div class="section-card">
@@ -4814,13 +4834,15 @@ function buildSettingsNav(mode){
     ["","calendar","Calendar & to-do"],
     ["How it works for you","general","General"],
     ["","reminders","Notifications"],
+    ["","shortcuts","Keyboard shortcuts"],
     ["","mailalerts","Email alerts"],
     ["","aiinstr","AI instructions"],
     ["Help","setup","Setup guide"]
   ]:[
     ["Personal","accounts","My email accounts"],
     ["","signin","Sign-in & security"],
-    ["","preferences","My preferences"]
+    ["","preferences","My preferences"],
+    ["","shortcuts","Keyboard shortcuts"]
   ];
   // Administration: the owner's controls, grouped the same way.
   const admin=be?[
@@ -7017,7 +7039,55 @@ document.addEventListener("keydown",e=>{
   const k=e.key.toLowerCase();
   const go=sel=>{const el=document.querySelector(sel);if(el&&!el.disabled){e.preventDefault();el.click()}};
   if(k==="arrowright")go(".decknav.next");else if(k==="arrowleft")go(".decknav.prev");
-  else if(k==="r")go('.deckact [data-status="reviewed"]');else if(k==="a")go('.deckact [data-status="archived"]');
+  
+});
+// Inbox keyboard shortcuts are deliberately separate from the header help link.
+function keyboardShortcutsKey(){
+  return "enveliq-shortcuts-"+String(currentUser&&currentUser.id!=null?currentUser.id:"preview");
+}
+function keyboardShortcutsEnabled(){
+  try{return localStorage.getItem(keyboardShortcutsKey())!=="0"}catch{return true}
+}
+function syncShortcutPreference(){
+  const input=document.getElementById("keyboardShortcutsOn");
+  if(input)input.checked=keyboardShortcutsEnabled();
+}
+document.getElementById("keyboardShortcutsOn").addEventListener("change",e=>{
+  try{localStorage.setItem(keyboardShortcutsKey(),e.target.checked?"1":"0")}catch{}
+});
+document.addEventListener("click",e=>{
+  if(e.target.closest('[data-settings-tab="shortcuts"]'))syncShortcutPreference();
+});
+document.addEventListener("keydown",e=>{
+  if(e.defaultPrevented||e.isComposing||e.repeat||e.ctrlKey||e.altKey||e.metaKey||!keyboardShortcutsEnabled())return;
+  if(window.matchMedia("(max-width:760px)").matches)return;
+  const target=e.target;
+  if(target&&target.closest&&target.closest('input,textarea,select,button,a,[contenteditable],[role="textbox"],[role="combobox"],[role="dialog"],[role="menu"],[role="listbox"]'))return;
+  if(document.querySelector(".settings.open,.compose.open,.attachment-modal.open,.oauth-modal.open,.picbox:not([hidden]),.scrim.show"))return;
+  if(document.body.classList.contains("vopen")||document.body.classList.contains("menu-open"))return;
+  const key=e.key.toLowerCase();
+  if(!["/","j","k","r","e","?"].includes(key))return;
+  if(key==="/"){e.preventDefault();const search=document.getElementById("search");search.focus();search.select();return}
+  if(key==="?"){e.preventDefault();openSettings("settings","shortcuts");syncShortcutPreference();return}
+  if(!["all","action","reviewed","archived"].includes(filter))return;
+  if(key==="j"||key==="k"){
+    if(!lastRowIds.length)return;
+    e.preventDefault();
+    const idx=lastRowIds.indexOf(paneId);
+    const next=key==="j"?(idx<0?0:Math.min(lastRowIds.length-1,idx+1)):(idx<0?lastRowIds.length-1:Math.max(0,idx-1));
+    const id=lastRowIds[next];
+    if(lay()==="screen")readerOpen=true;
+    paneId=id;enMarkOpened(id);render();
+    document.querySelector('[data-pick="'+id+'"]')?.scrollIntoView({block:"nearest"});
+    return;
+  }
+  const m=data.find(x=>String(x.id)===String(paneId)&&x.owner===currentUser.id);
+  if(!m)return;
+  if(key==="r"){e.preventDefault();openComposer(m.id);return}
+  if(key==="e"&&m.status==="inbox"){
+    e.preventDefault();
+    queueAction([m],"archived");
+  }
 });
 applyView();
 render();
