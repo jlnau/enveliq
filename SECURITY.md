@@ -649,3 +649,8 @@ The optional Show action confirmations preference is stored with the signed-in p
 ## Selected email continuity
 
 The last selected email is kept as its mailbox identifier and message identifier in the signed-in person's encrypted vault record. The server validates ownership before saving it and does not store an email body or attachment. Scroll positions remain in browser session storage, scoped to the current user, and are not sent to the server.
+
+
+## Live mailbox event stream
+
+The SSE endpoint requires a full signed-in session and fingerprints only the accounts owned by that user. Events contain a generic changed signal, never mail bodies, attachment content, subjects, sender addresses, message identifiers or raw vault data. Responses disable caching and buffering. Browser clients subsequently re-fetch data using existing permission-checked endpoints. The stream is one-way; it does not accept commands or permit direct mailbox mutations.
