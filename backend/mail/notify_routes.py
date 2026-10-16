@@ -42,6 +42,8 @@ class SettingsBody(StrictModel):
     show_titles: bool | None = None
     mail_on: bool | None = None
     mail_details: bool | None = None
+    mail_filter: Literal["all", "important", "action"] | None = None
+    mail_muted_accounts: list[str] | None = Field(default=None, max_length=100)
 
 
 class OpenedMessageBody(StrictModel):
@@ -200,7 +202,12 @@ def build_notify_router(ctx: Any) -> APIRouter:
         user = session.principal.user_id
         if not save_limit.allow(f"n:{user}"):
             raise HTTPException(status_code=429, detail="Too many changes. Wait a minute.")
-        notifier.save_settings(user, body.model_dump(exclude_none=True))
+        changed = body.model_dump(exclude_none=True)
+        if "mail_muted_accounts" in changed:
+            allowed = {a["id"] for a in ctx.vault.list_accounts() if a.get("owner_user_id") == user}
+            if any(not isinstance(aid, str) or aid not in allowed for aid in changed["mail_muted_accounts"]):
+                raise HTTPException(status_code=404, detail="Mailbox not found")
+        notifier.save_settings(user, changed)
         return notifier.overview(user)
 
     @router.get("/me/notifications/browser/key")
