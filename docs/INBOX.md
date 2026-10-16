@@ -10,7 +10,11 @@ The Tag, Task, Reply and other email actions have a fine oval outline so they ar
 
 Swipe inward from the left edge of the screen to open the mailbox menu. Swipe left across the open menu to close it. The browser Back button, including the phone's system Back button, closes the open menu rather than leaving the current page. The menu button and the dimmed area outside the menu still work as before.
 
-## Action confirmations
+## Action confirmations## Attachment summaries in the reading pane
+
+Expanding an attachment's AI summary keeps the current email selected in the reading pane. The summary arrow only opens or closes that attachment's details; it does not close the email. This also works when the attachment is collapsed again.
+
+
 
 Enveliq uses the same small feedback message for routine actions, including tagging and syncing. A successful action shows a short confirmation, while a failure explains what went wrong. Sending and replying continue to use the existing Undo Send countdown, and archive, Reviewed and Bin keep their existing Undo bars; these are never replaced by a success message.
 
