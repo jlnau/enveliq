@@ -638,6 +638,10 @@ Rules are the first thing Enveliq does to a mailbox by itself, so they are delib
 Each person's saved layout (`mail-view-v1:<person>`) and the list of emails they have opened (`enveliq-opened-v1:<person>`, only mailbox and email ids) are kept in the encrypted vault and are read and written only for the signed-in person, from the session, never from anything the page sends. The "opened" route answers "not found" unless the mailbox belongs to that person and the email exists. Neither record holds any email text, and opening an email never changes its state at the mail provider. Both are cleared when a person is deleted. The per-device browser test route needs a session, is limited to ten tests a minute, and only reaches the caller's own registered devices.
 
 
+## New email notification preferences
+
+Personal notification filters and muted mailbox identifiers are held in the existing encrypted per-user notifier settings. A mailbox can only be muted by its owner; a user cannot change settings for another person's account. Important-person filtering checks the existing private important-person records and requires matching the sender's address. Action-only filtering uses existing action-required metadata. Raw message bodies and attachments are not persisted or transmitted for filtering; sender addresses used for comparisons do not become notification content. Existing channel authorisation, notification privacy fields and quiet hours remain enforced.
+
 ## Action feedback preferences
 
 The optional Show action confirmations preference is stored with the signed-in person's existing view preferences in the encrypted vault. It contains only a Boolean setting and is never shared between people. Turning it off never disables security or operational errors, Undo controls or pending sending states.
