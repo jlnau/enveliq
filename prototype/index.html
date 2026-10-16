@@ -1594,7 +1594,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
   <section id="waitPage" aria-label="Waiting for reply"></section>
   <section id="draftPage" aria-label="Drafts"></section>
   <section id="msgPage" aria-label="Messages"></section>
-  <div class="allfoot" id="allFoot" hidden>Last 14 days, 100 emails max.</div>
+  <div class="allfoot" id="allFoot" hidden>Last 60 days, no email limit.</div>
   <section id="sentView" class="sentview" aria-label="Sent" hidden>
     <div class="sent-top"><span class="sent-tools"><select id="sentBox" aria-label="Mailbox" hidden></select><button class="btn" id="sentRefresh" type="button">Refresh</button></span></div>
     <div class="sent-note" role="note">Read from your mailbox when you open this page. Nothing is saved in Enveliq.</div>
@@ -3610,7 +3610,7 @@ function renderWaitHome(){
   box.innerHTML=`<div class="waitcard"><div class="thead"><b>Waiting on others · ${due.length}</b><button class="linkbtn" type="button" data-wait-go>Open</button></div>${due.slice(0,3).map(n=>`<div class="waitrow"><div><span class="wto">${esc(waitTo(n))}</span> <span class="wsub">· ${esc(n.subject||"")}</span></div><div class="wage">${esc(waitAge(n))}. No reply yet.${n.ask?" "+esc(n.ask):""}</div><div class="wb"><button class="wbtn amber" type="button" data-wait-nudge="${esc(n.id)}">Write a nudge</button>${btn(n,"got_reply","Got a reply")}${btn(n,"later","Ask again in "+waitData.days+(waitData.days===1?" day":" days"))}${btn(n,"not_needed","Not needed")}</div></div>`).join("")}${due.length>3?`<button class="tmore" type="button" data-wait-go>+${due.length-3} more</button>`:""}</div>`;
   box.hidden=false;
 }
-// ---- All emails: the last 14 days, and Generate summary ----
+// ---- All emails: the last 60 days, no count limit, and Generate summary ----
 const sqKey=m=>m.real&&sq.items.find(i=>i.account_id===m.real.accountId&&i.message_id===m.real.messageId);
 function genBlock(m){
   const it=sqKey(m);let dot="nsdot",text="Summary not generated",btn=`<button type="button" class="gen" data-gen="${esc(m.id)}">Generate summary</button>`,note="Pressing the button sends this email's text to your AI model.";
