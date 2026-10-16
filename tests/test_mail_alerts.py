@@ -115,7 +115,8 @@ def test_a_failing_channel_never_breaks_the_caller():
 
 def test_the_service_worker_opens_the_email_and_only_on_this_origin():
     js = (ROOT / "web/static/sw.js").read_text()
-    assert "enveliq-open" in js and "c.navigate(target)" in js and "openWindow(target)" in js
+    assert "c.navigate(target)" in js and "openWindow(target)" in js
+    assert "self.clients.matchAll" in js and "includeUncontrolled: true" in js
     assert "u.origin === self.location.origin" in js and "cu.origin !== self.location.origin" in js
 
 
