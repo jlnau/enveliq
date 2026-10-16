@@ -172,7 +172,7 @@ async function open(server, { seen = true } = {}) {
   check("copy all details in labelled lines", await page.evaluate(() => {
     const m = data.find(x => x.id === paneId), t = window.__copiedMailDetail;
     return t.includes("Sender: " + m.address) && t.includes("Subject: " + m.subject) &&
-      t.includes("Message reference: " + m.real.messageId) && t.includes("\\n");
+      t.includes("Message reference: " + m.real.messageId) && t.includes("\n");
   }));
   await page.evaluate(() => { copyText = window.__copyOriginal; delete window.__copyOriginal; });
 
