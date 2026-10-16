@@ -5069,7 +5069,7 @@ async function loadMailAlertPrefs(){
     ]);
     mailAlertPrefs={...mailAlertPrefs,...notices.settings};
     $("mailAlertEnabled").checked=!!mailAlertPrefs.mail_on;
-    document.querySelectorAll('input[name="mailAlertMode"]').forEach(r=>r.checked===false&&(r.checked=r.value===mailAlertPrefs.mail_filter));
+    document.querySelectorAll('input[name="mailAlertMode"]').forEach(r=>{r.checked=r.value===mailAlertPrefs.mail_filter});
     $("mailAlertAccounts").replaceChildren();
     for(const account of accountList){
       const row=document.createElement("label");row.className="toggle-row";
