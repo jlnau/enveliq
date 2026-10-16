@@ -2291,12 +2291,15 @@ function openFromLink(raw,fromAddress,quiet){
   if(u.origin!==location.origin||u.pathname!=="/")return false;
   const want=u.searchParams.get("open");if(!want)return false;
   if(fromAddress){
-    // A fresh notification tab needs an inbox entry beneath its reader entry.
-    // Never preserve the notification query in the return destination.
-    try{history.replaceState({enveliqInbox:1},"",location.pathname+location.hash)}catch{}
+    // A cold Android notification launch starts a new standalone activity.
+    // Create an actual same-document inbox destination before opening the
+    // reader, rather than replacing the activity's only initial entry.
+    try{
+      history.replaceState({enveliqNotificationLanding:1},"",location.pathname+location.hash);
+      history.pushState({enveliqInbox:1},"",location.pathname+location.hash);
+    }catch(error){console.warn("Could not prepare notification inbox history",error)}
   }else if(readerOpen&&readerHistory){
-    // Keep the original reader in history. Back from the notification must
-    // restore that email, not erase its entry or leave the application.
+    // Preserve the existing reader entry as the destination of Back.
     try{history.pushState({enveliqReader:1,enveliqNotification:1},"")}catch{}
   }
   const i=want.indexOf(":");if(i<1)return false;
@@ -2316,7 +2319,7 @@ function openFromLink(raw,fromAddress,quiet){
 }
 // Only notification navigation records an originating view; ordinary Back
 // continues to use the existing section and reader history logic.
-let notificationReturn=null;
+let notificationReturn=null,pendingNotificationUrl=null;
 function rememberNotificationOrigin(){
   if(notificationReturn)return;
   const list=document.getElementById("paneList"),content=document.querySelector(".main>.content");
@@ -2337,7 +2340,8 @@ function restoreNotificationOrigin(){
 }
 if("serviceWorker" in navigator){
   navigator.serviceWorker.addEventListener("message",async e=>{
-    const d=e.data;if(!d||d.type!=="enveliq-open"||typeof d.url!=="string"||!stateReady||!window.__me)return;
+    const d=e.data;if(!d||d.type!=="enveliq-open"||typeof d.url!=="string")return;
+    if(!stateReady||!window.__me){pendingNotificationUrl=d.url;return;}
     rememberNotificationOrigin();
     let found=openFromLink(d.url,false,true);
     if(!found){try{await loadRealMail(window.__me)}catch{}found=openFromLink(d.url)}   // the email may have arrived since the list was last read
@@ -5787,7 +5791,7 @@ async function bootBackendMode(){
   menu.append(out);$("menuSep").hidden=false;
   render();
   try{
-    window.__me=me;if(await loadRealMail(me)){restoreOpen();restorePage();await restoreMailContinuity();openFromLink(location.href,true);stateReady=true;$("syncBtn").onclick=()=>syncRealMail(me);render();startAutoRefresh(me);pollOutbox();pollSummaries(true)}
+    window.__me=me;if(await loadRealMail(me)){restoreOpen();restorePage();await restoreMailContinuity();openFromLink(location.href,true);stateReady=true;if(pendingNotificationUrl){const pending=pendingNotificationUrl;pendingNotificationUrl=null;rememberNotificationOrigin();openFromLink(pending,false)}$("syncBtn").onclick=()=>syncRealMail(me);render();startAutoRefresh(me);pollOutbox();pollSummaries(true)}
     else{stateReady=true;
       // A brand-new install: show the setup guide once, in this browser.
       let first=false;
