@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**All emails now covers 60 days with no message count cap.** Turning on All emails fetches all inbox message headers from the past 60 days, without the previous 100 email limit. The Sent and other views are unchanged. Touches `backend/mail/service.py`, `backend/mail/bridge.py`, `prototype/index.html` and `docs/INBOX.md`.
+
 **Pending email actions no longer interrupt another email you are reading.** When the five second Reviewed, Archive or Bin countdown finishes, Enveliq now updates only the email that action belongs to. A different email or original email viewer opened during the countdown stays open. Touches `prototype/index.html`, `scripts/check_undo_stays.mjs` and `docs/INBOX.md`.
 
 
