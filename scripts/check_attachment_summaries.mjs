@@ -68,6 +68,16 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
   check(name + ": nothing in a row spills out of it", fit);
   await rows.nth(0).locator(".ad-head").click();
   if (shots) await mail.screenshot({ path: path.join(shots, `attachments-${name}.png`) });
+  if(name==="desktop"){
+    await p.evaluate(() => {view.layout="right";applyView();paneId=9201;render()});
+    const reading=p.locator("#readDock");
+    const attachment=reading.locator(".ad-row").first();
+    check("reading pane shows the selected email before expanding an attachment",await reading.locator(".ad-head").count()===4 && await p.evaluate(()=>paneId===9201));
+    await attachment.locator(".ad-head").click();
+    check("expanding an attachment keeps the reading pane and selected email",await attachment.locator(".ad-detail").isVisible() && await p.evaluate(()=>paneId===9201) && await reading.locator(".ad-row").count()===4);
+    await attachment.locator(".ad-head").click();
+    check("collapsing an attachment also keeps the selected email",!(await attachment.locator(".ad-detail").isVisible()) && await p.evaluate(()=>paneId===9201));
+  }
   check(name + ": no script errors", errors.length === 0);
   await p.close();
 }
