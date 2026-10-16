@@ -5618,21 +5618,60 @@ function readSyncStatus(st){
   if(times.length)lastSyncMs=Math.max(lastSyncMs,...times);
   tickSyncAgo();
 }
+let liveEvents=null,liveRefreshBusy=false,liveRefreshPending=false,liveRefreshTimer=null,liveReconnectCount=0;
+async function refreshLiveMail(me){
+  if(liveRefreshBusy){liveRefreshPending=true;return}
+  if(document.hidden||!realMail||selected.size||$("attachmentModal").classList.contains("open")||
+     $("syncBtn").disabled||pendingActs.length){liveRefreshPending=true;return}
+  liveRefreshBusy=true;
+  try{
+    const list=$("paneList"),content=document.querySelector(".main>.content");
+    const scroll={list:list?.scrollTop??0,content:content?.scrollTop??0,window:window.scrollY};
+    const oldSelection=paneId,oldReader=readerOpen;
+    const before=new Set(data.filter(m=>m.real).map(m=>m.real.accountId+":"+m.real.messageId));
+    await loadRealMail(me);
+    if(oldSelection!=null&&data.some(m=>m.id===oldSelection))paneId=oldSelection;
+    else if(oldSelection!=null){paneId=null;readerOpen=false}
+    else readerOpen=oldReader;
+    render();
+    if(list&&list.isConnected)list.scrollTop=scroll.list;
+    const nextList=$("paneList");
+    if(nextList)nextList.scrollTop=scroll.list;
+    const nextContent=document.querySelector(".main>.content");
+    if(nextContent)nextContent.scrollTop=scroll.content;
+    if(!readerOpen)window.scrollTo(0,scroll.window);
+    const arrived=data.filter(m=>m.real&&!before.has(m.real.accountId+":"+m.real.messageId)).length;
+    if(arrived)toast(arrived===1?"1 new email":arrived+" new emails",2200,"success");
+    secureBackendRequest("/api/v1/sync/status",{method:"GET",headers:{}}).then(readSyncStatus).catch(()=>{});
+  }catch(e){console.warn("Live mail refresh failed",e)}
+  finally{
+    liveRefreshBusy=false;
+    if(liveRefreshPending&&!document.hidden){liveRefreshPending=false;scheduleLiveRefresh(me,1000)}
+  }
+}
+function scheduleLiveRefresh(me,delay=250){
+  if(liveRefreshTimer)clearTimeout(liveRefreshTimer);
+  liveRefreshTimer=setTimeout(()=>{liveRefreshTimer=null;refreshLiveMail(me)},delay);
+}
 function startAutoRefresh(me){
   secureBackendRequest("/api/v1/sync/status",{method:"GET",headers:{}}).then(st=>{readSyncStatus(st);render()}).catch(()=>{});
   if(!syncAgoTimer)syncAgoTimer=setInterval(tickSyncAgo,1000);
   tickSyncAgo();
   if(autoRefreshTimer)return;
-  autoRefreshTimer=setInterval(async()=>{
-    if(document.hidden||selected.size||$("attachmentModal").classList.contains("open")||$("syncBtn").disabled||pendingActs.length)return;
-    try{
-      const before=data.length;
-      await loadRealMail(me);render();
-      secureBackendRequest("/api/v1/sync/status",{method:"GET",headers:{}}).then(readSyncStatus).catch(()=>{});
-      if(data.length>before)toast(`${data.length-before} new email${data.length-before===1?"":"s"}`);
-    }catch{}
-  },60000);
+  // SSE reconnection is native to EventSource. A one-minute fallback also
+  // repairs missed events after network outages or proxy idle timeouts.
+  if(typeof EventSource!=="undefined"){
+    liveEvents=new EventSource("/api/v1/me/mail-events");
+    liveEvents.addEventListener("ready",()=>{liveReconnectCount++;if(liveReconnectCount>1)scheduleLiveRefresh(me,500)});
+    liveEvents.addEventListener("changed",()=>scheduleLiveRefresh(me));
+    liveEvents.addEventListener("reconnect",()=>scheduleLiveRefresh(me,1000));
+    liveEvents.onerror=()=>{liveRefreshPending=true};
+  }
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)scheduleLiveRefresh(me,300)});
+  window.addEventListener("online",()=>scheduleLiveRefresh(me,300));
+  autoRefreshTimer=setInterval(()=>scheduleLiveRefresh(me,0),60000);
 }
+
 async function openRealEmail(m){
   toast("Fetching the email from your mailbox…");
   try{
