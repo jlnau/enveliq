@@ -183,9 +183,11 @@ def build_notify_router(ctx: Any) -> APIRouter:
 
     @router.put("/me/mail-view")
     def put_mail_view(body: MailViewBody, session: Session = Depends(session_dep)):
-        # Old clients may not send the new optional preference. Preserve their shape.
-        view = body.model_dump(exclude_unset=True)
-        ctx.vault.set_global("mail-view-v1:" + session.principal.user_id, view)
+        # Preserve optional preferences when older clients submit their legacy view.
+        key = "mail-view-v1:" + session.principal.user_id
+        previous = ctx.vault.get_global(key)
+        view = {**(previous if isinstance(previous, dict) else {}), **body.model_dump(exclude_unset=True)}
+        ctx.vault.set_global(key, view)
         return {"view": view}
 
     @router.get("/me/mail-context")
