@@ -20,19 +20,27 @@ self.addEventListener("notificationclick", (event) => {
     for (const c of list) {
       let path = "";
       try { const cu = new URL(c.url); if (cu.origin !== self.location.origin) continue; path = cu.pathname; } catch (e) { continue; }
-      // Do not navigate an existing PWA activity to the notification URL:
-      // navigation can replace its inbox history and Android Back exits.
-      if (path === "/") {
-        try {
+      try {
+        // Chrome can skip pushState entries created without page user activation.
+        // Make the notification a real browser navigation so Back has a real
+        // previous inbox document, including when the PWA was backgrounded.
+        if (path === "/") {
+          await c.navigate(target);
           await c.focus();
-          c.postMessage({ type: "enveliq-open", url: target });
           return;
-        } catch (e) { /* try another client or a fresh launch */ }
-      }
+        }
+      } catch (e) { /* try another existing app window */ }
     }
-    // On a cold start open the inbox URL with the notification target encoded.
-    // This is a normal app launch and the reader must push its own history
-    // entry after the inbox document has finished loading.
+    // Cold launch: build a real document navigation stack from inbox to mail.
+    // Automatically pushed SPA states may be ignored by Android Back.
+    const inbox = await self.clients.openWindow(self.location.origin + "/");
+    if (inbox) {
+      try {
+        await inbox.navigate(target);
+        await inbox.focus();
+        return;
+      } catch (e) { /* fall back to opening the notification directly */ }
+    }
     await self.clients.openWindow(target);
   })());
 });
