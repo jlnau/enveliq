@@ -109,6 +109,8 @@ Normally Enveliq signs you out after 30 minutes without use. If an administrator
 
 The main inbox shows **Needs action**, **Today**, **Packages**, and **Waiting** at the top. These open the corresponding views. The **Today** section shows tasks that need attention; **Coming up** shows the next tasks due later. On a phone, the task sections start folded so you can reach the email list sooner; tap a section heading or its arrow to open it.
 
+The **All emails** switch fetches inbox headers from the last 60 days without a message count limit, across connected mailboxes. Entries from this view are quiet until you choose to generate a summary. It reads headers only and does not store original email bodies or attachments. Larger inboxes may take longer to load on the first request. The Sent, Drafts and other views retain their existing limits.
+
 The **Recent emails** section lists your mail. **Inbox options** starts closed on computers and phones. Press it to show the mailbox filter, sorting, **All emails**, **Expand all**, and the other available inbox controls; press it again to hide them. On phones, **Recent emails** can also be expanded or collapsed.
 
 The left menu leads to **My inbox**, **Needs action**, **Tasks**, **Shipping**, **Waiting for reply**, and **Attachments**. The **More** section contains other views, including Sent, Reviewed, and Archived where available. Collapsing the desktop menu keeps the icons; the compact Calm mode control remains available.
