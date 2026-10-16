@@ -92,6 +92,9 @@ def build_notify_router(ctx: Any) -> APIRouter:
     click_url = ctx.click_url
 
     opened_lock = RLock()
+    # Share recent fingerprints among the same person's browser connections.
+    fingerprint_lock = RLock()
+    fingerprint_cache: dict[str, tuple[float, str]] = {}
 
     opened_prefix = "enveliq-opened-v1:"
 
@@ -117,13 +120,30 @@ def build_notify_router(ctx: Any) -> APIRouter:
         rows.append(("opened", tuple(sorted(str(k) for k in keys))))
         return hashlib.sha256(json.dumps(rows, separators=(",", ":"), ensure_ascii=True).encode()).hexdigest()
 
+    def cached_mail_fingerprint(user_id: str) -> str:
+        # Avoid walking the entire mailbox once per open browser connection.
+        import time
+        with fingerprint_lock:
+            now = time.monotonic()
+            cached = fingerprint_cache.get(user_id)
+            if cached and now - cached[0] < 3:
+                return cached[1]
+            value = mail_fingerprint(user_id)
+            fingerprint_cache[user_id] = (now, value)
+            # Remove expired entries if the cache grows beyond its normal size.
+            if len(fingerprint_cache) > 256:
+                for uid, (stamp, _) in list(fingerprint_cache.items()):
+                    if now - stamp > 60:
+                        fingerprint_cache.pop(uid, None)
+            return value
+
     @router.get("/me/mail-events")
     async def mail_events(request: Request, session: Session = Depends(session_dep)):
         """Same-origin one-way change hints; EventSource automatically reconnects."""
         user_id = session.principal.user_id
 
         async def stream():
-            last = await asyncio.to_thread(mail_fingerprint, user_id)
+            last = await asyncio.to_thread(cached_mail_fingerprint, user_id)
             yield "retry: 3000\nevent: ready\ndata: {}\n\n"
             ticks = 0
             while not await request.is_disconnected():
@@ -131,7 +151,7 @@ def build_notify_router(ctx: Any) -> APIRouter:
                 if await request.is_disconnected():
                     return
                 try:
-                    fingerprint = await asyncio.to_thread(mail_fingerprint, user_id)
+                    fingerprint = await asyncio.to_thread(cached_mail_fingerprint, user_id)
                 except Exception:
                     yield "event: reconnect\ndata: {}\n\n"
                     return
