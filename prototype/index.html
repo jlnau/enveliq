@@ -5102,7 +5102,7 @@ document.addEventListener("click",e=>{
   }
   const exp=e.target.closest("[data-expand]");if(exp){const key=exp.dataset.expand,id=+key.replace(/^row-/,"");if(!expanded.has(key)){enMarkOpened(id);paneId=id;expanded.add(key)}else{expanded.delete(key);if(paneId===id)paneId=null}render();return}
   const a=e.target.closest("[data-status]");if(a){deckDir="act";const m=data.find(x=>x.id===+a.dataset.id&&x.owner===currentUser.id);if(m&&["reviewed","archived","trashed"].includes(a.dataset.status)){if(readerOpen&&lay()==="screen")readerOpen=false;   // on a phone the email closes at once; the Undo bar still shows
-    queueAction([m],a.dataset.status);return}if(m&&m.real){resolveRealOne(m,a.dataset.status,a);return}if(m){m.status=a.dataset.status;m.attachments=[];m.attachmentsPurged=true;closeAttachmentViewer();selected.delete(m.id);render();toast(m.status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${m.status} · attachment data purged`)}return}
+    queueAction([m],a.dataset.status);return}if(m&&m.real){resolveRealOne(m,a.dataset.status,a);return}if(m){m.status=a.dataset.status;m.attachments=[];m.attachmentsPurged=true;closeAttachmentViewer();selected.delete(m.id);render();toast(m.status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${m.status} · attachment data purged`,2000,"success")}return}
   const b=e.target.closest("[data-bulk]");if(b){queueAction([...selected].map(id=>data.find(x=>x.id===id&&x.owner===currentUser.id)),b.dataset.bulk);selMode=false;closeAttachmentViewer();return}
   if(e.target.closest("[data-need]")){filter="need";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();return}
   {const t=e.target.closest("[data-msg-open],[data-msg-new],[data-msg-back],[data-msg-send],[data-msg-mute],[data-msg-unsend],[data-msg-go]");
@@ -6767,8 +6767,8 @@ async function commitAction(entry,together){
     if(together)await Promise.all(ms.map(one));            // the page is closing: send them all at once
     else for(const m of ms){await one(m);if(failed)break}
     closeAttachmentViewer();
-    if(!many&&!ms[0].real)toast(status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${status} · attachment data purged`);
-    if(many)toast(failed?`${done} updated, then stopped. The rest are back in your list.`:`${done} emails updated${ms.some(m=>m.real)?" in your mailbox":" · attachment data purged"}`,failed?6000:2500);
+    if(!many&&!ms[0].real)toast(status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${status} · attachment data purged`,2000,"success");
+    if(many)toast(failed?`${done} updated, then stopped. The rest are back in your list.`:`${done} emails updated${ms.some(m=>m.real)?" in your mailbox":" · attachment data purged"}`,failed?6000:2500,failed?"error":"success");
     if(many&&ms.some(m=>m.real))refreshTasks();
   }finally{ms.forEach(m=>{delete m._pending});render()}
 }
