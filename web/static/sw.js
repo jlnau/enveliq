@@ -25,8 +25,8 @@ self.addEventListener("notificationclick", (event) => {
         // Make the notification a real browser navigation so Back has a real
         // previous inbox document, including when the PWA was backgrounded.
         if (path === "/") {
-          await c.navigate(target);
-          await c.focus();
+          const opened = await c.navigate(target);
+          try { await (opened || c).focus(); } catch (e) { /* navigation succeeded even if focus was denied */ }
           return;
         }
       } catch (e) { /* try another existing app window */ }
@@ -36,8 +36,8 @@ self.addEventListener("notificationclick", (event) => {
     const inbox = await self.clients.openWindow(self.location.origin + "/");
     if (inbox) {
       try {
-        await inbox.navigate(target);
-        await inbox.focus();
+        const opened = await inbox.navigate(target);
+        try { await (opened || inbox).focus(); } catch (e) { /* keep successfully opened window */ }
         return;
       } catch (e) { /* fall back to opening the notification directly */ }
     }
