@@ -630,7 +630,7 @@ mail_service.waits = waitbook
 notifier = Notifier(vault)
 _click = "" if _pub.hostname in ("localhost", "127.0.0.1", "::1") else PUBLIC_ORIGIN
 reminders = Reminders(vault, taskbook, notifier, _click)
-auto_sync.mail_alerts = MailAlerts(notifier, _click, taskbook.timezone_of)
+auto_sync.mail_alerts = MailAlerts(notifier, _click, taskbook.timezone_of, important=importantbook)
 reminders.subs = subbook
 sync = Sync(vault, taskbook, notifier, PUBLIC_ORIGIN)
 backups = BackupManager(vault, DATA_DIR / "backups")
