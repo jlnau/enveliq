@@ -16,7 +16,7 @@ Expanding an attachment's AI summary keeps the current email selected in the rea
 
 
 
-Enveliq uses the same small feedback message for routine actions, including tagging and syncing. A successful action shows a short confirmation, while a failure explains what went wrong. Sending and replying continue to use the existing Undo Send countdown, and archive, Reviewed and Bin keep their existing Undo bars; these are never replaced by a success message.
+Enveliq uses the same small feedback message for routine actions, including tagging and syncing. A successful action shows a short confirmation, while a failure explains what went wrong. Sending and replying continue to use the existing Undo Send countdown, and archive, Reviewed and Bin keep their existing Undo bars; these are never replaced by a success message. When one of those email action countdowns finishes in the background, it updates only that email. If you have opened a different email or its original content meanwhile, that view stays open and unchanged.
 
 In **View → Feedback**, **Show action confirmations** starts on. Turn it off if you prefer not to see routine success popups. Important errors, Undo buttons and sending countdowns always remain visible. The preference is saved for your own account in the encrypted vault and applies on all your devices.
 
@@ -108,6 +108,8 @@ Normally Enveliq signs you out after 30 minutes without use. If an administrator
 ## Finding your way around
 
 The main inbox shows **Needs action**, **Today**, **Packages**, and **Waiting** at the top. These open the corresponding views. The **Today** section shows tasks that need attention; **Coming up** shows the next tasks due later. On a phone, the task sections start folded so you can reach the email list sooner; tap a section heading or its arrow to open it.
+
+The **All emails** switch fetches inbox headers from the last 60 days without a message count limit, across connected mailboxes. Entries from this view are quiet until you choose to generate a summary. It reads headers only and does not store original email bodies or attachments. Larger inboxes may take longer to load on the first request. The Sent, Drafts and other views retain their existing limits.
 
 The **Recent emails** section lists your mail. **Inbox options** starts closed on computers and phones. Press it to show the mailbox filter, sorting, **All emails**, **Expand all**, and the other available inbox controls; press it again to hide them. On phones, **Recent emails** can also be expanded or collapsed.
 

@@ -1,0 +1,53 @@
+# Keeps the test branch preview/vX.YY level with the version branch feat/vX.YY, for any version.
+# If the test branch is already level (the normal case, because both are pushed together) nothing happens, so the
+# preview images are built once, not twice. It never overwrites commits that exist only on the test branch.
+name: Sync test branch
+
+on:
+  push:
+    branches:
+      - "feat/v*"
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: sync-preview-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Bring the test branch level
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Fast-forward the test branch and build it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          name="${BRANCH#feat/}"
+          preview="preview/${name}"
+          git fetch origin "+refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}"
+          source="$(git rev-parse "refs/remotes/origin/${BRANCH}")"
+          if ! git ls-remote --exit-code --heads origin "${preview}" >/dev/null; then
+            echo "No ${preview} branch yet; nothing to keep level."
+            exit 0
+          fi
+          git fetch origin "+refs/heads/${preview}:refs/remotes/origin/${preview}"
+          target="$(git rev-parse "refs/remotes/origin/${preview}")"
+          if [ "$source" = "$target" ]; then
+            echo "${preview} is already level."
+            exit 0
+          fi
+          if ! git merge-base --is-ancestor "$target" "$source"; then
+            echo "::error::${preview} has commits that ${BRANCH} does not. Refusing to overwrite them."
+            exit 1
+          fi
+          git push origin "${source}:refs/heads/${preview}"
+          gh workflow run build-ui-preview.yml --repo "${GITHUB_REPOSITORY}" --ref "${preview}"

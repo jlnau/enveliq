@@ -274,6 +274,7 @@ def test_idle_watchdog_locks_without_any_request(env):
         appm.vault.stop_idle_watchdog()
 
 
+@pytest.mark.real_kdf
 def test_kdf_is_rfc9106_argon2id_and_parameters_are_stored(env):
     from cryptography.hazmat.primitives.kdf.argon2 import Argon2id
 

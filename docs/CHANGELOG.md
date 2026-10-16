@@ -4,7 +4,12 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**Faster automatic checks.** The checks that run on each pull request now finish much sooner: the backend tests use cheap password and vault-key settings (one separate test still proves the real, full-strength settings), run on every processor at once, and the browser checks are split into three jobs that run side by side, with one "Browser checks" result that stands for all three. A pull request only runs the checks its changed files can affect. A push to `main` runs the quick set; the full set also runs every Monday morning, on every release and when started by hand. One generic workflow keeps `preview/vX.YY` level with `feat/vX.YY` and no longer builds the preview twice, replacing the two version-specific sync workflows. No change for people using Enveliq. Touches `.github/workflows/`, `tests/conftest.py`, `tests/test_kdf_strength.py`, `tests/test_hardening.py` and `requirements-dev.txt`.
+
+**All emails now covers 60 days with no message count cap.** Turning on All emails fetches all inbox message headers from the past 60 days, without the previous 100 email limit. The Sent and other views are unchanged. Touches `backend/mail/service.py`, `backend/mail/bridge.py`, `prototype/index.html` and `docs/INBOX.md`.
+
+**Pending email actions no longer interrupt another email you are reading.** When the five second Reviewed, Archive or Bin countdown finishes, Enveliq now updates only the email that action belongs to. A different email or original email viewer opened during the countdown stays open. Touches `prototype/index.html`, `scripts/check_undo_stays.mjs` and `docs/INBOX.md`.
+
 
 ## v0.92 (2026-10-16)
 

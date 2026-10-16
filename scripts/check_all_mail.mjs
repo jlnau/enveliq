@@ -1,4 +1,4 @@
-// Browser check for the "All emails" switch: quiet entries for the last 14 days, the unread look,
+// Browser check for the "All emails" switch: quiet entries for the last 60 days, the unread look,
 // "Summary not generated" with Generate summary, and the line it waits in (kept across a refresh).
 // The page is loaded from a pretend Enveliq server (Playwright intercepts requests).
 //
@@ -93,7 +93,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.waitForFunction(() => document.querySelectorAll("article.mail").length === 4);
   check("on: all four emails are listed", true);
   check("the switch reads as on and the choice is asked of the server once", (await page.locator("#allSwitch").getAttribute("aria-checked")) === "true" && server.calls.filter((c) => c[0] === "recent").length === 1);
-  check("the footer says 14 days, 100 max", (await page.locator("#allFoot").innerText()).includes("Last 14 days, 100 emails max."));
+  check("the footer says 60 days, unlimited", (await page.locator("#allFoot").innerText()).includes("Last 60 days, no email limit."));
   check("only the unread email is counted as to look at", (await page.locator("#inboxSubtitle").innerText()).includes("1 email"));
   check("the quiet entries are marked and the unread one is not", (await page.locator("article.mail.extra").count()) === 3 && (await page.locator("article.mail:not(.extra)").count()) === 1);
   const weights = await page.evaluate(() => [...document.querySelectorAll("article.mail")].map((a) => [a.classList.contains("extra"), getComputedStyle(a.querySelector(".subject")).fontWeight]));

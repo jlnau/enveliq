@@ -56,3 +56,7 @@ The preparation script changes files locally only. Commit the three changes in a
 - **Publish images was skipped or stopped:** the tag and `backend/version.py` do not match. Delete the release and its tag on GitHub, fix the version, and create the release again.
 - **A check failed:** nothing is published. Fix it in a pull request, merge, then edit the release (or make a new one) and publish again.
 - **Labels:** pull requests with labels `feat`, `fix`, `security` or `docs` are grouped in the generated notes. Unlabelled ones still appear, under "Other changes".
+
+## Which checks run when
+
+A pull request runs only the checks its changed files can affect. A push to `main` runs the quick set (backend tests, website, Docker image, dependency scan). Publishing a release runs **every** check, including all three browser jobs, and the images are published only if they all pass. The full set also runs every Monday morning and can be started by hand from the Actions tab (Checks, Run workflow).
