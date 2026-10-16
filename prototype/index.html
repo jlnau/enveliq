@@ -2295,10 +2295,9 @@ function openFromLink(raw,fromAddress,quiet){
     // Never preserve the notification query in the return destination.
     try{history.replaceState({enveliqInbox:1},"",location.pathname+location.hash)}catch{}
   }else if(readerOpen&&readerHistory){
-    // Opening a second notification while a reader is already open must not
-    // append another synthetic reader entry.
-    readerOpen=false;readerHistory=false;
-    try{if(history.state&&history.state.enveliqReader)history.replaceState({enveliqInbox:1},"")}catch{}
+    // Keep the original reader in history. Back from the notification must
+    // restore that email, not erase its entry or leave the application.
+    try{history.pushState({enveliqReader:1,enveliqNotification:1},"")}catch{}
   }
   const i=want.indexOf(":");if(i<1)return false;
   const acct=want.slice(0,i),mid=want.slice(i+1);
@@ -4110,7 +4109,7 @@ function readerHistorySync(){
   else if(!want&&readerHistory){readerHistory=false;try{if(history.state&&history.state.enveliqReader)history.back()}catch{}}
 }
 // (Back from a window opened over an email lands on the email's own step: nothing to close.)
-window.addEventListener("popstate",()=>{if(mobileMenuHistory){mobileMenuHistory=false;setMenu(false,true);return}if(viewerHistory){viewerHistory=false;closeAttachmentViewer(true);return}if(readerHistory){if(history.state&&history.state.enveliqReader)return;readerHistory=false;readerOpen=false;if(!restoreNotificationOrigin())render();return}if(notificationReturn&&!readerOpen){restoreNotificationOrigin();return}if(stateReady&&(location.hash||"")!==wantedHash())applyHashNav()});   // only when the address names a different section than the one showing
+window.addEventListener("popstate",()=>{if(mobileMenuHistory){mobileMenuHistory=false;setMenu(false,true);return}if(viewerHistory){viewerHistory=false;closeAttachmentViewer(true);return}if(readerHistory){if(history.state&&history.state.enveliqReader){if(notificationReturn)restoreNotificationOrigin();return}readerHistory=false;readerOpen=false;if(!restoreNotificationOrigin())render();return}if(notificationReturn&&!readerOpen){restoreNotificationOrigin();return}if(stateReady&&(location.hash||"")!==wantedHash())applyHashNav()});   // only when the address names a different section than the one showing
 function closeAttachmentViewer(fromBack){
   if(!document.getElementById("attachmentModal"))return;
   if(viewerHistory&&fromBack!==true){viewerHistory=false;try{history.back()}catch{}}
