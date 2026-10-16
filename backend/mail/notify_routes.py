@@ -2,6 +2,12 @@
 from __future__ import annotations
 
 from typing import Annotated, Any, Literal
+import asyncio
+import hashlib
+import json
+
+from fastapi import Request
+from fastapi.responses import StreamingResponse
 from threading import RLock
 
 from fastapi import APIRouter, Depends, HTTPException, Path as PathParam
@@ -86,7 +92,57 @@ def build_notify_router(ctx: Any) -> APIRouter:
     click_url = ctx.click_url
 
     opened_lock = RLock()
+
     opened_prefix = "enveliq-opened-v1:"
+
+    def mail_fingerprint(user_id: str) -> str:
+        """Hash metadata only, never expose message content in the event stream."""
+        rows = []
+        for account in ctx.vault.list_accounts():
+            if account.get("owner_user_id") != user_id:
+                continue
+            aid = account["id"]
+            try:
+                for m in ctx.vault.list_messages(aid):
+                    rows.append((aid, str(m.get("id", "")), str(m.get("state", "")),
+                                 str(m.get("folder", "")), str(m.get("mailbox", "")),
+                                 str(m.get("snoozed_until", "")), str(m.get("replied_at", "")),
+                                 tuple(sorted(str(t) for t in (m.get("tags") or []))),
+                                 str(m.get("summary", "")), str(m.get("ai_pending", ""))))
+            except (KeyError, ValueError):
+                continue
+        rows.sort(key=lambda row: (row[0], row[1]))
+        return hashlib.sha256(json.dumps(rows, separators=(",", ":"), ensure_ascii=True).encode()).hexdigest()
+
+    @router.get("/me/mail-events")
+    async def mail_events(request: Request, session: Session = Depends(session_dep)):
+        """Same-origin one-way change hints; EventSource automatically reconnects."""
+        user_id = session.principal.user_id
+
+        async def stream():
+            last = await asyncio.to_thread(mail_fingerprint, user_id)
+            yield "retry: 3000\nevent: ready\ndata: {}\n\n"
+            ticks = 0
+            while not await request.is_disconnected():
+                await asyncio.sleep(4)
+                if await request.is_disconnected():
+                    return
+                try:
+                    fingerprint = await asyncio.to_thread(mail_fingerprint, user_id)
+                except Exception:
+                    yield "event: reconnect\ndata: {}\n\n"
+                    return
+                if fingerprint != last:
+                    last = fingerprint
+                    yield "event: changed\ndata: {}\n\n"
+                ticks += 1
+                if ticks % 5 == 0:
+                    yield ": heartbeat\n\n"
+
+        return StreamingResponse(stream(), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no",
+                                          "Content-Security-Policy": "default-src 'none'"})
+
 
     @router.get("/me/mail-opened")
     def get_mail_opened(session: Session = Depends(session_dep)):
