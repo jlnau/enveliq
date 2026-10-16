@@ -5168,7 +5168,7 @@ document.addEventListener("click",e=>{
     if(!m){toast("Email no longer available",3500,"error");return}
     const ref=m.real?.messageId||"";
     const values={address:m.address||"",subject:m.subject||"",reference:ref,
-      all:[m.address?"Sender: "+m.address:"",m.subject?"Subject: "+m.subject:"",ref?"Message reference: "+ref:""].filter(Boolean).join("\\n")};
+      all:[m.address?"Sender: "+m.address:"",m.subject?"Subject: "+m.subject:"",ref?"Message reference: "+ref:""].filter(Boolean).join("\n")};
     const field=copyButton.dataset.copyField;
     const value=values[field];
     if(!value){toast("This detail is not available",3000,"error");return}
