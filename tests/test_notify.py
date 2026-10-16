@@ -461,6 +461,16 @@ def test_mail_view_preferences_stored_per_user_in_vault(env):
     assert appm.vault.get_global("mail-view-v1:" + uid) == chosen
     assert client.put("/api/v1/me/mail-view", json={**chosen, "layout": "invalid"}).status_code == 422
     assert client.get("/api/v1/me/mail-view").json()["view"] == chosen
+    # Success feedback starts enabled for older and first-time preferences.
+    enabled = {**chosen, "action_feedback": True}
+    assert client.put("/api/v1/me/mail-view", json=enabled).status_code == 200
+    assert client.get("/api/v1/me/mail-view").json()["view"]["action_feedback"] is True
+    disabled = {**chosen, "action_feedback": False}
+    response = client.put("/api/v1/me/mail-view", json=disabled)
+    assert response.status_code == 200, response.text
+    assert client.get("/api/v1/me/mail-view").json()["view"] == disabled
+    assert appm.vault.get_global("mail-view-v1:" + uid)["action_feedback"] is False
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "action_feedback": "invalid"}).status_code == 422
 
 
 def test_mail_context_is_private_and_validated(env):
