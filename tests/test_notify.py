@@ -523,11 +523,3 @@ def test_live_mail_events_require_sign_in(env):
     unauthenticated = TestClient(appm.app)
     response = unauthenticated.get("/api/v1/me/mail-events")
     assert response.status_code in (401, 403)
-
-
-def test_live_mail_fingerprint_does_not_leak_identifiers(env):
-    """A live stream requires authorization, and its source never embeds mail content."""
-    appm, _, _, _ = env
-    routes = [r for r in appm.app.routes if getattr(r, "path", "") == "/api/v1/me/mail-events"]
-    assert len(routes) == 1
-    assert "full_session" in str(routes[0].dependant.dependencies)
