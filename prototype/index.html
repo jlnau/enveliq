@@ -1851,6 +1851,21 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
       <section data-settings-panel="sync" hidden></section>
       <section data-settings-panel="general" hidden></section>
       <section data-settings-panel="reminders" hidden></section>
+      <section data-settings-panel="mailalerts" hidden>
+        <div class="section-card">
+          <h4>Email notifications</h4>
+          <p>Choose which new emails send notifications using your existing channels. Quiet hours still apply.</p>
+          <div class="toggle-row"><div><strong>Notify me about new emails</strong><small>Use your enabled notification channels.</small></div><input id="mailAlertEnabled" type="checkbox"></div>
+          <h4>Notify me about</h4>
+          <label class="toggle-row"><span><strong>All new emails</strong><small>Every new email in a mailbox with notifications enabled.</small></span><input type="radio" name="mailAlertMode" value="all"></label>
+          <label class="toggle-row"><span><strong>Important people only</strong><small>People you have added to Important people.</small></span><input type="radio" name="mailAlertMode" value="important"></label>
+          <label class="toggle-row"><span><strong>Needs action only</strong><small>Emails identified as requiring your attention.</small></span><input type="radio" name="mailAlertMode" value="action"></label>
+          <h4>Connected mailboxes</h4>
+          <p>Switch notifications off for a mailbox without disconnecting it or hiding its mail.</p>
+          <div id="mailAlertAccounts"></div>
+          <p id="mailAlertStatus" role="status" aria-live="polite"></p>
+        </div>
+      </section>
       <section data-settings-panel="calendar" hidden></section>
       <section data-settings-panel="aiinstr" hidden></section>
       <section data-settings-panel="adminaiinstr" hidden></section>
@@ -4775,6 +4790,7 @@ function buildSettingsNav(mode){
     ["","calendar","Calendar & to-do"],
     ["How it works for you","general","General"],
     ["","reminders","Notifications"],
+    ["","mailalerts","Email alerts"],
     ["","aiinstr","AI instructions"],
     ["Help","setup","Setup guide"]
   ]:[
@@ -5042,6 +5058,53 @@ window.addEventListener("enveliq-profile",e=>{
   $("userName").textContent=currentUser.name;paintAvatar();
 });
 function openSettings(mode,tab){buildSettingsNav(typeof mode==="string"?mode:"settings");if(!isBackend())providerFields();$("settings").classList.add("open");$("scrim").classList.add("show");if(tab){const b=document.querySelector(`[data-settings-tab="${tab}"]`);if(b)b.click()}syncHash()}
+let mailAlertPrefs={mail_on:false,mail_filter:"all",mail_muted_accounts:[]},mailAlertWrite=Promise.resolve();
+async function loadMailAlertPrefs(){
+  if(!isBackend())return;
+  const status=$("mailAlertStatus");status.textContent="Loading…";
+  try{
+    const [notices,accountList]=await Promise.all([
+      secureBackendRequest("/api/v1/me/notifications",{method:"GET"}),
+      secureBackendRequest("/api/v1/accounts",{method:"GET"})
+    ]);
+    mailAlertPrefs={...mailAlertPrefs,...notices.settings};
+    $("mailAlertEnabled").checked=!!mailAlertPrefs.mail_on;
+    document.querySelectorAll('input[name="mailAlertMode"]').forEach(r=>r.checked===false&&(r.checked=r.value===mailAlertPrefs.mail_filter));
+    $("mailAlertAccounts").replaceChildren();
+    for(const account of accountList){
+      const row=document.createElement("label");row.className="toggle-row";
+      const description=document.createElement("span"),title=document.createElement("strong"),small=document.createElement("small");
+      title.textContent=account.display_name||account.email_address||"Mailbox";
+      small.textContent=account.email_address||"";
+      description.append(title,small);
+      const toggle=document.createElement("input");toggle.type="checkbox";
+      toggle.dataset.mailAlertAccount=account.id;
+      toggle.checked=!mailAlertPrefs.mail_muted_accounts.includes(account.id);
+      row.append(description,toggle);$("mailAlertAccounts").append(row);
+    }
+    status.textContent="";
+  }catch(e){status.textContent="Could not load email notification preferences.";toast(e.message||"Could not load notification settings",5000,"error")}
+}
+function saveMailAlertPrefs(changes){
+  const next={...mailAlertPrefs,...changes};mailAlertPrefs=next;
+  const status=$("mailAlertStatus");status.textContent="Saving…";
+  mailAlertWrite=mailAlertWrite.catch(()=>{}).then(async()=>{
+    try{
+      await secureBackendRequest("/api/v1/me/notifications/settings",{method:"PUT",body:JSON.stringify(changes)});
+      status.textContent="Saved";
+    }catch(e){status.textContent="Could not save changes";toast(e.message||"Could not save notification settings",5000,"error");await loadMailAlertPrefs()}
+  });
+}
+document.addEventListener("change",e=>{
+  if(e.target.id==="mailAlertEnabled")saveMailAlertPrefs({mail_on:e.target.checked});
+  if(e.target.name==="mailAlertMode")saveMailAlertPrefs({mail_filter:e.target.value});
+  if(e.target.dataset&&e.target.dataset.mailAlertAccount){
+    const id=e.target.dataset.mailAlertAccount;
+    const muted=new Set(mailAlertPrefs.mail_muted_accounts);
+    e.target.checked?muted.delete(id):muted.add(id);
+    saveMailAlertPrefs({mail_muted_accounts:[...muted]});
+  }
+});
 function closeSettings(){$("settings").classList.remove("open");$("scrim").classList.remove("show");syncHash();if(realMail&&window.__me&&!$("syncBtn").disabled)loadRealMail(window.__me).then(render).catch(()=>{})}
 function switchUser(key){
   currentUser=users[key];selected.clear();filter="all";query="";$("search").value="";
@@ -5309,6 +5372,7 @@ document.addEventListener("click",e=>{
     $("settingsHeading").textContent=tab.textContent;syncHash();
     if(id==="security")setTimeout(refreshSecurityStatus,0);
     if(isBackend()&&EMBED_IDS.includes(id))openEmbed(id);
+    if(id==="mailalerts")loadMailAlertPrefs();
     return;
   }
 });
