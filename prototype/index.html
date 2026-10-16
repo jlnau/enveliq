@@ -489,6 +489,12 @@ body.real-mail .sample-banner{display:none}
 .payload-preview{margin-top:9px;background:var(--c-0b1016);border:1px solid var(--c-293241);border-radius:9px;padding:9px 10px;color:var(--c-9faabd);font:10px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap}
 
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,15px);opacity:0;background:var(--c-252b38);border:1px solid var(--c-3b4352);padding:9px 12px;border-radius:9px;transition:.18s;z-index:30}.toast.show{opacity:1;transform:translate(-50%,0)}
+/* Shared non-blocking feedback styling, within the existing toast surface. */
+.toast{display:flex;align-items:center;gap:8px;max-width:min(94vw,540px);box-shadow:0 8px 24px rgba(0,0,0,.16);border-radius:12px;color:var(--text);background:var(--panel);font-size:13px;font-weight:550;pointer-events:none}
+.toast[data-kind="success"]{border-color:var(--line)}
+.toast[data-kind="success"]::before{content:"✓";display:inline-grid;place-items:center;width:18px;height:18px;flex:none;border-radius:50%;background:#2d9266;color:white;font-weight:750}
+.toast[data-kind="error"]{border-color:#ad5050}
+.toast[data-kind="error"]::before{content:"!";display:inline-grid;place-items:center;width:18px;height:18px;flex:none;border-radius:50%;background:#b14b4b;color:white;font-weight:750}
 .app.collapsed .brand-wordmark,.app.collapsed .brand small,.app.collapsed .nav-label,.app.collapsed .sidebar .user-copy,.app.collapsed .sidebar .user-chev{display:none}
 .app.collapsed .brand{align-items:center;margin:0 0 16px}.app.collapsed .brand-mark{display:block}
 .app.collapsed .sidebar{padding-inline:10px}
@@ -1617,6 +1623,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
   <div class="vsec"><div class="vlabel">Classic list options</div>
     <label class="vcheck" id="vOpenL"><input type="checkbox" id="vOpen"><span><b>Show every email open</b><small>No collapsed rows</small></span></label>
     <label class="vcheck" id="vPeekL"><input type="checkbox" id="vPeek"><span><b>Preview on hover</b><small>Rest on a subject to peek at the summary</small></span></label></div>
+  <div class="vsec"><div class="vlabel">Feedback</div>
+    <label class="vcheck"><input type="checkbox" id="vActionFeedback"><span><b>Show action confirmations</b><small>Brief messages when an action succeeds. Undo and errors always stay visible.</small></span></label></div>
 </aside>
 <div class="scrim" id="scrim"></div><div class="menuscrim" id="menuScrim"></div><div class="sendbar" id="sendBar" role="status" aria-live="polite" hidden></div><div class="sumbar" id="sumBar" role="status" aria-live="polite" hidden></div><div class="undostack" id="undoBar" role="status" aria-live="polite" hidden></div>
 <div class="settings" id="settings">
@@ -2333,19 +2341,37 @@ if(isPlainHttp(location.protocol,location.hostname)){const b=document.getElement
 // as <img onerror=...> must render as text, never run as code.
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
 
-function toast(t,ms=1500){$("toast").textContent=t;$("toast").classList.add("show");setTimeout(()=>$("toast").classList.remove("show"),ms)}
+// Keep one shared feedback surface. Success notices are optional; errors and
+// safety-critical feedback remain visible even when confirmations are switched off.
+let toastTimer=null;
+function feedbackKind(t){
+  const message=String(t||"");
+  if(/^(Could not|Cannot|Failed|Unable|Error|Wrong |This email is no longer|That email is no longer|Sync failed|The original email is no longer)/i.test(message))return "error";
+  if(/^(Tag added|Added to your tasks|Back in your inbox|Snoozed until|.* sent from |.* is now an important person|Saved |Inbox is up to date|Sync complete|✓ )/i.test(message))return "success";
+  return "info";
+}
+function toast(t,ms=1500,kind){
+  const type=kind||feedbackKind(t);
+  if(type==="success"&&typeof view!=="undefined"&&view.action_feedback===false)return;
+  const el=$("toast");if(!el)return;
+  if(toastTimer)clearTimeout(toastTimer);
+  el.textContent=String(t);el.dataset.kind=type;
+  el.setAttribute("role",type==="error"?"alert":"status");
+  el.classList.add("show");
+  toastTimer=setTimeout(()=>{el.classList.remove("show");toastTimer=null},ms);
+}
 const fmtBytes=n=>!n?"":n<1024?n+" B":n<1048576?Math.round(n/1024)+" KB":(n/1048576).toFixed(1)+" MB";
 const fileN=m=>m.attachments.length||(m.hasFiles?(m.fileCount||1):0);          // real mail keeps only a count, never the files themselves
 const clipWords=m=>{const n=fileN(m),sure=m.attachments.length||m.fileCount!=null;return n===1?(sure?"Has an attachment":"May have an attachment"):`Has ${n} attachments`};
 function userMessages(){return data.filter(m=>m.owner===currentUser.id&&!m._pending)}
 let sortMode="newest",mailboxSel="";
 // ---- View options (saved in this browser) ----
-const VIEW_DEFAULT={layout:"right",density:"standard",width:"centered",rows:"collapsed",peek:true};
+const VIEW_DEFAULT={layout:"right",density:"standard",width:"centered",rows:"collapsed",peek:true,action_feedback:true};
 const VIEW_ALLOWED={layout:["list","right","bottom","screen","deck"],density:["compact","standard","roomy"],width:["centered","full"],rows:["collapsed","open"]};
 function loadView(){
   const v={...VIEW_DEFAULT};
   try{const raw=JSON.parse(localStorage.getItem("enveliq-view")||"null");
-    if(raw&&typeof raw==="object"){for(const k in VIEW_ALLOWED)if(VIEW_ALLOWED[k].includes(raw[k]))v[k]=raw[k];if(typeof raw.peek==="boolean")v.peek=raw.peek}}catch{}
+    if(raw&&typeof raw==="object"){for(const k in VIEW_ALLOWED)if(VIEW_ALLOWED[k].includes(raw[k]))v[k]=raw[k];if(typeof raw.peek==="boolean")v.peek=raw.peek;if(typeof raw.action_feedback==="boolean")v.action_feedback=raw.action_feedback}}catch{}
   return v;
 }
 let view=loadView(),readerOpen=false,dueOpen=false,calmLaterOpen=true,waitClosedOpen=false,paneId=null,lastPaneIdx=0,lastRowIds=[],lastDeckShown=null,deckDir="next",lastReadId=null;
@@ -2432,6 +2458,7 @@ async function loadServerView(){
     const v={...VIEW_DEFAULT};
     for(const k of Object.keys(VIEW_ALLOWED))if(VIEW_ALLOWED[k].includes(saved.view[k]))v[k]=saved.view[k];
     if(typeof saved.view.peek==="boolean")v.peek=saved.view.peek;
+    if(typeof saved.view.action_feedback==="boolean")v.action_feedback=saved.view.action_feedback;
     view=v;
   }else{
     // First sign-in has no server preference: never inherit a different user's browser choice.
@@ -2450,7 +2477,7 @@ function applyView(){
   c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");
   document.querySelectorAll("#viewPanel [data-view]").forEach(b=>{const on=view[b.dataset.view]===b.dataset.val;b.classList.toggle("on",on);b.setAttribute("aria-checked",String(on))});
   const classic=view.layout==="list";
-  $("vOpen").checked=view.rows==="open";$("vPeek").checked=view.peek;
+  $("vOpen").checked=view.rows==="open";$("vPeek").checked=view.peek;$("vActionFeedback").checked=view.action_feedback!==false;
   $("vOpen").disabled=$("vPeek").disabled=!classic;$("vOpenL").classList.toggle("off",!classic);$("vPeekL").classList.toggle("off",!classic);
 }
 function visible(m){
@@ -6823,6 +6850,7 @@ $("viewPanel").addEventListener("click",e=>{
 });
 $("vOpen").onchange=e=>{view.rows=e.target.checked?"open":"collapsed";saveView();applyView();render()};
 $("vPeek").onchange=e=>{view.peek=e.target.checked;saveView();applyView()};
+$("vActionFeedback").onchange=e=>{view.action_feedback=e.target.checked;saveView()};
 $("viewReset").onclick=()=>{view={...VIEW_DEFAULT};saveView();applyView();render()};
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"&&readerOpen){readerOpen=false;render();return}
