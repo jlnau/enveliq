@@ -20,10 +20,19 @@ self.addEventListener("notificationclick", (event) => {
     for (const c of list) {
       let path = "";
       try { const cu = new URL(c.url); if (cu.origin !== self.location.origin) continue; path = cu.pathname; } catch (e) { continue; }
-      try { await c.focus(); } catch (e) { /* the browser may refuse; carry on */ }
-      if (path === "/") { c.postMessage({ type: "enveliq-open", url: target }); return; }   // the inbox is open: it moves to the email itself
-      try { await c.navigate(target); return; } catch (e) { /* try the next window, then open a new one */ }
+      // Do not navigate an existing PWA activity to the notification URL:
+      // navigation can replace its inbox history and Android Back exits.
+      if (path === "/") {
+        try {
+          await c.focus();
+          c.postMessage({ type: "enveliq-open", url: target });
+          return;
+        } catch (e) { /* try another client or a fresh launch */ }
+      }
     }
+    // On a cold start open the inbox URL with the notification target encoded.
+    // This is a normal app launch and the reader must push its own history
+    // entry after the inbox document has finished loading.
     await self.clients.openWindow(target);
   })());
 });
