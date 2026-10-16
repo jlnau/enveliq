@@ -3862,14 +3862,14 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
   const rd=document.querySelector(".reading");if(rd&&lastReadId===paneId)rd.scrollTop=prevReadTop;lastReadId=paneId;
   saveMailContinuity();
 }
-let currentAttachmentView=null;
+let currentAttachmentView=null,currentViewerMessageId=null;
 function openAttachmentViewer(spec){
   const [messageIdRaw,indexRaw]=spec.split(":");
   const m=data.find(x=>x.id===Number(messageIdRaw)&&x.owner===currentUser.id);
   if(m&&m.real){openRealEmail(m);return}          // a real email: its files are previewed or saved from the original-email view
   const a=m?.attachments?.[Number(indexRaw)];
   if(!m||!a){toast("Attachment is no longer available in this review item");return}
-  currentAttachmentView={message:m,attachment:a,page:1};
+  currentAttachmentView={message:m,attachment:a,page:1};currentViewerMessageId=m.id;
   $("attachmentModalName").textContent=a.name;
   $("attachmentModalContext").textContent=`${m.sender} · ${m.subject} · ${a.mime||"attachment"} · ${a.size||"size unknown"}`;
   $("attachmentModalSummary").textContent=a.summary||"";
@@ -3918,7 +3918,7 @@ function openEmailViewer(id){
   const m=data.find(x=>x.id===Number(id)&&x.owner===currentUser.id);
   if(m&&m.real){openRealEmail(m);return}
   if(!m||!m.body){toast("The original email is no longer available");return}
-  currentAttachmentView=null;
+  currentAttachmentView=null;currentViewerMessageId=m.id;
   $("attachmentModalName").textContent=m.subject;
   $("attachmentModalContext").textContent=`${m.sender} · ${m.date||m.time}`;
   $("attachmentViewerControls").innerHTML=`<span>Original email · continuous scroll</span>`;
@@ -4149,7 +4149,7 @@ function closeAttachmentViewer(fromBack){
   $("attachmentViewer").innerHTML="";
   $("attachmentViewerControls").innerHTML="";
   $("linkAsk").hidden=true;
-  currentAttachmentView=null;
+  currentAttachmentView=null;currentViewerMessageId=null;
 }
 
 let oauthPendingProvider=null;
@@ -5742,7 +5742,7 @@ async function openRealEmail(m){
   try{
     const base=`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}`;
     const o=await secureBackendRequest(base+"/original",{method:"GET",headers:{}});
-    presentOriginal(o,{title:m.subject,context:`${m.sender} · ${m.date||m.time}`,attach:base+"/attachments",replyTo:m.replyTo,account:m.account,fallbackDate:m.date||m.time,replyId:m.replyTo?m.id:null,unsub:m.unsub,scam:m.scam});
+    presentOriginal(o,{title:m.subject,context:`${m.sender} · ${m.date||m.time}`,attach:base+"/attachments",replyTo:m.replyTo,account:m.account,fallbackDate:m.date||m.time,replyId:m.replyTo?m.id:null,unsub:m.unsub,scam:m.scam,messageId:m.id});
   }catch(er){toast(er.message,6000)}
 }
 const WORKING={reviewed:"Marking reviewed…",archived:"Archiving…",trashed:"Moving to Bin…",expired:"Removing…"};
@@ -5757,7 +5757,7 @@ async function resolveRealOne(m,status,button,quiet){
     const keep=(status==="reviewed"&&realPrefs.keep_reviewed)||(status==="archived"&&realPrefs.keep_archived);
     if(keep){m.status=status;m.kept=true;m.keptUntil=new Date(Date.now()+realPrefs.keep_days*86400000).toLocaleDateString(undefined,{day:"numeric",month:"short"});m.attachments=[]}
     else{const ix=data.indexOf(m);if(ix>=0)data.splice(ix,1)}
-    selected.delete(m.id);if(quiet)return true;closeAttachmentViewer();render();refreshTasks();
+    selected.delete(m.id);if(quiet)return true;if(currentViewerMessageId===m.id)closeAttachmentViewer();render();refreshTasks();
     toast(status==="trashed"?"Moved to Bin in your mailbox":status==="expired"?"Removed from this list":(status==="archived"?"Archived in your mailbox":"Marked read in your mailbox")+(keep?`. Kept in ${status==="archived"?"Archived":"Reviewed"} for ${realPrefs.keep_days} day${realPrefs.keep_days===1?"":"s"}`:""),2600,"success");
     return true;
   }catch(er){
@@ -6625,7 +6625,7 @@ document.addEventListener("keydown",e=>{if(e.key!=="Enter"&&e.key!==" ")return;c
 function presentOriginal(o,c){
   revokeViewerUrls();
   $("linkAsk").hidden=true;
-  currentAttachmentView=null;
+  currentAttachmentView=null;currentViewerMessageId=c.messageId??null;
   $("attachmentModalName").textContent=c.title;
   $("attachmentModalContext").textContent=c.context||"";
   $("attachmentViewerControls").innerHTML=`<span>${c.sent?"Sent email":"Original email"} · plain text</span>`;
@@ -6949,7 +6949,7 @@ async function commitAction(entry,together){
   try{
     if(together)await Promise.all(ms.map(one));            // the page is closing: send them all at once
     else for(const m of ms){await one(m);if(failed)break}
-    closeAttachmentViewer();
+    if(ms.some(m=>currentViewerMessageId===m.id))closeAttachmentViewer();
     if(!many&&!ms[0].real)toast(status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${status} · attachment data purged`,2000,"success");
     if(many)toast(failed?`${done} updated, then stopped. The rest are back in your list.`:`${done} emails updated${ms.some(m=>m.real)?" in your mailbox":" · attachment data purged"}`,failed?6000:2500,failed?"error":"success");
     if(many&&ms.some(m=>m.real))refreshTasks();
