@@ -2936,7 +2936,7 @@ async function tagOpen(id){
 function tagClose(){if(!tagUi.open)return;tagUi.open=false;$("tagPop").hidden=true;const b=document.querySelector(`[data-tag-open="${tagUi.id}"]`);if(b)b.focus()}
 async function tagCall(fn){
   if(tagUi.busy)return;tagUi.busy=true;tagUi.err="";tagPopPaint(true);
-  try{await fn();return true}catch(er){tagUi.err=er.message||"That did not work. Try again."}
+  try{await fn();return true}catch(er){tagUi.err=er.message||"That did not work. Try again.";toast(tagUi.err,4500,"error")}
   finally{tagUi.busy=false;if(tagUi.open)tagPopPaint(true);render()}
 }
 async function tagSet(mail,name,on){
@@ -2946,7 +2946,7 @@ async function tagSet(mail,name,on){
 document.addEventListener("change",e=>{
   const t=e.target.closest?e.target.closest("[data-tag-toggle]"):null;if(!t)return;
   const mail=tagMsg();if(!mail)return;const on=t.checked;
-  tagCall(async()=>{try{await tagSet(mail,t.dataset.tagToggle,on)}catch(er){t.checked=!on;throw er}});
+  tagCall(async()=>{try{await tagSet(mail,t.dataset.tagToggle,on);toast(on?"Tag added":"Tag removed",1800,"success")}catch(er){t.checked=!on;throw er}});
 });
 document.addEventListener("input",e=>{if(e.target&&e.target.matches&&e.target.matches("[data-tag-name]")){tagUi.name=e.target.value;tagUi.err=""}});
 document.addEventListener("submit",e=>{
@@ -5609,8 +5609,8 @@ async function syncRealMail(me){
     const parts=[added?`${added} new email${added===1?"":"s"}`:"Nothing new"];
     if(removed)parts.push(`${removed} removed (handled elsewhere)`);
     if(summarised)parts.push(`${summarised} summarised`);
-    if(aiProblem){toast(`${parts.join(", ")}. AI summaries: ${aiProblem}`,7000)}else toast(parts.join(", "));
-  }catch(er){toast(er.message,6000)}
+    if(aiProblem){toast(`${parts.join(", ")}. AI summaries: ${aiProblem}`,7000,"error")}else toast(added||removed||summarised?`Inbox updated: ${parts.join(", ")}`:"Inbox is up to date",2600,"success");
+  }catch(er){toast(`Could not sync your inbox. ${er.message||"Try again."}`,6000,"error")}
   finally{btn.disabled=false;btn.textContent="Sync mail";$("mSyncBtn").classList.remove("busy")}
 }
 // ---------- Running on a real Enveliq server ----------
