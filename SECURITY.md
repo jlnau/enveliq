@@ -654,3 +654,7 @@ The last selected email is kept as its mailbox identifier and message identifier
 ## Live mailbox event stream
 
 The SSE endpoint requires a full signed-in session and fingerprints only the accounts owned by that user. Events contain a generic changed signal, never mail bodies, attachment content, subjects, sender addresses, message identifiers or raw vault data. Responses disable caching and buffering. Browser clients subsequently re-fetch data using existing permission-checked endpoints. The stream is one-way; it does not accept commands or permit direct mailbox mutations.
+
+## All emails inbox window
+
+The optional All emails view retrieves inbox message headers from the last 60 days without a count cap. Enveliq keeps only the existing encrypted metadata and placeholder summary records in the vault. Original message bodies and attachments are not retained. This does not expand access beyond the signed in mailbox owner. The larger window can increase mailbox provider requests, encrypted metadata storage and loading time.
