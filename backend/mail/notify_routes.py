@@ -55,6 +55,7 @@ class MailViewBody(StrictModel):
     width: str = Field(pattern=r"^(centered|full)$")
     rows: str = Field(pattern=r"^(collapsed|open)$")
     peek: bool
+    action_feedback: bool = True
 
 
 class MailContextBody(StrictModel):
