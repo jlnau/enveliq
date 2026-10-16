@@ -210,6 +210,8 @@ const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll
 {
   const { page, context } = await open(makeServer(), "?open=a1:m1", { width: 390, height: 800 });
   check("on a phone the link opens the email too (full screen)", await page.evaluate(() => (document.querySelector(".reader h3")?.textContent || "").trim()) === "Update on refund");
+  check("cold notification creates an inbox entry and an active reader entry", await page.evaluate(() =>
+    history.length >= 3 && history.state?.enveliqReader === 1 && document.body.classList.contains("reader-open")));
   await shot(page, "notification-link-phone");
   await page.goBack();
   await page.waitForTimeout(300);
