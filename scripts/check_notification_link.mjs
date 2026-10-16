@@ -24,6 +24,7 @@ function makeServer() {
   let extra = false;
   const saved = [];
   let mailSelection = null;
+  const notificationChanges = [];
   const settings = { morning_on: true, morning_time: "08:00", due_on: true, repeat_hours: 2, repeat_max: 2, quiet_on: true, quiet_from: "21:00", quiet_to: "07:00", show_titles: true, mail_on: false, mail_details: false };
   const overview = () => ({ settings, tz: "Australia/Sydney", channels: [{ id: "browser", label: "This device (browser)", blurb: "A pop-up on this phone or computer, even when Enveliq is closed.", steps: ["Press Turn on for this device."], fields: [], enabled: false, allowed: true, configured: false, last_ok: null, last_error: null, devices: [] }] });                                 // a fourth email that "arrives" after the page loaded
   const handler = async (route) => {
@@ -44,6 +45,9 @@ function makeServer() {
     if (p === "/embed.js") return route.fulfill({ status: 200, contentType: "text/javascript", body: embed });
     if (p === "/static/auth.css") return route.fulfill({ status: 200, contentType: "text/css", body: authCss });
     if (p === "/api/v1/me/notifications") return json(200, overview());
+    if (p === "/api/v1/me/notifications/settings" && req.method() === "PUT") {
+      const changes = JSON.parse(req.postData());Object.assign(settings,changes);notificationChanges.push(changes);return json(200,overview());
+    }
     if (p === "/api/v1/me/notifications/settings" && req.method() === "PUT") { const b = JSON.parse(req.postData()); saved.push(b); Object.assign(settings, b); return json(200, overview()); }
     if (p === "/api/v1/me/mail-context" && req.method() === "GET") return json(200, { selection: mailSelection });
     if (p === "/api/v1/me/mail-context" && req.method() === "PUT") { mailSelection = JSON.parse(req.postData()); if (!mailSelection.account_id) mailSelection = null; return json(200, { selection: mailSelection }); }
@@ -54,7 +58,7 @@ function makeServer() {
     if (p === "/api/v1/me/shipping") return json(200, { enabled: false, orders: [], now });
     return json(404, { detail: "not found: " + p });
   };
-  return { handler, saved, selection: () => mailSelection, arrive: () => { extra = true; } };
+  return { handler, saved, notificationChanges, selection: () => mailSelection, arrive: () => { extra = true; } };
 }
 
 const browser = await chromium.launch();
@@ -87,6 +91,26 @@ const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll
   await page.waitForTimeout(250);
   check("selected email restores after refresh", await page.evaluate(() => paneId != null));
   check("refresh retains the same selected message", server.selection()?.message_id === selected);
+  await page.close();await context.close();
+}
+
+{
+  const server = makeServer();
+  const { page, context, errors } = await open(server);
+  await page.evaluate(() => openSettings("settings","mailalerts"));
+  await page.waitForSelector('#mailAlertAccounts input[data-mail-alert-account]');
+  check("email alerts are in the existing personal Settings",await page.locator('[data-settings-tab="mailalerts"].active').count()===1);
+  check("all new emails is the default mode", await page.locator('input[name="mailAlertMode"][value="all"]').isChecked());
+  await page.locator('input[name="mailAlertMode"][value="action"]').check();
+  await page.waitForFunction(() => document.getElementById("mailAlertStatus").textContent === "Saved");
+  check("action-only mode is saved to the notification endpoint",server.notificationChanges.some(x=>x.mail_filter==="action"));
+  await page.locator('#mailAlertAccounts input[data-mail-alert-account]').uncheck();
+  await page.waitForFunction(() => document.getElementById("mailAlertStatus").textContent === "Saved");
+  check("disabling notifications for one mailbox does not disable the channel",server.notificationChanges.some(x=>Array.isArray(x.mail_muted_accounts)&&x.mail_muted_accounts.includes("a1")));
+  await page.evaluate(() => loadMailAlertPrefs());
+  await page.waitForTimeout(150);
+  check("saved filter and mailbox mute restore in Settings",await page.locator('input[name="mailAlertMode"][value="action"]').isChecked()&&!(await page.locator('#mailAlertAccounts input[data-mail-alert-account]').isChecked()));
+  check("no script errors in email alert preferences",errors.length===0);
   await page.close();await context.close();
 }
 
