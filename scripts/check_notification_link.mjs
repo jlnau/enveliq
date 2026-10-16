@@ -187,6 +187,27 @@ const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll
 }
 
 {
+  const { page, context, errors } = await open(makeServer(), "", { width: 390, height: 800 });
+  await page.locator("article.mail").first().locator(".qmain").click();
+  await page.waitForSelector(".reader");
+  const previous = await page.evaluate(() => paneId);
+  const before = await page.evaluate(() => history.length);
+  await page.evaluate((url) => navigator.serviceWorker.dispatchEvent(new MessageEvent("message", {
+    data: { type: "enveliq-open", url }
+  })), `${ORIGIN}/?open=a1:m2`);
+  await page.waitForFunction(() => document.querySelector(".reader h3")?.textContent?.trim() === "Second email");
+  check("notification opened over a reader adds its own Back step", await page.evaluate(() => history.length) === before + 1);
+  await page.goBack();
+  await page.waitForTimeout(300);
+  check("Back restores the previously opened email", await page.evaluate(id => readerOpen && paneId === id && document.body.classList.contains("reader-open"), previous));
+  await page.goBack();
+  await page.waitForTimeout(300);
+  check("second Back returns to inbox without closing Enveliq", await page.evaluate(() => !readerOpen && !!document.querySelector("article.mail")));
+  check("no navigation script errors", errors.length === 0);
+  await page.close(); await context.close();
+}
+
+{
   const { page, context } = await open(makeServer(), "?open=a1:m1", { width: 390, height: 800 });
   check("on a phone the link opens the email too (full screen)", await page.evaluate(() => (document.querySelector(".reader h3")?.textContent || "").trim()) === "Update on refund");
   await shot(page, "notification-link-phone");
