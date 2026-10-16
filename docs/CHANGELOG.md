@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Consistent action feedback with an optional popup switch.** Success confirmations use the existing unobtrusive toast and matching icon styling. Tag additions and removals and inbox synchronisation report their actual results. The View panel offers **Show action confirmations**, enabled by default and remembered privately per person. Turning it off hides routine success messages, not errors, pending sending or Undo. Touches `prototype/index.html`, `backend/mail/notify_routes.py`, `scripts/check_inbox_real_mail.mjs` and `tests/test_notify.py`. See `docs/INBOX.md`.
+
 **Return safely from Android email notifications.** A notification launch gives Back an inbox destination without closing Enveliq or changing ordinary navigation. Touches `prototype/index.html` and notification browser checks. See `docs/NOTIFICATIONS.md`.
 
 **Remember inbox position and selected email.** The inbox keeps its scroll position on each device through navigation and refresh; the selected email is saved privately in the encrypted vault for that signed-in person. Touches `prototype/index.html`, `backend/mail/notify_routes.py`, `backend/app.py`, browser and backend tests. The saved selection is also cleared when a user is deleted. See `docs/INBOX.md` and `SECURITY.md`.
