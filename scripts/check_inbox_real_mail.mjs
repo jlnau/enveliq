@@ -652,6 +652,18 @@ await page.click('[data-theme-choice="dark"]');
   const rows1 = await page.locator("article.mail").count();
   await page.locator("article.mail .qmain").first().click();
   check("phone: tapping a row opens the email full screen, with the details panel under the text", (await page.locator(".reader .qside").count()) === 1);
+  check("phone: sender details menu contains clipboard actions", await page.locator(".reader .rfrom .mail-copy-menu summary").count() === 1);
+  await page.evaluate(() => { window.__copyOriginal = copyText; copyText = async value => { window.__copiedMailDetail = value; return true; }; });
+  await page.locator(".reader .rfrom .mail-copy-menu summary").click();
+  await page.locator(".reader .rfrom [data-copy-field=all]").click();
+  check("phone: one action copies sender subject and message reference", await page.evaluate(() => {
+    const m = data.find(x => x.id === paneId), value = window.__copiedMailDetail;
+    return !!m?.real && value.includes("Sender: " + m.address) &&
+      value.includes("Subject: " + m.subject) &&
+      value.includes("Message reference: " + m.real.messageId);
+  }));
+  await page.evaluate(() => { copyText = window.__copyOriginal; delete window.__copyOriginal; });
+
   const callsQ = server.calls.length;
   await page.locator(".reader .ract [data-status=reviewed]").click();
   await page.waitForSelector("#undoBar:not([hidden])");
