@@ -16,7 +16,7 @@ Expanding an attachment's AI summary keeps the current email selected in the rea
 
 
 
-Enveliq uses the same small feedback message for routine actions, including tagging and syncing. A successful action shows a short confirmation, while a failure explains what went wrong. Sending and replying continue to use the existing Undo Send countdown, and archive, Reviewed and Bin keep their existing Undo bars; these are never replaced by a success message.
+Enveliq uses the same small feedback message for routine actions, including tagging and syncing. A successful action shows a short confirmation, while a failure explains what went wrong. Sending and replying continue to use the existing Undo Send countdown, and archive, Reviewed and Bin keep their existing Undo bars; these are never replaced by a success message. When one of those email action countdowns finishes in the background, it updates only that email. If you have opened a different email or its original content meanwhile, that view stays open and unchanged.
 
 In **View → Feedback**, **Show action confirmations** starts on. Turn it off if you prefer not to see routine success popups. Important errors, Undo buttons and sending countdowns always remain visible. The preference is saved for your own account in the encrypted vault and applies on all your devices.
 
