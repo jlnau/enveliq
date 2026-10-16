@@ -1,7 +1,7 @@
 """Reminder channels: setting them up, testing them, and the administrator's rules."""
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from threading import RLock
 
 from fastapi import APIRouter, Depends, HTTPException, Path as PathParam
