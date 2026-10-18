@@ -8,7 +8,7 @@ Read this page once, decide your answers, and then go back to your guide. Nothin
 - [Setting 2: the one-time setup code](#setting-2-the-one-time-setup-code)
 - [Setting 3: the "plain http" switch](#setting-3-the-plain-http-switch)
 - [The port line](#the-port-line)
-- [Optional: let Enveliq unlock itself after a restart](#optional-let-enveliq-unlock-itself-after-a-restart)
+- [Required: the vault key](#required-the-vault-key)
 
 ## Setting 1: the address you will type in your browser
 
