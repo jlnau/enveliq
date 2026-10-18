@@ -6,7 +6,7 @@ For a Linux computer or server (Ubuntu, Debian, Fedora and others), or a virtual
 
 ## The install file
 
-This is the whole file. Copy it, or [download it](../../install/docker-compose.yml). [Step 3](#step-3-change-the-three-lines) shows the lines to change. The steps below start from nothing and put it on your computer.
+This is the whole file. Copy it, or [download it](../../install/docker-compose.yml). [Step 3](#step-3-make-your-vault-key) shows the one thing you must set, the vault key. The steps below start from nothing and put it on your computer.
 
 <!-- include: install/docker-compose.yml -->
 
