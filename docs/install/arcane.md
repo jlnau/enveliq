@@ -6,7 +6,7 @@
 
 ## Step 1. Decide your settings
 
-Open [Choose your settings](choose-settings.md), decide your answers, and come back. Have your **setup code** ready.
+Open [Choose your settings](choose-settings.md), decide your answers, and come back. This includes a **vault key**, which is required: make it now with [Setting 4: the vault key](choose-settings.md#setting-4-the-vault-key-required) and save a copy in your password manager. Have your **setup code** ready.
 
 ## Step 2. Create the project
 

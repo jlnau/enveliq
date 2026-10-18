@@ -29,9 +29,9 @@ You will make a small text file called `docker-compose.yml` inside that folder.
    - **Mac:** open **TextEdit**. Choose **Format**, **Make Plain Text**. Paste. Choose **File**, **Save**. Name it `docker-compose.yml`, choose the `enveliq` folder, and when it asks about `.yml`, press **Use .yml**. (If it offers "If no extension is provided, use .txt", untick it.)
 4. **Check:** in the folder the file is called `docker-compose.yml`, not `docker-compose.yml.txt`. (On Windows, in File Explorer press **View**, **Show**, **File name extensions** to see the full name.)
 
-## Step 4. Change the three lines
+## Step 4. Change the four lines
 
-1. Open [Choose your settings](choose-settings.md) and decide your answers. If you only want to try Enveliq on this computer, you can change **just the setup code** and leave the rest.
+1. Open [Choose your settings](choose-settings.md) and decide your answers. If you only want to try Enveliq on this computer, you can change **just the setup code and the vault key** and leave the rest. **Make your vault key first** ([Setting 4: the vault key](choose-settings.md#setting-4-the-vault-key-required)): it is required.
 2. Open the file you saved (right-click, **Open with**, Notepad or TextEdit) and edit the lines marked `<-- CHANGE THIS`. Keep the quote marks.
 3. Save the file.
 

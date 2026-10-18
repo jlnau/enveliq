@@ -1,6 +1,6 @@
 # Enveliq: ready-to-use install file.
 #
-# You only need to change the lines marked  <-- CHANGE THIS  (there are three). Everything else can stay as it is.
+# You only need to change the lines marked  <-- CHANGE THIS  (there are four). Everything else can stay as it is.
 # Step-by-step instructions for your kind of computer: https://github.com/jlnau/enveliq/blob/main/docs/install/README.md
 #
 # Two small programs run together:
@@ -30,8 +30,12 @@ services:
       #    change "" to "1". Leave it as "" for https:// addresses and for localhost.
       ENVELIQ_ALLOW_INSECURE_PUBLIC_URL: ""          # <-- CHANGE THIS only for http://192.168... addresses
 
+      # 4. REQUIRED: the vault key. It locks everything Enveliq keeps and unlocks it after every restart.
+      #    Make it BEFORE you start (see "Setting 4" in docs/install/choose-settings.md), paste it between the quote marks,
+      #    and save a copy in your password manager. Without a key, Enveliq's setup page will not continue.
+      ENVELIQ_VAULT_KEY: "PASTE-YOUR-VAULT-KEY-HERE"          # <-- CHANGE THIS (required)
+
       # Optional (you can ignore these until you want them; the guide explains each):
-      # ENVELIQ_VAULT_KEY: ""      # lets Enveliq unlock itself after a restart (docs/VAULT_KEY.md)
       # ENVELIQ_LLM_URL: ""        # an AI model on your own network (you can also do this inside the app)
 
       # Keep this as it is: it connects Enveliq to the PDF drawing program below.

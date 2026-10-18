@@ -55,9 +55,9 @@ curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/jlnau/enveliq
 
 **Check:** `ls` lists `docker-compose.yml`.
 
-## Step 3. Change the three lines
+## Step 3. Change the four lines
 
-1. Open [Choose your settings](choose-settings.md), decide your answers, and come back.
+1. Open [Choose your settings](choose-settings.md), decide your answers, and come back. **Make your vault key first** ([Setting 4: the vault key](choose-settings.md#setting-4-the-vault-key-required)): it is required, and you paste it into the line `ENVELIQ_VAULT_KEY`.
 2. Open the file in a simple editor called nano:
 
    ```

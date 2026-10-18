@@ -92,7 +92,7 @@ You do **not** need to know Linux or Docker. Every guide below tells you exactly
 **The short version** (Windows, Mac or Linux, with [Docker](https://www.docker.com/get-started/) installed):
 
 1. Download [`install/docker-compose.yml`](install/docker-compose.yml).
-2. Open it in any text editor and change the three lines marked `<-- CHANGE THIS` ([what to put](docs/install/choose-settings.md)).
+2. Open it in any text editor and change the four lines marked `<-- CHANGE THIS` ([what to put](docs/install/choose-settings.md)).
 3. Start it with `docker compose up -d`, then open **http://localhost:8765**.
 
 **Pick the guide that matches what you have:**

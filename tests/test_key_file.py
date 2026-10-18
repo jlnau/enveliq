@@ -191,3 +191,12 @@ def test_setup_with_a_vault_key_works_and_the_status_no_longer_asks_for_one(tmp_
     assert client.get("/api/v1/status").json()["vault_key_needed"] is False
     r = client.post("/api/v1/setup", json={"setup_code": SETUP_CODE, "username": "morgan", "password": ADMIN_PASSWORD})
     assert r.status_code == 201, r.text
+
+
+def test_the_placeholder_left_in_the_install_file_counts_as_no_key(tmp_path):
+    from helpers import load_app
+    from fastapi.testclient import TestClient
+    appm = load_app(tmp_path, ENVELIQ_VAULT_KEY="PASTE-YOUR-VAULT-KEY-HERE")
+    appm.REQUIRE_VAULT_KEY = True
+    assert appm.AUTO_UNLOCK is False
+    assert TestClient(appm.app, raise_server_exceptions=False).get("/api/v1/status").json()["vault_key_needed"] is True

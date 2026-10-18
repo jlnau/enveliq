@@ -180,6 +180,8 @@ logger.propagate = False
 # again) is switched off. See docs/VAULT_KEY.md.
 VAULT_KEY_FILE = os.environ.get("ENVELIQ_VAULT_KEY_FILE", "").strip()
 VAULT_KEY_ENV = os.environ.get("ENVELIQ_VAULT_KEY", "").strip()
+if VAULT_KEY_ENV.upper().startswith("PASTE-YOUR"):      # the placeholder in the install file was never replaced: same as no key
+    VAULT_KEY_ENV = ""
 AUTO_UNLOCK = bool(VAULT_KEY_FILE or VAULT_KEY_ENV)
 
 

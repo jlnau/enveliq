@@ -13,7 +13,7 @@ You have installed Enveliq and it is running. This page takes you from the first
 The first person to set up Enveliq becomes its **administrator**: the person who looks after Enveliq itself. Administrators cannot read other people's email.
 
 1. Choose a **username** and a **password**. Make the password long. A password manager is ideal. The page tells you the rules.
-2. Setup does not ask for a vault passphrase: Enveliq locks and unlocks itself with the vault key you made before starting. If you skipped that, the setup page tells you how to make one. **Keep a copy of the key somewhere safe: without it nobody can open your data again.**
+2. Setup does not ask for a vault passphrase: Enveliq locks and unlocks itself with the vault key you made before starting (Setting 4 in [Choose your settings](choose-settings.md#setting-4-the-vault-key-required)). If you skipped that, the setup page tells you how to make one. **Keep a copy of the key somewhere safe: without it nobody can open your data again.**
 3. Press the button to finish.
 
 ## Step 3. Turn on two-factor sign-in

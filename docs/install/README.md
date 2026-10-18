@@ -32,7 +32,7 @@ Choose the one that matches **what you already have**. If you are not sure, use 
 | **Unraid** | [Unraid](unraid.md) |
 | **TrueNAS SCALE** | [TrueNAS](truenas.md) |
 
-Every guide uses the same ready-made install file: [`install/docker-compose.yml`](../../install/docker-compose.yml). Only three lines in it ever need changing, and [Choose your settings](choose-settings.md) explains each one in plain words. Read that page once; every guide links to it at the right moment.
+Every guide uses the same ready-made install file: [`install/docker-compose.yml`](../../install/docker-compose.yml). Only four lines in it ever need changing, and [Choose your settings](choose-settings.md) explains each one in plain words. Read that page once; every guide links to it at the right moment.
 
 ## 3. After it is installed
 

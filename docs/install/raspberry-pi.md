@@ -25,9 +25,9 @@ git clone https://github.com/jlnau/enveliq.git
 cd enveliq/install
 ```
 
-## Step 4. Change the three lines
+## Step 4. Change the four lines
 
-1. Read [Choose your settings](choose-settings.md) and decide your answers.
+1. Read [Choose your settings](choose-settings.md) and decide your answers. **Make your vault key first** ([Setting 4: the vault key](choose-settings.md#setting-4-the-vault-key-required)): it is required, and you paste it into the line `ENVELIQ_VAULT_KEY`.
 2. Open the file:
 
    ```

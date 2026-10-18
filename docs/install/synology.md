@@ -6,7 +6,7 @@ For Synology NAS models that run **Container Manager** (DSM 7.2 or newer). It is
 
 ## Step 1. Decide your settings
 
-Open [Choose your settings](choose-settings.md), decide your answers, and come back. On a NAS you open Enveliq from other devices, so you will most likely choose address **B** (home Wi-Fi) or **C** (Tailscale). Have your **setup code** ready.
+Open [Choose your settings](choose-settings.md), decide your answers, and come back. This includes a **vault key**, which is required: make it now with [Setting 4: the vault key](choose-settings.md#setting-4-the-vault-key-required) and save a copy in your password manager. On a NAS you open Enveliq from other devices, so you will most likely choose address **B** (home Wi-Fi) or **C** (Tailscale). Have your **setup code** ready.
 
 ## Step 2. Install Container Manager
 

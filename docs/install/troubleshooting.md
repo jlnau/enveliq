@@ -54,7 +54,7 @@ The code stops existing once setup is finished.
 
 ## Setup says it needs a vault key
 
-A new install must be given a vault key first. Make one (`openssl rand -hex 32`), save a copy in your password manager, add `ENVELIQ_VAULT_KEY=...` to the `.env` file next to `docker-compose.yml`, run `docker compose up -d` and reload the page. [The vault key guide](../VAULT_KEY.md) has the steps.
+A new install must be given a vault key first. Make one (`openssl rand -hex 32`), save a copy in your password manager, put it in the `ENVELIQ_VAULT_KEY` line of your install file (or `.env`), redeploy (`docker compose up -d`, or Redeploy in your panel) and reload the page. [The vault key guide](../VAULT_KEY.md) has the steps.
 
 ## Enveliq says it is locked after a restart
 

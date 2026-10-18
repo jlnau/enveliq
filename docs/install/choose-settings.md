@@ -1,6 +1,6 @@
 # Choose your settings
 
-The install file ([`install/docker-compose.yml`](../../install/docker-compose.yml)) has **three lines** you may need to change. They are marked `<-- CHANGE THIS`. Everything else stays as it is.
+The install file ([`install/docker-compose.yml`](../../install/docker-compose.yml)) has **four lines** to check (three you may change, and the vault key, which is required). They are marked `<-- CHANGE THIS`. Everything else stays as it is.
 
 Read this page once, decide your answers, and then go back to your guide. Nothing here is permanent: you can change any of it later and redeploy.
 
@@ -8,7 +8,7 @@ Read this page once, decide your answers, and then go back to your guide. Nothin
 - [Setting 2: the one-time setup code](#setting-2-the-one-time-setup-code)
 - [Setting 3: the "plain http" switch](#setting-3-the-plain-http-switch)
 - [The port line](#the-port-line)
-- [Required: the vault key](#required-the-vault-key)
+- [Setting 4: the vault key (required)](#setting-4-the-vault-key-required)
 
 ## Setting 1: the address you will type in your browser
 
@@ -72,7 +72,7 @@ In the file this is the line `- "8765:8765"`. You do not need to change it.
 
 Whichever you choose, **do not** forward port 8765 on your router. That would open it to the whole internet.
 
-## Required: the vault key
+## Setting 4: the vault key (required)
 
 Everything Enveliq keeps is locked with a **vault key**, and Enveliq unlocks itself with it after every restart. Make the key **before** you start Enveliq, and put it in the install file or `.env`:
 
@@ -83,7 +83,7 @@ Everything Enveliq keeps is locked with a **vault key**, and Enveliq unlocks its
    ```
 
 2. Save it in your password manager **now**. Without it your data cannot be opened if the install file is ever lost.
-3. In the install file, remove the `#` at the start of the `ENVELIQ_VAULT_KEY` line and paste your key between the quote marks (or put `ENVELIQ_VAULT_KEY=your-key` in the `.env` file next to it):
+3. In the install file, find the line `ENVELIQ_VAULT_KEY: "PASTE-YOUR-VAULT-KEY-HERE"` and paste your key in its place, between the quote marks:
 
    ```
          ENVELIQ_VAULT_KEY: "9f2c...your key here..."

@@ -6,7 +6,7 @@ Unraid can run Docker Compose projects with a free add-on called **Docker Compos
 
 ## Step 1. Decide your settings
 
-Open [Choose your settings](choose-settings.md), decide your answers, and come back. On Unraid you open Enveliq from other devices, so you will most likely choose address **B** (home Wi-Fi) or **C** (Tailscale). Have your **setup code** ready.
+Open [Choose your settings](choose-settings.md), decide your answers, and come back. This includes a **vault key**, which is required: make it now with [Setting 4: the vault key](choose-settings.md#setting-4-the-vault-key-required) and save a copy in your password manager. On Unraid you open Enveliq from other devices, so you will most likely choose address **B** (home Wi-Fi) or **C** (Tailscale). Have your **setup code** ready.
 
 ## Step 2. Install Docker Compose Manager
 
