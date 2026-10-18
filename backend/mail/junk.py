@@ -34,6 +34,12 @@ VERDICTS = ("junk", "review")
 ID_RE = re.compile(r"^j[0-9a-f]{23}$")
 
 
+def safe(value: Any, limit: int) -> str:
+    """Text from a stranger's email, cleaned so it can always be stored and sent: broken characters (junk is full of them) become '?'."""
+    text = clean(value if isinstance(value, str) else "", limit)
+    return text.encode("utf-8", "replace").decode("utf-8")
+
+
 def junk_folder(session: Any, kind: str) -> str:
     """The name of this mailbox's junk folder. Proton Bridge always calls it Spam; other services mark it with a special-use flag, else the usual names."""
     if kind != "imap":
@@ -138,8 +144,8 @@ class JunkBook:
                 if info is None:
                     continue
                 key = "j" + secrets.token_hex(11) + "0"
-                items[key] = {"account_id": account_id, "locator": locator(validity, uid, folder), "subject": clean(info["subject"], 300),
-                              "sender_display": clean(info["sender_display"] or "", 120) or None, "sender_address": clean(info["sender_address"] or "", 320) or None,
+                items[key] = {"account_id": account_id, "locator": locator(validity, uid, folder), "subject": safe(info["subject"], 300),
+                              "sender_display": safe(info["sender_display"] or "", 120) or None, "sender_address": safe(info["sender_address"] or "", 320) or None,
                               "received_at": info["received_at"] or self.clock(), "has_attachments": bool(info["has_attachments"]), "tries": 0}
 
     # ---------- the AI check ----------

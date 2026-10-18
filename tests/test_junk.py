@@ -189,3 +189,13 @@ def test_junk_goes_with_the_person(env):
     assert appm.vault.get_global("junk:" + user)["items"]
     appm.delete_user_data(user)
     assert not appm.vault.get_global("junk:" + user)
+
+
+def test_an_email_with_broken_characters_does_not_stop_the_list(env):
+    _, client, bridge, _ = env
+    raw = (b"From: =?utf-8?q?Sh=FFp?= <shop@example.invalid>\r\nTo: me@example.invalid\r\nSubject: Cheap \xff\xfe pills\r\n"
+           b"Date: Mon, 5 Oct 2026 09:00:00 +0000\r\nMessage-ID: <broken@example.invalid>\r\n\r\nBuy now\r\n")
+    bridge.add(903, raw, "Spam")
+    account(client, bridge)
+    got = client.post("/api/v1/junk/refresh")
+    assert got.status_code == 200 and got.json()["total"] == 3 and got.json()["problems"] == []
