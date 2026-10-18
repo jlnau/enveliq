@@ -100,6 +100,25 @@ for (const [cls, word] of [["reviewed", "Marked reviewed"], ["archive", "Archive
   await context.close();
 }
 
+// Scrolling down in an open email must stay put when the page redraws itself (background refresh, a summary or a picture arriving)
+{
+  const { page, context, errors } = await run("list", 390, 800);
+  await page.locator("article.mail", { hasText: "Plan for May" }).locator(".qmain").click();
+  await page.waitForSelector(".reader");
+  await page.addStyleTag({ content: ".reader .rbody::after{content:'';display:block;height:2400px}" });   // a long email that survives a redraw
+  await page.locator(".reader .rbody").evaluate((el) => { el.scrollTop = 400; });
+  const before = await page.locator(".reader .rbody").evaluate((el) => el.scrollTop);
+  check("the open email can be scrolled down", before >= 300);
+  for (let i = 0; i < 2; i++) { await page.evaluate(() => render()); await page.waitForTimeout(150); }
+  check("after the page redraws twice, the email is still where the reader scrolled to", Math.abs((await page.locator(".reader .rbody").evaluate((el) => el.scrollTop)) - before) <= 2);
+  await page.locator(".reader [data-reader-close]").click();
+  await page.locator("article.mail", { hasText: "Third one" }).locator(".qmain").click();
+  await page.waitForSelector(".reader");
+  check("a different email opens at the top", (await page.locator(".reader .rbody").evaluate((el) => el.scrollTop)) === 0);
+  check("no script errors while scrolling", errors.length === 0);
+  await context.close();
+}
+
 // A big screen keeps the chosen layout: "right" shows the reading pane beside the list and no full screen reader
 {
   const { page, context } = await run("right", 1300, 900);

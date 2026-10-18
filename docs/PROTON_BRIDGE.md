@@ -19,9 +19,12 @@ network Enveliq lives on, the same pattern as any other container that needs it.
 - **Sync** reads the *headers* of unread inbox mail (sender, subject, reply
   address, which address it was delivered to). It never downloads message bodies
   for syncing and never marks anything as read.
-- **View email** fetches the original from Bridge at that moment, turns it into
-  plain text in memory and shows it. Nothing is stored. HTML, images, links and
-  scripts from the email are not passed to your browser.
+- **View email** fetches the original from Bridge at that moment and shows it,
+  as the sender formatted it (colours, layout, tables, links and the pictures that
+  travel inside the email), or as plain text if you prefer. Nothing is stored.
+  Scripts, forms and anything that could load or run something are removed, and
+  pictures from the internet stay hidden until you press **Show pictures**. See
+  [Reading the original email](ORIGINAL_EMAIL.md).
 - **Reply** goes to the Reply-To address, or From if there is none, exactly as
   received (so Proton Pass, SimpleLogin and similar reverse-alias addresses work).
   It is sent through Bridge from the address the email was delivered to when that

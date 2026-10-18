@@ -13,7 +13,7 @@ from ..models import StrictModel, header_safe
 from ..security import Session
 from .errors import HTTP_STATUS, BridgeError
 from .limits import SlidingWindowLimiter
-from . import attach_service, llm_providers, providers, review
+from . import attach_service, htmlview, llm_providers, providers, review
 from . import microsoft as ms
 from .llm import LlmConfig, Summariser, run_sample
 from .service import AI_CONFIG_RECORD, MailService, target_for
@@ -427,6 +427,24 @@ def build_mail_router(ctx: Any) -> APIRouter:
             raise fail(err) from None
         response.headers["Cache-Control"] = "no-store"
         return result
+
+    @router.get("/accounts/{account_id}/messages/{message_id}/original/html")
+    def original_html(account_id: AccountId, message_id: MessageId, images: bool = False, session: Session = Depends(session_dep)):
+        """The email as its sender formatted it, rebuilt from allowed parts only and served with its own strict policy (see htmlview)."""
+        account = owned(account_id, session, "view original emails")
+        message = message_of(account_id, message_id)
+        if not view_limit.allow(f"view:{session.principal.user_id}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        try:
+            raw = service.original_raw(account, message)
+        except BridgeError as err:
+            raise fail(err) from None
+        built = htmlview.render(raw, images)
+        if built is None:
+            raise HTTPException(status_code=404, detail="This email has no formatted version.")
+        return Response(built.page, media_type="text/html; charset=utf-8",
+                        headers={"Content-Security-Policy": htmlview.policy_header(images), "Cache-Control": "no-store", "X-Frame-Options": "SAMEORIGIN",
+                                 "Referrer-Policy": "no-referrer"})
 
     @router.post("/accounts/{account_id}/messages/{message_id}/reply")
     def reply(body: ReplyBody, account_id: AccountId, message_id: MessageId, session: Session = Depends(session_dep)):

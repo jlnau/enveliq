@@ -400,7 +400,7 @@ PAGE_CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 's
 # The inbox page is still the single-file prototype with inline script and
 # styles; it gets a looser policy until it is split into bundled files.
 APP_CSP = ("default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; "
-           "connect-src 'self'; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
+           "connect-src 'self'; frame-src 'self'; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
 
 
 @app.middleware("http")
@@ -408,7 +408,8 @@ async def secure_headers(request: Request, call_next):
     response: Response = await call_next(request)
     path = request.url.path
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
+    framed = request.method == "GET" and path.startswith("/api/") and path.endswith("/original/html") and "Content-Security-Policy" in response.headers
+    response.headers["X-Frame-Options"] = "SAMEORIGIN" if framed else "DENY"       # only the formatted email may be shown in a frame of our own page
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
     response.headers["Cache-Control"] = "no-store"
@@ -416,7 +417,8 @@ async def secure_headers(request: Request, call_next):
     response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
     if COOKIE_SECURE:
         response.headers["Strict-Transport-Security"] = "max-age=31536000"
-    response.headers["Content-Security-Policy"] = API_CSP if path.startswith("/api/") else (APP_CSP if path == "/" else PAGE_CSP)
+    if not framed:      # the formatted email brings its own, stricter policy (backend/mail/htmlview.py)
+        response.headers["Content-Security-Policy"] = API_CSP if path.startswith("/api/") else (APP_CSP if path == "/" else PAGE_CSP)
     return response
 
 

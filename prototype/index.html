@@ -479,6 +479,11 @@ body.backend:not(.mail-ready) #dueBars,body.backend:not(.mail-ready) #shipBars,b
 .sample-banner{display:none;margin-bottom:12px}.sample-banner .sb-real{display:none}body.backend .sample-banner .sb-demo{display:none}body.backend .sample-banner .sb-real{display:inline}
 body.backend .sample-banner{display:block}
 body.real-mail .sample-banner{display:none}
+.email-doc.fmt{width:min(940px,100%);padding:24px 28px 32px}
+.fmt-tabs{display:flex;gap:6px;margin:0 0 12px}.fmt-tab{border:1px solid #c9d0db;background:#f3f5f8;color:#2b323d;border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer}.fmt-tab.on{background:#1a56c4;border-color:#1a56c4;color:#fff}
+.fmt-pane[hidden]{display:none}.email-frame{display:block;width:100%;min-height:120px;border:1px solid #e1e5ec;border-radius:6px;background:#fff}.fmt-wait{margin:8px 0 0}
+.fmt-pics{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.fmt-pics .linkbtn{color:#1a56c4;text-decoration:underline;font-size:12px}
+@media(max-width:760px){.email-doc.fmt{padding:16px 12px 24px}}
 .email-text{white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0 0 6px}
 .sync-btn{margin-left:10px;white-space:nowrap}
 .attachment-modal-foot{padding:12px 18px;border-top:1px solid var(--line);background:var(--c-111720)}.attachment-modal-foot strong{display:block;font-size:12px}.attachment-modal-foot p{margin:3px 0 0;color:var(--muted);font-size:11px}
@@ -629,6 +634,8 @@ body.vopen .vpanel{transform:none;visibility:visible;transition:transform .3s cu
 /* An email waiting out its five seconds stays where it is, slightly greyed and gently pulsing, with a thin line that runs across its bottom */
 .mail.quiet.leaving,.deckcard.leaving{position:relative;pointer-events:none;user-select:none}
 .mail.quiet.leaving .qpair,.mail.quiet.leaving .check{visibility:hidden}
+/* The reading-pane layout (list beside the email) shows the same row buttons on hover, in the place of the date */
+@media(hover:hover) and (min-width:761px){body.layout-right .mail.quiet .qpair{display:flex;position:absolute;right:12px;top:5px;opacity:0;transition:opacity .15s;gap:6px}body.layout-right .mail.quiet:hover .qpair,body.layout-right .mail.quiet:focus-within .qpair{opacity:1}body.layout-right .mail.quiet .time{transition:opacity .15s}body.layout-right .mail.quiet:hover .time,body.layout-right .mail.quiet:focus-within .time{opacity:0}body.layout-right .mail.quiet .qic{width:30px;height:26px}body.layout-right .mail.quiet .qic svg{width:15px;height:15px}}
 .mail.quiet.leaving>*,.deckcard.leaving>*{animation:leavePulse 2.4s ease-in-out infinite}
 .mail.quiet.leaving::after,.deckcard.leaving::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--leavec);transform-origin:left;transform:scaleX(0);animation:leaveRun var(--leave-ms,5s) var(--leave-delay,0s) linear forwards}
 .leaving.to-reviewed{--leavec:var(--green)}.leaving.to-archived{--leavec:var(--accent)}.leaving.to-trashed{--leavec:var(--red)}
@@ -3916,7 +3923,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
     
     const flag=!m.kept&&(m.action||m.priority==="high")?`<span class="flag" title="Needs action" aria-label="Needs action"></span>`:"";
     const lead=m.kept?"<span></span>":`<input class="check" type="checkbox" data-select="${esc(m.id)}" aria-label="Select ${esc(m.subject)}" ${esc(selected.has(m.id)?"checked":"")}>`;
-    const quick=m.kept?"<span></span>":`<span class="qpair"><button class="action reviewed qic" data-id="${esc(m.id)}" data-status="reviewed" aria-label="Mark reviewed" title="Mark reviewed">${ICON_OK}</button><button class="action archive qic" data-id="${esc(m.id)}" data-status="archived" aria-label="Archive" title="Archive">${ICON_ARCH}</button><button class="action trash qic" data-id="${esc(m.id)}" data-status="trashed" aria-label="Bin" title="Bin">${ICON_BIN}</button></span>`;
+    const quick=m.kept?`<span class="qpair"><button class="action trash qic" data-id="${esc(m.id)}" data-status="expired" aria-label="Remove from this list" title="Remove from this list">${ICON_BIN}</button></span>`:`<span class="qpair"><button class="action reviewed qic" data-id="${esc(m.id)}" data-status="reviewed" aria-label="Mark reviewed" title="Mark reviewed">${ICON_OK}</button><button class="action archive qic" data-id="${esc(m.id)}" data-status="archived" aria-label="Archive" title="Archive">${ICON_ARCH}</button><button class="action trash qic" data-id="${esc(m.id)}" data-status="trashed" aria-label="Bin" title="Bin">${ICON_BIN}</button></span>`;
     const category=m.action?"Needs action":m.priority==="high"?"High priority":"Information";
     const attCount=fileN(m)?`${fileN(m)} ${fileN(m)===1?"file":"files"}`:"None";
     const replyBtn=(m.replyTo?`<button class="subtle" data-reply="${esc(m.id)}">${ICON_REPLY}Reply</button>`:"")+moreReplyBtns(m)+(m.kept?"":isSnoozed(m)?`<button class="subtle" data-unsnooze="${esc(m.id)}">${ICON_SNOOZE}Wake now</button>`:`<button class="subtle" data-snooze="${esc(m.id)}" aria-haspopup="menu">${ICON_SNOOZE}Snooze</button>`)+`<button class="subtle" data-task-add="${esc(m.id)}" aria-haspopup="dialog">Task</button>`+(tagsOn(m)?`<button class="subtle" data-tag-open="${esc(m.id)}" aria-haspopup="dialog">Tags</button>`:"");
@@ -3937,7 +3944,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
     </div>${open?detail:""}</article>`;
   };
   let listHtml,dockHtml="";
-  const prevScroll=document.getElementById("paneList"),prevTop=prevScroll?prevScroll.scrollTop:0,prevRead=document.querySelector(".reading"),prevReadTop=prevRead?prevRead.scrollTop:0;
+  const prevScroll=document.getElementById("paneList"),prevTop=prevScroll?prevScroll.scrollTop:0,prevRead=document.querySelector(".reading"),prevReadTop=prevRead?prevRead.scrollTop:0;const prevBody=document.querySelector(".reader .rbody"),prevBodyTop=prevBody?prevBody.scrollTop:0;
   lastRowIds=rows.map(m=>m.id);
   if(!rows.length){listHtml=`<div class="empty">${query&&String(query).trim().length>=2&&filter!=="snoozed"?"Nothing in this view matches your search.":filter==="snoozed"?"Nothing is snoozed. Use Snooze on an email to set it aside until you need it.":realMail&&!data.some(m=>m.status==="inbox")?"You're all caught up. Press <strong>Sync mail</strong> to look for new unread email.":document.body.classList.contains("backend")&&!realMail?`Your mail will appear here once a mailbox is connected. <a href="/welcome">Set up your mailbox</a>`:`Nothing in this view for ${esc(currentUser.name)}.`}</div>`}
   else if(lay()==="list"){listHtml=`<div class="quiet-list">${rows.map(m=>quiet(m)).join("")}</div>`}
@@ -3982,14 +3989,23 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
   syncMobileBar(inbox.length,needN);
   const pl=document.getElementById("paneList");
   if(pl){pl.scrollTop=prevTop;const c=pl.querySelector(".current");if(c){const top=c.offsetTop,bot=top+c.offsetHeight;if(top<pl.scrollTop)pl.scrollTop=top;else if(bot>pl.scrollTop+pl.clientHeight)pl.scrollTop=bot-pl.clientHeight}}
-  const rd=document.querySelector(".reading");if(rd&&lastReadId===paneId)rd.scrollTop=prevReadTop;lastReadId=paneId;
+  const rd=document.querySelector(".reading");if(rd&&lastReadId===paneId)rd.scrollTop=prevReadTop;const rb=document.querySelector(".reader .rbody");if(rb&&lastReadId===paneId&&prevBodyTop)rb.scrollTop=prevBodyTop;lastReadId=paneId;
   saveMailContinuity();
 }
 let currentAttachmentView=null,currentViewerMessageId=null;
+// The View button on an attachment of a real email: the picture or document viewer for that one file (Save is in the viewer). The email underneath stays as it was.
+function openRealAttachment(m,i){
+  const a=m.attachments&&m.attachments[i];
+  if(!a||!Number.isInteger(a.index)){toast("That file is no longer available.");return}
+  if(!feat.media){toast("Attachment previews are switched off. An administrator can turn them on under Administration, Features.",6000);return}
+  const base=`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/attachments`;
+  const f={index:a.index,filename:a.name,size_bytes:a.bytes||0,mime_type:a.mime};
+  if(["image/png","image/jpeg","image/gif","image/webp"].includes(a.mime))openPic(base,[f],0);else openDoc(base,f)
+}
 function openAttachmentViewer(spec){
   const [messageIdRaw,indexRaw]=spec.split(":");
   const m=data.find(x=>x.id===Number(messageIdRaw)&&x.owner===currentUser.id);
-  if(m&&m.real){openRealEmail(m);return}          // a real email: its files are previewed or saved from the original-email view
+  if(m&&m.real){openRealAttachment(m,Number(indexRaw));return}          // a real email: that file opens in its own viewer, on top of the email you were reading
   const a=m?.attachments?.[Number(indexRaw)];
   if(!m||!a){toast("Attachment is no longer available in this review item");return}
   currentAttachmentView={message:m,attachment:a,page:1};currentViewerMessageId=m.id;
@@ -5755,7 +5771,7 @@ async function loadRealMail(me){
       items.push({id:0,owner:me.id,account:a.display_name,sender:r.sender_display||r.sender_address||"Unknown sender",address:r.sender_address||"",
         subject:r.subject,time:realTime(r.received_at),date:r.received_at?new Date(r.received_at*1000).toLocaleString():"",received:r.received_at||0,
         summary:r.summary,priority:r.priority||"normal",category:r.category||"Email",action:!!r.action_required,status:r.state==="reviewed"||r.state==="archived"?r.state:"inbox",kept:r.state==="reviewed"||r.state==="archived",keptUntil:r.resolved_at?new Date((r.resolved_at+realPrefs.keep_days*86400)*1000).toLocaleDateString(undefined,{day:"numeric",month:"short"}):"",
-        task:r.suggested_task&&r.suggested_task.title?{title:r.suggested_task.title,due:r.suggested_task.due||"",detail:r.suggested_task.detail||""}:null,attachments:(r.attachment_summaries||[]).map(a=>({name:a.filename,mime:a.mime_type||"",size:fmtBytes(a.size_bytes),pages:a.pages||0,index:a.index,state:a.state==="reading"?"working":a.state||"done",summary:a.summary||"",parts:(a.parts||[]).map(p=>({title:p.title||"",text:p.text})),note:a.note||"",reason:a.reason||"",real:true})),tags:Array.isArray(r.tags)?r.tags.map(String):[],hasFiles:!!r.has_attachments,fileCount:Number.isInteger(r.attachment_count)?r.attachment_count:null,
+        task:r.suggested_task&&r.suggested_task.title?{title:r.suggested_task.title,due:r.suggested_task.due||"",detail:r.suggested_task.detail||""}:null,attachments:(r.attachment_summaries||[]).map(a=>({name:a.filename,mime:a.mime_type||"",size:fmtBytes(a.size_bytes),bytes:a.size_bytes||0,pages:a.pages||0,index:a.index,state:a.state==="reading"?"working":a.state||"done",summary:a.summary||"",parts:(a.parts||[]).map(p=>({title:p.title||"",text:p.text})),note:a.note||"",reason:a.reason||"",real:true})),tags:Array.isArray(r.tags)?r.tags.map(String):[],hasFiles:!!r.has_attachments,fileCount:Number.isInteger(r.attachment_count)?r.attachment_count:null,
         replyTo:ctx.reply_to||null,replyCc:ctx.cc||[],replyAlsoTo:ctx.also_to||[],deliveredTo:ctx.delivered_to||null,viaAlias:ctx.via_alias||null,unsub:r.unsubscribe||null,scam:r.scam_warning||null,real:{accountId:a.id,messageId:r.id},extra:!!r.from_all_mail,found:r.found_until?r.found_until*1000:0,ungen:String(r.summary||"").startsWith("Not summarised yet"),snoozeUntil:r.snoozed_until?r.snoozed_until*1000:0,replied:!!r.replied_at,repliedAt:r.replied_at?realTime(r.replied_at):""});
     }
   }
@@ -5866,7 +5882,7 @@ async function openRealEmail(m){
   try{
     const base=`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}`;
     const o=await secureBackendRequest(base+"/original",{method:"GET",headers:{}});
-    presentOriginal(o,{title:m.subject,context:`${m.sender} · ${m.date||m.time}`,attach:base+"/attachments",replyTo:m.replyTo,account:m.account,fallbackDate:m.date||m.time,replyId:m.replyTo?m.id:null,unsub:m.unsub,scam:m.scam,messageId:m.id});
+    presentOriginal(o,{title:m.subject,context:`${m.sender} · ${m.date||m.time}`,attach:base+"/attachments",htmlUrl:base+"/original/html",replyTo:m.replyTo,account:m.account,fallbackDate:m.date||m.time,replyId:m.replyTo?m.id:null,unsub:m.unsub,scam:m.scam,messageId:m.id});
   }catch(er){toast(er.message,6000)}
 }
 const WORKING={reviewed:"Marking reviewed…",archived:"Archiving…",trashed:"Moving to Bin…",expired:"Removing…"};
@@ -6747,13 +6763,59 @@ function askInlineLink(el){
 }
 document.addEventListener("click",e=>{const l=e.target.closest&&e.target.closest("[data-inline-link]");if(l){e.preventDefault();askInlineLink(l);return}if(e.target.closest&&e.target.closest("#linkAskNo"))$("linkAsk").hidden=true});
 document.addEventListener("keydown",e=>{if(e.key!=="Enter"&&e.key!==" ")return;const l=e.target.closest&&e.target.closest("[data-inline-link]");if(l){e.preventDefault();askInlineLink(l)}});
+// The email as its sender formatted it. The server rebuilds the HTML from allowed parts and serves it under its own strict policy; it is shown
+// here in a frame that cannot reach this page (no cookies, no storage). The frame only reports how tall the email is and which link was pressed.
+// Plain text is always one tap away, and is what is shown if the formatted page does not open.
+function askLinkTo(url,careful){
+  let host="",mail=false;
+  if(/^https?:\/\/[^\s"'<>\\]{4,2000}$/i.test(url)){try{host=new URL(url).hostname}catch{}}
+  else if(/^mailto:[^\s"'<>\\]{3,500}$/i.test(url)){mail=true;host=url.slice(7).split("?")[0].slice(0,200)}
+  if(!host){toast("That link cannot be opened from here.",4000);return}
+  const t=$("linkAsk");$("linkAskText").replaceChildren(document.createTextNode((careful?"This email looked odd. ":"")+(mail?"This starts an email to ":"This goes to ")));
+  const b=document.createElement("b");b.textContent=host.slice(0,100);$("linkAskText").append(b,document.createTextNode(mail?". Open it in your mail app?":". Open it in a new tab?"));
+  const a=$("linkAskOpen");a.href=url;a.textContent=careful?"Open anyway":"Open it";t.hidden=false;a.focus();
+}
+function wireFormatted(root,o,c){
+  const frame=root.querySelector("iframe.email-frame"),wait=root.querySelector(".fmt-wait");
+  if(!frame)return;
+  const careful=!!(o.warning||c.scam);
+  let seen=false,timer=0;
+  const show=which=>{
+    root.querySelectorAll("[data-fmt]").forEach(b=>{const on=b.dataset.fmt===which;b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on))});
+    root.querySelectorAll("[data-fmt-pane]").forEach(x=>{x.hidden=x.dataset.fmtPane!==which});
+  };
+  const load=images=>{
+    seen=false;frame.removeAttribute("srcdoc");if(wait){wait.hidden=false;wait.textContent="Opening the email…"}
+    frame.style.height="";frame.src=c.htmlUrl+(images?"?images=true":"");
+    clearTimeout(timer);
+    timer=setTimeout(()=>{if(seen||!frame.isConnected)return;show("text");const b=root.querySelector('[data-fmt="html"]');if(b)b.hidden=true;toast("The formatted email could not be opened, so the plain text is shown.",5000)},6000);
+  };
+  frame._seen=()=>{seen=true;clearTimeout(timer);if(wait)wait.hidden=true};
+  frame._careful=careful;frame._links=Array.isArray(o.links)?o.links:[];
+  root.querySelectorAll("[data-fmt]").forEach(b=>b.onclick=()=>show(b.dataset.fmt));
+  const pics=root.querySelector("[data-fmt-pics]");
+  if(pics)pics.onclick=()=>{load(true);const n=pics.closest(".fmt-pics");if(n)n.textContent="Pictures from the internet are shown for this email."};
+  load(false);
+}
+window.addEventListener("message",e=>{
+  const fr=document.querySelector("#attachmentViewer iframe.email-frame");
+  if(!fr||e.source!==fr.contentWindow||!e.data||typeof e.data!=="object")return;
+  if(e.data.enveliq==="height"){
+    const h=Math.max(60,Math.min(30000,Math.ceil(Number(e.data.height)||0)));
+    if(Math.abs(h-fr.offsetHeight)>1)fr.style.height=h+"px";
+    if(fr._seen)fr._seen();
+  }else if(e.data.enveliq==="link"&&typeof e.data.href==="string"){
+    const url=e.data.href.slice(0,2100),hit=(fr._links||[]).find(l=>l&&l.url===url);
+    askLinkTo(url,!!fr._careful||!!(hit&&hit.flagged));
+  }
+});
 function presentOriginal(o,c){
   revokeViewerUrls();
   $("linkAsk").hidden=true;
   currentAttachmentView=null;currentViewerMessageId=c.messageId??null;
   $("attachmentModalName").textContent=c.title;
   $("attachmentModalContext").textContent=c.context||"";
-  $("attachmentViewerControls").innerHTML=`<span>${c.sent?"Sent email":"Original email"} · plain text</span>`;
+  $("attachmentViewerControls").innerHTML=`<span>${c.sent?"Sent email":"Original email"} · ${!c.sent&&o.has_html&&c.htmlUrl?"as the sender made it":"plain text"}</span>`;
   $("viewerStrip").innerHTML="<span>Fetched from your mailbox on demand</span><span>Not stored by Enveliq</span><span>Scripts removed</span><span>Pictures from the internet not loaded</span><span>Links open only when you choose</span>";
   const from=`${o.from.name?o.from.name+" ":""}<${o.from.address}>`;
   const sc=(!c.sent&&o.sender_check)||{};
@@ -6761,11 +6823,15 @@ function presentOriginal(o,c){
   const rows=[["From",from],senderRow,c.replyTo&&c.replyTo!==o.from.address?["Reply-To",c.replyTo+(sc.reply_differs===true?" (a different website from the sender)":"")]:null,["To",(o.to||[]).map(t=>t.address).join(", ")||c.account||""],["Date",o.date||c.fallbackDate||""],["Subject",o.subject||c.title]].filter(Boolean);
   const remote=o.remote_images>0?`<div class="mail-notice">${o.remote_images} ${o.remote_images===1?"picture":"pictures"} from the internet ${o.remote_images===1?"is":"are"} not shown. They can tell the sender you opened this email.</div>`:"";
   const hasInline=feat.media&&(o.attachments||[]).some(a=>a.inline&&a.previewable);
-  $("attachmentViewer").innerHTML=`<article class="email-doc">
+  const fmt=!c.sent&&!!o.has_html&&!!c.htmlUrl;          // the sender's own formatting is offered when the email has some
+  $("attachmentViewer").innerHTML=`<article class="email-doc${fmt?" fmt":""}">
     <dl class="email-head">${rows.map(([k,v,t])=>`<dt>${esc(k)}</dt><dd${t==="ok"||t==="warn"?` class="${t}"`:""}>${esc(v)}</dd>`).join("")}</dl>
-    <h4>${esc(o.subject||c.title)}</h4>${scamHtml(o.warning||c.scam)}${remote}${hasInline?'<div class="pics" data-inline></div>':""}
-    <pre class="email-text">${emailTextHtml(o.text||"(no text content)",c.sent?[]:o.links,!!(o.warning||c.scam))}</pre>${o.truncated?'<p class="hint">Shortened for display.</p>':""}${c.sent?"":linksHtml(o.links,!!(o.warning||c.scam))}${attachmentsHtml(o,c)}
+    <h4>${esc(o.subject||c.title)}</h4>${scamHtml(o.warning||c.scam)}${fmt?"":remote}${hasInline&&!fmt?'<div class="pics" data-inline></div>':""}
+    ${fmt?`<div class="fmt-tabs" role="group" aria-label="How to show this email"><button type="button" class="fmt-tab on" data-fmt="html" aria-pressed="true">As the sender made it</button><button type="button" class="fmt-tab" data-fmt="text" aria-pressed="false">Plain text</button></div>
+    <div class="fmt-pane" data-fmt-pane="html">${o.remote_images>0?`<div class="mail-notice fmt-pics"><span>${o.remote_images} ${o.remote_images===1?"picture":"pictures"} from the internet ${o.remote_images===1?"is":"are"} not shown. They can tell the sender you opened this email.</span> <button type="button" class="linkbtn" data-fmt-pics>Show pictures</button></div>`:""}<iframe class="email-frame" title="This email as its sender formatted it" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe><p class="hint fmt-wait" role="status">Opening the email…</p></div>
+    <div class="fmt-pane" data-fmt-pane="text" hidden>${remote}`:""}<pre class="email-text">${emailTextHtml(o.text||"(no text content)",c.sent?[]:o.links,!!(o.warning||c.scam))}</pre>${o.truncated?'<p class="hint">Shortened for display.</p>':""}${fmt?"</div>":""}${c.sent?"":linksHtml(o.links,!!(o.warning||c.scam))}${attachmentsHtml(o,c)}
   </article>`;
+  if(fmt)wireFormatted($("attachmentViewer"),o,c);
   wireAttachments($("attachmentViewer"),o,c);
   $("attachmentViewer").scrollTop=0;
   $("attachmentModalSummary").textContent="";

@@ -206,6 +206,12 @@ The name you gave a mailbox when you connected it (for example "Proton Test") ca
 
 On the same Mailboxes card, the **Label colour** drop-down picks the colour of that mailbox's label: Blue, Green, Orange, Pink, Red, Teal, Purple or Lime. **Automatic** (the start) lets Enveliq choose one for you. The choice is saved at once and shows in the mail list and in the open email the next time the inbox loads. It is only a colour; nothing else about the mailbox changes.
 
+On a computer, moving the mouse over an email shows its quick buttons in place of the date: **Reviewed**, **Archive** and **Bin** on mail in your inbox, in every layout including the reading pane on the right, and a single **Remove from this list** button on emails in the Reviewed and Archived lists. They look and sit the same everywhere. Sent and Drafts have no such buttons because they hold nothing to archive. On a phone the buttons stay out of the way (swipe instead).
+
+**View** next to a file under an email opens that file in its own viewer (a picture viewer for pictures, a document viewer for PDFs, text and spreadsheets), on top of the email you were reading. Close it and you are back at the same place. **Save to my device** in the viewer still downloads the file. Pictures and attachment previews must be switched on (Administration, Features).
+
+When you scroll down an open email on a phone, it now stays where you scrolled when the page refreshes in the background or a summary or picture arrives, instead of jumping back to the top.
+
 The search box clears by itself when you choose something from the menu (My inbox, Needs action, Tasks and so on), so the next page is never left filtered by words you typed earlier. Pressing the X in the box still clears it too.
 
 ## Searching your tasks

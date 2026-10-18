@@ -243,6 +243,17 @@ Attachments and preview data are processed temporarily rather than stored as per
 
 Running without the isolated rendering container provides weaker isolation and should not be treated as equivalent to the standard container deployment.
 
+### Original email as the sender formatted it
+
+"View original email" shows an email's own formatting, fetched from the mailbox on demand and never stored.
+
+* The server rebuilds the HTML from an allowed list of tags and settings. Scripts, forms, frames, plug-ins, SVG and event handlers are removed, links keep only web and mail addresses, and style rules lose anything that can load a file or run code.
+* The result is served from its own address with its own strict Content-Security-Policy: no scripts except one fixed script of ours (pinned by its hash), no forms, and pictures only from inside the email unless the person asks.
+* The browser shows it in a sealed frame with no access to the person's session, storage or the page around it. A mistake in the cleaning alone could not run an email's script. Only this one page may be framed; every other answer stays unframeable.
+* Pictures from the internet are not loaded unless the person presses Show pictures for that email, because they tell the sender the email was opened. Plain `http` pictures are never loaded.
+* Links inside the formatted email are intercepted and open only after the person confirms where they go, as in the plain text view.
+* It is the same sign-in, ownership and rate limit as the plain text view, and nothing about the email is kept.
+
 ### Attachment AI summaries
 
 Supported attachments may be summarised using the configured AI model.

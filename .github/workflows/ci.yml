@@ -172,6 +172,10 @@ jobs:
         run: node scripts/check_drafts.mjs
       - name: On a phone every email opens full screen, whatever layout is chosen (made-up mail, no server)
         run: node scripts/check_phone_reader.mjs
+      - name: View original email shows the email as the sender formatted it, safely (made-up mail, real cleaner)
+        run: node scripts/check_original_html.mjs
+      - name: The View button on an attachment opens that file in its own viewer (made-up mail, no server)
+        run: node scripts/check_attachment_view.mjs
       - name: The Back button returns to the previous section inside the app (made-up mail, no server)
         run: node scripts/check_back_button.mjs
       - name: A Task button on every email adds a task of your own (made-up mail, no server)

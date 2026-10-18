@@ -4,6 +4,14 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**The original email, as the sender made it.** View original email now shows the email with its own colours, layout, tables, links and the pictures that travel inside it, with a Plain text button always one tap away (and shown automatically when an email has no formatting). Scripts and forms are removed, pictures from the internet wait for a Show pictures button, and links still ask before opening. It works the same for Proton Mail, Gmail, Microsoft and other IMAP mailboxes. Touches `backend/mail/htmlview.py` (new), `backend/mail/routes.py`, `backend/mail/parse.py`, `backend/app.py` (the page may now show one sealed frame of its own), `prototype/index.html`. See [Reading the original email](ORIGINAL_EMAIL.md).
+
+**View on an attachment opens the file.** The View button on a file under an email now opens that file in the picture or document viewer instead of the whole original email; Save and the email you were reading are untouched. Touches `prototype/index.html`.
+
+**The email no longer jumps to the top on a phone.** Scrolling down in an open email stays put when the page refreshes in the background or something finishes loading. Touches `prototype/index.html`.
+
+**Hover buttons in more places.** The Reviewed, Archive and Bin buttons that appear when the mouse is over an email now also appear in the reading-pane layout, and the Reviewed and Archived lists get a Remove from this list button, in the same place and style. Touches `prototype/index.html`.
+
 **Search clears when you move on.** Choosing something from the menu now empties the inbox search box, so you no longer have to press the X to see the whole page again. Touches `prototype/index.html`.
 
 **Find models.** On Administration, AI model (and the setup guide), a **Find models** button asks the AI server which models it has and lets you tap one to fill in the name, so nobody has to look it up. Administrators only; it follows the same address rules as the Test button, sends no email text and never returns the access key. Touches `backend/mail/llm.py`, `backend/mail/routes.py`, `web/static/welcome.js`.
