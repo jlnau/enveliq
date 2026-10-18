@@ -12,6 +12,16 @@ await context.addCookies(ctx.cookies);
 // Advanced mailbox controls are intentionally collapsed when Calm mode is enabled.
 await context.addInitScript(() => localStorage.setItem("enveliq-calm", "0"));
 const page = await context.newPage();
+// Pressing a Settings or Administration tab opens every page that tab holds. Wait until they have all been drawn, so a check
+// never types into a page that is about to be redrawn.
+{
+  const press = page.click.bind(page);
+  page.click = async (selector, ...rest) => {
+    const r = await press(selector, ...rest);
+    if (String(selector).includes("data-settings-tab")) await page.waitForFunction(() => typeof embedBusy === "undefined" || embedBusy === 0, null, { timeout: 25000 }).catch(() => {});
+    return r;
+  };
+}
 const csp = []; page.on("console", (m) => { if (/Content Security Policy/i.test(m.text())) csp.push(m.text()); });
 const errors = []; page.on("pageerror", (e) => errors.push(String(e)));
 page.on("dialog", (d) => { check("no script dialogs", false); d.dismiss(); });
@@ -268,7 +278,7 @@ check("Administration > Features has a switch for each feature", (await page.loc
 const savedPut = () => page.waitForResponse((r) => r.url().includes("/admin/features") && r.request().method() === "PUT" && r.status() === 200);
 await Promise.all([savedPut(), page.locator("#settings .embed-host >> #fe_compose").uncheck()]);
 await Promise.all([savedPut(), page.locator("#settings .embed-host >> #fe_address_book").uncheck()]);
-check("ticking a feature saves at once, with no Save button", (await page.locator("#settings .embed-host >> .featgrid").count()) === 1 && (await page.locator("#settings [data-settings-panel]:not([hidden]) .embed-host >> button:has-text('Save')").count()) === 0);
+check("ticking a feature saves at once, with no Save button", (await page.locator("#settings [data-settings-panel='adminfeatures'] .embed-host >> .featgrid").count()) === 1 && (await page.locator("#settings [data-settings-panel='adminfeatures'] .embed-host >> button:has-text('Save')").count()) === 0);
 const f2 = await page.evaluate(async () => (await fetch("/api/v1/me/features")).json());
 check("an administrator can switch features off for everyone", f2.admin.compose === false && f2.effective.compose === false && f2.effective.address_book === false);
 // Administration > Agent chat: plain helper by default, or the person's own agent
