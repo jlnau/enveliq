@@ -108,6 +108,7 @@ class AutoSync:
             for account in accounts:
                 try:
                     review.purge_expired(self.vault, account)
+                    self.service.drop_expired_found(self.vault, account)
                 except Exception:
                     log.info("clearing old kept items failed")
             live = {a["id"] for a in accounts}

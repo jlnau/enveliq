@@ -212,6 +212,11 @@ class FakeBridge:
                     wanted = re.search(r'HEADER Message-ID "([^"]+)"', rest)
                     if wanted:
                         hits = [u for u in hits if f"Message-ID: {wanted.group(1)}".encode() in bridge.messages[u]["raw"]]
+                    # Find any email: TEXT "words" (all must appear) and Gmail's X-GM-RAW "words"
+                    for kind, value in re.findall(r'(TEXT|X-GM-RAW) "((?:[^"\\]|\\.)*)"', rest):
+                        value = re.sub(r"\\(.)", r"\1", value).lower()
+                        words = [a or b for a, b in re.findall(r'"([^"]+)"|(\S+)', value)] if kind == "X-GM-RAW" else [value]
+                        hits = [u for u in hits if all(word.encode("utf-8") in bridge.messages[u]["raw"].lower() for word in words)]
                     w(("* SEARCH " + " ".join(map(str, hits)) + f"\r\n{tag} OK done\r\n").encode())
                 elif sub == "FETCH":
                     uidset, _, items = rest.partition(" ")
