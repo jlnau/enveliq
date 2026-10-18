@@ -146,6 +146,8 @@ jobs:
         run: node scripts/check_search_everywhere.mjs
       - name: A blank install shows no sample mail (simulated server)
         run: node scripts/check_blank_install.mjs
+      - name: The setup page asks for a vault key first (simulated server)
+        run: node scripts/check_vault_key_setup.mjs
       - name: Calm mode (made-up mail, no server)
         run: node scripts/check_calm_mode.mjs
       - name: Inbox backdrop and plain logo (made-up mail, no server)

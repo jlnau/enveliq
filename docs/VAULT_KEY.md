@@ -1,28 +1,38 @@
-# Unlocking by itself (vault key)
+# The vault key
 
-By default Enveliq asks for a vault passphrase after every restart. If you sign in with single sign-on and do not want a second password, give Enveliq a vault key instead: it then unlocks itself.
+Everything Enveliq keeps is locked with a **vault key**. Enveliq reads the key when it starts and unlocks itself after every restart, so nobody has to type anything. A new install **must** be given a key before setup: there is no typed passphrase any more.
 
-## New install (recommended)
+## New install
 
-1. Make a key and put it in the `.env` file next to `docker-compose.yml`:
+Do this **before** you start Enveliq for the first time.
+
+1. Make a key. On the server run one of these (both give 64 letters and numbers):
 
    ```
-   echo "ENVELIQ_VAULT_KEY=$(openssl rand -hex 32)" >> .env
+   openssl rand -hex 32
    ```
 
-2. Keep a copy of that line in your password manager. **Without the key the data cannot be opened.**
-3. `docker compose up -d --build`, then open the address and finish setup. The setup page does not ask for a passphrase.
+   ```
+   docker run --rm alpine sh -c "head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n'; echo"
+   ```
 
-If you leave `ENVELIQ_VAULT_KEY` empty, setup asks for a passphrase and you type it after each restart.
+2. **Save a copy in your password manager now.** The key lives in your `.env` file; if that file is ever lost, the key is the only way to open your data again. **Without the key the data cannot be opened.**
+3. Put it in the `.env` file next to `docker-compose.yml`, on its own line (no spaces, no quotes):
 
-The key must be at least 32 characters. Use letters and numbers (`openssl rand -hex 32` does), so it needs no quoting. Keep `.env` out of Git and readable only by you (`chmod 600 .env`).
+   ```
+   ENVELIQ_VAULT_KEY=paste-your-key-here
+   ```
+
+4. `docker compose up -d`, then open the address and finish setup. If the key is missing, the setup page tells you what to do and does not continue.
+
+The key must be at least 32 characters. Use letters and numbers (the commands above do), so it needs no quoting. Keep `.env` out of Git and readable only by you (`chmod 600 .env`).
 
 ## What it does and does not protect
 
 Your mail data stays encrypted on disk, and the key is not stored with it.
 
 - Protects against: a stolen or copied data volume or backup of it, as long as the key is not in the same backup.
-- Does not protect against: someone who controls the whole server (they can read the key too), or anyone who can read your compose or `.env` file. The typed passphrase is stronger in those cases, because it is never stored.
+- Does not protect against: someone who controls the whole server (they can read the key too), or anyone who can read your compose or `.env` file. The older typed passphrase was stronger in those cases, because it is never stored.
 
 An environment variable can be seen by anyone who can run `docker inspect` on the host. If that matters, use the key file instead (below).
 
@@ -34,16 +44,12 @@ Put the key in a file outside the data volume:
 2. In `docker-compose.yml` add the volume `/opt/enveliq/keys:/keys` and set `ENVELIQ_VAULT_KEY_FILE: /keys/vault.key`. Leave `ENVELIQ_VAULT_KEY` empty (the file wins if both are set).
 3. On a new install Enveliq creates the file itself during setup (owner-only, never overwritten). Back it up separately from the data.
 
-## Switch an existing install
+## Switch an install that still uses a passphrase
 
 1. Update and rebuild the image, add `ENVELIQ_VAULT_KEY` (or the key file) as above and redeploy.
 2. Run: `docker exec -it enveliq python -m backend.vault_key adopt` (`enveliq` is the container name in the supplied Compose file; this works the same whichever Compose version you have, which some reject `-it` or `-m` on `docker compose exec`)
    It asks for your current passphrase once and re-protects the vault with the key. Your data is not re-encrypted.
 3. Restart Enveliq. It unlocks by itself.
-
-## Go back to a typed passphrase
-
-Run `docker exec -it enveliq python -m backend.vault_key use-passphrase`, remove the key setting from your Compose or `.env` file and restart. `python -m backend.vault_key status` shows which mode is active.
 
 ## What changes while it is on
 

@@ -166,3 +166,28 @@ def test_a_key_in_the_environment_unlocks_after_a_restart_and_the_file_wins_if_b
     short = load_app(tmp_path / "data", ENVELIQ_VAULT_KEY="short")
     st = TestClient(short.app).get("/api/v1/status").json()
     assert st["auto_unlock_problem"] == "too_short"
+
+
+# ---------- a new install must be given a vault key ----------
+
+def test_setup_is_refused_without_a_vault_key_and_the_status_says_so(tmp_path):
+    from helpers import ADMIN_PASSWORD, SETUP_CODE, load_app
+    from fastapi.testclient import TestClient
+    appm = load_app(tmp_path)
+    appm.REQUIRE_VAULT_KEY = True
+    client = TestClient(appm.app, raise_server_exceptions=False)
+    assert client.get("/api/v1/status").json()["vault_key_needed"] is True
+    r = client.post("/api/v1/setup", json={"setup_code": SETUP_CODE, "username": "morgan", "password": ADMIN_PASSWORD, "passphrase": "A passphrase that is long enough"})
+    assert r.status_code == 400 and "vault key" in r.json()["detail"] and "openssl rand -hex 32" in r.json()["detail"]
+    assert client.get("/api/v1/status").json()["initialized"] is False
+
+
+def test_setup_with_a_vault_key_works_and_the_status_no_longer_asks_for_one(tmp_path):
+    from helpers import ADMIN_PASSWORD, SETUP_CODE, load_app
+    from fastapi.testclient import TestClient
+    appm = load_app(tmp_path, ENVELIQ_VAULT_KEY="k" * 64)
+    appm.REQUIRE_VAULT_KEY = True
+    client = TestClient(appm.app, raise_server_exceptions=False)
+    assert client.get("/api/v1/status").json()["vault_key_needed"] is False
+    r = client.post("/api/v1/setup", json={"setup_code": SETUP_CODE, "username": "morgan", "password": ADMIN_PASSWORD})
+    assert r.status_code == 201, r.text

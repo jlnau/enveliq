@@ -42,6 +42,7 @@ def load_app(tmp_path: Path, **env: str):
             os.environ.pop(key, None)
     import backend.app as app_module
     app_module = importlib.reload(app_module)
+    app_module.REQUIRE_VAULT_KEY = False                 # real installs must be given a vault key; most tests set up with a passphrase, and test_vault_key_required turns the rule on
     app_module.mail_service.hold_new_mail = False        # most tests read the inbox straight after a sync; tests of the AI queue switch this on
     return app_module
 

@@ -167,7 +167,7 @@ async function route() {
 
 // ---------- first run ----------
 function setupPage(status = {}) {
-  const auto = !!status.auto_unlock;
+  if (status.vault_key_needed) return vaultKeyNeededPage();
   const form = h("form", { novalidate: true },
     field("Setup code", input("setup_code", { autocomplete: "off", required: true, spellcheck: "false" }), "Shown in the server log and saved in setup-code.txt in Enveliq's data folder. It proves you control the server."),
     field("Your name", input("display_name", { autocomplete: "name" })),
@@ -175,22 +175,30 @@ function setupPage(status = {}) {
     field("Password", input("password", { type: "password", autocomplete: "new-password", required: true, minlength: 12 }), "At least 12 characters."),
     field("Confirm password", input("password2", { type: "password", autocomplete: "new-password", required: true })),
     h("div", { class: "divider", text: "Vault" }),
-    ...(auto ? [h("div", { class: "alert info" }, h("strong", { text: "Enveliq unlocks itself" }),
-      h("p", { text: "This server was given a vault key (ENVELIQ_VAULT_KEY or a key file), so there is no passphrase to remember and Enveliq starts without anyone typing anything. Keep a copy of that key somewhere safe and separate from your backups of the data folder: without it the data cannot be opened." }))] : [
-    field("Vault passphrase", input("passphrase", { type: "password", autocomplete: "off", required: true, minlength: 12 }),
-      "Encrypts everything Enveliq stores. You need it to unlock Enveliq after a restart. Store it somewhere safe and offline: it cannot be recovered."),
-    field("Confirm vault passphrase", input("passphrase2", { type: "password", autocomplete: "off", required: true }))]),
+    h("div", { class: "alert info" }, h("strong", { text: "Enveliq unlocks itself" }),
+      h("p", { text: "This server was given a vault key, so there is no passphrase to remember and Enveliq starts without anyone typing anything. Keep a copy of that key somewhere safe and separate from your backups of the data folder: without it the data cannot be opened." })),
     h("button", { class: "btn primary full", type: "submit", text: "Create administrator account" }),
     guideNote("install/after-install.md", "Not sure what to type?", "Open the first-time setup guide"));
   onSubmit(form, async () => {
     const v = id => form.querySelector("#" + id).value;
     if (v("password") !== v("password2")) throw new Error("The passwords don't match.");
-    if (!auto && v("passphrase") !== v("passphrase2")) throw new Error("The vault passphrases don't match.");
-    if (!auto && v("password") === v("passphrase")) throw new Error("Use a different vault passphrase from your password.");
-    const out = await api("/setup", { method: "POST", body: { setup_code: v("setup_code").trim(), display_name: v("display_name").trim() || null, username: v("username").trim(), password: v("password"), ...(auto ? {} : { passphrase: v("passphrase") }) } });
+    const out = await api("/setup", { method: "POST", body: { setup_code: v("setup_code").trim(), display_name: v("display_name").trim() || null, username: v("username").trim(), password: v("password") } });
     location.replace(out.next === "enroll_mfa" ? "/account?enroll=1" : "/");
   });
-  show(brandCard(h("h1", { text: "Set up Enveliq" }), h("p", { class: "lead", text: "Create the first administrator account and the vault passphrase. You can add other people afterwards." }), form));
+  show(brandCard(h("h1", { text: "Set up Enveliq" }), h("p", { class: "lead", text: "Create the first administrator account. You can add other people afterwards." }), form));
+}
+
+// A new install needs a vault key before anything else: say how to make one and where it goes.
+function vaultKeyNeededPage() {
+  const code = text => h("pre", { class: "codebox" }, h("code", { text }));
+  show(brandCard(h("h1", { text: "One thing first: a vault key" }),
+    h("p", { class: "lead", text: "Enveliq locks everything it keeps with a vault key, and unlocks itself with it after every restart. This server was not given one yet." }),
+    h("ol", {},
+      h("li", {}, "Make a key. On the server, run:", code("openssl rand -hex 32"), "No openssl? Run this instead:", code("docker run --rm alpine sh -c \"head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \\n'; echo\"")),
+      h("li", {}, h("strong", { text: "Save a copy in your password manager now." }), " If the .env file is ever lost, the key is the only way to open your data again."),
+      h("li", {}, "Put it in the .env file next to docker-compose.yml, on its own line:", code("ENVELIQ_VAULT_KEY=paste-your-key-here")),
+      h("li", {}, "Start Enveliq again:", code("docker compose up -d"), "Then reload this page.")),
+    guideNote("VAULT_KEY.md", "Need more help?", "Open the vault key guide")));
 }
 
 const KEY_FILE_PROBLEMS = {

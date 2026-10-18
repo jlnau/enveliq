@@ -104,11 +104,11 @@ Encryption keys are protected separately from the encrypted data.
 
 ### Vault unlocking
 
-Enveliq supports manual vault unlocking and optional automatic unlocking using a configured key or key file.
+A new install must be given a vault key (`ENVELIQ_VAULT_KEY` or a key file) before first setup, and the setup page refuses to continue without one. Enveliq unlocks itself with it after every restart. The key is at least 32 characters, is never logged and is never sent to a browser.
 
-Manual unlocking requires the vault passphrase after a restart.
+Installs made before this rule can keep their typed passphrase (manual unlocking after a restart) or switch to a key with `python -m backend.vault_key adopt`.
 
-Automatic unlocking is convenient for unattended servers, but the operator must protect the associated secret.
+Automatic unlocking is convenient for unattended servers, but the operator must protect the key and keep a copy somewhere safe: without it the data cannot be opened.
 
 A key file should be stored securely, outside the application data volume, with restricted permissions.
 

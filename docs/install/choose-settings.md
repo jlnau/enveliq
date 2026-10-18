@@ -72,18 +72,9 @@ In the file this is the line `- "8765:8765"`. You do not need to change it.
 
 Whichever you choose, **do not** forward port 8765 on your router. That would open it to the whole internet.
 
-## Optional: let Enveliq unlock itself after a restart
+## Required: the vault key
 
-Everything Enveliq keeps is locked with a secret. There are two ways to hold that secret:
-
-| | What happens after a restart or power cut | Best for |
-|---|---|---|
-| **Passphrase** (the default) | Enveliq waits at an "Unlock" page until you type the passphrase. | One person, and the most privacy. |
-| **Vault key** | Enveliq unlocks itself and everyone can carry on. | A family or household. |
-
-To use the **passphrase**, change nothing. During setup you will be asked to make one. **Write it down: without it nobody can ever open your data again, including us.**
-
-To use a **vault key**:
+Everything Enveliq keeps is locked with a **vault key**, and Enveliq unlocks itself with it after every restart. Make the key **before** you start Enveliq, and put it in the install file or `.env`:
 
 1. Make one:
 
@@ -91,16 +82,14 @@ To use a **vault key**:
    docker run --rm alpine sh -c "head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n'; echo"
    ```
 
-2. Save it in your password manager **now**. Without it your data cannot be opened.
-3. In the install file, remove the `#` at the start of the `ENVELIQ_VAULT_KEY` line and paste your key between the quote marks:
+2. Save it in your password manager **now**. Without it your data cannot be opened if the install file is ever lost.
+3. In the install file, remove the `#` at the start of the `ENVELIQ_VAULT_KEY` line and paste your key between the quote marks (or put `ENVELIQ_VAULT_KEY=your-key` in the `.env` file next to it):
 
    ```
          ENVELIQ_VAULT_KEY: "9f2c...your key here..."
    ```
 
-4. Do this **before** you finish first-time setup. (To switch an existing Enveliq, see [Unlocking by itself](../VAULT_KEY.md).)
-
-Anyone who can read your install file can then read the key, so keep the file private. [Unlocking by itself](../VAULT_KEY.md) explains the stronger "key file" option.
+Anyone who can read your install file can read the key, so keep the file private. If you forget this step, the setup page tells you what to do. [The vault key guide](../VAULT_KEY.md) has more, including the stronger "key file" option.
 
 ## Ready?
 

@@ -52,9 +52,13 @@ In **Portainer**: **Containers**, click `enveliq`, **Console**, **Connect**, the
 
 The code stops existing once setup is finished.
 
+## Setup says it needs a vault key
+
+A new install must be given a vault key first. Make one (`openssl rand -hex 32`), save a copy in your password manager, add `ENVELIQ_VAULT_KEY=...` to the `.env` file next to `docker-compose.yml`, run `docker compose up -d` and reload the page. [The vault key guide](../VAULT_KEY.md) has the steps.
+
 ## Enveliq says it is locked after a restart
 
-You did not set a vault key, so Enveliq waits for your **vault passphrase**. Open `/unlock` on your Enveliq address (for example `http://localhost:8765/unlock`), type the passphrase, then sign in. To make Enveliq unlock by itself, set a vault key: [Unlocking by itself](../VAULT_KEY.md).
+This Enveliq was set up before vault keys were required, so it waits for your **vault passphrase**. Open `/unlock` on your Enveliq address (for example `http://localhost:8765/unlock`), type the passphrase, then sign in. To make Enveliq unlock by itself, set a vault key: [Unlocking by itself](../VAULT_KEY.md).
 
 **If you have lost the passphrase (or key), your data cannot be recovered.** That is what encryption means. You can [start again](#start-again-from-scratch).
 

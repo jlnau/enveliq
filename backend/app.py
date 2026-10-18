@@ -327,9 +327,17 @@ def try_auto_unlock() -> None:
         logger.info("Vault unlocked from the configured key")
 
 
+REQUIRE_VAULT_KEY = True       # a new install must be given a vault key; only the automatic tests switch this off
+
+NEED_VAULT_KEY = ("This server was not given a vault key. Make one with: openssl rand -hex 32 (or the Docker command in the setup guide), "
+                  "put it in the .env file as ENVELIQ_VAULT_KEY=..., keep a copy somewhere safe, then run: docker compose up -d. Then reload this page.")
+
+
 def vault_key_for_setup(passphrase: str | None) -> str:
-    """The secret the new vault is created with: the key file's key (made if absent) or the typed passphrase."""
+    """The secret the new vault is created with: the key file's key (made if absent). A new install without a vault key is refused."""
     if not AUTO_UNLOCK:
+        if REQUIRE_VAULT_KEY:
+            raise ValueError(NEED_VAULT_KEY)
         if not passphrase:
             raise ValueError("Enter a vault passphrase.")
         return passphrase
@@ -765,6 +773,7 @@ def status_endpoint():
     }
     if not unlocked:                      # only the setup and unlock pages ask, and only while the vault is closed
         out["auto_unlock"] = AUTO_UNLOCK
+        out["vault_key_needed"] = bool(REQUIRE_VAULT_KEY and not AUTO_UNLOCK and not initialized)
         out["auto_unlock_problem"] = _auto["problem"] if AUTO_UNLOCK else None
     return out
 

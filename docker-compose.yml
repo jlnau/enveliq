@@ -1,6 +1,6 @@
 # Enveliq with Docker Compose.
 #
-# 0. Make a vault key and put it in a .env file next to this one:
+# 0. REQUIRED: make a vault key and put it in a .env file next to this one:
 #      echo "ENVELIQ_VAULT_KEY=$(openssl rand -hex 32)" >> .env
 #    Enveliq then unlocks itself after every restart (see docs/VAULT_KEY.md).
 #    Keep a copy of that line somewhere safe: without it the data cannot be opened.
@@ -31,7 +31,7 @@ services:
       ENVELIQ_LLM_API_KEY: ${ENVELIQ_LLM_API_KEY:-}
       # Only for a cloud service set here instead of in the app: its id (openai, anthropic, gemini, openrouter, groq, mistral, xai, deepseek, together).
       ENVELIQ_LLM_PROVIDER: ${ENVELIQ_LLM_PROVIDER:-}
-      # Unlocks the encrypted vault by itself after every restart. Leave empty to type a passphrase instead.
+      # REQUIRED for a new install: the vault key that locks everything and unlocks it after every restart (see docs/VAULT_KEY.md).
       ENVELIQ_VAULT_KEY: ${ENVELIQ_VAULT_KEY:-}
       # The PDF viewer container below (private network, no internet). Remove this line to turn PDF viewing off.
       ENVELIQ_RENDER_URL: http://enveliq-render:8766
