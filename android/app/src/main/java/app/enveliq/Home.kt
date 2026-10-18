@@ -113,7 +113,7 @@ fun EnveliqApp(activity: MainActivity) {
         }
         Stage.Start -> StartScreen(
             notice = notice,
-            onDemo = { api = null; server = ""; notice = ""; stage = Stage.Home },
+            onSample = { api = null; server = ""; notice = ""; stage = Stage.Home },
             onConnect = { notice = ""; stage = Stage.SignIn },
         )
         Stage.SignIn -> {
@@ -276,7 +276,7 @@ private fun InboxTab(mails: List<Mail>, loading: Boolean, error: String, demo: B
     Column(Modifier.fillMaxSize()) {
         Heading(
             "My inbox",
-            if (loading) "Looking for your email…" else "${mails.size} emails to look at, $needs need you" + if (demo) " · demo" else "",
+            if (loading) "Looking for your email…" else "${mails.size} emails to look at, $needs need you" + if (demo) " · sample email" else "",
         ) {
             TextButton(onClick = onRefresh, enabled = !loading) { Text("Refresh", color = Blue, fontSize = 15.sp) }
         }
@@ -522,20 +522,26 @@ private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, demo: 
 
         SectionTitle("Account")
         Text(
-            if (demo) "You are trying the demo with sample email. Nothing here is real." else "Signed in to $server. You stay signed in on this phone until you sign out.",
+            if (demo) "You are looking at made-up sample email. Nothing here is real." else "Signed in to $server. You stay signed in on this phone until you sign out.",
             color = Ink, fontSize = 15.sp, lineHeight = 22.sp,
         )
         OutlinedButton(
             onClick = { onLeave(true) },
             modifier = Modifier.fillMaxWidth().padding(top = 10.dp).height(48.dp),
             shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
-        ) { Text(if (demo) "Leave the demo" else "Sign out", color = Ink) }
+        ) { Text(if (demo) "Leave sample email" else "Sign out", color = Ink) }
 
         SectionTitle("About")
-        Text("Enveliq for Android · demo build 0.1", color = Ink, fontSize = 15.sp)
+        Text("Enveliq for Android · version " + appVersion(context), color = Ink, fontSize = 15.sp)
         Text(
             "Email is held in memory while it is on the screen and is never saved on this phone. Backups are switched off. The only thing kept is your sign-in, encrypted on this phone, if you chose to stay signed in. The app only talks to the server you typed, over HTTPS.",
             color = Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 4.dp, bottom = 30.dp),
         )
     }
+}
+
+private fun appVersion(context: Context): String = try {
+    context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
+} catch (e: Exception) {
+    ""
 }

@@ -44,7 +44,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun StartScreen(notice: String, onDemo: () -> Unit, onConnect: () -> Unit) {
+fun StartScreen(notice: String, onSample: () -> Unit, onConnect: () -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
@@ -65,18 +65,18 @@ fun StartScreen(notice: String, onDemo: () -> Unit, onConnect: () -> Unit) {
         )
         Spacer(Modifier.height(32.dp))
         Button(
-            onClick = onDemo,
+            onClick = onSample,
             modifier = Modifier.fillMaxWidth().height(54.dp),
             shape = RoundedCornerShape(14.dp),
-        ) { Text("Try the demo", fontSize = 17.sp, fontWeight = FontWeight.SemiBold) }
-        Text("Sample email only. Nothing to set up.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp, bottom = 18.dp))
+        ) { Text("Look around with sample email", fontSize = 17.sp, fontWeight = FontWeight.SemiBold) }
+        Text("Made-up email. Nothing to set up.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp, bottom = 18.dp))
         OutlinedButton(
             onClick = onConnect,
             modifier = Modifier.fillMaxWidth().height(54.dp),
             shape = RoundedCornerShape(14.dp),
             border = BorderStroke(1.dp, Line),
-        ) { Text("Connect to my Enveliq", fontSize = 17.sp, color = Ink) }
-        Text("Sign in to your own Enveliq server.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
+        ) { Text("Sign in to my Enveliq", fontSize = 17.sp, color = Ink) }
+        Text("Use your own Enveliq server.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
     }
 }
 
@@ -134,7 +134,7 @@ fun SignInScreen(initialAddress: String, onBack: () -> Unit, onDone: (EnveliqApi
     ) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onBack) { Text("‹ Back", color = Blue, fontSize = 16.sp) }
-            Text("Connect to my Enveliq", color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+            Text("Sign in to my Enveliq", color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
         }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 22.dp)) {
             if (!needsCode) {

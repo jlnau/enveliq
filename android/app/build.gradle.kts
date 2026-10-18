@@ -12,13 +12,29 @@ android {
         applicationId = "app.enveliq.android"
         minSdk = 28
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1-demo"
+        // The workflow passes the real version (for a release, its tag) and a number that goes up with every build.
+        versionCode = (project.findProperty("appCode") as String?)?.toIntOrNull() ?: 1
+        versionName = (project.findProperty("appVersion") as String?) ?: "dev"
+    }
+
+    // Signed with the key from the build settings when it is there. Without it the build still works, signed with the
+    // debug key, so it can be tried but is not a release.
+    val keystorePath: String? = System.getenv("ANDROID_KEYSTORE_PATH")
+    signingConfigs {
+        if (!keystorePath.isNullOrEmpty() && file(keystorePath).exists()) {
+            create("release") {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
     compileOptions {
