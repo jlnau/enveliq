@@ -132,17 +132,34 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 .empty{border:1px dashed var(--c-333b4b);border-radius:14px;padding:60px 20px;text-align:center;color:var(--muted)}
 
 .scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:20}.scrim.show{display:block}
-.settings{position:fixed;left:50%;top:50%;transform:translate(-50%,-46%) scale(.985);width:min(1040px,94vw);height:min(790px,92vh);background:var(--c-11161f);border:1px solid var(--c-343b4b);border-radius:18px;box-shadow:var(--shadow);z-index:21;display:none;overflow:hidden}
-.settings.open{display:grid;grid-template-columns:240px 1fr;transform:translate(-50%,-50%) scale(1)}
-.settings-nav{background:var(--c-0f131a);border-right:1px solid var(--line);padding:16px 12px;overflow:auto}
-.settings-title{padding:0 10px 12px;font-size:16px;font-weight:800}
-.settings-group{color:var(--faint);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;padding:14px 10px 5px}
-.settings-nav button{width:100%;border:0;background:transparent;color:var(--muted);padding:10px 11px;border-radius:9px;text-align:left;margin:2px 0}
-.settings-nav button.active{background:var(--panel2);color:var(--text)}
-.settings-main{display:flex;flex-direction:column;min-width:0;min-height:0}
-.settings-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line)}
+/* Settings is a full screen: its menu takes the place of the sidebar, the top bar stays, and the page fills the rest. */
+.settings{position:fixed;inset:0;z-index:10;display:none;pointer-events:none}
+.settings.open{display:block}
+.app.settings-open,.app.collapsed.settings-open{--side-w:242px}
+.settings-nav{pointer-events:auto;position:fixed;left:0;top:0;bottom:0;width:242px;overflow:auto;padding:22px 14px 16px;background:linear-gradient(160deg,#0b1e3a,#08162e);border-right:1px solid #263c61;display:flex;flex-direction:column;gap:1px}
+html[data-theme="light"] .settings-nav{background:linear-gradient(170deg,#e9f1ff,#f8fbff);border-color:var(--line)}
+.sn-brand{padding:0 6px 14px}.sn-brand img{display:block;width:150px;height:auto}
+.sn-back{display:flex;align-items:center;gap:9px;width:100%;border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:10px 12px;border-radius:10px;margin:0 0 12px;font-weight:600}
+.sn-back svg{width:16px;height:16px}
+.sn-find{display:none}
+.settings-title{display:none}
+.settings-group{color:var(--faint);font-size:12px;font-weight:700;padding:8px 12px 4px}
+.settings-sep{height:1px;background:var(--line);margin:12px 8px 6px}
+.settings-nav button[data-settings-tab]{display:flex;align-items:center;gap:12px;width:100%;border:0;background:transparent;color:var(--muted);padding:10px 12px;border-radius:10px;text-align:left;margin:1px 0;font-size:14px}
+.settings-nav button[data-settings-tab] svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.settings-nav button[data-settings-tab]:hover{background:rgba(120,160,255,.08);color:var(--text)}
+.settings-nav button[data-settings-tab].active{background:var(--c-0c1c38);color:var(--text)}
+.settings-main{pointer-events:auto;position:fixed;left:242px;right:0;top:var(--tb-h,72px);bottom:0;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--c-11161f);border-top:1px solid var(--line)}
+.settings-results{overflow:auto;padding:20px 26px;flex:1}.settings-results[hidden]{display:none}
+.sres-list{display:grid;gap:4px;max-width:780px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px}
+.sres{display:flex;gap:14px;align-items:center;width:100%;text-align:left;border:0;background:transparent;color:var(--text);padding:11px 12px;border-radius:10px}
+.sres:hover,.sres:focus-visible,.sres.first{background:var(--c-0c1c38)}
+.sres b{display:block;font-size:14px}.sres small{display:block;color:var(--muted);font-size:12.5px;margin-top:1px}.sres .where{margin-left:auto;color:var(--c-7cc8ff);font-size:12.5px;white-space:nowrap}
+.sres-none{color:var(--muted);padding:6px 2px}
+.settings-back{display:none}
+.settings-head{display:flex;justify-content:space-between;align-items:center;padding:16px 26px;border-bottom:1px solid var(--line)}
 .settings-head h3{margin:0;font-size:18px}.close{border:0;background:transparent;color:var(--muted);font-size:20px}
-.settings-scroll{overflow:auto;padding:20px 22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,350px),1fr));gap:16px;align-items:start;align-content:start}
+.settings-scroll{overflow:auto;padding:20px 26px;flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,350px),1fr));gap:16px;align-items:start;align-content:start}
 .settings-scroll>section{min-width:0}.settings-scroll>section[hidden]{display:none}
 .settings-scroll>section[data-settings-panel="accounts"],.settings-scroll>section[data-settings-panel="general"],.settings-scroll>section[data-settings-panel="shortcuts"],.settings-scroll>section[data-settings-panel="setup"]{grid-column:1/-1}
 .settings-scroll{--panel:#121722;--panel2:#181f2c;--line:#262f3f}
@@ -166,6 +183,7 @@ html[data-theme="light"] .settings-scroll{--panel:#ffffff;--panel2:#edf0f6;--lin
 .add-account{margin-top:12px;border:1px dashed var(--c-3a4355);background:transparent;color:var(--c-cdd2df);border-radius:10px;padding:10px 12px;width:100%}
 .admin-badge{display:inline-block;background:var(--c-0c1c38);color:var(--c-bfe3ff);border:1px solid var(--c-1f4f9c);padding:3px 7px;border-radius:999px;font-size:10px;font-weight:800}
 .role-demo{border:1px solid var(--c-1f3f75);background:var(--c-0b1628);padding:10px 11px;border-radius:10px;margin-bottom:14px;color:var(--c-b9d6f5);font-size:12px}
+body.backend .savebar{display:none}
 .savebar{margin-top:auto;padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:9px;background:var(--c-10141b)}
 .user-menu{position:fixed;left:12px;bottom:66px;width:250px;background:var(--c-141922);border:1px solid var(--c-343b4a);border-radius:12px;box-shadow:var(--shadow);z-index:12;padding:8px;display:none}.user-menu.open{display:block}
 .user-menu .menu-label{padding:8px 10px;color:var(--faint);font-size:10px;text-transform:uppercase;letter-spacing:.09em;font-weight:800}
@@ -552,23 +570,33 @@ body.real-mail .sample-banner{display:none}
 .agent-form textarea:focus{outline:2px solid var(--accent);outline-offset:0}
 @media(max-width:650px){.agent-pop{right:8px;left:8px;bottom:8px;width:auto;height:min(78dvh,620px)}}
 @media(prefers-reduced-motion:reduce){.app,.collapse-toggle svg{transition:none}}
-@media(max-width:900px){.content{padding:16px}.top{padding:12px 16px}.search input{width:min(220px,42vw)}.settings.open{grid-template-columns:190px 1fr}.provider-grid{grid-template-columns:repeat(2,1fr)}}
-/* v0.55: on a phone Settings and Administration are a full-screen sheet; the sections become a swipeable strip along the top */
+@media(max-width:900px){.content{padding:16px}.top{padding:12px 16px}.search input{width:min(220px,42vw)}.provider-grid{grid-template-columns:repeat(2,1fr)}}
+/* On a phone Settings is a full-screen list of pages; choosing one opens it with a Back button at the top. */
 @media(max-width:760px){
-  .settings{left:0;top:56px;width:100%;height:calc(100dvh - 56px);max-height:none;border:0;border-radius:0;transform:none}
-  .settings.open{transform:none;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);z-index:84}
-  .settings-nav{display:flex;flex-direction:row;align-items:center;gap:6px;overflow-x:auto;overflow-y:hidden;border-right:0;border-bottom:1px solid var(--line);padding:8px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-  .settings-nav::-webkit-scrollbar{display:none}
-  .settings-title{display:none}
-  .settings-group{flex:none;padding:0 4px 0 10px;white-space:nowrap}
-  .settings-nav button{flex:none;width:auto;white-space:nowrap;margin:0;padding:9px 13px;border:1px solid var(--line)}
-  .settings-nav button.active{border-color:var(--c-1f3f75);background:var(--c-0c1a33);color:var(--c-d4ecff)}
-  .settings-head{padding:12px 16px}
+  .settings.open{z-index:86;background:var(--c-11161f);display:flex;flex-direction:column;pointer-events:auto}
+  .settings-nav,.settings-main{position:static;width:auto;border:0;flex:1;min-height:0}
+  .settings-nav{padding:14px 14px calc(20px + env(safe-area-inset-bottom,0px))}
+  .settings.menu-view .settings-main{display:none}
+  .settings:not(.menu-view) .settings-nav{display:none}
+  .settings.menu-view.searching .settings-main{display:flex}
+  .settings.searching .settings-nav{flex:0 0 auto;padding-bottom:0}.settings.searching .settings-nav>button[data-settings-tab],.settings.searching .settings-group,.settings.searching .settings-sep{display:none}
+  .settings.searching .settings-head{display:none}
+  .sn-brand{display:none}
+  .sn-back{width:auto;align-self:flex-start;margin-bottom:10px;min-height:44px}
+  .sn-find{display:block;margin:0 0 8px}
+  .sn-find input{width:100%;min-height:46px;border-radius:12px;border:1px solid var(--line);background:var(--c-0d121b);color:var(--text);padding:0 14px;font:inherit}
+  .settings-nav button[data-settings-tab]{min-height:52px;border:1px solid var(--line);background:var(--panel);margin:6px 0;font-size:15px}
+  .settings-nav button[data-settings-tab]::after{content:"\203A";margin-left:auto;color:var(--faint);font-size:20px}
+  .settings-group{padding:14px 4px 2px}
+  .settings-head{padding:8px 10px;gap:6px;justify-content:flex-start}
+  .settings-head .close{display:none}
+  .settings-back{display:inline-flex;align-items:center;min-height:44px;padding:0 10px;border:0;background:transparent;color:var(--c-7cc8ff);font:inherit;font-size:15px}
   .settings-head h3{font-size:17px}
   .settings-scroll{padding:14px 12px calc(24px + env(safe-area-inset-bottom,0px))}
   .settings-scroll .section-card{padding:14px 12px}
+  .settings-results{padding:14px 12px}
 }
-@media(max-width:650px){.top-inner{flex-wrap:wrap}.greet{flex-wrap:wrap;height:auto;line-height:1.3;top:0}.top h2,.today{line-height:1.3}.search-col{flex:1 1 100%;align-items:stretch}.search{flex:1 1 100%}.search input{width:100%}.email-provider-grid{grid-template-columns:1fr}.row{grid-template-columns:24px 1fr}.time{grid-column:2}.bulk{align-items:flex-start;flex-direction:column}.settings{height:94vh}.settings.open{grid-template-columns:1fr}.settings-nav{display:flex;overflow:auto;border-right:0;border-bottom:1px solid var(--line);padding:8px}.settings-title,.settings-group{display:none}.settings-nav button{width:auto;white-space:nowrap}.field-grid{grid-template-columns:1fr}.provider-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:650px){.top-inner{flex-wrap:wrap}.greet{flex-wrap:wrap;height:auto;line-height:1.3;top:0}.top h2,.today{line-height:1.3}.search-col{flex:1 1 100%;align-items:stretch}.search{flex:1 1 100%}.search input{width:100%}.email-provider-grid{grid-template-columns:1fr}.row{grid-template-columns:24px 1fr}.time{grid-column:2}.bulk{align-items:flex-start;flex-direction:column}.field-grid{grid-template-columns:1fr}.provider-grid{grid-template-columns:1fr 1fr}}
 
 /* ---- View options: layouts, spacing, width ---- */
 body{--rowpad:11px;--rowh:57px}
@@ -1645,7 +1673,6 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
   <div class="menu-actions" id="menuActions">
     <button class="user-option menu-item" id="customiseBtn" type="button" title="Change how the inbox looks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span class="menu-text">Customise</span></button>
     <button class="user-option menu-item" id="settingsBtn" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="nav-label menu-text">Settings</span></button>
-    <button class="user-option menu-item" id="adminBtn" title="Administration" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.6 3.1 8.2 7.5 9.5 4.4-1.3 7.5-4.9 7.5-9.5V6z"/><path d="m9 12 2 2 4-4"/></svg><span class="nav-label menu-text">Administration</span></button>
     <button class="user-option menu-item theme-btn" id="themeBtn" type="button" title="Switch between light and dark mode" aria-pressed="false"><svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span class="nav-label menu-text" id="themeLabel">Light mode</span></button>
   </div>
   <a class="user-option preview-help-item" href="https://enveliq.app/docs/" target="_blank" rel="noopener noreferrer">? &nbsp; Help and support</a>
@@ -1681,12 +1708,14 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
 
   <div class="settings-main">
     <div class="settings-head">
+      <button class="settings-back" id="settingsBack" type="button">&#8249; Settings</button>
       <div>
         <h3 id="settingsHeading">My email accounts</h3>
         <div id="settingsRoleBadge"></div>
       </div>
-      <button class="close" id="closeSettings">×</button>
+      <button class="close" id="closeSettings" aria-label="Back to inbox" title="Back to inbox">×</button>
     </div>
+    <div class="settings-results" id="settingsResults" role="region" aria-label="Search results" hidden></div>
 
     <div class="settings-scroll">
       <section data-settings-panel="accounts">
@@ -3891,7 +3920,7 @@ function render(){
   $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent"&&filter!=="drafts");
   document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",filter==="all"));{const fb=$("filterBy");tagFilterOptions(fb);const pick=["action","need","high","attachments"].includes(filter)||[...fb.options].some(o=>o.value===filter)?filter:"";fb.value=pick;fb.classList.toggle("active",!!pick)}
   $("selectedCount").textContent=selected.size;$("bulk").classList.toggle("show",selected.size>1||selMode);$("previewBulk").classList.toggle("show",selected.size>1||selMode);$("previewSelCount").textContent=selected.size;
-  $("adminBtn").hidden=!currentUser.is_admin;$("userName").textContent=currentUser.name;$("userRole").textContent=currentUser.is_admin?"Administrator":"User";paintAvatar();previewSyncAccount();
+  $("userName").textContent=currentUser.name;$("userRole").textContent=currentUser.is_admin?"Administrator":"User";paintAvatar();previewSyncAccount();
   const inbox=mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)),needN=inbox.filter(m=>m.action||m.priority==="high").length;
   const hr=new Date().getHours(),first=String(currentUser.name||"").trim().split(/\s+/)[0];
   const greeting=(hr<12?"Good morning":hr<18?"Good afternoon":"Good evening")+(first?`, ${first}`:"");
@@ -4979,12 +5008,31 @@ function updateSecuritySettings(accountId){
 
 let settingsMode="settings";
 const isBackend=()=>document.body.classList.contains("backend");
+const SETTINGS_ICONS={
+  account:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+  accounts:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+  people:'<path d="M4 20h4l10-10-4-4L4 16z"/>',
+  rules:'<path d="M4 6h16M7 12h10M10 18h4"/>',
+  alerts:'<path d="M6 17V11a6 6 0 1 1 12 0v6l2 2H4z"/><path d="M10 21h4"/>',
+  general:'<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
+  setup:'<circle cx="12" cy="12" r="9"/><path d="M12 17h.01M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7"/>',
+  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/>',
+  sync:'<path d="M20 11a8 8 0 0 0-14-4M4 13a8 8 0 0 0 14 4"/><path d="M6 3v4h4M18 21v-4h-4"/>',
+  llm:'<path d="M12 3l2.2 5.3L20 9l-4.3 3.8L17 18.5 12 15.5 7 18.5l1.3-5.7L4 9l5.8-.7z"/>',
+  adminfeatures:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  adminreminders:'<path d="M6 17V11a6 6 0 1 1 12 0v6l2 2H4z"/><path d="M10 21h4"/>',
+  adminbackup:'<path d="M12 3 4 6v6c0 4.5 3.2 7.8 8 9 4.8-1.2 8-4.5 8-9V6z"/>',
+  _:'<circle cx="12" cy="12" r="9"/>'
+};
+const settingsIcon=id=>`<svg viewBox="0 0 24 24" aria-hidden="true">${SETTINGS_ICONS[id]||SETTINGS_ICONS._}</svg>`;
+const ADMIN_TAB_IDS=["users","sso","llm","sync","adminkeep","admincheck","adminbackup","adminupdates","adminms","adminfeatures","adminreminders","adminaiinstr","adminagent","adminreport","processing","providers","automation","privacy","security","system"];
+let settingsSkipFirst=false;
 function buildSettingsNav(mode){
   settingsMode=mode||"settings";
   const be=isBackend();
-  // Settings: what a person sets for themselves. Grouped by what they are doing, not by how it is built.
-  // Each entry is [heading, tab, label, the older pages it now holds]. A tab shows all of the pages it holds, one under another,
-  // so nothing was removed: it is just found in one place. The older names still work in links and bookmarks.
+  // One menu for everything. Settings (what a person sets for themselves) sits above the line; Administration (the owner's controls)
+  // sits below it and is only built for administrators. Each entry is [heading, tab, label, the older pages it now holds]. A tab shows all
+  // of the pages it holds, one under another, so nothing was removed: it is just found in one place. The older names still work in links.
   const common=be?[
     ["","account","Account","signin profile"],
     ["","accounts","Mailboxes",""],
@@ -4999,7 +5047,6 @@ function buildSettingsNav(mode){
     ["","preferences","My preferences"],
     ["","shortcuts","Keyboard shortcuts"]
   ];
-  // Administration: the owner's controls, grouped the same way.
   const admin=be?[
     ["","users","People & sign-in","users sso"],
     ["","sync","Mail","sync adminkeep admincheck adminms"],
@@ -5018,21 +5065,96 @@ function buildSettingsNav(mode){
     ["","security","Security & encryption"],
     ["","system","System status"]
   ];
-  const items=settingsMode==="admin"?admin:common;
-  const first=items[0];
-  let lastGroup=null,html="";
-  for(const [group,id,label,held] of items){
-    if(group && group!==lastGroup){html+=`<div class="settings-group">${esc(group)}</div>`;lastGroup=group}
-    html+=`<button data-settings-tab="${esc((id+" "+(held||"")).trim())}" class="${esc(id===first[1]?"active":"")}">${esc(label)}</button>`;
-  }
-  $("settingsNav").innerHTML=`<div class="settings-title">${settingsMode==="admin"?"Administration":"Settings"}</div>${html}`;
+  const isAdmin=!!(currentUser&&currentUser.is_admin);
+  const first=(settingsMode==="admin"&&isAdmin?admin:common)[0];
+  const list=(items,heading)=>{
+    let lastGroup=null,html=heading?`<div class="settings-group">${esc(heading)}</div>`:"";
+    for(const [group,id,label,held] of items){
+      if(group && group!==lastGroup){html+=`<div class="settings-group">${esc(group)}</div>`;lastGroup=group}
+      html+=`<button type="button" data-settings-tab="${esc((id+" "+(held||"")).trim())}" class="${esc(id===first[1]?"active":"")}">${settingsIcon(id)}${esc(label)}</button>`;
+    }
+    return html;
+  };
+  const brand=document.querySelector(".sidebar .brand-wordmark");
+  const back='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+  $("settingsNav").innerHTML=(brand?`<div class="sn-brand"><img src="${esc(brand.getAttribute("src")||"")}" alt="Enveliq"></div>`:"")
+    +`<button type="button" class="sn-back" id="settingsBackInbox">${back}Back to inbox</button>`
+    +`<div class="sn-find"><input id="settingsSearchM" type="search" placeholder="Search settings" aria-label="Search settings" autocomplete="off"></div>`
+    +list(common,be?"Settings":"")+(isAdmin?`<div class="settings-sep"></div>`+list(admin,"Administration"):"");
   $("settingsHeading").textContent=first[2];
-  $("settingsRoleBadge").innerHTML=currentUser.is_admin?'<span class="admin-badge">Administrator</span>':'';
+  $("settingsRoleBadge").innerHTML=currentUser&&currentUser.is_admin?'<span class="admin-badge">Administrator</span>':'';
   const firstHeld=(first[1]+" "+(first[3]||"")).trim().split(" ");
-  document.querySelectorAll("[data-settings-panel]").forEach(x=>x.hidden=!firstHeld.includes(x.dataset.settingsPanel));
+  document.querySelectorAll("[data-settings-panel]").forEach(x=>x.hidden=settingsSkipFirst||!firstHeld.includes(x.dataset.settingsPanel));
   $("cancelSettings").textContent=be?"Close":"Cancel";$("saveSettings").hidden=be;
+  if(settingsSkipFirst)return;
   if(be)firstHeld.forEach(id=>{if(EMBED_IDS.includes(id))openEmbed(id)});
   else if(first[1]==="accounts")renderAccounts();
+}
+// ---- Searching Settings: the search box in the top bar changes to "Search settings" while Settings is open ----
+const SETTINGS_INDEX=[
+  ["Undo send","general","Hold each reply for a short moment so you can take it back","undo send window hold reply seconds"],
+  ["Reviewed and Archived lists","general","Keep a list so you can look again, and for how long","reviewed archived keep days list"],
+  ["Features you see","general","Show or hide parts of Enveliq","features switch off hide calendar tasks messages shipping subscriptions trips"],
+  ["Fast search","general","Makes searching all your old mail instant","fast search find old mail index"],
+  ["Export my data","general","A copy of your summaries, notes and settings","export download data backup copy"],
+  ["Keyboard shortcuts","general","Handy commands if you like the keyboard","keyboard shortcuts keys"],
+  ["Password and two-factor sign-in","account","Authenticator app, passkeys and recovery codes","password two-factor 2fa authenticator passkey recovery codes security sign in"],
+  ["Profile","account","Your name, email address and picture","profile name picture avatar email about people list"],
+  ["Mailboxes","accounts","Add, edit or remove an email account","mailbox mailboxes email account add remove connect gmail outlook proton imap"],
+  ["Automatic checking and AI summaries","accounts","Switch checking, AI summaries and Waiting for reply on or off for one mailbox","automatic sync check new mail ai summaries waiting for reply colour rename"],
+  ["Address book","people","The people you write to","address book contacts import export vcard"],
+  ["Important people","people","Put chosen senders first","important people senders priority"],
+  ["Signature and saved replies","people","Words you use often","signature saved replies text"],
+  ["Your AI instructions","people","Tell the AI how you like summaries and writing help","ai instructions summaries writing help style"],
+  ["Mail rules","rules","Archive or mark reviewed new mail from a sender","mail rules archive reviewed sender automatic"],
+  ["Calendar and to-do","rules","Send tasks to a calendar or Home Assistant","calendar to-do tasks google caldav home assistant link"],
+  ["Notifications","alerts","Choose where reminders go and what you hear about","notifications reminders ntfy gotify telegram home assistant browser quiet hours"],
+  ["Email alerts","alerts","Which new emails send an alert","email alerts new mail notify important people"],
+  ["Setup guide","setup","The first-time guide, step by step","help guide welcome setup first sync"],
+  ["People and sign-in rules","users","Add people, roles, two-factor rules, single sign-on","people users add user role admin password requirements single sign-on sso"],
+  ["Automatic sync time","sync","How often Enveliq checks for new mail","automatic sync minutes interval"],
+  ["Longest time in Reviewed and Archived","sync","The most days anyone can keep emails there","reviewed archived maximum days limit"],
+  ["Check address","sync","Forward a suspicious email and get a one-line answer","check address suspicious forward scam"],
+  ["Microsoft sign-in","sync","Outlook, Hotmail and Microsoft 365","microsoft outlook hotmail 365 azure sign in"],
+  ["AI model","llm","The AI that writes summaries","ai model server ollama cloud api key llama find models"],
+  ["Extra instructions for every summary","llm","Style or language for everyone's summaries","ai instructions prompt summaries language british"],
+  ["Agent chat","llm","A separate assistant people can ask about their own mail","agent chat hermes assistant"],
+  ["Switch features on or off for everyone","adminfeatures","Everything beyond reading and sorting mail is optional","features admin switch off everyone"],
+  ["Reminder channels and Google Calendar","adminreminders","Where reminders may go, and Google Calendar setup","reminders channels ntfy gotify google calendar allowed addresses"],
+  ["Backup and restore","adminbackup","A locked copy of everything Enveliq keeps","backup restore daily copy"],
+  ["Updates","adminbackup","Tell administrators when a new version is out","updates new version notice"],
+  ["Reporting","adminbackup","Send numbers to Grafana and other tools","reporting grafana metrics"],
+  ["Security and encryption","adminbackup","The vault, locking and what Enveliq promises","security encryption vault lock unlock privacy"]
+];
+let settingsSavedSearch="";
+const inSettingsScreen=()=>$("settings").classList.contains("open");
+function settingsSearchRun(raw){
+  const q=String(raw||"").trim().toLowerCase(),box=$("settingsResults"),scroll=document.querySelector(".settings-scroll");
+  $("settings").classList.toggle("searching",!!q);
+  if(!q){box.hidden=true;box.replaceChildren();scroll.hidden=false;return}
+  const words=q.split(/\s+/).filter(Boolean),isAdmin=!!(currentUser&&currentUser.is_admin),adminTabs=["users","sync","llm","adminfeatures","adminreminders","adminbackup"];
+  const hits=SETTINGS_INDEX.filter(([t,tab,hint,keys])=>(isAdmin||!adminTabs.includes(tab))&&words.every(w=>(t+" "+hint+" "+keys).toLowerCase().includes(w)))
+    .sort((a,b)=>Number(b[0].toLowerCase().includes(q))-Number(a[0].toLowerCase().includes(q)));
+  const label=id=>{const b=document.querySelector(`#settingsNav [data-settings-tab~="${id}"]`);return b?b.textContent:id};
+  scroll.hidden=true;box.hidden=false;
+  const head=document.createElement("h3");head.textContent=`Results for \u201c${raw.trim()}\u201d`;head.style.margin="0 0 12px";
+  const list=document.createElement("div");list.className="sres-list";
+  if(!hits.length){const none=document.createElement("p");none.className="sres-none";none.textContent="Nothing found. Try a different word, such as \u201cundo\u201d, \u201cbackup\u201d or \u201cmailbox\u201d.";list.append(none)}
+  hits.slice(0,12).forEach(([t,tab,hint],i)=>{
+    const b=document.createElement("button");b.type="button";b.className="sres"+(i===0?" first":"");b.dataset.openTab=tab;
+    const w=document.createElement("span"),bt=document.createElement("b"),sm=document.createElement("small"),where=document.createElement("span");
+    bt.textContent=t;sm.textContent=hint;w.append(bt,sm);where.className="where";where.textContent=label(tab);b.append(w,where);list.append(b);
+  });
+  box.replaceChildren(head,list);
+}
+function settingsSearchClear(){
+  settingsSearchRun("");
+  if($("search").value&&inSettingsScreen())$("search").value="";
+  const m=document.getElementById("settingsSearchM");if(m)m.value="";
+}
+function settingsOpenTab(id){
+  settingsSearchClear();
+  const b=document.querySelector(`#settingsNav [data-settings-tab~="${id}"]`);if(b)b.click();
 }
 // ---- The real pages, shown inside the pop-ups ----
 // auth.css and the page scripts are loaded once, as one module so their names cannot clash with this page's.
@@ -5261,7 +5383,25 @@ window.addEventListener("enveliq-profile",e=>{
   currentUser.avatar=u.avatar_v?`/api/v1/users/${u.id}/avatar?v=${u.avatar_v}`:"";
   $("userName").textContent=currentUser.name;paintAvatar();
 });
-function openSettings(mode,tab){buildSettingsNav(typeof mode==="string"?mode:"settings");if(!isBackend())providerFields();$("settings").classList.add("open");$("scrim").classList.add("show");if(tab){const b=document.querySelector(`[data-settings-tab~="${tab}"]`);if(b)b.click()}syncHash()}
+function openSettings(mode,tab){
+  const phone=window.matchMedia("(max-width:760px)").matches;
+  const wasOpen=inSettingsScreen();
+  settingsSkipFirst=phone&&!tab&&!wasOpen;
+  buildSettingsNav(typeof mode==="string"?mode:"settings");
+  settingsSkipFirst=false;
+  if(!isBackend())providerFields();
+  if(!wasOpen){
+    settingsSavedSearch=$("search").value;
+    document.querySelector(".app").classList.add("settings-open");
+    const tb=$("previewToolbar");document.documentElement.style.setProperty("--tb-h",Math.max(0,Math.round(tb.getBoundingClientRect().bottom))+"px");
+  }
+  $("search").value="";$("search").placeholder="Search settings";$("search").setAttribute("aria-label","Search settings");
+  $("settings").classList.add("open");
+  $("settings").classList.toggle("menu-view",phone&&!tab);
+  settingsSearchRun("");
+  if(tab){const b=document.querySelector(`[data-settings-tab~="${tab}"]`);if(b)b.click()}
+  syncHash();
+}
 let mailAlertPrefs={mail_on:false,mail_filter:"all",mail_muted_accounts:[]},mailAlertWrite=Promise.resolve();
 async function loadMailAlertPrefs(){
   if(!isBackend())return;
@@ -5309,7 +5449,7 @@ document.addEventListener("change",e=>{
     saveMailAlertPrefs({mail_muted_accounts:[...muted]});
   }
 });
-function closeSettings(){$("settings").classList.remove("open");$("scrim").classList.remove("show");syncHash();if(realMail&&window.__me&&!$("syncBtn").disabled)loadRealMail(window.__me).then(render).catch(()=>{})}
+function closeSettings(){settingsSearchRun("");$("settings").classList.remove("open","menu-view");$("scrim").classList.remove("show");document.querySelector(".app").classList.remove("settings-open");$("search").value=settingsSavedSearch;settingsSavedSearch="";$("search").placeholder="Search inbox";$("search").setAttribute("aria-label","Search inbox");syncHash();if(realMail&&window.__me&&!$("syncBtn").disabled)loadRealMail(window.__me).then(render).catch(()=>{})}
 function switchUser(key){
   currentUser=users[key];selected.clear();filter="all";query="";$("search").value="";
   document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",x.dataset.chip==="all"));
@@ -5582,8 +5722,10 @@ document.addEventListener("click",e=>{
   const p=e.target.closest("[data-provider]");if(p){if(!authorizeAdmin())return;provider=p.dataset.provider;document.querySelectorAll(".provider").forEach(x=>x.classList.toggle("active",x===p));providerFields();return}
   const tab=e.target.closest("[data-settings-tab]");if(tab){
     const held=tab.dataset.settingsTab.split(" "),id=held[0];
-    const adminOnly=["users","sso","llm","sync","adminkeep","admincheck","adminbackup","adminupdates","adminms","adminfeatures","adminreminders","adminaiinstr","adminagent","adminreport","processing","providers","automation","privacy","security","system"].includes(id);
+    const adminOnly=ADMIN_TAB_IDS.includes(id);
     if(adminOnly&&!authorizeAdmin())return;
+    settingsMode=adminOnly?"admin":"settings";
+    if(inSettingsScreen()){$("settings").classList.remove("menu-view");settingsSearchClear()}
     const wasActive=tab.classList.contains("active");
     document.querySelectorAll("[data-settings-tab]").forEach(x=>x.classList.toggle("active",x===tab));try{tab.scrollIntoView({inline:"center",block:"nearest"})}catch(_){}
     document.querySelectorAll("[data-settings-panel]").forEach(x=>x.hidden=!held.includes(x.dataset.settingsPanel));
@@ -5595,7 +5737,23 @@ document.addEventListener("click",e=>{
     return;
   }
 });
-$("search").addEventListener("input",e=>{query=e.target.value;render()});
+$("search").addEventListener("input",e=>{if(inSettingsScreen()){settingsSearchRun(e.target.value);return}query=e.target.value;render()});
+$("search").addEventListener("keydown",e=>{
+  if(!inSettingsScreen())return;
+  if(e.key==="Escape"){settingsSearchClear()}
+  else if(e.key==="Enter"){const f=document.querySelector("#settingsResults .sres");if(f){e.preventDefault();settingsOpenTab(f.dataset.openTab)}}
+});
+document.addEventListener("input",e=>{if(e.target&&e.target.id==="settingsSearchM")settingsSearchRun(e.target.value)});
+document.addEventListener("keydown",e=>{
+  if(!e.target||e.target.id!=="settingsSearchM")return;
+  if(e.key==="Escape")settingsSearchClear();
+  else if(e.key==="Enter"){const f=document.querySelector("#settingsResults .sres");if(f){e.preventDefault();settingsOpenTab(f.dataset.openTab)}}
+});
+document.addEventListener("click",e=>{
+  const r=e.target.closest&&e.target.closest("#settingsResults [data-open-tab]");if(r){settingsOpenTab(r.dataset.openTab);return}
+  if(e.target.closest&&e.target.closest("#settingsBackInbox"))closeSettings();
+});
+$("settingsBack").onclick=()=>{settingsSearchClear();$("settings").classList.add("menu-view")};
 
 (function(){
   const peek=$("peek");let timer=null,cur=null;
@@ -5634,7 +5792,7 @@ $("filterBy").addEventListener("change",e=>{filter=e.target.value||"all";documen
 $("mailboxFilter").addEventListener("change",e=>{mailboxSel=e.target.value;render()});
 $("clear").onclick=()=>{selected.clear();selAnchor=null;render()};
 $("previewBulkClear").onclick=()=>{selected.clear();selAnchor=null;render()};
-$("settingsBtn").onclick=()=>openSettings("settings");$("adminBtn").onclick=()=>{if(authorizeAdmin())openSettings("admin","users")};$("closeSettings").onclick=closeSettings;$("cancelSettings").onclick=closeSettings;$("scrim").onclick=closeSettings;
+$("settingsBtn").onclick=()=>openSettings("settings");$("closeSettings").onclick=closeSettings;$("cancelSettings").onclick=closeSettings;$("scrim").onclick=closeSettings;
 $("saveSettings").onclick=()=>{closeSettings();toast("Settings saved for this prototype")};
 $("testProvider").onclick=testConfig;
 $("customiseBtn").onclick=()=>setViewPanel(true);          // the menu closes itself (menuActions), then the panel on the right slides in

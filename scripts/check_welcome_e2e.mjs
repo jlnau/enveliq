@@ -121,15 +121,15 @@ check("sorting by sender puts them in A to Z order", senders.length === 6 && sen
 
 // The Settings and Administration pop-ups on the inbox page hold the real pages
 await page.click("#userPill");
-check("the redesigned user menu offers account settings, administration, appearance and sign out", (await page.locator("#userMenu #profileBtn").count()) === 0 && (await page.locator("#userMenu #settingsBtn").count()) === 1 && (await page.locator("#userMenu #adminBtn").count()) === 1 && (await page.locator("#userMenu [data-theme-choice]").count()) === 3 && (await page.locator("#userMenu button", { hasText: "Sign out" }).count()) === 1 && (await page.locator("#userMenu [data-switch-user]").count()) === 0);
+check("the redesigned user menu offers settings, appearance and sign out (Administration lives inside Settings)", (await page.locator("#userMenu #profileBtn").count()) === 0 && (await page.locator("#userMenu #settingsBtn").count()) === 1 && (await page.locator("#userMenu #adminBtn").count()) === 0 && (await page.locator("#userMenu [data-theme-choice]").count()) === 3 && (await page.locator("#userMenu button", { hasText: "Sign out" }).count()) === 1 && (await page.locator("#userMenu [data-switch-user]").count()) === 0);
 await page.click("#userPill");
 await page.click("#userPill");
 await page.click("#settingsBtn");
 await page.click("[data-settings-tab~=accounts]");
 await page.waitForSelector("#settings.open .embed-host >> text=Connected", { timeout: 15000 }).catch(() => {});
 await page.waitForSelector("#settings.open .embed-host >> text=Add a mailbox", { timeout: 15000 });
-const personalSettings=(await page.locator("#settingsNav button").allInnerTexts()).map(s=>s.trim());
-check("Settings has seven personal pages", personalSettings.join("|")==="Account|Mailboxes|People & writing|Rules & calendar|Alerts|General|Help" && !personalSettings.some(s=>/Administration|Automatic sync|Users|Reporting/.test(s)));
+const personalSettings=(await page.locator("#settingsNav [data-settings-tab]").allInnerTexts()).map(s=>s.trim());
+check("Settings has seven personal pages, then the six Administration pages below the line", personalSettings.join("|")==="Account|Mailboxes|People & writing|Rules & calendar|Alerts|General|Help|People & sign-in|Mail|AI|Features|Notifications|System");
 check("Settings > My email accounts shows a card for both mailboxes and has the add form ready", (await page.locator("#settings .embed-host >> .provider").count()) >= 7 && (await page.locator("#settings .embed-host >> .mbcard").count()) === 2);
 await page.click("[data-settings-tab~=signin]");
 await page.waitForSelector("#settings .embed-host >> text=Authenticator app");
@@ -269,7 +269,8 @@ check("turning the link off stops it working", gone === 404);
 await page.click("#closeSettings");
 // The administrator switches things off for everyone
 await page.click("#userPill");
-await page.click("#adminBtn");
+await page.click("#settingsBtn");
+await page.click("[data-settings-tab~=users]");
 await page.waitForSelector("#settings.open .embed-host >> text=Add a person");
 await page.click("[data-settings-tab~=adminfeatures]");
 await page.waitForSelector("#settings .embed-host >> #fe_compose");
@@ -331,9 +332,10 @@ await page.locator("#settings .embed-host >> button:has-text('‹ Mailboxes')").
 await page.waitForSelector("#settings .embed-host >> .mbcard");
 await page.click("#closeSettings");
 await page.click("#userPill");
-await page.click("#adminBtn");
+await page.click("#settingsBtn");
+await page.click("[data-settings-tab~=users]");
 await page.waitForSelector("#settings.open .embed-host >> text=Add a person");
-check("Administration has its own pop-up with the admin sections", (await page.locator("#settingsNav .settings-title").innerText()) === "Administration" && (await page.locator("#settingsNav button").allInnerTexts()).join("|") === "People & sign-in|Mail|AI|Features|Notifications|System");
+check("Administration sits below the line in the same menu", (await page.locator("#settingsNav .settings-group").allInnerTexts()).map(s=>s.trim()).join("|") === "Settings|Administration" && (await page.locator("#settingsNav .settings-sep").count()) === 1);
 check("Administration > Users shows the people", (await page.locator("#settings .embed-host >> text=morgan").count()) >= 1);
 await page.click("[data-settings-tab~=adminaiinstr]");
 await page.waitForSelector("#settings .embed-host >> #rv_instr");

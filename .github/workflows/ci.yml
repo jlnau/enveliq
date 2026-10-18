@@ -263,6 +263,8 @@ jobs:
         run: node scripts/check_scrolllock.mjs
       - name: Settings and Administration on a phone
         run: node scripts/check_mobile_settings.mjs
+      - name: Look of every Settings and Administration page (simulated server)
+        run: node scripts/check_settings_look.mjs
       - name: User menu, Profile settings and tidied Settings (simulated server)
         run: node scripts/check_user_menu.mjs
       - name: Messages page, sidebar count and Home card (simulated server)

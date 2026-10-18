@@ -460,3 +460,8 @@ The optional All emails view retrieves inbox message headers from the last 60 da
 ## New mailboxes start with AI summaries and Waiting for reply on
 
 A mailbox you add starts with Check for new mail automatically, Write AI summaries and Follow sent mail for replies all ticked. This is a default, not a change to what is kept: only a short summary, or a one-line note for Waiting for reply, is stored, never the email, and the AI still gets no tools and treats email text as data. What changes is that, with the AI configured, the text of new mail and of each new sent email is shown to your AI model without a separate question for each mailbox. If your AI model is a cloud service, that text leaves your computer, so the add form and the mailbox's Edit page say so in plain words and each box can be unticked, which saves at once. Mailboxes that already exist keep the choices they had. The settings are saved by the server for the signed-in owner of the mailbox only, as before.
+
+
+## Administration in the one Settings menu
+
+The Administration group in the Settings menu, and its search results, are only built for signed-in administrators. This is a convenience: every Administration request is still checked on the server from the signed-in session, and anyone else gets "not found".

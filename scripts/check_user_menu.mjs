@@ -83,7 +83,7 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   await page.click("#userPill");
   await shot(page, "menu");
   const items = (await page.locator("#userMenu .menu-item").allInnerTexts()).map((t) => t.trim());
-  check("the menu offers Settings and Administration (no Profile settings or Manage users), and all three appearance modes", ["Settings", "Administration"].every(t=>items.includes(t)) && !items.includes("Profile settings") && !items.includes("Manage users") && items.indexOf("Settings") < items.indexOf("Administration") && (await page.locator("[data-theme-choice]").count())===3 && (await page.locator("#previewCalmBtn").isVisible()));
+  check("the menu offers Settings only (Administration lives inside Settings), and all three appearance modes", items.includes("Settings") && !items.includes("Administration") && !items.includes("Profile settings") && !items.includes("Manage users") && (await page.locator("[data-theme-choice]").count())===3 && (await page.locator("#previewCalmBtn").isVisible()));
   check("Sign out is in the menu too", (await page.locator("#userMenu button", { hasText: "Sign out" }).count()) === 1);
   await page.click('[data-theme-choice="light"]');
   check("Light mode works from the account menu", (await page.evaluate(() => document.documentElement.dataset.theme))==="light");
@@ -102,9 +102,16 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   await host(page, "profile").locator("text=Everything on this page is optional").waitFor({ timeout: 15000 });
   check("Settings opens on Account, which holds the Profile page", (await page.locator("#settingsHeading").innerText()).trim() === "Account" && (await page.locator('[data-settings-tab~="profile"].active').count()) === 1);
   const groups = (await page.locator("#settingsNav .settings-group").allTextContents()).map((t) => t.trim());
-  check("Settings is seven plain pages with no group headings", groups.length === 0);
+  check("the one menu has a Settings group and an Administration group below a line", groups.join("|") === "Settings|Administration" && (await page.locator("#settingsNav .settings-sep").count()) === 1);
   const tabs = (await page.locator("#settingsNav [data-settings-tab]").allInnerTexts()).map((t) => t.trim());
-  check("Settings has no leftover mock-up page", tabs.join("|") === "Account|Mailboxes|People & writing|Rules & calendar|Alerts|General|Help");
+  check("Settings has its seven pages, then the six Administration pages", tabs.join("|") === "Account|Mailboxes|People & writing|Rules & calendar|Alerts|General|Help|People & sign-in|Mail|AI|Features|Notifications|System");
+  check("the search box says Search settings while Settings is open", (await page.locator("#search").getAttribute("placeholder")) === "Search settings");
+  await page.fill("#search", "backup");
+  await page.waitForSelector("#settingsResults .sres");
+  check("searching settings lists matching pages", (await page.locator("#settingsResults .sres").count()) >= 1 && (await page.locator("#settingsResults").innerText()).includes("Backup and restore"));
+  await page.press("#search", "Escape");
+  check("Escape clears the settings search", (await page.inputValue("#search")) === "" && (await page.locator("#settingsResults").isHidden()));
+  await page.click('[data-settings-tab~="profile"]');
   const pf = host(page, "profile");
   check("the people-list switch starts on", (await host(page, "profile").locator("#pf_people").isChecked()));
   check("name, email and about start empty (name shows the username as a hint)", (await pf.locator("#pf_email").inputValue()) === "" && (await pf.locator("#pf_about").inputValue()) === "" && (await pf.locator("#pf_name").inputValue()) === "");
@@ -126,15 +133,12 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   await page.waitForFunction(() => !document.querySelector("#avatar img") && document.getElementById("avatar").textContent.length > 0);
   check("removing the picture brings the initials back", true);
   await page.click("#closeSettings");
+  check("closing Settings brings back Search inbox", (await page.locator("#search").getAttribute("placeholder")) === "Search inbox");
 
-  // Administration
+  // Administration (below the line in the same menu)
   await page.click("#userPill");
-  await page.click("#adminBtn");
+  await page.click("#settingsBtn");
   await page.waitForSelector("#settings.open");
-  const ag = (await page.locator("#settingsNav .settings-group").allTextContents()).map((t) => t.trim());
-  check("Administration is six plain pages with no group headings", ag.length === 0);
-  const at = (await page.locator("#settingsNav [data-settings-tab]").allInnerTexts()).map((t) => t.trim());
-  check("Administration has no mock-up pages", !at.some((t) => /^(Processing|Email providers|Tasks & automation|Privacy & retention|System status)$/.test(t)) && at.join("|") === "People & sign-in|Mail|AI|Features|Notifications|System");
   await page.click('[data-settings-tab~="sso"]');
   const ss = host(page, "sso");
   await ss.locator("summary:has-text('Password requirements')").waitFor({ timeout: 15000 });
@@ -167,7 +171,13 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   const server = makeServer("user");
   const { page, errors } = await open(server);
   await page.click("#userPill");
-  check("a normal user does not see Administration", await page.locator("#adminBtn").isHidden());
+  await page.click("#settingsBtn");
+  await page.waitForSelector("#settings.open");
+  check("a normal user does not see Administration anywhere in Settings", (await page.locator("#settingsNav .settings-sep").count()) === 0 && !(await page.locator("#settingsNav").innerText()).includes("Administration"));
+  await page.fill("#search", "grafana");
+  check("and the search does not offer them administrator pages", (await page.locator("#settingsResults").innerText()).includes("Nothing found"));
+  await page.click("#closeSettings");
+  await page.click("#userPill");
   check("they still see Settings, and there is no Profile settings item", (await page.locator("#settingsBtn").isVisible()) && (await page.locator("#profileBtn").count()) === 0);
   check("no script errors (user)", errors.length === 0);
 }

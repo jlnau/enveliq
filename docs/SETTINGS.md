@@ -1,6 +1,12 @@
 # Settings and Administration
 
-Settings is for what each person chooses for themselves. Administration is for the person who runs Enveliq. Both open from the menu at the top right, and both are short lists of plain pages.
+Settings is for what each person chooses for themselves. Administration is for the person who runs Enveliq. Both open from one place: Settings in the account menu at the top right. Settings takes over the whole screen and the left panel becomes its menu, with your own pages above a line and, for administrators only, the Administration pages below it. Both are short lists of plain pages.
+
+**Search settings.** While Settings is open the search box in the top bar says "Search settings" and finds pages by what they do (for example "undo", "backup", "mailbox"). Enter opens the first match, Escape clears it. Administrators' pages are only offered to administrators. Closing Settings brings back "Search inbox".
+
+**On a phone** Settings opens as a list of big rows with a search box at the top; each page opens full screen with a Back button, and Back to inbox leaves Settings.
+
+**Saving.** Forms save by themselves when you change something. Buttons that test a connection or store a key or password keep their button.
 
 ## Settings (everyone): seven pages
 
