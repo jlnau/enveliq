@@ -257,3 +257,14 @@ a.btn{text-decoration:none}
 .linkback{display:block;justify-self:start;align-self:flex-start;text-align:left;margin:0 0 6px}
 .mbwho .meta,.mbtitle .meta{color:var(--faint);font-size:12.5px}
 .mbtitle{margin-bottom:0}
+
+/* Inside Settings and Administration, sections sit side by side when there is room, so pages are short instead of one long scroll. */
+.page.embed-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:16px;align-items:start;max-width:none}
+.page.embed-cols > :not(.section){grid-column:1/-1}
+.page.embed-cols > .section{margin:0;min-width:0}
+.featgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:4px 24px}
+.featitem{margin:0!important;padding:10px 0;border-top:1px solid var(--line)}
+.lead .savedtag{margin-left:8px}
+.ai-models-list{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-size:13px;padding:6px 12px;border-radius:99px;border:1px solid var(--c-2f394b);background:var(--panel2);color:var(--text);cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--brand);background:var(--c-0c1c38);color:var(--c-bfe3ff)}

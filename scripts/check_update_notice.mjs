@@ -95,7 +95,7 @@ for (const [label, bad] of [["a link to another site", { version: "9.9", url: "h
   await context.route("**/*", handler);
   await page.goto(`${ORIGIN}/`); await page.waitForTimeout(800);
   await page.evaluate(() => { openSettings("admin"); }); await page.waitForTimeout(300);
-  await page.evaluate(() => { document.querySelector('#settingsNav [data-settings-tab="adminupdates"]').click(); });
+  await page.evaluate(() => { document.querySelector('#settingsNav [data-settings-tab~="adminupdates"]').click(); });
   const host = page.locator('[data-settings-panel="adminupdates"] .embed-host');
   await host.locator("#up_on").waitFor({ state: "attached", timeout: 8000 }).catch(async (e) => { console.log("DEBUG", await page.locator('[data-settings-panel="adminupdates"]').innerHTML().then((t) => t.slice(0, 600)), errors.join(";")); throw e; });
   const text = () => host.evaluate((h) => h.shadowRoot.textContent);

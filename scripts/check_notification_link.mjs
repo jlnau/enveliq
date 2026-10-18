@@ -113,7 +113,7 @@ const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll
   const { page, context, errors } = await open(server);
   await page.evaluate(() => openSettings("settings","mailalerts"));
   await page.waitForSelector('#mailAlertAccounts input[data-mail-alert-account]');
-  check("email alerts are in the existing personal Settings",await page.locator('[data-settings-tab="mailalerts"].active').count()===1);
+  check("email alerts are in the existing personal Settings",await page.locator('[data-settings-tab~="mailalerts"].active').count()===1);
   check("all new emails is the default mode", await page.locator('input[name="mailAlertMode"][value="all"]').isChecked());
   await page.locator('input[name="mailAlertMode"][value="action"]').check();
   await page.waitForFunction(() => document.getElementById("mailAlertStatus").textContent === "Saved");
@@ -228,7 +228,7 @@ const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll
   const { page, errors, context } = await open(server);
   await page.click("#userPill");
   await page.click("#settingsBtn");
-  await page.click('[data-settings-tab="reminders"]');
+  await page.click('[data-settings-tab~="reminders"]');
   await page.waitForTimeout(800);
   const text = await page.evaluate(() => { return [...document.querySelectorAll("#settings *")].map((e) => e.shadowRoot ? e.shadowRoot.textContent : "").join(" "); });
   check("Settings > Notifications offers the new-email switch, off to begin with", /When new email arrives/.test(text));
@@ -240,7 +240,7 @@ const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll
   });
   check("both start switched off", state.mail === false && state.details === false);
   await shot(page, "reminders-settings");
-  check("the tab and page are called Notifications", /Notifications/.test(await page.locator("[data-settings-tab=reminders]").innerText()) && !/Reminders/.test(await page.locator("[data-settings-tab=reminders]").innerText()));
+  check("the tab is called Alerts", /Alerts/.test(await page.locator("[data-settings-tab~=reminders]").innerText()));
   await page.evaluate(() => {
     const roots = [...document.querySelectorAll("#settings *")].filter((e) => e.shadowRoot).map((e) => e.shadowRoot);
     for (const r of roots) { const el = r.querySelector("#rs_mail"); if (el) { el.click(); r.querySelector("form button[type=submit]").click(); } }

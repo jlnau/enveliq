@@ -403,7 +403,7 @@ function mfaStep(methods) {
 
 // ---------- signed-in chrome ----------
 function chrome(me, current, ...content) {
-  if (window.ENVELIQ_EMBED) return [h("div", { class: "page" }, content)];
+  if (window.ENVELIQ_EMBED) return [h("div", { class: "page embed-cols" }, content)];
   // Settings and Administration live in the pop-ups on the inbox page; these pages are only reached directly.
   const links = [h("a", { href: "/", text: "Inbox" })];
   links.push(h("a", { href: "#", text: "Sign out", onclick: async e => { e.preventDefault(); await api("/auth/logout", { method: "POST" }); location.replace("/login"); } }));
@@ -512,17 +512,24 @@ async function profilePage(me) {
         me.avatar_v ? h("button", { class: "btn small", type: "button", text: "Remove white background", onclick: async e => { try { e.target.disabled=true; const image=await removeLegacyAvatarWhite(me); const u=await api("/me/avatar", { method:"PUT", body:{ image } }); toast("White background removed");tell(u);redraw(); } catch (er) { toast(er.message);e.target.disabled=false; } } }) : null,
         me.avatar_v ? h("button", { class: "btn small", type: "button", text: "Remove", onclick: async () => { try { const u = await api("/me/avatar", { method: "DELETE" }); toast("Picture removed"); tell(u); redraw(); } catch (er) { toast(er.message); } } }) : null)),
     file);
-  const form = h("form", {},
+  const saved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
+  const form = h("div", {},
     h("div", { class: "grid2" },
       field("Your name", input("pf_name", { value: me.display_name && me.display_name !== me.username ? me.display_name : "", maxlength: 128, autocomplete: "name", placeholder: me.username }), "How you appear in Enveliq. Leave it empty to use your username."),
       field("Email address", input("pf_email", { type: "email", value: me.email || "", maxlength: 254, autocomplete: "email", placeholder: "Optional" }), "Not used to sign in. Nobody else can see it.")),
     field("About you", h("textarea", { id: "pf_about", rows: "3", maxlength: "500", placeholder: "Optional. A line other people in your Enveliq will see." , text: me.about || "" }), "Only people using this same Enveliq can see this."),
     h("label", { class: "check", for: "pf_people" }, h("input", { id: "pf_people", type: "checkbox", checked: me.show_in_people !== false }),
       h("span", {}, h("strong", { text: "Show me in the people list" }), h("div", { class: "hint", text: "Other people can pick you from the list when they start a message. Turn this off if you would rather not appear. You can still reply to anyone who writes to you." }))),
-    h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save profile" })));
-  onSubmit(form, async () => {
-    const u = await api("/me/profile", { method: "PATCH", body: { display_name: form.querySelector("#pf_name").value.trim(), email: form.querySelector("#pf_email").value.trim(), about: form.querySelector("#pf_about").value.trim(), show_in_people: form.querySelector("#pf_people").checked } });
-    toast("Profile saved"); tell(u);
+    h("p", { class: "hint" }, "Your choices save as you make them. ", saved));
+  let pending = null;
+  form.addEventListener("change", () => {
+    clearTimeout(pending);
+    pending = setTimeout(async () => {
+      try {
+        const u = await api("/me/profile", { method: "PATCH", body: { display_name: form.querySelector("#pf_name").value.trim(), email: form.querySelector("#pf_email").value.trim(), about: form.querySelector("#pf_about").value.trim(), show_in_people: form.querySelector("#pf_people").checked } });
+        saved.textContent = "Saved ✓"; saved.classList.add("show"); clearTimeout(saved._t); saved._t = setTimeout(() => saved.classList.remove("show"), 1800); tell(u);
+      } catch (er) { toast(er.message); }
+    }, 300);
   });
   show(h("h1", { text: "Profile" }),
     h("p", { class: "lead", text: "You only need a username and password to use Enveliq. Everything on this page is optional." }),
@@ -983,15 +990,17 @@ async function adminPage(me, only) {
     h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" }))) : null;
   if (instrForm) onSubmit(instrForm, async () => { await api("/admin/review-settings", { method: "PUT", body: { max_days: rv.max_days, instructions: instrForm.querySelector("#rv_instr").value } }); rv.instructions = instrForm.querySelector("#rv_instr").value; toast("Saved"); });
   const fe = (!only || only === "features") ? await api("/admin/features").catch(() => null) : null;
-  const featForm = fe ? h("form", {},
-    h("p", { class: "lead", text: "Everything beyond reading and sorting mail is optional. Switch off what you don't want anyone on this server to use. People can also switch features off for themselves, but they cannot switch on anything you have turned off." }),
-    ...Object.keys(fe.labels).map(k => h("label", { class: "check", for: "fe_" + k }, h("input", { id: "fe_" + k, type: "checkbox", checked: fe.flags[k] }),
-      h("span", {}, h("strong", { text: fe.labels[k] }), h("div", { class: "hint", text: FEATURE_HINTS[k] })))),
-    h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" }))) : null;
-  if (featForm) onSubmit(featForm, async () => {
-    const body = {}; for (const k of Object.keys(fe.labels)) body[k] = featForm.querySelector("#fe_" + k).checked;
-    await api("/admin/features", { method: "PUT", body }); toast("Saved. People see the change the next time their inbox refreshes.");
-  });
+  // Features: a tidy two-column checklist. Each tick is saved at once, so there is no Save button.
+  const featSaved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
+  const featForm = fe ? h("div", {},
+    h("p", { class: "lead" }, "Everything beyond reading and sorting mail is optional. Switch off what you don't want anyone on this server to use. People can also switch features off for themselves, but they cannot switch on anything you have turned off. Your choices save as you make them. ", featSaved),
+    h("div", { class: "featgrid" }, ...Object.keys(fe.labels).map(k => h("label", { class: "check featitem", for: "fe_" + k }, h("input", { id: "fe_" + k, type: "checkbox", checked: fe.flags[k], onchange: async e => {
+      const box = e.target, body = {};
+      for (const key of Object.keys(fe.labels)) body[key] = featForm.querySelector("#fe_" + key).checked;
+      try { await api("/admin/features", { method: "PUT", body }); featSaved.textContent = "Saved ✓"; featSaved.classList.add("show"); clearTimeout(featSaved._t); featSaved._t = setTimeout(() => featSaved.classList.remove("show"), 1800); }
+      catch (er) { box.checked = !box.checked; toast(er.message); }
+    } }),
+      h("span", {}, h("strong", { text: fe.labels[k] }), h("div", { class: "hint", text: FEATURE_HINTS[k] })))))) : null;
   const ag = (!only || only === "agent") ? await api("/admin/agent").catch(() => null) : null;
   const agForm = ag ? h("form", {},
     h("p", { class: "lead", text: "The Agent button opens a chat with the AI at the address set under AI model. Choose how it is used." }),
@@ -1294,30 +1303,38 @@ async function generalPage(me) {
   const p = await api("/me/preferences");
   const fx = await api("/me/features").catch(() => null);
   const box = (id, checked, title, hint) => h("label", { class: "check", for: id }, h("input", { id, type: "checkbox", checked }), h("span", {}, h("strong", { text: title }), h("div", { class: "hint", text: hint })));
-  const form = h("form", {},
-    h("h2", { text: "Sending replies" }),
+  // Everything here saves as soon as it is changed, so there is no Save button.
+  const saved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
+  const sendSec = h("section", { class: "section" }, h("h2", {}, "Sending replies ", saved),
     box("undo_on", p.undo_send_seconds > 0, "Undo send", "Hold each reply for a short moment before it leaves, so you can take it back. While it waits, an Undo button stays at the bottom of the screen, even if you move to another page."),
     more("How long to hold replies",
       field("Hold replies for (seconds)", input("undo_secs", { type: "number", min: "1", max: "60", value: String(p.undo_send_seconds || 10) }),
-        "From 1 to 60 seconds. Switch Undo send off to send replies straight away. If the server restarts while a reply is waiting, that reply is not sent.")),
-    h("h2", { text: "Reviewed and Archived lists" }),
+        "From 1 to 60 seconds. Switch Undo send off to send replies straight away. If the server restarts while a reply is waiting, that reply is not sent.")));
+  const keepSec = h("section", { class: "section" }, h("h2", { text: "Reviewed and Archived lists" }),
     box("keep_reviewed", p.keep_reviewed, "Keep a Reviewed list", "When you press Reviewed, the email is marked read in your mailbox as usual, and Enveliq also keeps its summary in a Reviewed list so you can look again."),
     box("keep_archived", p.keep_archived, "Keep an Archived list", "The same for Archive: the email moves to your mailbox's archive and its summary stays in an Archived list."),
     more("How long to keep them",
       field("Keep them for (days)", input("keep_days", { type: "number", min: "1", max: String(p.max_days), value: String(p.keep_days) }),
-        `After this many days the summary is deleted from Enveliq. Your administrator allows up to ${p.max_days} days. Your mailbox itself is not affected.`)),
-    h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" })));
-  onSubmit(form, async () => {
-    const secs = Math.max(1, Math.min(60, Math.round(Number(form.querySelector("#undo_secs").value) || 10)));
-    await api("/me/preferences", { method: "PUT", body: { keep_reviewed: form.querySelector("#keep_reviewed").checked, keep_archived: form.querySelector("#keep_archived").checked, keep_days: Number(form.querySelector("#keep_days").value), instructions: p.instructions, undo_send_seconds: form.querySelector("#undo_on").checked ? secs : 0 } });
-    toast("Saved. Your inbox updates the next time it refreshes.");
-  });
+        `After this many days the summary is deleted from Enveliq. Your administrator allows up to ${p.max_days} days. Your mailbox itself is not affected.`)));
+  const q = id => sendSec.querySelector(id) || keepSec.querySelector(id);
+  let saving = null;
+  const savePrefs = () => {
+    clearTimeout(saving);
+    saving = setTimeout(async () => {
+      const secs = Math.max(1, Math.min(60, Math.round(Number(q("#undo_secs").value) || 10)));
+      try {
+        await api("/me/preferences", { method: "PUT", body: { keep_reviewed: q("#keep_reviewed").checked, keep_archived: q("#keep_archived").checked, keep_days: Number(q("#keep_days").value), instructions: p.instructions, undo_send_seconds: q("#undo_on").checked ? secs : 0 } });
+        saved.textContent = "Saved ✓"; saved.classList.add("show"); clearTimeout(saved._t); saved._t = setTimeout(() => saved.classList.remove("show"), 1800);
+      } catch (er) { toast(er.message); }
+    }, 350);
+  };
+  sendSec.addEventListener("change", savePrefs); keepSec.addEventListener("change", savePrefs);
   const featSection = fx ? featuresSection(me, fx) : null;
   const fastSection = fx && fx.effective.find_mail ? await fastSearchSection().catch(() => null) : null;
   const exportSection = h("section", { class: "section" }, h("h2", { text: "Your data" }),
     h("p", { class: "lead", text: "Download everything Enveliq keeps about you as one file you can read: your lists, summaries, people and settings. It never holds passwords or keys, or anyone else's mail." }),
     h("div", {}, h("a", { class: "btn", href: `${API}/me/export`, download: "", text: "Export my data" })));
-  show(...chrome(me, "general", h("h1", { text: "General" }), h("p", { class: "lead", text: "The everyday choices. The defaults work well, so you can leave everything here as it is." }), h("section", { class: "section" }, form), featSection, fastSection, exportSection));
+  show(...chrome(me, "general", h("h1", { text: "General" }), h("p", { class: "lead", text: "The everyday choices. The defaults work well, so you can leave everything here as it is." }), sendSec, keepSec, featSection, fastSection, exportSection));
 }
 // ---------- reminders (everyone) ----------
 function ago(ts) {
@@ -1538,15 +1555,18 @@ async function syncPage(me, fresh) {
 function featuresSection(me, fx) {
   const rows = Object.keys(fx.labels).map(k => {
     const allowed = fx.admin[k];
-    return h("label", { class: "check", for: "uf_" + k }, h("input", { id: "uf_" + k, type: "checkbox", checked: allowed && fx.user[k], disabled: !allowed }),
+    return h("label", { class: "check featitem", for: "uf_" + k }, h("input", { id: "uf_" + k, type: "checkbox", checked: allowed && fx.user[k], disabled: !allowed }),
       h("span", {}, h("strong", { text: fx.labels[k] }), h("div", { class: "hint", text: allowed ? FEATURE_HINTS[k] : "Turned off by your administrator." })));
   });
-  const form = h("form", {},
-    h("p", { class: "lead", text: "Switch off anything you don't want to see. If you only want your inbox, turn them all off." }), ...rows,
-    h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" })));
-  onSubmit(form, async () => {
-    const body = {}; for (const k of Object.keys(fx.labels)) if (fx.admin[k]) body[k] = form.querySelector("#uf_" + k).checked;
-    await api("/me/features", { method: "PUT", body }); toast("Saved. Your inbox updates the next time it refreshes.");
+  const saved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
+  const form = h("div", {},
+    h("p", { class: "lead" }, "Switch off anything you don't want to see. If you only want your inbox, turn them all off. Your choices save as you make them. ", saved),
+    h("div", { class: "featgrid" }, ...rows));
+  form.addEventListener("change", async e => {
+    const box = e.target, body = {};
+    for (const k of Object.keys(fx.labels)) if (fx.admin[k]) body[k] = form.querySelector("#uf_" + k).checked;
+    try { await api("/me/features", { method: "PUT", body }); saved.textContent = "Saved ✓"; saved.classList.add("show"); clearTimeout(saved._t); saved._t = setTimeout(() => saved.classList.remove("show"), 1800); }
+    catch (er) { box.checked = !box.checked; toast(er.message); }
   });
   return h("section", { class: "section" }, h("h2", { text: "Features" }), form);
 }

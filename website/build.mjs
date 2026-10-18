@@ -65,6 +65,7 @@ const NAV = [
     ["docs/SEARCH.md", "Search"],
     ["docs/FIND_MAIL.md", "Find any email"],
     ["docs/ORIGINAL_EMAIL.md", "Reading the original email"],
+    ["docs/SETTINGS.md", "Settings and Administration"],
     ["docs/SUBSCRIPTIONS.md", "Subscriptions"],
     ["docs/TRIPS.md", "Trips"],
     ["docs/MESSAGES.md", "Messages between people"],

@@ -123,11 +123,13 @@ async function aiSetupPanel(me, onChange) {
       btn.disabled = true; status.textContent = "Asking the server…";
       try {
         const out = await api("/ai/models", { method: "POST", body: { provider: current.id, url: current.cloud ? current.url : url.value.trim(), api_key: key.value === "" ? null : key.value } });
-        const choose = h("select", { id: "ai_model_pick", "aria-label": "Models found on the server" },
-          h("option", { value: "", text: `Pick one of ${out.models.length} models…` }), out.models.map(m => h("option", { value: m, text: m })));
-        choose.addEventListener("change", () => { if (choose.value) model.value = choose.value; });
-        list.append(choose);
-        status.textContent = `${out.models.length} found. Pick one to fill in the model name above.`;
+        // Each model is a button to tap, so there is nothing to type or work out.
+        const chips = out.models.slice(0, 60).map(m => h("button", { class: "chip", type: "button", "aria-pressed": String(model.value === m), text: m, onclick: () => {
+          model.value = m; model.dispatchEvent(new Event("input", { bubbles: true }));
+          for (const c of list.querySelectorAll(".chip")) c.setAttribute("aria-pressed", String(c.textContent === m));
+        } }));
+        list.append(...chips);
+        status.textContent = `${out.models.length} found. Tap one to use it.`;
       } catch (er) { status.textContent = er.message || "Could not get the list. Type the model name instead."; }
       btn.disabled = false;
     });

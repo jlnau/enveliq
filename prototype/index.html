@@ -2292,7 +2292,7 @@ function restoreOpen(){
 }
 function wantedHash(){
   const o=document.getElementById("settings");
-  if(o&&o.classList.contains("open")){const t=document.querySelector("[data-settings-tab].active");return `#/${settingsMode==="admin"?"admin":"settings"}/${t?t.dataset.settingsTab:""}`}
+  if(o&&o.classList.contains("open")){const t=document.querySelector("[data-settings-tab].active");return `#/${settingsMode==="admin"?"admin":"settings"}/${t?t.dataset.settingsTab.split(" ")[0]:""}`}
   return filter==="all"||!PAGES.includes(filter)?"":"#/"+filter;
 }
 function syncHash(){
@@ -2313,7 +2313,7 @@ function applyHashNav(){
   try{
     if(sm&&!(sm[1]==="admin"&&!currentUser.is_admin)){
       if(!isOpen||(sm[1]==="admin")!==(settingsMode==="admin"))openSettings(sm[1]);
-      const b=sm[2]&&document.querySelector(`[data-settings-tab="${sm[2]}"]`);if(b)b.click();
+      const b=sm[2]&&document.querySelector(`[data-settings-tab~="${sm[2]}"]`);if(b)b.click();
       return;
     }
     if(isOpen)closeSettings();
@@ -2404,7 +2404,7 @@ function restorePage(){
   }
   if(m&&!(m[1]==="admin"&&!currentUser.is_admin)){
     openSettings(m[1]);
-    const b=m[2]&&document.querySelector(`[data-settings-tab="${m[2]}"]`);if(b)b.click();
+    const b=m[2]&&document.querySelector(`[data-settings-tab~="${m[2]}"]`);if(b)b.click();
   }
 }
 const $=id=>document.getElementById(id);
@@ -4970,21 +4970,16 @@ function buildSettingsNav(mode){
   settingsMode=mode||"settings";
   const be=isBackend();
   // Settings: what a person sets for themselves. Grouped by what they are doing, not by how it is built.
+  // Each entry is [heading, tab, label, the older pages it now holds]. A tab shows all of the pages it holds, one under another,
+  // so nothing was removed: it is just found in one place. The older names still work in links and bookmarks.
   const common=be?[
-    ["You","profile","Profile"],
-    ["","signin","Sign-in & security"],
-    ["Your mail","accounts","Email accounts"],
-    ...(feat.address_book?[["","addressbook","Address book"]]:[]),
-    ["","important","Important people"],
-    ["","saved","Signature & saved replies"],
-    ["","rules","Mail rules"],
-    ["","calendar","Calendar & to-do"],
-    ["How it works for you","general","General"],
-    ["","reminders","Notifications"],
-    ["","shortcuts","Keyboard shortcuts"],
-    ["","mailalerts","Email alerts"],
-    ["","aiinstr","AI instructions"],
-    ["Help","setup","Setup guide"]
+    ["","account","Account","signin profile"],
+    ["","accounts","Mailboxes",""],
+    ["","people","People & writing","addressbook important saved aiinstr"],
+    ["","rules","Rules & calendar","rules calendar"],
+    ["","alerts","Alerts","reminders mailalerts"],
+    ["","general","General","general shortcuts"],
+    ["","setup","Help",""]
   ]:[
     ["Personal","accounts","My email accounts"],
     ["","signin","Sign-in & security"],
@@ -4993,21 +4988,12 @@ function buildSettingsNav(mode){
   ];
   // Administration: the owner's controls, grouped the same way.
   const admin=be?[
-    ["People","users","People"],
-    ["","sso","Sign-in rules & SSO"],
-    ["Mail","sync","Automatic sync"],
-    ["","adminkeep","Reviewed & archived"],
-    ["","admincheck","Forward to check"],
-    ["","adminms","Microsoft sign-in"],
-    ["","adminfeatures","Features"],
-    ["","adminreminders","Reminders"],
-    ["AI","llm","AI model"],
-    ["","adminaiinstr","AI instructions"],
-    ["","adminagent","Agent chat"],
-    ["System","adminbackup","Backup and restore"],
-    ["","adminupdates","Updates"],
-    ["","adminreport","Reporting"],
-    ["","security","Security & privacy"]
+    ["","users","People & sign-in","users sso"],
+    ["","sync","Mail","sync adminkeep admincheck adminms"],
+    ["","llm","AI","llm adminaiinstr adminagent"],
+    ["","adminfeatures","Features",""],
+    ["","adminreminders","Notifications",""],
+    ["","adminbackup","System","adminbackup adminupdates adminreport security"]
   ]:[
     ["","users","Users"],
     ["","sso","Sign-in rules & SSO"],
@@ -5022,16 +5008,17 @@ function buildSettingsNav(mode){
   const items=settingsMode==="admin"?admin:common;
   const first=items[0];
   let lastGroup=null,html="";
-  for(const [group,id,label] of items){
+  for(const [group,id,label,held] of items){
     if(group && group!==lastGroup){html+=`<div class="settings-group">${esc(group)}</div>`;lastGroup=group}
-    html+=`<button data-settings-tab="${esc(id)}" class="${esc(id===first[1]?"active":"")}">${esc(label)}</button>`;
+    html+=`<button data-settings-tab="${esc((id+" "+(held||"")).trim())}" class="${esc(id===first[1]?"active":"")}">${esc(label)}</button>`;
   }
   $("settingsNav").innerHTML=`<div class="settings-title">${settingsMode==="admin"?"Administration":"Settings"}</div>${html}`;
   $("settingsHeading").textContent=first[2];
   $("settingsRoleBadge").innerHTML=currentUser.is_admin?'<span class="admin-badge">Administrator</span>':'';
-  document.querySelectorAll("[data-settings-panel]").forEach(x=>x.hidden=x.dataset.settingsPanel!==first[1]);
+  const firstHeld=(first[1]+" "+(first[3]||"")).trim().split(" ");
+  document.querySelectorAll("[data-settings-panel]").forEach(x=>x.hidden=!firstHeld.includes(x.dataset.settingsPanel));
   $("cancelSettings").textContent=be?"Close":"Cancel";$("saveSettings").hidden=be;
-  if(be)openEmbed(first[1]);
+  if(be)firstHeld.forEach(id=>{if(EMBED_IDS.includes(id))openEmbed(id)});
   else if(first[1]==="accounts")renderAccounts();
 }
 // ---- The real pages, shown inside the pop-ups ----
@@ -5063,7 +5050,14 @@ function prepareEmbedPanels(){
 // The pages share one drawing area at a time, so opening two quickly (Settings opens on Profile, then someone
 // taps another section) must not draw one page into the other's box: they are drawn one after another.
 let embedChain=Promise.resolve();
-function openEmbed(id){const run=embedChain.then(()=>openEmbedNow(id));embedChain=run.catch(()=>{});return run}
+let embedBusy=0,embedWant=null;
+function applyEmbedWant(){if(embedWant&&window.EnveliqEmbed){window.EnveliqEmbed.setMount(embedWant._mount,embedWant._toast)}}
+function openEmbed(id){
+  embedBusy++;
+  const run=embedChain.then(()=>openEmbedNow(id));
+  embedChain=run.catch(()=>{}).then(()=>{embedBusy--;if(!embedBusy)applyEmbedWant()});
+  return run;
+}
 async function openEmbedNow(id){
   const host=document.querySelector(`[data-settings-panel="${id}"] .embed-host`);
   if(!host)return;
@@ -5074,6 +5068,10 @@ async function openEmbedNow(id){
       const st=document.createElement("style");st.textContent=embedCss;
       const mount=document.createElement("div"),toastNode=document.createElement("div");toastNode.id="toast";
       root.append(st,mount,toastNode);host._mount=mount;host._toast=toastNode;
+      // Several pages can now be open under one Settings tab. A page draws into "the" current box, so whichever one the person
+      // touches becomes the current one before the page reacts to what they did.
+      const claim=()=>{embedWant=host;if(!embedBusy)applyEmbedWant()};
+      for(const ev of ["pointerdown","click","keydown","focusin","change","input","submit"])root.addEventListener(ev,claim,true);
     }
     embedTheme();
     const E=window.EnveliqEmbed;E.setMount(host._mount,host._toast);
@@ -5250,7 +5248,7 @@ window.addEventListener("enveliq-profile",e=>{
   currentUser.avatar=u.avatar_v?`/api/v1/users/${u.id}/avatar?v=${u.avatar_v}`:"";
   $("userName").textContent=currentUser.name;paintAvatar();
 });
-function openSettings(mode,tab){buildSettingsNav(typeof mode==="string"?mode:"settings");if(!isBackend())providerFields();$("settings").classList.add("open");$("scrim").classList.add("show");if(tab){const b=document.querySelector(`[data-settings-tab="${tab}"]`);if(b)b.click()}syncHash()}
+function openSettings(mode,tab){buildSettingsNav(typeof mode==="string"?mode:"settings");if(!isBackend())providerFields();$("settings").classList.add("open");$("scrim").classList.add("show");if(tab){const b=document.querySelector(`[data-settings-tab~="${tab}"]`);if(b)b.click()}syncHash()}
 let mailAlertPrefs={mail_on:false,mail_filter:"all",mail_muted_accounts:[]},mailAlertWrite=Promise.resolve();
 async function loadMailAlertPrefs(){
   if(!isBackend())return;
@@ -5438,7 +5436,7 @@ document.addEventListener("click",e=>{
   const cd=e.target.closest("[data-cal-day]");if(cd){calDay=cd.dataset.calDay;taskMoveFor=null;render();return}
   const cn=e.target.closest("[data-cal-nav]");if(cn){const v=cn.dataset.calNav;if(v==="today"){calMonth="";calDay=""}else{const [y,m]=calMonth.split("-").map(Number),d=new Date(y,m-1+Number(v),1);calMonth=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;calDay=""}render();return}
   const tmode=e.target.closest("[data-task-mode]");if(tmode){taskMode=tmode.dataset.taskMode;try{localStorage.setItem("enveliq-task-mode",taskMode)}catch{}render();return}
-  if(e.target.closest("[data-reminder-settings]")){openSettings("settings");const b=document.querySelector('[data-settings-tab="reminders"]');if(b)b.click();return}
+  if(e.target.closest("[data-reminder-settings]")){openSettings("settings");const b=document.querySelector('[data-settings-tab~="reminders"]');if(b)b.click();return}
   if(e.target.closest("[data-tasks-go]")){filter="tasks";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="tasks"));render();return}
   const sw=e.target.closest("[data-switch-user]");if(sw){switchUser(sw.dataset.switchUser);return}
 
@@ -5570,15 +5568,17 @@ document.addEventListener("click",e=>{
 
   const p=e.target.closest("[data-provider]");if(p){if(!authorizeAdmin())return;provider=p.dataset.provider;document.querySelectorAll(".provider").forEach(x=>x.classList.toggle("active",x===p));providerFields();return}
   const tab=e.target.closest("[data-settings-tab]");if(tab){
-    const id=tab.dataset.settingsTab;
+    const held=tab.dataset.settingsTab.split(" "),id=held[0];
     const adminOnly=["users","sso","llm","sync","adminkeep","admincheck","adminbackup","adminupdates","adminms","adminfeatures","adminreminders","adminaiinstr","adminagent","adminreport","processing","providers","automation","privacy","security","system"].includes(id);
     if(adminOnly&&!authorizeAdmin())return;
+    const wasActive=tab.classList.contains("active");
     document.querySelectorAll("[data-settings-tab]").forEach(x=>x.classList.toggle("active",x===tab));try{tab.scrollIntoView({inline:"center",block:"nearest"})}catch(_){}
-    document.querySelectorAll("[data-settings-panel]").forEach(x=>x.hidden=x.dataset.settingsPanel!==id);
+    document.querySelectorAll("[data-settings-panel]").forEach(x=>x.hidden=!held.includes(x.dataset.settingsPanel));
     $("settingsHeading").textContent=tab.textContent;syncHash();
-    if(id==="security")setTimeout(refreshSecurityStatus,0);
-    if(isBackend()&&EMBED_IDS.includes(id))openEmbed(id);
-    if(id==="mailalerts")loadMailAlertPrefs();
+    if(held.includes("security"))setTimeout(refreshSecurityStatus,0);
+    // Pressing the tab you are already on does not redraw pages that are already open (it would close any fold you had open).
+    if(isBackend())held.forEach(h=>{if(!EMBED_IDS.includes(h))return;const host=document.querySelector(`[data-settings-panel="${h}"] .embed-host`);if(wasActive&&host&&host._mount&&host._mount.children.length)return;openEmbed(h)});
+    if(held.includes("mailalerts"))loadMailAlertPrefs();
     return;
   }
 });
@@ -7262,7 +7262,7 @@ document.getElementById("keyboardShortcutsOn").addEventListener("change",e=>{
   try{localStorage.setItem(keyboardShortcutsKey(),e.target.checked?"1":"0")}catch{}
 });
 document.addEventListener("click",e=>{
-  if(e.target.closest('[data-settings-tab="shortcuts"]'))syncShortcutPreference();
+  if(e.target.closest('[data-settings-tab~="shortcuts"]'))syncShortcutPreference();
 });
 document.addEventListener("keydown",e=>{
   if(e.defaultPrevented||e.isComposing||e.repeat||e.ctrlKey||e.altKey||e.metaKey||!keyboardShortcutsEnabled())return;
@@ -7301,7 +7301,7 @@ render();
   const m=/^#google-calendar=(\w+)$/.exec(location.hash||"");if(!m)return;
   try{history.replaceState(null,"",location.pathname+location.search)}catch{}
   const say={ok:"Google Calendar is connected. Your tasks are being added.",denied:"Google Calendar was not connected: permission was not given.",expired:"That sign-in took too long. Press Connect Google Calendar again.",state:"That sign-in could not be checked. Try again.",failed:"Google Calendar could not be connected. Check the setup guide and try again."};
-  window.addEventListener("load",()=>setTimeout(()=>{openSettings("settings");const b=document.querySelector('[data-settings-tab="calendar"]');if(b)b.click();toast(say[m[1]]||say.failed,6000)},900));
+  window.addEventListener("load",()=>setTimeout(()=>{openSettings("settings");const b=document.querySelector('[data-settings-tab~="calendar"]');if(b)b.click();toast(say[m[1]]||say.failed,6000)},900));
 })();
 </script>
 </body>

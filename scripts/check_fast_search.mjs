@@ -64,7 +64,7 @@ async function open(server, width, height) {
   await page.goto(`${ORIGIN}/`);
   await page.waitForSelector("article.mail");
   await page.evaluate(() => openSettings("settings"));
-  await page.evaluate(() => document.querySelector('#settingsNav [data-settings-tab="general"]').click());
+  await page.evaluate(() => document.querySelector('#settingsNav [data-settings-tab~="general"]').click());
   return { page, errors, csp, context, host: page.locator('[data-settings-panel="general"] .embed-host') };
 }
 
