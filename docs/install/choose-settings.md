@@ -2,7 +2,7 @@
 
 Enveliq's install file ([`install/docker-compose.yml`](../../install/docker-compose.yml)) needs only one thing from you, the vault key, and it already has safe defaults for everything else. This page is for when you want to change those defaults, mainly to open Enveliq from your phone or another device. Each setting is read from the `.env` file next to the install file (for example `ENVELIQ_PUBLIC_URL=http://192.168.1.50:8765`), or from your panel's environment box.
 
-Read this page once, decide your answers, and then go back to your guide. Nothing here is permanent: you can change any of it later and redeploy.
+**The only required setting is the vault key** ([Setting 4](#setting-4-the-vault-key-required)); your install guide already shows how. Everything else here is optional: read it only if you want to open Enveliq from your phone or another device. Nothing is permanent: you can change any of it later and redeploy.
 
 - [Setting 1: the address you will type in your browser](#setting-1-the-address-you-will-type-in-your-browser)
 - [Setting 2: the one-time setup code](#setting-2-the-one-time-setup-code)
@@ -38,25 +38,17 @@ You need this only for option B. It looks like `192.168.1.50` (four numbers with
 
 **Tip:** ask your router to always give this computer the same number (it is called a "DHCP reservation" or "static lease"). If the number changes, the address you set will stop working.
 
-## Setting 2: the one-time setup code
+## Setting 2: the one-time setup code (optional)
 
-**You can skip this setting.** Leave it empty and Enveliq makes a code itself (read it with `docker exec enveliq cat /data/setup-code.txt`).
+**You can skip this setting.** The very first time you open Enveliq it asks for a setup code, which proves the person setting up Enveliq is you. Enveliq makes the code itself the first time it starts. Read it with:
 
-In the file this is `ENVELIQ_SETUP_CODE`. The very first time you open Enveliq it asks for this code. It proves the person setting up Enveliq is you and not someone else who found the page.
+```
+docker exec enveliq cat /data/setup-code.txt
+```
 
-1. Make up a code that is **long and random**: at least 20 letters and numbers. A password manager's "generate password" button is perfect. Or ask Docker to make one:
+(In a control panel, open the `enveliq` container's **Console** and run `cat /data/setup-code.txt`. See [I do not know the setup code](troubleshooting.md#i-do-not-know-the-setup-code).)
 
-   ```
-   docker run --rm alpine sh -c "head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n'; echo"
-   ```
-
-   It prints something like `9f2c1e7a4b6d03885c2e1f77a9b04d6e51c8a3f2d7b09e41`. Use that.
-2. Put it in the `.env` file as `ENVELIQ_SETUP_CODE=your-code`.
-3. Write it down for a minute: you type it once, on the first screen.
-
-After setup is finished the code does nothing and can be forgotten. You can delete the line afterwards.
-
-> **If you leave the placeholder:** newer versions of Enveliq ignore the placeholder and make a random code themselves. Then see [How to find the setup code](troubleshooting.md#i-do-not-know-the-setup-code).
+If you would rather choose your own, put `ENVELIQ_SETUP_CODE=your-code` in the `.env` file: at least 20 random letters and numbers. After setup is finished the code does nothing and can be forgotten.
 
 ## Setting 3: the "plain http" switch
 
@@ -76,7 +68,7 @@ Whichever you choose, **do not** forward port 8765 on your router. That would op
 
 ## Setting 4: the vault key (required)
 
-Everything Enveliq keeps is locked with a **vault key**, and Enveliq unlocks itself with it after every restart. Make the key **before** you start Enveliq, and put it in the install file or `.env`:
+Everything Enveliq keeps is locked with a **vault key**, and Enveliq unlocks itself with it after every restart. Make the key **before** you start Enveliq:
 
 1. Make one:
 
