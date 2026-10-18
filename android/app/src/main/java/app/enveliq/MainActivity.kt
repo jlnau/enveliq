@@ -11,6 +11,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         Notifier.ensureChannels(this)
+        MailWatcherService.start(this)          // only does anything when the person has alerts on and a kept sign-in
         val prefs = getSharedPreferences("enveliq", MODE_PRIVATE)
         setSecure(prefs.getBoolean("hide_in_recents", false))
         setContent {

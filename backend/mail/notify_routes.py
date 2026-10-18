@@ -84,6 +84,22 @@ class AdminBody(StrictModel):
     local_hosts: list[str] | None = Field(default=None, max_length=50)
 
 
+def ready_mail(vault: Any, user_id: str) -> set[tuple[str, str]]:
+    """The (account, message) pairs of this person's unread emails that are ready to be told about: stored, not from All Mail,
+    and not still waiting for the AI summary. Only ids are returned, never any text."""
+    ready: set[tuple[str, str]] = set()
+    for account in vault.list_accounts():
+        if account.get("owner_user_id") != user_id:
+            continue
+        try:
+            for m in vault.list_messages(account["id"]):
+                if m.get("state", "unread") == "unread" and not m.get("from_all_mail") and not m.get("ai_pending"):
+                    ready.add((str(account["id"]), str(m.get("id", ""))))
+        except (KeyError, ValueError):
+            continue
+    return ready
+
+
 def build_notify_router(ctx: Any) -> APIRouter:
     router = APIRouter(prefix="/api/v1")
     notifier: Notifier = ctx.notifier
@@ -167,6 +183,56 @@ def build_notify_router(ctx: Any) -> APIRouter:
                                  headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no",
                                           "Content-Security-Policy": "default-src 'none'"})
 
+
+    ready_cache: dict[str, tuple[float, set[tuple[str, str]]]] = {}
+
+    def cached_ready(user_id: str) -> set[tuple[str, str]]:
+        import time
+        with fingerprint_lock:
+            now = time.monotonic()
+            hit = ready_cache.get(user_id)
+            if hit and now - hit[0] < 4:
+                return hit[1]
+            value = ready_mail(ctx.vault, user_id)
+            ready_cache[user_id] = (now, value)
+            if len(ready_cache) > 256:
+                for uid, (stamp, _) in list(ready_cache.items()):
+                    if now - stamp > 60:
+                        ready_cache.pop(uid, None)
+            return value
+
+    @router.get("/me/new-mail-events")
+    async def new_mail_events(request: Request, session: Session = Depends(session_dep)):
+        """For the Android app: one quiet stream that only says "these emails are ready" (their AI summary is done).
+        It carries ids, never text. A short heartbeat every minute keeps the connection alive without waking the phone often."""
+        user_id = session.principal.user_id
+
+        async def stream():
+            seen = set(await asyncio.to_thread(cached_ready, user_id))
+            yield "retry: 30000\nevent: ready\ndata: {}\n\n"
+            ticks = 0
+            while not await request.is_disconnected():
+                await asyncio.sleep(5)
+                try:
+                    now = await asyncio.to_thread(cached_ready, user_id)
+                except Exception:
+                    yield "event: reconnect\ndata: {}\n\n"
+                    return
+                fresh = sorted(now - seen)
+                seen = set(now)
+                if fresh:
+                    ids = [{"a": a, "m": m} for a, m in fresh[:50]]
+                    yield "event: new\ndata: " + json.dumps({"count": len(fresh), "ids": ids}, separators=(",", ":")) + "\n\n"
+                    ticks = 0
+                else:
+                    ticks += 1
+                    if ticks >= 12:                       # a minute of quiet: one tiny line, so the connection is not dropped
+                        ticks = 0
+                        yield ": heartbeat\n\n"
+
+        return StreamingResponse(stream(), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no",
+                                          "Content-Security-Policy": "default-src 'none'"})
 
     @router.get("/me/mail-opened")
     def get_mail_opened(session: Session = Depends(session_dep)):

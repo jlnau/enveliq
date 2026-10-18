@@ -22,12 +22,23 @@ The app's version is the release tag (for example `v0.96` gives version `0.96`);
 
 - **Look around with sample email** shows six made-up emails (nothing to set up). Open one to read its AI summary (labelled as the AI's), the task it found, and the original text. **Reviewed**, **Archive** and **Bin** sit fixed at the bottom; each has an **Undo** for a few seconds. The **Tasks** tab lists the tasks. **Settings** has the notification test.
 - **Sign in to my Enveliq** signs in to a real Enveliq with its address, your username and password, and a code if you use two-factor. It then lists your inbox (the same email as the website, newest first), opens an email's summary and original text, and marks emails Reviewed, Archived or Binned for real. The address must start with `https://`, and your Enveliq must be reachable from the phone.
+- **Tell me when new email arrives** (Settings) shows a quiet note when a new email's AI summary is done. The lock screen only says "New email" (or "3 new emails"); sender and subject show once the phone is unlocked. Android asks permission the first time. **Quiet hours** keep the note but without sound or buzz. Alerts work while the app is closed, and start again after the phone restarts or the app is updated. See "How new-email alerts work" below.
 - **Send a test notification to this phone** shows what an alert looks like. On the lock screen it only says "New email"; the words show once the phone is unlocked. Android asks permission the first time.
 - **Hide Enveliq in recent apps** hides the app's picture in the recent-apps view and stops screenshots.
 
 ## Not in the app yet
 
-Passkeys and single sign-on, notifications from your server, app lock, search, replying and sending, shipping, calendar and the other screens, and an in-app 'new version' button (it needs a public place to look for releases, because this repository is private). The plan for all of these is in the project's Android plan (phases 0 to 5). Settings, Administration and mailbox setup stay on the website.
+Passkeys and single sign-on, notes from Home Assistant and other services, task reminders, app lock, search, replying and sending, shipping, calendar and the other screens, and an in-app 'new version' button (it needs a public place to look for releases, because this repository is private). The plan for all of these is in the project's Android plan (phases 0 to 5). Settings, Administration and mailbox setup stay on the website.
+
+## How new-email alerts work
+
+- The server has one small stream for the app, `GET /api/v1/me/new-mail-events`. It only says which emails have just become ready (their AI summary is finished). It carries ids, never any text, and the server only ever lists the signed-in person's own email.
+- The app holds one connection to that stream. The server sends one line a minute so the connection is not dropped; in between, the app does nothing. There is no polling.
+- When the server says something is ready, the app fetches the inbox once, and shows an alert for each email it has not already told you about. It remembers only the ids it has announced (up to 400), so an email is never announced twice. The first time you turn alerts on, the email already in your inbox is not announced.
+- No network, no connection: while the phone has no signal the app does not try, and it reconnects the moment a network returns. After a failed try it waits 15 seconds, then longer each time, up to 5 minutes.
+- If the server signs the app out, the app stops and tells you once so you can sign in again.
+- Android needs a small permanent note while an app keeps a connection open ("Enveliq is watching for new email"). It is silent and tucked away. Turning the setting off removes it.
+- If the phone has been still for a long time, Android may pause background apps ("Doze") and alerts can come late. **Keep alerts on time** in Settings asks Android to let Enveliq run without that limit.
 
 ## Privacy
 
@@ -35,8 +46,9 @@ Passkeys and single sign-on, notifications from your server, app lock, search, r
 - Android backups are switched off, so nothing is copied to Google or a new phone.
 - The app only talks to the address you typed, over HTTPS, and only trusts the server's real certificate.
 - **Staying signed in.** On the sign-in screen, **Keep me signed in on this phone** (on to begin with) keeps your sign-in between runs, so the app opens straight to your inbox. What is kept is the server's sign-in cookie, encrypted with a key in the Android Keystore that never leaves the phone. Your password is never kept. How long it lasts is the same "keep me signed in" time your administrator set for the website. **Sign out** in Settings ends the session at the server and removes what was kept; if the server stops accepting it (you signed out elsewhere, or it ran out) the app asks you to sign in again. Turn the switch off to be asked every time.
+- **Alerts** keep your sign-in on the phone (they need it to listen while the app is closed). The only extra things stored are the on/off switches, the quiet hours and the ids of emails already announced; no sender, subject or summary is written to the phone. Alerts go straight between your phone and your own Enveliq: no Google push service and no other company is involved.
 - The app adds no analytics, no ads and no crash reporting.
 
 ## How it is built
 
-`android/` is a Gradle project (`app/` holds the code). `Api.kt` talks to the same JSON routes the website uses; `Home.kt` and `Screens.kt` are the screens; `SessionVault.kt` keeps the sign-in encrypted; `Notifier.kt` makes the notifications; `Data.kt` holds the sample emails. The **Build Android app** workflow compiles it with the Android SDK on a GitHub runner, signs it, and attaches the APK. Version 1 for everyone needs the server groundwork in the plan first (per-device tokens, a list of devices, the public API list in Cloudflare).
+`android/` is a Gradle project (`app/` holds the code). `Api.kt` talks to the same JSON routes the website uses; `Home.kt` and `Screens.kt` are the screens; `SessionVault.kt` keeps the sign-in encrypted; `Notifier.kt` makes the notifications; `MailWatcher.kt` is the background service that keeps the one connection and the alert settings; `Data.kt` holds the sample emails. The **Build Android app** workflow compiles it with the Android SDK on a GitHub runner, signs it, and attaches the APK. Version 1 for everyone needs the server groundwork in the plan first (per-device tokens, a list of devices, the public API list in Cloudflare).

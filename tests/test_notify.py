@@ -531,3 +531,31 @@ def test_live_mail_events_require_sign_in(env):
     unauthenticated = TestClient(appm.app)
     response = unauthenticated.get("/api/v1/me/mail-events")
     assert response.status_code in (401, 403)
+
+
+def test_new_mail_stream_requires_sign_in(env):
+    from fastapi.testclient import TestClient
+    appm, _, _, _ = env
+    assert TestClient(appm.app).get("/api/v1/me/new-mail-events").status_code in (401, 403)
+
+
+def test_ready_mail_lists_only_this_persons_finished_unread_emails():
+    from backend.mail.notify_routes import ready_mail
+
+    class FakeVault:
+        def list_accounts(self):
+            return [{"id": "a1", "owner_user_id": "me"}, {"id": "a2", "owner_user_id": "someone-else"}]
+
+        def list_messages(self, aid):
+            if aid == "a2":
+                return [{"id": "x", "state": "unread"}]
+            return [
+                {"id": "ready", "state": "unread"},
+                {"id": "waiting", "state": "unread", "ai_pending": True},      # AI summary not finished yet
+                {"id": "done", "state": "reviewed"},
+                {"id": "old", "state": "unread", "from_all_mail": True},
+            ]
+
+    assert ready_mail(FakeVault(), "me") == {("a1", "ready")}
+    assert ready_mail(FakeVault(), "someone-else") == {("a2", "x")}
+    assert ready_mail(FakeVault(), "nobody") == set()

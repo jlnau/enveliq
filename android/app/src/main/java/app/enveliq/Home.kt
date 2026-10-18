@@ -123,7 +123,11 @@ fun EnveliqApp(activity: MainActivity) {
                 onBack = { stage = Stage.Start },
                 onDone = { client, address, keep ->
                     prefs.edit().putString("server", address).apply()
-                    if (keep) SessionVault.save(activity, address, client.sessionCookies()) else SessionVault.clear(activity)
+                    if (keep) SessionVault.save(activity, address, client.sessionCookies()) else {
+                        SessionVault.clear(activity)
+                        AlertPrefs.reset(activity)          // alerts need a kept sign-in
+                        MailWatcherService.stop(activity)
+                    }
                     api = client
                     server = address
                     stage = Stage.Home
@@ -140,6 +144,8 @@ fun EnveliqApp(activity: MainActivity) {
                     val client = api
                     if (client != null) Thread { client.signOut() }.start()
                     SessionVault.clear(activity)
+                    AlertPrefs.reset(activity)
+                    MailWatcherService.stop(activity)
                 }
                 EnveliqApi.forgetSession()
                 api = null
@@ -250,7 +256,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 when (tab) {
                     Tab.Inbox -> InboxTab(mails, loading, error, demo, onOpen = { opened = it }, onRefresh = { load() })
                     Tab.Tasks -> TasksTab(mails, onOpen = { opened = it })
-                    Tab.Settings -> SettingsTab(activity, prefs, demo, server, onLeave)
+                    Tab.Settings -> SettingsTab(activity, prefs, demo, server, api, onLeave)
                 }
             }
         }
@@ -473,11 +479,28 @@ private fun SwitchRow(title: String, note: String, checked: Boolean, onChange: (
 }
 
 @Composable
-private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, demo: Boolean, server: String, onLeave: (Boolean) -> Unit) {
+private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, demo: Boolean, server: String, api: EnveliqApi?, onLeave: (Boolean) -> Unit) {
     val context = LocalContext.current
-    var alerts by remember { mutableStateOf(prefs.getBoolean("alerts", true)) }
+    var mailAlerts by remember { mutableStateOf(AlertPrefs.on(context)) }
+    var quietOn by remember { mutableStateOf(AlertPrefs.quietOn(context)) }
+    var quietFrom by remember { mutableStateOf(AlertPrefs.quietFrom(context)) }
+    var quietTo by remember { mutableStateOf(AlertPrefs.quietTo(context)) }
+    var alertNote by remember { mutableStateOf("") }
+    val power = remember { context.getSystemService(android.os.PowerManager::class.java) }
+    var unrestricted by remember { mutableStateOf(power.isIgnoringBatteryOptimizations(context.packageName)) }
     var hide by remember { mutableStateOf(prefs.getBoolean("hide_in_recents", false)) }
     var message by remember { mutableStateOf("") }
+    fun turnOnAlerts() {
+        api?.let { SessionVault.save(context, server, it.sessionCookies()) }     // alerts need a kept sign-in
+        AlertPrefs.setSeeded(context, false)       // what is in the inbox now is not new
+        AlertPrefs.setOn(context, true)
+        mailAlerts = true
+        alertNote = ""
+        MailWatcherService.start(context)
+    }
+    val askMailPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) turnOnAlerts() else alertNote = "Notifications are off for Enveliq. Turn them on in Android's settings, then try again."
+    }
     val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         message = if (granted && Notifier.sendTest(context)) "Sent. Lock your phone to see how it looks on the lock screen."
         else "Notifications are off for Enveliq. Turn them on in Android's settings."
@@ -486,9 +509,65 @@ private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, demo: 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
         Heading("Settings", "")
         SectionTitle("Notifications")
-        SwitchRow("New email alerts", "A quiet note when email that needs you arrives. The lock screen only says \"New email\".", alerts) {
-            alerts = it
-            prefs.edit().putBoolean("alerts", it).apply()
+        SwitchRow(
+            "Tell me when new email arrives",
+            if (demo) "Sign in to your Enveliq to use this." else "A quiet note once the AI has finished reading it. The lock screen only says \"New email\".",
+            mailAlerts,
+        ) { on ->
+            if (demo) {
+                alertNote = "Sign in to your own Enveliq first. Sample email never changes."
+            } else if (!on) {
+                AlertPrefs.setOn(context, false)
+                mailAlerts = false
+                MailWatcherService.stop(context)
+            } else if (!Notifier.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
+                askMailPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else turnOnAlerts()
+        }
+        if (mailAlerts) Text(
+            "Enveliq stays signed in on this phone and keeps one quiet connection to your server. It uses almost no battery, and does nothing at all while the phone has no signal.",
+            color = Muted, fontSize = 13.sp, lineHeight = 18.sp, modifier = Modifier.padding(bottom = 6.dp),
+        )
+        if (alertNote.isNotEmpty()) Text(alertNote, color = Muted, fontSize = 13.sp, modifier = Modifier.padding(bottom = 6.dp))
+        if (mailAlerts) {
+            SwitchRow("Quiet hours", "No sound or buzz. New email still waits for you in the notification list.", quietOn) {
+                quietOn = it
+                AlertPrefs.setQuietOn(context, it)
+            }
+            if (quietOn) Row(Modifier.fillMaxWidth().padding(bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedButton(
+                    onClick = {
+                        android.app.TimePickerDialog(context, { _, h, m ->
+                            quietFrom = h * 60 + m
+                            AlertPrefs.setQuiet(context, quietFrom, quietTo)
+                        }, quietFrom / 60, quietFrom % 60, true).show()
+                    },
+                    modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
+                ) { Text("From " + AlertPrefs.timeText(quietFrom), color = Ink) }
+                OutlinedButton(
+                    onClick = {
+                        android.app.TimePickerDialog(context, { _, h, m ->
+                            quietTo = h * 60 + m
+                            AlertPrefs.setQuiet(context, quietFrom, quietTo)
+                        }, quietTo / 60, quietTo % 60, true).show()
+                    },
+                    modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
+                ) { Text("Until " + AlertPrefs.timeText(quietTo), color = Ink) }
+            }
+            if (!unrestricted) {
+                Text(
+                    "If alerts sometimes arrive late when the phone has been still for a while, let Enveliq run without Android's battery limit. It still uses very little.",
+                    color = Muted, fontSize = 13.sp, lineHeight = 18.sp,
+                )
+                OutlinedButton(
+                    onClick = {
+                        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, android.net.Uri.parse("package:" + context.packageName))
+                        context.startActivity(intent)
+                        unrestricted = power.isIgnoringBatteryOptimizations(context.packageName)
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp).height(48.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
+                ) { Text("Keep alerts on time", color = Ink) }
+            }
         }
         Button(
             onClick = {

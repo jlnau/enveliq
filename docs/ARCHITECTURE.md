@@ -87,6 +87,10 @@ v0.33 adds two outputs. `Reporter.otlp_payload` renders the same registry as Ope
 
 Authenticated clients connect to `GET /api/v1/me/mail-events` through same-origin Server-Sent Events. The stream checks an owner-scoped fingerprint of encrypted-vault message metadata and opened indicators; no message content, sender, subject, account names or secrets are sent in events. Changed events instruct the existing mail client to re-fetch using normal user-scoped API calls. Browser EventSource reconnects automatically, while a periodic fallback and page visibility/network wake-up recover missed updates. The client retains selected-message identity and scroll offset during refresh. The stream does not itself trigger provider mailbox synchronization; the existing server sync scheduler continues to do so.
 
+### Android alert stream
+
+`GET /api/v1/me/new-mail-events` is a second, much smaller stream for the Android app. It needs the same full session. Every 5 seconds (sharing a 4-second per-person cache) it compares the person's set of finished, unread emails (`ready_mail`: stored, not from All Mail, not waiting for the AI) with what it had, and sends `event: new` with only `{"count", "ids": [{"a": account, "m": message}]}` for the new ones. It sends a comment line once a minute (below Cloudflare's idle limit) so the connection stays open without waking the phone often. The app then fetches the inbox through the normal user-scoped routes. See `docs/ANDROID.md`.
+
 ## Junk Mail (v0.95)
 
 - `backend/mail/junk.py`: `JunkBook`. One encrypted per-person record `junk:<user id>` (outside the retained messages, so junk never reaches the inbox, reminders, Found emails or the summary queue). `refresh` reads each mailbox's junk folder (IMAP `\Junk` flag, else Spam/Junk names; always Spam on Proton Bridge) read-only, headers only; `classify` shows a few emails at a time to the model (`Summariser.judge_junk`); `not_junk` selects the folder read-write, marks the email unread, moves it to `INBOX` (IMAP MOVE, or COPY and expunge) and syncs the mailbox.

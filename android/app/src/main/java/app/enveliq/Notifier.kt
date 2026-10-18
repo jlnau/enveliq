@@ -14,6 +14,9 @@ import android.os.Build
 object Notifier {
     const val CHANNEL_MAIL = "mail"
     const val CHANNEL_REMINDERS = "reminders"
+    const val CHANNEL_QUIET = "mail_quiet"
+    const val CHANNEL_WATCH = "watching"
+    const val WATCH_ID = 1002
 
     fun ensureChannels(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
@@ -23,6 +26,14 @@ object Notifier {
         val reminders = NotificationChannel(CHANNEL_REMINDERS, "Task reminders", NotificationManager.IMPORTANCE_DEFAULT)
         reminders.description = "Reminders for tasks that are due."
         reminders.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+        val watch = NotificationChannel(CHANNEL_WATCH, "Watching for new email", NotificationManager.IMPORTANCE_MIN)
+        watch.description = "The small note Android requires while Enveliq waits quietly for new email."
+        watch.setShowBadge(false)
+        val quiet = NotificationChannel(CHANNEL_QUIET, "New email (quiet hours)", NotificationManager.IMPORTANCE_LOW)
+        quiet.description = "New email that arrives during your quiet hours: no sound and no buzz."
+        quiet.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+        manager.createNotificationChannel(quiet)
+        manager.createNotificationChannel(watch)
         manager.createNotificationChannel(mail)
         manager.createNotificationChannel(reminders)
     }
@@ -56,5 +67,50 @@ object Notifier {
             .build()
         manager.notify(1001, note)
         return true
+    }
+
+    private fun openApp(context: Context): PendingIntent = PendingIntent.getActivity(
+        context, 0, Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
+
+    /** A plain note with the same words on and off the lock screen (nothing private in it). */
+    fun simple(context: Context, id: Int, title: String, text: String) {
+        if (!canNotify(context)) return
+        val note = Notification.Builder(context, CHANNEL_MAIL)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title).setContentText(text)
+            .setContentIntent(openApp(context)).setAutoCancel(true).build()
+        context.getSystemService(NotificationManager::class.java).notify(id, note)
+    }
+
+    /**
+     * New email whose AI summary is done. On the lock screen it only says "New email"; the sender and subject show once the phone
+     * is unlocked. During quiet hours it still appears, but without sound or buzz.
+     */
+    fun newMail(context: Context, mails: List<Mail>, quiet: Boolean) {
+        if (!canNotify(context) || mails.isEmpty()) return
+        val manager = context.getSystemService(NotificationManager::class.java)
+        val generic = Notification.Builder(context, CHANNEL_MAIL)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(if (mails.size == 1) "New email" else "${mails.size} new emails")
+            .build()
+        val builder = Notification.Builder(context, if (quiet) CHANNEL_QUIET else CHANNEL_MAIL).setSmallIcon(R.drawable.ic_notification)
+        val id: Int
+        if (mails.size == 1) {
+            val m = mails[0]
+            builder.setContentTitle(m.sender).setContentText(m.subject)
+            id = 3000 + (m.id.hashCode() and 0xffff)
+        } else {
+            builder.setContentTitle("${mails.size} new emails")
+            builder.setContentText(mails.take(3).joinToString(", ") { it.sender })
+            val style = Notification.InboxStyle()
+            mails.take(5).forEach { style.addLine(it.sender + ": " + it.subject) }
+            builder.setStyle(style)
+            id = 2002
+        }
+        builder.setVisibility(Notification.VISIBILITY_PRIVATE).setPublicVersion(generic)
+            .setContentIntent(openApp(context)).setAutoCancel(true)
+        manager.notify(id, builder.build())
     }
 }
