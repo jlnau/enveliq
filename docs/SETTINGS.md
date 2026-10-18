@@ -11,7 +11,7 @@ Settings is for what each person chooses for themselves. Administration is for t
 | **People & writing** | Address book, Important people, Signature and saved replies, and your own AI instructions. |
 | **Rules & calendar** | Mail rules, and Calendar and to-do. |
 | **Alerts** | Notifications on your devices, and Email alerts. |
-| **General** | Undo send, the Reviewed and Archived lists, your Features, Fast search, Your data, and Keyboard shortcuts. |
+| **General** | Undo send, the Reviewed and Archived lists, your Features, Fast search, Your data, and Keyboard shortcuts, laid out as three short columns of small cards. Undo send and how long to keep lists are drop-down lists; Features are single ticks with their explanations folded under "What each one does". |
 | **Help** | The setup guide. |
 
 ## Administration (administrators only): six pages

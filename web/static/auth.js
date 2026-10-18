@@ -1265,7 +1265,7 @@ const FEATURE_HINTS = {
 async function fastSearchSection() {
   const body = h("div", {});
   const sec = h("section", { class: "section" }, h("h2", { text: "Fast search" }),
-    h("p", { class: "lead", text: "Searching a very large mailbox can take a while. Fast search makes it instant. It is off unless you turn it on." }), body);
+    h("p", { class: "gsub", text: "Makes searching all your old mail instant. It is off unless you turn it on." }), body);
   let timer = null;
   const confirming = new Set();
   async function draw() {
@@ -1302,28 +1302,28 @@ async function fastSearchSection() {
 async function generalPage(me) {
   const p = await api("/me/preferences");
   const fx = await api("/me/features").catch(() => null);
-  const box = (id, checked, title, hint) => h("label", { class: "check", for: id }, h("input", { id, type: "checkbox", checked }), h("span", {}, h("strong", { text: title }), h("div", { class: "hint", text: hint })));
   // Everything here saves as soon as it is changed, so there is no Save button.
   const saved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
-  const sendSec = h("section", { class: "section" }, h("h2", {}, "Sending replies ", saved),
-    box("undo_on", p.undo_send_seconds > 0, "Undo send", "Hold each reply for a short moment before it leaves, so you can take it back. While it waits, an Undo button stays at the bottom of the screen, even if you move to another page."),
-    more("How long to hold replies",
-      field("Hold replies for (seconds)", input("undo_secs", { type: "number", min: "1", max: "60", value: String(p.undo_send_seconds || 10) }),
-        "From 1 to 60 seconds. Switch Undo send off to send replies straight away. If the server restarts while a reply is waiting, that reply is not sent.")));
-  const keepSec = h("section", { class: "section" }, h("h2", { text: "Reviewed and Archived lists" }),
-    box("keep_reviewed", p.keep_reviewed, "Keep a Reviewed list", "When you press Reviewed, the email is marked read in your mailbox as usual, and Enveliq also keeps its summary in a Reviewed list so you can look again."),
-    box("keep_archived", p.keep_archived, "Keep an Archived list", "The same for Archive: the email moves to your mailbox's archive and its summary stays in an Archived list."),
-    more("How long to keep them",
-      field("Keep them for (days)", input("keep_days", { type: "number", min: "1", max: String(p.max_days), value: String(p.keep_days) }),
-        `After this many days the summary is deleted from Enveliq. Your administrator allows up to ${p.max_days} days. Your mailbox itself is not affected.`)));
+  const tick = (id, checked, title) => h("label", { class: "gopt", for: id }, h("input", { id, type: "checkbox", checked }), h("span", { text: title }));
+  const pick = (id, options, current) => {
+    const list = options.slice();
+    if (!list.some(o => o[0] === current)) list.push([current, String(current)]);
+    return h("select", { id, name: id }, list.sort((x, y) => x[0] - y[0]).map(([v, t]) => h("option", { value: String(v), text: t, selected: v === current })));
+  };
+  const lab = (id, text, el) => h("div", {}, h("label", { class: "glab", for: id, text }), el);
+  const card = (title, sub, ...kids) => h("section", { class: "section gcard" }, h("h2", {}, title, title === "Sending replies" ? saved : null), sub ? h("p", { class: "gsub", text: sub }) : null, ...kids);
+  const undoSel = pick("undo_secs", [[0, "Off"], [5, "5 seconds"], [10, "10 seconds"], [20, "20 seconds"], [30, "30 seconds"], [60, "60 seconds"]], p.undo_send_seconds || 0);
+  const daysSel = pick("keep_days", [7, 14, 30, 60, 90, 180, 365].filter(d => d <= p.max_days).map(d => [d, d + " days"]), p.keep_days);
+  const sendSec = card("Sending replies", "A short pause lets you change your mind. Pick Off to send straight away.", lab("undo_secs", "Undo send window", undoSel));
+  const keepSec = card("Reviewed and Archived", `Keep a list so you can look again. Your administrator allows up to ${p.max_days} days.`,
+    tick("keep_reviewed", p.keep_reviewed, "Keep a Reviewed list"), tick("keep_archived", p.keep_archived, "Keep an Archived list"), lab("keep_days", "Keep them for", daysSel));
   const q = id => sendSec.querySelector(id) || keepSec.querySelector(id);
   let saving = null;
   const savePrefs = () => {
     clearTimeout(saving);
     saving = setTimeout(async () => {
-      const secs = Math.max(1, Math.min(60, Math.round(Number(q("#undo_secs").value) || 10)));
       try {
-        await api("/me/preferences", { method: "PUT", body: { keep_reviewed: q("#keep_reviewed").checked, keep_archived: q("#keep_archived").checked, keep_days: Number(q("#keep_days").value), instructions: p.instructions, undo_send_seconds: q("#undo_on").checked ? secs : 0 } });
+        await api("/me/preferences", { method: "PUT", body: { keep_reviewed: q("#keep_reviewed").checked, keep_archived: q("#keep_archived").checked, keep_days: Number(q("#keep_days").value), instructions: p.instructions, undo_send_seconds: Number(q("#undo_secs").value) } });
         saved.textContent = "Saved ✓"; saved.classList.add("show"); clearTimeout(saved._t); saved._t = setTimeout(() => saved.classList.remove("show"), 1800);
       } catch (er) { toast(er.message); }
     }, 350);
@@ -1331,10 +1331,11 @@ async function generalPage(me) {
   sendSec.addEventListener("change", savePrefs); keepSec.addEventListener("change", savePrefs);
   const featSection = fx ? featuresSection(me, fx) : null;
   const fastSection = fx && fx.effective.find_mail ? await fastSearchSection().catch(() => null) : null;
-  const exportSection = h("section", { class: "section" }, h("h2", { text: "Your data" }),
-    h("p", { class: "lead", text: "Download everything Enveliq keeps about you as one file you can read: your lists, summaries, people and settings. It never holds passwords or keys, or anyone else's mail." }),
+  if (fastSection) fastSection.classList.add("gcard");
+  const exportSection = card("Your data", "A copy of your summaries, notes and settings. It never holds passwords or keys, or anyone else's mail.",
     h("div", {}, h("a", { class: "btn", href: `${API}/me/export`, download: "", text: "Export my data" })));
-  show(...chrome(me, "general", h("h1", { text: "General" }), h("p", { class: "lead", text: "The everyday choices. The defaults work well, so you can leave everything here as it is." }), sendSec, keepSec, featSection, fastSection, exportSection));
+  const cols = [h("div", { class: "gcol" }, sendSec, keepSec), h("div", { class: "gcol" }, featSection, fastSection), h("div", { class: "gcol" }, exportSection)];
+  show(...chrome(me, "general", window.ENVELIQ_EMBED ? null : h("h1", { text: "General" }), h("div", { class: "gcols" }, ...cols)));
 }
 // ---------- reminders (everyone) ----------
 function ago(ts) {
@@ -1555,20 +1556,21 @@ async function syncPage(me, fresh) {
 function featuresSection(me, fx) {
   const rows = Object.keys(fx.labels).map(k => {
     const allowed = fx.admin[k];
-    return h("label", { class: "check featitem", for: "uf_" + k }, h("input", { id: "uf_" + k, type: "checkbox", checked: allowed && fx.user[k], disabled: !allowed }),
-      h("span", {}, h("strong", { text: fx.labels[k] }), h("div", { class: "hint", text: allowed ? FEATURE_HINTS[k] : "Turned off by your administrator." })));
+    return h("label", { class: "gopt", for: "uf_" + k, title: allowed ? "" : "Turned off by your administrator." }, h("input", { id: "uf_" + k, type: "checkbox", checked: allowed && fx.user[k], disabled: !allowed }),
+      h("span", { text: fx.labels[k] }));
   });
+  const explain = more("What each one does", ...Object.keys(fx.labels).map(k => h("p", { class: "hint" }, h("strong", { text: fx.labels[k] + ". " }), fx.admin[k] ? FEATURE_HINTS[k] : "Turned off by your administrator.")));
   const saved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
   const form = h("div", {},
-    h("p", { class: "lead" }, "Switch off anything you don't want to see. If you only want your inbox, turn them all off. Your choices save as you make them. ", saved),
-    h("div", { class: "featgrid" }, ...rows));
+    h("p", { class: "gsub" }, "Show or hide parts of Enveliq. Saves as you tick. ", saved),
+    h("div", { class: "gfeat" }, ...rows), explain);
   form.addEventListener("change", async e => {
     const box = e.target, body = {};
     for (const k of Object.keys(fx.labels)) if (fx.admin[k]) body[k] = form.querySelector("#uf_" + k).checked;
     try { await api("/me/features", { method: "PUT", body }); saved.textContent = "Saved ✓"; saved.classList.add("show"); clearTimeout(saved._t); saved._t = setTimeout(() => saved.classList.remove("show"), 1800); }
     catch (er) { box.checked = !box.checked; toast(er.message); }
   });
-  return h("section", { class: "section" }, h("h2", { text: "Features" }), form);
+  return h("section", { class: "section gcard" }, h("h2", { text: "Features" }), form);
 }
 
 // ---------- address book ----------

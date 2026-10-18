@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**General settings are now three short columns.** Undo send and "Keep them for" are plain drop-down lists instead of folds with number boxes, each Features option is a single tick with a short name (the long explanations fold away under "What each one does"), and Keyboard shortcuts fold away under "Show shortcuts". Everything still saves as you change it. Because "Keep them for" is now a list, it offers 7, 14, 30, 60, 90, 180 and 365 days, up to the limit your administrator allows.
+
 **The inbox list stays where you scrolled it.** After you scrolled down the list, a refresh in the background could pull it back up to the highlighted email a few seconds later. It now only moves to the highlighted email when the highlight changes. Touches `prototype/index.html`.
 
 **Settings and Administration, tidied.** Settings goes from 14 pages to 7 (Account, Mailboxes, People & writing, Rules & calendar, Alerts, General, Help) and Administration from 15 to 6 (People & sign-in, Mail, AI, Features, Notifications, System). Nothing is removed: each older page is now a section on the page where you would look for it, and older links still work. Sections sit side by side when there is room, so there is far less scrolling. Choices now save as you make them: your profile, the Features lists (yours and the administrator's), Undo send and the Reviewed and Archived lists save when you tick or change them, with a quiet "Saved ✓". Find models on the AI page now shows the models as buttons to tap. Touches `prototype/index.html`, `web/static/auth.js`, `web/static/welcome.js`, `web/static/auth.css`. See [Settings and Administration](SETTINGS.md).

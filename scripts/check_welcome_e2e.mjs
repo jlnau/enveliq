@@ -143,19 +143,18 @@ await shot("settings-setup");
 // General settings and AI instructions (every user)
 await page.click("[data-settings-tab~=general]");
 await page.waitForSelector("#settings .embed-host >> text=Keep a Reviewed list");
-check("General settings shows the Reviewed and Archived choices and the administrator's limit", (await page.locator("#settings .embed-host >> #keep_days").getAttribute("max")) === "14");
+check("General settings shows the Reviewed and Archived choices and the administrator's limit", (await page.locator("#settings .embed-host >> #keep_days option").last().getAttribute("value")) === "14");
 await page.locator("#settings .embed-host >> #keep_archived").uncheck();
-await page.locator("#settings .embed-host >> summary:has-text('How long to keep them')").click();
-await page.locator("#settings .embed-host >> #keep_days").fill("5");
+await page.locator("#settings .embed-host >> #keep_days").selectOption("14");
 await Promise.all([page.waitForResponse((r) => r.request().method() === "PUT" && r.url().includes("/me/preferences") && r.status() === 200), page.keyboard.press("Tab")]);
 const prefs1 = await page.evaluate(async () => (await fetch("/api/v1/me/preferences")).json());
-check("the choices are saved for this person", prefs1.keep_archived === false && prefs1.keep_reviewed === true && prefs1.keep_days === 5);
+check("the choices are saved for this person", prefs1.keep_archived === false && prefs1.keep_reviewed === true && prefs1.keep_days === 14);
 await page.click("[data-settings-tab~=aiinstr]");
 await page.waitForSelector("#settings .embed-host >> #my_instr");
 await page.locator("#settings .embed-host >> #my_instr").fill("Keep it to one sentence.");
 await Promise.all([page.waitForResponse((r) => r.request().method() === "PUT" && r.url().includes("/me/preferences") && r.status() === 200), page.locator("#settings [data-settings-panel='aiinstr'] .embed-host >> button:has-text('Save')").first().click()]);
 const prefs2 = await page.evaluate(async () => (await fetch("/api/v1/me/preferences")).json());
-check("the person's AI instructions are saved without changing their other choices", prefs2.instructions === "Keep it to one sentence." && prefs2.keep_days === 5 && prefs2.keep_archived === false);
+check("the person's AI instructions are saved without changing their other choices", prefs2.instructions === "Keep it to one sentence." && prefs2.keep_days === 14 && prefs2.keep_archived === false);
 // ---- Optional email features, against the real server ----
 await page.click("#closeSettings");
 {
@@ -366,7 +365,7 @@ await page.locator("#settings .embed-host >> #rv_days").fill("10");
 await Promise.all([page.waitForResponse((r) => r.request().method() === "PUT" && r.url().includes("/admin/review-settings") && r.status() === 200), page.locator("#settings [data-settings-panel='adminkeep'] .embed-host >> button:has-text('Save')").click()]);
 const rv2 = await page.evaluate(async () => (await fetch("/api/v1/admin/review-settings")).json());
 const prefs3 = await page.evaluate(async () => (await fetch("/api/v1/me/preferences")).json());
-check("Administration > Reviewed & Archived sets the maximum, which caps each person's days", rv2.max_days === 10 && rv2.instructions === "Write in British English." && prefs3.keep_days === 5 && prefs3.max_days === 10);
+check("Administration > Reviewed & Archived sets the maximum, which caps each person's days", rv2.max_days === 10 && rv2.instructions === "Write in British English." && prefs3.keep_days === 10 && prefs3.max_days === 10);
 await page.click("[data-settings-tab~=sync]");
 await page.waitForSelector("#settings .embed-host >> #sync_min");
 check("Administration > Automatic sync shows the interval", true);

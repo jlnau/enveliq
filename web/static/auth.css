@@ -268,3 +268,16 @@ a.btn{text-decoration:none}
 .ai-models-list{display:flex;gap:8px;flex-wrap:wrap}
 .chip{font-size:13px;padding:6px 12px;border-radius:99px;border:1px solid var(--c-2f394b);background:var(--panel2);color:var(--text);cursor:pointer}
 .chip[aria-pressed="true"]{border-color:var(--brand);background:var(--c-0c1c38);color:var(--c-bfe3ff)}
+
+/* Settings, General: three short columns of small cards. */
+.gcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:16px;align-items:start}
+.gcol{display:flex;flex-direction:column;gap:16px;min-width:0}
+.gcard{margin:0;padding:16px}
+.gcard h2{margin:0 0 3px;font-size:15px}
+.gsub{margin:0 0 10px;color:var(--faint);font-size:12.5px}
+.glab{display:block;margin:8px 0 4px;color:var(--muted,var(--faint));font-size:12.5px}
+.gcard select{width:100%}
+.gopt{display:flex;gap:10px;align-items:center;padding:6px 0;font-size:13.5px;margin:0}
+.gopt input{width:18px;height:18px;margin:0;flex:none}
+.gfeat{display:grid;grid-template-columns:1fr 1fr;column-gap:12px}
+@media(max-width:760px){.gopt{min-height:44px}.gfeat{grid-template-columns:1fr}}

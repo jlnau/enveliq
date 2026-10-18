@@ -1897,15 +1897,17 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
           <h4>Keyboard shortcuts</h4>
           <p>Optional desktop keyboard commands for navigating your inbox. They never run while you type in a field or use a dialog.</p>
           <label class="toggle-row" for="keyboardShortcutsOn"><span><strong>Enable keyboard shortcuts</strong><small>Turn these commands off at any time.</small></span><input id="keyboardShortcutsOn" type="checkbox" checked></label>
-          <div class="shortcut-rows" aria-label="Available shortcuts">
-            <div><span>Search</span><kbd>/</kbd></div>
-            <div><span>Next message</span><kbd>J</kbd></div>
-            <div><span>Previous message</span><kbd>K</kbd></div>
-            <div><span>Reply to selected message</span><kbd>R</kbd></div>
-            <div><span>Archive selected message</span><kbd>E</kbd></div>
-            <div><span>Open this help page</span><kbd>?</kbd></div>
-          </div>
-          <p>Keyboard commands only work while you are in the desktop inbox. The question mark in the top header still opens the help website.</p>
+          <details class="shortcut-fold"><summary>Show shortcuts</summary>
+            <div class="shortcut-rows" aria-label="Available shortcuts">
+              <div><span>Search</span><kbd>/</kbd></div>
+              <div><span>Next message</span><kbd>J</kbd></div>
+              <div><span>Previous message</span><kbd>K</kbd></div>
+              <div><span>Reply to selected message</span><kbd>R</kbd></div>
+              <div><span>Archive selected message</span><kbd>E</kbd></div>
+              <div><span>Open this help page</span><kbd>?</kbd></div>
+            </div>
+            <p>Keyboard commands only work while you are in the desktop inbox. The question mark in the top header still opens the help website.</p>
+          </details>
         </div>
       </section>
       <section data-settings-panel="reminders" hidden></section>
