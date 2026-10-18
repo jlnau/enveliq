@@ -3261,6 +3261,28 @@ async function findMore(){
   }catch(er){findUi.err=er.message||"Could not load more."}
   findUi.busy=false;findPaint();
 }
+// When every mailbox has Fast search ready, typing searches all mail by itself (after a short pause) and the results show in the list.
+// With any mailbox not ready the person still presses Search all my mail, because a live search of a large mailbox is slow.
+let fastAll=null,fastAt=0,autoTimer=0,autoDismissed="";
+async function fastCheck(){
+  if(!findOn())return false;
+  if(fastAll!==null&&Date.now()-fastAt<60000)return fastAll;
+  try{const r=await secureBackendRequest("/api/v1/find/fast",{method:"GET",headers:{}});const m=(r&&r.mailboxes)||[];fastAll=m.length>0&&m.every(x=>x.state==="ready")}catch{fastAll=false}
+  fastAt=Date.now();return fastAll;
+}
+function findAuto(){
+  clearTimeout(autoTimer);
+  const q=String(query||"").trim();
+  if(!findOn()||q.length<2){autoDismissed="";return}
+  autoTimer=setTimeout(async()=>{
+    if(String(query||"").trim()!==q||autoDismissed===q||(findUi.open&&findUi.query===q))return;
+    if(!(await fastCheck()))return;
+    if(String(query||"").trim()!==q||autoDismissed===q)return;
+    if(findUi.open)findReset();
+    findUi={...findUi,open:true,viewing:false,query:q,sel:new Set(),anchor:null,sumNote:"",summing:false};
+    render();findStart();
+  },450);
+}
 function findOpen(){
   const q=String(query||"").trim();
   if(q.length<2)return;
@@ -3276,6 +3298,7 @@ function findReset(){          // the search words were cleared: forget the sear
 }
 function findClose(){
   if(!findUi.open)return;
+  autoDismissed=findUi.query;
   if(findUi.id&&findUi.prog&&!findUi.prog.done){secureBackendRequest(`/api/v1/find/searches/${encodeURIComponent(findUi.id)}`,{method:"DELETE",headers:{}}).catch(()=>{})}
   if(findUi.timer){clearTimeout(findUi.timer);findUi.timer=null}
   findUi={...findUi,open:false,viewing:false,id:"",prog:null,rows:[],more:false,err:"",notes:{},sel:new Set(),anchor:null,sumNote:"",summing:false};
@@ -5907,7 +5930,7 @@ document.addEventListener("click",e=>{
     return;
   }
 });
-$("search").addEventListener("input",e=>{if(inSettingsScreen()){settingsSearchRun(e.target.value);return}query=e.target.value;render()});
+$("search").addEventListener("input",e=>{if(inSettingsScreen()){settingsSearchRun(e.target.value);return}query=e.target.value;render();findAuto()});
 $("search").addEventListener("keydown",e=>{
   if(!inSettingsScreen())return;
   if(e.key==="Escape"){settingsSearchClear()}

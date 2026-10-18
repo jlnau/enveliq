@@ -38,6 +38,7 @@ Some mailboxes are slow to search, mostly Proton Mail through Bridge with tens o
 
 It is off. Turn it on, for one mailbox at a time, in **Settings, General, Fast search**. A plain warning appears and you must tick **I understand** before it starts.
 
+- **Searching by itself:** when Fast search is ready on every one of your mailboxes, you no longer need the button. Typing in the search box searches all your mail after a short pause, and the results appear in the list. If you press **Close**, the same words do not search again until you change them. If any mailbox has Fast search off or is still being built, the **Search all my mail** button stays and nothing starts by itself, because a live search of a large mailbox is slow.
 - It is recommended for Proton Mail only. Other services already search quickly on their own servers.
 - It gets ready in the background, newest mail first, a little at a time. It shows "Getting ready: 62% of your mail". Searching still works while it builds, just more slowly.
 - It keeps itself up to date as mail arrives or goes.

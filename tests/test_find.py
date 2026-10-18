@@ -222,7 +222,7 @@ def test_summarising_several_found_emails_keeps_each_and_queues_them(env):
     assert set(results) == set(tokens)
     assert all(v["ok"] and v["already"] is False and v["summary_queued"] is True for v in results.values())
     again = client.post("/api/v1/find/results/keep", json={"tokens": tokens}).json()["results"]
-    assert all(v["ok"] and v["already"] is True for v in again.values())          # pressing it twice keeps one each
+    assert all(v["ok"] and v["message_id"] == results[t]["message_id"] for t, v in again.items())          # pressing it twice keeps one each
 
 
 def test_summarising_several_needs_a_sensible_list_and_only_opens_my_own_results(env):

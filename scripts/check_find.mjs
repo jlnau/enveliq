@@ -43,6 +43,7 @@ function makeServer(opts = {}) {
       if (state.kept) out.push({ id: "f1", subject: "Canvas order", sender_display: "Dana", sender_address: "dana@example.invalid", summary: "Not summarised yet.", priority: "normal", category: null, action_required: false, state: "unread", received_at: now - 3 * 86400, reply_context: ctx("f1"), attachment_summaries: [], tags: [], from_all_mail: true, found_until: now + 60 * 86400 });
       return json(200, out);
     }
+    if (p === "/api/v1/find/fast") return opts.fast === undefined ? json(404, { detail: "not found" }) : json(200, { mailboxes: [{ account_id: "a1", enabled: true, state: opts.fast, label: "me@example.invalid" }] });
     if (p === "/api/v1/find/searches" && req.method() === "POST") { const b = JSON.parse(req.postData() || "{}"); calls.push(["start", b.query, b.include_junk]); state.junk = !!b.include_junk; state.polls = 0; return json(201, progress(false)); }
     if (p === "/api/v1/find/searches/AAAAAAAAAAAA/results") {
       state.polls++; const done = state.polls >= 2; const list = state.junk ? [...rows, { ...rows[1], token: "AAAAAAAAAAAA.2.cccccccccccccccccccccccc", subject: "Junk offer", folder: "Spam" }] : rows;
@@ -161,6 +162,37 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.waitForFunction(() => document.querySelectorAll("article.mail").length === 0);
   check("Reviewed asks the server and removes it from the page", server.calls.some((c) => c[0] === "resolve" && c[1] === "reviewed"));
   check("no script errors or policy violations", errors.length === 0 && csp.length === 0);
+  await context.close();
+}
+
+{
+  // With Fast search ready on every mailbox, typing searches all mail by itself.
+  const server = makeServer({ fast: "ready" });
+  const { page, errors, csp, context } = await open(server);
+  await page.fill("#search", "canvas");
+  await page.waitForSelector("#findInline .find-row", { timeout: 5000 });
+  check("Fast search ready: typing opens the results in the list by itself, with no button press", server.calls.some((c) => c[0] === "start" && c[1] === "canvas") && (await page.locator("[data-find-open]").count()) === 0);
+  await page.fill("#search", "canvas order");
+  await page.waitForFunction(() => true);
+  await page.waitForTimeout(900);
+  check("changing the words searches again", server.calls.filter((c) => c[0] === "start").length >= 2 && server.calls.some((c) => c[0] === "start" && c[1] === "canvas order"));
+  await page.locator("[data-find-close]").first().click();
+  await page.waitForTimeout(900);
+  const starts = server.calls.filter((c) => c[0] === "start").length;
+  check("after Close the same words do not search again", (await page.locator("#findInline").count()) === 0 && server.calls.filter((c) => c[0] === "start").length === starts);
+  await page.fill("#search", "");
+  check("clearing the words leaves nothing open", (await page.locator("#findInline").count()) === 0);
+  check("no errors with automatic search", errors.length === 0 && csp.length === 0);
+  await context.close();
+}
+
+{
+  // A mailbox still building its index: the button stays and nothing starts by itself.
+  const server = makeServer({ fast: "building" });
+  const { page, context } = await open(server);
+  await page.fill("#search", "canvas");
+  await page.waitForTimeout(1000);
+  check("Fast search not ready everywhere: the button is offered and nothing starts by itself", await page.locator("[data-find-open]").isVisible() && !server.calls.some((c) => c[0] === "start"));
   await context.close();
 }
 
