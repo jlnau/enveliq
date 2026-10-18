@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Only the server's real HTTPS certificate is trusted. No "accept any certificate" option. -->
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>
