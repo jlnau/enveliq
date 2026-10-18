@@ -25,14 +25,20 @@ Either way you get one long line of letters and numbers. **Save it in your passw
 
 ## Step 2. Create the stack
 
+This is the install file. Select everything in the box below and copy it (on the website the box has a **Copy** button). You will paste it into the editor in the steps after it. If you read this on GitHub the box is not shown: open the [install file on GitHub](https://github.com/jlnau/enveliq/blob/main/install/docker-compose.yml) and press **Copy raw file** instead.
+
+<!-- include: install/docker-compose.yml -->
+
 1. Open Portainer and pick your Docker environment (usually called **local**).
 2. In the left menu click **Stacks**, then **Add stack**.
 3. In **Name** type `enveliq`. (Lower case, no spaces.)
 4. Leave **Build method** on **Web editor**.
-5. Open <https://github.com/jlnau/enveliq/blob/main/install/docker-compose.yml> in another tab and press **Copy raw file** (two overlapping squares, top right of the file).
+5. Copy the install file shown at the top of this step.
 6. Back in Portainer, click inside the web editor and paste (Ctrl + V).
 7. Change the lines marked `<-- CHANGE THIS` to your answers, including your vault key. Keep the quote marks.
 8. Scroll down and press **Deploy the stack**.
+
+**Tip:** under the editor Portainer has **Environment variables**. You can add `ENVELIQ_VAULT_KEY` there with your key instead of editing the file.
 
 **Check:** you land on the Stacks list and `enveliq` shows as **running** (the first start downloads the images, so wait a few minutes). Click it: both `enveliq` and `enveliq-render` should be running.
 

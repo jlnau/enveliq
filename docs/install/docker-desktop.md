@@ -20,14 +20,17 @@ The easiest way to try Enveliq. Docker Desktop is a free program that runs Envel
 
 ## Step 3. Get the install file
 
+This is the install file. Select everything in the box below and copy it (on the website the box has a **Copy** button). You will paste it into the editor in the steps after it. If you read this on GitHub the box is not shown: open the [install file on GitHub](https://github.com/jlnau/enveliq/blob/main/install/docker-compose.yml) and press **Copy raw file** instead.
+
+<!-- include: install/docker-compose.yml -->
+
 You will make a small text file called `docker-compose.yml` inside that folder.
 
-1. Open <https://github.com/jlnau/enveliq/blob/main/install/docker-compose.yml> in your browser.
-2. Press the **Copy raw file** button (two overlapping squares, top right of the file).
-3. Now save it as a file:
+1. Copy the install file shown at the top of this step.
+2. Now save it as a file:
    - **Windows:** open **Notepad**. Paste. Choose **File**, **Save as**. Go to the `enveliq` folder. Click **Save as type** and choose **All files**. Type the name `docker-compose.yml` and press **Save**.
    - **Mac:** open **TextEdit**. Choose **Format**, **Make Plain Text**. Paste. Choose **File**, **Save**. Name it `docker-compose.yml`, choose the `enveliq` folder, and when it asks about `.yml`, press **Use .yml**. (If it offers "If no extension is provided, use .txt", untick it.)
-4. **Check:** in the folder the file is called `docker-compose.yml`, not `docker-compose.yml.txt`. (On Windows, in File Explorer press **View**, **Show**, **File name extensions** to see the full name.)
+3. **Check:** in the folder the file is called `docker-compose.yml`, not `docker-compose.yml.txt`. (On Windows, in File Explorer press **View**, **Show**, **File name extensions** to see the full name.)
 
 ## Step 4. Open a terminal in the folder
 

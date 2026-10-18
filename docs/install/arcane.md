@@ -25,13 +25,19 @@ Either way you get one long line of letters and numbers. **Save it in your passw
 
 ## Step 2. Create the project
 
+This is the install file. Select everything in the box below and copy it (on the website the box has a **Copy** button). You will paste it into the editor in the steps after it. If you read this on GitHub the box is not shown: open the [install file on GitHub](https://github.com/jlnau/enveliq/blob/main/install/docker-compose.yml) and press **Copy raw file** instead.
+
+<!-- include: install/docker-compose.yml -->
+
 1. Open Arcane. In the left menu click **Projects**.
 2. Click **Create Project**.
 3. In **Name** type `enveliq`.
-4. Open <https://github.com/jlnau/enveliq/blob/main/install/docker-compose.yml> in another tab and press **Copy raw file** (two overlapping squares, top right of the file).
+4. Copy the install file shown at the top of this step.
 5. Back in Arcane, click in the large compose editor, select everything in it (Ctrl + A), and paste (Ctrl + V).
 6. Change the lines marked `<-- CHANGE THIS` to your answers, including your vault key. Keep the quote marks.
 7. Click **Create Project**. Arcane saves it and starts it.
+
+**Tip:** if you see an environment (`.env`) box on the project page, you can put `ENVELIQ_VAULT_KEY=your-key` there instead of editing the file.
 
 **Check:** the project `enveliq` shows two services, `enveliq` and `enveliq-render`, both running. The first start downloads the images and can take a few minutes. If a service is red, open the project and look at its logs, then see [Troubleshooting](troubleshooting.md).
 

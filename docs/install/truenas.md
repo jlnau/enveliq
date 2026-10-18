@@ -25,7 +25,11 @@ Either way you get one long line of letters and numbers. **Save it in your passw
 
 ## Step 2. Prepare the install file
 
-1. Open <https://github.com/jlnau/enveliq/blob/main/install/docker-compose.yml> on your computer and press **Copy raw file**.
+This is the install file. Select everything in the box below and copy it (on the website the box has a **Copy** button). You will paste it into the editor in the steps after it. If you read this on GitHub the box is not shown: open the [install file on GitHub](https://github.com/jlnau/enveliq/blob/main/install/docker-compose.yml) and press **Copy raw file** instead.
+
+<!-- include: install/docker-compose.yml -->
+
+1. Copy the install file shown at the top of this step.
 2. Paste it into a plain text editor (Notepad, TextEdit in plain text mode, or any code editor) so you can edit it comfortably. TrueNAS is strict about indentation, so do not change the spaces at the start of lines.
 3. Change the lines marked `<-- CHANGE THIS` to your answers, including your vault key. The port line already says `- "8765:8765"`, so other devices on your network can open Enveliq.
 
