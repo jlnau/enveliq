@@ -17,7 +17,7 @@ Email you did not ask for is not trusted, so Enveliq rebuilds the formatting fro
 
 - **Scripts, forms, frames, plug-ins and moving content are removed.** Nothing in an email can run, ask for a password or submit anything.
 - **Pictures from the internet are not loaded.** They can tell the sender that you opened the email and from where. A yellow note says how many are held back. Press **Show pictures** to load them for that email only; they are hidden again next time.
-- **Links ask first.** Pressing a link shows where it really goes and asks before opening it in a new tab, exactly like the links in the plain text. On an email marked **Be careful**, the question says so.
+- **Links ask first.** Pressing a link shows where it really goes, with the complete address underneath (wrapped over as many lines as it needs, never cut short), and asks before opening it in a new tab, exactly like the links in the plain text. On an email marked **Be careful**, the question says so.
 - **The email cannot reach Enveliq.** It sits in a sealed frame with no access to your sign-in or anything else on the page, and the server sends it with its own strict rules (no scripts but one of ours, no pictures from the internet unless you asked, no forms).
 
 ## For administrators

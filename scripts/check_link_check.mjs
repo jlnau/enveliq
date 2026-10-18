@@ -12,6 +12,8 @@ import path from "node:path";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const html = fs.readFileSync(path.resolve(process.argv[2] || path.join(here, "..", "prototype", "index.html")), "utf8");
 const ORIGIN = process.env.TOUR ? "https://enveliq.test" : "http://enveliq.test";   // https hides the plain-http warning in the website pictures
+// A very long address, like the tracking links in real mail: it must be shown whole.
+const LONG_URL = "https://orders.example.com/o/1?token=ABC&data=" + "05%7C02%7C%7Cd054e0e676704b5b927b08df2b4b6c1a%7C84df9e7fe9f640afb435aaaaaaaaaaaa%7C1".repeat(12) + "&sdata=xnBzgEjRIve00OJMACYpp%2By";
 let failed = false;
 const check = (label, good) => { console.log((good ? "✓ " : "✗ ") + label); if (!good) { failed = true; console.log("::error::" + label); } };
 for (const ev of ["uncaughtException", "unhandledRejection"]) process.on(ev, (e) => { console.log("::error::" + String((e && e.message) || e).split("\n").slice(0, 3).join(" | ")); process.exit(1); });
@@ -26,7 +28,7 @@ const messages = [
   { ...base, id: "m-none", subject: "Dinner on Friday", sender_display: "Alice", sender_address: "alice@example.invalid", received_at: now - 300, reply_context: ctx("n"), summary: "Asks if you can come to dinner at seven.", category: "Information" },
 ];
 const okLinks = [
-  { label: "View your order", host: "orders.example.com", url: "https://orders.example.com/o/1?token=ABC", note: "", flagged: false },
+  { label: "View your order", host: "orders.example.com", url: LONG_URL, note: "", flagged: false },
   { label: "", host: "tracking.example.net", url: "https://tracking.example.net/x", note: "", flagged: false },
 ];
 const badLinks = [
@@ -96,6 +98,10 @@ const closeViewer = async (page) => { await page.keyboard.press("Escape"); await
   const a = sure.locator("a");
   check("the link opens in a new tab with no referrer", (await a.getAttribute("target")) === "_blank" && /noopener/.test(await a.getAttribute("rel")) && /noreferrer/.test(await a.getAttribute("rel")));
   check("a calm email says Open it, not Open anyway", /^Open it$/.test((await a.innerText()).trim()));
+  const full = sure.locator(".link-full code");
+  check("the full address is shown before Open it, never cut short", (await full.innerText()) === LONG_URL);
+  check("a long address wraps over several lines and nothing is hidden", await full.evaluate((e) => e.scrollHeight <= e.clientHeight + 1 && e.scrollWidth <= e.clientWidth + 1 && e.clientHeight > 40));
+  check("the button opens exactly the address that is shown", (await a.getAttribute("href")) === LONG_URL);
   await shot(page, "links-ask");
   await page.locator("[data-link-ask]").nth(1).click();
   check("only one question is open at a time", (await page.locator(".link-sure:not([hidden])").count()) === 1);

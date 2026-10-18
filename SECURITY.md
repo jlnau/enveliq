@@ -282,7 +282,7 @@ Some existing application pages use inline scripts under a less restrictive Cont
 
 Links contained in email are untrusted.
 
-Enveliq validates supported external links, restricts unsafe destinations and requires user interaction before opening them.
+Enveliq validates supported external links, restricts unsafe destinations and requires user interaction before opening them. Before a link can be opened, the question shows its website and then its complete address, wrapped over as many lines as it needs and never shortened, so a long tracking address can be read in full first.
 
 The application does not automatically visit websites referenced in email messages.
 

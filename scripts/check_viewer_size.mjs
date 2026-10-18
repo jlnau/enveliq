@@ -102,6 +102,7 @@ const box = (page, sel) => page.locator(sel).evaluate((e) => { const r = e.getBo
   check("clicking a link asks first and says where it goes", (await ask.isVisible()) && /This goes to orders\.example\.com\. Open it in a new tab\?/.test(await ask.innerText()));
   check("nothing opened by itself", popups.length === 0);
   const open_ = page.locator("#linkAskOpen");
+  check("the full address is shown before Open it", (await page.locator("#linkAskFull code").innerText()) === (await open_.getAttribute("href")));
   check("only the Open it button leads away, in a new tab with no referrer", (await open_.getAttribute("href")) === "https://orders.example.com/o/1?token=ABC" && (await open_.getAttribute("target")) === "_blank" && /noopener/.test(await open_.getAttribute("rel")) && /noreferrer/.test(await open_.getAttribute("rel")));
   check("a calm email says Open it", /^Open it$/.test((await open_.innerText()).trim()));
   await shot(page, "viewer-big");

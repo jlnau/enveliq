@@ -94,6 +94,7 @@ for (const [name, w, h] of [["computer", 1200, 900], ["phone", 390, 800]]) {
   await inner.locator("a", { hasText: "Shop now" }).click();
   await page.waitForSelector("#linkAsk:not([hidden])");
   check(`[${name}] pressing a link asks first and names the website`, (await page.locator("#linkAskText").innerText()).includes("shop.example.com") && page.url().startsWith(ORIGIN));
+  check(`[${name}] the whole address is shown before it can be opened`, (await page.locator("#linkAskFull code").innerText()) === (await page.locator("#linkAskOpen").getAttribute("href")) && /^https:\/\/shop\.example\.com/.test(await page.locator("#linkAskFull code").innerText()));
   await page.locator("#linkAskNo").click();
   await inner.locator("a", { hasText: "bad link" }).click({ trial: true }).catch(() => {});
   if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, `original-html-${name}.png`) }); }

@@ -303,6 +303,7 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 .attachment-security-strip{display:flex;gap:7px;flex-wrap:wrap;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--c-0d1219)}
 .attachment-security-strip span{font-size:10px;border:1px solid var(--c-315644);background:var(--c-122219);color:var(--c-bfe8cf);border-radius:999px;padding:4px 7px}
 .inline-link{color:#1f4fb0;text-decoration:underline;text-underline-offset:2px;cursor:pointer;border-radius:3px}.inline-link:hover{color:#123a8a}.inline-link:focus-visible{outline:2px solid #1f4fb0;outline-offset:2px}
+.link-full{display:block;flex:1 1 100%;margin:6px 0 4px}.link-full[hidden]{display:none}.link-full small{display:block;font-size:12px;opacity:.75;margin-bottom:3px}.link-full code{display:block;font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow-wrap:anywhere;word-break:break-all;white-space:normal;user-select:all;padding:8px 10px;border-radius:8px;background:rgba(127,140,160,.14);max-height:none}
 .link-ask{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--c-0d1219);font-size:13px;color:var(--text)}.link-ask[hidden]{display:none}.link-ask b{overflow-wrap:anywhere}.link-ask button{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:10px;padding:7px 12px;min-height:36px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
 .attachment-viewer{flex:1;min-height:0;overflow:auto;padding:22px;background:var(--c-0a0e13);display:flex;flex-direction:column;gap:22px;justify-content:flex-start;align-items:center;scroll-behavior:smooth}
 .safe-document{position:relative;flex:0 0 auto;width:min(720px,100%);min-height:720px;background:#fff;color:#20242b;border-radius:4px;box-shadow:0 18px 50px rgba(0,0,0,.35);padding:44px 52px}
@@ -1966,7 +1967,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
     <button class="attachment-modal-close" id="attachmentModalClose" aria-label="Close"><span aria-hidden="true">×</span><span class="cw">Close</span></button>
   </div>
   <div class="attachment-security-strip" id="viewerStrip"></div>
-  <div class="link-ask" id="linkAsk" role="alert" hidden><span id="linkAskText"></span><a class="unsub" id="linkAskOpen" target="_blank" rel="noopener noreferrer nofollow">Open it</a><button type="button" id="linkAskNo">Not now</button></div>
+  <div class="link-ask" id="linkAsk" role="alert" hidden><span id="linkAskText"></span><span class="link-full" id="linkAskFull" hidden></span><a class="unsub" id="linkAskOpen" target="_blank" rel="noopener noreferrer nofollow">Open it</a><button type="button" id="linkAskNo">Not now</button></div>
   <div class="attachment-viewer" id="attachmentViewer"></div>
   <div class="attachment-modal-foot"><strong id="attachmentModalSummary"></strong><p id="viewerNote"></p><div class="modal-actions" id="viewerActions"></div></div>
 </div>
@@ -6682,7 +6683,7 @@ function linksHtml(list,careful){
     const note=typeof l.note==="string"&&l.note?`<small class="link-note${l.flagged?" warn":""}">${esc(l.note.slice(0,300))}</small>`:"";
     const ok=typeof l.url==="string"&&/^https?:\/\/[^\s"'<>\\]{4,2000}$/.test(l.url);
     const act=ok?`<button type="button" data-link-ask aria-expanded="false">Open…</button>`:`<span class="att-only">Not opened from here</span>`;
-    const ask=ok?`<div class="link-sure" hidden><span>${careful||l.flagged?"This email looked odd. ":""}This goes to <b>${host}</b>. Open it in a new tab?</span> <a class="unsub" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer nofollow">${careful||l.flagged?"Open anyway":"Open it"}</a></div>`:"";
+    const ask=ok?`<div class="link-sure" hidden><span>${careful||l.flagged?"This email looked odd. ":""}This goes to <b>${host}</b>. Open it in a new tab?</span><span class="link-full"><small>The full address, exactly as the link has it:</small><code>${esc(l.url)}</code></span> <a class="unsub" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer nofollow">${careful||l.flagged?"Open anyway":"Open it"}</a></div>`:"";
     return `<div class="link-row"><div class="link-line"><span class="link-name"><b>${host}</b>${label}${note}</span>${act}</div>${ask}</div>`;
   }).join("");
   return rows?`<div class="att-title">Links in this email</div><div class="link-list">${rows}</div><p class="att-foot">This is where each link really goes. Enveliq never opens a link for you.</p>`:"";
@@ -6753,11 +6754,18 @@ function emailTextHtml(text,links,careful){
   }
   return out+esc(text.slice(last));
 }
+// The whole address is always shown before a link can be opened, however long it is. It wraps over as many lines as it needs and is never cut short.
+function showLinkFull(url){
+  const box=$("linkAskFull");if(!box)return;
+  box.replaceChildren();const s=document.createElement("small");s.textContent="The full address, exactly as the link has it:";
+  const c=document.createElement("code");c.textContent=url;box.append(s,c);box.hidden=false;
+}
 function askInlineLink(el){
   const url=el.dataset.inlineLink||"",host=el.dataset.host||"";
   if(!/^https?:\/\/[^\s"'<>\\]{4,2000}$/.test(url)||!host)return;
   const t=$("linkAskText");t.replaceChildren(document.createTextNode((el.dataset.careful?"This email looked odd. ":"")+"This goes to "));
   const b=document.createElement("b");b.textContent=host;t.append(b,document.createTextNode(". Open it in a new tab?"));
+  showLinkFull(url);
   const a=$("linkAskOpen");a.href=url;a.textContent=el.dataset.careful?"Open anyway":"Open it";
   $("linkAsk").hidden=false;a.focus();
 }
@@ -6773,6 +6781,7 @@ function askLinkTo(url,careful){
   if(!host){toast("That link cannot be opened from here.",4000);return}
   const t=$("linkAsk");$("linkAskText").replaceChildren(document.createTextNode((careful?"This email looked odd. ":"")+(mail?"This starts an email to ":"This goes to ")));
   const b=document.createElement("b");b.textContent=host.slice(0,100);$("linkAskText").append(b,document.createTextNode(mail?". Open it in your mail app?":". Open it in a new tab?"));
+  showLinkFull(url);
   const a=$("linkAskOpen");a.href=url;a.textContent=careful?"Open anyway":"Open it";t.hidden=false;a.focus();
 }
 function wireFormatted(root,o,c){
