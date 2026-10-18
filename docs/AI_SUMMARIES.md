@@ -150,8 +150,10 @@ wrong (`ai_unreachable`, `ai_refused`, `host_not_allowed`, `ai_bad_reply`).
 
 ## 3. Switch it on per mailbox
 
-Open **Mailboxes**. Tick "Summarise with the AI model" when adding a mailbox, or
-press "Turn AI summaries on" on an existing one. **Sync now** (Mailboxes) and
+Open Settings, **Mailboxes**. A new mailbox starts with "Summarise with the AI model"
+ticked (and with Waiting for reply on); untick it when adding if you do not want
+it. To change it later, press **Edit** on the mailbox's card and tick or untick
+**Write AI summaries**. It saves the moment you tick it. **Sync now** (Mailboxes) and
 **Sync mail** (Inbox) then summarise new emails, newest first, up to 50 per press.
 
 ## Notes

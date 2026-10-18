@@ -1815,104 +1815,137 @@ async function writingHelpSection() {
 // ---------- mailboxes (Proton Bridge and app-password services) ----------
 const BRIDGE_ERRORS = { ok: "Working" };
 const MAILBOX_COLOR_CHOICES = [["", "Automatic"], ["blue", "Blue"], ["green", "Green"], ["orange", "Orange"], ["pink", "Pink"], ["red", "Red"], ["teal", "Teal"], ["purple", "Purple"], ["lime", "Lime"]];
-async function mailboxesPage(me, diagId) {
+const MAILBOX_HEX = { blue: "#2563c9", green: "#2e9d6a", orange: "#c26a1b", pink: "#c2467f", red: "#c8453c", teal: "#1f8f95", purple: "#7c4dcc", lime: "#6a9a1f" };
+const MAILBOX_AUTO = ["blue", "green", "orange", "pink", "red", "teal", "purple", "lime"];
+const mailboxHex = a => MAILBOX_HEX[(a.settings && a.settings.color) || ""] || MAILBOX_HEX[MAILBOX_AUTO[Math.abs([...String(a.id)].reduce((s, c) => s * 31 + c.charCodeAt(0), 7)) % MAILBOX_AUTO.length]];
+// The coloured initial. The colour is set through the page's style object, because a strict policy forbids style attributes.
+function mailboxLogo(a) { const el = h("div", { class: "mblogo", "aria-hidden": "true", text: (a.display_name || a.email_address || "?").trim().charAt(0).toUpperCase() }); el.style.background = mailboxHex(a); return el; }
+const agoText = at => { const m = Math.max(0, Math.round((Date.now() / 1000 - at) / 60)); return m < 1 ? "just now" : m === 1 ? "1 minute ago" : m < 60 ? `${m} minutes ago` : m < 120 ? "1 hour ago" : m < 2880 ? `${Math.round(m / 60)} hours ago` : `${Math.round(m / 1440)} days ago`; };
+// One line that says how a mailbox is doing, in plain words.
+function mailboxState(a, auto) {
+  const last = auto.accounts && auto.accounts[a.id];
+  if (last && last.ok === false) return { bad: true, text: "Needs you: the last check did not work. Open Edit to see why." };
+  if (last && last.ok) return { text: `Up to date, checked ${agoText(last.at)}${last.added ? `, ${last.added} new` : ""}` };
+  return { text: "Not checked yet. Press Sync now." };
+}
+async function mailboxesPage(me, diagId, editId) {
   const accounts = (await api("/accounts")).filter(a => a.owner_user_id === me.id);
   const auto = await api("/sync/status").catch(() => ({ enabled: false, accounts: {} }));
   const ai = await api("/ai/status").catch(() => ({ configured: false }));
-  const out = h("div", {});
 
   if (diagId) {
     const a = accounts.find(x => x.id === diagId);
-    if (a) return diagnosticsPage(me, a, () => mailboxesPage(me));
+    if (a) return diagnosticsPage(me, a, () => mailboxesPage(me, null, a.id));
+  }
+  if (editId) {
+    const a = accounts.find(x => x.id === editId);
+    if (a) return mailboxEditPage(me, a, { auto, ai });
   }
   const addPanel = await mailboxAddPanel(me, { ai, askAi: true, onAdded: async () => { mailboxesPage(me); } });
+  const addSection = h("section", { class: "section", id: "mb_add", hidden: !!accounts.length }, h("h2", { text: "Add a mailbox" }),
+    h("p", { class: "lead" }, "Enveliq reads only the headers of unread mail, shows the original on request, and never stores message bodies. The ", h("a", { href: "/welcome", text: "Setup guide" }), " explains every field."),
+    h("p", { class: "hint guide-note" }, "Step by step on the Enveliq website: ", guide("install/after-install.md#step-4-connect-your-email", "Connecting your email"), " · ", guide("EMAIL_SERVICES.md", "Gmail, iCloud, Yahoo and others"), " · ", guide("MICROSOFT.md", "Outlook and Microsoft 365"), " · ", guide("PROTON_BRIDGE.md", "Proton Mail")), addPanel);
+  const addButton = h("button", { class: "btn primary", type: "button", id: "mb_add_btn", text: "+ Add a mailbox", onclick: () => { addSection.hidden = !addSection.hidden; if (!addSection.hidden) addSection.scrollIntoView({ block: "start" }); } });
 
   const cards = accounts.map(a => {
     const status = h("div", { class: "hint" });
-    const run = async (button, fn) => { button.disabled = true; try { await fn(); } catch (er) { status.replaceChildren(alertBox("bad", er.message)); } finally { button.disabled = false; } };
-    const check = h("button", { class: "btn small", type: "button", text: "Check connection", onclick: e => run(e.target, async () => {
-      const r = await api(`/accounts/${a.id}/bridge/check`, { method: "POST", body: {} });
-      status.replaceChildren(...["imap", "smtp"].map(k => alertBox(r[k] === "ok" ? "good" : "bad", `${k.toUpperCase()}: ${r[k] === "ok" ? "working" : (r[k + "_message"] || r[k])}`)));
-    }) });
-    const sync = h("button", { class: "btn small primary", type: "button", text: "Sync now", onclick: e => run(e.target, async () => {
-      const r = await api(`/accounts/${a.id}/sync`, { method: "POST", body: {} });
-      let summarised = 0, aiProblem = null;
-      if (ai.configured && a.settings && a.settings.ai_summaries) {
-        try {
-          for (let i = 0; i < 5; i++) {
-            e.target.textContent = `Summarising… ${summarised}`;
-            const s = await api(`/accounts/${a.id}/summarise`, { method: "POST", body: {} });
-            summarised += s.summarised;
-            if (!s.remaining || !s.summarised) break;
-          }
-        } catch (er) { aiProblem = er.message; }
-        e.target.textContent = "Sync now";
-      }
-      status.replaceChildren(...[alertBox("good", `${r.added} new${r.removed ? `, ${r.removed} no longer unread removed` : ""}${summarised ? `, ${summarised} summarised` : ""}.`), aiProblem ? alertBox("bad", `AI summaries: ${aiProblem}`) : null].filter(Boolean));
-    }) });
-    const remove = h("button", { class: "btn small danger", type: "button", text: "Remove", onclick: e => confirmThen(e.target, `Remove ${a.display_name} and its saved summaries? Your mail stays with your email service.`, async () => {
-      try { await api(`/accounts/${a.id}`, { method: "DELETE" }); toast("Mailbox removed"); mailboxesPage(me); } catch (er) { toast(er.message); }
-    }) });
-    const diag = h("button", { class: "btn small", type: "button", text: "Diagnostics", onclick: () => mailboxesPage(me, a.id) });
-    // Rename: the name is only a label. It is shown on the mail list and in reports; nothing else changes.
-    const nameSlot = h("div", {});
-    const rename = h("button", { class: "btn small", type: "button", text: "Rename", "aria-label": `Rename ${a.display_name}`, onclick: () => {
-      const box = h("input", { id: `rn_${a.id}`, type: "text", maxlength: 128, value: a.display_name, "aria-label": "New name for this mailbox", autocomplete: "off" });
-      const form = h("form", { class: "row rename-form" }, box,
-        h("button", { class: "btn small primary", type: "submit", text: "Save name" }),
-        h("button", { class: "btn small", type: "button", text: "Cancel", onclick: () => nameSlot.replaceChildren() }));
-      onSubmit(form, async () => {
-        const name = box.value.trim();
-        if (!name) { status.replaceChildren(alertBox("bad", "Type a name for this mailbox.")); return; }
-        if (name === a.display_name) { nameSlot.replaceChildren(); return; }
-        await api(`/accounts/${a.id}`, { method: "PATCH", body: { display_name: name } });
-        toast("Mailbox renamed"); mailboxesPage(me);
-      });
-      nameSlot.replaceChildren(form); box.focus(); box.select();
-    } });
-    // Colour of the small label that shows which mailbox an email came from. "Automatic" lets Enveliq pick one.
-    const colorSel = h("select", { id: `col_${a.id}`, "aria-label": `Label colour for ${a.display_name}`, onchange: e => run(e.target, async () => {
-      const color = e.target.value;
-      await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), color } } });
-      a.settings = { ...(a.settings || {}), color };
-      toast(color ? `Label colour set to ${color}` : "Label colour is automatic");
-    }) }, MAILBOX_COLOR_CHOICES.map(([v, t]) => h("option", { value: v, text: t, selected: ((a.settings && a.settings.color) || "") === v })));
-    const colorField = h("label", { class: "color-pick" }, "Label colour ", colorSel);
-    const aiOn = !!(a.settings && a.settings.ai_summaries);
-    const aiToggle = ai.configured ? h("button", { class: "btn small", type: "button", text: aiOn ? "Turn AI summaries off" : "Turn AI summaries on", onclick: e => run(e.target, async () => {
-      await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), ai_summaries: !aiOn } } });
-      toast(aiOn ? "AI summaries are off" : "AI summaries are on"); mailboxesPage(me);
-    }) }) : null;
-    const waitOn = !!(a.settings && a.settings.waiting);
-    const waitToggle = ai.configured && isMail(a) ? h("button", { class: "btn small", type: "button", text: waitOn ? "Turn Waiting for reply off" : "Turn Waiting for reply on", onclick: e => {
-      if (waitOn) return run(e.target, async () => {
-        await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), waiting: false } } });
-        toast("Waiting for reply is off"); mailboxesPage(me);
-      });
-      return confirmThen(e.target, "Waiting for reply watches this mailbox's Sent folder and shows each email you send from now on to your AI model once, to decide whether you are waiting for an answer. It does not read anything already in Sent; to follow an older email, press Follow for a reply on it in Sent. Only a short note is kept, never the email. If your AI model is a cloud service, the text of your sent emails goes to it. Turn it on?", () => run(e.target, async () => {
-        await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), waiting: true } } });
-        toast("Waiting for reply is on. It starts at the next sync."); mailboxesPage(me);
-      }), "Yes, turn it on", "primary");
-    } }) : null;
-    const autoOn = !(a.settings && a.settings.auto_sync === false);
-    const last = auto.accounts && auto.accounts[a.id];
-    const autoNote = !auto.enabled ? "Automatic sync is turned off on this server." : !autoOn ? "Automatic sync is off for this mailbox." :
-      last ? (last.ok ? `Last automatic check ${new Date(last.at * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}: ${last.added} new${last.removed ? `, ${last.removed} removed` : ""}.` : `Last automatic check failed (${last.error}). It tries again later.`) : `Checks every ${auto.minutes} minutes while Enveliq is unlocked.`;
-    const autoToggle = auto.enabled ? h("button", { class: "btn small", type: "button", text: autoOn ? "Turn automatic sync off" : "Turn automatic sync on", onclick: e => run(e.target, async () => {
-      await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), auto_sync: !autoOn } } });
-      toast(autoOn ? "Automatic sync is off" : "Automatic sync is on"); mailboxesPage(me);
-    }) }) : null;
-    return h("section", { class: "section" },
-      h("div", { class: "item" }, h("div", {}, h("strong", { text: a.display_name }), h("div", { class: "meta", text: `${a.email_address} · ${a.auth_method === "proton_bridge" ? `Proton Bridge at ${a.server}:${a.port}` : `${a.provider} (app password)`}${ai.configured ? ` · AI summaries ${aiOn ? "on" : "off"}` : ""}` }), h("div", { class: "hint", text: autoNote }), colorField, nameSlot),
-        isMail(a) ? h("div", { class: "row" }, check, sync, rename, autoToggle, aiToggle, waitToggle, diag, remove) : h("div", { class: "row" }, rename, remove)), status);
+    const st = mailboxState(a, auto);
+    const sync = h("button", { class: "btn small", type: "button", text: "Sync now", onclick: e => syncNow(a, ai, e.target, status) });
+    return h("div", { class: "mbcard", "data-mailbox": a.id },
+      h("div", { class: "mbwho" }, mailboxLogo(a),
+        h("div", {}, h("strong", { text: a.display_name }), h("div", { class: "meta", text: a.email_address }))),
+      h("div", { class: "mbstate" }, h("span", { class: st.bad ? "mbdot amber" : "mbdot" }), st.text),
+      status,
+      h("div", { class: "mbacts" }, isMail(a) ? sync : null, h("button", { class: "btn small", type: "button", "aria-label": `Edit ${a.display_name}`, text: "Edit", onclick: () => mailboxesPage(me, null, a.id) })));
   });
 
   show(...chrome(me, "mailboxes",
-    h("h1", { text: "Mailboxes" }),
-    ...(cards.length ? cards : [h("section", { class: "section" }, h("p", { class: "lead", text: "No mailboxes yet. Add one below. Gmail, iCloud, Yahoo, Fastmail, Proton Mail and any IMAP service work." }))]),
-    h("section", { class: "section" }, h("h2", { text: "Add a mailbox" }),
-      h("p", { class: "lead" }, "Enveliq reads only the headers of unread mail, shows the original on request, and never stores message bodies. The ", h("a", { href: "/welcome", text: "Setup guide" }), " explains every field."),
-      h("p", { class: "hint guide-note" }, "Step by step on the Enveliq website: ", guide("install/after-install.md#step-4-connect-your-email", "Connecting your email"), " · ", guide("EMAIL_SERVICES.md", "Gmail, iCloud, Yahoo and others"), " · ", guide("MICROSOFT.md", "Outlook and Microsoft 365"), " · ", guide("PROTON_BRIDGE.md", "Proton Mail")), addPanel), out));
+    h("div", { class: "mbhead" }, h("div", {}, h("h1", { text: "Your mailboxes" }), h("p", { class: "lead", text: accounts.length ? "The email accounts Enveliq checks for you." : "No mailboxes yet. Add one to begin. Gmail, iCloud, Yahoo, Fastmail, Proton Mail and any IMAP service work." })), addButton),
+    accounts.length ? h("div", { class: "mbgrid" }, cards) : null,
+    accounts.length ? h("p", { class: "hint", text: "Checking for new mail, AI summaries and Waiting for reply are on for every new mailbox. Press Edit to change them for one mailbox." }) : null,
+    addSection));
+}
+async function syncNow(a, ai, button, status) {
+  button.disabled = true; const label = button.textContent;
+  try {
+    const r = await api(`/accounts/${a.id}/sync`, { method: "POST", body: {} });
+    let summarised = 0, aiProblem = null;
+    if (ai.configured && a.settings && a.settings.ai_summaries) {
+      try {
+        for (let i = 0; i < 5; i++) {
+          button.textContent = `Summarising… ${summarised}`;
+          const s = await api(`/accounts/${a.id}/summarise`, { method: "POST", body: {} });
+          summarised += s.summarised;
+          if (!s.remaining || !s.summarised) break;
+        }
+      } catch (er) { aiProblem = er.message; }
+    }
+    status.replaceChildren(...[alertBox("good", `${r.added} new${r.removed ? `, ${r.removed} no longer unread removed` : ""}${summarised ? `, ${summarised} summarised` : ""}.`), aiProblem ? alertBox("bad", `AI summaries: ${aiProblem}`) : null].filter(Boolean));
+  } catch (er) { status.replaceChildren(alertBox("bad", er.message)); }
+  finally { button.disabled = false; button.textContent = label; }
+}
+// The page for one mailbox. Ticking a box or choosing a colour saves at once; nothing here needs a Save button.
+function mailboxEditPage(me, a, { auto, ai }) {
+  const status = h("div", { class: "hint" });
+  const st = mailboxState(a, auto);
+  const savedTag = () => h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
+  const flash = tag => { tag.textContent = "Saved ✓"; tag.classList.add("show"); clearTimeout(tag._t); tag._t = setTimeout(() => tag.classList.remove("show"), 1800); };
+  const save = async (patch, tag, undo) => {
+    try {
+      const settings = { ...(a.settings || {}), ...patch };
+      await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings } });
+      a.settings = settings; flash(tag);
+    } catch (er) { if (undo) undo(); status.replaceChildren(alertBox("bad", `Could not save: ${er.message}`)); }
+  };
+  const tick = (id, title, hint, on, key, tag, extra) => h("label", { class: "optrow", for: id },
+    h("input", { id, type: "checkbox", checked: on, onchange: e => { const box = e.target; save({ [key]: box.checked }, tag, () => { box.checked = !box.checked; }); if (extra) extra(box.checked); } }),
+    h("span", {}, h("strong", { text: title }), h("span", { class: "hint", text: hint })));
+  const tagA = savedTag(), tagB = savedTag();
+  const autoOn = !(a.settings && a.settings.auto_sync === false);
+  const rows = [
+    auto.enabled && isMail(a) ? tick(`mb_auto_${a.id}`, "Check for new mail automatically", `Enveliq looks every ${auto.minutes} minutes. Turn off to check only when you press Sync now.`, autoOn, "auto_sync", tagA) : null,
+    ai.configured ? tick(`mb_ai_${a.id}`, "Write AI summaries", "Each email gets a short summary, marked as written by AI. The email text goes to your AI model and is not kept.", !!(a.settings && a.settings.ai_summaries), "ai_summaries", tagA) : null,
+    ai.configured && isMail(a) ? tick(`mb_wait_${a.id}`, "Follow sent mail for replies", "Shows Waiting for reply. Each new email you send is shown to your AI model once, to decide whether you expect an answer. Older sent mail is not read, and only a short note is kept.", !!(a.settings && a.settings.waiting), "waiting", tagA) : null,
+  ].filter(Boolean);
+  const nameBox = h("input", { id: `rn_${a.id}`, type: "text", maxlength: 128, value: a.display_name, "aria-label": "Mailbox name", autocomplete: "off", onchange: async e => {
+    const name = e.target.value.trim();
+    if (!name) { e.target.value = a.display_name; status.replaceChildren(alertBox("bad", "Type a name for this mailbox.")); return; }
+    if (name === a.display_name) return;
+    try { await api(`/accounts/${a.id}`, { method: "PATCH", body: { display_name: name } }); a.display_name = name; flash(tagB); title.textContent = name; remove.textContent = `Remove ${name}`; logo.textContent = name.charAt(0).toUpperCase(); }
+    catch (er) { e.target.value = a.display_name; status.replaceChildren(alertBox("bad", er.message)); }
+  } });
+  const colorSel = h("select", { id: `col_${a.id}`, "aria-label": `Label colour for ${a.display_name}`, onchange: async e => {
+    const color = e.target.value;
+    try { await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), color } } }); a.settings = { ...(a.settings || {}), color }; flash(tagB); logo.style.background = mailboxHex(a); toast(color ? `Label colour set to ${color}` : "Label colour is automatic"); }
+    catch (er) { status.replaceChildren(alertBox("bad", er.message)); }
+  } }, MAILBOX_COLOR_CHOICES.map(([v, t]) => h("option", { value: v, text: t, selected: ((a.settings && a.settings.color) || "") === v })));
+  const logo = mailboxLogo(a);
+  const title = h("h1", { text: a.display_name });
+  const checkBtn = h("button", { class: "btn small", type: "button", text: "Check connection", onclick: async e => {
+    e.target.disabled = true;
+    try {
+      const r = await api(`/accounts/${a.id}/bridge/check`, { method: "POST", body: {} });
+      status.replaceChildren(...["imap", "smtp"].map(k => alertBox(r[k] === "ok" ? "good" : "bad", `${k.toUpperCase()}: ${r[k] === "ok" ? "working" : (r[k + "_message"] || r[k])}`)));
+    } catch (er) { status.replaceChildren(alertBox("bad", er.message)); } finally { e.target.disabled = false; }
+  } });
+  const syncBtn = h("button", { class: "btn small primary", type: "button", text: "Sync now", onclick: e => syncNow(a, ai, e.target, status) });
+  const remove = h("button", { class: "btn danger", type: "button", text: `Remove ${a.display_name}`, onclick: e => confirmThen(e.target, `Remove ${a.display_name} and its saved summaries? Your mail stays with your email service.`, async () => {
+    try { await api(`/accounts/${a.id}`, { method: "DELETE" }); toast("Mailbox removed"); mailboxesPage(me); } catch (er) { toast(er.message); }
+  }) });
+  const detail = a.auth_method === "proton_bridge" ? `Proton Bridge at ${a.server}:${a.port}` : a.auth_method === "imap" ? `${a.provider} (app password)` : a.provider || "Connected";
+  show(...chrome(me, "mailboxes",
+    h("button", { class: "linkback", type: "button", text: "‹ Mailboxes", onclick: () => mailboxesPage(me) }),
+    h("div", { class: "mbtitle" }, logo, h("div", {}, title, h("div", { class: "meta", text: a.email_address })), h("span", { class: st.bad ? "mbchip amber" : "mbchip", text: st.bad ? "Needs you" : "Working" }),
+      isMail(a) ? h("div", { class: "mbacts" }, syncBtn, checkBtn) : null),
+    status,
+    h("div", { class: "mbedit" },
+      h("div", { class: "mbcol" },
+        rows.length ? h("section", { class: "section" }, h("h2", {}, "Checking and summaries ", tagA), h("p", { class: "lead", text: "Your choices save as you make them." }), ...rows) : null,
+        h("section", { class: "section" }, h("h2", {}, "Look ", tagB), h("p", { class: "lead", text: "The name and colour you see in your lists." }), nameBox, h("label", { class: "color-pick", for: `col_${a.id}` }, "Label colour ", colorSel))),
+      h("div", { class: "mbcol" },
+        h("section", { class: "section" }, h("h2", { text: "Connection" }), h("p", { class: "lead", text: detail }), st.bad ? alertBox("bad", st.text) : h("p", { class: "hint", text: st.text }),
+          isMail(a) ? more("Diagnostics", h("p", { class: "hint", text: "Shows what Enveliq holds for this mailbox, for finding out why something looks wrong." }), h("button", { class: "btn small", type: "button", text: "Open diagnostics", onclick: () => mailboxesPage(me, a.id) })) : null),
+        h("section", { class: "section mbremove" }, h("h2", { text: "Remove this mailbox" }), h("p", { class: "lead", text: "Enveliq stops checking it and forgets its saved summaries. Your email itself is not touched." }), remove)))));
 }
 // What Enveliq holds for one mailbox, with the same actions as the inbox. For finding out why something looks wrong.
 async function diagnosticsPage(me, account, back) {

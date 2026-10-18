@@ -209,6 +209,8 @@ jobs:
       - run: npx playwright install ${{ vars.RUNNER_LABELS == '' && '--with-deps' || '' }} chromium
       - name: A label on each email says which mailbox it came from when there are several (made-up mail, no server)
         run: node scripts/check_mailbox_label.mjs
+      - name: Browser check of the Mailboxes page and its Edit page
+        run: node scripts/check_mailboxes_page.mjs
       - name: Searching your tasks by typing part of their words (made-up tasks, no server)
         run: node scripts/check_task_search.mjs
       - name: On a phone an open email is never wider than the screen, so the page does not look zoomed in (made-up mail, no server)

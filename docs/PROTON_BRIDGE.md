@@ -158,7 +158,10 @@ The **Setup guide** (`/welcome`, linked in the menu) walks through this with a
 help line under every field and tests the connection before saving. The table
 below is the same information.
 
-Sign in, open **Mailboxes** in the top bar (`/mailboxes`) and fill in:
+Sign in, open **Mailboxes** in the top bar (`/mailboxes`), press **Add a mailbox** and fill in:
+
+(Each mailbox then appears as a card with **Sync now** and **Edit**. Edit holds automatic checking, AI summaries, Waiting for reply, the name and colour, Diagnostics and Remove. Ticking a box there saves at once.)
+
 
 | Field | Value |
 | --- | --- |

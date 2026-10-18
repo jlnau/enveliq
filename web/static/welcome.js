@@ -250,8 +250,8 @@ async function mailboxAddPanel(me, opts = {}) {
 
   const unavailable = p => h("div", { class: "alert" }, h("strong", { text: `${p.label} cannot be connected` }), h("p", { text: p.unavailable_reason }));
 
-  const aiBox = () => ai.configured && opts.askAi ? h("label", { class: "check", for: "mb_ai" }, h("input", { id: "mb_ai", type: "checkbox" }), h("span", {}, h("strong", { text: "Summarise with the AI model" }),
-    h("div", { class: "hint", text: `Sends the plain text of each new email to your AI server (${ai.model}) to write the summary, then discards the text.` }))) : null;
+  const aiBox = () => ai.configured && opts.askAi ? h("label", { class: "check", for: "mb_ai" }, h("input", { id: "mb_ai", type: "checkbox", checked: true }), h("span", {}, h("strong", { text: "Summarise with the AI model" }),
+    h("div", { class: "hint", text: `Sends the plain text of each new email to your AI server (${ai.model}) to write the summary, then discards the text. It also follows the emails you send, to show Waiting for reply. You can switch either off later, on the mailbox's Edit page.` }))) : null;
   const identities = p => richField("Other addresses you send from (optional)", input("mb_ids", { placeholder: "work@example.com, alias@example.com", spellcheck: "false" }),
     `If this account has more than one address or alias, list them here, separated by commas. When an email arrived at one of them, your reply is sent from that address. Addresses that are not listed reply from the main address.`);
 
@@ -259,7 +259,7 @@ async function mailboxAddPanel(me, opts = {}) {
   async function connect(form, result, body, adviceFor) {
     result.replaceChildren();
     const extra = form.querySelector("#mb_ai");
-    if (extra) body.settings.ai_summaries = extra.checked;
+    if (extra) { body.settings.ai_summaries = extra.checked; if (extra.checked && isMail(body)) body.settings.waiting = true; }
     const created = await api("/accounts", { method: "POST", body });
     let check;
     try { check = await api(`/accounts/${created.id}/bridge/check`, { method: "POST", body: {} }); }
@@ -438,7 +438,7 @@ async function welcomePage(me, params) {
           h("button", { class: "btn primary", type: "button", text: label, onclick: async e => {
             e.target.disabled = true;
             try {
-              for (const a of accounts) await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), ai_summaries: ai.configured && useAi.checked } } });
+              for (const a of accounts) await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), ai_summaries: ai.configured && useAi.checked, ...(ai.configured && useAi.checked && isMail(a) ? { waiting: a.settings && a.settings.waiting === false ? false : true } : {}) } } });
               await go(2);
             } catch (er) { toast(er.message); e.target.disabled = false; }
           } }),
