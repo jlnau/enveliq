@@ -6,7 +6,22 @@
 
 ## Step 1. Decide your settings
 
-Open [Choose your settings](choose-settings.md), decide your answers, and come back. This includes a **vault key**, which is required: make it now with [Setting 4: the vault key](choose-settings.md#setting-4-the-vault-key-required) and save a copy in your password manager. Have your **setup code** ready.
+Open [Choose your settings](choose-settings.md), decide your answers, and come back. Have your **setup code** ready.
+
+### Make your vault key (required)
+
+The vault key is a long secret that locks everything Enveliq keeps. Enveliq will not finish setup without one. Make it now, **before** you start Enveliq. Use whichever way is easiest:
+
+- **In a terminal** (on Mac or Linux): `openssl rand -hex 32`
+- **In a terminal anywhere Docker runs, including Windows:**
+
+  ```
+  docker run --rm alpine sh -c "head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n'; echo"
+  ```
+
+- **No terminal?** In your password manager (Bitwarden, 1Password and others) make a new password that is **64 characters, letters and numbers only**.
+
+Either way you get one long line of letters and numbers. **Save it in your password manager right now.** If your install file is ever lost, this key is the only way to open your data again. Then, when you edit the install file below, paste the key between the quote marks on the line `ENVELIQ_VAULT_KEY: "PASTE-YOUR-VAULT-KEY-HERE"`.
 
 ## Step 2. Create the stack
 
@@ -16,7 +31,7 @@ Open [Choose your settings](choose-settings.md), decide your answers, and come b
 4. Leave **Build method** on **Web editor**.
 5. Open <https://github.com/jlnau/enveliq/blob/main/install/docker-compose.yml> in another tab and press **Copy raw file** (two overlapping squares, top right of the file).
 6. Back in Portainer, click inside the web editor and paste (Ctrl + V).
-7. Change the lines marked `<-- CHANGE THIS` to your answers. Keep the quote marks.
+7. Change the lines marked `<-- CHANGE THIS` to your answers, including your vault key. Keep the quote marks.
 8. Scroll down and press **Deploy the stack**.
 
 **Check:** you land on the Stacks list and `enveliq` shows as **running** (the first start downloads the images, so wait a few minutes). Click it: both `enveliq` and `enveliq-render` should be running.

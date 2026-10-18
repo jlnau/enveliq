@@ -6,7 +6,22 @@ For Synology NAS models that run **Container Manager** (DSM 7.2 or newer). It is
 
 ## Step 1. Decide your settings
 
-Open [Choose your settings](choose-settings.md), decide your answers, and come back. This includes a **vault key**, which is required: make it now with [Setting 4: the vault key](choose-settings.md#setting-4-the-vault-key-required) and save a copy in your password manager. On a NAS you open Enveliq from other devices, so you will most likely choose address **B** (home Wi-Fi) or **C** (Tailscale). Have your **setup code** ready.
+Open [Choose your settings](choose-settings.md), decide your answers, and come back. On a NAS you open Enveliq from other devices, so you will most likely choose address **B** (home Wi-Fi) or **C** (Tailscale). Have your **setup code** ready.
+
+### Make your vault key (required)
+
+The vault key is a long secret that locks everything Enveliq keeps. Enveliq will not finish setup without one. Make it now, **before** you start Enveliq. Use whichever way is easiest:
+
+- **In a terminal** (on Mac or Linux): `openssl rand -hex 32`
+- **In a terminal anywhere Docker runs, including Windows:**
+
+  ```
+  docker run --rm alpine sh -c "head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n'; echo"
+  ```
+
+- **No terminal?** In your password manager (Bitwarden, 1Password and others) make a new password that is **64 characters, letters and numbers only**.
+
+Either way you get one long line of letters and numbers. **Save it in your password manager right now.** If your install file is ever lost, this key is the only way to open your data again. Then, when you edit the install file below, paste the key between the quote marks on the line `ENVELIQ_VAULT_KEY: "PASTE-YOUR-VAULT-KEY-HERE"`.
 
 ## Step 2. Install Container Manager
 
@@ -27,7 +42,7 @@ Open [Choose your settings](choose-settings.md), decide your answers, and come b
 3. **Path:** press **Set Path** and choose `docker/enveliq`.
 4. **Source:** choose **Create docker-compose.yml**.
 5. Open <https://github.com/jlnau/enveliq/blob/main/install/docker-compose.yml> on your computer and press **Copy raw file**. Paste it into the box (Ctrl + V).
-6. Change the lines marked `<-- CHANGE THIS` to your answers. The port line already says `- "8765:8765"`, so other devices on your network can open Enveliq.
+6. Change the lines marked `<-- CHANGE THIS` to your answers, including your vault key. The port line already says `- "8765:8765"`, so other devices on your network can open Enveliq.
 7. Press **Next**. If it offers **Set up web portal via Web Station**, leave it off. Press **Next**, then **Done**.
 
 Container Manager now downloads and starts Enveliq. This can take several minutes the first time.
