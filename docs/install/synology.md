@@ -4,9 +4,9 @@ For Synology NAS models that run **Container Manager** (DSM 7.2 or newer). It is
 
 **You need:** a Synology with an **Intel or AMD** processor (most "Plus" models, shown as `+` in the name, for example DS920+) and at least 2 GB of memory. Models with ARM processors need the [build method](raspberry-pi.md) instead. Not sure? Search your model number on Synology's website for "CPU".
 
-## Step 1. Decide your settings
+## Step 1. Decide your address and make your vault key
 
-Open [Choose your settings](choose-settings.md), decide your answers, and come back. On a NAS you open Enveliq from other devices, so you will most likely choose address **B** (home Wi-Fi) or **C** (Tailscale). Have your **setup code** ready.
+Open [Choose your settings](choose-settings.md), read the address options, and come back. On a NAS you open Enveliq from other devices, so you will most likely choose address **B** (home Wi-Fi) or **C** (Tailscale).
 
 ### Make your vault key (required)
 

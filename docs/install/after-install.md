@@ -6,7 +6,7 @@ You have installed Enveliq and it is running. This page takes you from the first
 
 1. Open the address you chose (for example <http://localhost:8765>).
 2. You should see **Set up Enveliq**. If you see something else, see [Troubleshooting](troubleshooting.md#the-page-does-not-open).
-3. Type the **setup code** you put in the install file. (Do not remember it? See [I do not know the setup code](troubleshooting.md#i-do-not-know-the-setup-code).)
+3. Type the **setup code**. Enveliq made it for you; it is not something you chose. Read it by running `docker exec enveliq cat /data/setup-code.txt` (or see [How to read the setup code](troubleshooting.md#i-do-not-know-the-setup-code) if you use a control panel).
 
 ## Step 2. Make your administrator account
 

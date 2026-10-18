@@ -4,9 +4,9 @@ Unraid can run Docker Compose projects with a free add-on called **Docker Compos
 
 **You need:** Unraid 6.12 or newer with Docker switched on, and about 2 GB of free memory.
 
-## Step 1. Decide your settings
+## Step 1. Decide your address and make your vault key
 
-Open [Choose your settings](choose-settings.md), decide your answers, and come back. On Unraid you open Enveliq from other devices, so you will most likely choose address **B** (home Wi-Fi) or **C** (Tailscale). Have your **setup code** ready.
+Open [Choose your settings](choose-settings.md), read the address options, and come back. On Unraid you open Enveliq from other devices, so you will most likely choose address **B** (home Wi-Fi) or **C** (Tailscale).
 
 ### Make your vault key (required)
 

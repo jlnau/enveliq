@@ -4,9 +4,7 @@
 
 **You need:** Arcane up and running, and about 2 GB of free memory.
 
-## Step 1. Decide your settings
-
-Open [Choose your settings](choose-settings.md), decide your answers, and come back. Have your **setup code** ready.
+## Step 1. Make your vault key
 
 ### Make your vault key (required)
 

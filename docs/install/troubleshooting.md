@@ -42,7 +42,7 @@ Your computer is not an ordinary 64-bit Intel or AMD one (for example a Raspberr
 
 ## I do not know the setup code
 
-The code is whatever you put in `ENVELIQ_SETUP_CODE`. If you forgot it, or you left the placeholder and Enveliq made one, read it from the container:
+Enveliq makes the setup code itself the first time it starts (unless you set `ENVELIQ_SETUP_CODE` yourself). Read it from the container:
 
 ```
 docker exec enveliq cat /data/setup-code.txt
