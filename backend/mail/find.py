@@ -306,7 +306,7 @@ class FindJobs:
 
     def progress(self, job: Job) -> dict[str, Any]:
         return {
-            "id": job.id, "done": job.done, "cancelled": job.cancelled, "total": job.total,
+            "id": job.id, "done": job.done, "cancelled": job.cancelled, "total": job.total, "listed": len(job.refs),
             "include_junk": job.include_junk,
             "mailboxes": [{"account_id": m.account_id, "label": m.label, "state": m.state, "found": m.found, "message": m.message} for m in job.mailboxes.values()],
         }

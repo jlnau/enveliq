@@ -265,6 +265,8 @@ jobs:
         run: node scripts/check_waiting.mjs
       - name: All emails switch and Generate summary (simulated server)
         run: node scripts/check_all_mail.mjs
+      - name: Find any email: search, view, summarise, Found emails and the phone layout (simulated server)
+        run: node scripts/check_find.mjs
       - name: Notification links, new-email alert switches and install manifest (simulated server)
         run: node scripts/check_notification_link.mjs
 
