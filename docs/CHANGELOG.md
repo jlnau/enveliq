@@ -10,7 +10,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 **Emails without a summary are tried again.** Unread emails that were shown without a summary (the AI was busy or did not answer, or they arrived before AI summaries were switched on) are now put back in the AI line after each mailbox check, with longer waits between tries and a limit of five. Their card now always has a **Generate summary** button and says plainly why a summary is missing: no AI model set up, summaries off for the mailbox, or the last reason it failed. Touches `backend/mail/service.py`, `extra_routes.py` (the queue answer carries a short notice), `prototype/index.html` and `docs/AI_SUMMARIES.md`.
 
-**Password managers and the two-factor page.** The sign-in code box now carries the usual one-time-code hints (name, label, placeholder, no auto-capitalise) so password managers such as Bitwarden offer the authenticator code. The Vault key guide now shows `docker compose exec enveliq ...` without `-it`, which Docker Compose rejects. Touches `web/static/auth.js`, `docs/VAULT_KEY.md` and `backend/vault_key.py`.
+**Password managers and the two-factor page.** The sign-in code box now carries the usual one-time-code hints (name, label, placeholder, no auto-capitalise) so password managers such as Bitwarden offer the authenticator code. The Vault key guide now uses `docker exec -it enveliq ...`, because some Docker Compose versions reject flags such as `-it` and `-m` on `docker compose exec`. Touches `web/static/auth.js`, `docs/VAULT_KEY.md` and `backend/vault_key.py`.
 
 ## v0.93 (2026-10-16)
 

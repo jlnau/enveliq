@@ -1,8 +1,8 @@
 """Switch an existing vault between a typed passphrase and a key file.
 
-    docker compose exec enveliq python -m backend.vault_key adopt
-    docker compose exec enveliq python -m backend.vault_key use-passphrase
-    docker compose exec enveliq python -m backend.vault_key status
+    docker exec -it enveliq python -m backend.vault_key adopt
+    docker exec -it enveliq python -m backend.vault_key use-passphrase
+    docker exec -it enveliq python -m backend.vault_key status
 
 Nothing stored is re-encrypted: the vault's master key is wrapped with the new
 secret. Run it on the server (it needs the data folder), then restart Enveliq.
