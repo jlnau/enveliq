@@ -1,6 +1,6 @@
 # Choose your settings
 
-The install file ([`install/docker-compose.yml`](../../install/docker-compose.yml)) has **four lines** to check (three you may change, and the vault key, which is required). They are marked `<-- CHANGE THIS`. Everything else stays as it is.
+Enveliq's install file ([`install/docker-compose.yml`](../../install/docker-compose.yml)) needs only one thing from you, the vault key, and it already has safe defaults for everything else. This page is for when you want to change those defaults, mainly to open Enveliq from your phone or another device. Each setting is read from the `.env` file next to the install file (for example `ENVELIQ_PUBLIC_URL=http://192.168.1.50:8765`), or from your panel's environment box.
 
 Read this page once, decide your answers, and then go back to your guide. Nothing here is permanent: you can change any of it later and redeploy.
 
@@ -40,6 +40,8 @@ You need this only for option B. It looks like `192.168.1.50` (four numbers with
 
 ## Setting 2: the one-time setup code
 
+**You can skip this setting.** Leave it empty and Enveliq makes a code itself (read it with `docker exec enveliq cat /data/setup-code.txt`).
+
 In the file this is `ENVELIQ_SETUP_CODE`. The very first time you open Enveliq it asks for this code. It proves the person setting up Enveliq is you and not someone else who found the page.
 
 1. Make up a code that is **long and random**: at least 20 letters and numbers. A password manager's "generate password" button is perfect. Or ask Docker to make one:
@@ -49,7 +51,7 @@ In the file this is `ENVELIQ_SETUP_CODE`. The very first time you open Enveliq i
    ```
 
    It prints something like `9f2c1e7a4b6d03885c2e1f77a9b04d6e51c8a3f2d7b09e41`. Use that.
-2. Replace `CHANGE-ME-make-this-long-and-random` in the file with your code, keeping the quote marks.
+2. Put it in the `.env` file as `ENVELIQ_SETUP_CODE=your-code`.
 3. Write it down for a minute: you type it once, on the first screen.
 
 After setup is finished the code does nothing and can be forgotten. You can delete the line afterwards.
@@ -83,7 +85,7 @@ Everything Enveliq keeps is locked with a **vault key**, and Enveliq unlocks its
    ```
 
 2. Save it in your password manager **now**. Without it your data cannot be opened if the install file is ever lost.
-3. In the install file, find the line `ENVELIQ_VAULT_KEY: "PASTE-YOUR-VAULT-KEY-HERE"` and paste your key in its place, between the quote marks:
+3. In the install file, find the line `ENVELIQ_VAULT_KEY: "${ENVELIQ_VAULT_KEY:-}"` and replace `${ENVELIQ_VAULT_KEY:-}` with your key (or put `ENVELIQ_VAULT_KEY=your-key` in a `.env` file next to the install file, as the [install page](README.md) does):
 
    ```
          ENVELIQ_VAULT_KEY: "9f2c...your key here..."

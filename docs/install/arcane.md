@@ -21,7 +21,7 @@ The vault key is a long secret that locks everything Enveliq keeps. Enveliq will
 
 - **No terminal?** In your password manager (Bitwarden, 1Password and others) make a new password that is **64 characters, letters and numbers only**.
 
-Either way you get one long line of letters and numbers. **Save it in your password manager right now.** If your install file is ever lost, this key is the only way to open your data again. Then, when you edit the install file below, paste the key between the quote marks on the line `ENVELIQ_VAULT_KEY: "PASTE-YOUR-VAULT-KEY-HERE"`.
+Either way you get one long line of letters and numbers. **Save it in your password manager right now.** If your install file is ever lost, this key is the only way to open your data again. Then, when you edit the install file below, put it in the line `ENVELIQ_VAULT_KEY: "${ENVELIQ_VAULT_KEY:-}"`: replace `${ENVELIQ_VAULT_KEY:-}` with your key and keep the quote marks (or, if your panel has an environment box, set `ENVELIQ_VAULT_KEY` there).
 
 ## Step 2. Create the project
 

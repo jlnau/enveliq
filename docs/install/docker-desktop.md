@@ -29,40 +29,33 @@ You will make a small text file called `docker-compose.yml` inside that folder.
    - **Mac:** open **TextEdit**. Choose **Format**, **Make Plain Text**. Paste. Choose **File**, **Save**. Name it `docker-compose.yml`, choose the `enveliq` folder, and when it asks about `.yml`, press **Use .yml**. (If it offers "If no extension is provided, use .txt", untick it.)
 4. **Check:** in the folder the file is called `docker-compose.yml`, not `docker-compose.yml.txt`. (On Windows, in File Explorer press **View**, **Show**, **File name extensions** to see the full name.)
 
-## Step 4. Change the four lines
+## Step 4. Open a terminal in the folder
 
-### Make your vault key (required)
+- **Windows:** in File Explorer open the `enveliq` folder. Click the address bar at the top, type `powershell` and press Enter. A blue window opens.
+- **Mac:** open **Terminal** (press Command + Space, type `Terminal`, press Enter). Type `cd ` (the letters c, d and a space), then drag the `enveliq` folder from Finder into the Terminal window, then press Enter.
 
-The vault key is a long secret that locks everything Enveliq keeps. Enveliq will not finish setup without one. Make it now, **before** you start Enveliq. Use whichever way is easiest:
+## Step 5. Make your vault key and start Enveliq
 
-- **In a terminal** (on Mac or Linux): `openssl rand -hex 32`
-- **In a terminal anywhere Docker runs, including Windows:**
+The vault key is a long secret that locks everything Enveliq keeps. Enveliq will not finish setup without one. Paste the block for your computer and press Enter. It makes the key, saves it in a file called `.env` next to the install file (Docker reads it by itself), and starts Enveliq.
 
-  ```
-  docker run --rm alpine sh -c "head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n'; echo"
-  ```
+**Windows (PowerShell)**
 
-- **No terminal?** In your password manager (Bitwarden, 1Password and others) make a new password that is **64 characters, letters and numbers only**.
+```
+$b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
+"ENVELIQ_VAULT_KEY=" + (($b | ForEach-Object { $_.ToString("x2") }) -join "") | Out-File -Encoding ascii .env
+docker compose up -d
+```
 
-Either way you get one long line of letters and numbers. **Save it in your password manager right now.** If your install file is ever lost, this key is the only way to open your data again. Then, when you edit the install file below, paste the key between the quote marks on the line `ENVELIQ_VAULT_KEY: "PASTE-YOUR-VAULT-KEY-HERE"`.
+**Mac**
 
-1. Open [Choose your settings](choose-settings.md) and decide your answers. If you only want to try Enveliq on this computer, you can change **just the setup code and the vault key** and leave the rest.
-2. Open the file you saved (right-click, **Open with**, Notepad or TextEdit) and edit the lines marked `<-- CHANGE THIS`. Keep the quote marks.
-3. Save the file.
+```
+echo "ENVELIQ_VAULT_KEY=$(openssl rand -hex 32)" > .env
+docker compose up -d
+```
 
-## Step 5. Start Enveliq
-
-1. Open a terminal in the `enveliq` folder:
-   - **Windows:** in File Explorer open the `enveliq` folder. Click the address bar at the top, type `cmd` and press Enter. A black window opens.
-   - **Mac:** open **Terminal** (press Command + Space, type `Terminal`, press Enter). Type `cd ` (the letters c, d and a space), then drag the `enveliq` folder from Finder into the Terminal window, then press Enter.
-2. Type this and press Enter:
-
-   ```
-   docker compose up -d
-   ```
-
-3. Wait. The first time it downloads Enveliq, which can take a few minutes. You will see lines scroll by.
-4. **Check:** it ends with two lines that say `Started` (or `Running`). Docker Desktop's **Containers** page now lists `enveliq` and `enveliq-render` as running.
+1. Wait. The first time it downloads Enveliq, which can take a few minutes. You will see lines scroll by.
+2. **Check:** it ends with two lines that say `Started` (or `Running`). Docker Desktop's **Containers** page now lists `enveliq` and `enveliq-render` as running.
+3. **Save a copy of your vault key in your password manager now:** run `type .env` (Windows) or `cat .env` (Mac) and copy the line. If that file is ever lost, the key is the only way to open your data again.
 
 ## Step 6. Open Enveliq
 
