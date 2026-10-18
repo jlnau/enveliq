@@ -5,7 +5,9 @@ import org.json.JSONObject
 import java.io.IOException
 import java.net.CookieHandler
 import java.net.CookieManager
+import java.net.HttpCookie
 import java.net.HttpURLConnection
+import java.net.URI
 import java.net.URL
 import java.net.URLEncoder
 import java.time.Instant
@@ -14,7 +16,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.net.ssl.SSLException
 
-class ApiException(message: String) : Exception(message)
+class ApiException(message: String, val code: Int = 0) : Exception(message)
 
 sealed class SignIn {
     object Done : SignIn()
@@ -92,7 +94,7 @@ class EnveliqApi(address: String) {
             val code = conn.responseCode
             val stream = if (code >= 400) conn.errorStream else conn.inputStream
             val text = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
-            if (code >= 400) throw ApiException(detail(text, code))
+            if (code >= 400) throw ApiException(detail(text, code), code)
             return text
         } catch (e: ApiException) {
             throw e
@@ -114,12 +116,48 @@ class EnveliqApi(address: String) {
         else -> throw ApiException("This account has to finish setting up on the website first.")
     }
 
-    fun signIn(username: String, password: String): SignIn {
-        val body = JSONObject().put("username", username.trim()).put("password", password).put("remember", false)
+    fun signIn(username: String, password: String, keep: Boolean): SignIn {
+        val body = JSONObject().put("username", username.trim()).put("password", password).put("remember", keep)
         return finish(JSONObject(call("POST", "/api/v1/auth/login", body)))
     }
 
     fun code(code: String): SignIn = finish(JSONObject(call("POST", "/api/v1/auth/mfa", JSONObject().put("code", code.trim()))))
+
+    /** The server's own sign-in cookies for this address, to be kept (encrypted) when the person asked to stay signed in. */
+    fun sessionCookies(): String {
+        val handler = CookieHandler.getDefault() as? CookieManager ?: return ""
+        val out = JSONArray()
+        for (c in handler.cookieStore.get(URI(base))) {
+            out.put(JSONObject().put("name", c.name).put("value", c.value))
+        }
+        return if (out.length() == 0) "" else out.toString()
+    }
+
+    /** Puts kept cookies back, then asks the server whether the session still works. Throws with code 401 when it does not. */
+    fun restore(cookies: String) {
+        val handler = CookieHandler.getDefault() as? CookieManager ?: return
+        val uri = URI(base)
+        val list = JSONArray(cookies)
+        for (i in 0 until list.length()) {
+            val item = list.getJSONObject(i)
+            val cookie = HttpCookie(item.str("name"), item.str("value"))
+            cookie.domain = uri.host
+            cookie.path = "/"
+            cookie.secure = true
+            cookie.isHttpOnly = true
+            handler.cookieStore.add(uri, cookie)
+        }
+        val me = JSONObject(call("GET", "/api/v1/me"))
+        userId = me.str("id")
+    }
+
+    /** Tells the server to end this session. Best effort: the app forgets it either way. */
+    fun signOut() {
+        try {
+            call("POST", "/api/v1/auth/logout", JSONObject())
+        } catch (_: Exception) {
+        }
+    }
 
     fun inbox(): List<Mail> {
         val accounts = JSONArray(call("GET", "/api/v1/accounts"))

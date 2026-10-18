@@ -23,6 +23,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -43,7 +44,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun StartScreen(onDemo: () -> Unit, onConnect: () -> Unit) {
+fun StartScreen(notice: String, onDemo: () -> Unit, onConnect: () -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
@@ -56,6 +57,7 @@ fun StartScreen(onDemo: () -> Unit, onConnect: () -> Unit) {
         Text("Enveliq", color = Blue, fontSize = 44.sp, fontWeight = FontWeight.ExtraBold)
         Spacer(Modifier.height(6.dp))
         Text("Turn email into clarity.", color = Ink, fontSize = 20.sp)
+        if (notice.isNotEmpty()) Text(notice, color = Amber, fontSize = 15.sp, modifier = Modifier.padding(top = 14.dp))
         Spacer(Modifier.height(28.dp))
         Text(
             "Your email, calmly sorted. One thing at a time, with a short summary of each email and the buttons you need.",
@@ -79,12 +81,13 @@ fun StartScreen(onDemo: () -> Unit, onConnect: () -> Unit) {
 }
 
 @Composable
-fun SignInScreen(initialAddress: String, onBack: () -> Unit, onDone: (EnveliqApi, String) -> Unit) {
+fun SignInScreen(initialAddress: String, onBack: () -> Unit, onDone: (EnveliqApi, String, Boolean) -> Unit) {
     var address by remember { mutableStateOf(initialAddress) }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
     var needsCode by remember { mutableStateOf(false) }
+    var keep by remember { mutableStateOf(true) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
     var api by remember { mutableStateOf<EnveliqApi?>(null) }
@@ -102,7 +105,7 @@ fun SignInScreen(initialAddress: String, onBack: () -> Unit, onDone: (EnveliqApi
                     } else {
                         val client = EnveliqApi(address)
                         api = client
-                        client.signIn(username, password)
+                        client.signIn(username, password, keep)
                     }
                 }
                 if (result is SignIn.NeedsCode) {
@@ -110,7 +113,7 @@ fun SignInScreen(initialAddress: String, onBack: () -> Unit, onDone: (EnveliqApi
                     code = ""
                 } else {
                     password = ""
-                    onDone(api!!, address.trim())
+                    onDone(api!!, address.trim(), keep)
                 }
             } catch (e: ApiException) {
                 error = e.message ?: "That did not work."
@@ -163,11 +166,20 @@ fun SignInScreen(initialAddress: String, onBack: () -> Unit, onDone: (EnveliqApi
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
+            if (!needsCode) {
+                Row(Modifier.fillMaxWidth().padding(top = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text("Keep me signed in on this phone", color = Ink, fontSize = 16.sp)
+                        Text("So you don't have to sign in each time. Sign out in Settings to forget it.", color = Muted, fontSize = 13.sp, lineHeight = 18.sp)
+                    }
+                    Switch(checked = keep, onCheckedChange = { keep = it })
+                }
+            }
             if (error.isNotEmpty()) {
                 Text(error, color = Red, fontSize = 15.sp, modifier = Modifier.padding(top = 14.dp))
             }
             Text(
-                "Passkeys and single sign-on are coming to the app. Until then, use your password. The app only talks to your own server, over a secure connection, and does not keep your password.",
+                "Passkeys and single sign-on are coming to the app. Until then, use your password. The app only talks to your own server, over a secure connection, and never keeps your password.",
                 color = Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 18.dp, bottom = 12.dp),
             )
         }

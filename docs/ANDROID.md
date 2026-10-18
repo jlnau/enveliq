@@ -24,10 +24,10 @@ Passkeys and single sign-on, push notifications from your server, app lock, sear
 
 ## Privacy
 
-- No email is written to the phone. It is held in memory while on the screen.
+- No email is written to the phone. It is held in memory while on the screen. The only thing kept is your sign-in (below), and the server address you typed.
 - Android backups are switched off, so nothing is copied to Google or a new phone.
 - The app only talks to the address you typed, over HTTPS, and only trusts the server's real certificate.
-- The signed-in session is held in memory only. Closing the app signs you out. Your password is not kept.
+- **Staying signed in.** On the sign-in screen, **Keep me signed in on this phone** (on to begin with) keeps your sign-in between runs, so the app opens straight to your inbox. What is kept is the server's sign-in cookie, encrypted with a key in the Android Keystore that never leaves the phone. Your password is never kept. How long it lasts is the same "keep me signed in" time your administrator set for the website. **Sign out** in Settings ends the session at the server and removes what was kept; if the server stops accepting it (you signed out elsewhere, or it ran out) the app asks you to sign in again. Turn the switch off to be asked every time.
 - The app adds no analytics, no ads and no crash reporting.
 
 ## How it is built

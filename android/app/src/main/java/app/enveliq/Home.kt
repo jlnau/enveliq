@@ -73,28 +73,57 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class Stage { Start, SignIn, Home }
+private enum class Stage { Opening, Start, SignIn, Home }
 private enum class Tab { Inbox, Tasks, Settings }
 
 @Composable
 fun EnveliqApp(activity: MainActivity) {
     val prefs = remember { activity.getSharedPreferences("enveliq", Context.MODE_PRIVATE) }
-    var stage by remember { mutableStateOf(Stage.Start) }
+    val kept = remember { SessionVault.load(activity) }
+    var stage by remember { mutableStateOf(if (kept != null) Stage.Opening else Stage.Start) }
     var api by remember { mutableStateOf<EnveliqApi?>(null) }
     var server by remember { mutableStateOf("") }
+    var notice by remember { mutableStateOf("") }
+
+    // A kept sign-in is tried first, so you land straight in your inbox.
+    LaunchedEffect(Unit) {
+        if (kept == null) return@LaunchedEffect
+        try {
+            val client = EnveliqApi(kept.first)
+            withContext(Dispatchers.IO) { client.restore(kept.second) }
+            api = client
+            server = kept.first
+            stage = Stage.Home
+        } catch (e: ApiException) {
+            if (e.code == 401) SessionVault.clear(activity)
+            notice = if (e.code == 401) "You were signed out. Please sign in again." else (e.message ?: "Could not reach your Enveliq.")
+            stage = Stage.Start
+        } catch (e: Exception) {
+            notice = "Could not reach your Enveliq. Try again."
+            stage = Stage.Start
+        }
+    }
 
     when (stage) {
+        Stage.Opening -> Box(Modifier.fillMaxSize().background(Navy), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                CircularProgressIndicator(color = Blue)
+                Text("Opening your inbox…", color = Muted, fontSize = 15.sp, modifier = Modifier.padding(top = 14.dp))
+            }
+        }
         Stage.Start -> StartScreen(
-            onDemo = { api = null; server = ""; stage = Stage.Home },
-            onConnect = { stage = Stage.SignIn },
+            notice = notice,
+            onDemo = { api = null; server = ""; notice = ""; stage = Stage.Home },
+            onConnect = { notice = ""; stage = Stage.SignIn },
         )
         Stage.SignIn -> {
             BackHandler { stage = Stage.Start }
             SignInScreen(
                 initialAddress = prefs.getString("server", "") ?: "",
                 onBack = { stage = Stage.Start },
-                onDone = { client, address ->
+                onDone = { client, address, keep ->
                     prefs.edit().putString("server", address).apply()
+                    if (keep) SessionVault.save(activity, address, client.sessionCookies()) else SessionVault.clear(activity)
                     api = client
                     server = address
                     stage = Stage.Home
@@ -106,9 +135,15 @@ fun EnveliqApp(activity: MainActivity) {
             prefs = prefs,
             api = api,
             server = server,
-            onLeave = {
+            onLeave = { signOut ->
+                if (signOut) {
+                    val client = api
+                    if (client != null) Thread { client.signOut() }.start()
+                    SessionVault.clear(activity)
+                }
                 EnveliqApi.forgetSession()
                 api = null
+                notice = ""
                 stage = Stage.Start
             },
         )
@@ -116,7 +151,7 @@ fun EnveliqApp(activity: MainActivity) {
 }
 
 @Composable
-private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: EnveliqApi?, server: String, onLeave: () -> Unit) {
+private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: EnveliqApi?, server: String, onLeave: (Boolean) -> Unit) {
     val demo = api == null
     val mails = remember { mutableStateListOf<Mail>() }
     var loading by remember { mutableStateOf(false) }
@@ -140,7 +175,11 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 mails.clear()
                 mails.addAll(list)
             } catch (e: ApiException) {
-                error = e.message ?: "Could not load your email."
+                if (e.code == 401) {
+                    onLeave(true)
+                } else {
+                    error = e.message ?: "Could not load your email."
+                }
             } catch (e: Exception) {
                 error = "Could not load your email."
             } finally {
@@ -434,7 +473,7 @@ private fun SwitchRow(title: String, note: String, checked: Boolean, onChange: (
 }
 
 @Composable
-private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, demo: Boolean, server: String, onLeave: () -> Unit) {
+private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, demo: Boolean, server: String, onLeave: (Boolean) -> Unit) {
     val context = LocalContext.current
     var alerts by remember { mutableStateOf(prefs.getBoolean("alerts", true)) }
     var hide by remember { mutableStateOf(prefs.getBoolean("hide_in_recents", false)) }
@@ -483,11 +522,11 @@ private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, demo: 
 
         SectionTitle("Account")
         Text(
-            if (demo) "You are trying the demo with sample email. Nothing here is real." else "Signed in to $server",
+            if (demo) "You are trying the demo with sample email. Nothing here is real." else "Signed in to $server. You stay signed in on this phone until you sign out.",
             color = Ink, fontSize = 15.sp, lineHeight = 22.sp,
         )
         OutlinedButton(
-            onClick = onLeave,
+            onClick = { onLeave(true) },
             modifier = Modifier.fillMaxWidth().padding(top = 10.dp).height(48.dp),
             shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
         ) { Text(if (demo) "Leave the demo" else "Sign out", color = Ink) }
@@ -495,7 +534,7 @@ private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, demo: 
         SectionTitle("About")
         Text("Enveliq for Android · demo build 0.1", color = Ink, fontSize = 15.sp)
         Text(
-            "Email is held in memory while it is on the screen. Nothing is saved on this phone, and backups are switched off. The app only talks to the server you typed, over HTTPS.",
+            "Email is held in memory while it is on the screen and is never saved on this phone. Backups are switched off. The only thing kept is your sign-in, encrypted on this phone, if you chose to stay signed in. The app only talks to the server you typed, over HTTPS.",
             color = Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 4.dp, bottom = 30.dp),
         )
     }
