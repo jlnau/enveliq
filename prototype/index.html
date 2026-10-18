@@ -2826,7 +2826,7 @@ window.__parseDue=parseDue;
 const phoneQuery=window.matchMedia("(max-width:760px)");
 function isPhone(){return phoneQuery.matches}
 // ---- Tasks: made from the summaries by the server; shown as the Today card, the Tasks page and a line inside each email ----
-let taskQuery="",tasksData={today:"",tasks:[]},taskMode=(()=>{try{const v=localStorage.getItem("enveliq-task-mode");return v==="list"||v==="calendar"?v:"focus"}catch{return"focus"}})(),calMonth="",calDay="",taskMoveFor=null,demoTasks=[];
+let taskQuery="",tasksData={today:"",tasks:[]},taskMode=(()=>{try{const v=localStorage.getItem("enveliq-task-mode");return v==="focus"||v==="calendar"?v:"list"}catch{return"list"}})(),calMonth="",calDay="",taskMoveFor=null,demoTasks=[];
 const REASON_TEXT={you:"Done",replied:"Done by itself · you replied",handled:"Done by itself · the email was dealt with",gone:"Done by itself · the email left your inbox"};
 const isoLocal=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 function taskOrder(a,b){return (a.state!=="open")-(b.state!=="open")||Math.max(a.days,0)-Math.max(b.days,0)||(a.priority==="high"?0:1)-(b.priority==="high"?0:1)||a.days-b.days||(b.received||0)-(a.received||0)}
@@ -6153,7 +6153,8 @@ async function loadRealMail(me){
     box.replaceChildren(new Option("All mailboxes",""),...bridges.map(a=>new Option(a.display_name,a.display_name)));
     box.value=keep;box.hidden=false;
   }else{mailboxSel="";box.hidden=true}
-  selected.clear();realMail=true;applyFeatures();
+  {const here=new Set(data.map(m=>m.id));for(const k of [...selected])if(!here.has(k))selected.delete(k)}   // a reload (for example when an AI summary finishes) keeps the emails you ticked
+  realMail=true;applyFeatures();
   await fetchTasks();await fetchShipping();await fetchRss();await fetchBell();await fetchSubs();await fetchTrips();await fetchJunk();await fetchWaiting();await fetchImportant();await fetchSaved();      // after realMail is set, so the first load already has the person's tasks
   document.body.classList.add("real-mail");
   $("syncBtn").hidden=false;

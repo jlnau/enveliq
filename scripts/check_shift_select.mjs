@@ -20,6 +20,7 @@ for (const ev of ["uncaughtException", "unhandledRejection"]) process.on(ev, (e)
 const now = Math.floor(Date.now() / 1000);
 
 const mails = [1, 2, 3, 4, 5, 6, 7].map((n) => ({ id: "m" + n, subject: "Email number " + n, sender_display: "Sender " + n, sender_address: `s${n}@example.invalid`, summary: "Summary " + n, priority: "normal", category: null, action_required: false, received_at: now - n * 60, reply_context: { reply_to: `s${n}@example.invalid`, delivered_to: null, via_alias: null, message_id: `<m${n}@x>`, references: [] } }));
+let queue = { items: [], waiting: 0, writing: 0 };
 const handler = async (route) => {
   const req = route.request(), u = new URL(req.url()), p = u.pathname;
   const json = (status, body) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
@@ -35,6 +36,7 @@ const handler = async (route) => {
   if (p === "/api/v1/me/preferences") return json(200, { keep_reviewed: true, keep_archived: true, keep_days: 7, max_days: 14, instructions: "", undo_send_seconds: 0 });
   if (p === "/api/v1/me/features") return json(200, { effective: {}, admin: {}, user: {}, labels: {} });
   if (p === "/api/v1/sync/status") return json(200, { enabled: true, minutes: 10, now: Date.now() / 1000, accounts: { a1: { ok: true, at: now } } });
+  if (p === "/api/v1/me/summary-queue") return json(200, queue);
   return json(404, { detail: "not found" });
 };
 
@@ -99,6 +101,13 @@ await tick(7, true);
 check("Shift unticking a run still works after Select all", (await ticked()) === "1,2");
 await page.locator("#clear").click();
 check("Clear empties a Select all", (await ticked()) === "" && !(await all.isChecked()));
+// An AI summary finishing reloads the list in the background. The emails you ticked stay ticked.
+await tick(2); await tick(3, true);
+check("two emails are ticked before the summary finishes", (await ticked()) === "2,3");
+queue = { items: [{ account_id: "a1", message_id: "m1", state: "done" }], waiting: 0, writing: 0 };
+await page.evaluate(() => pollSummaries(false));
+await page.waitForTimeout(600);
+check("a finished AI summary does not untick the emails", (await ticked()) === "2,3" && (await page.locator("#selectedCount").innerText()) === "2");
 await all.check();
 await page.locator('#bulk [data-bulk="reviewed"]').click();
 await page.waitForFunction(() => document.querySelectorAll("article.mail.leaving").length === 7, null, { timeout: 15000 });

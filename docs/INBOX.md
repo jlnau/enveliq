@@ -63,7 +63,7 @@ On a computer the three small buttons on a row show when you point at the email.
 
 ## Ticking several emails
 
-Tick one email's box, then hold **Shift** and tick another one a few emails up or down, and every email between them is ticked too. Shift and untick clears the range the same way. Ticking without Shift works one email at a time. The **Select all** box next to "Recent emails" ticks every email in the list you are looking at (a dash means only some are ticked; pressing it again unticks them all), and works with Shift, single ticks and the bar below. On a phone it sits on the same line as the heading. Once two or more are ticked, a bar appears with **Reviewed**, **Archive** and **Bin** for all of them at once (one Undo covers them all). **Clear selection** starts again.
+Tick one email's box, then hold **Shift** and tick another one a few emails up or down, and every email between them is ticked too. Shift and untick clears the range the same way. Ticking without Shift works one email at a time. The **Select all** box next to "Recent emails" ticks every email in the list you are looking at (a dash means only some are ticked; pressing it again unticks them all), and works with Shift, single ticks and the bar below. On a phone it sits on the same line as the heading. Once two or more are ticked, a bar appears with **Reviewed**, **Archive** and **Bin** for all of them at once (one Undo covers them all). **Clear selection** starts again. Your ticks stay while Enveliq works in the background: when an AI summary finishes or the list refreshes, the emails you ticked are still ticked (only an email that has left the list loses its tick).
 
 ## A new install starts empty
 
@@ -218,7 +218,7 @@ The search box clears by itself when you choose something from the menu (My inbo
 
 ## Searching your tasks
 
-The Tasks page has a **Search your tasks** box under its title. Type part of a task's words (its title, its details or who it is from; capital letters do not matter) and the page lists only the tasks that have them, open ones under **To do** and finished ones under **Done**, with a line saying how many match. Clear the box to get your usual view back. It works in the Focus, List and Calendar views. Browser check: `scripts/check_task_search.mjs`.
+The Tasks page opens on the **List** view the first time (Focus and Calendar are one tap away, and Enveliq remembers the one you choose on that device). The Tasks page has a **Search your tasks** box under its title. Type part of a task's words (its title, its details or who it is from; capital letters do not matter) and the page lists only the tasks that have them, open ones under **To do** and finished ones under **Done**, with a line saying how many match. Clear the box to get your usual view back. It works in the Focus, List and Calendar views. Browser check: `scripts/check_task_search.mjs`.
 
 ## Forms on a phone
 
