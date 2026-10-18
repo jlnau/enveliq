@@ -136,19 +136,23 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 .settings{position:fixed;inset:0;z-index:10;display:none;pointer-events:none}
 .settings.open{display:block}
 .app.settings-open,.app.collapsed.settings-open{--side-w:242px}
-.settings-nav{pointer-events:auto;position:fixed;left:0;top:0;bottom:0;width:242px;overflow:auto;padding:22px 14px 16px;background:linear-gradient(160deg,#0b1e3a,#08162e);border-right:1px solid #263c61;display:flex;flex-direction:column;gap:1px}
-html[data-theme="light"] .settings-nav{background:linear-gradient(170deg,#e9f1ff,#f8fbff);border-color:var(--line)}
-.sn-brand{padding:0 6px 14px}.sn-brand img{display:block;width:150px;height:auto}
-.sn-back{display:flex;align-items:center;gap:9px;width:100%;border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:10px 12px;border-radius:10px;margin:0 0 12px;font-weight:600}
-.sn-back svg{width:16px;height:16px}
+.settings>.settings-nav{pointer-events:auto;position:fixed;left:0;top:0;bottom:0;width:242px;overflow:auto;padding:22px 14px 16px;background:linear-gradient(160deg,#0b1e3a,#08162e);border-right:1px solid #263c61;display:flex;flex-direction:column;gap:1px}
+html[data-theme="light"] .settings>.settings-nav{background:linear-gradient(170deg,#e9f1ff,#f8fbff);border-color:var(--line)}
+.sn-brand{display:none}
+/* On a computer the Settings menu lives inside the real sidebar (same brand, buttons, footer and spacing as the inbox); only the middle list changes. */
+.sidebar>.settings-nav{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:block}
+.app.settings-open .sidebar>.side-nav:not(.settings-nav){display:none}
+.sidebar>.settings-nav .settings-sep{height:1px;background:var(--line);margin:10px 4px 6px}
+.sidebar>.settings-nav .sn-back{margin-bottom:6px}
+.settings-nav .nav svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.settings>.settings-nav .sn-back{display:flex;align-items:center;gap:9px;width:100%;border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:10px 12px;border-radius:10px;margin:0 0 12px;font-weight:600}
 .sn-find{display:none}
 .settings-title{display:none}
-.settings-group{color:var(--faint);font-size:12px;font-weight:700;padding:8px 12px 4px}
 .settings-sep{height:1px;background:var(--line);margin:12px 8px 6px}
-.settings-nav button[data-settings-tab]{display:flex;align-items:center;gap:12px;width:100%;border:0;background:transparent;color:var(--muted);padding:10px 12px;border-radius:10px;text-align:left;margin:1px 0;font-size:14px}
-.settings-nav button[data-settings-tab] svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.settings-nav button[data-settings-tab]:hover{background:rgba(120,160,255,.08);color:var(--text)}
-.settings-nav button[data-settings-tab].active{background:var(--c-0c1c38);color:var(--text)}
+.settings>.settings-nav button[data-settings-tab]{display:flex;align-items:center;gap:12px;width:100%;border:0;background:transparent;color:var(--muted);padding:10px 12px;border-radius:10px;text-align:left;margin:1px 0;font-size:14px}
+.settings>.settings-nav button[data-settings-tab] svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.settings>.settings-nav button[data-settings-tab]:hover{background:rgba(120,160,255,.08);color:var(--text)}
+.settings>.settings-nav button[data-settings-tab].active{background:var(--c-0c1c38);color:var(--text)}
 .settings-main{pointer-events:auto;position:fixed;left:242px;right:0;top:var(--tb-h,72px);bottom:0;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--c-11161f);border-top:1px solid var(--line)}
 .settings-results{overflow:auto;padding:20px 26px;flex:1}.settings-results[hidden]{display:none}
 .sres-list{display:grid;gap:4px;max-width:780px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px}
@@ -574,19 +578,19 @@ body.real-mail .sample-banner{display:none}
 /* On a phone Settings is a full-screen list of pages; choosing one opens it with a Back button at the top. */
 @media(max-width:760px){
   .settings.open{z-index:86;background:var(--c-11161f);display:flex;flex-direction:column;pointer-events:auto}
-  .settings-nav,.settings-main{position:static;width:auto;border:0;flex:1;min-height:0}
-  .settings-nav{padding:14px 14px calc(20px + env(safe-area-inset-bottom,0px))}
+  .settings>.settings-nav,.settings-main{position:static;width:auto;border:0;flex:1;min-height:0}
+  .settings>.settings-nav{padding:14px 14px calc(20px + env(safe-area-inset-bottom,0px))}
   .settings.menu-view .settings-main{display:none}
-  .settings:not(.menu-view) .settings-nav{display:none}
+  .settings:not(.menu-view)>.settings-nav{display:none}
   .settings.menu-view.searching .settings-main{display:flex}
-  .settings.searching .settings-nav{flex:0 0 auto;padding-bottom:0}.settings.searching .settings-nav>button[data-settings-tab],.settings.searching .settings-group,.settings.searching .settings-sep{display:none}
+  .settings.searching>.settings-nav{flex:0 0 auto;padding-bottom:0}.settings.searching>.settings-nav>button[data-settings-tab],.settings.searching .settings-group,.settings.searching .settings-sep{display:none}
   .settings.searching .settings-head{display:none}
   .sn-brand{display:none}
-  .sn-back{width:auto;align-self:flex-start;margin-bottom:10px;min-height:44px}
+  .settings>.settings-nav .sn-back{width:auto;align-self:flex-start;margin-bottom:10px;min-height:44px}
   .sn-find{display:block;margin:0 0 8px}
   .sn-find input{width:100%;min-height:46px;border-radius:12px;border:1px solid var(--line);background:var(--c-0d121b);color:var(--text);padding:0 14px;font:inherit}
-  .settings-nav button[data-settings-tab]{min-height:52px;border:1px solid var(--line);background:var(--panel);margin:6px 0;font-size:15px}
-  .settings-nav button[data-settings-tab]::after{content:"\203A";margin-left:auto;color:var(--faint);font-size:20px}
+  .settings>.settings-nav button[data-settings-tab]{min-height:52px;border:1px solid var(--line);background:var(--panel);margin:6px 0;font-size:15px}
+  .settings>.settings-nav button[data-settings-tab]::after{content:"\203A";margin-left:auto;color:var(--faint);font-size:20px}
   .settings-group{padding:14px 4px 2px}
   .settings-head{padding:8px 10px;gap:6px;justify-content:flex-start}
   .settings-head .close{display:none}
@@ -5068,17 +5072,16 @@ function buildSettingsNav(mode){
   const isAdmin=!!(currentUser&&currentUser.is_admin);
   const first=(settingsMode==="admin"&&isAdmin?admin:common)[0];
   const list=(items,heading)=>{
-    let lastGroup=null,html=heading?`<div class="settings-group">${esc(heading)}</div>`:"";
+    let lastGroup=null,html=heading?`<div class="label settings-group">${esc(heading)}</div>`:"";
     for(const [group,id,label,held] of items){
-      if(group && group!==lastGroup){html+=`<div class="settings-group">${esc(group)}</div>`;lastGroup=group}
-      html+=`<button type="button" data-settings-tab="${esc((id+" "+(held||"")).trim())}" class="${esc(id===first[1]?"active":"")}">${settingsIcon(id)}${esc(label)}</button>`;
+      if(group && group!==lastGroup){html+=`<div class="label settings-group">${esc(group)}</div>`;lastGroup=group}
+      html+=`<button type="button" data-settings-tab="${esc((id+" "+(held||"")).trim())}" class="nav${id===first[1]?" active":""}">${settingsIcon(id)}<span class="nav-label">${esc(label)}</span></button>`;
     }
     return html;
   };
   const brand=document.querySelector(".sidebar .brand-wordmark");
   const back='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
-  $("settingsNav").innerHTML=(brand?`<div class="sn-brand"><img src="${esc(brand.getAttribute("src")||"")}" alt="Enveliq"></div>`:"")
-    +`<button type="button" class="sn-back" id="settingsBackInbox">${back}Back to inbox</button>`
+  $("settingsNav").innerHTML=`<button type="button" class="nav sn-back" id="settingsBackInbox">${back}<span class="nav-label">Back to inbox</span></button>`
     +`<div class="sn-find"><input id="settingsSearchM" type="search" placeholder="Search settings" aria-label="Search settings" autocomplete="off"></div>`
     +list(common,be?"Settings":"")+(isAdmin?`<div class="settings-sep"></div>`+list(admin,"Administration"):"");
   $("settingsHeading").textContent=first[2];
@@ -5383,6 +5386,13 @@ window.addEventListener("enveliq-profile",e=>{
   currentUser.avatar=u.avatar_v?`/api/v1/users/${u.id}/avatar?v=${u.avatar_v}`:"";
   $("userName").textContent=currentUser.name;paintAvatar();
 });
+function placeSettingsNav(){
+  const n=$("settingsNav"),sb=$("sidebar"),phone=window.matchMedia("(max-width:760px)").matches;
+  if(inSettingsScreen()&&!phone){const real=sb.querySelector(":scope>nav.side-nav:not(.settings-nav)");if(n.parentElement!==sb&&real)real.after(n);n.classList.add("side-nav")}
+  else{n.classList.remove("side-nav");if(n.parentElement!==$("settings"))$("settings").prepend(n)}
+}
+window.addEventListener("resize",()=>{if(inSettingsScreen())placeSettingsNav()});
+let settingsWasCollapsed=false;
 function openSettings(mode,tab){
   const phone=window.matchMedia("(max-width:760px)").matches;
   const wasOpen=inSettingsScreen();
@@ -5392,11 +5402,12 @@ function openSettings(mode,tab){
   if(!isBackend())providerFields();
   if(!wasOpen){
     settingsSavedSearch=$("search").value;
-    document.querySelector(".app").classList.add("settings-open");
+    const appEl=document.querySelector(".app");appEl.classList.add("settings-open");
+    settingsWasCollapsed=appEl.classList.contains("collapsed");if(settingsWasCollapsed&&!phone)appEl.classList.remove("collapsed");
     const tb=$("previewToolbar");document.documentElement.style.setProperty("--tb-h",Math.max(0,Math.round(tb.getBoundingClientRect().bottom))+"px");
   }
   $("search").value="";$("search").placeholder="Search settings";$("search").setAttribute("aria-label","Search settings");
-  $("settings").classList.add("open");
+  $("settings").classList.add("open");placeSettingsNav();
   $("settings").classList.toggle("menu-view",phone&&!tab);
   settingsSearchRun("");
   if(tab){const b=document.querySelector(`[data-settings-tab~="${tab}"]`);if(b)b.click()}
@@ -5449,7 +5460,7 @@ document.addEventListener("change",e=>{
     saveMailAlertPrefs({mail_muted_accounts:[...muted]});
   }
 });
-function closeSettings(){settingsSearchRun("");$("settings").classList.remove("open","menu-view");$("scrim").classList.remove("show");document.querySelector(".app").classList.remove("settings-open");$("search").value=settingsSavedSearch;settingsSavedSearch="";$("search").placeholder="Search inbox";$("search").setAttribute("aria-label","Search inbox");syncHash();if(realMail&&window.__me&&!$("syncBtn").disabled)loadRealMail(window.__me).then(render).catch(()=>{})}
+function closeSettings(){settingsSearchRun("");$("settings").classList.remove("open","menu-view");$("scrim").classList.remove("show");{const a=document.querySelector(".app");a.classList.remove("settings-open");if(settingsWasCollapsed)a.classList.add("collapsed");settingsWasCollapsed=false}placeSettingsNav();$("search").value=settingsSavedSearch;settingsSavedSearch="";$("search").placeholder="Search inbox";$("search").setAttribute("aria-label","Search inbox");syncHash();if(realMail&&window.__me&&!$("syncBtn").disabled)loadRealMail(window.__me).then(render).catch(()=>{})}
 function switchUser(key){
   currentUser=users[key];selected.clear();filter="all";query="";$("search").value="";
   document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",x.dataset.chip==="all"));
