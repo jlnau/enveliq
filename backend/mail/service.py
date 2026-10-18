@@ -197,7 +197,7 @@ class MailService:
         """Put unread emails that still have no summary back in the AI queue, with growing waits between tries and a limit, so a model that
         was busy or switched off a moment ago is not left forgotten. Does nothing while there is a genuine reason it cannot work
         (no model set up, or summaries switched off for this mailbox): `summary_notice` says so."""
-        if self.on_pending is None or not self.summariser.enabled or not (account.get("settings") or {}).get("ai_summaries"):
+        if not self.hold_new_mail or self.on_pending is None or not self.summariser.enabled or not (account.get("settings") or {}).get("ai_summaries"):
             return 0
         now = time.time() if now is None else now
         ids: list[str] = []

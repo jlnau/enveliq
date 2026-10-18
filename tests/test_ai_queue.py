@@ -170,9 +170,10 @@ def test_mail_that_arrived_before_summaries_were_switched_on_is_summarised_by_th
     assert len(done) == 1
 
 
-def test_a_failed_try_is_repeated_with_waits_and_then_stops_with_a_reason(held):
+def test_a_failed_try_is_repeated_with_waits_and_then_stops_with_a_reason(held, monkeypatch):
     appm, client, aid = _placeholder_mail(held, ai=False)
     svc, acct = appm.mail_service, _with_summaries(appm, aid)
+    monkeypatch.setattr(appm.vault, "list_accounts", lambda: [acct])          # the mailbox as it is with summaries on
     queued: list[str] = []
     svc.on_pending = lambda account, ids: queued.extend(ids)         # nobody works the line: only count the tries
     now = 1000.0
