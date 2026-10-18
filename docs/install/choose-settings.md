@@ -5,7 +5,7 @@ Enveliq's install file ([`install/docker-compose.yml`](../../install/docker-comp
 **The only required setting is the vault key** ([Setting 4](#setting-4-the-vault-key-required)); your install guide already shows how. Everything else here is optional: read it only if you want to open Enveliq from your phone or another device. Nothing is permanent: you can change any of it later and redeploy.
 
 - [Setting 1: the address you will type in your browser](#setting-1-the-address-you-will-type-in-your-browser)
-- [Setting 2: the one-time setup code](#setting-2-the-one-time-setup-code)
+- [Setting 2: the one-time setup code (optional)](#setting-2-the-one-time-setup-code-optional)
 - [Setting 3: the "plain http" switch](#setting-3-the-plain-http-switch)
 - [The port line](#the-port-line)
 - [Setting 4: the vault key (required)](#setting-4-the-vault-key-required)
