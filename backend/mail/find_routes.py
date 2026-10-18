@@ -12,6 +12,7 @@ from ..models import StrictModel
 from . import features
 from .errors import BridgeError
 from .find import FindError, FindJobs, parse_query
+from .find_index import FindIndex
 from .limits import SlidingWindowLimiter
 from .parse import render_original
 from .routes import fail
@@ -19,6 +20,11 @@ from .service import MAIL_METHODS, target_for
 
 JobId = Annotated[str, PathParam(pattern=r"^[A-Za-z0-9_-]{8,16}$")]
 Token = Annotated[str, PathParam(pattern=r"^[A-Za-z0-9_-]{8,16}\.\d{1,6}\.[0-9a-f]{24}$")]
+
+
+class FastBody(StrictModel):
+    enabled: bool
+    agree: bool = False
 
 
 class StartBody(StrictModel):
@@ -35,8 +41,12 @@ def build_find_router(ctx: Any) -> APIRouter:
     page_limit = SlidingWindowLimiter(max_events=120, window=60)
     view_limit = SlidingWindowLimiter(max_events=60, window=60)
     keep_limit = SlidingWindowLimiter(max_events=60, window=60)
-    jobs = FindJobs(service.bridge, lambda account_id: vault.get_account(account_id), service.target)
+    index = FindIndex(vault, service.bridge, lambda account_id: vault.get_account(account_id), service.target, vault.db_path.parent / "find-index")
+    ctx.find_index = index
+    index.watch()
+    jobs = FindJobs(service.bridge, lambda account_id: vault.get_account(account_id), service.target, fast=index)
     ctx.find_jobs = jobs
+    fast_limit = SlidingWindowLimiter(max_events=30, window=60)
 
     def need(session: Session) -> str:
         user = session.principal.user_id
@@ -52,6 +62,47 @@ def build_find_router(ctx: Any) -> APIRouter:
 
     def no_store(response: Response) -> None:
         response.headers["Cache-Control"] = "no-store"
+
+    def mine(user: str) -> list[dict[str, Any]]:
+        return [a for a in vault.list_accounts() if a.get("owner_user_id") == user and a.get("auth_method") in MAIL_METHODS]
+
+    def mailbox(user: str, account_id: str) -> dict[str, Any]:
+        for a in mine(user):
+            if a["id"] == account_id:
+                return a
+        raise HTTPException(status_code=404, detail="Not found.")
+
+    @router.get("/fast")
+    def fast_status(response: Response, session: Session = Depends(session_dep)):
+        user = need(session)
+        no_store(response)
+        return {"mailboxes": [{**index.status(user, a["id"]), "label": str(a.get("email_address") or a.get("name") or "Mailbox"), "recommended": a.get("auth_method") == "proton_bridge"} for a in mine(user)]}
+
+    @router.put("/fast/{account_id}")
+    def fast_set(account_id: AccountId, body: FastBody, session: Session = Depends(session_dep)):
+        user = need(session)
+        mailbox(user, account_id)
+        if not fast_limit.allow(f"findfast:{user}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        if body.enabled:
+            if not body.agree:
+                raise HTTPException(status_code=400, detail="Tick the box to say you understand, then turn Fast search on.")
+            index.enable(user, account_id)
+        else:
+            index.disable(user, account_id)
+        vault.audit({"event": "find_fast_on" if body.enabled else "find_fast_off", "actor_user_id": user, "account_id": account_id, "at": time.time()})
+        return index.status(user, account_id)
+
+    @router.post("/fast/{account_id}/rebuild", status_code=202)
+    def fast_rebuild(account_id: AccountId, session: Session = Depends(session_dep)):
+        user = need(session)
+        mailbox(user, account_id)
+        if not index.is_enabled(user, account_id):
+            raise HTTPException(status_code=409, detail="Fast search is off for this mailbox.")
+        if not fast_limit.allow(f"findfast:{user}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        index.rebuild(user, account_id)
+        return index.status(user, account_id)
 
     @router.post("/searches", status_code=201)
     def start(body: StartBody, response: Response, session: Session = Depends(session_dep)):

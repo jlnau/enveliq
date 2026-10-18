@@ -12,7 +12,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.kdf.argon2 import Argon2id
 
 ARGON_TIME_COST = 3
@@ -352,6 +354,11 @@ class SecureVault:
         if key is None:
             raise VaultLocked("Vault is locked")
         return key
+
+    def derive_key(self, purpose: bytes) -> bytes:
+        """A separate 32-byte key for one purpose (for example one person's search word list), derived from the vault key.
+        The vault key itself never leaves this class. Raises VaultLocked while locked."""
+        return HKDF(algorithm=hashes.SHA256(), length=32, salt=None, info=b"enveliq/derived/v1|" + purpose).derive(self._master())
 
     def start_idle_watchdog(self, interval_seconds: float = 15.0) -> None:
         """Enforce the idle lock on a timer, so the key leaves memory on time

@@ -216,3 +216,5 @@ a.btn{text-decoration:none}
 /* Label colour drop-down on a mailbox card: small, on one line. */
 .color-pick{display:flex;align-items:center;gap:8px;margin:8px 0 2px;font-weight:600}
 .color-pick select{width:auto;min-width:9em}
+.fs-box{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 12px;background:var(--panel)}.fs-box p{margin:8px 0}.fs-box .row{margin-top:10px}
+@media(max-width:640px){.fs-box .row .btn{flex:1 1 100%;min-height:44px}}

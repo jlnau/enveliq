@@ -136,6 +136,7 @@ class Mailbox:
     account_id: str
     label: str
     state: str = "waiting"          # waiting | searching | done | failed | cancelled
+    fast: bool = False              # answered from the optional word list (Fast search)
     found: int = 0
     message: str = ""
     session: Any = None
@@ -162,8 +163,9 @@ class Job:
 
 
 class FindJobs:
-    def __init__(self, bridge: Bridge, load_account: Callable[[str], dict[str, Any]], target_for: Callable[[dict[str, Any]], Target]):
+    def __init__(self, bridge: Bridge, load_account: Callable[[str], dict[str, Any]], target_for: Callable[[dict[str, Any]], Target], fast: Any = None):
         self.bridge = bridge
+        self.fast = fast                      # the optional word list (find_index.FindIndex), or None
         self._load = load_account
         self._target = target_for
         self._secret = secrets.token_bytes(32)
@@ -267,9 +269,25 @@ class FindJobs:
         target = self._target(account)
         started = time.time()
         crit, utf8 = criteria(job.terms, target)
+        quick = None
+        if self.fast is not None and not job.include_junk:          # the word list leaves out Spam and Bin
+            try:
+                quick = self.fast.lookup(job.user_id, mb.account_id, job.terms)
+            except Exception:
+                quick = None
         with self.bridge.session(target) as s:
             mb.session = s
             s.set_timeout(SOCKET_SECONDS)
+            if quick is not None:
+                mb.fast = True
+                for folder, (validity, uids) in quick.items():
+                    if job.cancelled:
+                        mb.state = "cancelled"
+                        return
+                    if s.select_folder(folder, True) == validity:            # a reset folder's numbers mean something else now
+                        self._take(job, mb, s, folder, validity, uids)
+                mb.state = "done"
+                return
             folders = choose_folders(s.list_folders(), job.include_junk)
             for folder in folders:
                 if job.cancelled:
@@ -279,22 +297,24 @@ class FindJobs:
                     mb.state, mb.message = "done", "Stopped early because this mailbox took too long. Try more specific words."
                     return
                 validity = s.select_folder(folder, True)
-                uids = s.search(crit, utf8)
-                head = uids[:HEAD_PER_FOLDER]
-                dates: dict[int, float] = {}
-                if head:
-                    for uid, raw in s.header_blocks(head, "Date"):
-                        dates[uid] = received_at_of(raw) or 0.0
-                with job.lock:
-                    job.total += len(uids)
-                    mb.found += len(uids)
-                    room = max(0, MAX_REFS - len(job.refs))
-                    for uid in uids[:room]:
-                        ref = Ref(mb.account_id, folder, validity, uid, dates.get(uid, 0.0), len(job.by_id))
-                        job.by_id[ref.rid] = ref
-                        job.refs.append(ref)
-                    job.ordered = False
+                self._take(job, mb, s, folder, validity, s.search(crit, utf8))
         mb.state = "done"
+
+    def _take(self, job: Job, mb: Mailbox, s: Any, folder: str, validity: int, uids: list[int]) -> None:
+        """Remember where the matches are (numbers only) and read the dates of the newest few so the first pages are truly newest first."""
+        dates: dict[int, float] = {}
+        if uids[:HEAD_PER_FOLDER]:
+            for uid, raw in s.header_blocks(uids[:HEAD_PER_FOLDER], "Date"):
+                dates[uid] = received_at_of(raw) or 0.0
+        with job.lock:
+            job.total += len(uids)
+            mb.found += len(uids)
+            room = max(0, MAX_REFS - len(job.refs))
+            for uid in uids[:room]:
+                ref = Ref(mb.account_id, folder, validity, uid, dates.get(uid, 0.0), len(job.by_id))
+                job.by_id[ref.rid] = ref
+                job.refs.append(ref)
+            job.ordered = False
 
     # ---------- a page of results ----------
 
@@ -308,7 +328,7 @@ class FindJobs:
         return {
             "id": job.id, "done": job.done, "cancelled": job.cancelled, "total": job.total, "listed": len(job.refs),
             "include_junk": job.include_junk,
-            "mailboxes": [{"account_id": m.account_id, "label": m.label, "state": m.state, "found": m.found, "message": m.message} for m in job.mailboxes.values()],
+            "mailboxes": [{"account_id": m.account_id, "label": m.label, "state": m.state, "found": m.found, "message": m.message, "fast": m.fast} for m in job.mailboxes.values()],
         }
 
     def page(self, job: Job, offset: int, limit: int = PAGE) -> list[dict[str, Any]]:

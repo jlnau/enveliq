@@ -17,7 +17,7 @@ from backend.mail.errors import BridgeError
 
 def mail(subject, body, days_ago=1, sender="Dana <dana@example.invalid>"):
     when = format_datetime(datetime.now(timezone.utc) - timedelta(days=days_ago))
-    return (f"From: {sender}\nTo: me@example.invalid\nSubject: {subject}\nDate: {when}\nMessage-ID: <{abs(hash(subject)) % 10**9}@example.invalid>\n\n{body}\n"
+    return (f"From: {sender}\nTo: me@example.invalid\nSubject: {subject}\nDate: {when}\nMIME-Version: 1.0\nContent-Type: text/plain; charset=utf-8\nContent-Transfer-Encoding: 8bit\nMessage-ID: <{abs(hash(subject)) % 10**9}@example.invalid>\n\n{body}\n"
             ).replace("\n", "\r\n").encode("utf-8")
 
 
@@ -267,3 +267,135 @@ def test_switching_the_feature_off_forgets_what_was_kept(env):
     keep(client, page["rows"][0]["token"])
     client.put("/api/v1/me/features", json={"find_mail": False})
     assert "Canvas order" not in messages(client, aid)
+
+
+# ---------- Fast search (the optional word list) ----------
+
+from backend.mail import find_index as fi            # noqa: E402
+
+
+def test_words_skip_long_numbers_and_long_words_and_ignore_accents():
+    assert fi.words("Café 3D project, Visual-Art 2 1234567890 " + "x" * 31) == ["cafe", "3d", "project", "visual", "art", "2"]
+    assert fi.words("card 4111111111111111 and 12345678") == ["card", "and", "12345678"]
+
+
+def test_the_word_query_matches_word_starts_and_phrases_and_declines_what_it_cannot_answer():
+    T = find.Term
+    assert fi.match_query([T("crème", False)]) == '"creme"*'
+    assert fi.match_query([T("visual art", True), T("3d", False)]) == '"visual art" AND "3d"*'
+    assert fi.match_query([T("12345678901", False)]) is None          # such numbers are never kept, so live search must answer
+
+
+def test_the_word_list_is_sealed_and_only_opens_for_the_right_key_and_person():
+    import os
+    idx = fi.UserIndex()
+    idx.add("a", "INBOX", 7, 1, "Canvas order for a visual art project")
+    sealed = fi.seal(idx.to_bytes(), b"k" * 32, b"person-1")
+    assert b"canvas" not in sealed.lower()
+    assert fi.unseal(sealed, b"k" * 32, b"person-1")
+    for key, who in ((os.urandom(32), b"person-1"), (b"k" * 32, b"person-2")):
+        with pytest.raises(Exception):
+            fi.unseal(sealed, key, who)
+
+
+def fast_on(client, appm, aid):
+    index = appm.mail_ctx.find_index
+    index.pause = 0
+    assert client.put(f"/api/v1/find/fast/{aid}", json={"enabled": True}).status_code == 400            # the box must be ticked
+    r = client.put(f"/api/v1/find/fast/{aid}", json={"enabled": True, "agree": True})
+    assert r.status_code == 200, r.text
+    end = time.time() + 15
+    while time.time() < end:
+        st = client.get("/api/v1/find/fast").json()["mailboxes"][0]
+        if st["state"] == "ready":
+            return index, st
+        time.sleep(0.05)
+    raise AssertionError("the word list was not built: " + str(st))
+
+
+def test_fast_search_builds_answers_without_asking_the_mailbox_and_is_sealed(env):
+    appm, client, bridge, _ = env
+    aid = account(client, bridge)
+    index, status = fast_on(client, appm, aid)
+    assert status["total"] >= 3 and status["done"] == status["total"]
+    mark = len(bridge.log)
+    job, page = run_search(client, "visual art 2")
+    assert [r["subject"] for r in page["rows"]] == ["Canvas order", "Old project"]
+    assert page["mailboxes"][0]["fast"] is True
+    assert not any("SEARCH" in line and "TEXT" in line for line in bridge.log[mark:])                    # the mailbox was not asked to search
+    assert [r["subject"] for r in run_search(client, "crème")[1]["rows"]] == ["Café menu"]
+    user = appm.vault.get_account(aid)["owner_user_id"]
+    sealed = (appm.vault.db_path.parent / "find-index" / f"{user}.bin").read_bytes()
+    assert b"canvas" not in sealed.lower() and b"SQLite" not in sealed
+
+
+def test_fast_search_keeps_up_with_new_and_deleted_mail(env):
+    appm, client, bridge, _ = env
+    aid = account(client, bridge)
+    index, _ = fast_on(client, appm, aid)
+    user = appm.vault.get_account(aid)["owner_user_id"]
+    bridge.add(705, mail("Fresh news", "A brand new zeppelin arrived.", 0), "Archive")
+    del bridge.messages[702]
+    index.pass_once(user, aid)
+    assert [r["subject"] for r in run_search(client, "zeppelin")[1]["rows"]] == ["Fresh news"]
+    assert run_search(client, "3D project")[1]["total"] == 0
+
+
+def test_a_long_number_falls_back_to_the_live_search_and_spam_is_never_in_the_word_list(env):
+    appm, client, bridge, _ = env
+    aid = account(client, bridge)
+    fast_on(client, appm, aid)
+    _, page = run_search(client, "visual art 2", include_junk=True)
+    assert page["mailboxes"][0]["fast"] is False and page["total"] == 3 and "Junk offer" in [r["subject"] for r in page["rows"]]
+    _, page = run_search(client, "98765432101")
+    assert page["mailboxes"][0]["fast"] is False
+
+
+def test_turning_fast_search_off_deletes_the_word_list(env):
+    appm, client, bridge, _ = env
+    aid = account(client, bridge)
+    fast_on(client, appm, aid)
+    user = appm.vault.get_account(aid)["owner_user_id"]
+    path = appm.vault.db_path.parent / "find-index" / f"{user}.bin"
+    assert path.exists()
+    assert client.put(f"/api/v1/find/fast/{aid}", json={"enabled": False}).status_code == 200
+    assert not path.exists()
+    assert run_search(client, "visual art 2")[1]["mailboxes"][0]["fast"] is False
+    assert client.get("/api/v1/find/fast").json()["mailboxes"][0]["state"] == "off"
+
+
+def test_the_word_list_goes_when_the_person_does_and_is_never_shared(env):
+    appm, client, bridge, _ = env
+    aid = account(client, bridge)
+    fast_on(client, appm, aid)
+    user = appm.vault.get_account(aid)["owner_user_id"]
+    create_user(client, "casey")
+    other = sign_in(appm, "casey")
+    assert other.get("/api/v1/find/fast").json()["mailboxes"] == []                                     # nothing of mine is listed
+    assert other.put(f"/api/v1/find/fast/{aid}", json={"enabled": True, "agree": True}).status_code == 404
+    assert other.post(f"/api/v1/find/fast/{aid}/rebuild").status_code == 404
+    path = appm.vault.db_path.parent / "find-index" / f"{user}.bin"
+    appm.delete_user_data(user)
+    assert not path.exists() and appm.mail_ctx.find_index.enabled(user) == {}
+
+
+def test_the_word_list_is_not_in_a_backup(env):
+    appm, client, bridge, _ = env
+    aid = account(client, bridge)
+    fast_on(client, appm, aid)
+    import sqlite3
+    copy = appm.vault.db_path.parent / "copy.sqlite3"
+    with sqlite3.connect(appm.vault.db_path) as src, sqlite3.connect(copy) as dst:
+        src.backup(dst)
+    assert b"canvas" not in copy.read_bytes().lower() and b"ENVFIDX1" not in copy.read_bytes()
+
+
+def test_switching_find_any_email_off_deletes_the_word_list_too(env):
+    appm, client, bridge, _ = env
+    aid = account(client, bridge)
+    fast_on(client, appm, aid)
+    user = appm.vault.get_account(aid)["owner_user_id"]
+    path = appm.vault.db_path.parent / "find-index" / f"{user}.bin"
+    assert path.exists()
+    client.put("/api/v1/me/features", json={"find_mail": False})
+    assert not path.exists() and appm.mail_ctx.find_index.enabled(user) == {}

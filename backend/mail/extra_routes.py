@@ -142,11 +142,18 @@ def build_extra_router(ctx: Any) -> APIRouter:
 
     def drop_found(wanted: Any) -> None:
         """Forget the emails kept from searches (nothing else) for people Find any email was just switched off for."""
+        owners: set[str] = set()
         for acct in vault.list_accounts():
             if wanted(acct.get("owner_user_id")):
+                owners.add(acct.get("owner_user_id"))
                 for m in vault.list_messages(acct["id"]):
                     if m.get("found_until"):
                         vault.delete_message(acct["id"], m["id"])
+        finder = getattr(ctx, "find_index", None)              # Fast search goes with the feature
+        if finder is not None:
+            for owner in owners:
+                if owner:
+                    finder.delete_user(owner)
 
     # ---------- switches ----------
 

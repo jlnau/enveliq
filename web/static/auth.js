@@ -1232,6 +1232,7 @@ const FEATURE_HINTS = {
   address_book: "Remember names and email addresses (never email text) so they can be suggested when writing. Stored encrypted, one private book per person.",
   sent: "A read-only list of the last 14 days of sent mail, read from the mailbox when opened and never stored.",
   media: "Show pictures that are part of an email, preview picture attachments and save attachments, fetched only when asked for and never stored.",
+  find_mail: "Adds a Search all my mail button under the inbox search box. It asks each of your mail services to search the whole mailbox and lists every match as sender, subject and date only. Nothing found is stored. Press Summarise on a result to keep that one email in Found emails for 60 days, or until you press Reviewed. Your search words go only to your own mail service and are never logged.",
   all_mail: "Adds an All emails switch to the inbox that also lists mail you have already read, for the last 14 days (newest 100). Only the sender, subject and date are kept, encrypted. A summary is written only when you press Generate summary, which sends that email's text to your AI model.",
   subscriptions: "Follows your subscriptions and free trials. When a summary finds that an email is about one, Enveliq keeps the service, the price as written, how often it is charged and the renewal or trial-end date (never the email) in a Subscriptions list, shows what is coming up on Home, and can send a reminder a few days before. The AI only copies what the email says; Enveliq works out every date itself. Emails that carry a Be careful warning are never filed. No extra AI request is made.",
   travel: "Follows your trips. When a summary finds that an email is a booking, change or cancellation for a flight, a stay or a hire car, Enveliq keeps the provider, booking reference, places and dates and times (never the email) in a Trips list, groups them into trips, and can add them to the calendar you set up for tasks. The AI only copies what the email says; Enveliq works out every date and the grouping itself. Emails that carry a Be careful warning are never filed. No extra AI request is made.",
@@ -1242,6 +1243,44 @@ const FEATURE_HINTS = {
   messages: "Short messages between the people who use this Enveliq, one to one or in a small group. Each conversation is kept encrypted on this server and only the people in it can open it. Administrators cannot read other people's messages, and they are never shown to the AI model. Plain text only.",
   shipping: "Follows your online orders. When a summary finds that an email is about an order or a delivery, Enveliq keeps the shop, order number, carrier, tracking number, expected date and a few words about the items (never the email) in a Shipping list, and asks you on Home to confirm when a parcel is delivered. No extra AI request is made."
 };
+// ---------- Fast search (optional word list, per mailbox) ----------
+async function fastSearchSection() {
+  const body = h("div", {});
+  const sec = h("section", { class: "section" }, h("h2", { text: "Fast search" }),
+    h("p", { class: "lead", text: "Searching a very large mailbox can take a while. Fast search makes it instant. It is off unless you turn it on." }), body);
+  let timer = null;
+  const confirming = new Set();
+  async function draw() {
+    clearTimeout(timer);
+    let r;
+    try { r = await api("/find/fast"); } catch (er) { body.replaceChildren(h("p", { class: "hint", text: "Fast search is not available right now." })); return; }
+    if (!r.mailboxes.length) { body.replaceChildren(h("p", { class: "hint", text: "Connect a mailbox first." })); return; }
+    const cards = r.mailboxes.map(m => {
+      const kids = [h("strong", { text: m.label }), h("div", { class: "hint", text: m.recommended ? "Recommended for Proton Mail, which is slow to search on its own." : "Not usually needed. This mail service already searches quickly." })];
+      if (m.enabled) {
+        const pct = m.total ? Math.min(100, Math.floor((m.done / m.total) * 100)) : 0;
+        kids.push(h("p", { role: "status", text: m.state === "ready" ? `Fast search is on. ${m.done.toLocaleString()} emails are ready to search.` : m.state === "failed" ? m.message : m.state === "waiting" ? m.message : `Getting ready: ${pct}% of your mail. Searching still works while this happens, just more slowly.` }),
+          h("div", { class: "row" },
+            h("button", { class: "btn", type: "button", text: "Rebuild", onclick: async () => { try { await api(`/find/fast/${m.account_id}/rebuild`, { method: "POST", body: {} }); toast("Rebuilding"); draw(); } catch (er) { toast(er.message); } } }),
+            h("button", { class: "btn", type: "button", text: "Turn off and delete", onclick: async () => { try { await api(`/find/fast/${m.account_id}`, { method: "PUT", body: { enabled: false } }); toast("Fast search is off and its word list is deleted"); draw(); } catch (er) { toast(er.message); } } })));
+        if (m.state === "building") timer = setTimeout(() => { if (sec.isConnected) draw(); }, 3000);
+      } else if (confirming.has(m.account_id)) {
+        const tick = h("input", { id: "fs_" + m.account_id, type: "checkbox" });
+        const go = h("button", { class: "btn primary", type: "button", text: "Turn on Fast search", disabled: true, onclick: async () => { try { await api(`/find/fast/${m.account_id}`, { method: "PUT", body: { enabled: true, agree: true } }); confirming.delete(m.account_id); toast("Fast search is on. It will get ready in the background."); draw(); } catch (er) { toast(er.message); } } });
+        tick.addEventListener("change", () => { go.disabled = !tick.checked; });
+        kids.push(alertBox("info", "Enveliq will keep a private, locked list of the words in your emails so it can search them quickly. Your emails themselves are not kept. Turn this off at any time and the list is deleted."),
+          h("label", { class: "check", for: "fs_" + m.account_id }, tick, h("span", {}, h("strong", { text: "I understand" }))),
+          h("div", { class: "row" }, go, h("button", { class: "btn", type: "button", text: "Cancel", onclick: () => { confirming.delete(m.account_id); draw(); } })));
+      } else {
+        kids.push(h("div", { class: "row" }, h("button", { class: "btn", type: "button", text: "Turn on", onclick: () => { confirming.add(m.account_id); draw(); } })));
+      }
+      return h("div", { class: "fs-box" }, ...kids);
+    });
+    body.replaceChildren(...cards);
+  }
+  await draw();
+  return sec;
+}
 async function generalPage(me) {
   const p = await api("/me/preferences");
   const fx = await api("/me/features").catch(() => null);
@@ -1265,10 +1304,11 @@ async function generalPage(me) {
     toast("Saved. Your inbox updates the next time it refreshes.");
   });
   const featSection = fx ? featuresSection(me, fx) : null;
+  const fastSection = fx && fx.effective.find_mail ? await fastSearchSection().catch(() => null) : null;
   const exportSection = h("section", { class: "section" }, h("h2", { text: "Your data" }),
     h("p", { class: "lead", text: "Download everything Enveliq keeps about you as one file you can read: your lists, summaries, people and settings. It never holds passwords or keys, or anyone else's mail." }),
     h("div", {}, h("a", { class: "btn", href: `${API}/me/export`, download: "", text: "Export my data" })));
-  show(...chrome(me, "general", h("h1", { text: "General" }), h("p", { class: "lead", text: "The everyday choices. The defaults work well, so you can leave everything here as it is." }), h("section", { class: "section" }, form), featSection, exportSection));
+  show(...chrome(me, "general", h("h1", { text: "General" }), h("p", { class: "lead", text: "The everyday choices. The defaults work well, so you can leave everything here as it is." }), h("section", { class: "section" }, form), featSection, fastSection, exportSection));
 }
 // ---------- reminders (everyone) ----------
 function ago(ts) {
