@@ -4,6 +4,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+No changes recorded yet.
+
+## v0.94 (2026-10-18)
+
 **Settings is now a full screen with one menu.** Pressing Settings opens a full-screen Settings. The left panel turns into the Settings menu: your own pages above a line, and below the line a group called Administration (only administrators see it). On a computer the menu is the same left panel as the inbox (same logo, spacing, buttons and footer); only the middle list changes. The top bar stays as it was, but its search box says "Search settings" and finds settings pages instead of email; press Enter to open the first match or Escape to clear it. The separate Administration item in the account menu is gone, because Administration now lives in the same menu. On a phone, Settings opens as a plain list of big rows (with its own search at the top); each page opens full screen with a Back button. The server still decides who may use Administration; the page only hides it. Touches `prototype/index.html`.
 
 **Every Settings and Administration page, tidied.** Cards sit in two columns where there is room. Forms with a single Save button now save by themselves when you change something, so that button is gone; buttons that test a connection or store a key or password are kept. Long explanations fold behind "More about this" or "Read more", and step-by-step guides sit inside "Show the steps". In Administration the AI model tests and saves by itself. Touches `web/static/auth.js`, `web/static/welcome.js`, `web/static/auth.css`.
