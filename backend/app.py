@@ -28,6 +28,7 @@ from .mail.microsoft import Microsoft
 from .mail.microsoft_routes import build_microsoft_router
 from .mail.routes import build_mail_router
 from .mail.extra_routes import build_extra_router
+from .mail.find_routes import build_find_router
 from .mail.task_routes import build_task_router
 from .mail.shipping import ShipBook
 from .mail.inbound import InboundBook
@@ -671,6 +672,7 @@ mail_ctx = SimpleNamespace(
 )
 app.include_router(build_mail_router(mail_ctx))
 app.include_router(build_extra_router(mail_ctx))          # after the main router: shares its send limits
+app.include_router(build_find_router(mail_ctx))           # after the extra router: uses its summary queue
 app.include_router(build_task_router(mail_ctx))
 app.include_router(build_shipping_router(mail_ctx))
 app.include_router(build_rss_router(mail_ctx))
@@ -1020,9 +1022,16 @@ def resolve_message(account_id: str, message_id: str, outcome: str, user_id: str
     retained metadata/summaries and any temporary safe preview leases, so a failed action leaves the item
     in place. Raises BridgeError when the mailbox cannot be changed, and KeyError when the message is gone."""
     account = vault.get_account(account_id)
-    mail_service.apply_outcome(account, vault.get_message(account_id, message_id), outcome)
+    stored = vault.get_message(account_id, message_id)
+    found = bool(stored.get("found_until"))
+    if found:
+        # A kept search result: Reviewed only forgets it here. The mailbox is never changed, and nothing is filed under Reviewed.
+        if outcome not in ("reviewed", "expired"):
+            raise BridgeError("found_only_reviewed", "A found email can only be marked Reviewed. Open it in your mail app to archive or bin it.")
+    else:
+        mail_service.apply_outcome(account, stored, outcome)
     preview_leases.purge_message(account_id, message_id)
-    kept = review.kept_state_for(vault, user_id, outcome)
+    kept = None if found else review.kept_state_for(vault, user_id, outcome)
     if outcome != "expired":
         taskbook.close_message(user_id, account_id, message_id, "handled")
     if kept:

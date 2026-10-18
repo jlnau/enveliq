@@ -42,6 +42,7 @@ class FeaturesBody(StrictModel):
     write_help: bool | None = None
     rss: bool | None = None
     tags: bool | None = None
+    find_mail: bool | None = None
 
 
 class FollowBody(StrictModel):
@@ -136,8 +137,16 @@ def build_extra_router(ctx: Any) -> APIRouter:
             if not wanted(acct.get("owner_user_id")):
                 continue
             for m in vault.list_messages(acct["id"]):
-                if m.get("from_all_mail"):
+                if m.get("from_all_mail") and not m.get("found_until"):
                     vault.delete_message(acct["id"], m["id"])
+
+    def drop_found(wanted: Any) -> None:
+        """Forget the emails kept from searches (nothing else) for people Find any email was just switched off for."""
+        for acct in vault.list_accounts():
+            if wanted(acct.get("owner_user_id")):
+                for m in vault.list_messages(acct["id"]):
+                    if m.get("found_until"):
+                        vault.delete_message(acct["id"], m["id"])
 
     # ---------- switches ----------
 
@@ -151,6 +160,8 @@ def build_extra_router(ctx: Any) -> APIRouter:
         features.save_user_flags(vault, ctx.users, session.principal.user_id, body.model_dump())
         if not features.effective(vault, session.principal.user_id)["all_mail"]:
             drop_listed(lambda uid: uid == session.principal.user_id)
+        if not features.effective(vault, session.principal.user_id)["find_mail"]:
+            drop_found(lambda uid: uid == session.principal.user_id)
         vault.audit({"event": "features_saved_user", "actor_user_id": session.principal.user_id, "at": time.time()})
         return features.overview(vault, session.principal.user_id)
 
@@ -164,6 +175,8 @@ def build_extra_router(ctx: Any) -> APIRouter:
         flags = features.save_admin_flags(vault, body.model_dump())
         if not flags["all_mail"]:
             drop_listed(lambda uid: True)
+        if not flags["find_mail"]:
+            drop_found(lambda uid: True)
         vault.audit({"event": "features_saved_admin", "actor_user_id": session.principal.user_id, "flags": flags, "at": time.time()})
         return {"flags": flags, "labels": features.LABELS}
 
@@ -223,12 +236,13 @@ def build_extra_router(ctx: Any) -> APIRouter:
 
     @router.post("/accounts/{account_id}/messages/{message_id}/summary", status_code=202)
     def ask_summary(account_id: AccountId, message_id: MessageId, session: Session = Depends(session_dep)):
-        user = need(session, "all_mail")
+        user = session.principal.user_id
         owned(account_id, session, "summarise this email")
         try:
-            vault.get_message(account_id, message_id)
+            kept = vault.get_message(account_id, message_id)
         except KeyError:
             raise HTTPException(status_code=404, detail="Message not found") from None
+        need(session, "find_mail" if kept.get("found_until") else "all_mail")
         if not queue_limit.allow(f"queue:{user}"):
             raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
         service.refresh_ai(vault)

@@ -32,6 +32,8 @@ HTTP_STATUS = {
     "busy": 409,
     "check_address": 409,
     "conflict": 409,
+    "already_listed": 409,
+    "found_only_reviewed": 409,
     "ai_not_configured": 400,
     "ai_disabled": 400,
     "ai_unreachable": 502,

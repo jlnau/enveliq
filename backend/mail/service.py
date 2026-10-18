@@ -15,7 +15,7 @@ from email.utils import parseaddr
 from typing import Any
 
 from ..models import RetainedMessageCreate
-from .bridge import Bridge, Target, locator, parse_locator
+from .bridge import Bridge, Target, locator, parse_folder_locator, parse_locator
 from .errors import BridgeError
 from . import attach_service, llm_providers, marks, review
 from . import microsoft as ms
@@ -352,12 +352,9 @@ class MailService:
         try:
             # Read the texts first and close Bridge, so a slow model never holds the mailbox connection open.
             with self.bridge.session(target) as s:
-                validity = s.select_inbox(readonly=True)
                 for m in batch:
                     try:
-                        found_validity, uid = parse_locator(m["source_locator"])
-                        if found_validity != validity:
-                            raise BridgeError("not_found", "mailbox reset")
+                        uid = self.open_location(s, m["source_locator"])
                         raw = s.original(uid)
                         shown = render_original(raw)
                         if shown.get("file_count"):
@@ -509,10 +506,40 @@ class MailService:
         for m in stored_all:
             if (account_id, m["id"]) in held:
                 continue
-            if m.get("from_all_mail") and m.get("state", "unread") == "unread" and (m.get("received_at") or 0) and m["received_at"] < cutoff:
+            if m.get("from_all_mail") and not m.get("found_until") and m.get("state", "unread") == "unread" and (m.get("received_at") or 0) and m["received_at"] < cutoff:
                 vault.delete_message(account_id, m["id"])
                 removed += 1
         return {"added": added, "removed": removed}
+
+    FOUND_DAYS = 60
+
+    def keep_found(self, vault: Any, account: dict[str, Any], raw_headers: bytes, folder: str, validity: int, uid: int) -> str:
+        """Keep one email a search found, as a quiet entry in Found emails for 60 days. Headers only; nothing is summarised here.
+        Returns the new entry's id (or the existing one when it was kept already)."""
+        account_id = account["id"]
+        where = locator(validity, uid, folder)
+        for stored in vault.list_messages(account_id):
+            if stored.get("source_locator") == where:
+                if not stored.get("found_until"):
+                    raise BridgeError("already_listed", "This email is already in your lists.")
+                return stored["id"]
+        info = summarise_headers(raw_headers, sending_identities(account))
+        if info is None:
+            raise BridgeError("not_found", "This email could not be read.")
+        body = RetainedMessageCreate(subject=info["subject"], sender_display=info["sender_display"], sender_address=info["sender_address"],
+                                     summary=PLACEHOLDER_SUMMARY, reply_context=info["reply_context"], unsubscribe=info["unsubscribe"], scam_warning=info["scam_warning"],
+                                     received_at=info["received_at"], source_locator=where, from_all_mail=True, has_attachments=info["has_attachments"],
+                                     found_until=time.time() + self.FOUND_DAYS * 86400)
+        return vault.create_message(account_id, body.model_dump(mode="python"))
+
+    def drop_expired_found(self, vault: Any, account: dict[str, Any]) -> int:
+        removed = 0
+        now = time.time()
+        for m in vault.list_messages(account["id"]):
+            if m.get("found_until") and m["found_until"] < now:
+                vault.delete_message(account["id"], m["id"])
+                removed += 1
+        return removed
 
     def summarise_one(self, vault: Any, account: dict[str, Any], message_id: str, release: bool = True) -> None:
         """Summarise one listed email now (the person pressed Generate summary). Raises BridgeError with a plain reason."""
@@ -537,12 +564,23 @@ class MailService:
 
     def original_raw(self, account: dict[str, Any], message: dict[str, Any]) -> bytes:
         """The whole email as it sits in the mailbox, fetched now and never kept."""
-        validity, uid = parse_locator(message.get("source_locator"))
         target = self.target(account)
         with self.bridge.session(target) as s:
-            if s.select_inbox(readonly=True) != validity:
-                raise BridgeError("not_found", "The mailbox was reset on the server. Sync again.")
+            uid = self.open_location(s, message.get("source_locator"))
             return s.original(uid)
+
+    @staticmethod
+    def open_location(s: Any, value: str | None) -> int:
+        """Open the folder an email lives in (the Inbox, or another folder for a found email) and return its message number."""
+        if str(value or "").startswith("FOLDER|"):
+            folder, validity, uid = parse_folder_locator(value)
+            opened = s.select_folder(folder, True)
+        else:
+            validity, uid = parse_locator(value)
+            opened = s.select_inbox(readonly=True)
+        if opened != validity:
+            raise BridgeError("not_found", "The mailbox was reset on the server. Sync again.")
+        return uid
 
     def view(self, account: dict[str, Any], message: dict[str, Any]) -> dict[str, Any]:
         return render_original(self.original_raw(account, message))
