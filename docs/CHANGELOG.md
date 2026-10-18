@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**The inbox list stays where you scrolled it.** After you scrolled down the list, a refresh in the background could pull it back up to the highlighted email a few seconds later. It now only moves to the highlighted email when the highlight changes. Touches `prototype/index.html`.
+
 **Settings and Administration, tidied.** Settings goes from 14 pages to 7 (Account, Mailboxes, People & writing, Rules & calendar, Alerts, General, Help) and Administration from 15 to 6 (People & sign-in, Mail, AI, Features, Notifications, System). Nothing is removed: each older page is now a section on the page where you would look for it, and older links still work. Sections sit side by side when there is room, so there is far less scrolling. Choices now save as you make them: your profile, the Features lists (yours and the administrator's), Undo send and the Reviewed and Archived lists save when you tick or change them, with a quiet "Saved ✓". Find models on the AI page now shows the models as buttons to tap. Touches `prototype/index.html`, `web/static/auth.js`, `web/static/welcome.js`, `web/static/auth.css`. See [Settings and Administration](SETTINGS.md).
 
 **Links show their whole address before you open them.** When you press Open on a link, or press a link in an email, the question now shows the website and, under it, the complete address exactly as the link has it, on as many lines as it takes, so a very long tracking address can be read in full before you press Open it. Applies to the Links in this email list, links in the plain text and links in the formatted email. Touches `prototype/index.html`. See [Reading the original email](ORIGINAL_EMAIL.md).

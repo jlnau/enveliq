@@ -3855,6 +3855,7 @@ function enEmptyReading(){return `<div class="enveliq-empty-wrap"><h2 class="env
 <button type="button" class="enveliq-empty-action" data-en-action="subscriptions"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 16a4 4 0 0 1 5 4"/></svg><strong>Check subscriptions</strong><span>Find and manage low-value email</span><span class="ea-arrow">→</span></button>
 </div></div>`}
 document.addEventListener("click",e=>{const btn=e.target.closest("[data-en-action]");if(!btn)return;const type=btn.dataset.enAction;if(type==="read"){document.querySelector("#paneList article.mail .qmain")?.click();return}const target={tasks:"tasks",draft:"drafts",subscriptions:"subscriptions"}[type];if(target)document.querySelector('.nav[data-filter="'+target+'"]')?.click()});
+let lastScrolledTo="";
 function render(){
   window.__hidePeek&&window.__hidePeek();
   if(selMode&&(!selected.size||!isPhone()))selMode=false;
@@ -3980,16 +3981,19 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
       }else listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div>${readingHtml}</div>`;
     }
   }
+  // The highlighted email is scrolled into view only when it has just changed. A refresh in the background redraws the list too, and it must
+  // leave the list exactly where the person scrolled it to (it used to pull the list back up to the highlighted email after a few seconds).
+  const currentChanged=lastScrolledTo!==`${filter}|${paneId}`;lastScrolledTo=`${filter}|${paneId}`;
   const leftBox=document.querySelector(".main>.content"),leftTop=leftBox?leftBox.scrollTop:0;
   $("list").innerHTML=searchMore(rows)+listHtml;
   $("readDock").innerHTML=dockHtml;document.body.classList.toggle("split-read",!!dockHtml);
-  if(leftBox&&dockHtml){leftBox.scrollTop=leftTop;const c=document.querySelector("#paneList .current");if(c){const a=c.getBoundingClientRect(),b=leftBox.getBoundingClientRect(),hh=(document.getElementById("previewListHeading")||{offsetHeight:0}).offsetHeight;if(a.top<b.top+hh)leftBox.scrollTop+=a.top-b.top-hh-6;else if(a.bottom>b.bottom)leftBox.scrollTop+=a.bottom-b.bottom+6}}
+  if(leftBox&&dockHtml){leftBox.scrollTop=leftTop;const c=currentChanged?document.querySelector("#paneList .current"):null;if(c){const a=c.getBoundingClientRect(),b=leftBox.getBoundingClientRect(),hh=(document.getElementById("previewListHeading")||{offsetHeight:0}).offsetHeight;if(a.top<b.top+hh)leftBox.scrollTop+=a.top-b.top-hh-6;else if(a.bottom>b.bottom)leftBox.scrollTop+=a.bottom-b.bottom+6}}
   document.body.classList.toggle("reader-open",lay()==="screen"&&readerOpen&&rows.length>0);
   if(!rows.length)readerOpen=false;
   readerHistorySync();
   syncMobileBar(inbox.length,needN);
   const pl=document.getElementById("paneList");
-  if(pl){pl.scrollTop=prevTop;const c=pl.querySelector(".current");if(c){const top=c.offsetTop,bot=top+c.offsetHeight;if(top<pl.scrollTop)pl.scrollTop=top;else if(bot>pl.scrollTop+pl.clientHeight)pl.scrollTop=bot-pl.clientHeight}}
+  if(pl){pl.scrollTop=prevTop;const c=currentChanged?pl.querySelector(".current"):null;if(c){const top=c.offsetTop,bot=top+c.offsetHeight;if(top<pl.scrollTop)pl.scrollTop=top;else if(bot>pl.scrollTop+pl.clientHeight)pl.scrollTop=bot-pl.clientHeight}}
   const rd=document.querySelector(".reading");if(rd&&lastReadId===paneId)rd.scrollTop=prevReadTop;const rb=document.querySelector(".reader .rbody");if(rb&&lastReadId===paneId&&prevBodyTop)rb.scrollTop=prevBodyTop;lastReadId=paneId;
   saveMailContinuity();
 }
@@ -4975,7 +4979,7 @@ function buildSettingsNav(mode){
   const common=be?[
     ["","account","Account","signin profile"],
     ["","accounts","Mailboxes",""],
-    ["","people","People & writing","addressbook important saved aiinstr"],
+    ["","people","People & writing",(feat.address_book?"addressbook ":"")+"important saved aiinstr"],
     ["","rules","Rules & calendar","rules calendar"],
     ["","alerts","Alerts","reminders mailalerts"],
     ["","general","General","general shortcuts"],
