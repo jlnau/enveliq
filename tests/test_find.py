@@ -64,11 +64,11 @@ def test_unusable_searches_get_a_plain_answer(bad):
 
 
 def test_search_words_are_quoted_for_the_mail_service():
-    target = Target(host="mail.example.com", imap_port=993, username="u", password="p", kind="imap")
+    target = Target(host="mail.example.com", imap_port=993, username="u", password="p", smtp_port=None, kind="imap")
     crit, utf8 = find.criteria(find.parse_query('say "hi \\ there"'), target)
     assert crit[0] == "TEXT" and not utf8
     assert find._quote('a"b\\c') == '"a\\"b\\\\c"'
-    gmail = Target(host="imap.gmail.com", imap_port=993, username="u", password="p", kind="imap")
+    gmail = Target(host="imap.gmail.com", imap_port=993, username="u", password="p", smtp_port=None, kind="imap")
     crit, _ = find.criteria(find.parse_query("from:bank invoice"), gmail)
     assert crit == ["X-GM-RAW", '"from:bank invoice"']
     assert find.criteria(find.parse_query("café"), target)[1] is True
@@ -229,6 +229,12 @@ def test_a_kept_email_survives_sync_and_the_all_emails_clean_up(env):
     _, page = run_search(client, "visual art 2")
     for row in page["rows"]:                                    # one of them is 400 days old
         keep(client, row["token"])
+    end = time.time() + 10                                      # let the summaries finish, so the mailbox is not busy
+    while time.time() < end:
+        q = client.get("/api/v1/me/summary-queue").json()
+        if q["waiting"] == 0 and q["writing"] == 0:
+            break
+        time.sleep(0.05)
     client.post(f"/api/v1/accounts/{aid}/sync", json={})
     assert client.post(f"/api/v1/accounts/{aid}/inbox/recent").status_code == 200
     assert {"Canvas order", "Old project"} <= set(messages(client, aid))

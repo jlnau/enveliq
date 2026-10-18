@@ -248,6 +248,7 @@ def build_extra_router(ctx: Any) -> APIRouter:
         try:
             kept = vault.get_message(account_id, message_id)
         except KeyError:
+            need(session, "all_mail")
             raise HTTPException(status_code=404, detail="Message not found") from None
         need(session, "find_mail" if kept.get("found_until") else "all_mail")
         if not queue_limit.allow(f"queue:{user}"):

@@ -77,6 +77,7 @@ for (const [label, w, h] of [["desktop", 1200, 900], ["phone", 390, 780]]) {
   check(`${label}: it recommends Fast search for Proton Mail`, /Recommended for Proton Mail/.test(await text()));
   check(`${label}: nothing was turned on by being shown`, server.calls.length === 0);
   await host.getByRole("button", { name: "Turn on", exact: true }).click();
+  await host.getByLabel("I understand").waitFor();
   check(`${label}: a plain warning appears before anything happens`, /private, locked list of the words in your emails/.test(await text()) && /Your emails themselves are not kept/.test(await text()));
   const go = host.getByRole("button", { name: "Turn on Fast search" });
   check(`${label}: the button waits until the box is ticked`, await go.isDisabled());

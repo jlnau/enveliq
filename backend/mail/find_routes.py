@@ -15,7 +15,7 @@ from .find import FindError, FindJobs, parse_query
 from .find_index import FindIndex
 from .limits import SlidingWindowLimiter
 from .parse import render_original
-from .routes import fail
+from .routes import AccountId, fail
 from .service import MAIL_METHODS, target_for
 
 JobId = Annotated[str, PathParam(pattern=r"^[A-Za-z0-9_-]{8,16}$")]
