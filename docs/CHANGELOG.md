@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Show the original email in the reading panel.** The View panel has a new Reading tick box, **Show the original email**. When it is on, each email opened in the reading panel (inbox, Needs action and the other lists) shows its original straight away, between the Reply row and the email details. The Reply row moves up under the AI summary and attachments, the details move down, and the original scrolls inside its own box however long it is. It is the same safe copy as View original email, fetched when needed and never saved; a redraw of the page does not reload it. Touches `prototype/index.html`, `backend/mail/notify_routes.py` (the saved view gains `show_original`). See [Reading the original email](ORIGINAL_EMAIL.md).
+
 **Ticked emails stay ticked while an AI summary runs.** When an AI summary finished, the page reloaded the list and untick everything you had selected. Reloads now keep the ticks on emails that are still in the list. Touches `prototype/index.html`. See [Inbox](INBOX.md).
 
 **Tasks opens on the List view.** The first time (or when no choice has been remembered) the Tasks page shows List instead of Focus. Focus and Calendar are still there. Touches `prototype/index.html`. See [Inbox](INBOX.md).

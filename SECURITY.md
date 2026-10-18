@@ -451,6 +451,10 @@ The optional All emails view retrieves inbox message headers from the last 60 da
 
 By default Enveliq asks Google only for `calendar.app.created`, so it can only touch a calendar it made itself. A person may instead choose "Use a calendar I already have", which asks for `calendar.events` and `calendar.calendarlist.readonly`. That is a wider permission: Enveliq could technically see and change events on every calendar of that account, and says so before the person connects. In this mode Enveliq lists only calendars the person can write to, and the server checks the chosen calendar against that list (the page cannot name any other). It only adds, moves and removes events it made itself (tracked by their ids), and it never deletes the calendar. Disconnecting removes only Enveliq's events and revokes the permission. The Google token stays write-only and encrypted in the vault. Connecting and picking are audited (`google_calendar_connected` with the mode, `google_calendar_picked`).
 
+## Original email shown in the reading panel
+
+The View panel option "Show the original email" fetches the original from the mailbox for the email you opened, through the same server route, safe rebuild and strict page rules as "View original email" (scripts removed, pictures from the internet and links off until you choose). The page holds at most three originals in memory for a moment so a redraw does not fetch again; they are never written to the browser's storage or to Enveliq's vault, and are dropped when the option is turned off or another person signs in. Only the on/off choice is saved, in the person's own encrypted view settings.
+
 ## Junk Mail
 
 **Junk Mail** reads the Junk or Spam folder of the person's own mailboxes and asks the configured AI model about each email.

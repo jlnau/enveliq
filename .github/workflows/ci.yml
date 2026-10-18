@@ -283,6 +283,8 @@ jobs:
         run: node scripts/check_junk.mjs
       - name: Google Calendar - new or existing calendar choice, picker and the phone layout (simulated server)
         run: node scripts/check_google_calendar.mjs
+      - name: Original email in the reading panel - tick box, order, own scroll, no reload and the phone layout (simulated server)
+        run: node scripts/check_original_inline.mjs
       - name: Fast search in Settings - warning, tick box, progress and turning it off (simulated server)
         run: node scripts/check_fast_search.mjs
       - name: Notification links, new-email alert switches and install manifest (simulated server)

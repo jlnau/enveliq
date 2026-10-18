@@ -474,6 +474,11 @@ def test_mail_view_preferences_stored_per_user_in_vault(env):
     assert client.put("/api/v1/me/mail-view", json=chosen).status_code == 200
     assert client.get("/api/v1/me/mail-view").json()["view"] == disabled
     assert client.put("/api/v1/me/mail-view", json={**chosen, "action_feedback": "invalid"}).status_code == 422
+    # Showing the original email inside the reading panel is off to begin with and is remembered once chosen.
+    shown = {**chosen, "show_original": True}
+    assert client.put("/api/v1/me/mail-view", json=shown).status_code == 200
+    assert client.get("/api/v1/me/mail-view").json()["view"]["show_original"] is True
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "show_original": "yes please"}).status_code == 422
 
 
 def test_mail_context_is_private_and_validated(env):

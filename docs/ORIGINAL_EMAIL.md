@@ -11,6 +11,10 @@ When an email has formatting, a row at the top of the email lets you choose:
 
 The formatted email is shown in one page that grows to fit, so you scroll the whole email with the rest of the page.
 
+## Showing it in the reading panel by itself
+
+Open the **View** panel (the tab on the right edge) and, under **Reading**, tick **Show the original email**. Every email you open in the reading panel then shows its original right away, with no button to press. It sits between the Reply, Forward and Snooze row and the email details: the buttons move up under the AI summary (and the attachments, if there are any) and the details move down. The original has its own scroll, so it scrolls on for as long as the email is while the rest stays where it is. The same rules below apply: no scripts, no pictures from the internet unless you press **Show pictures**, links ask first, and nothing is saved. The choice is remembered for you on every device. It is not used when the Classic list is set to show every email open (that would fetch every email at once).
+
 ## What is kept out, and why
 
 Email you did not ask for is not trusted, so Enveliq rebuilds the formatting from a short list of safe parts instead of passing it on as it is.
