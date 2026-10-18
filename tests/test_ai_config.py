@@ -124,3 +124,50 @@ def test_the_key_is_not_in_the_vault_file_as_plain_text(env):
     admin.put("/api/v1/ai/config", json=body(model, api_key=KEY))
     scan = appm.vault.plaintext_scan([KEY])
     assert not any(scan.values())
+
+
+# ---------- finding the models an AI server offers ----------
+
+def test_the_models_the_server_offers_are_listed_so_one_can_be_picked(env):
+    _, admin, model, _ = env
+    r = admin.post("/api/v1/ai/models", json={"url": model.url})
+    assert r.status_code == 200 and r.json() == {"models": ["alpha-3b", "Beta-8b", "zeta-7b"]}
+    assert model.model_requests == ["/v1/models"]                  # only the model list was asked for: no email text, no summary request
+    assert admin.get("/api/v1/ai/status").json()["configured"] is False        # looking does not save anything
+
+
+def test_a_saved_key_is_used_for_the_same_address_and_never_sent_to_another(env):
+    _, admin, model, _ = env
+    other = FakeModel()
+    try:
+        assert admin.put("/api/v1/ai/config", json=body(model, api_key=KEY)).status_code == 200
+        r = admin.post("/api/v1/ai/models", json={"url": model.url})
+        assert r.status_code == 200 and KEY not in r.text
+        assert model.auth[-1] == f"Bearer {KEY}"
+        admin.post("/api/v1/ai/models", json={"url": other.url})
+        assert other.auth[-1] is None
+    finally:
+        other.close()
+
+
+def test_only_an_administrator_can_ask_and_only_for_addresses_on_the_own_network(env):
+    appm, admin, model, _ = env
+    create_user(admin, "pat")
+    pat = sign_in(appm, "pat")
+    assert pat.post("/api/v1/ai/models", json={"url": model.url}).status_code == 403
+    r = admin.post("/api/v1/ai/models", json={"url": "http://8.8.8.8/v1/chat/completions"})
+    assert r.status_code in (400, 403) and "own network" in r.text
+    assert admin.post("/api/v1/ai/models", json={"url": ""}).status_code == 400
+    assert admin.post("/api/v1/ai/models", json={"provider": "openai"}).status_code == 400          # a cloud service needs its key first
+
+
+def test_an_answer_with_no_models_or_an_unknown_address_shape_says_so_plainly(env):
+    _, admin, model, _ = env
+    empty = FakeModel(models=[])
+    try:
+        r = admin.post("/api/v1/ai/models", json={"url": empty.url})
+        assert r.status_code >= 400 and "did not list any models" in r.text
+    finally:
+        empty.close()
+    odd = admin.post("/api/v1/ai/models", json={"url": model.url.replace("/v1/chat/completions", "/api/generate")})
+    assert odd.status_code >= 400 and "Type the model name" in odd.text

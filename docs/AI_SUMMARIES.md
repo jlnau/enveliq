@@ -125,6 +125,8 @@ model to summarise a made-up email before it saves anything, and says what to tr
 if that fails. The settings are stored encrypted in Enveliq's vault and the key is
 never shown again. Environment settings (below) take priority if they are set.
 
+**Not sure of the model name?** Put in the server address and press **Find models**. Enveliq asks that server which models it has and shows them as a list; tap one to fill in the name. If the server needs a key, type it first. Only the address (and key) is sent, never any email, and an administrator is needed. The same address rules as the Test button apply.
+
 **Or with environment settings.** Add these settings to the Enveliq container (in `docker-compose.yml`, `.env` or
 your Docker manager's environment editor):
 

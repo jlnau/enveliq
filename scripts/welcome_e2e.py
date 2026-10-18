@@ -17,6 +17,10 @@ GOOD = {"summary": "Dentist appointment on Friday at 2:30 PM.", "category": "Per
 
 
 class Model(BaseHTTPRequestHandler):
+    def do_GET(self):
+        payload = json.dumps({"object": "list", "data": [{"id": "zeta-7b"}, {"id": "alpha-3b"}, {"id": "Beta-8b"}]}).encode()
+        self.send_response(200); self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(payload))); self.end_headers(); self.wfile.write(payload)
+
     def do_POST(self):
         self.rfile.read(int(self.headers["Content-Length"]))
         payload = json.dumps({"choices": [{"message": {"role": "assistant", "content": json.dumps(GOOD)}}]}).encode()

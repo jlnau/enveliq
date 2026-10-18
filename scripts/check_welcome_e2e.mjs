@@ -69,7 +69,17 @@ await page.fill("#ai_url", "http://127.0.0.1:9/v1/chat/completions"); await page
 await page.click("text=Test and save");
 await page.waitForSelector("text=Check the address and port");
 check("dead AI address: says what to try and saves nothing", (await api("/ai/status")).configured === false);
+await page.click("button:has-text('Find models')");
+await page.waitForSelector("text=could not be reached");
+check("Find models with a dead address says so plainly and fills nothing in", (await page.locator("#ai_model_pick").count()) === 0 && (await page.inputValue("#ai_model")) === "test-model");
 await page.fill("#ai_url", ctx.model_url);
+await page.click("button:has-text('Find models')");
+await page.waitForSelector("#ai_model_pick");
+const found = await page.locator("#ai_model_pick option").allInnerTexts();
+check("Find models lists what the server offers, tidily sorted", found.includes("alpha-3b") && found.includes("zeta-7b") && found[0].startsWith("Pick one of 3 models"));
+await page.selectOption("#ai_model_pick", "zeta-7b");
+check("picking a model fills in the model name", (await page.inputValue("#ai_model")) === "zeta-7b");
+await page.fill("#ai_model", "test-model");
 await page.click("text=Test and save");
 await page.waitForSelector("text=AI is ready: test-model");
 check("working AI: tested with a made-up email, then saved", (await api("/ai/status")).source === "saved");

@@ -21,12 +21,24 @@ GOOD = {"summary": "Dentist appointment on Friday at 2:30 PM.", "category": "Per
 class FakeModel:
     """Answers every request with `reply` (a string, or a callable) and records what it was sent."""
 
-    def __init__(self, reply=None, status=200, headers=None):
+    def __init__(self, reply=None, status=200, headers=None, models=None):
+        self.models = models if models is not None else ["zeta-7b", "alpha-3b", "Beta-8b"]
+        self.model_requests: list[str] = []
         self.requests: list[dict] = []
         self.auth: list[str | None] = []
         outer = self
 
         class H(BaseHTTPRequestHandler):
+            def do_GET(self):
+                outer.model_requests.append(self.path)
+                outer.auth.append(self.headers.get("Authorization"))
+                payload = json.dumps({"object": "list", "data": [{"id": m} for m in outer.models]} if self.path.split("?")[0].endswith("/v1/models") else {"detail": "no"}).encode()
+                self.send_response(200 if self.path.split("?")[0].endswith("/v1/models") else 404)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+
             def do_POST(self):
                 body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
                 outer.requests.append(body)

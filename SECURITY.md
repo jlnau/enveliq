@@ -188,6 +188,8 @@ The provider's own privacy policies and data handling practices apply.
 
 Enveliq requires acknowledgement when configuring cloud AI processing. Additional consent controls apply to cloud attachment summaries.
 
+**Finding models.** The administrator-only "Find models" button asks the configured AI address for its list of model names. It follows the same address rules as the connection test (private addresses, the allowed-hosts list, fixed cloud addresses), sends no email text, and never returns the access key.
+
 ### AI processing restrictions
 
 For Enveliq's built in email analysis and writing assistance:

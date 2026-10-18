@@ -112,6 +112,28 @@ async function aiSetupPanel(me, onChange) {
   let url, model, key, consent, current = byId[savedProvider] || { id: "custom", cloud: false, url_example: "http://192.168.1.20:11434/v1/chat/completions" };
   const link = (href, text) => h("a", { href, target: "_blank", rel: "noopener noreferrer", text });
 
+  // Ask the AI server which models it has, so the person can pick one instead of working out its exact name.
+  function modelsFinder() {
+    const status = h("div", { class: "hint", "aria-live": "polite" });
+    const list = h("div", { class: "ai-models-list" });
+    const btn = h("button", { class: "btn", type: "button", text: "Find models" });
+    btn.addEventListener("click", async () => {
+      list.replaceChildren(); status.textContent = "";
+      if (!current.cloud && !url.value.trim()) { status.textContent = "Type the AI server's address first."; return; }
+      btn.disabled = true; status.textContent = "Asking the server…";
+      try {
+        const out = await api("/ai/models", { method: "POST", body: { provider: current.id, url: current.cloud ? current.url : url.value.trim(), api_key: key.value === "" ? null : key.value } });
+        const choose = h("select", { id: "ai_model_pick", "aria-label": "Models found on the server" },
+          h("option", { value: "", text: `Pick one of ${out.models.length} models…` }), out.models.map(m => h("option", { value: m, text: m })));
+        choose.addEventListener("change", () => { if (choose.value) model.value = choose.value; });
+        list.append(choose);
+        status.textContent = `${out.models.length} found. Pick one to fill in the model name above.`;
+      } catch (er) { status.textContent = er.message || "Could not get the list. Type the model name instead."; }
+      btn.disabled = false;
+    });
+    return h("div", { class: "ai-models" }, h("div", { class: "row" }, btn, list), status);
+  }
+
   function drawProvider() {
     current = byId[pick.value] || current;
     const same = cfg && cfg.provider === current.id;
@@ -131,6 +153,7 @@ async function aiSetupPanel(me, onChange) {
             h("li", { text: "Paste the key below. It is stored encrypted inside Enveliq and never shown again." })),
           h("p", { text: "Using the API is billed by the company, separately from any chat subscription. Summaries are short, so the cost is normally small, but check their pricing page." })),
         richField("Model name", model, "The exact name of the model to use. Pick a small, fast one: summaries do not need the biggest model. Examples and the full list: ", link(current.models_url, "the models page"), ". Example: ", code(current.model_example)),
+        modelsFinder(),
         richField("Access key", key, keep ? "Leave empty to keep the saved key." : "Required."),
         h("label", { class: "check", for: "ai_consent" }, consent, h("span", {}, h("strong", { text: `I understand my email text will be sent to ${current.company || current.label}` }),
           h("div", { class: "hint", text: "You can switch this off any time by removing the AI settings or switching AI summaries off for a mailbox." }))));
@@ -152,6 +175,7 @@ async function aiSetupPanel(me, onChange) {
         h("p", { text: "Do not point Enveliq at an AI assistant that can run commands, edit files or control devices. Use a plain model server: Enveliq treats every email as untrusted, but a plain model cannot do anything even if an email tries to trick it." })),
       richField("Model name", model,
         "The exact name your server uses for the model. Ollama: run ", code("ollama list"), " and copy the NAME column. Other servers: open ", code("http://192.168.1.20:PORT/v1/models"), " in a browser and copy an ", code("id"), ". Small and fast is fine: a 7 to 8 billion parameter model is usually enough."),
+      modelsFinder(),
       richField("Access key (optional)", key,
         "Only if your AI server asks for a key or token. Most servers on a home network do not, so leave this empty. If you enter one it is stored encrypted and never shown again."));
   }

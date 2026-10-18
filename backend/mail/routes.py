@@ -62,6 +62,18 @@ class AttachmentAiBody(StrictModel):
     acknowledged: StrictBool = False
 
 
+class AiModelsBody(StrictModel):
+    """Which AI server to ask for its model list. `api_key` None reuses the saved key for the same address."""
+    url: str = Field(default="", max_length=2048)
+    api_key: str | None = Field(default=None, max_length=4096)
+    provider: str = Field(default="custom", max_length=40)
+
+    @field_validator("url", "api_key")
+    @classmethod
+    def no_control(cls, value: str | None) -> str | None:
+        return header_safe(value.strip()) if value is not None else None
+
+
 class AiConfigBody(StrictModel):
     """AI server settings. `api_key` None keeps the saved key; "" removes it."""
     url: str = Field(default="", max_length=2048)      # not needed for a cloud service: it has one fixed address
@@ -311,6 +323,26 @@ def build_mail_router(ctx: Any) -> APIRouter:
         vault.audit({"event": "ai_config_cleared", "actor_user_id": session.principal.user_id, "at": time.time()})
         service.refresh_ai(vault)
         return Response(status_code=204)
+
+    @router.post("/ai/models")
+    def ai_models(body: AiModelsBody, session: Session = Depends(admin_dep)):
+        """The models an AI server offers, so an administrator can pick one instead of typing its name. Same address rules as the test."""
+        if not ai_limit.allow(f"aimodels:{session.principal.user_id}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        service.refresh_ai(vault)
+        known = llm_providers.get(body.provider)
+        url = known.url if known.cloud else body.url
+        if not url:
+            raise HTTPException(status_code=400, detail="Type the AI server's address first.")
+        current = service.summariser.config
+        same = current.url == url and llm_providers.get(current.provider).id == known.id
+        key = (current.api_key if same else "") if body.api_key is None else body.api_key
+        if known.cloud and not key:
+            raise HTTPException(status_code=400, detail=f"{known.label} needs an access key first.")
+        try:
+            return {"models": Summariser(LlmConfig(url=url, model="models", api_key=key, allowed_hosts=service.env_ai.allowed_hosts, provider=known.id)).list_models()}
+        except BridgeError as err:
+            raise fail(err) from None
 
     @router.post("/ai/test")
     def ai_test(body: AiConfigBody | None = None, session: Session = Depends(session_dep)):
