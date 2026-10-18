@@ -30,7 +30,7 @@ Enveliq remembers where you were in the inbox and the email you had selected. Wh
 
 ## When new mail appears
 
-If the mailbox uses AI summaries, a new email is not shown in your inbox until its summary, and the summaries of any attached files, are ready. A small bar at the bottom of the page shows the AI queue (*1 being written, 2 waiting*). If a summary fails after a few tries, the email is shown anyway with **Could not summarise** and a **Try again** button. [The AI guide](AI_SUMMARIES.md#the-ai-queue) has the details.
+If the mailbox uses AI summaries, a new email is not shown in your inbox until its summary, and the summaries of any attached files, are ready. A small bar at the bottom of the page shows the AI queue (*1 being written, 2 waiting*). If a summary fails after a few tries, the email is shown anyway with **Could not summarise** and a **Try again** button. An email that still has no summary is tried again automatically a few times, and its card has a **Generate summary** button and says why if it cannot be done. [The AI guide](AI_SUMMARIES.md#the-ai-queue) has the details.
 
 ## What each email shows
 

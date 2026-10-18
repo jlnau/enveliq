@@ -43,6 +43,16 @@ summary, then its files, then it is shown.
   **Could not summarise** with the reason and a **Try again** button, so mail is
   never hidden for good. A file that cannot be read (a scan, a picture, a damaged
   file) does not hold its email back: that file is marked **Not summarised**.
+- **Emails left without a summary are tried again.** If an email is shown without
+  a summary (a try failed, or it arrived before AI summaries were switched on),
+  Enveliq puts it back in the line on its own after each mailbox check. It waits
+  longer each time (2 minutes, 10 minutes, 30 minutes, then 2 hours) and stops
+  after five tries. While an email has no summary its card has a **Generate
+  summary** button (**Try again** after a failure) and says why: no AI model is
+  set up, summaries are switched off for the mailbox, or the last reason Enveliq
+  could not summarise it. Pressing the button starts the count again. Nothing is
+  tried while there is no model or the mailbox has summaries off. The tries are
+  kept in the server's memory (ids only), so a restart starts them again.
 - **If the AI is switched off** (or the mailbox no longer uses AI summaries) the
   waiting emails are shown as they are.
 - **After a restart.** The line lives in the server's memory. Emails that were

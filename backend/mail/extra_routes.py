@@ -220,6 +220,7 @@ def build_extra_router(ctx: Any) -> APIRouter:
                         bad += 1
                         time.sleep(5 * bad)
                     else:
+                        service.problems[message_id] = err.message
                         raise
         finally:
             announce(account, service.release(vault, account, [message_id]))
@@ -254,6 +255,7 @@ def build_extra_router(ctx: Any) -> APIRouter:
         if not queue_limit.allow(f"queue:{user}"):
             raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
         service.refresh_ai(vault)
+        service.retry_now(message_id)
         if not service.summariser.enabled:
             raise HTTPException(status_code=409, detail={"code": "ai_not_configured", "message": "No AI model is set up yet. An administrator can add one under Administration, AI model."})
         try:
@@ -266,7 +268,7 @@ def build_extra_router(ctx: Any) -> APIRouter:
     @router.get("/me/summary-queue")
     def my_summary_queue(response: Response, session: Session = Depends(session_dep)):
         response.headers["Cache-Control"] = "no-store"
-        return queue.listing(session.principal.user_id)
+        return {**queue.listing(session.principal.user_id), "notice": service.summary_notice(vault, session.principal.user_id)}
 
     @router.delete("/accounts/{account_id}/messages/{message_id}/summary")
     def cancel_summary(account_id: AccountId, message_id: MessageId, session: Session = Depends(session_dep)):

@@ -105,6 +105,7 @@ class MailService:
         self.locks = AccountLocks()
         self.hold_new_mail = True                 # new mail waits out of the inbox list until its summary and files are ready
         self.on_pending: Any = None               # set by the application: (account, [message ids]) put in the AI queue
+        self.retries: dict[str, list[float]] = {}   # unread emails still without a summary: message id -> [automatic tries so far, earliest next try]; ids only
         self.problems: dict[str, str] = {}        # why the last attempt on an email failed, in plain words (message id -> reason); never email content
 
     def _held(self, account: dict[str, Any]) -> set[tuple[str, str]]:
@@ -155,6 +156,7 @@ class MailService:
             raise
         self.reporter.event("sync_completed", mailbox=account["id"], added=result["added"], removed=result["removed"], duration_ms=(time.monotonic() - started) * 1000)
         self.enqueue_held(vault, account)
+        self.enqueue_unsummarised(vault, account)
         return result
 
     # ---------- the AI queue: new mail waits for its summary ----------
@@ -182,6 +184,68 @@ class MailService:
             self.release(vault, account, ids)
             return 0
         return len(ids)
+
+    RETRY_DELAYS = (120.0, 600.0, 1800.0, 7200.0)    # seconds to wait before the 2nd, 3rd, 4th and 5th automatic try; after that Enveliq says why it stopped
+    RETRY_PER_PASS = 20
+
+    def unsummarised(self, vault: Any, account_id: str) -> list[dict[str, Any]]:
+        """Unread inbox emails that are shown but still have no summary (a failed try, or they arrived before summaries were switched on)."""
+        return [m for m in vault.list_messages(account_id) if m.get("state", "unread") == "unread" and str(m.get("summary") or "").startswith(PLACEHOLDER_SUMMARY)
+                and m.get("source_locator") and not m.get("from_all_mail") and not m.get("found_until") and not m.get("ai_pending")]
+
+    def enqueue_unsummarised(self, vault: Any, account: dict[str, Any], now: float | None = None) -> int:
+        """Put unread emails that still have no summary back in the AI queue, with growing waits between tries and a limit, so a model that
+        was busy or switched off a moment ago is not left forgotten. Does nothing while there is a genuine reason it cannot work
+        (no model set up, or summaries switched off for this mailbox): `summary_notice` says so."""
+        if self.on_pending is None or not self.summariser.enabled or not (account.get("settings") or {}).get("ai_summaries"):
+            return 0
+        now = time.time() if now is None else now
+        ids: list[str] = []
+        for m in sorted(self.unsummarised(vault, account["id"]), key=lambda m: m.get("received_at") or 0, reverse=True):
+            tries, due = self.retries.get(m["id"], [0.0, 0.0])
+            if tries > len(self.RETRY_DELAYS) or now < due:
+                continue
+            self.retries[m["id"]] = [tries + 1, now + self.RETRY_DELAYS[min(int(tries), len(self.RETRY_DELAYS) - 1)]]
+            ids.append(m["id"])
+            if len(ids) >= self.RETRY_PER_PASS:
+                break
+        if not ids:
+            return 0
+        try:
+            self.on_pending(account, ids)
+        except Exception:
+            log.warning("could not queue unsummarised mail", exc_info=True)
+            return 0
+        return len(ids)
+
+    def retry_now(self, message_id: str) -> None:
+        """Someone pressed Generate or Try again: the automatic count starts over for this email."""
+        self.retries.pop(message_id, None)
+
+    def summary_notice(self, vault: Any, user_id: str) -> dict[str, Any] | None:
+        """Plain words about unread emails that have no summary and why, or None when there is nothing to say. Never email content."""
+        count, reasons = 0, []
+        for account in vault.list_accounts():
+            if account.get("owner_user_id") != user_id or self.is_check_address(account):
+                continue
+            left = self.unsummarised(vault, account["id"])
+            if not left:
+                continue
+            count += len(left)
+            if not self.summariser.enabled:
+                reasons.append("No AI model is set up yet. An administrator can add one under Administration, AI model.")
+            elif not (account.get("settings") or {}).get("ai_summaries"):
+                reasons.append("AI summaries are switched off for this mailbox. Turn them on in Settings.")
+            else:
+                stuck = [m for m in left if self.retries.get(m["id"], [0.0, 0.0])[0] > len(self.RETRY_DELAYS)]
+                if stuck:
+                    why = next((self.problems[m["id"]] for m in stuck if m["id"] in self.problems), "The AI model did not answer.")
+                    reasons.append(f"Enveliq tried several times and could not summarise {len(stuck)} of them. {why} Press Try again on an email to try once more.")
+        if not count:
+            return None
+        if not reasons:
+            return {"count": count, "retrying": True, "text": f"{count} {'email is' if count == 1 else 'emails are'} waiting for a summary. Enveliq will keep trying."}
+        return {"count": count, "retrying": False, "text": " ".join(dict.fromkeys(reasons))}
 
     def release(self, vault: Any, account: dict[str, Any], ids: list[str]) -> list[dict[str, Any]]:
         """Show these emails in the inbox now (their summary is ready, or has failed for good). Returns the small facts a new-mail alert needs."""
@@ -424,6 +488,7 @@ class MailService:
                     continue
                 done += 1
                 self.problems.pop(m["id"], None)
+                self.retries.pop(m["id"], None)
                 summarised.add(m["id"])
                 if shipment and self.shipments is not None:
                     try:
