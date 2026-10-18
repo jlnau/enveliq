@@ -1,16 +1,21 @@
 # Builds the Enveliq Android app and attaches the installable file (an APK) to the run, under "Artifacts".
 # When you publish a GitHub Release, the same build is also attached to that release as Enveliq-<tag>.apk (with its checksum).
-# The app is signed with your own release key when the four ANDROID_ secrets exist (docs/ANDROID.md says how to make them).
-# Without them it is still built, signed with a temporary debug key, so it can be tried but is not a proper release.
+# There is nothing to set up. The app is signed with a key that GitHub keeps for you (in its cache), so each new version installs
+# over the old one. A small weekly job on the main branch keeps that key alive and makes it the same for test builds and releases.
+# If the key is ever lost, Android asks you to uninstall the app once before the next version installs.
+# Optional: with the four ANDROID_ secrets set, the app is signed with your own key instead (docs/ANDROID.md).
 name: Build Android app
 
 on:
   push:
     branches:
       - "preview/**"
+      - "main"
     paths:
       - "android/**"
       - ".github/workflows/build-android.yml"
+  schedule:
+    - cron: "23 3 * * 1"
   release:
     types: [published]
   workflow_dispatch:
@@ -23,8 +28,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  key:
+    name: Keep the app's signing key
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Find the saved key, or make it the first time
+        id: saved
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: enveliq-android-debug-keystore
+      - name: Make the key
+        if: ${{ steps.saved.outputs.cache-hit != 'true' }}
+        run: |
+          mkdir -p ~/.android
+          keytool -genkeypair -keystore ~/.android/debug.keystore -storepass android -keypass android -alias androiddebugkey \
+            -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+
   apk:
     name: Build the APK
+    if: ${{ github.event_name != 'schedule' && !(github.event_name == 'push' && github.ref == 'refs/heads/main') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -49,11 +74,11 @@ jobs:
           if [ -n "$KEYSTORE_B64" ]; then
             echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
             echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
-            echo "SIGNING=your release key" >> "$GITHUB_ENV"
+            echo "SIGNING=your own release key" >> "$GITHUB_ENV"
           else
-            echo "SIGNING=a temporary debug key (add the ANDROID_ secrets for a proper release)" >> "$GITHUB_ENV"
+            echo "SIGNING=the key GitHub keeps for this app" >> "$GITHUB_ENV"
           fi
-      - name: Keep the same debug key between builds, when there is no release key
+      - name: Use the saved key, so this build installs over the last one
         if: ${{ env.ANDROID_KEYSTORE_PATH == '' }}
         uses: actions/cache@v4
         with:

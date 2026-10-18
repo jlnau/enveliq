@@ -8,16 +8,13 @@ A real Android app (not a web page in a frame), written in Kotlin with Jetpack C
 
 **From a test build.** Every time the test branch `preview/vX.YY` changes the `android/` folder, the same workflow runs. Open **Actions**, **Build Android app**, the newest green run, and download **Enveliq-android-apk** under Artifacts (a zip with the APK inside; kept for 90 days). **Run workflow** starts a build by hand.
 
-## Signing: set up once
+## Signing: nothing to set up
 
-Android only installs an update over an app if both were signed with the same key. Builds are signed with your own release key when four repository secrets exist. Make the key once, on your computer (it needs Java's `keytool` and `openssl`):
+Android only installs an update over an app if both carry the same signature. GitHub keeps the signing key for you (in its cache), and a small weekly job on the main branch keeps it from expiring and makes it the same for test builds and releases. You do nothing.
 
-1. Run `bash android/make-signing-key.sh`. It writes `enveliq-release.jks` and prints four values.
-2. **Keep `enveliq-release.jks` and its password safe** (a password manager). If the key is lost, every phone has to uninstall the app before a new version can be installed. Never put the file in the repository.
-3. In GitHub, open **Settings, Secrets and variables, Actions** and add the four secrets it printed: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. (The script also prints ready-made `gh secret set` lines.)
-4. Run the workflow again. Its summary says "Signed with your release key".
+If the key is ever lost (for example before the first build from `main`, or after GitHub clears its cache), Android says the app conflicts with the one already installed. Uninstall Enveliq once and install the new version. The app keeps almost nothing on the phone (your sign-in), so you lose nothing but one sign-in.
 
-Until the secrets exist, builds are still made, signed with a temporary debug key. They work for trying the app, but the first release-signed build will not install over a debug-signed one: uninstall the app once, then install the new one.
+Optional, only if you later share the app with other people: add the four repository secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD` (a key you make with `keytool` and keep safe). Builds are then signed with that key instead, and the workflow summary says "your own release key". Switching keys needs one uninstall and reinstall.
 
 The app's version is the release tag (for example `v0.96` gives version `0.96`); test builds are named `0.96-preview`. Each build has a higher build number than the one before, so it installs as an update.
 
