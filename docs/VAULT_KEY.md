@@ -37,13 +37,13 @@ Put the key in a file outside the data volume:
 ## Switch an existing install
 
 1. Update and rebuild the image, add `ENVELIQ_VAULT_KEY` (or the key file) as above and redeploy.
-2. Run: `docker compose exec -it enveliq python -m backend.vault_key adopt`
+2. Run: `docker compose exec enveliq python -m backend.vault_key adopt` (do not add `-it`: Docker Compose already opens an interactive prompt and rejects those flags; with plain `docker exec` use `-it`)
    It asks for your current passphrase once and re-protects the vault with the key. Your data is not re-encrypted.
 3. Restart Enveliq. It unlocks by itself.
 
 ## Go back to a typed passphrase
 
-Run `docker compose exec -it enveliq python -m backend.vault_key use-passphrase`, remove the key setting from your Compose or `.env` file and restart. `python -m backend.vault_key status` shows which mode is active.
+Run `docker compose exec enveliq python -m backend.vault_key use-passphrase`, remove the key setting from your Compose or `.env` file and restart. `python -m backend.vault_key status` shows which mode is active.
 
 ## What changes while it is on
 

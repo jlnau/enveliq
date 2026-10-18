@@ -376,7 +376,8 @@ function addChrome() {
 function mfaStep(methods) {
   const form = h("form", {},
     field(methods.includes("totp") ? "Code from your authenticator app" : "Recovery code",
-      input("code", { autocomplete: "one-time-code", inputmode: methods.includes("totp") ? "numeric" : "text", required: true, maxlength: 32 }),
+      input("code", { name: methods.includes("totp") ? "totp" : "recovery_code", type: "text", autocomplete: "one-time-code", inputmode: methods.includes("totp") ? "numeric" : "text",
+      autocapitalize: "off", spellcheck: "false", placeholder: methods.includes("totp") ? "6-digit code" : "Recovery code", "aria-label": methods.includes("totp") ? "Authenticator code (TOTP)" : "Recovery code", required: true, maxlength: 32 }),
       methods.includes("recovery") ? "Lost your phone? Enter one of your recovery codes instead." : null),
     h("button", { class: "btn primary full", type: "submit", text: "Verify" }));
   onSubmit(form, async () => {
