@@ -56,15 +56,14 @@ function stepper(current, labels) {
 }
 
 // ---------- the AI model panel (used by the guide and by Administration) ----------
-async function aiSetupPanel(me, onChange) {
+async function aiSetupPanel(me, onChange, { auto = false } = {}) {
   const status = await api("/ai/status");
   const isAdmin = me.role === "admin";
   const cfg = isAdmin ? await api("/ai/config").catch(() => null) : null;
   const out = h("div", { class: "ai-panel" });
   const result = h("div", { "aria-live": "polite" });
 
-  const privacy = h("div", { class: "alert info" },
-    h("strong", { text: "What the AI model sees" }),
+  const privacy = helpBox("What the AI model sees",
     h("p", { text: "For each new email, Enveliq sends the sender, the subject and the first part of the plain text (about 6,000 characters) to the AI server you choose below, and nothing else. The text is thrown away as soon as the summary comes back. Enveliq keeps only the summary, category, priority and a suggested task, encrypted."}),
     h("p", { text: "Attachments, images, links and your passwords are never sent. Pick a server you trust: one on your own network keeps your mail inside your home." }));
 
@@ -74,10 +73,10 @@ async function aiSetupPanel(me, onChange) {
   const showProblem = er => adviceBox("bad", er.message, AI_ADVICE[er.code] || []);
 
   async function runTest(button, body) {
-    button.disabled = true; result.replaceChildren(h("div", { class: "hint", text: "Asking the AI to summarise a made-up email. A local model can take up to a minute…" }));
+    if (button) button.disabled = true; result.replaceChildren(h("div", { class: "hint", text: "Asking the AI to summarise a made-up email. A local model can take up to a minute…" }));
     try { const r = await api("/ai/test", { method: "POST", body }); result.replaceChildren(showSample(r.result)); return true; }
     catch (er) { result.replaceChildren(showProblem(er)); return false; }
-    finally { button.disabled = false; }
+    finally { if (button) button.disabled = false; }
   }
 
   if (status.source === "environment") {
@@ -182,13 +181,18 @@ async function aiSetupPanel(me, onChange) {
         "Only if your AI server asks for a key or token. Most servers on a home network do not, so leave this empty. If you enter one it is stored encrypted and never shown again."));
   }
   drawProvider();
-  pick.addEventListener("change", () => { result.replaceChildren(); drawProvider(); });
+  pick.addEventListener("change", () => { result.replaceChildren(); drawProvider(); syncSubmit(); });
 
+  // In Administration, a model on your own network is tested and saved by itself as soon as its details are filled in. A cloud service keeps its button,
+  // because testing it sends a sample to that company and needs the person's tick first.
+  const submitBtn = h("button", { class: "btn primary", type: "submit", text: cfg && cfg.source === "saved" ? "Test and save changes" : "Test and save" });
+  const syncSubmit = () => { submitBtn.hidden = auto && !current.cloud; };
+  syncSubmit();
   const form = h("form", {},
     richField("AI service", pick, "Choose where the summaries are written. A model on your own network keeps your mail at home. A cloud service is often smarter and faster, but your email text is sent to that company."),
     holder,
     h("div", { class: "row" },
-      h("button", { class: "btn primary", type: "submit", text: cfg && cfg.source === "saved" ? "Test and save changes" : "Test and save" }),
+      submitBtn,
       cfg && cfg.source === "saved" ? h("button", { class: "btn danger", type: "button", text: "Remove AI settings", onclick: async () => {
         try { await api("/ai/config", { method: "DELETE" }); toast("AI settings removed"); onChange && onChange(); } catch (er) { toast(er.message); }
       } }) : null));
@@ -200,6 +204,12 @@ async function aiSetupPanel(me, onChange) {
     await api("/ai/config", { method: "PUT", body });
     toast("AI settings saved");
     if (onChange) onChange();
+  });
+  let autoTimer = null;
+  form.addEventListener("change", e => {
+    if (!auto || current.cloud || e.target === pick) return;
+    clearTimeout(autoTimer);
+    autoTimer = setTimeout(() => { if (form.isConnected && form.checkValidity()) form.requestSubmit(); }, 900);
   });
   const savedCloud = cfg && cfg.source === "saved" && byId[cfg.provider] && byId[cfg.provider].cloud;
   out.append(cfg && cfg.source === "saved" ? h("div", { class: "alert good" }, h("strong", { text: `AI is ready: ${cfg.model}` }),

@@ -147,10 +147,9 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   await ss.locator("#pw_up").fill("1");
   await ss.locator("#pw_sym").fill("1");
   check("the preview sentence follows the numbers", (await ss.locator("#pw_preview").innerText()).includes("At least 14 characters, 2 numbers, 1 capital letter and 1 symbol"));
-  await ss.locator("button:has-text('Save sign-in rules')").click();
-  await page.waitForFunction(() => true);
-  await new Promise((r) => setTimeout(r, 300));
-  const pol = server.calls.find((c) => c[0] === "policy");
+  await ss.locator("#pw_sym").press("Tab");
+  await new Promise((r) => setTimeout(r, 1200));
+  const pol = server.calls.filter((c) => c[0] === "policy").pop();
   check("saving sends the password rules", !!pol && pol[1].pw_min_length === 14 && pol[1].pw_min_digits === 2 && pol[1].pw_min_upper === 1 && pol[1].pw_min_symbols === 1 && pol[1].pw_forbid_username === true);
   await page.click('[data-settings-tab~="users"]');
   const us = host(page, "users");

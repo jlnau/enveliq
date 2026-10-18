@@ -243,9 +243,9 @@ const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll
   check("the tab is called Alerts", /Alerts/.test(await page.locator("[data-settings-tab~=reminders]").innerText()));
   await page.evaluate(() => {
     const roots = [...document.querySelectorAll("#settings *")].filter((e) => e.shadowRoot).map((e) => e.shadowRoot);
-    for (const r of roots) { const el = r.querySelector("#rs_mail"); if (el) { el.click(); r.querySelector("form button[type=submit]").click(); } }
+    for (const r of roots) { const el = r.querySelector("#rs_mail"); if (el) { el.click(); } }
   });
-  await page.waitForTimeout(600);
+  await page.waitForTimeout(1200);
   check("saving sends the new settings", server.saved.length === 1 && server.saved[0].mail_on === true && server.saved[0].mail_details === false);
   check("no script errors in Settings", errors.length === 0);
   await page.close(); await context.close();

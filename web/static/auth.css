@@ -259,7 +259,7 @@ a.btn{text-decoration:none}
 .mbtitle{margin-bottom:0}
 
 /* Inside Settings and Administration, sections sit side by side when there is room, so pages are short instead of one long scroll. */
-.page.embed-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:16px;align-items:start;max-width:none}
+.page.embed-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:16px;align-items:start;max-width:none}
 .page.embed-cols > :not(.section){grid-column:1/-1}
 .page.embed-cols > .section{margin:0;min-width:0}
 .featgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:4px 24px}
@@ -271,7 +271,6 @@ a.btn{text-decoration:none}
 
 /* Settings, General: three short columns of small cards. */
 .gcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:16px;align-items:start}
-.gcol{display:flex;flex-direction:column;gap:16px;min-width:0}
 .gcard{margin:0;padding:16px}
 .gcard h2{margin:0 0 3px;font-size:15px}
 .gsub{margin:0 0 10px;color:var(--faint);font-size:12.5px}
@@ -279,5 +278,23 @@ a.btn{text-decoration:none}
 .gcard select{width:100%}
 .gopt{display:flex;gap:10px;align-items:center;padding:6px 0;font-size:13.5px;margin:0}
 .gopt input{width:18px;height:18px;margin:0;flex:none}
-.gfeat{display:grid;grid-template-columns:1fr 1fr;column-gap:12px}
+.gfeat{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));column-gap:12px}
+.gcol{display:flex;flex-direction:column;gap:16px;min-width:0}
+.gcol.wide{grid-column:span 2}
+@media(max-width:700px){.gcol.wide{grid-column:auto}}
 @media(max-width:760px){.gopt{min-height:44px}.gfeat{grid-template-columns:1fr}}
+
+/* Inside the pop-ups every page is a stack of calm cards. A page's own heading is a small group title, not a banner. */
+.page.embed-cols h1{font-size:16px;margin:0 0 -6px}
+.page.embed-cols > .lead{margin:0 0 -4px;font-size:12.5px}
+.page.embed-cols .section{border-radius:14px;padding:16px}
+.page.embed-cols .section > h2{font-size:15px;margin:0 0 4px}
+.page.embed-cols .section > .lead{margin:0 0 10px;font-size:12.5px}
+.page.embed-cols .help{margin:8px 0 0;padding:0 12px;border-radius:10px}
+.page.embed-cols .help summary{padding:8px 0;font-size:12.5px;font-weight:600;color:var(--muted)}
+.page.embed-cols .help[open] summary{color:var(--text)}
+.page.embed-cols .btn{padding:8px 13px}
+.page.embed-cols form{gap:10px}
+.page.embed-cols .grid2{grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr))}
+.page.embed-cols .section .check{margin:8px 0}
+.page.embed-cols:has(.steps) > .section,.page.embed-cols:has(.steps) > .steps,.page.embed-cols:has(.steps) > .skip{grid-column:1/-1}

@@ -104,8 +104,7 @@ for (const [label, bad] of [["a link to another site", { version: "9.9", url: "h
   check("it says a newer version is out, with a link", /Version 9\.9 is out/.test(await text()) && (await host.locator('a[href="' + LINK + '"]').count()) === 1);
   await shot(page, "update-admin");
   await host.locator("#up_on").uncheck();
-  await host.locator('button[type="submit"]').click();
-  await page.waitForFunction(() => true); await page.waitForTimeout(600);
+  await page.waitForTimeout(1100);
   check("turning it off is saved", putBody && putBody.enabled === false);
   check("and the page now says the check is off", /The check is off/.test(await text()));
   check("no script errors in Administration", errors.length === 0);

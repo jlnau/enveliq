@@ -142,7 +142,14 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 .settings-main{display:flex;flex-direction:column;min-width:0;min-height:0}
 .settings-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line)}
 .settings-head h3{margin:0;font-size:18px}.close{border:0;background:transparent;color:var(--muted);font-size:20px}
-.settings-scroll{overflow:auto;padding:22px}
+.settings-scroll{overflow:auto;padding:20px 22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,350px),1fr));gap:16px;align-items:start;align-content:start}
+.settings-scroll>section{min-width:0}.settings-scroll>section[hidden]{display:none}
+.settings-scroll>section[data-settings-panel="accounts"],.settings-scroll>section[data-settings-panel="general"],.settings-scroll>section[data-settings-panel="shortcuts"],.settings-scroll>section[data-settings-panel="setup"]{grid-column:1/-1}
+.settings-scroll{--panel:#121722;--panel2:#181f2c;--line:#262f3f}
+html[data-theme="light"] .settings-scroll{--panel:#ffffff;--panel2:#edf0f6;--line:#d8dde8}
+.settings-scroll .section-card{margin-bottom:0;border-radius:14px}
+.settings-scroll .fold{margin-bottom:0}
+.shortcut-fold>summary{cursor:pointer;font-weight:700;padding:8px 0}
 .fold{border:1px solid var(--line);background:var(--panel);border-radius:14px;margin-bottom:12px}.fold>summary{list-style:none;cursor:pointer;padding:13px 16px;display:flex;flex-direction:column;gap:2px}.fold>summary::-webkit-details-marker{display:none}.fold>summary strong{font-size:14px}.fold>summary small{color:var(--muted);font-size:12px}.fold{position:relative}.fold>summary{padding-right:70px}.fold>summary::after{content:"Show";position:absolute;right:16px;top:14px;color:var(--brand);font-size:12px;font-weight:700}.fold[open]>summary::after{content:"Hide"}.fold-body{padding:0 16px 14px}.fold-body .section-card{border:0;padding:0;background:none}
 .section-card{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:16px;margin-bottom:14px}
 .section-card h4{margin:0 0 4px;font-size:14px}.section-card>p{margin:0 0 14px;color:var(--muted);font-size:12px}

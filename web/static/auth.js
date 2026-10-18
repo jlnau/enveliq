@@ -8,7 +8,45 @@ let app = document.getElementById("app");
 let toastEl = null;
 // When these pages are shown inside the inbox page's pop-ups, the inbox page loads
 // this file with window.ENVELIQ_EMBED set and gives each page its own mount point.
-function setMount(el, toastNode) { app = el; toastEl = toastNode || null; }
+function setMount(el, toastNode) { app = el; toastEl = toastNode || null; watchPolish(el); }
+
+// ---------- one calm look for every page ----------
+// Two small tidy-ups applied to whatever a page draws, so all of Settings and Administration behave alike:
+//  1. A form whose only button is a plain "Save" saves by itself when a field changes, and the button goes away.
+//  2. Long explanations fold away behind "More about this": the first short sentence stays, the rest opens on demand.
+const polishWatched = new WeakSet();
+function watchPolish(root) {
+  if (!root || polishWatched.has(root) || typeof MutationObserver === "undefined") return;
+  polishWatched.add(root);
+  let queued = false;
+  new MutationObserver(() => { if (queued) return; queued = true; queueMicrotask(() => { queued = false; polish(root); }); }).observe(root, { childList: true, subtree: true });
+}
+function polish(root) {
+  for (const form of root.querySelectorAll("form:not([data-auto])")) {
+    const buttons = [...form.querySelectorAll("button[type=submit]")];
+    if (buttons.length !== 1 || buttons[0].textContent.trim() !== "Save") continue;
+    form.dataset.auto = "1";
+    const holder = buttons[0].parentElement;
+    buttons[0].remove();
+    if (holder && holder !== form && !holder.children.length && !holder.textContent.trim()) holder.remove();
+    let timer = null;
+    const run = () => { clearTimeout(timer); timer = setTimeout(() => { if (form.isConnected && form.checkValidity()) form.requestSubmit(); }, 500); };
+    form.addEventListener("change", run);
+  }
+  for (const el of root.querySelectorAll(".hint:not([data-fold]), p.lead:not([data-fold])")) {
+    el.dataset.fold = "1";
+    if (el.children.length || el.closest(".alert, details.help, .savedtag, [role=status], .page > .lead") || el.parentElement === root) continue;
+    const text = el.textContent.trim();
+    if (text.length < 150) continue;
+    const sentences = text.split(/(?<=[.!?])\s+/);
+    const first = sentences[0].length <= 140 ? sentences[0] : "";
+    const rest = first ? sentences.slice(1).join(" ") : text;
+    if (!rest) continue;
+    const fold = h("details", { class: "help" }, h("summary", { text: first ? "More about this" : "Read more" }), h("div", { class: "help-body" }, h("p", { class: "hint", text: rest })));
+    fold.firstChild.nextSibling.firstChild.dataset.fold = "1";
+    if (first) { el.textContent = first; el.after(fold); } else el.replaceWith(fold);
+  }
+}
 
 // ---------- tiny DOM helpers ----------
 function h(tag, attrs, ...children) {
@@ -61,7 +99,7 @@ function passwordRulesText(r) {
   const last = parts.pop();
   return "At least " + (parts.length ? parts.join(", ") + " and " : "") + last + (r.pw_forbid_username ? ", and not your username" : "") + ".";
 }
-function show(...nodes) { app.replaceChildren(...nodes); const f = app.querySelector("input:not([type=hidden]),button.primary"); if (f) f.focus(); }
+function show(...nodes) { app.replaceChildren(...nodes); if (window.ENVELIQ_EMBED) return; const f = app.querySelector("input:not([type=hidden]),button.primary"); if (f) f.focus(); }
 
 async function api(path, { method = "GET", body } = {}) {
   const opts = { method, credentials: "same-origin", headers: {} };
@@ -886,7 +924,7 @@ async function adminPage(me, only) {
   const [list, policy, sso] = await Promise.all([api("/admin/users"), api("/admin/auth-policy"), api("/admin/sso")]);
 
   const aiPanel = h("div", {}, h("p", { class: "hint", text: "Loading…" }));
-  const drawAi = async () => { try { aiPanel.replaceChildren(await aiSetupPanel(me, drawAi)); } catch (er) { aiPanel.replaceChildren(alertBox("bad", er.message)); } drawAttach(); };
+  const drawAi = async () => { try { aiPanel.replaceChildren(await aiSetupPanel(me, drawAi, { auto: true })); } catch (er) { aiPanel.replaceChildren(alertBox("bad", er.message)); } drawAttach(); };
   // Summaries of attached files: automatic with a local model; a cloud service needs the administrator's explicit yes.
   const attPanel = h("div", {});
   const drawAttach = async () => {
@@ -943,7 +981,7 @@ async function adminPage(me, only) {
       sync.editable ? "Between 2 and 1440. Enter 0 to turn automatic checking off; mail is then fetched only when someone presses Sync mail." : "This is set by ENVELIQ_SYNC_MINUTES in the server's environment, so it can only be changed there.")),
     h("p", { class: "hint", text: "Automatic checking runs only while Enveliq is unlocked. When Enveliq locks itself after a period of no use, it pauses until someone unlocks it. Each person can also switch it off for their own mailboxes on the Mailboxes page." }),
     sync.editable ? h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" })) : null) : null;
-  if (syncForm && sync.editable) onSubmit(syncForm, async () => { await api("/sync/config", { method: "PUT", body: { minutes: Number(syncForm.querySelector("#sync_min").value) } }); toast("Saved"); adminPage(me, only); });
+  if (syncForm && sync.editable) onSubmit(syncForm, async () => { await api("/sync/config", { method: "PUT", body: { minutes: Number(syncForm.querySelector("#sync_min").value) } }); toast("Saved"); });
   const rv = await api("/admin/review-settings").catch(() => null);
   const keepForm = rv ? h("form", {},
     field("Longest an email may stay in Reviewed or Archived (days)", input("rv_days", { type: "number", min: "1", max: "90", value: String(rv.max_days) }),
@@ -980,7 +1018,7 @@ async function adminPage(me, only) {
     const restore = st.in_use ? h("button", { class: "btn small", type: "button", text: "Restore the built-in prompt", onclick: () => savePrompt("") }) : null;
     promptPanel.replaceChildren(head,
       h("p", { class: "hint", text: "This is what the AI is told before every summary. It is shown here so nothing is hidden." }),
-      view(st.in_use ? "Your custom prompt (replaces the original)" : "Prompt (original)", st.in_use ? st.custom : st.default), fixedBox,
+      more("Show the prompt", view(st.in_use ? "Your custom prompt (replaces the original)" : "Prompt (original)", st.in_use ? st.custom : st.default), fixedBox),
       h("div", { class: "row" }, h("button", { class: "btn small", type: "button", text: "Edit built-in prompt", onclick: startEdit }), restore));
   };
   if (!only || only === "instr") drawPrompt();
@@ -1058,6 +1096,7 @@ async function adminPage(me, only) {
   const gcfg = (!only || only === "reminders") ? await api("/admin/google").catch(() => null) : null;
   const gForm = gcfg ? h("form", {},
     h("p", { class: "lead", text: "Lets people connect their own Google Calendar so tasks are added and deleted instantly. Google needs you to register Enveliq once (free, about 10 minutes). Do these in order:" }),
+    more("Show the steps, one by one",
     h("ol", { class: "lead" },
       h("li", {}, "Copy the Redirect address below."),
       h("li", {}, "Make a project: ", h("a", { href: "https://console.cloud.google.com/projectcreate", target: "_blank", rel: "noopener noreferrer", text: "console.cloud.google.com/projectcreate" })),
@@ -1065,7 +1104,7 @@ async function adminPage(me, only) {
       h("li", {}, "Consent screen: ", h("a", { href: "https://console.cloud.google.com/auth/overview", target: "_blank", rel: "noopener noreferrer", text: "Google Auth Platform" }), ". Left menu: Audience (External, add everyone under Test users), Branding (home page and privacy policy = your Enveliq address), Audience again (Publish app), then Data access (add the scope https://www.googleapis.com/auth/calendar.app.created)."),
       h("li", {}, "Clients, Create client, Web application. Paste the Redirect address. Copy the Client ID and Client secret."),
       h("li", {}, "Paste them here, tick Allow Google Calendar and Save.")),
-    guideNote("CALENDAR.md", "Every click, and fixes for common errors:", "Google Calendar guide"),
+    guideNote("CALENDAR.md", "Every click, and fixes for common errors:", "Google Calendar guide")),
     h("label", { class: "check", for: "gc_on" }, h("input", { id: "gc_on", type: "checkbox", checked: gcfg.enabled }), h("span", {}, h("strong", { text: "Allow Google Calendar" }))),
     field("Redirect address (paste this into Google Cloud)", input("gc_redirect", { value: gcfg.redirect_uri, readonly: true })),
     h("div", { class: "grid2" }, field("Client ID", input("gc_id", { value: gcfg.client_id, spellcheck: "false", placeholder: "1234-abc.apps.googleusercontent.com" })),
@@ -1092,7 +1131,7 @@ async function adminPage(me, only) {
   if (ckForm && !ck.set_elsewhere) onSubmit(ckForm, async () => {
     const account_id = ckForm.querySelector("#ck_account").value || null;
     const allowed = ckForm.querySelector("#ck_allowed").value.split(/[\n,;]+/).map(x => x.trim()).filter(Boolean);
-    await api("/admin/check-address", { method: "PUT", body: { account_id, allowed } }); toast("Saved"); adminPage(me, only);
+    await api("/admin/check-address", { method: "PUT", body: { account_id, allowed } }); toast("Saved");
   });
   const bk = (!only || only === "backup") ? await api("/admin/backups").catch(() => null) : null;
   const bkSection = bk ? (() => {
@@ -1105,7 +1144,7 @@ async function adminPage(me, only) {
       h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" })));
     onSubmit(settings, async () => {
       await api("/admin/backups/settings", { method: "PUT", body: { daily: settings.querySelector("#bk_daily").checked, keep_days: Number(settings.querySelector("#bk_days").value) || 7 } });
-      toast("Saved"); reload();
+      toast("Saved");
     });
     const makeBtn = h("button", { class: "btn primary", type: "button", text: "Make a backup now", onclick: async () => {
       makeBtn.disabled = true;
@@ -1177,7 +1216,7 @@ async function adminPage(me, only) {
         numField("pw_sym", "Symbols", policy.pw_min_symbols, 0, 32, "Anything that is not a letter or number, like ! ? # % or a space.")),
       chkBox("pw_nouser", policy.pw_forbid_username, "Don't allow the username inside the password"),
       h("p", { class: "hint", id: "pw_preview", text: "Passwords must be: " + passwordRulesText(policy) }))),
-    h("div", {}, h("button", { class: "btn", type: "submit", text: "Save sign-in rules" })));
+    h("div", {}, h("button", { class: "btn", type: "submit", text: "Save" })));
   const pwNum = id => Number(pol.querySelector("#" + id).value) || 0;
   const pwRulesNow = () => ({ pw_min_length: Math.max(8, pwNum("pw_len")), pw_min_digits: pwNum("pw_dig"), pw_min_upper: pwNum("pw_up"), pw_min_lower: pwNum("pw_low"), pw_min_symbols: pwNum("pw_sym"), pw_forbid_username: pol.querySelector("#pw_nouser").checked });
   pol.addEventListener("input", () => { pol.querySelector("#pw_preview").textContent = "Passwords must be: " + passwordRulesText(pwRulesNow()); });
@@ -1305,15 +1344,15 @@ async function generalPage(me) {
   // Everything here saves as soon as it is changed, so there is no Save button.
   const saved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
   const tick = (id, checked, title) => h("label", { class: "gopt", for: id }, h("input", { id, type: "checkbox", checked }), h("span", { text: title }));
-  const pick = (id, options, current) => {
+  const pick = (id, options, current, unit = "") => {
     const list = options.slice();
-    if (!list.some(o => o[0] === current)) list.push([current, String(current)]);
+    if (!list.some(o => o[0] === current)) list.push([current, current + unit]);
     return h("select", { id, name: id }, list.sort((x, y) => x[0] - y[0]).map(([v, t]) => h("option", { value: String(v), text: t, selected: v === current })));
   };
   const lab = (id, text, el) => h("div", {}, h("label", { class: "glab", for: id, text }), el);
   const card = (title, sub, ...kids) => h("section", { class: "section gcard" }, h("h2", {}, title, title === "Sending replies" ? saved : null), sub ? h("p", { class: "gsub", text: sub }) : null, ...kids);
-  const undoSel = pick("undo_secs", [[0, "Off"], [5, "5 seconds"], [10, "10 seconds"], [20, "20 seconds"], [30, "30 seconds"], [60, "60 seconds"]], p.undo_send_seconds || 0);
-  const daysSel = pick("keep_days", [7, 14, 30, 60, 90, 180, 365].filter(d => d <= p.max_days).map(d => [d, d + " days"]), p.keep_days);
+  const undoSel = pick("undo_secs", [[0, "Off"], [5, "5 seconds"], [10, "10 seconds"], [15, "15 seconds"], [20, "20 seconds"], [30, "30 seconds"], [60, "60 seconds"]], p.undo_send_seconds || 0, " seconds");
+  const daysSel = pick("keep_days", [7, 14, 30, 60, 90, 180, 365].filter(d => d <= p.max_days).map(d => [d, d + " days"]), p.keep_days, " days");
   const sendSec = card("Sending replies", "A short pause lets you change your mind. Pick Off to send straight away.", lab("undo_secs", "Undo send window", undoSel));
   const keepSec = card("Reviewed and Archived", `Keep a list so you can look again. Your administrator allows up to ${p.max_days} days.`,
     tick("keep_reviewed", p.keep_reviewed, "Keep a Reviewed list"), tick("keep_archived", p.keep_archived, "Keep an Archived list"), lab("keep_days", "Keep them for", daysSel));
@@ -1334,7 +1373,7 @@ async function generalPage(me) {
   if (fastSection) fastSection.classList.add("gcard");
   const exportSection = card("Your data", "A copy of your summaries, notes and settings. It never holds passwords or keys, or anyone else's mail.",
     h("div", {}, h("a", { class: "btn", href: `${API}/me/export`, download: "", text: "Export my data" })));
-  const cols = [h("div", { class: "gcol" }, sendSec, keepSec), h("div", { class: "gcol" }, featSection, fastSection), h("div", { class: "gcol" }, exportSection)];
+  const cols = [h("div", { class: "gcol" }, sendSec, keepSec), h("div", { class: "gcol wide" }, featSection, fastSection, exportSection)];
   show(...chrome(me, "general", window.ENVELIQ_EMBED ? null : h("h1", { text: "General" }), h("div", { class: "gcols" }, ...cols)));
 }
 // ---------- reminders (everyone) ----------
@@ -1557,9 +1596,9 @@ function featuresSection(me, fx) {
   const rows = Object.keys(fx.labels).map(k => {
     const allowed = fx.admin[k];
     return h("label", { class: "gopt", for: "uf_" + k, title: allowed ? "" : "Turned off by your administrator." }, h("input", { id: "uf_" + k, type: "checkbox", checked: allowed && fx.user[k], disabled: !allowed }),
-      h("span", { text: fx.labels[k] }));
+      h("span", { text: fx.labels[k].replace(/\s*\(.*\)\s*$/, "") }));
   });
-  const explain = more("What each one does", ...Object.keys(fx.labels).map(k => h("p", { class: "hint" }, h("strong", { text: fx.labels[k] + ". " }), fx.admin[k] ? FEATURE_HINTS[k] : "Turned off by your administrator.")));
+  const explain = more("What each one does", ...Object.keys(fx.labels).map(k => h("p", { class: "hint" }, h("strong", { text: fx.labels[k].replace(/\s*\(.*\)\s*$/, "") + ". " }), fx.admin[k] ? FEATURE_HINTS[k] : "Turned off by your administrator.")));
   const saved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
   const form = h("div", {},
     h("p", { class: "gsub" }, "Show or hide parts of Enveliq. Saves as you tick. ", saved),
@@ -1725,7 +1764,7 @@ async function savedPage(me) {
   let state = { signature: "", replies: [], limits: { signature: 1000, replies: 30, title: 60, text: 3000 } };
   let editing = null;
   const sig = h("textarea", { id: "sv_sig", rows: "4", "aria-label": "Your signature" });
-  const sigSave = h("button", { class: "btn primary", type: "button", text: "Save signature" });
+  const sigSaved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
   const list = h("div", { class: "ab-list" });
   const title = h("input", { id: "sv_title", type: "text", placeholder: "A short name, for example \u201cRunning late\u201d", "aria-label": "Name of the saved reply", autocomplete: "off" });
   const text = h("textarea", { id: "sv_text", rows: "4", placeholder: "The words to insert", "aria-label": "Text of the saved reply" });
@@ -1742,8 +1781,9 @@ async function savedPage(me) {
   }
   function reset() { editing = null; title.value = ""; text.value = ""; save.textContent = "Save reply"; cancel.hidden = true; }
   cancel.addEventListener("click", reset);
-  sigSave.addEventListener("click", async () => {
-    try { state = await api("/me/saved/signature", { method: "PUT", body: { text: sig.value } }); paint(); toast(state.signature ? "Signature saved" : "Signature removed"); } catch (er) { toast(er.message); }
+  // The signature saves by itself when you click away from it.
+  sig.addEventListener("change", async () => {
+    try { state = await api("/me/saved/signature", { method: "PUT", body: { text: sig.value } }); paint(); sigSaved.textContent = "Saved ✓"; sigSaved.classList.add("show"); clearTimeout(sigSaved._t); sigSaved._t = setTimeout(() => sigSaved.classList.remove("show"), 1800); } catch (er) { toast(er.message); }
   });
   save.addEventListener("click", async () => {
     try {
@@ -1756,9 +1796,9 @@ async function savedPage(me) {
   paint();
   const wrap = h("div", {},
     h("div", { class: "sv-block" },
-      h("h2", { text: "Your signature" }),
+      h("h2", {}, "Your signature ", sigSaved),
       h("p", { class: "lead", text: "Put at the bottom of every new email and reply when you open the box. You can change or delete it in the message box before you send. Leave this empty for no signature." }),
-      sig, h("div", { class: "row" }, sigSave)),
+      sig),
     h("div", { class: "sv-block" },
       h("h2", { text: "Saved replies" }),
       h("p", { class: "lead", text: "Short pieces of text you use often. In the message box, choose one from \u201cSaved reply\u201d and it is put in where your cursor is. Only you can see them." }),
@@ -2025,6 +2065,7 @@ function confirmThen(button, question, action, yes = "Yes, delete", cls = "dange
 }
 
 if (!window.ENVELIQ_EMBED) {
+  watchPolish(app);
   addChrome(); route();
   if (!["/login", "/setup", "/unlock", "/terms", "/privacy", "/security", "/welcome"].includes(location.pathname) && !new URLSearchParams(location.search).has("enroll")) sendWatcher();
 }

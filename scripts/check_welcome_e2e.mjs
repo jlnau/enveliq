@@ -152,7 +152,7 @@ check("the choices are saved for this person", prefs1.keep_archived === false &&
 await page.click("[data-settings-tab~=aiinstr]");
 await page.waitForSelector("#settings .embed-host >> #my_instr");
 await page.locator("#settings .embed-host >> #my_instr").fill("Keep it to one sentence.");
-await Promise.all([page.waitForResponse((r) => r.request().method() === "PUT" && r.url().includes("/me/preferences") && r.status() === 200), page.locator("#settings [data-settings-panel='aiinstr'] .embed-host >> button:has-text('Save')").first().click()]);
+await Promise.all([page.waitForResponse((r) => r.request().method() === "PUT" && r.url().includes("/me/preferences") && r.status() === 200), page.locator("#settings .embed-host >> #my_instr").press("Tab")]);
 const prefs2 = await page.evaluate(async () => (await fetch("/api/v1/me/preferences")).json());
 check("the person's AI instructions are saved without changing their other choices", prefs2.instructions === "Keep it to one sentence." && prefs2.keep_days === 14 && prefs2.keep_archived === false);
 // ---- Optional email features, against the real server ----
@@ -287,13 +287,11 @@ check("Agent chat starts on Enveliq's helper, open to everyone", (await page.loc
 check("it warns that Enveliq cannot limit what the agent itself can do", (await page.locator("#settings .embed-host >> text=cannot limit what the agent itself is able to do").count()) === 1);
 await shot("admin-agent");
 await page.locator("#settings .embed-host >> #ag_own").check();
-await page.locator("#settings .embed-host >> #ag_who").selectOption("admins");
-await Promise.all([page.waitForResponse((r) => r.url().includes("/admin/agent") && r.request().method() === "PUT" && r.status() === 200), page.locator("#settings [data-settings-panel='adminagent'] .embed-host >> button:has-text('Save')").click()]);
+await Promise.all([page.waitForResponse((r) => r.url().includes("/admin/agent") && r.request().method() === "PUT" && r.status() === 200), page.locator("#settings .embed-host >> #ag_who").selectOption("admins")]);
 const ag2 = await page.evaluate(async () => (await fetch("/api/v1/admin/agent")).json());
 check("choosing the agent's own mode for administrators is saved", ag2.mode === "own" && ag2.who === "admins");
 await page.locator("#settings .embed-host >> #ag_plain").check();
-await page.locator("#settings .embed-host >> #ag_who").selectOption("all");
-await Promise.all([page.waitForResponse((r) => r.url().includes("/admin/agent") && r.request().method() === "PUT" && r.status() === 200), page.locator("#settings [data-settings-panel='adminagent'] .embed-host >> button:has-text('Save')").click()]);
+await Promise.all([page.waitForResponse((r) => r.url().includes("/admin/agent") && r.request().method() === "PUT" && r.status() === 200), page.locator("#settings .embed-host >> #ag_who").selectOption("all")]);
 const sendBlocked = await page.evaluate(async () => { const a = (await (await fetch("/api/v1/accounts")).json())[0].id; const r = await fetch(`/api/v1/accounts/${a}/send`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: ["x@example.invalid"], body: "x" }) }); return r.status; });
 check("the server then refuses to send a new email", sendBlocked === 403);
 await page.click("[data-settings-tab~=adminreminders]");
@@ -340,7 +338,7 @@ check("Administration > Users shows the people", (await page.locator("#settings 
 await page.click("[data-settings-tab~=adminaiinstr]");
 await page.waitForSelector("#settings .embed-host >> #rv_instr");
 await page.locator("#settings .embed-host >> #rv_instr").fill("Write in British English.");
-await Promise.all([page.waitForResponse((r) => r.request().method() === "PUT" && r.url().includes("/admin/review-settings") && r.status() === 200), page.locator("#settings [data-settings-panel='adminaiinstr'] .embed-host >> button:has-text('Save')").click()]);
+await Promise.all([page.waitForResponse((r) => r.request().method() === "PUT" && r.url().includes("/admin/review-settings") && r.status() === 200), page.locator("#settings .embed-host >> #rv_instr").press("Tab")]);
 const rv1 = await page.evaluate(async () => (await fetch("/api/v1/admin/review-settings")).json());
 check("Administration > AI instructions saves the administrator's instructions", rv1.instructions === "Write in British English." && rv1.max_days === 14);
 const eh = page.locator("#settings [data-settings-panel='adminaiinstr'] .embed-host");
@@ -362,7 +360,7 @@ check("the built-in prompt can be restored", (await page.evaluate(async () => (a
 await page.click("[data-settings-tab~=adminkeep]");
 await page.waitForSelector("#settings .embed-host >> #rv_days");
 await page.locator("#settings .embed-host >> #rv_days").fill("10");
-await Promise.all([page.waitForResponse((r) => r.request().method() === "PUT" && r.url().includes("/admin/review-settings") && r.status() === 200), page.locator("#settings [data-settings-panel='adminkeep'] .embed-host >> button:has-text('Save')").click()]);
+await Promise.all([page.waitForResponse((r) => r.request().method() === "PUT" && r.url().includes("/admin/review-settings") && r.status() === 200), page.locator("#settings .embed-host >> #rv_days").press("Tab")]);
 const rv2 = await page.evaluate(async () => (await fetch("/api/v1/admin/review-settings")).json());
 const prefs3 = await page.evaluate(async () => (await fetch("/api/v1/me/preferences")).json());
 check("Administration > Reviewed & Archived sets the maximum, which caps each person's days", rv2.max_days === 10 && rv2.instructions === "Write in British English." && prefs3.keep_days === 10 && prefs3.max_days === 10);

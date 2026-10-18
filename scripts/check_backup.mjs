@@ -86,8 +86,8 @@ async function open(width, height, tab, wait) {
   check("Make a backup now adds one to the list", madeCount === 1 && (await host.locator(".bkrow").count()) === 3);
   await host.locator("#bk_daily").check();
   await host.locator("#bk_days").fill("14");
-  await host.locator('form:has(#bk_daily) button[type="submit"]').click();
-  await page.waitForTimeout(600);
+  await host.locator("#bk_days").press("Tab");
+  await page.waitForTimeout(1100);
   check("the daily choice and the days are sent", lastSettings && lastSettings.daily === true && lastSettings.keep_days === 14);
   const del = host.locator(".bkrow").nth(2).locator("button", { hasText: "Delete" });
   await del.click();
