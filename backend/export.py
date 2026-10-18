@@ -18,6 +18,7 @@ PLAIN_RECORDS = {
     "orders": "ship:",
     "subscriptions": "subs:",
     "trips": "trips:",
+    "junk_mail": "junk:",
     "waiting_for_replies": "wait:",
     "writing_help": "writehelp:",
     "important_people": "important:",

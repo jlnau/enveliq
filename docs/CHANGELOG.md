@@ -4,7 +4,13 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**Junk Mail.** A new Junk Mail page in the left menu lists what your mail services (Gmail, Microsoft, Proton and others) put in their Junk or Spam folders. The AI reads each email and says **Yes, it's junk** or **Needs review**, with a short summary and a line saying why, always labelled as the AI's. **View original email** opens it with links, pictures from the internet, files and anything that runs switched off. **Not Junk** moves the email to the Inbox at your mail service (and into your Enveliq inbox as new mail). It has its own switch under Features. Touches `backend/mail/junk.py` and `backend/mail/junk_routes.py` (new), `backend/mail/llm.py`, `backend/mail/htmlview.py`, `backend/mail/bridge.py`, `backend/mail/features.py`, `backend/export.py`, `backend/app.py`, `prototype/index.html`. See [Junk Mail](JUNK_MAIL.md).
+
+**Search all my mail results are now in the list, with Summarise Emails.** The results no longer open in a pop-up: they appear in the main list area where ordinary search results are. Each result has a tick box on its left (one at a time, Shift for a range, or Select all). When two or more are ticked, a **Summarise Emails** button above the results keeps them all and adds them to the AI summary queue. Touches `backend/mail/find_routes.py` (a new `POST /api/v1/find/results/keep`), `prototype/index.html`. See [Find any email](FIND_MAIL.md).
+
+**Select all in the inbox list.** A Select all box next to "Recent emails" ticks every email in the list. It works with single ticks, Shift ticking and the Reviewed, Archive and Bin bar, on a computer and on a phone. Touches `prototype/index.html`. See [Inbox](INBOX.md).
+
+**Phone: the selection bar in calm mode.** The Reviewed, Archive and Bin bar was laid out badly on a phone in calm mode; it now sits properly under the heading. Touches `prototype/index.html`.
 
 ## v0.94 (2026-10-18)
 

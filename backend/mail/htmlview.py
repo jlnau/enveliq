@@ -143,9 +143,9 @@ def clean_style_attr(value: str, remote: bool, counter: list[int]) -> str:
 
 
 class _Rebuild(HTMLParser):
-    def __init__(self, cids: dict[str, str], remote: bool) -> None:
+    def __init__(self, cids: dict[str, str], remote: bool, no_links: bool = False) -> None:
         super().__init__(convert_charrefs=True)
-        self.cids, self.remote = cids, remote
+        self.cids, self.remote, self.no_links = cids, remote, no_links
         self.out: list[str] = []
         self.css: list[str] = []
         self.stack: list[str] = []
@@ -216,6 +216,8 @@ class _Rebuild(HTMLParser):
             return
         if tag not in TAGS:
             return                      # an unknown tag (Outlook's o:p, vector shapes, custom tags): drop the tag, keep what is inside
+        if tag == "a" and self.no_links:
+            tag, attrs = "span", [(n, v) for n, v in attrs if (n or "").lower() != "href"]      # junk view: a link is just text
         if tag == "body":
             self.body_attrs = self.attrs_for("body", attrs)
             return
@@ -249,6 +251,8 @@ class _Rebuild(HTMLParser):
             return
         if tag in VOID or tag not in TAGS or tag == "body":
             return
+        if tag == "a" and self.no_links:
+            tag = "span"
         if tag in self.stack:
             while self.stack:
                 top = self.stack.pop()
@@ -304,17 +308,17 @@ def embedded_pictures(msg: Any) -> dict[str, str]:
     return out
 
 
-def render(raw: bytes, remote_images: bool = False) -> Result | None:
-    """The formatted page for the raw email, or None when the email has no HTML."""
+def render(raw: bytes, remote_images: bool = False, no_links: bool = False) -> Result | None:
+    """The formatted page for the raw email, or None when the email has no HTML. With `no_links` nothing in it can be clicked."""
     msg = email.message_from_bytes(raw, policy=policy.default)
     html = html_part(msg)
     if html is None:
         return None
-    return rebuild(html, embedded_pictures(msg), remote_images)
+    return rebuild(html, embedded_pictures(msg), remote_images, no_links)
 
 
-def rebuild(html: str, cids: dict[str, str] | None = None, remote_images: bool = False) -> Result:
-    parser = _Rebuild(cids or {}, remote_images)
+def rebuild(html: str, cids: dict[str, str] | None = None, remote_images: bool = False, no_links: bool = False) -> Result:
+    parser = _Rebuild(cids or {}, remote_images, no_links)
     try:
         parser.feed(html[:MAX_HTML])
         parser.close()

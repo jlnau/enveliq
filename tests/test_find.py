@@ -209,6 +209,37 @@ def test_keeping_a_result_lists_it_quietly_for_60_days(env):
     assert keep(client, page["rows"][0]["token"])["message_id"] == done["message_id"]        # pressing it twice keeps one
 
 
+def test_summarising_several_found_emails_keeps_each_and_queues_them(env):
+    _, client, bridge, _ = env
+    aid = account(client, bridge)
+    client.post(f"/api/v1/accounts/{aid}/sync", json={})
+    _, page = run_search(client, "visual art 2")
+    tokens = [row["token"] for row in page["rows"]]
+    assert len(tokens) >= 2
+    r = client.post("/api/v1/find/results/keep", json={"tokens": tokens + [tokens[0]]})      # a repeated one is only counted once
+    assert r.status_code == 200, r.text
+    results = r.json()["results"]
+    assert set(results) == set(tokens)
+    assert all(v["ok"] and v["already"] is False and v["summary_queued"] is True for v in results.values())
+    again = client.post("/api/v1/find/results/keep", json={"tokens": tokens}).json()["results"]
+    assert all(v["ok"] and v["already"] is True for v in again.values())          # pressing it twice keeps one each
+
+
+def test_summarising_several_needs_a_sensible_list_and_only_opens_my_own_results(env):
+    appm, client, bridge, _ = env
+    account(client, bridge)
+    _, page = run_search(client, "visual art 2")
+    token = page["rows"][0]["token"]
+    assert client.post("/api/v1/find/results/keep", json={"tokens": []}).status_code == 422
+    assert client.post("/api/v1/find/results/keep", json={"tokens": [f"AAAAAAAAAAAA.{i}.000000000000000000000000" for i in range(101)]}).status_code == 422
+    junk = client.post("/api/v1/find/results/keep", json={"tokens": ["not-a-token"]}).json()["results"]
+    assert junk["not-a-token"]["ok"] is False
+    create_user(client, "casey")
+    other = sign_in(appm, "casey")
+    theirs = other.post("/api/v1/find/results/keep", json={"tokens": [token]}).json()["results"]
+    assert theirs[token]["ok"] is False
+
+
 def test_a_kept_email_can_be_opened_and_summarised_from_its_own_folder(env):
     appm, client, bridge, model = env
     aid = account(client, bridge)

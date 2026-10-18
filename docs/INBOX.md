@@ -63,7 +63,7 @@ On a computer the three small buttons on a row show when you point at the email.
 
 ## Ticking several emails
 
-Tick one email's box, then hold **Shift** and tick another one a few emails up or down, and every email between them is ticked too. Shift and untick clears the range the same way. Ticking without Shift works one email at a time. Once two or more are ticked, a bar appears with **Reviewed**, **Archive** and **Bin** for all of them at once (one Undo covers them all). **Clear selection** starts again.
+Tick one email's box, then hold **Shift** and tick another one a few emails up or down, and every email between them is ticked too. Shift and untick clears the range the same way. Ticking without Shift works one email at a time. The **Select all** box next to "Recent emails" ticks every email in the list you are looking at (a dash means only some are ticked; pressing it again unticks them all), and works with Shift, single ticks and the bar below. On a phone it sits on the same line as the heading. Once two or more are ticked, a bar appears with **Reviewed**, **Archive** and **Bin** for all of them at once (one Undo covers them all). **Clear selection** starts again.
 
 ## A new install starts empty
 
@@ -110,6 +110,8 @@ Normally Enveliq signs you out after 30 minutes without use. If an administrator
 The main inbox shows **Needs action**, **Today**, **Packages**, and **Waiting** at the top. These open the corresponding views. The **Today** section shows tasks that need attention; **Coming up** shows the next tasks due later. On a phone, the task sections start folded so you can reach the email list sooner; tap a section heading or its arrow to open it.
 
 The **All emails** switch fetches inbox headers from the last 60 days without a message count limit, across connected mailboxes. Entries from this view are quiet until you choose to generate a summary. It reads headers only and does not store original email bodies or attachments. Larger inboxes may take longer to load on the first request. The Sent, Drafts and other views retain their existing limits.
+
+**Junk Mail** lists what your mail services put in their Junk and Spam folders, with the AI's answer for each. See [Junk Mail](JUNK_MAIL.md).
 
 **Found emails** lists the emails you found with **Search all my mail** and chose to keep. Each stays for 60 days, or until you press **Reviewed**. See [Find any email](FIND_MAIL.md).
 

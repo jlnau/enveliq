@@ -447,6 +447,16 @@ For general questions and bugs, use [GitHub Issues](https://github.com/jlnau/env
 
 The optional All emails view retrieves inbox message headers from the last 60 days without a count cap. Enveliq keeps only the existing encrypted metadata and placeholder summary records in the vault. Original message bodies and attachments are not retained. This does not expand access beyond the signed in mailbox owner. The larger window can increase mailbox provider requests, encrypted metadata storage and loading time.
 
+## Junk Mail
+
+**Junk Mail** reads the Junk or Spam folder of the person's own mailboxes and asks the configured AI model about each email.
+
+- Only headers are read to list an email. The text is shown to the model once, between data markers, with the usual rules: the model gets no tools, treats the text as data, never decides anything else, and its answer (verdict, summary, reason) is checked, cut to safe lengths and labelled as the AI's.
+- What is kept is one encrypted record per person: sender, subject, date, the AI's answer and the email's mailbox location. No email text. The location is never sent to the page; the page uses an opaque random id. Another person's id answers "not found". The record is capped (200 emails, 30 days), is part of Your data and is removed with the person.
+- **View original email** from Junk Mail is stricter than the normal viewer: the server removes the links list, the unsubscribe address, the attachment list and the count of pictures from the internet, and the formatted copy is rebuilt with links turned into plain text, pictures from the internet never loaded, and scripts removed, under the same sealed-frame policy. The email is fetched when opened and not stored.
+- **Not Junk** is the only change Enveliq makes at the mail service: it moves that one email to the Inbox and marks it unread. It is limited to the person's own mailbox, rate-limited, and recorded in the audit log without the subject or sender. Enveliq never moves mail into Junk, never deletes it and never unsubscribes.
+- It has its own switch for everyone (Administration) and for each person (Settings, General).
+
 ## Find any email
 
 **Search all my mail** asks the person's own mail service to search their whole mailbox. It adds no copy of any email.
@@ -454,6 +464,7 @@ The optional All emails view retrieves inbox message headers from the last 60 da
 - The search words go only to the person's own mail service, over the connection Enveliq already uses. They are never logged, never sent to an AI model and never shown to an administrator. The audit log records only that a search happened.
 - A search keeps only folder and message numbers, in server memory, for about 15 minutes. No email text. Results carry an opaque signed reference tied to the signed-in person and that one search; a reference that is not theirs, or is forged, answers "not found". Opening a result fetches the email then and does not store it.
 - Searching never changes the mailbox. A search never holds the lock that syncing uses. Searches are limited (six a minute per person, four at once on the server, about three minutes per mailbox) and the words are length-limited and quoted safely before they reach the mail service.
+- **Summarise Emails** (two or more ticked results, at most 100 at a time, six requests a minute) does the same for each ticked result through the same per-result checks: a result that is not the person's own, or is forged, answers "not found" for that one and the rest still go through.
 - **Summarise** keeps one email as an ordinary encrypted card (sender, subject, date, summary) in Found emails for 60 days or until Reviewed. It is treated as quiet: no alert, not counted as unread, not touched by syncing. Reviewed removes the card and does not change the mailbox.
 - **Fast search** is optional, per person and per mailbox, off by default, and needs a plain warning to be accepted. If it is on, an encrypted word list is kept: for each email, where it lives and which words it contains, with no email text. Numbers longer than 8 digits and words longer than 30 characters are skipped, and attachments are not indexed. It is one file per person sealed with AES-256-GCM under a key derived from the vault key, so it can only be read while Enveliq is unlocked, and it is dropped from memory when the vault locks. It is not in backups or exports, and it is deleted when switched off, when the mailbox is removed and when the person is removed. Honest limit: while Enveliq builds or uses the word list, or summarises an email, the text is briefly in the server's memory, as it already is for summaries. Someone with full control of the running server could read it then.
 

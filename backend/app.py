@@ -46,6 +46,8 @@ from .mail.drafts import Drafts
 from .mail.drafts_routes import build_drafts_router
 from .mail.saved_writing import SavedWriting
 from .mail.saved_writing_routes import build_saved_writing_router
+from .mail.junk import JunkBook
+from .mail.junk_routes import build_junk_router
 from .mail.subscriptions import SubBook
 from .mail.subscriptions_routes import build_subscriptions_router
 from .mail.trips import TripBook
@@ -517,6 +519,7 @@ def delete_user_data(user_id: str) -> None:
     savedbook.forget_user(user_id)
     draftbook.forget_user(user_id)
     rulebook.forget_user(user_id)
+    junkbook.forget_user(user_id)
     finder = getattr(mail_ctx, "find_index", None)
     if finder is not None:
         finder.delete_user(user_id)                                     # their search word list, if they had one
@@ -643,6 +646,7 @@ mail_service.subscriptions = subbook
 mail_service.trips = tripbook
 waitbook = WaitBook(vault)
 mail_service.waits = waitbook
+junkbook = JunkBook(vault, mail_service)
 notifier = Notifier(vault)
 _click = "" if _pub.hostname in ("localhost", "127.0.0.1", "::1") else PUBLIC_ORIGIN
 reminders = Reminders(vault, taskbook, notifier, _click)
@@ -682,7 +686,7 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))
@@ -699,6 +703,7 @@ app.include_router(build_drafts_router(mail_ctx))
 app.include_router(build_rules_router(mail_ctx))
 app.include_router(build_trips_router(mail_ctx))
 app.include_router(build_waiting_router(mail_ctx))
+app.include_router(build_junk_router(mail_ctx))
 app.include_router(build_check_router(mail_ctx))
 def apply_rules(account: dict, arrived: list) -> None:
     """Mail that has just arrived: apply the owner's rules (archive it, or mark it reviewed). Nothing else about the

@@ -672,6 +672,9 @@ class _ImapSession:
     def mark_seen(self, uid: int) -> None:
         self._call("store", self.imap.uid, "STORE", str(uid), "+FLAGS.SILENT", "(\\Seen)")
 
+    def mark_unseen(self, uid: int) -> None:
+        self._call("store", self.imap.uid, "STORE", str(uid), "-FLAGS.SILENT", "(\\Seen)")
+
     def move(self, uid: int, folder: str) -> None:
         caps = {c.upper() for c in self.imap.capabilities}
         quoted = '"' + folder.replace("\\", "\\\\").replace('"', '\\"') + '"'

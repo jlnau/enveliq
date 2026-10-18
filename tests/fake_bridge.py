@@ -239,7 +239,10 @@ class FakeBridge:
                     uid = int(rest.split(" ")[0])
                     if uid in bridge.messages:
                         flag = "\\Seen" if "\\Seen" in rest else "\\Deleted"
-                        bridge.messages[uid]["flags"].add(flag)
+                        if "-FLAGS" in rest:
+                            bridge.messages[uid]["flags"].discard(flag)
+                        else:
+                            bridge.messages[uid]["flags"].add(flag)
                     w(f"{tag} OK done\r\n".encode())
                 elif sub in ("MOVE", "COPY"):
                     uid_s, _, folder = rest.partition(" ")
