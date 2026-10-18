@@ -1,6 +1,7 @@
 """Junk Mail: list, refresh from the mail services, AI check, a safe view of one email, and Not junk."""
 from __future__ import annotations
 
+import logging
 import time
 from typing import Annotated, Any
 
@@ -14,6 +15,7 @@ from .limits import SlidingWindowLimiter
 from .parse import render_original
 from .routes import fail
 
+log = logging.getLogger(__name__)
 JunkId = Annotated[str, PathParam(pattern=r"^j[0-9a-f]{23}$")]
 
 
@@ -47,7 +49,13 @@ def build_junk_router(ctx: Any) -> APIRouter:
     @router.post("/refresh")
     def refresh(response: Response, session: Session = Depends(session_dep)):
         user = need(session, response, refresh_limit, "junkrefresh")
-        return book.refresh(user)
+        try:
+            return book.refresh(user)
+        except HTTPException:
+            raise
+        except Exception as exc:
+            log.exception("junk mail: refresh failed")
+            raise HTTPException(status_code=502, detail=f"Junk Mail could not be read just now ({type(exc).__name__}). Try again in a moment.") from None
 
     @router.post("/check")
     def check(response: Response, session: Session = Depends(session_dep)):
@@ -57,6 +65,9 @@ def build_junk_router(ctx: Any) -> APIRouter:
             return book.classify(user)
         except BridgeError as err:
             raise fail(err) from None
+        except Exception as exc:
+            log.exception("junk mail: check failed")
+            raise HTTPException(status_code=502, detail=f"The AI check could not run just now ({type(exc).__name__}). Try again in a moment.") from None
 
     @router.get("/{junk_id}/original")
     def original(junk_id: JunkId, response: Response, session: Session = Depends(session_dep)):

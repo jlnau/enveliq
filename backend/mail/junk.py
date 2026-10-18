@@ -12,6 +12,7 @@ so the next sync brings it into Enveliq's inbox.
 """
 from __future__ import annotations
 
+import logging
 import re
 import secrets
 import threading
@@ -22,6 +23,7 @@ from .bridge import locator, parse_folder_locator
 from .errors import BridgeError
 from .parse import clean, render_original, summarise_headers, sending_identities
 
+log = logging.getLogger(__name__)
 RECORD_PREFIX = "junk:"
 LOOK_BACK_DAYS = 30
 PER_MAILBOX = 50
@@ -59,7 +61,8 @@ class JunkBook:
     def _load(self, user: str) -> dict[str, Any]:
         raw = self.vault.get_global(RECORD_PREFIX + user) or {}
         items = raw.get("items") if isinstance(raw.get("items"), dict) else {}
-        return {"items": {k: v for k, v in items.items() if isinstance(v, dict) and ID_RE.match(str(k))}}
+        problems = [str(p)[:300] for p in raw.get("problems", [])[:5]] if isinstance(raw.get("problems"), list) else []
+        return {"items": {k: v for k, v in items.items() if isinstance(v, dict) and ID_RE.match(str(k))}, "problems": problems}
 
     def _save(self, user: str, data: dict[str, Any]) -> None:
         items = data["items"]
@@ -74,6 +77,7 @@ class JunkBook:
     # ---------- what the page sees ----------
 
     def view(self, user: str) -> dict[str, Any]:
+        self.service.refresh_ai(self.vault)          # the AI settings an administrator saved in the app, if any
         with self._lock:
             data = self._load(user)
         labels = {a["id"]: str(a.get("email_address") or a.get("name") or "Mailbox") for a in self._mailboxes(user)}
@@ -106,8 +110,9 @@ class JunkBook:
                     self._refresh_one(account, items)
                 except BridgeError as err:
                     problems.append(f"{label}: {err.message}")
-                except Exception:
-                    problems.append(f"{label}: could not be read.")
+                except Exception as exc:
+                    log.exception("junk mail: reading a junk folder failed")          # the traceback holds no email text
+                    problems.append(f"{label}: could not be read ({type(exc).__name__}).")
             cutoff = self.clock() - LOOK_BACK_DAYS * 86400
             for key in [k for k, v in items.items() if (v.get("received_at") or self.clock()) < cutoff]:
                 del items[key]
@@ -141,6 +146,7 @@ class JunkBook:
 
     def classify(self, user: str, limit: int = 6) -> dict[str, Any]:
         """Ask the model about a few emails that have no answer yet. Bounded, so one request stays short; the page calls again while some are left."""
+        self.service.refresh_ai(self.vault)
         if not self.service.summariser.enabled:
             return self.view(user)
         self.service.summariser.check_url()
@@ -162,6 +168,7 @@ class JunkBook:
                 except BridgeError:
                     continue
                 except Exception:
+                    log.exception("junk mail: checking one email failed")
                     continue
                 it.update(verdict=answer["verdict"], summary=answer["summary"], reason=answer["reason"])
             self._save(user, data)
