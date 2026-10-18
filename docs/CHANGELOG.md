@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Search clears when you move on.** Choosing something from the menu now empties the inbox search box, so you no longer have to press the X to see the whole page again. Touches `prototype/index.html`.
+
 **Find models.** On Administration, AI model (and the setup guide), a **Find models** button asks the AI server which models it has and lets you tap one to fill in the name, so nobody has to look it up. Administrators only; it follows the same address rules as the Test button, sends no email text and never returns the access key. Touches `backend/mail/llm.py`, `backend/mail/routes.py`, `web/static/welcome.js`.
 
 **Find any email.** A new **Search all my mail** button under the inbox search box asks each connected mail service (Proton Bridge, Gmail, Microsoft and other IMAP services) to search the whole mailbox, every folder, and lists every match as sender, subject and date, newest first, with a total, per-mailbox progress and Cancel. **View original email** reads one; **Summarise** keeps that one email in a new **Found emails** page in the left menu for 60 days, or until Reviewed (which only removes it from the list and never changes the mailbox). Typed words are all required, "quoted" words must appear together, commas are ignored. Nothing a search finds is stored, and the search words are never logged. A new **Find any email** switch (administrator and per person) turns it off. Touches `backend/mail/find.py`, `find_routes.py`, `bridge.py` (folder-aware locations and search), `service.py`, `features.py`, `extra_routes.py`, `scheduler.py`, `prototype/index.html`, `docs/FIND_MAIL.md`, `SECURITY.md` and `docs/PRIVACY.md`.

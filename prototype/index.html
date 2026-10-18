@@ -5380,7 +5380,7 @@ document.addEventListener("click",e=>{
      if(t.matches("[data-msg-unsend]")&&msgS.cur){msgReq(`/threads/${encodeURIComponent(msgS.cur.id)}/messages/${encodeURIComponent(t.dataset.msgUnsend)}`,"DELETE").then(async()=>{await loadMsgs();render()}).catch(er=>toast(er.message,5000));return}
    }}
   if(e.target.closest("[data-back-inbox]")){paneId=null;filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();window.scrollTo({top:0});return}
-  const n=e.target.closest("[data-filter]");if(n){filter=n.dataset.filter;if(filter==="all")paneId=null;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="drafts")loadDrafts();if(filter==="messages")openMsgPage();return}
+  const n=e.target.closest("[data-filter]");if(n){filter=n.dataset.filter;if(filter==="all")paneId=null;if(n.classList.contains("nav")&&query){query="";$("search").value="";document.body.classList.remove("msearch")}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="drafts")loadDrafts();if(filter==="messages")openMsgPage();return}
   const c=e.target.closest("[data-chip]");if(c){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();return}
   const wa=e.target.closest("[data-wait]");if(wa){waitAct(wa.dataset.waitId,wa.dataset.wait);return}
   const wn=e.target.closest("[data-wait-nudge]");if(wn){waitNudge(wn.dataset.waitNudge);return}

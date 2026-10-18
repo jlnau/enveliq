@@ -206,6 +206,8 @@ The name you gave a mailbox when you connected it (for example "Proton Test") ca
 
 On the same Mailboxes card, the **Label colour** drop-down picks the colour of that mailbox's label: Blue, Green, Orange, Pink, Red, Teal, Purple or Lime. **Automatic** (the start) lets Enveliq choose one for you. The choice is saved at once and shows in the mail list and in the open email the next time the inbox loads. It is only a colour; nothing else about the mailbox changes.
 
+The search box clears by itself when you choose something from the menu (My inbox, Needs action, Tasks and so on), so the next page is never left filtered by words you typed earlier. Pressing the X in the box still clears it too.
+
 ## Searching your tasks
 
 The Tasks page has a **Search your tasks** box under its title. Type part of a task's words (its title, its details or who it is from; capital letters do not matter) and the page lists only the tasks that have them, open ones under **To do** and finished ones under **Done**, with a line saying how many match. Clear the box to get your usual view back. It works in the Focus, List and Calendar views. Browser check: `scripts/check_task_search.mjs`.
