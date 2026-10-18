@@ -7668,7 +7668,7 @@ render();
 (function(){
   const m=/^#google-calendar=(\w+)$/.exec(location.hash||"");if(!m)return;
   try{history.replaceState(null,"",location.pathname+location.search)}catch{}
-  const say={ok:"Google Calendar is connected. Your tasks are being added.",denied:"Google Calendar was not connected: permission was not given.",expired:"That sign-in took too long. Press Connect Google Calendar again.",state:"That sign-in could not be checked. Try again.",failed:"Google Calendar could not be connected. Check the setup guide and try again."};
+  const say={ok:"Google Calendar is connected. Your tasks are being added.",pick:"Google Calendar is connected. Now choose which of your calendars to use.",denied:"Google Calendar was not connected: permission was not given.",expired:"That sign-in took too long. Press Connect Google Calendar again.",state:"That sign-in could not be checked. Try again.",failed:"Google Calendar could not be connected. Check the setup guide and try again."};
   window.addEventListener("load",()=>setTimeout(()=>{openSettings("settings");const b=document.querySelector('[data-settings-tab~="calendar"]');if(b)b.click();toast(say[m[1]]||say.failed,6000)},900));
 })();
 </script>

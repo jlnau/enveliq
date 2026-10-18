@@ -447,6 +447,10 @@ For general questions and bugs, use [GitHub Issues](https://github.com/jlnau/env
 
 The optional All emails view retrieves inbox message headers from the last 60 days without a count cap. Enveliq keeps only the existing encrypted metadata and placeholder summary records in the vault. Original message bodies and attachments are not retained. This does not expand access beyond the signed in mailbox owner. The larger window can increase mailbox provider requests, encrypted metadata storage and loading time.
 
+## Google Calendar: using an existing calendar
+
+By default Enveliq asks Google only for `calendar.app.created`, so it can only touch a calendar it made itself. A person may instead choose "Use a calendar I already have", which asks for `calendar.events` and `calendar.calendarlist.readonly`. That is a wider permission: Enveliq could technically see and change events on every calendar of that account, and says so before the person connects. In this mode Enveliq lists only calendars the person can write to, and the server checks the chosen calendar against that list (the page cannot name any other). It only adds, moves and removes events it made itself (tracked by their ids), and it never deletes the calendar. Disconnecting removes only Enveliq's events and revokes the permission. The Google token stays write-only and encrypted in the vault. Connecting and picking are audited (`google_calendar_connected` with the mode, `google_calendar_picked`).
+
 ## Junk Mail
 
 **Junk Mail** reads the Junk or Spam folder of the person's own mailboxes and asks the configured AI model about each email.

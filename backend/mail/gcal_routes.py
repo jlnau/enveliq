@@ -28,10 +28,19 @@ class EnabledBody(StrictModel):
     enabled: bool
 
 
+class StartBody(StrictModel):
+    mode: str = Field(default="new", pattern=r"^(new|existing)$")
+
+
+class PickBody(StrictModel):
+    calendar_id: str = Field(min_length=1, max_length=300)
+
+
 def build_gcal_router(ctx: Any) -> APIRouter:
     router = APIRouter(prefix="/api/v1")
     vault, sync, flows, redirect_uri = ctx.vault, ctx.sync, ctx.flows, ctx.google_redirect_uri
     start_limit = SlidingWindowLimiter(max_events=10, window=60)
+    pick_limit = SlidingWindowLimiter(max_events=30, window=60)
 
     @router.get("/admin/google")
     def get_settings(session=Depends(ctx.admin_session)):
@@ -49,16 +58,17 @@ def build_gcal_router(ctx: Any) -> APIRouter:
         return gcal.public(new, redirect_uri)
 
     @router.post("/me/sync/google/start")
-    def start(session=Depends(ctx.full_session)):
-        """Begin connecting. Returns Google's address for the browser to open."""
+    def start(body: StartBody | None = None, session=Depends(ctx.full_session)):
+        """Begin connecting. Returns Google's address for the browser to open. mode: new (Enveliq makes its own calendar) or existing."""
         if not start_limit.allow(session.principal.user_id):
             raise HTTPException(status_code=429, detail="Too many attempts. Wait a minute.")
+        mode = body.mode if body else "new"
         try:
-            url, secrets_ = sync.google.authorization_url(redirect_uri)
+            url, secrets_ = sync.google.authorization_url(redirect_uri, mode)
         except OutboundError as err:
             raise HTTPException(status_code=400, detail=err.message) from None
         response = JSONResponse({"url": url})
-        flow_id = flows.create(FLOW, {**secrets_, "user_id": session.principal.user_id}, ttl_seconds=600)
+        flow_id = flows.create(FLOW, {**secrets_, "user_id": session.principal.user_id, "mode": mode}, ttl_seconds=600)
         ctx.set_cookie(response, ctx.flow_cookie, flow_id, max_age=600)
         return response
 
@@ -69,6 +79,33 @@ def build_gcal_router(ctx: Any) -> APIRouter:
         except ValueError as err:
             raise HTTPException(status_code=422, detail=str(err)) from None
         return sync.overview(session.principal.user_id)
+
+    @router.get("/me/sync/google/calendars")
+    def calendars(session=Depends(ctx.full_session)):
+        """The person's own calendars Enveliq may write to, for the picker. Names are shown, never stored here."""
+        user = session.principal.user_id
+        if not pick_limit.allow(user):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        try:
+            return {"calendars": sync.google_calendars(user)}
+        except ValueError as err:
+            raise HTTPException(status_code=422, detail=str(err)) from None
+        except OutboundError as err:
+            raise HTTPException(status_code=502, detail=err.message) from None
+
+    @router.put("/me/sync/google/calendar")
+    def pick(body: PickBody, session=Depends(ctx.full_session)):
+        user = session.principal.user_id
+        if not pick_limit.allow(user):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        try:
+            sync.set_google_calendar(user, body.calendar_id)
+        except ValueError as err:
+            raise HTTPException(status_code=422, detail=str(err)) from None
+        except OutboundError as err:
+            raise HTTPException(status_code=502, detail=err.message) from None
+        vault.audit({"event": "google_calendar_picked", "actor_user_id": user, "at": time.time()})
+        return sync.overview(user)
 
     @router.get("/sync/google/callback", include_in_schema=False)
     def callback(request: Request, code: str = "", state: str = "", error: str = ""):
@@ -92,12 +129,13 @@ def build_gcal_router(ctx: Any) -> APIRouter:
         if not state or not secrets.compare_digest(state, data["state"]) or not code or len(code) > 4096:
             return back("state")
         try:
-            tokens = sync.google.exchange(code, redirect_uri, data["verifier"])
-            sync.connect_google(session.principal.user_id, tokens["refresh_token"])
+            mode = data.get("mode") if data.get("mode") in gcal.MODES else "new"
+            tokens = sync.google.exchange(code, redirect_uri, data["verifier"], mode)
+            sync.connect_google(session.principal.user_id, tokens["refresh_token"], mode)
         except OutboundError as err:
             vault.audit({"event": "google_calendar_connect_failed", "reason": err.code, "at": time.time()})
             return back("failed")
-        vault.audit({"event": "google_calendar_connected", "actor_user_id": session.principal.user_id, "at": time.time()})
-        return back("ok")
+        vault.audit({"event": "google_calendar_connected", "actor_user_id": session.principal.user_id, "mode": mode, "at": time.time()})
+        return back("pick" if mode == "existing" else "ok")
 
     return router

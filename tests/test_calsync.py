@@ -353,6 +353,10 @@ class FakeGoogle:
         from backend.mail import gcal
         self.gcal, self.events, self.calendars, self.log, self.revoked = gcal, {}, {}, [], []
         self.allowed = True
+        self.grant = None                                 # the permissions Google says were given (default: the narrow one)
+        self.list_items = [{"id": "family@example.com", "summary": "Family", "accessRole": "owner", "primary": True},
+                           {"id": "holidays@example.com", "summary": "Holidays", "accessRole": "reader"},
+                           {"id": "work@example.com", "summary": "Work", "accessRole": "writer"}]
         monkeypatch.setattr(gcal.outbound, "request", self.request)
 
     def request(self, method, url, *, allow=None, headers=None, body=None, json_body=None, form=None, timeout=0):
@@ -365,7 +369,7 @@ class FakeGoogle:
             assert form["client_id"].endswith(".apps.googleusercontent.com") and form["client_secret"] == "gsecret"
             if form["grant_type"] == "authorization_code":
                 assert form["code"] == "good-code" and len(form["code_verifier"]) >= 43
-                return j(200, {"access_token": "at1", "refresh_token": "rt1", "expires_in": 3600, "scope": self.gcal.SCOPE})
+                return j(200, {"access_token": "at1", "refresh_token": "rt1", "expires_in": 3600, "scope": self.grant or self.gcal.SCOPE})
             return j(200, {"access_token": "at2", "expires_in": 3600}) if form["refresh_token"] == "rt1" else j(400, {"error": "invalid_grant"})
         if url.startswith(self.gcal.REVOKE_URL):
             self.revoked.append(form["token"])
@@ -373,6 +377,8 @@ class FakeGoogle:
         assert headers["Authorization"].startswith("Bearer at")
         if not self.allowed:
             return j(401, {})
+        if path == "/calendar/v3/users/me/calendarList" and method == "GET":
+            return j(200, {"items": self.list_items})
         if path == "/calendar/v3/calendars" and method == "POST":
             assert json_body["summary"] == "Enveliq tasks"
             self.calendars["cal1@group.calendar.google.com"] = True
@@ -461,3 +467,60 @@ def test_google_needs_the_administrator_first_and_a_lost_connection_is_explained
     r = client.post("/api/v1/me/sync/now").json()["results"]["google"]
     assert r and "Connect Google Calendar again" in r
     assert "again" in client.get("/api/v1/me/sync").json()["google"]["last_error"]
+
+
+def connect_existing(client, appm, g, grant=True):
+    import urllib.parse
+    client.put("/api/v1/admin/google", json={"enabled": True, "client_id": "1234-abcdef.apps.googleusercontent.com", "client_secret": "gsecret"})
+    start = client.post("/api/v1/me/sync/google/start", json={"mode": "existing"})
+    assert start.status_code == 200, start.text
+    q = urllib.parse.parse_qs(urllib.parse.urlsplit(start.json()["url"]).query)
+    assert q["scope"] == [" ".join(g.gcal.SCOPES_EXISTING)]
+    if grant:
+        g.grant = " ".join(g.gcal.SCOPES_EXISTING)
+    return client.get("/api/v1/sync/google/callback", params={"code": "good-code", "state": q["state"][0]}, follow_redirects=False)
+
+
+def test_google_can_use_a_calendar_the_person_already_has(env, monkeypatch):
+    appm, client, _ = env
+    g = FakeGoogle(monkeypatch)
+    r = connect_existing(client, appm, g)
+    assert r.status_code == 303 and r.headers["location"] == "/#google-calendar=pick"
+    ov = client.get("/api/v1/me/sync").json()["google"]
+    assert ov["connected"] and ov["mode"] == "existing" and ov["needs_pick"] is True and ov["calendar_name"] == ""
+    assert not any(m == "POST" and p == "/calendar/v3/calendars" for m, p in g.log)          # no calendar is made
+    t = first_open(client)
+    client.post("/api/v1/me/sync/now")
+    assert not g.events                                                                        # nothing is written until one is picked
+    listed = client.get("/api/v1/me/sync/google/calendars").json()["calendars"]
+    assert [c["id"] for c in listed] == ["family@example.com", "work@example.com"]             # a read-only calendar is not offered
+    assert client.put("/api/v1/me/sync/google/calendar", json={"calendar_id": "holidays@example.com"}).status_code == 422
+    assert client.put("/api/v1/me/sync/google/calendar", json={"calendar_id": "nobody@example.com"}).status_code == 422
+    ov = client.put("/api/v1/me/sync/google/calendar", json={"calendar_id": "family@example.com"}).json()["google"]
+    assert ov["needs_pick"] is False and ov["calendar_name"] == "Family" and "family@example.com" not in json.dumps(ov)
+    g.events["someone-elses-event"] = {"summary": "Dentist"}
+    assert client.post("/api/v1/me/sync/now").json()["results"]["google"] is None
+    assert t["id"] in g.events and g.events["someone-elses-event"]["summary"] == "Dentist"
+    client.put("/api/v1/me/sync/google/calendar", json={"calendar_id": "work@example.com"})   # moving to another calendar takes Enveliq's own events out of the old one
+    assert t["id"] not in g.events and "someone-elses-event" in g.events
+    client.post("/api/v1/me/sync/now")
+    assert t["id"] in g.events
+    r = client.delete("/api/v1/me/sync/google")
+    assert not r.json()["google"]["connected"] and g.revoked == ["rt1"]
+    assert t["id"] not in g.events and "someone-elses-event" in g.events                       # only Enveliq's own events go
+    assert not any(m == "DELETE" and p.startswith("/calendar/v3/calendars/") and "/events/" not in p for m, p in g.log)    # a calendar the person had is never deleted
+
+
+def test_using_an_existing_google_calendar_needs_every_permission_and_a_connection(env, monkeypatch):
+    appm, client, _ = env
+    g = FakeGoogle(monkeypatch)
+    g.grant = g.gcal.SCOPES_EXISTING[0]                                                        # Google gave only one of the two
+    r = connect_existing(client, appm, g, grant=False)
+    assert r.headers["location"] == "/#google-calendar=failed"
+    assert not client.get("/api/v1/me/sync").json()["google"]["connected"]
+    assert client.get("/api/v1/me/sync/google/calendars").status_code == 422
+    assert client.put("/api/v1/me/sync/google/calendar", json={"calendar_id": "family@example.com"}).status_code == 422
+    assert client.post("/api/v1/me/sync/google/start", json={"mode": "everything"}).status_code == 422
+    g.grant = None
+    connect_google(client, appm)                                                               # a calendar Enveliq made has nothing to pick
+    assert client.get("/api/v1/me/sync/google/calendars").status_code == 422
