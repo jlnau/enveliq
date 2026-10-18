@@ -23,4 +23,8 @@ On a phone the results are stacked so each one is easy to tap:
 
 ## What it searches
 
-Only what Enveliq already keeps for you: the sender, subject and summary of each email card, task titles, order details and waiting notes. It never looks inside your mailbox and never reads the full text of an email. Nothing new is saved by searching, and other people's emails, tasks and orders are never searched.
+Only what Enveliq already keeps for you: the sender, subject and summary of each email card, task titles, order details and waiting notes. This box never looks inside your mailbox. Nothing new is saved by searching, and other people's emails, tasks and orders are never searched.
+
+## Search all my mail
+
+If the email you want is not in Enveliq's lists, the box also offers **Search all my mail**. That asks your mail service to search every folder of your mailbox. See [Find any email](FIND_MAIL.md).

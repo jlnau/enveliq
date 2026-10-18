@@ -28,7 +28,7 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 
 from . import llm_providers
 from .errors import BridgeError
@@ -331,7 +331,8 @@ class Summariser:
         if ip.is_unspecified or ip.is_multicast or not (ip.is_private or ip.is_loopback):
             raise BridgeError("host_not_allowed", "The AI server must be on your own network (a private or local address).")
 
-    def _post(self, payload: dict[str, Any], timeout: float | None = None) -> Any:
+    def _post(self, payload: dict[str, Any] | None, timeout: float | None = None, *, url: str | None = None) -> Any:
+        """POST the payload to the AI address, or GET `url` when there is no payload. The address is always checked first."""
         self.check_url()
         headers = {"Content-Type": "application/json", "Accept": "application/json"}
         if self.config.api_key:
@@ -340,7 +341,7 @@ class Summariser:
                 headers["anthropic-version"] = "2023-06-01"
             else:
                 headers["Authorization"] = f"Bearer {self.config.api_key}"
-        request = urllib.request.Request(self.config.url, data=json.dumps(payload).encode(), headers=headers, method="POST")
+        request = urllib.request.Request(url or self.config.url, data=json.dumps(payload).encode() if payload is not None else None, headers=headers, method="POST" if payload is not None else "GET")
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect())
         try:
             with opener.open(request, timeout=timeout or self.config.timeout) as response:
@@ -361,6 +362,32 @@ class Summariser:
             return json.loads(raw)
         except ValueError:
             raise BridgeError("ai_bad_reply", "The AI server did not answer in the expected format.") from None
+
+    def models_url(self) -> str:
+        """Where this server lists its models: the chat address with its last part swapped for /models."""
+        parts = urlsplit(self.config.url)
+        path = parts.path.rstrip("/")
+        for tail in ("/chat/completions", "/messages", "/completions"):
+            if path.endswith(tail):
+                return urlunsplit((parts.scheme, parts.netloc, path[: -len(tail)] + "/models", "limit=1000" if tail == "/messages" else "", ""))
+        raise BridgeError("ai_not_configured", "Enveliq could not work out where this server lists its models. Type the model name instead.")
+
+    def list_models(self) -> list[str]:
+        """The names of the models the AI server offers, for the person to pick from. Asks the server's model list and nothing else."""
+        self.check_url()
+        data = self._post(None, 20.0, url=self.models_url())
+        items = data.get("data") if isinstance(data, dict) else None
+        if not isinstance(items, list):
+            items = data.get("models") if isinstance(data, dict) else None
+        names: list[str] = []
+        for item in items if isinstance(items, list) else []:
+            raw = item.get("id") or item.get("name") or item.get("model") if isinstance(item, dict) else item
+            name = _text(raw, 200).removeprefix("models/")
+            if name and name not in names:
+                names.append(name)
+        if not names:
+            raise BridgeError("ai_bad_reply", "The server answered, but did not list any models. Type the model name instead.")
+        return sorted(names, key=str.lower)[:300]
 
     def summarise(self, subject: str, sender: str, text: str, instructions: str = "", prompt: str = "") -> dict[str, Any]:
         provider = llm_providers.get(self.config.provider)

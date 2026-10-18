@@ -333,6 +333,8 @@ class RetainedMessageCreate(StrictModel):
     resolved_at: float | None = Field(default=None, ge=0, le=4_102_444_800)
     # Listed by the "All emails" switch (recent mail that is not in the unread list).
     from_all_mail: bool = False
+    # A search result the person kept (Find any email): shown in Found emails until this Unix time, or until Reviewed.
+    found_until: float | None = Field(default=None, ge=0, le=4_102_444_800)
     # The mail service's own tags (labels, keywords) on this email: names only, kept in step with the mailbox (see backend/mail/tags.py).
     tags: list[Annotated[str, StringConstraints(min_length=1, max_length=40)]] = Field(default_factory=list, max_length=20)
     # When you last replied to this email from Enveliq (a Unix timestamp).

@@ -27,7 +27,7 @@ The following requirements apply throughout Enveliq.
 
 1. **Private data belongs to its owner.** Users can access only their own email, settings and personal records. Administrators do not automatically receive access to another person's information.
 2. **Sensitive information is encrypted.** Credentials, email metadata, summaries and other retained personal information are encrypted before being written to the database.
-3. **Original email content is not retained.** Raw email bodies and attachments are processed temporarily when required, rather than stored as permanent application data.
+3. **Original email content is not retained.** Raw email bodies and attachments are processed temporarily when required, rather than stored as permanent application data. Only if a person switches on the optional Fast search, an encrypted word list is also kept so search is quick. It holds no email text and is deleted when switched off (see Find any email below).
 4. **Access is verified by the server.** Authentication, permissions and ownership checks never rely on information supplied by the browser alone.
 5. **Email content is untrusted.** Email text, attachments, external feeds and AI responses are treated as untrusted input.
 6. **AI cannot independently manage email.** AI summaries and writing assistance do not have tools or permission to send, delete or modify messages.
@@ -104,11 +104,11 @@ Encryption keys are protected separately from the encrypted data.
 
 ### Vault unlocking
 
-Enveliq supports manual vault unlocking and optional automatic unlocking using a configured key or key file.
+A new install must be given a vault key (`ENVELIQ_VAULT_KEY` or a key file) before first setup, and the setup page refuses to continue without one. Enveliq unlocks itself with it after every restart. The key is at least 32 characters, is never logged and is never sent to a browser.
 
-Manual unlocking requires the vault passphrase after a restart.
+Installs made before this rule can keep their typed passphrase (manual unlocking after a restart) or switch to a key with `python -m backend.vault_key adopt`.
 
-Automatic unlocking is convenient for unattended servers, but the operator must protect the associated secret.
+Automatic unlocking is convenient for unattended servers, but the operator must protect the key and keep a copy somewhere safe: without it the data cannot be opened.
 
 A key file should be stored securely, outside the application data volume, with restricted permissions.
 
@@ -188,6 +188,8 @@ The provider's own privacy policies and data handling practices apply.
 
 Enveliq requires acknowledgement when configuring cloud AI processing. Additional consent controls apply to cloud attachment summaries.
 
+**Finding models.** The administrator-only "Find models" button asks the configured AI address for its list of model names. It follows the same address rules as the connection test (private addresses, the allowed-hosts list, fixed cloud addresses), sends no email text, and never returns the access key.
+
 ### AI processing restrictions
 
 For Enveliq's built in email analysis and writing assistance:
@@ -241,6 +243,17 @@ Attachments and preview data are processed temporarily rather than stored as per
 
 Running without the isolated rendering container provides weaker isolation and should not be treated as equivalent to the standard container deployment.
 
+### Original email as the sender formatted it
+
+"View original email" shows an email's own formatting, fetched from the mailbox on demand and never stored.
+
+* The server rebuilds the HTML from an allowed list of tags and settings. Scripts, forms, frames, plug-ins, SVG and event handlers are removed, links keep only web and mail addresses, and style rules lose anything that can load a file or run code.
+* The result is served from its own address with its own strict Content-Security-Policy: no scripts except one fixed script of ours (pinned by its hash), no forms, and pictures only from inside the email unless the person asks.
+* The browser shows it in a sealed frame with no access to the person's session, storage or the page around it. A mistake in the cleaning alone could not run an email's script. Only this one page may be framed; every other answer stays unframeable.
+* Pictures from the internet are not loaded unless the person presses Show pictures for that email, because they tell the sender the email was opened. Plain `http` pictures are never loaded.
+* Links inside the formatted email are intercepted and open only after the person confirms where they go, as in the plain text view.
+* It is the same sign-in, ownership and rate limit as the plain text view, and nothing about the email is kept.
+
 ### Attachment AI summaries
 
 Supported attachments may be summarised using the configured AI model.
@@ -269,7 +282,7 @@ Some existing application pages use inline scripts under a less restrictive Cont
 
 Links contained in email are untrusted.
 
-Enveliq validates supported external links, restricts unsafe destinations and requires user interaction before opening them.
+Enveliq validates supported external links, restricts unsafe destinations and requires user interaction before opening them. Before a link can be opened, the question shows its website and then its complete address, wrapped over as many lines as it needs and never shortened, so a long tracking address can be read in full first.
 
 The application does not automatically visit websites referenced in email messages.
 
@@ -433,3 +446,22 @@ For general questions and bugs, use [GitHub Issues](https://github.com/jlnau/env
 ## All emails inbox window
 
 The optional All emails view retrieves inbox message headers from the last 60 days without a count cap. Enveliq keeps only the existing encrypted metadata and placeholder summary records in the vault. Original message bodies and attachments are not retained. This does not expand access beyond the signed in mailbox owner. The larger window can increase mailbox provider requests, encrypted metadata storage and loading time.
+
+## Find any email
+
+**Search all my mail** asks the person's own mail service to search their whole mailbox. It adds no copy of any email.
+
+- The search words go only to the person's own mail service, over the connection Enveliq already uses. They are never logged, never sent to an AI model and never shown to an administrator. The audit log records only that a search happened.
+- A search keeps only folder and message numbers, in server memory, for about 15 minutes. No email text. Results carry an opaque signed reference tied to the signed-in person and that one search; a reference that is not theirs, or is forged, answers "not found". Opening a result fetches the email then and does not store it.
+- Searching never changes the mailbox. A search never holds the lock that syncing uses. Searches are limited (six a minute per person, four at once on the server, about three minutes per mailbox) and the words are length-limited and quoted safely before they reach the mail service.
+- **Summarise** keeps one email as an ordinary encrypted card (sender, subject, date, summary) in Found emails for 60 days or until Reviewed. It is treated as quiet: no alert, not counted as unread, not touched by syncing. Reviewed removes the card and does not change the mailbox.
+- **Fast search** is optional, per person and per mailbox, off by default, and needs a plain warning to be accepted. If it is on, an encrypted word list is kept: for each email, where it lives and which words it contains, with no email text. Numbers longer than 8 digits and words longer than 30 characters are skipped, and attachments are not indexed. It is one file per person sealed with AES-256-GCM under a key derived from the vault key, so it can only be read while Enveliq is unlocked, and it is dropped from memory when the vault locks. It is not in backups or exports, and it is deleted when switched off, when the mailbox is removed and when the person is removed. Honest limit: while Enveliq builds or uses the word list, or summarises an email, the text is briefly in the server's memory, as it already is for summaries. Someone with full control of the running server could read it then.
+
+## New mailboxes start with AI summaries and Waiting for reply on
+
+A mailbox you add starts with Check for new mail automatically, Write AI summaries and Follow sent mail for replies all ticked. This is a default, not a change to what is kept: only a short summary, or a one-line note for Waiting for reply, is stored, never the email, and the AI still gets no tools and treats email text as data. What changes is that, with the AI configured, the text of new mail and of each new sent email is shown to your AI model without a separate question for each mailbox. If your AI model is a cloud service, that text leaves your computer, so the add form and the mailbox's Edit page say so in plain words and each box can be unticked, which saves at once. Mailboxes that already exist keep the choices they had. The settings are saved by the server for the signed-in owner of the mailbox only, as before.
+
+
+## Administration in the one Settings menu
+
+The Administration group in the Settings menu, and its search results, are only built for signed-in administrators. This is a convenience: every Administration request is still checked on the server from the signed-in session, and anyone else gets "not found".

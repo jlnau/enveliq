@@ -63,7 +63,7 @@ async function open(width, height) {
   await page.waitForTimeout(800);
   await page.evaluate(() => { openSettings("admin"); });
   await page.waitForTimeout(300);
-  await page.evaluate(() => { document.querySelector('#settingsNav [data-settings-tab="admincheck"]').click(); });
+  await page.evaluate(() => { document.querySelector('#settingsNav [data-settings-tab~="admincheck"]').click(); });
   await page.waitForSelector('[data-settings-panel="admincheck"] .embed-host', { state: "attached" });
   await page.locator('[data-settings-panel="admincheck"] .embed-host').locator("#ck_account").waitFor({ timeout: 8000 });
   const host = page.locator('[data-settings-panel="admincheck"] .embed-host');
@@ -80,13 +80,11 @@ async function open(width, height) {
   await shot(page, "check-address-empty");
   await host.locator("#ck_allowed").fill("not an address");
   await host.locator("#ck_account").selectOption("11111111-1111-4111-8111-111111111111");
-  await host.locator('button[type="submit"]').click();
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(1000);
   check("a bad address is refused and the page says why", /is not an email address/.test(await host.text()) && saved.account_id === "11111111-1111-4111-8111-111111111111" && state.allowed.length === 0);
   await host.locator("#ck_allowed").fill("alex@example.invalid\nsam@example.invalid");
   await host.locator("#ck_account").selectOption("11111111-1111-4111-8111-111111111111");
-  await host.locator('button[type="submit"]').click();
-  await page.waitForTimeout(600);
+  await page.waitForTimeout(1100);
   check("saving sends the mailbox and the list, one address per line", saved && saved.account_id === "11111111-1111-4111-8111-111111111111" && saved.allowed.join(",") === "alex@example.invalid,sam@example.invalid");
   await page.waitForSelector("#ck_allowed", { state: "attached" });
   const after = host.locator("#ck_allowed");

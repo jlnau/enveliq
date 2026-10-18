@@ -23,6 +23,7 @@ from datetime import date, timedelta
 from email.message import EmailMessage
 from pathlib import Path
 from typing import Any, Iterator
+from urllib.parse import quote, unquote
 
 from .errors import BridgeError
 from .microsoft import MESSAGES as MS_MESSAGES
@@ -32,6 +33,7 @@ log = logging.getLogger("enveliq.bridge")
 
 _MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 _LOCATOR = re.compile(r"^INBOX\|(\d{1,10})\|(\d{1,10})$")
+_FOLDER_LOCATOR = re.compile(r"^FOLDER\|([A-Za-z0-9%._~-]{1,600})\|(\d{1,10})\|(\d{1,10})$")
 _BAD_CRED = re.compile(r"[\r\n\x00]")
 # imaplib sends the user name unquoted, so only plain address characters are accepted.
 _USERNAME = re.compile(r"^[A-Za-z0-9._%+@-]{1,320}$")
@@ -83,8 +85,23 @@ class Target:
     trash_hint: tuple[str, ...] = ()
 
 
-def locator(uidvalidity: int, uid: int) -> str:
-    return f"INBOX|{uidvalidity}|{uid}"
+def locator(uidvalidity: int, uid: int, folder: str = "INBOX") -> str:
+    """Where one email lives. Inbox mail keeps its old, short form. Mail found in another folder (Find any email) names the folder."""
+    if folder == "INBOX":
+        return f"INBOX|{uidvalidity}|{uid}"
+    return f"FOLDER|{quote(folder, safe='')}|{uidvalidity}|{uid}"
+
+
+def parse_folder_locator(value: str | None) -> tuple[str, int, int]:
+    """(folder, uidvalidity, uid) of an email in any folder."""
+    text = value or ""
+    match = _LOCATOR.match(text)
+    if match:
+        return "INBOX", int(match.group(1)), int(match.group(2))
+    match = _FOLDER_LOCATOR.match(text)
+    if not match:
+        raise BridgeError("not_found", "This email can no longer be found in the mailbox. Sync again.")
+    return unquote(match.group(1)), int(match.group(2)), int(match.group(3))
 
 
 def parse_locator(value: str | None) -> tuple[int, int]:
@@ -488,6 +505,7 @@ class _ImapSession:
         self._target = target
         self._imap: imaplib.IMAP4 | None = None
         self.uidvalidity = 0
+        self.exists = 0                       # how many emails the open folder holds
 
     def __enter__(self) -> "_ImapSession":
         self._imap = self._bridge.open_imap(self._target)
@@ -524,13 +542,49 @@ class _ImapSession:
     def select_folder(self, name: str, readonly: bool = True) -> int:
         """Open any folder (read-only by default) and return its UIDVALIDITY."""
         quoted = '"' + name.replace("\\", "\\\\").replace('"', '\\"') + '"'
-        self._call("select", self.imap.select, quoted, readonly)
+        opened = self._call("select", self.imap.select, quoted, readonly)
+        try:
+            self.exists = int(opened[0])
+        except (TypeError, ValueError, IndexError):
+            self.exists = 0
         try:
             typ, data = self.imap.response("UIDVALIDITY")
             self.uidvalidity = int(data[0]) if data and data[0] else 0
         except (ValueError, TypeError):
             self.uidvalidity = 0
         return self.uidvalidity
+
+    # ---------- Find any email: search a whole folder on the mail service's side ----------
+
+    def list_folders(self) -> list[tuple[set[str], str]]:
+        """Every folder that can be opened, as (lower-case flags, name)."""
+        return self._folders()
+
+    def set_timeout(self, seconds: float) -> None:
+        """Allow slow answers (a search of a big folder) on this connection."""
+        try:
+            self.imap.socket().settimeout(seconds)
+        except (OSError, AttributeError):
+            pass
+
+    def abort(self) -> None:
+        """Cut this connection from another thread, so a search that is still running stops."""
+        imap = self._imap
+        if imap is None:
+            return
+        try:
+            imap.socket().shutdown(socket.SHUT_RDWR)
+        except (OSError, AttributeError):
+            pass
+
+    def search(self, criteria: list[str], utf8: bool = False) -> list[int]:
+        """UIDs matching already-quoted IMAP search criteria in the open folder, newest first. Nothing is read or changed."""
+        if utf8:
+            self.imap._encoding = "utf-8"          # type: ignore[attr-defined]
+            data = self._call("search", self.imap.uid, "SEARCH", "CHARSET", "UTF-8", *criteria)
+        else:
+            data = self._call("search", self.imap.uid, "SEARCH", None, *criteria)
+        return sorted((int(x) for x in (data[0] or b"").split() if x.isdigit()), reverse=True)
 
     def recent_uids(self, since_days: int, limit: int | None = None) -> list[int]:
         """Newest emails in the open folder from the last few days (read or not)."""

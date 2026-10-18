@@ -265,6 +265,7 @@ def html_to_text(html: str) -> str:
 
 
 from .render import can_view  # noqa: E402
+from . import htmlview  # noqa: E402
 
 PREVIEW_IMAGE_TYPES = {"image/png", "image/jpeg", "image/gif", "image/webp"}
 MAX_PARTS = 100
@@ -357,6 +358,7 @@ def render_original(raw: bytes) -> dict[str, Any]:
         "attachments": attachments,
         "file_count": file_count(msg),
         "remote_images": remote_image_count(msg),
+        "has_html": htmlview.has_html(msg),
         "unsubscribe": unsub.find(msg),
         "links": links.find(msg),
         "warning": scamcheck.from_whole(msg),

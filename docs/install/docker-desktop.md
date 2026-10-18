@@ -20,34 +20,45 @@ The easiest way to try Enveliq. Docker Desktop is a free program that runs Envel
 
 ## Step 3. Get the install file
 
+This is the install file. Select everything in the box below and copy it (on the website the box has a **Copy** button). You will paste it into the editor in the steps after it. If you read this on GitHub the box is not shown: open the [install file on GitHub](https://github.com/jlnau/enveliq/blob/main/install/docker-compose.yml) and press **Copy raw file** instead.
+
+<!-- include: install/docker-compose.yml -->
+
 You will make a small text file called `docker-compose.yml` inside that folder.
 
-1. Open <https://github.com/jlnau/enveliq/blob/main/install/docker-compose.yml> in your browser.
-2. Press the **Copy raw file** button (two overlapping squares, top right of the file).
-3. Now save it as a file:
+1. Copy the install file shown at the top of this step.
+2. Now save it as a file:
    - **Windows:** open **Notepad**. Paste. Choose **File**, **Save as**. Go to the `enveliq` folder. Click **Save as type** and choose **All files**. Type the name `docker-compose.yml` and press **Save**.
    - **Mac:** open **TextEdit**. Choose **Format**, **Make Plain Text**. Paste. Choose **File**, **Save**. Name it `docker-compose.yml`, choose the `enveliq` folder, and when it asks about `.yml`, press **Use .yml**. (If it offers "If no extension is provided, use .txt", untick it.)
-4. **Check:** in the folder the file is called `docker-compose.yml`, not `docker-compose.yml.txt`. (On Windows, in File Explorer press **View**, **Show**, **File name extensions** to see the full name.)
+3. **Check:** in the folder the file is called `docker-compose.yml`, not `docker-compose.yml.txt`. (On Windows, in File Explorer press **View**, **Show**, **File name extensions** to see the full name.)
 
-## Step 4. Change the three lines
+## Step 4. Open a terminal in the folder
 
-1. Open [Choose your settings](choose-settings.md) and decide your answers. If you only want to try Enveliq on this computer, you can change **just the setup code** and leave the rest.
-2. Open the file you saved (right-click, **Open with**, Notepad or TextEdit) and edit the lines marked `<-- CHANGE THIS`. Keep the quote marks.
-3. Save the file.
+- **Windows:** in File Explorer open the `enveliq` folder. Click the address bar at the top, type `powershell` and press Enter. A blue window opens.
+- **Mac:** open **Terminal** (press Command + Space, type `Terminal`, press Enter). Type `cd ` (the letters c, d and a space), then drag the `enveliq` folder from Finder into the Terminal window, then press Enter.
 
-## Step 5. Start Enveliq
+## Step 5. Make your vault key and start Enveliq
 
-1. Open a terminal in the `enveliq` folder:
-   - **Windows:** in File Explorer open the `enveliq` folder. Click the address bar at the top, type `cmd` and press Enter. A black window opens.
-   - **Mac:** open **Terminal** (press Command + Space, type `Terminal`, press Enter). Type `cd ` (the letters c, d and a space), then drag the `enveliq` folder from Finder into the Terminal window, then press Enter.
-2. Type this and press Enter:
+The vault key is a long secret that locks everything Enveliq keeps. Enveliq will not finish setup without one. Paste the block for your computer and press Enter. It makes the key, saves it in a file called `.env` next to the install file (Docker reads it by itself), and starts Enveliq.
 
-   ```
-   docker compose up -d
-   ```
+**Windows (PowerShell)**
 
-3. Wait. The first time it downloads Enveliq, which can take a few minutes. You will see lines scroll by.
-4. **Check:** it ends with two lines that say `Started` (or `Running`). Docker Desktop's **Containers** page now lists `enveliq` and `enveliq-render` as running.
+```
+$b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
+"ENVELIQ_VAULT_KEY=" + (($b | ForEach-Object { $_.ToString("x2") }) -join "") | Out-File -Encoding ascii .env
+docker compose up -d
+```
+
+**Mac**
+
+```
+echo "ENVELIQ_VAULT_KEY=$(openssl rand -hex 32)" > .env
+docker compose up -d
+```
+
+1. Wait. The first time it downloads Enveliq, which can take a few minutes. You will see lines scroll by.
+2. **Check:** it ends with two lines that say `Started` (or `Running`). Docker Desktop's **Containers** page now lists `enveliq` and `enveliq-render` as running.
+3. **Save a copy of your vault key in your password manager now:** run `type .env` (Windows) or `cat .env` (Mac) and copy the line. If that file is ever lost, the key is the only way to open your data again.
 
 ## Step 6. Open Enveliq
 

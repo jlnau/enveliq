@@ -99,8 +99,8 @@ async function open(server, width = 1200, height = 900) {
   const { page, errors } = await open(server);
   await page.evaluate(() => openSettings("settings"));
   await page.waitForTimeout(300);
-  check("Settings has a Mail rules page", (await page.locator('#settingsNav [data-settings-tab="rules"]').innerText()).includes("Mail rules"));
-  await page.evaluate(() => document.querySelector('#settingsNav [data-settings-tab="rules"]').click());
+  check("Settings has a Mail rules page", (await page.locator('#settingsNav [data-settings-tab~="rules"]').innerText()).includes("Rules & calendar"));
+  await page.evaluate(() => document.querySelector('#settingsNav [data-settings-tab~="rules"]').click());
   const host = page.locator('[data-settings-panel="rules"] .embed-host');
   await host.locator("#ru_sender").waitFor({ timeout: 8000 });
   const text = () => host.evaluate((h) => h.shadowRoot.textContent);

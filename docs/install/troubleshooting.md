@@ -42,7 +42,7 @@ Your computer is not an ordinary 64-bit Intel or AMD one (for example a Raspberr
 
 ## I do not know the setup code
 
-The code is whatever you put in `ENVELIQ_SETUP_CODE`. If you forgot it, or you left the placeholder and Enveliq made one, read it from the container:
+Enveliq makes the setup code itself the first time it starts (unless you set `ENVELIQ_SETUP_CODE` yourself). Read it from the container:
 
 ```
 docker exec enveliq cat /data/setup-code.txt
@@ -52,9 +52,13 @@ In **Portainer**: **Containers**, click `enveliq`, **Console**, **Connect**, the
 
 The code stops existing once setup is finished.
 
+## Setup says it needs a vault key
+
+A new install must be given a vault key first. Make one (`openssl rand -hex 32`), save a copy in your password manager, put it in the `ENVELIQ_VAULT_KEY` line of your install file (or `.env`), redeploy (`docker compose up -d`, or Redeploy in your panel) and reload the page. [The vault key guide](../VAULT_KEY.md) has the steps.
+
 ## Enveliq says it is locked after a restart
 
-You did not set a vault key, so Enveliq waits for your **vault passphrase**. Open `/unlock` on your Enveliq address (for example `http://localhost:8765/unlock`), type the passphrase, then sign in. To make Enveliq unlock by itself, set a vault key: [Unlocking by itself](../VAULT_KEY.md).
+This Enveliq was set up before vault keys were required, so it waits for your **vault passphrase**. Open `/unlock` on your Enveliq address (for example `http://localhost:8765/unlock`), type the passphrase, then sign in. To make Enveliq unlock by itself, set a vault key: [Unlocking by itself](../VAULT_KEY.md).
 
 **If you have lost the passphrase (or key), your data cannot be recovered.** That is what encryption means. You can [start again](#start-again-from-scratch).
 

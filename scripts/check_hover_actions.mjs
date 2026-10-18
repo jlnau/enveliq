@@ -58,6 +58,39 @@ const settle = (p) => p.waitForTimeout(350);
   await p.close();
 }
 {
+  // The reading-pane layout (list beside the email) and the Reviewed list show the same buttons on hover
+  const p = await b.newPage({ viewport: { width: 1280, height: 800 } }); const errors = [];
+  p.on("pageerror", (e) => errors.push(String(e)));
+  await p.goto(url); await p.waitForTimeout(600);
+  await p.evaluate(() => { view.layout = "right"; applyView(); render(); });
+  await p.mouse.move(5, 5); await settle(p);
+  const rows = p.locator("#paneList article.mail"), pair = (i) => rows.nth(i).locator(".qpair"), time = (i) => rows.nth(i).locator(".time");
+  const o = (loc) => loc.evaluate((e) => +getComputedStyle(e).opacity);
+  check("[reading pane] with the mouse elsewhere, no row shows its buttons", (await o(pair(0))) === 0 && (await o(time(0))) === 1);
+  await rows.nth(1).hover(); await settle(p);
+  check("[reading pane] the mouse over a row shows its three buttons in place of the date", (await o(pair(1))) === 1 && (await pair(1).locator("button").count()) === 3 && (await o(time(1))) === 0);
+  const inside = await rows.nth(1).evaluate((a) => { const r = a.getBoundingClientRect(), q = a.querySelector(".qpair").getBoundingClientRect(); return q.left >= r.left && q.right <= r.right && q.top >= r.top && q.bottom <= r.bottom; });
+  check("[reading pane] the buttons sit inside the row", inside);
+  if (shots) await p.screenshot({ path: path.join(shots, "hover-reading-pane.png") });
+  const n = await rows.count();
+  await pair(1).locator(".archive").click();
+  await p.waitForSelector("#undoBar:not([hidden])");
+  check("[reading pane] a button works: Archive greys the email out and shows Undo", (await rows.count()) === n && (await p.locator("#paneList article.mail.leaving").count()) === 1);
+  // A kept email in the Reviewed list gets one button: Remove from this list
+  await p.evaluate(() => { const m = data.find((x) => x.owner === currentUser.id && x.status === "inbox"); m.status = "reviewed"; m.kept = true; m.keptUntil = "1 Nov"; filter = "reviewed"; render(); });
+  await p.mouse.move(5, 5); await settle(p);
+  const kept = p.locator("#paneList article.mail").first();
+  await kept.hover(); await settle(p);
+  const btns = kept.locator(".qpair button");
+  check("[reviewed list] hovering a kept email shows one button, Remove from this list", (await btns.count()) === 1 && (await btns.first().getAttribute("data-status")) === "expired" && (await o(kept.locator(".qpair"))) === 1);
+  await p.evaluate(() => { view.layout = "list"; applyView(); render(); });
+  const keptList = p.locator("article.mail.quiet").first();
+  await p.mouse.move(5, 5); await settle(p); await keptList.hover(); await settle(p);
+  check("[reviewed list] the classic list shows it too", (await keptList.locator(".qpair button").count()) === 1 && (await o(keptList.locator(".qpair"))) === 1);
+  check("[reading pane] no script errors", errors.length === 0);
+  await p.close();
+}
+{
   const p = await b.newPage({ viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true });
   await p.goto(url); await p.waitForTimeout(600);
   await p.evaluate(() => { view.layout = "list"; applyView(); render(); });   // the classic list; the default is now the reading panel on the right

@@ -42,6 +42,7 @@ class FeaturesBody(StrictModel):
     write_help: bool | None = None
     rss: bool | None = None
     tags: bool | None = None
+    find_mail: bool | None = None
 
 
 class FollowBody(StrictModel):
@@ -136,8 +137,23 @@ def build_extra_router(ctx: Any) -> APIRouter:
             if not wanted(acct.get("owner_user_id")):
                 continue
             for m in vault.list_messages(acct["id"]):
-                if m.get("from_all_mail"):
+                if m.get("from_all_mail") and not m.get("found_until"):
                     vault.delete_message(acct["id"], m["id"])
+
+    def drop_found(wanted: Any) -> None:
+        """Forget the emails kept from searches (nothing else) for people Find any email was just switched off for."""
+        owners: set[str] = set()
+        for acct in vault.list_accounts():
+            if wanted(acct.get("owner_user_id")):
+                owners.add(acct.get("owner_user_id"))
+                for m in vault.list_messages(acct["id"]):
+                    if m.get("found_until"):
+                        vault.delete_message(acct["id"], m["id"])
+        finder = getattr(ctx, "find_index", None)              # Fast search goes with the feature
+        if finder is not None:
+            for owner in owners:
+                if owner:
+                    finder.delete_user(owner)
 
     # ---------- switches ----------
 
@@ -151,6 +167,8 @@ def build_extra_router(ctx: Any) -> APIRouter:
         features.save_user_flags(vault, ctx.users, session.principal.user_id, body.model_dump())
         if not features.effective(vault, session.principal.user_id)["all_mail"]:
             drop_listed(lambda uid: uid == session.principal.user_id)
+        if not features.effective(vault, session.principal.user_id)["find_mail"]:
+            drop_found(lambda uid: uid == session.principal.user_id)
         vault.audit({"event": "features_saved_user", "actor_user_id": session.principal.user_id, "at": time.time()})
         return features.overview(vault, session.principal.user_id)
 
@@ -164,6 +182,8 @@ def build_extra_router(ctx: Any) -> APIRouter:
         flags = features.save_admin_flags(vault, body.model_dump())
         if not flags["all_mail"]:
             drop_listed(lambda uid: True)
+        if not flags["find_mail"]:
+            drop_found(lambda uid: True)
         vault.audit({"event": "features_saved_admin", "actor_user_id": session.principal.user_id, "flags": flags, "at": time.time()})
         return {"flags": flags, "labels": features.LABELS}
 
@@ -200,6 +220,7 @@ def build_extra_router(ctx: Any) -> APIRouter:
                         bad += 1
                         time.sleep(5 * bad)
                     else:
+                        service.problems[message_id] = err.message
                         raise
         finally:
             announce(account, service.release(vault, account, [message_id]))
@@ -223,15 +244,18 @@ def build_extra_router(ctx: Any) -> APIRouter:
 
     @router.post("/accounts/{account_id}/messages/{message_id}/summary", status_code=202)
     def ask_summary(account_id: AccountId, message_id: MessageId, session: Session = Depends(session_dep)):
-        user = need(session, "all_mail")
+        user = session.principal.user_id
         owned(account_id, session, "summarise this email")
         try:
-            vault.get_message(account_id, message_id)
+            kept = vault.get_message(account_id, message_id)
         except KeyError:
+            need(session, "all_mail")
             raise HTTPException(status_code=404, detail="Message not found") from None
+        need(session, "find_mail" if kept.get("found_until") else "all_mail")
         if not queue_limit.allow(f"queue:{user}"):
             raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
         service.refresh_ai(vault)
+        service.retry_now(message_id)
         if not service.summariser.enabled:
             raise HTTPException(status_code=409, detail={"code": "ai_not_configured", "message": "No AI model is set up yet. An administrator can add one under Administration, AI model."})
         try:
@@ -244,7 +268,7 @@ def build_extra_router(ctx: Any) -> APIRouter:
     @router.get("/me/summary-queue")
     def my_summary_queue(response: Response, session: Session = Depends(session_dep)):
         response.headers["Cache-Control"] = "no-store"
-        return queue.listing(session.principal.user_id)
+        return {**queue.listing(session.principal.user_id), "notice": service.summary_notice(vault, session.principal.user_id)}
 
     @router.delete("/accounts/{account_id}/messages/{message_id}/summary")
     def cancel_summary(account_id: AccountId, message_id: MessageId, session: Session = Depends(session_dep)):

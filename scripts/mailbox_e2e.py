@@ -17,7 +17,7 @@ hostile = '<img src=x onerror="window.__pwned=1"><script>window.__pwned=1</scrip
 bridge.add(1, raw_email("Quarterly update", "Alice Example <alice@example.invalid>", "me@example.invalid", message_id="<a1@example.invalid>", body="Numbers are attached.\n"))
 bridge.add(2, raw_email("Weekly news", "News <news_at_example_invalid_k3j9@simplelogin.co>", "me@example.invalid", reply_to="news_at_example_invalid_k3j9@simplelogin.co", message_id="<n2@example.invalid>"))
 bridge.add(3, raw_email(hostile, f'"{hostile}" <evil@example.invalid>', "me@example.invalid", message_id="<h3@example.invalid>", body=hostile + "\n"))
-env = dict(os.environ, ENVELIQ_DATA_DIR=str(tmp / "data"), ENVELIQ_SETUP_CODE="e2e-setup-code-12345", ENVELIQ_PORT="8798", ENVELIQ_SYNC_MINUTES="0",
+env = dict(os.environ, ENVELIQ_VAULT_KEY="e2e-vault-key-0123456789abcdef0123456789abcdef", ENVELIQ_DATA_DIR=str(tmp / "data"), ENVELIQ_SETUP_CODE="e2e-setup-code-12345", ENVELIQ_PORT="8798", ENVELIQ_SYNC_MINUTES="0",
            ENVELIQ_PUBLIC_URL="http://localhost:8798", ENVELIQ_BRIDGE_CA_FILE=str(bridge.cert_path),
            PYTHONPATH=os.pathsep.join([str(ROOT), os.environ.get("PYTHONPATH", "")]))
 server = subprocess.Popen([sys.executable, "run.py"], cwd=ROOT, env=env, stdout=open(tmp / "server.log", "w"), stderr=subprocess.STDOUT)
@@ -27,7 +27,7 @@ try:
             if httpx.get("http://localhost:8798/api/v1/health").status_code == 200: break
         except Exception: time.sleep(0.3)
     c = httpx.Client(base_url="http://localhost:8798", headers={"Origin": "http://localhost:8798"})
-    r = c.post("/api/v1/setup", json={"setup_code": "e2e-setup-code-12345", "passphrase": "Correct Horse Battery Staple 2026!", "username": "morgan", "password": "Admin password for tests 2026"}); assert r.status_code == 201, r.text
+    r = c.post("/api/v1/setup", json={"setup_code": "e2e-setup-code-12345", "username": "morgan", "password": "Admin password for tests 2026"}); assert r.status_code == 201, r.text
     secret = c.post("/api/v1/auth/totp/setup").json()["secret"]
     r = c.post("/api/v1/auth/totp/confirm", json={"code": totp.code_at(secret, totp.current_step())}); assert r.status_code == 200, r.text
     cookies = [{"name": k, "value": v, "url": "http://localhost:8798"} for k, v in c.cookies.items()]

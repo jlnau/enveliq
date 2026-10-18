@@ -6,14 +6,14 @@ You have installed Enveliq and it is running. This page takes you from the first
 
 1. Open the address you chose (for example <http://localhost:8765>).
 2. You should see **Set up Enveliq**. If you see something else, see [Troubleshooting](troubleshooting.md#the-page-does-not-open).
-3. Type the **setup code** you put in the install file. (Do not remember it? See [I do not know the setup code](troubleshooting.md#i-do-not-know-the-setup-code).)
+3. Type the **setup code**. Enveliq made it for you; it is not something you chose. Read it by running `docker exec enveliq cat /data/setup-code.txt` (or see [How to read the setup code](troubleshooting.md#i-do-not-know-the-setup-code) if you use a control panel).
 
 ## Step 2. Make your administrator account
 
 The first person to set up Enveliq becomes its **administrator**: the person who looks after Enveliq itself. Administrators cannot read other people's email.
 
 1. Choose a **username** and a **password**. Make the password long. A password manager is ideal. The page tells you the rules.
-2. If you did **not** set a vault key, you are also asked to choose a **vault passphrase**. This locks everything Enveliq keeps. **Write it down and keep it safe: without it nobody can open your data again.** (With a vault key set, there is no passphrase to choose.)
+2. Setup does not ask for a vault passphrase: Enveliq locks and unlocks itself with the vault key you made before starting (Setting 4 in [Choose your settings](choose-settings.md#setting-4-the-vault-key-required)). If you skipped that, the setup page tells you how to make one. **Keep a copy of the key somewhere safe: without it nobody can open your data again.**
 3. Press the button to finish.
 
 ## Step 3. Turn on two-factor sign-in

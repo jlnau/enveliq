@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from helpers import create_user, load_app, setup_admin, sign_in
 
-ALLOWED_BEFORE_SIGN_IN = {"initialized", "unlocked", "setup_required", "sign_in", "auto_unlock", "auto_unlock_problem"}
+ALLOWED_BEFORE_SIGN_IN = {"initialized", "unlocked", "setup_required", "sign_in", "auto_unlock", "auto_unlock_problem", "vault_key_needed"}
 NEVER_PUBLIC = ("version", "cipher", "kdf", "argon2", "crypto", "public_url", "memory_kib", "time_cost", "parallelism",
                 "master_key_bits", "idle_lock", "raw_message", "raw_attachment", "attachments", "preview_mode")
 

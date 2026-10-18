@@ -1,40 +1,69 @@
 # Install Enveliq
 
-This page helps you pick the right guide. You do not need to know Linux or Docker. Every guide below tells you exactly what to click or type, one small step at a time.
-
-**How long it takes:** about 15 to 30 minutes the first time.
+One page, about five minutes. You do not need to know Linux or Docker.
 
 ## 1. What you need
 
-| You need | Notes |
-|---|---|
-| A computer that can stay switched on | An old laptop or PC, a small "mini PC", a NAS (Synology, Unraid, TrueNAS), a Raspberry Pi 4 or 5, or a virtual machine. It does not have to be fast. **2 GB of free memory** is plenty. |
-| Docker | A free program that runs Enveliq in its own sealed box, so it cannot mess up the rest of your computer. Each guide tells you how to get it if you do not have it. |
-| An email account | Any of: Gmail, Outlook/Hotmail/Microsoft 365, iCloud, Yahoo, Fastmail, Proton Mail (with Proton Bridge), or any other service that supports IMAP. You connect it **after** installing. |
-| (Optional) An AI model | Enveliq writes its summaries with an AI model. Use a cloud service (OpenAI, Anthropic, Google Gemini and others) or a model running on your own network. You can add this later, inside the app. |
+- A computer that can stay switched on (a spare PC, mini PC, NAS, or a Mac or Windows PC to try it). 2 GB of free memory.
+- **Docker.** On Windows or Mac install [Docker Desktop](https://www.docker.com/products/docker-desktop/) (accept the defaults, start it, wait for **Engine running**). On Linux run `curl -fsSL https://get.docker.com | sh`.
+- An email account to connect afterwards (Gmail, Outlook, iCloud, Yahoo, Fastmail, Proton with Proton Bridge, or any IMAP service).
 
-You do **not** need a domain name, a credit card, or an account with us. Enveliq collects nothing and sends nothing anywhere you did not set up yourself.
+Raspberry Pi and other ARM computers build Enveliq themselves: see [Raspberry Pi](raspberry-pi.md).
 
-## 2. Pick your guide
+## 2. Install: copy, paste, done
 
-Choose the one that matches **what you already have**. If you are not sure, use the first row.
+Open a terminal (on Windows, **PowerShell**), paste this whole block and press Enter. It downloads the install file, makes your **vault key**, and starts Enveliq.
 
-| What you have | Guide |
-|---|---|
-| **A Windows PC or a Mac** (the easiest way to try it) | [Docker Desktop on Windows or Mac](docker-desktop.md) |
-| **A Linux computer or server** (Ubuntu, Debian and others), or a virtual machine | [Docker Compose on Linux](docker-compose.md) |
-| **A Raspberry Pi** or another ARM computer | [Raspberry Pi and ARM](raspberry-pi.md) |
-| **A Proxmox server** | [Proxmox](proxmox.md) |
-| **Arcane** (a Docker control panel) | [Arcane](arcane.md) |
-| **Portainer** (a Docker control panel) | [Portainer](portainer.md) |
-| **Dockge** (a Docker control panel) | [Dockge](dockge.md) |
-| **A Synology NAS** | [Synology](synology.md) |
-| **Unraid** | [Unraid](unraid.md) |
-| **TrueNAS SCALE** | [TrueNAS](truenas.md) |
+**Mac or Linux**
 
-Every guide uses the same ready-made install file: [`install/docker-compose.yml`](../../install/docker-compose.yml). Only three lines in it ever need changing, and [Choose your settings](choose-settings.md) explains each one in plain words. Read that page once; every guide links to it at the right moment.
+```
+mkdir enveliq && cd enveliq
+curl -fsSL https://raw.githubusercontent.com/jlnau/enveliq/main/install/docker-compose.yml -o docker-compose.yml
+echo "ENVELIQ_VAULT_KEY=$(openssl rand -hex 32)" > .env
+docker compose up -d
+```
 
-## 3. After it is installed
+**Windows (PowerShell)**
+
+```
+mkdir enveliq; cd enveliq
+curl.exe -fsSL https://raw.githubusercontent.com/jlnau/enveliq/main/install/docker-compose.yml -o docker-compose.yml
+$b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
+"ENVELIQ_VAULT_KEY=" + (($b | ForEach-Object { $_.ToString("x2") }) -join "") | Out-File -Encoding ascii .env
+docker compose up -d
+```
+
+The first time it downloads Enveliq, which takes a few minutes.
+
+## 3. Save your vault key
+
+The vault key locks everything Enveliq keeps and unlocks it after every restart. It is in the `.env` file you just made. **Copy it into your password manager now.** If that file is ever lost, the key is the only way to open your data again.
+
+```
+cat .env          # Windows: type .env
+```
+
+## 4. Open Enveliq
+
+Open <http://localhost:8765> in your browser. It asks for a **setup code** once. Read it with:
+
+```
+docker exec enveliq cat /data/setup-code.txt
+```
+
+Then follow [First-time setup](after-install.md): your administrator account and two-factor sign-in. If the page says it needs a vault key instead, see [Troubleshooting](troubleshooting.md#setup-says-it-needs-a-vault-key).
+
+## Using a control panel or a NAS instead?
+
+You can paste the same install file into your panel. The only thing to set is the vault key: make one with the commands above (or have your password manager make a 64-character password of letters and numbers), then put it in the `ENVELIQ_VAULT_KEY` line, or in the panel's environment box. The guides show where to click:
+
+[Docker Desktop](docker-desktop.md) · [Docker Compose on Linux](docker-compose.md) · [Arcane](arcane.md) · [Portainer](portainer.md) · [Dockge](dockge.md) · [Synology](synology.md) · [Unraid](unraid.md) · [TrueNAS](truenas.md) · [Proxmox](proxmox.md) · [Raspberry Pi](raspberry-pi.md)
+
+## Open it from your phone or another device (optional)
+
+By default Enveliq opens only on the computer it runs on. To open it from your phone or over the internet, see [Choose your settings](choose-settings.md) and [How should I open Enveliq?](../ACCESS.md).
+
+## After it is installed
 
 1. [**First-time setup**](after-install.md): the one-time code, your administrator account, two-factor sign-in.
 2. [**Connect your email**](after-install.md#step-4-connect-your-email) (Gmail, Outlook, iCloud, Yahoo, Proton and others).

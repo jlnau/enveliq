@@ -117,6 +117,7 @@ code.mono{background:var(--c-0d121b);border:1px solid var(--line);border-radius:
 .provider.off{opacity:.65}
 .add-mailbox select{width:100%}
 
+.codebox{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--c-0d121b);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:6px 0 10px;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;user-select:all}
 .promptbox{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--panel2);border:1px solid var(--c-2f394b);border-radius:10px;padding:10px 12px;margin:4px 0 12px;font-size:13px;line-height:1.5;color:var(--muted);font-family:inherit}
 .rp-group{margin:22px 0 6px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
 .rp-out{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0;background:var(--panel)}
@@ -216,3 +217,84 @@ a.btn{text-decoration:none}
 /* Label colour drop-down on a mailbox card: small, on one line. */
 .color-pick{display:flex;align-items:center;gap:8px;margin:8px 0 2px;font-weight:600}
 .color-pick select{width:auto;min-width:9em}
+.fs-box{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 12px;background:var(--panel)}.fs-box p{margin:8px 0}.fs-box .row{margin-top:10px}
+@media(max-width:640px){.fs-box .row .btn{flex:1 1 100%;min-height:44px}}
+
+.ai-models{margin:-4px 0 14px}.ai-models .row{margin-bottom:6px}.ai-models select{flex:1 1 220px;min-width:0}
+
+/* mailboxes: a card for each, and an edit page whose choices save as they are made */
+.mbhead{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.mbhead .lead{margin:3px 0 0}
+.mbgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:14px}
+.mbcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.mbwho,.mbtitle{display:flex;gap:12px;align-items:center}
+.mblogo{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;font-weight:800;font-size:18px;color:#fff;flex:none;background:var(--brand)}
+.mbstate{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.mbdot{width:9px;height:9px;border-radius:50%;background:var(--good);flex:none}
+.mbdot.amber{background:var(--warn)}
+.mbacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+.mbtitle{flex-wrap:wrap;margin-bottom:14px}
+.mbtitle h1{margin:0}
+.mbtitle .mbacts{margin:0 0 0 auto}
+.mbchip{font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--c-315644);background:var(--c-122219);color:var(--c-bfe8cf)}
+.mbchip.amber{border-color:var(--c-5a4720);background:var(--c-261f12);color:var(--c-ecd7a7)}
+.mbedit{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:14px}
+.mbcol{display:flex;flex-direction:column;gap:16px}
+.linkback{background:none;border:0;color:var(--c-7cc8ff);padding:6px 0;cursor:pointer;font-weight:600}
+.optrow{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--line);font-size:14px;font-weight:400;margin:0;cursor:pointer}
+.optrow input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var(--brand)}
+.optrow strong{display:block}
+.optrow .hint{display:block;margin-top:2px}
+.savedtag{margin-left:auto;font-size:12px;font-weight:500;color:var(--good);opacity:0;transition:opacity .2s}
+.savedtag.show{opacity:1}
+.section h2{display:flex;align-items:center}
+.mbremove .lead{margin-bottom:10px}
+@media(max-width:760px){
+  .mbgrid,.mbedit{grid-template-columns:1fr}
+  .mbtitle .mbacts{margin-left:0;width:100%}
+  .mbcard .btn,.mbacts .btn,.optrow{min-height:44px}
+}
+.linkback{display:block;justify-self:start;align-self:flex-start;text-align:left;margin:0 0 6px}
+.mbwho .meta,.mbtitle .meta{color:var(--faint);font-size:12.5px}
+.mbtitle{margin-bottom:0}
+
+/* Inside Settings and Administration, sections sit side by side when there is room, so pages are short instead of one long scroll. */
+.page.embed-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:16px;align-items:start;max-width:none}
+.page.embed-cols > :not(.section){grid-column:1/-1}
+.page.embed-cols > .section{margin:0;min-width:0}
+.featgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:4px 24px}
+.featitem{margin:0!important;padding:10px 0;border-top:1px solid var(--line)}
+.lead .savedtag{margin-left:8px}
+.ai-models-list{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-size:13px;padding:6px 12px;border-radius:99px;border:1px solid var(--c-2f394b);background:var(--panel2);color:var(--text);cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--brand);background:var(--c-0c1c38);color:var(--c-bfe3ff)}
+
+/* Settings, General: three short columns of small cards. */
+.gcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:16px;align-items:start}
+.gcard{margin:0;padding:16px}
+.gcard h2{margin:0 0 3px;font-size:15px}
+.gsub{margin:0 0 10px;color:var(--faint);font-size:12.5px}
+.glab{display:block;margin:8px 0 4px;color:var(--muted,var(--faint));font-size:12.5px}
+.gcard select{width:100%}
+.gopt{display:flex;gap:10px;align-items:center;padding:6px 0;font-size:13.5px;margin:0}
+.gopt input{width:18px;height:18px;margin:0;flex:none}
+.gfeat{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));column-gap:12px}
+.gcol{display:flex;flex-direction:column;gap:16px;min-width:0}
+.gcol.wide{grid-column:span 2}
+@media(max-width:700px){.gcol.wide{grid-column:auto}}
+@media(max-width:760px){.gopt{min-height:44px}.gfeat{grid-template-columns:1fr}}
+
+/* Inside the pop-ups every page is a stack of calm cards. A page's own heading is a small group title, not a banner. */
+.page.embed-cols h1{font-size:16px;margin:0 0 -6px}
+.page.embed-cols > .lead{margin:0 0 -4px;font-size:12.5px}
+.page.embed-cols .section{border-radius:14px;padding:16px}
+.page.embed-cols .section > h2{font-size:15px;margin:0 0 4px}
+.page.embed-cols .section > .lead{margin:0 0 10px;font-size:12.5px}
+.page.embed-cols .help{margin:8px 0 0;padding:0 12px;border-radius:10px}
+.page.embed-cols .help summary{padding:8px 0;font-size:12.5px;font-weight:600;color:var(--muted)}
+.page.embed-cols .help[open] summary{color:var(--text)}
+.page.embed-cols .btn{padding:8px 13px}
+.page.embed-cols form{gap:10px}
+.page.embed-cols .grid2{grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr))}
+.page.embed-cols .section .check{margin:8px 0}
+.page.embed-cols:has(.steps) > .section,.page.embed-cols:has(.steps) > .steps,.page.embed-cols:has(.steps) > .skip{grid-column:1/-1}

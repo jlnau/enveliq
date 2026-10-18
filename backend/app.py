@@ -28,6 +28,7 @@ from .mail.microsoft import Microsoft
 from .mail.microsoft_routes import build_microsoft_router
 from .mail.routes import build_mail_router
 from .mail.extra_routes import build_extra_router
+from .mail.find_routes import build_find_router
 from .mail.task_routes import build_task_router
 from .mail.shipping import ShipBook
 from .mail.inbound import InboundBook
@@ -179,6 +180,8 @@ logger.propagate = False
 # again) is switched off. See docs/VAULT_KEY.md.
 VAULT_KEY_FILE = os.environ.get("ENVELIQ_VAULT_KEY_FILE", "").strip()
 VAULT_KEY_ENV = os.environ.get("ENVELIQ_VAULT_KEY", "").strip()
+if VAULT_KEY_ENV.upper().startswith("PASTE-YOUR"):      # the placeholder in the install file was never replaced: same as no key
+    VAULT_KEY_ENV = ""
 AUTO_UNLOCK = bool(VAULT_KEY_FILE or VAULT_KEY_ENV)
 
 
@@ -326,9 +329,17 @@ def try_auto_unlock() -> None:
         logger.info("Vault unlocked from the configured key")
 
 
+REQUIRE_VAULT_KEY = True       # a new install must be given a vault key; only the automatic tests switch this off
+
+NEED_VAULT_KEY = ("This server was not given a vault key. Make one with: openssl rand -hex 32 (or the Docker command in the setup guide), "
+                  "put it in the .env file as ENVELIQ_VAULT_KEY=..., keep a copy somewhere safe, then run: docker compose up -d. Then reload this page.")
+
+
 def vault_key_for_setup(passphrase: str | None) -> str:
-    """The secret the new vault is created with: the key file's key (made if absent) or the typed passphrase."""
+    """The secret the new vault is created with: the key file's key (made if absent). A new install without a vault key is refused."""
     if not AUTO_UNLOCK:
+        if REQUIRE_VAULT_KEY:
+            raise ValueError(NEED_VAULT_KEY)
         if not passphrase:
             raise ValueError("Enter a vault passphrase.")
         return passphrase
@@ -389,7 +400,7 @@ PAGE_CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 's
 # The inbox page is still the single-file prototype with inline script and
 # styles; it gets a looser policy until it is split into bundled files.
 APP_CSP = ("default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; "
-           "connect-src 'self'; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
+           "connect-src 'self'; frame-src 'self'; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
 
 
 @app.middleware("http")
@@ -397,7 +408,8 @@ async def secure_headers(request: Request, call_next):
     response: Response = await call_next(request)
     path = request.url.path
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
+    framed = request.method == "GET" and path.startswith("/api/") and path.endswith("/original/html") and "Content-Security-Policy" in response.headers
+    response.headers["X-Frame-Options"] = "SAMEORIGIN" if framed else "DENY"       # only the formatted email may be shown in a frame of our own page
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
     response.headers["Cache-Control"] = "no-store"
@@ -405,7 +417,8 @@ async def secure_headers(request: Request, call_next):
     response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
     if COOKIE_SECURE:
         response.headers["Strict-Transport-Security"] = "max-age=31536000"
-    response.headers["Content-Security-Policy"] = API_CSP if path.startswith("/api/") else (APP_CSP if path == "/" else PAGE_CSP)
+    if not framed:      # the formatted email brings its own, stricter policy (backend/mail/htmlview.py)
+        response.headers["Content-Security-Policy"] = API_CSP if path.startswith("/api/") else (APP_CSP if path == "/" else PAGE_CSP)
     return response
 
 
@@ -504,6 +517,9 @@ def delete_user_data(user_id: str) -> None:
     savedbook.forget_user(user_id)
     draftbook.forget_user(user_id)
     rulebook.forget_user(user_id)
+    finder = getattr(mail_ctx, "find_index", None)
+    if finder is not None:
+        finder.delete_user(user_id)                                     # their search word list, if they had one
     vault.set_global("enveliq-opened-v1:" + user_id, {})          # which emails this person has opened (the new-mail glow)
     vault.set_global("mail-view-v1:" + user_id, {})               # their saved layout
     vault.set_global("mail-context-v1:" + user_id, {})            # last selected email
@@ -671,6 +687,7 @@ mail_ctx = SimpleNamespace(
 )
 app.include_router(build_mail_router(mail_ctx))
 app.include_router(build_extra_router(mail_ctx))          # after the main router: shares its send limits
+app.include_router(build_find_router(mail_ctx))           # after the extra router: uses its summary queue
 app.include_router(build_task_router(mail_ctx))
 app.include_router(build_shipping_router(mail_ctx))
 app.include_router(build_rss_router(mail_ctx))
@@ -760,6 +777,7 @@ def status_endpoint():
     }
     if not unlocked:                      # only the setup and unlock pages ask, and only while the vault is closed
         out["auto_unlock"] = AUTO_UNLOCK
+        out["vault_key_needed"] = bool(REQUIRE_VAULT_KEY and not AUTO_UNLOCK and not initialized)
         out["auto_unlock_problem"] = _auto["problem"] if AUTO_UNLOCK else None
     return out
 
@@ -1020,9 +1038,16 @@ def resolve_message(account_id: str, message_id: str, outcome: str, user_id: str
     retained metadata/summaries and any temporary safe preview leases, so a failed action leaves the item
     in place. Raises BridgeError when the mailbox cannot be changed, and KeyError when the message is gone."""
     account = vault.get_account(account_id)
-    mail_service.apply_outcome(account, vault.get_message(account_id, message_id), outcome)
+    stored = vault.get_message(account_id, message_id)
+    found = bool(stored.get("found_until"))
+    if found:
+        # A kept search result: Reviewed only forgets it here. The mailbox is never changed, and nothing is filed under Reviewed.
+        if outcome not in ("reviewed", "expired"):
+            raise BridgeError("found_only_reviewed", "A found email can only be marked Reviewed. Open it in your mail app to archive or bin it.")
+    else:
+        mail_service.apply_outcome(account, stored, outcome)
     preview_leases.purge_message(account_id, message_id)
-    kept = review.kept_state_for(vault, user_id, outcome)
+    kept = None if found else review.kept_state_for(vault, user_id, outcome)
     if outcome != "expired":
         taskbook.close_message(user_id, account_id, message_id, "handled")
     if kept:

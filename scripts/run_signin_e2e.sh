@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 DATA=$(mktemp -d)
 SHOTS=${ENVELIQ_E2E_SHOTS:-$(mktemp -d)}
-ENVELIQ_DATA_DIR=$DATA ENVELIQ_SETUP_CODE=e2e-setup-code-12345 ENVELIQ_PORT=8799 ENVELIQ_SYNC_MINUTES=0 \
+ENVELIQ_VAULT_KEY=e2e-vault-key-0123456789abcdef0123456789abcdef ENVELIQ_DATA_DIR=$DATA ENVELIQ_SETUP_CODE=e2e-setup-code-12345 ENVELIQ_PORT=8799 ENVELIQ_SYNC_MINUTES=0 \
   ENVELIQ_PUBLIC_URL=http://localhost:8799 python3 run.py > "$DATA/server.log" 2>&1 &
 SERVER=$!
 trap 'kill $SERVER 2>/dev/null; rm -rf "$DATA"' EXIT

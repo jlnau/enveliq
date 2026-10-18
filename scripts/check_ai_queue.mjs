@@ -49,6 +49,8 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 760 }], ["phone", {
   check(name + ": an AI answer you are waiting for (Write help, Agent) shows in the bar", !(await bar.evaluate((e) => e.hidden)) && (await bar.innerText()).includes("an AI answer is on its way"));
   await paint({ waiting: 0, writing: 0, new_mail: 0 }, 0);
   check(name + ": and goes away when it arrives", await bar.evaluate((e) => e.hidden));
+  const card = await p.evaluate(() => { sq = { items: [], waiting: 0, writing: 0, notice: { text: "No AI model is set up yet." } }; return genBlock({ id: 1, real: { accountId: "a", messageId: "m" } }); });
+  check(name + ": an email with no summary offers a button and says why when it cannot be summarised", card.includes("data-gen=") && card.includes("No AI model is set up yet."));
   check(name + ": no sideways scrolling", await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
   check(name + ": no script errors", errors.length === 0);
   await p.close();

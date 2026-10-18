@@ -27,7 +27,7 @@ The registration is free and takes about five minutes, once Microsoft has given 
 ## What Enveliq does with the connection
 
 Same as for Bridge: it reads only the sender, subject and date of unread mail,
-fetches the full email only when you press View email (plain text, never saved),
+fetches the full email only when you press View email (shown as the sender formatted it, or as plain text; never saved; see [Reading the original email](ORIGINAL_EMAIL.md)),
 and changes your mailbox only when you press Reviewed, Archive or Bin, or when a
 [rule you made](MAIL_RULES.md) archives or marks as reviewed new mail from a sender you
 chose. Archive moves to the folder the service marks as archive (Gmail: All Mail) and

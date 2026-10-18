@@ -56,15 +56,14 @@ function stepper(current, labels) {
 }
 
 // ---------- the AI model panel (used by the guide and by Administration) ----------
-async function aiSetupPanel(me, onChange) {
+async function aiSetupPanel(me, onChange, { auto = false } = {}) {
   const status = await api("/ai/status");
   const isAdmin = me.role === "admin";
   const cfg = isAdmin ? await api("/ai/config").catch(() => null) : null;
   const out = h("div", { class: "ai-panel" });
   const result = h("div", { "aria-live": "polite" });
 
-  const privacy = h("div", { class: "alert info" },
-    h("strong", { text: "What the AI model sees" }),
+  const privacy = helpBox("What the AI model sees",
     h("p", { text: "For each new email, Enveliq sends the sender, the subject and the first part of the plain text (about 6,000 characters) to the AI server you choose below, and nothing else. The text is thrown away as soon as the summary comes back. Enveliq keeps only the summary, category, priority and a suggested task, encrypted."}),
     h("p", { text: "Attachments, images, links and your passwords are never sent. Pick a server you trust: one on your own network keeps your mail inside your home." }));
 
@@ -74,10 +73,10 @@ async function aiSetupPanel(me, onChange) {
   const showProblem = er => adviceBox("bad", er.message, AI_ADVICE[er.code] || []);
 
   async function runTest(button, body) {
-    button.disabled = true; result.replaceChildren(h("div", { class: "hint", text: "Asking the AI to summarise a made-up email. A local model can take up to a minute…" }));
+    if (button) button.disabled = true; result.replaceChildren(h("div", { class: "hint", text: "Asking the AI to summarise a made-up email. A local model can take up to a minute…" }));
     try { const r = await api("/ai/test", { method: "POST", body }); result.replaceChildren(showSample(r.result)); return true; }
     catch (er) { result.replaceChildren(showProblem(er)); return false; }
-    finally { button.disabled = false; }
+    finally { if (button) button.disabled = false; }
   }
 
   if (status.source === "environment") {
@@ -112,6 +111,30 @@ async function aiSetupPanel(me, onChange) {
   let url, model, key, consent, current = byId[savedProvider] || { id: "custom", cloud: false, url_example: "http://192.168.1.20:11434/v1/chat/completions" };
   const link = (href, text) => h("a", { href, target: "_blank", rel: "noopener noreferrer", text });
 
+  // Ask the AI server which models it has, so the person can pick one instead of working out its exact name.
+  function modelsFinder() {
+    const status = h("div", { class: "hint", "aria-live": "polite" });
+    const list = h("div", { class: "ai-models-list" });
+    const btn = h("button", { class: "btn", type: "button", text: "Find models" });
+    btn.addEventListener("click", async () => {
+      list.replaceChildren(); status.textContent = "";
+      if (!current.cloud && !url.value.trim()) { status.textContent = "Type the AI server's address first."; return; }
+      btn.disabled = true; status.textContent = "Asking the server…";
+      try {
+        const out = await api("/ai/models", { method: "POST", body: { provider: current.id, url: current.cloud ? current.url : url.value.trim(), api_key: key.value === "" ? null : key.value } });
+        // Each model is a button to tap, so there is nothing to type or work out.
+        const chips = out.models.slice(0, 60).map(m => h("button", { class: "chip", type: "button", "aria-pressed": String(model.value === m), text: m, onclick: () => {
+          model.value = m; model.dispatchEvent(new Event("input", { bubbles: true }));
+          for (const c of list.querySelectorAll(".chip")) c.setAttribute("aria-pressed", String(c.textContent === m));
+        } }));
+        list.append(...chips);
+        status.textContent = `${out.models.length} found. Tap one to use it.`;
+      } catch (er) { status.textContent = er.message || "Could not get the list. Type the model name instead."; }
+      btn.disabled = false;
+    });
+    return h("div", { class: "ai-models" }, h("div", { class: "row" }, btn, list), status);
+  }
+
   function drawProvider() {
     current = byId[pick.value] || current;
     const same = cfg && cfg.provider === current.id;
@@ -131,6 +154,7 @@ async function aiSetupPanel(me, onChange) {
             h("li", { text: "Paste the key below. It is stored encrypted inside Enveliq and never shown again." })),
           h("p", { text: "Using the API is billed by the company, separately from any chat subscription. Summaries are short, so the cost is normally small, but check their pricing page." })),
         richField("Model name", model, "The exact name of the model to use. Pick a small, fast one: summaries do not need the biggest model. Examples and the full list: ", link(current.models_url, "the models page"), ". Example: ", code(current.model_example)),
+        modelsFinder(),
         richField("Access key", key, keep ? "Leave empty to keep the saved key." : "Required."),
         h("label", { class: "check", for: "ai_consent" }, consent, h("span", {}, h("strong", { text: `I understand my email text will be sent to ${current.company || current.label}` }),
           h("div", { class: "hint", text: "You can switch this off any time by removing the AI settings or switching AI summaries off for a mailbox." }))));
@@ -152,17 +176,23 @@ async function aiSetupPanel(me, onChange) {
         h("p", { text: "Do not point Enveliq at an AI assistant that can run commands, edit files or control devices. Use a plain model server: Enveliq treats every email as untrusted, but a plain model cannot do anything even if an email tries to trick it." })),
       richField("Model name", model,
         "The exact name your server uses for the model. Ollama: run ", code("ollama list"), " and copy the NAME column. Other servers: open ", code("http://192.168.1.20:PORT/v1/models"), " in a browser and copy an ", code("id"), ". Small and fast is fine: a 7 to 8 billion parameter model is usually enough."),
+      modelsFinder(),
       richField("Access key (optional)", key,
         "Only if your AI server asks for a key or token. Most servers on a home network do not, so leave this empty. If you enter one it is stored encrypted and never shown again."));
   }
   drawProvider();
-  pick.addEventListener("change", () => { result.replaceChildren(); drawProvider(); });
+  pick.addEventListener("change", () => { result.replaceChildren(); drawProvider(); syncSubmit(); });
 
+  // In Administration, a model on your own network is tested and saved by itself as soon as its details are filled in. A cloud service keeps its button,
+  // because testing it sends a sample to that company and needs the person's tick first.
+  const submitBtn = h("button", { class: "btn primary", type: "submit", text: cfg && cfg.source === "saved" ? "Test and save changes" : "Test and save" });
+  const syncSubmit = () => { submitBtn.hidden = auto && !current.cloud; };
+  syncSubmit();
   const form = h("form", {},
     richField("AI service", pick, "Choose where the summaries are written. A model on your own network keeps your mail at home. A cloud service is often smarter and faster, but your email text is sent to that company."),
     holder,
     h("div", { class: "row" },
-      h("button", { class: "btn primary", type: "submit", text: cfg && cfg.source === "saved" ? "Test and save changes" : "Test and save" }),
+      submitBtn,
       cfg && cfg.source === "saved" ? h("button", { class: "btn danger", type: "button", text: "Remove AI settings", onclick: async () => {
         try { await api("/ai/config", { method: "DELETE" }); toast("AI settings removed"); onChange && onChange(); } catch (er) { toast(er.message); }
       } }) : null));
@@ -174,6 +204,12 @@ async function aiSetupPanel(me, onChange) {
     await api("/ai/config", { method: "PUT", body });
     toast("AI settings saved");
     if (onChange) onChange();
+  });
+  let autoTimer = null;
+  form.addEventListener("change", e => {
+    if (!auto || current.cloud || e.target === pick) return;
+    clearTimeout(autoTimer);
+    autoTimer = setTimeout(() => { if (form.isConnected && form.checkValidity()) form.requestSubmit(); }, 900);
   });
   const savedCloud = cfg && cfg.source === "saved" && byId[cfg.provider] && byId[cfg.provider].cloud;
   out.append(cfg && cfg.source === "saved" ? h("div", { class: "alert good" }, h("strong", { text: `AI is ready: ${cfg.model}` }),
@@ -226,8 +262,8 @@ async function mailboxAddPanel(me, opts = {}) {
 
   const unavailable = p => h("div", { class: "alert" }, h("strong", { text: `${p.label} cannot be connected` }), h("p", { text: p.unavailable_reason }));
 
-  const aiBox = () => ai.configured && opts.askAi ? h("label", { class: "check", for: "mb_ai" }, h("input", { id: "mb_ai", type: "checkbox" }), h("span", {}, h("strong", { text: "Summarise with the AI model" }),
-    h("div", { class: "hint", text: `Sends the plain text of each new email to your AI server (${ai.model}) to write the summary, then discards the text.` }))) : null;
+  const aiBox = () => ai.configured && opts.askAi ? h("label", { class: "check", for: "mb_ai" }, h("input", { id: "mb_ai", type: "checkbox", checked: true }), h("span", {}, h("strong", { text: "Summarise with the AI model" }),
+    h("div", { class: "hint", text: `Sends the plain text of each new email to your AI server (${ai.model}) to write the summary, then discards the text. It also follows the emails you send, to show Waiting for reply. You can switch either off later, on the mailbox's Edit page.` }))) : null;
   const identities = p => richField("Other addresses you send from (optional)", input("mb_ids", { placeholder: "work@example.com, alias@example.com", spellcheck: "false" }),
     `If this account has more than one address or alias, list them here, separated by commas. When an email arrived at one of them, your reply is sent from that address. Addresses that are not listed reply from the main address.`);
 
@@ -235,7 +271,7 @@ async function mailboxAddPanel(me, opts = {}) {
   async function connect(form, result, body, adviceFor) {
     result.replaceChildren();
     const extra = form.querySelector("#mb_ai");
-    if (extra) body.settings.ai_summaries = extra.checked;
+    if (extra) { body.settings.ai_summaries = extra.checked; if (extra.checked && isMail(body)) body.settings.waiting = true; }
     const created = await api("/accounts", { method: "POST", body });
     let check;
     try { check = await api(`/accounts/${created.id}/bridge/check`, { method: "POST", body: {} }); }
@@ -414,7 +450,7 @@ async function welcomePage(me, params) {
           h("button", { class: "btn primary", type: "button", text: label, onclick: async e => {
             e.target.disabled = true;
             try {
-              for (const a of accounts) await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), ai_summaries: ai.configured && useAi.checked } } });
+              for (const a of accounts) await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), ai_summaries: ai.configured && useAi.checked, ...(ai.configured && useAi.checked && isMail(a) ? { waiting: a.settings && a.settings.waiting === false ? false : true } : {}) } } });
               await go(2);
             } catch (er) { toast(er.message); e.target.disabled = false; }
           } }),

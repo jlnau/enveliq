@@ -8,7 +8,45 @@ let app = document.getElementById("app");
 let toastEl = null;
 // When these pages are shown inside the inbox page's pop-ups, the inbox page loads
 // this file with window.ENVELIQ_EMBED set and gives each page its own mount point.
-function setMount(el, toastNode) { app = el; toastEl = toastNode || null; }
+function setMount(el, toastNode) { app = el; toastEl = toastNode || null; watchPolish(el); }
+
+// ---------- one calm look for every page ----------
+// Two small tidy-ups applied to whatever a page draws, so all of Settings and Administration behave alike:
+//  1. A form whose only button is a plain "Save" saves by itself when a field changes, and the button goes away.
+//  2. Long explanations fold away behind "More about this": the first short sentence stays, the rest opens on demand.
+const polishWatched = new WeakSet();
+function watchPolish(root) {
+  if (!root || polishWatched.has(root) || typeof MutationObserver === "undefined") return;
+  polishWatched.add(root);
+  let queued = false;
+  new MutationObserver(() => { if (queued) return; queued = true; queueMicrotask(() => { queued = false; polish(root); }); }).observe(root, { childList: true, subtree: true });
+}
+function polish(root) {
+  for (const form of root.querySelectorAll("form:not([data-auto])")) {
+    const buttons = [...form.querySelectorAll("button[type=submit]")];
+    if (buttons.length !== 1 || buttons[0].textContent.trim() !== "Save") continue;
+    form.dataset.auto = "1";
+    const holder = buttons[0].parentElement;
+    buttons[0].remove();
+    if (holder && holder !== form && !holder.children.length && !holder.textContent.trim()) holder.remove();
+    let timer = null;
+    const run = () => { clearTimeout(timer); timer = setTimeout(() => { if (form.isConnected && form.checkValidity()) form.requestSubmit(); }, 500); };
+    form.addEventListener("change", run);
+  }
+  for (const el of root.querySelectorAll(".hint:not([data-fold]), p.lead:not([data-fold])")) {
+    el.dataset.fold = "1";
+    if (el.children.length || el.closest(".alert, details.help, .savedtag, [role=status], .page > .lead") || el.parentElement === root) continue;
+    const text = el.textContent.trim();
+    if (text.length < 150) continue;
+    const sentences = text.split(/(?<=[.!?])\s+/);
+    const first = sentences[0].length <= 140 ? sentences[0] : "";
+    const rest = first ? sentences.slice(1).join(" ") : text;
+    if (!rest) continue;
+    const fold = h("details", { class: "help" }, h("summary", { text: first ? "More about this" : "Read more" }), h("div", { class: "help-body" }, h("p", { class: "hint", text: rest })));
+    fold.firstChild.nextSibling.firstChild.dataset.fold = "1";
+    if (first) { el.textContent = first; el.after(fold); } else el.replaceWith(fold);
+  }
+}
 
 // ---------- tiny DOM helpers ----------
 function h(tag, attrs, ...children) {
@@ -61,7 +99,7 @@ function passwordRulesText(r) {
   const last = parts.pop();
   return "At least " + (parts.length ? parts.join(", ") + " and " : "") + last + (r.pw_forbid_username ? ", and not your username" : "") + ".";
 }
-function show(...nodes) { app.replaceChildren(...nodes); const f = app.querySelector("input:not([type=hidden]),button.primary"); if (f) f.focus(); }
+function show(...nodes) { app.replaceChildren(...nodes); if (window.ENVELIQ_EMBED) return; const f = app.querySelector("input:not([type=hidden]),button.primary"); if (f) f.focus(); }
 
 async function api(path, { method = "GET", body } = {}) {
   const opts = { method, credentials: "same-origin", headers: {} };
@@ -167,7 +205,7 @@ async function route() {
 
 // ---------- first run ----------
 function setupPage(status = {}) {
-  const auto = !!status.auto_unlock;
+  if (status.vault_key_needed) return vaultKeyNeededPage();
   const form = h("form", { novalidate: true },
     field("Setup code", input("setup_code", { autocomplete: "off", required: true, spellcheck: "false" }), "Shown in the server log and saved in setup-code.txt in Enveliq's data folder. It proves you control the server."),
     field("Your name", input("display_name", { autocomplete: "name" })),
@@ -175,22 +213,30 @@ function setupPage(status = {}) {
     field("Password", input("password", { type: "password", autocomplete: "new-password", required: true, minlength: 12 }), "At least 12 characters."),
     field("Confirm password", input("password2", { type: "password", autocomplete: "new-password", required: true })),
     h("div", { class: "divider", text: "Vault" }),
-    ...(auto ? [h("div", { class: "alert info" }, h("strong", { text: "Enveliq unlocks itself" }),
-      h("p", { text: "This server was given a vault key (ENVELIQ_VAULT_KEY or a key file), so there is no passphrase to remember and Enveliq starts without anyone typing anything. Keep a copy of that key somewhere safe and separate from your backups of the data folder: without it the data cannot be opened." }))] : [
-    field("Vault passphrase", input("passphrase", { type: "password", autocomplete: "off", required: true, minlength: 12 }),
-      "Encrypts everything Enveliq stores. You need it to unlock Enveliq after a restart. Store it somewhere safe and offline: it cannot be recovered."),
-    field("Confirm vault passphrase", input("passphrase2", { type: "password", autocomplete: "off", required: true }))]),
+    h("div", { class: "alert info" }, h("strong", { text: "Enveliq unlocks itself" }),
+      h("p", { text: "This server was given a vault key, so there is no passphrase to remember and Enveliq starts without anyone typing anything. Keep a copy of that key somewhere safe and separate from your backups of the data folder: without it the data cannot be opened." })),
     h("button", { class: "btn primary full", type: "submit", text: "Create administrator account" }),
     guideNote("install/after-install.md", "Not sure what to type?", "Open the first-time setup guide"));
   onSubmit(form, async () => {
     const v = id => form.querySelector("#" + id).value;
     if (v("password") !== v("password2")) throw new Error("The passwords don't match.");
-    if (!auto && v("passphrase") !== v("passphrase2")) throw new Error("The vault passphrases don't match.");
-    if (!auto && v("password") === v("passphrase")) throw new Error("Use a different vault passphrase from your password.");
-    const out = await api("/setup", { method: "POST", body: { setup_code: v("setup_code").trim(), display_name: v("display_name").trim() || null, username: v("username").trim(), password: v("password"), ...(auto ? {} : { passphrase: v("passphrase") }) } });
+    const out = await api("/setup", { method: "POST", body: { setup_code: v("setup_code").trim(), display_name: v("display_name").trim() || null, username: v("username").trim(), password: v("password") } });
     location.replace(out.next === "enroll_mfa" ? "/account?enroll=1" : "/");
   });
-  show(brandCard(h("h1", { text: "Set up Enveliq" }), h("p", { class: "lead", text: "Create the first administrator account and the vault passphrase. You can add other people afterwards." }), form));
+  show(brandCard(h("h1", { text: "Set up Enveliq" }), h("p", { class: "lead", text: "Create the first administrator account. You can add other people afterwards." }), form));
+}
+
+// A new install needs a vault key before anything else: say how to make one and where it goes.
+function vaultKeyNeededPage() {
+  const code = text => h("pre", { class: "codebox" }, h("code", { text }));
+  show(brandCard(h("h1", { text: "One thing first: a vault key" }),
+    h("p", { class: "lead", text: "Enveliq locks everything it keeps with a vault key, and unlocks itself with it after every restart. This server was not given one yet." }),
+    h("ol", {},
+      h("li", {}, "Make a key. On the server, run:", code("openssl rand -hex 32"), "No openssl? Run this instead:", code("docker run --rm alpine sh -c \"head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \\n'; echo\"")),
+      h("li", {}, h("strong", { text: "Save a copy in your password manager now." }), " If the .env file is ever lost, the key is the only way to open your data again."),
+      h("li", {}, "Put it in the .env file next to docker-compose.yml, on its own line:", code("ENVELIQ_VAULT_KEY=paste-your-key-here")),
+      h("li", {}, "Start Enveliq again:", code("docker compose up -d"), "Then reload this page.")),
+    guideNote("VAULT_KEY.md", "Need more help?", "Open the vault key guide")));
 }
 
 const KEY_FILE_PROBLEMS = {
@@ -376,7 +422,8 @@ function addChrome() {
 function mfaStep(methods) {
   const form = h("form", {},
     field(methods.includes("totp") ? "Code from your authenticator app" : "Recovery code",
-      input("code", { autocomplete: "one-time-code", inputmode: methods.includes("totp") ? "numeric" : "text", required: true, maxlength: 32 }),
+      input("code", { name: methods.includes("totp") ? "totp" : "recovery_code", type: "text", autocomplete: "one-time-code", inputmode: methods.includes("totp") ? "numeric" : "text",
+      autocapitalize: "off", spellcheck: "false", placeholder: methods.includes("totp") ? "6-digit code" : "Recovery code", "aria-label": methods.includes("totp") ? "Authenticator code (TOTP)" : "Recovery code", required: true, maxlength: 32 }),
       methods.includes("recovery") ? "Lost your phone? Enter one of your recovery codes instead." : null),
     h("button", { class: "btn primary full", type: "submit", text: "Verify" }));
   onSubmit(form, async () => {
@@ -394,7 +441,7 @@ function mfaStep(methods) {
 
 // ---------- signed-in chrome ----------
 function chrome(me, current, ...content) {
-  if (window.ENVELIQ_EMBED) return [h("div", { class: "page" }, content)];
+  if (window.ENVELIQ_EMBED) return [h("div", { class: "page embed-cols" }, content)];
   // Settings and Administration live in the pop-ups on the inbox page; these pages are only reached directly.
   const links = [h("a", { href: "/", text: "Inbox" })];
   links.push(h("a", { href: "#", text: "Sign out", onclick: async e => { e.preventDefault(); await api("/auth/logout", { method: "POST" }); location.replace("/login"); } }));
@@ -503,17 +550,24 @@ async function profilePage(me) {
         me.avatar_v ? h("button", { class: "btn small", type: "button", text: "Remove white background", onclick: async e => { try { e.target.disabled=true; const image=await removeLegacyAvatarWhite(me); const u=await api("/me/avatar", { method:"PUT", body:{ image } }); toast("White background removed");tell(u);redraw(); } catch (er) { toast(er.message);e.target.disabled=false; } } }) : null,
         me.avatar_v ? h("button", { class: "btn small", type: "button", text: "Remove", onclick: async () => { try { const u = await api("/me/avatar", { method: "DELETE" }); toast("Picture removed"); tell(u); redraw(); } catch (er) { toast(er.message); } } }) : null)),
     file);
-  const form = h("form", {},
+  const saved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
+  const form = h("div", {},
     h("div", { class: "grid2" },
       field("Your name", input("pf_name", { value: me.display_name && me.display_name !== me.username ? me.display_name : "", maxlength: 128, autocomplete: "name", placeholder: me.username }), "How you appear in Enveliq. Leave it empty to use your username."),
       field("Email address", input("pf_email", { type: "email", value: me.email || "", maxlength: 254, autocomplete: "email", placeholder: "Optional" }), "Not used to sign in. Nobody else can see it.")),
     field("About you", h("textarea", { id: "pf_about", rows: "3", maxlength: "500", placeholder: "Optional. A line other people in your Enveliq will see." , text: me.about || "" }), "Only people using this same Enveliq can see this."),
     h("label", { class: "check", for: "pf_people" }, h("input", { id: "pf_people", type: "checkbox", checked: me.show_in_people !== false }),
       h("span", {}, h("strong", { text: "Show me in the people list" }), h("div", { class: "hint", text: "Other people can pick you from the list when they start a message. Turn this off if you would rather not appear. You can still reply to anyone who writes to you." }))),
-    h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save profile" })));
-  onSubmit(form, async () => {
-    const u = await api("/me/profile", { method: "PATCH", body: { display_name: form.querySelector("#pf_name").value.trim(), email: form.querySelector("#pf_email").value.trim(), about: form.querySelector("#pf_about").value.trim(), show_in_people: form.querySelector("#pf_people").checked } });
-    toast("Profile saved"); tell(u);
+    h("p", { class: "hint" }, "Your choices save as you make them. ", saved));
+  let pending = null;
+  form.addEventListener("change", () => {
+    clearTimeout(pending);
+    pending = setTimeout(async () => {
+      try {
+        const u = await api("/me/profile", { method: "PATCH", body: { display_name: form.querySelector("#pf_name").value.trim(), email: form.querySelector("#pf_email").value.trim(), about: form.querySelector("#pf_about").value.trim(), show_in_people: form.querySelector("#pf_people").checked } });
+        saved.textContent = "Saved ✓"; saved.classList.add("show"); clearTimeout(saved._t); saved._t = setTimeout(() => saved.classList.remove("show"), 1800); tell(u);
+      } catch (er) { toast(er.message); }
+    }, 300);
   });
   show(h("h1", { text: "Profile" }),
     h("p", { class: "lead", text: "You only need a username and password to use Enveliq. Everything on this page is optional." }),
@@ -870,7 +924,7 @@ async function adminPage(me, only) {
   const [list, policy, sso] = await Promise.all([api("/admin/users"), api("/admin/auth-policy"), api("/admin/sso")]);
 
   const aiPanel = h("div", {}, h("p", { class: "hint", text: "Loading…" }));
-  const drawAi = async () => { try { aiPanel.replaceChildren(await aiSetupPanel(me, drawAi)); } catch (er) { aiPanel.replaceChildren(alertBox("bad", er.message)); } drawAttach(); };
+  const drawAi = async () => { try { aiPanel.replaceChildren(await aiSetupPanel(me, drawAi, { auto: true })); } catch (er) { aiPanel.replaceChildren(alertBox("bad", er.message)); } drawAttach(); };
   // Summaries of attached files: automatic with a local model; a cloud service needs the administrator's explicit yes.
   const attPanel = h("div", {});
   const drawAttach = async () => {
@@ -927,7 +981,7 @@ async function adminPage(me, only) {
       sync.editable ? "Between 2 and 1440. Enter 0 to turn automatic checking off; mail is then fetched only when someone presses Sync mail." : "This is set by ENVELIQ_SYNC_MINUTES in the server's environment, so it can only be changed there.")),
     h("p", { class: "hint", text: "Automatic checking runs only while Enveliq is unlocked. When Enveliq locks itself after a period of no use, it pauses until someone unlocks it. Each person can also switch it off for their own mailboxes on the Mailboxes page." }),
     sync.editable ? h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" })) : null) : null;
-  if (syncForm && sync.editable) onSubmit(syncForm, async () => { await api("/sync/config", { method: "PUT", body: { minutes: Number(syncForm.querySelector("#sync_min").value) } }); toast("Saved"); adminPage(me, only); });
+  if (syncForm && sync.editable) onSubmit(syncForm, async () => { await api("/sync/config", { method: "PUT", body: { minutes: Number(syncForm.querySelector("#sync_min").value) } }); toast("Saved"); });
   const rv = await api("/admin/review-settings").catch(() => null);
   const keepForm = rv ? h("form", {},
     field("Longest an email may stay in Reviewed or Archived (days)", input("rv_days", { type: "number", min: "1", max: "90", value: String(rv.max_days) }),
@@ -964,7 +1018,7 @@ async function adminPage(me, only) {
     const restore = st.in_use ? h("button", { class: "btn small", type: "button", text: "Restore the built-in prompt", onclick: () => savePrompt("") }) : null;
     promptPanel.replaceChildren(head,
       h("p", { class: "hint", text: "This is what the AI is told before every summary. It is shown here so nothing is hidden." }),
-      view(st.in_use ? "Your custom prompt (replaces the original)" : "Prompt (original)", st.in_use ? st.custom : st.default), fixedBox,
+      more("Show the prompt", view(st.in_use ? "Your custom prompt (replaces the original)" : "Prompt (original)", st.in_use ? st.custom : st.default), fixedBox),
       h("div", { class: "row" }, h("button", { class: "btn small", type: "button", text: "Edit built-in prompt", onclick: startEdit }), restore));
   };
   if (!only || only === "instr") drawPrompt();
@@ -974,15 +1028,17 @@ async function adminPage(me, only) {
     h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" }))) : null;
   if (instrForm) onSubmit(instrForm, async () => { await api("/admin/review-settings", { method: "PUT", body: { max_days: rv.max_days, instructions: instrForm.querySelector("#rv_instr").value } }); rv.instructions = instrForm.querySelector("#rv_instr").value; toast("Saved"); });
   const fe = (!only || only === "features") ? await api("/admin/features").catch(() => null) : null;
-  const featForm = fe ? h("form", {},
-    h("p", { class: "lead", text: "Everything beyond reading and sorting mail is optional. Switch off what you don't want anyone on this server to use. People can also switch features off for themselves, but they cannot switch on anything you have turned off." }),
-    ...Object.keys(fe.labels).map(k => h("label", { class: "check", for: "fe_" + k }, h("input", { id: "fe_" + k, type: "checkbox", checked: fe.flags[k] }),
-      h("span", {}, h("strong", { text: fe.labels[k] }), h("div", { class: "hint", text: FEATURE_HINTS[k] })))),
-    h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" }))) : null;
-  if (featForm) onSubmit(featForm, async () => {
-    const body = {}; for (const k of Object.keys(fe.labels)) body[k] = featForm.querySelector("#fe_" + k).checked;
-    await api("/admin/features", { method: "PUT", body }); toast("Saved. People see the change the next time their inbox refreshes.");
-  });
+  // Features: a tidy two-column checklist. Each tick is saved at once, so there is no Save button.
+  const featSaved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
+  const featForm = fe ? h("div", {},
+    h("p", { class: "lead" }, "Everything beyond reading and sorting mail is optional. Switch off what you don't want anyone on this server to use. People can also switch features off for themselves, but they cannot switch on anything you have turned off. Your choices save as you make them. ", featSaved),
+    h("div", { class: "featgrid" }, ...Object.keys(fe.labels).map(k => h("label", { class: "check featitem", for: "fe_" + k }, h("input", { id: "fe_" + k, type: "checkbox", checked: fe.flags[k], onchange: async e => {
+      const box = e.target, body = {};
+      for (const key of Object.keys(fe.labels)) body[key] = featForm.querySelector("#fe_" + key).checked;
+      try { await api("/admin/features", { method: "PUT", body }); featSaved.textContent = "Saved ✓"; featSaved.classList.add("show"); clearTimeout(featSaved._t); featSaved._t = setTimeout(() => featSaved.classList.remove("show"), 1800); }
+      catch (er) { box.checked = !box.checked; toast(er.message); }
+    } }),
+      h("span", {}, h("strong", { text: fe.labels[k] }), h("div", { class: "hint", text: FEATURE_HINTS[k] })))))) : null;
   const ag = (!only || only === "agent") ? await api("/admin/agent").catch(() => null) : null;
   const agForm = ag ? h("form", {},
     h("p", { class: "lead", text: "The Agent button opens a chat with the AI at the address set under AI model. Choose how it is used." }),
@@ -1040,6 +1096,7 @@ async function adminPage(me, only) {
   const gcfg = (!only || only === "reminders") ? await api("/admin/google").catch(() => null) : null;
   const gForm = gcfg ? h("form", {},
     h("p", { class: "lead", text: "Lets people connect their own Google Calendar so tasks are added and deleted instantly. Google needs you to register Enveliq once (free, about 10 minutes). Do these in order:" }),
+    more("Show the steps, one by one",
     h("ol", { class: "lead" },
       h("li", {}, "Copy the Redirect address below."),
       h("li", {}, "Make a project: ", h("a", { href: "https://console.cloud.google.com/projectcreate", target: "_blank", rel: "noopener noreferrer", text: "console.cloud.google.com/projectcreate" })),
@@ -1047,7 +1104,7 @@ async function adminPage(me, only) {
       h("li", {}, "Consent screen: ", h("a", { href: "https://console.cloud.google.com/auth/overview", target: "_blank", rel: "noopener noreferrer", text: "Google Auth Platform" }), ". Left menu: Audience (External, add everyone under Test users), Branding (home page and privacy policy = your Enveliq address), Audience again (Publish app), then Data access (add the scope https://www.googleapis.com/auth/calendar.app.created)."),
       h("li", {}, "Clients, Create client, Web application. Paste the Redirect address. Copy the Client ID and Client secret."),
       h("li", {}, "Paste them here, tick Allow Google Calendar and Save.")),
-    guideNote("CALENDAR.md", "Every click, and fixes for common errors:", "Google Calendar guide"),
+    guideNote("CALENDAR.md", "Every click, and fixes for common errors:", "Google Calendar guide")),
     h("label", { class: "check", for: "gc_on" }, h("input", { id: "gc_on", type: "checkbox", checked: gcfg.enabled }), h("span", {}, h("strong", { text: "Allow Google Calendar" }))),
     field("Redirect address (paste this into Google Cloud)", input("gc_redirect", { value: gcfg.redirect_uri, readonly: true })),
     h("div", { class: "grid2" }, field("Client ID", input("gc_id", { value: gcfg.client_id, spellcheck: "false", placeholder: "1234-abc.apps.googleusercontent.com" })),
@@ -1074,7 +1131,7 @@ async function adminPage(me, only) {
   if (ckForm && !ck.set_elsewhere) onSubmit(ckForm, async () => {
     const account_id = ckForm.querySelector("#ck_account").value || null;
     const allowed = ckForm.querySelector("#ck_allowed").value.split(/[\n,;]+/).map(x => x.trim()).filter(Boolean);
-    await api("/admin/check-address", { method: "PUT", body: { account_id, allowed } }); toast("Saved"); adminPage(me, only);
+    await api("/admin/check-address", { method: "PUT", body: { account_id, allowed } }); toast("Saved");
   });
   const bk = (!only || only === "backup") ? await api("/admin/backups").catch(() => null) : null;
   const bkSection = bk ? (() => {
@@ -1087,7 +1144,7 @@ async function adminPage(me, only) {
       h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" })));
     onSubmit(settings, async () => {
       await api("/admin/backups/settings", { method: "PUT", body: { daily: settings.querySelector("#bk_daily").checked, keep_days: Number(settings.querySelector("#bk_days").value) || 7 } });
-      toast("Saved"); reload();
+      toast("Saved");
     });
     const makeBtn = h("button", { class: "btn primary", type: "button", text: "Make a backup now", onclick: async () => {
       makeBtn.disabled = true;
@@ -1159,7 +1216,7 @@ async function adminPage(me, only) {
         numField("pw_sym", "Symbols", policy.pw_min_symbols, 0, 32, "Anything that is not a letter or number, like ! ? # % or a space.")),
       chkBox("pw_nouser", policy.pw_forbid_username, "Don't allow the username inside the password"),
       h("p", { class: "hint", id: "pw_preview", text: "Passwords must be: " + passwordRulesText(policy) }))),
-    h("div", {}, h("button", { class: "btn", type: "submit", text: "Save sign-in rules" })));
+    h("div", {}, h("button", { class: "btn", type: "submit", text: "Save" })));
   const pwNum = id => Number(pol.querySelector("#" + id).value) || 0;
   const pwRulesNow = () => ({ pw_min_length: Math.max(8, pwNum("pw_len")), pw_min_digits: pwNum("pw_dig"), pw_min_upper: pwNum("pw_up"), pw_min_lower: pwNum("pw_low"), pw_min_symbols: pwNum("pw_sym"), pw_forbid_username: pol.querySelector("#pw_nouser").checked });
   pol.addEventListener("input", () => { pol.querySelector("#pw_preview").textContent = "Passwords must be: " + passwordRulesText(pwRulesNow()); });
@@ -1232,6 +1289,7 @@ const FEATURE_HINTS = {
   address_book: "Remember names and email addresses (never email text) so they can be suggested when writing. Stored encrypted, one private book per person.",
   sent: "A read-only list of the last 14 days of sent mail, read from the mailbox when opened and never stored.",
   media: "Show pictures that are part of an email, preview picture attachments and save attachments, fetched only when asked for and never stored.",
+  find_mail: "Adds a Search all my mail button under the inbox search box. It asks each of your mail services to search the whole mailbox and lists every match as sender, subject and date only. Nothing found is stored. Press Summarise on a result to keep that one email in Found emails for 60 days, or until you press Reviewed. Your search words go only to your own mail service and are never logged.",
   all_mail: "Adds an All emails switch to the inbox that also lists mail you have already read, for the last 14 days (newest 100). Only the sender, subject and date are kept, encrypted. A summary is written only when you press Generate summary, which sends that email's text to your AI model.",
   subscriptions: "Follows your subscriptions and free trials. When a summary finds that an email is about one, Enveliq keeps the service, the price as written, how often it is charged and the renewal or trial-end date (never the email) in a Subscriptions list, shows what is coming up on Home, and can send a reminder a few days before. The AI only copies what the email says; Enveliq works out every date itself. Emails that carry a Be careful warning are never filed. No extra AI request is made.",
   travel: "Follows your trips. When a summary finds that an email is a booking, change or cancellation for a flight, a stay or a hire car, Enveliq keeps the provider, booking reference, places and dates and times (never the email) in a Trips list, groups them into trips, and can add them to the calendar you set up for tasks. The AI only copies what the email says; Enveliq works out every date and the grouping itself. Emails that carry a Be careful warning are never filed. No extra AI request is made.",
@@ -1242,33 +1300,81 @@ const FEATURE_HINTS = {
   messages: "Short messages between the people who use this Enveliq, one to one or in a small group. Each conversation is kept encrypted on this server and only the people in it can open it. Administrators cannot read other people's messages, and they are never shown to the AI model. Plain text only.",
   shipping: "Follows your online orders. When a summary finds that an email is about an order or a delivery, Enveliq keeps the shop, order number, carrier, tracking number, expected date and a few words about the items (never the email) in a Shipping list, and asks you on Home to confirm when a parcel is delivered. No extra AI request is made."
 };
+// ---------- Fast search (optional word list, per mailbox) ----------
+async function fastSearchSection() {
+  const body = h("div", {});
+  const sec = h("section", { class: "section" }, h("h2", { text: "Fast search" }),
+    h("p", { class: "gsub", text: "Makes searching all your old mail instant. It is off unless you turn it on." }), body);
+  let timer = null;
+  const confirming = new Set();
+  async function draw() {
+    clearTimeout(timer);
+    let r;
+    try { r = await api("/find/fast"); } catch (er) { body.replaceChildren(h("p", { class: "hint", text: "Fast search is not available right now." })); return; }
+    if (!r.mailboxes.length) { body.replaceChildren(h("p", { class: "hint", text: "Connect a mailbox first." })); return; }
+    const cards = r.mailboxes.map(m => {
+      const kids = [h("strong", { text: m.label }), h("div", { class: "hint", text: m.recommended ? "Recommended for Proton Mail, which is slow to search on its own." : "Not usually needed. This mail service already searches quickly." })];
+      if (m.enabled) {
+        const pct = m.total ? Math.min(100, Math.floor((m.done / m.total) * 100)) : 0;
+        kids.push(h("p", { role: "status", text: m.state === "ready" ? `Fast search is on. ${m.done.toLocaleString()} emails are ready to search.` : m.state === "failed" ? m.message : m.state === "waiting" ? m.message : `Getting ready: ${pct}% of your mail. Searching still works while this happens, just more slowly.` }),
+          h("div", { class: "row" },
+            h("button", { class: "btn", type: "button", text: "Rebuild", onclick: async () => { try { await api(`/find/fast/${m.account_id}/rebuild`, { method: "POST", body: {} }); toast("Rebuilding"); draw(); } catch (er) { toast(er.message); } } }),
+            h("button", { class: "btn", type: "button", text: "Turn off and delete", onclick: async () => { try { await api(`/find/fast/${m.account_id}`, { method: "PUT", body: { enabled: false } }); toast("Fast search is off and its word list is deleted"); draw(); } catch (er) { toast(er.message); } } })));
+        if (m.state === "building") timer = setTimeout(() => { if (sec.isConnected) draw(); }, 3000);
+      } else if (confirming.has(m.account_id)) {
+        const tick = h("input", { id: "fs_" + m.account_id, type: "checkbox" });
+        const go = h("button", { class: "btn primary", type: "button", text: "Turn on Fast search", disabled: true, onclick: async () => { try { await api(`/find/fast/${m.account_id}`, { method: "PUT", body: { enabled: true, agree: true } }); confirming.delete(m.account_id); toast("Fast search is on. It will get ready in the background."); draw(); } catch (er) { toast(er.message); } } });
+        tick.addEventListener("change", () => { go.disabled = !tick.checked; });
+        kids.push(alertBox("info", "Enveliq will keep a private, locked list of the words in your emails so it can search them quickly. Your emails themselves are not kept. Turn this off at any time and the list is deleted."),
+          h("label", { class: "check", for: "fs_" + m.account_id }, tick, h("span", {}, h("strong", { text: "I understand" }))),
+          h("div", { class: "row" }, go, h("button", { class: "btn", type: "button", text: "Cancel", onclick: () => { confirming.delete(m.account_id); draw(); } })));
+      } else {
+        kids.push(h("div", { class: "row" }, h("button", { class: "btn", type: "button", text: "Turn on", onclick: () => { confirming.add(m.account_id); draw(); } })));
+      }
+      return h("div", { class: "fs-box" }, ...kids);
+    });
+    body.replaceChildren(...cards);
+  }
+  await draw();
+  return sec;
+}
 async function generalPage(me) {
   const p = await api("/me/preferences");
   const fx = await api("/me/features").catch(() => null);
-  const box = (id, checked, title, hint) => h("label", { class: "check", for: id }, h("input", { id, type: "checkbox", checked }), h("span", {}, h("strong", { text: title }), h("div", { class: "hint", text: hint })));
-  const form = h("form", {},
-    h("h2", { text: "Sending replies" }),
-    box("undo_on", p.undo_send_seconds > 0, "Undo send", "Hold each reply for a short moment before it leaves, so you can take it back. While it waits, an Undo button stays at the bottom of the screen, even if you move to another page."),
-    more("How long to hold replies",
-      field("Hold replies for (seconds)", input("undo_secs", { type: "number", min: "1", max: "60", value: String(p.undo_send_seconds || 10) }),
-        "From 1 to 60 seconds. Switch Undo send off to send replies straight away. If the server restarts while a reply is waiting, that reply is not sent.")),
-    h("h2", { text: "Reviewed and Archived lists" }),
-    box("keep_reviewed", p.keep_reviewed, "Keep a Reviewed list", "When you press Reviewed, the email is marked read in your mailbox as usual, and Enveliq also keeps its summary in a Reviewed list so you can look again."),
-    box("keep_archived", p.keep_archived, "Keep an Archived list", "The same for Archive: the email moves to your mailbox's archive and its summary stays in an Archived list."),
-    more("How long to keep them",
-      field("Keep them for (days)", input("keep_days", { type: "number", min: "1", max: String(p.max_days), value: String(p.keep_days) }),
-        `After this many days the summary is deleted from Enveliq. Your administrator allows up to ${p.max_days} days. Your mailbox itself is not affected.`)),
-    h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" })));
-  onSubmit(form, async () => {
-    const secs = Math.max(1, Math.min(60, Math.round(Number(form.querySelector("#undo_secs").value) || 10)));
-    await api("/me/preferences", { method: "PUT", body: { keep_reviewed: form.querySelector("#keep_reviewed").checked, keep_archived: form.querySelector("#keep_archived").checked, keep_days: Number(form.querySelector("#keep_days").value), instructions: p.instructions, undo_send_seconds: form.querySelector("#undo_on").checked ? secs : 0 } });
-    toast("Saved. Your inbox updates the next time it refreshes.");
-  });
+  // Everything here saves as soon as it is changed, so there is no Save button.
+  const saved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
+  const tick = (id, checked, title) => h("label", { class: "gopt", for: id }, h("input", { id, type: "checkbox", checked }), h("span", { text: title }));
+  const pick = (id, options, current, unit = "") => {
+    const list = options.slice();
+    if (!list.some(o => o[0] === current)) list.push([current, current + unit]);
+    return h("select", { id, name: id }, list.sort((x, y) => x[0] - y[0]).map(([v, t]) => h("option", { value: String(v), text: t, selected: v === current })));
+  };
+  const lab = (id, text, el) => h("div", {}, h("label", { class: "glab", for: id, text }), el);
+  const card = (title, sub, ...kids) => h("section", { class: "section gcard" }, h("h2", {}, title, title === "Sending replies" ? saved : null), sub ? h("p", { class: "gsub", text: sub }) : null, ...kids);
+  const undoSel = pick("undo_secs", [[0, "Off"], [5, "5 seconds"], [10, "10 seconds"], [15, "15 seconds"], [20, "20 seconds"], [30, "30 seconds"], [60, "60 seconds"]], p.undo_send_seconds || 0, " seconds");
+  const daysSel = pick("keep_days", [7, 14, 30, 60, 90, 180, 365].filter(d => d <= p.max_days).map(d => [d, d + " days"]), p.keep_days, " days");
+  const sendSec = card("Sending replies", "A short pause lets you change your mind. Pick Off to send straight away.", lab("undo_secs", "Undo send window", undoSel));
+  const keepSec = card("Reviewed and Archived", `Keep a list so you can look again. Your administrator allows up to ${p.max_days} days.`,
+    tick("keep_reviewed", p.keep_reviewed, "Keep a Reviewed list"), tick("keep_archived", p.keep_archived, "Keep an Archived list"), lab("keep_days", "Keep them for", daysSel));
+  const q = id => sendSec.querySelector(id) || keepSec.querySelector(id);
+  let saving = null;
+  const savePrefs = () => {
+    clearTimeout(saving);
+    saving = setTimeout(async () => {
+      try {
+        await api("/me/preferences", { method: "PUT", body: { keep_reviewed: q("#keep_reviewed").checked, keep_archived: q("#keep_archived").checked, keep_days: Number(q("#keep_days").value), instructions: p.instructions, undo_send_seconds: Number(q("#undo_secs").value) } });
+        saved.textContent = "Saved ✓"; saved.classList.add("show"); clearTimeout(saved._t); saved._t = setTimeout(() => saved.classList.remove("show"), 1800);
+      } catch (er) { toast(er.message); }
+    }, 350);
+  };
+  sendSec.addEventListener("change", savePrefs); keepSec.addEventListener("change", savePrefs);
   const featSection = fx ? featuresSection(me, fx) : null;
-  const exportSection = h("section", { class: "section" }, h("h2", { text: "Your data" }),
-    h("p", { class: "lead", text: "Download everything Enveliq keeps about you as one file you can read: your lists, summaries, people and settings. It never holds passwords or keys, or anyone else's mail." }),
+  const fastSection = fx && fx.effective.find_mail ? await fastSearchSection().catch(() => null) : null;
+  if (fastSection) fastSection.classList.add("gcard");
+  const exportSection = card("Your data", "A copy of your summaries, notes and settings. It never holds passwords or keys, or anyone else's mail.",
     h("div", {}, h("a", { class: "btn", href: `${API}/me/export`, download: "", text: "Export my data" })));
-  show(...chrome(me, "general", h("h1", { text: "General" }), h("p", { class: "lead", text: "The everyday choices. The defaults work well, so you can leave everything here as it is." }), h("section", { class: "section" }, form), featSection, exportSection));
+  const cols = [h("div", { class: "gcol" }, sendSec, keepSec), h("div", { class: "gcol wide" }, featSection, fastSection, exportSection)];
+  show(...chrome(me, "general", window.ENVELIQ_EMBED ? null : h("h1", { text: "General" }), h("div", { class: "gcols" }, ...cols)));
 }
 // ---------- reminders (everyone) ----------
 function ago(ts) {
@@ -1489,17 +1595,21 @@ async function syncPage(me, fresh) {
 function featuresSection(me, fx) {
   const rows = Object.keys(fx.labels).map(k => {
     const allowed = fx.admin[k];
-    return h("label", { class: "check", for: "uf_" + k }, h("input", { id: "uf_" + k, type: "checkbox", checked: allowed && fx.user[k], disabled: !allowed }),
-      h("span", {}, h("strong", { text: fx.labels[k] }), h("div", { class: "hint", text: allowed ? FEATURE_HINTS[k] : "Turned off by your administrator." })));
+    return h("label", { class: "gopt", for: "uf_" + k, title: allowed ? "" : "Turned off by your administrator." }, h("input", { id: "uf_" + k, type: "checkbox", checked: allowed && fx.user[k], disabled: !allowed }),
+      h("span", { text: fx.labels[k].replace(/\s*\(.*\)\s*$/, "") }));
   });
-  const form = h("form", {},
-    h("p", { class: "lead", text: "Switch off anything you don't want to see. If you only want your inbox, turn them all off." }), ...rows,
-    h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" })));
-  onSubmit(form, async () => {
-    const body = {}; for (const k of Object.keys(fx.labels)) if (fx.admin[k]) body[k] = form.querySelector("#uf_" + k).checked;
-    await api("/me/features", { method: "PUT", body }); toast("Saved. Your inbox updates the next time it refreshes.");
+  const explain = more("What each one does", ...Object.keys(fx.labels).map(k => h("p", { class: "hint" }, h("strong", { text: fx.labels[k].replace(/\s*\(.*\)\s*$/, "") + ". " }), fx.admin[k] ? FEATURE_HINTS[k] : "Turned off by your administrator.")));
+  const saved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
+  const form = h("div", {},
+    h("p", { class: "gsub" }, "Show or hide parts of Enveliq. Saves as you tick. ", saved),
+    h("div", { class: "gfeat" }, ...rows), explain);
+  form.addEventListener("change", async e => {
+    const box = e.target, body = {};
+    for (const k of Object.keys(fx.labels)) if (fx.admin[k]) body[k] = form.querySelector("#uf_" + k).checked;
+    try { await api("/me/features", { method: "PUT", body }); saved.textContent = "Saved ✓"; saved.classList.add("show"); clearTimeout(saved._t); saved._t = setTimeout(() => saved.classList.remove("show"), 1800); }
+    catch (er) { box.checked = !box.checked; toast(er.message); }
   });
-  return h("section", { class: "section" }, h("h2", { text: "Features" }), form);
+  return h("section", { class: "section gcard" }, h("h2", { text: "Features" }), form);
 }
 
 // ---------- address book ----------
@@ -1654,7 +1764,7 @@ async function savedPage(me) {
   let state = { signature: "", replies: [], limits: { signature: 1000, replies: 30, title: 60, text: 3000 } };
   let editing = null;
   const sig = h("textarea", { id: "sv_sig", rows: "4", "aria-label": "Your signature" });
-  const sigSave = h("button", { class: "btn primary", type: "button", text: "Save signature" });
+  const sigSaved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
   const list = h("div", { class: "ab-list" });
   const title = h("input", { id: "sv_title", type: "text", placeholder: "A short name, for example \u201cRunning late\u201d", "aria-label": "Name of the saved reply", autocomplete: "off" });
   const text = h("textarea", { id: "sv_text", rows: "4", placeholder: "The words to insert", "aria-label": "Text of the saved reply" });
@@ -1671,8 +1781,9 @@ async function savedPage(me) {
   }
   function reset() { editing = null; title.value = ""; text.value = ""; save.textContent = "Save reply"; cancel.hidden = true; }
   cancel.addEventListener("click", reset);
-  sigSave.addEventListener("click", async () => {
-    try { state = await api("/me/saved/signature", { method: "PUT", body: { text: sig.value } }); paint(); toast(state.signature ? "Signature saved" : "Signature removed"); } catch (er) { toast(er.message); }
+  // The signature saves by itself when you click away from it.
+  sig.addEventListener("change", async () => {
+    try { state = await api("/me/saved/signature", { method: "PUT", body: { text: sig.value } }); paint(); sigSaved.textContent = "Saved ✓"; sigSaved.classList.add("show"); clearTimeout(sigSaved._t); sigSaved._t = setTimeout(() => sigSaved.classList.remove("show"), 1800); } catch (er) { toast(er.message); }
   });
   save.addEventListener("click", async () => {
     try {
@@ -1685,9 +1796,9 @@ async function savedPage(me) {
   paint();
   const wrap = h("div", {},
     h("div", { class: "sv-block" },
-      h("h2", { text: "Your signature" }),
+      h("h2", {}, "Your signature ", sigSaved),
       h("p", { class: "lead", text: "Put at the bottom of every new email and reply when you open the box. You can change or delete it in the message box before you send. Leave this empty for no signature." }),
-      sig, h("div", { class: "row" }, sigSave)),
+      sig),
     h("div", { class: "sv-block" },
       h("h2", { text: "Saved replies" }),
       h("p", { class: "lead", text: "Short pieces of text you use often. In the message box, choose one from \u201cSaved reply\u201d and it is put in where your cursor is. Only you can see them." }),
@@ -1766,104 +1877,137 @@ async function writingHelpSection() {
 // ---------- mailboxes (Proton Bridge and app-password services) ----------
 const BRIDGE_ERRORS = { ok: "Working" };
 const MAILBOX_COLOR_CHOICES = [["", "Automatic"], ["blue", "Blue"], ["green", "Green"], ["orange", "Orange"], ["pink", "Pink"], ["red", "Red"], ["teal", "Teal"], ["purple", "Purple"], ["lime", "Lime"]];
-async function mailboxesPage(me, diagId) {
+const MAILBOX_HEX = { blue: "#2563c9", green: "#2e9d6a", orange: "#c26a1b", pink: "#c2467f", red: "#c8453c", teal: "#1f8f95", purple: "#7c4dcc", lime: "#6a9a1f" };
+const MAILBOX_AUTO = ["blue", "green", "orange", "pink", "red", "teal", "purple", "lime"];
+const mailboxHex = a => MAILBOX_HEX[(a.settings && a.settings.color) || ""] || MAILBOX_HEX[MAILBOX_AUTO[Math.abs([...String(a.id)].reduce((s, c) => s * 31 + c.charCodeAt(0), 7)) % MAILBOX_AUTO.length]];
+// The coloured initial. The colour is set through the page's style object, because a strict policy forbids style attributes.
+function mailboxLogo(a) { const el = h("div", { class: "mblogo", "aria-hidden": "true", text: (a.display_name || a.email_address || "?").trim().charAt(0).toUpperCase() }); el.style.background = mailboxHex(a); return el; }
+const agoText = at => { const m = Math.max(0, Math.round((Date.now() / 1000 - at) / 60)); return m < 1 ? "just now" : m === 1 ? "1 minute ago" : m < 60 ? `${m} minutes ago` : m < 120 ? "1 hour ago" : m < 2880 ? `${Math.round(m / 60)} hours ago` : `${Math.round(m / 1440)} days ago`; };
+// One line that says how a mailbox is doing, in plain words.
+function mailboxState(a, auto) {
+  const last = auto.accounts && auto.accounts[a.id];
+  if (last && last.ok === false) return { bad: true, text: "Needs you: the last check did not work. Open Edit to see why." };
+  if (last && last.ok) return { text: `Up to date, checked ${agoText(last.at)}${last.added ? `, ${last.added} new` : ""}` };
+  return { text: "Not checked yet. Press Sync now." };
+}
+async function mailboxesPage(me, diagId, editId) {
   const accounts = (await api("/accounts")).filter(a => a.owner_user_id === me.id);
   const auto = await api("/sync/status").catch(() => ({ enabled: false, accounts: {} }));
   const ai = await api("/ai/status").catch(() => ({ configured: false }));
-  const out = h("div", {});
 
   if (diagId) {
     const a = accounts.find(x => x.id === diagId);
-    if (a) return diagnosticsPage(me, a, () => mailboxesPage(me));
+    if (a) return diagnosticsPage(me, a, () => mailboxesPage(me, null, a.id));
+  }
+  if (editId) {
+    const a = accounts.find(x => x.id === editId);
+    if (a) return mailboxEditPage(me, a, { auto, ai });
   }
   const addPanel = await mailboxAddPanel(me, { ai, askAi: true, onAdded: async () => { mailboxesPage(me); } });
+  const addSection = h("section", { class: "section", id: "mb_add", hidden: !!accounts.length }, h("h2", { text: "Add a mailbox" }),
+    h("p", { class: "lead" }, "Enveliq reads only the headers of unread mail, shows the original on request, and never stores message bodies. The ", h("a", { href: "/welcome", text: "Setup guide" }), " explains every field."),
+    h("p", { class: "hint guide-note" }, "Step by step on the Enveliq website: ", guide("install/after-install.md#step-4-connect-your-email", "Connecting your email"), " · ", guide("EMAIL_SERVICES.md", "Gmail, iCloud, Yahoo and others"), " · ", guide("MICROSOFT.md", "Outlook and Microsoft 365"), " · ", guide("PROTON_BRIDGE.md", "Proton Mail")), addPanel);
+  const addButton = h("button", { class: "btn primary", type: "button", id: "mb_add_btn", text: "+ Add a mailbox", onclick: () => { addSection.hidden = !addSection.hidden; if (!addSection.hidden) addSection.scrollIntoView({ block: "start" }); } });
 
   const cards = accounts.map(a => {
     const status = h("div", { class: "hint" });
-    const run = async (button, fn) => { button.disabled = true; try { await fn(); } catch (er) { status.replaceChildren(alertBox("bad", er.message)); } finally { button.disabled = false; } };
-    const check = h("button", { class: "btn small", type: "button", text: "Check connection", onclick: e => run(e.target, async () => {
-      const r = await api(`/accounts/${a.id}/bridge/check`, { method: "POST", body: {} });
-      status.replaceChildren(...["imap", "smtp"].map(k => alertBox(r[k] === "ok" ? "good" : "bad", `${k.toUpperCase()}: ${r[k] === "ok" ? "working" : (r[k + "_message"] || r[k])}`)));
-    }) });
-    const sync = h("button", { class: "btn small primary", type: "button", text: "Sync now", onclick: e => run(e.target, async () => {
-      const r = await api(`/accounts/${a.id}/sync`, { method: "POST", body: {} });
-      let summarised = 0, aiProblem = null;
-      if (ai.configured && a.settings && a.settings.ai_summaries) {
-        try {
-          for (let i = 0; i < 5; i++) {
-            e.target.textContent = `Summarising… ${summarised}`;
-            const s = await api(`/accounts/${a.id}/summarise`, { method: "POST", body: {} });
-            summarised += s.summarised;
-            if (!s.remaining || !s.summarised) break;
-          }
-        } catch (er) { aiProblem = er.message; }
-        e.target.textContent = "Sync now";
-      }
-      status.replaceChildren(...[alertBox("good", `${r.added} new${r.removed ? `, ${r.removed} no longer unread removed` : ""}${summarised ? `, ${summarised} summarised` : ""}.`), aiProblem ? alertBox("bad", `AI summaries: ${aiProblem}`) : null].filter(Boolean));
-    }) });
-    const remove = h("button", { class: "btn small danger", type: "button", text: "Remove", onclick: e => confirmThen(e.target, `Remove ${a.display_name} and its saved summaries? Your mail stays with your email service.`, async () => {
-      try { await api(`/accounts/${a.id}`, { method: "DELETE" }); toast("Mailbox removed"); mailboxesPage(me); } catch (er) { toast(er.message); }
-    }) });
-    const diag = h("button", { class: "btn small", type: "button", text: "Diagnostics", onclick: () => mailboxesPage(me, a.id) });
-    // Rename: the name is only a label. It is shown on the mail list and in reports; nothing else changes.
-    const nameSlot = h("div", {});
-    const rename = h("button", { class: "btn small", type: "button", text: "Rename", "aria-label": `Rename ${a.display_name}`, onclick: () => {
-      const box = h("input", { id: `rn_${a.id}`, type: "text", maxlength: 128, value: a.display_name, "aria-label": "New name for this mailbox", autocomplete: "off" });
-      const form = h("form", { class: "row rename-form" }, box,
-        h("button", { class: "btn small primary", type: "submit", text: "Save name" }),
-        h("button", { class: "btn small", type: "button", text: "Cancel", onclick: () => nameSlot.replaceChildren() }));
-      onSubmit(form, async () => {
-        const name = box.value.trim();
-        if (!name) { status.replaceChildren(alertBox("bad", "Type a name for this mailbox.")); return; }
-        if (name === a.display_name) { nameSlot.replaceChildren(); return; }
-        await api(`/accounts/${a.id}`, { method: "PATCH", body: { display_name: name } });
-        toast("Mailbox renamed"); mailboxesPage(me);
-      });
-      nameSlot.replaceChildren(form); box.focus(); box.select();
-    } });
-    // Colour of the small label that shows which mailbox an email came from. "Automatic" lets Enveliq pick one.
-    const colorSel = h("select", { id: `col_${a.id}`, "aria-label": `Label colour for ${a.display_name}`, onchange: e => run(e.target, async () => {
-      const color = e.target.value;
-      await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), color } } });
-      a.settings = { ...(a.settings || {}), color };
-      toast(color ? `Label colour set to ${color}` : "Label colour is automatic");
-    }) }, MAILBOX_COLOR_CHOICES.map(([v, t]) => h("option", { value: v, text: t, selected: ((a.settings && a.settings.color) || "") === v })));
-    const colorField = h("label", { class: "color-pick" }, "Label colour ", colorSel);
-    const aiOn = !!(a.settings && a.settings.ai_summaries);
-    const aiToggle = ai.configured ? h("button", { class: "btn small", type: "button", text: aiOn ? "Turn AI summaries off" : "Turn AI summaries on", onclick: e => run(e.target, async () => {
-      await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), ai_summaries: !aiOn } } });
-      toast(aiOn ? "AI summaries are off" : "AI summaries are on"); mailboxesPage(me);
-    }) }) : null;
-    const waitOn = !!(a.settings && a.settings.waiting);
-    const waitToggle = ai.configured && isMail(a) ? h("button", { class: "btn small", type: "button", text: waitOn ? "Turn Waiting for reply off" : "Turn Waiting for reply on", onclick: e => {
-      if (waitOn) return run(e.target, async () => {
-        await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), waiting: false } } });
-        toast("Waiting for reply is off"); mailboxesPage(me);
-      });
-      return confirmThen(e.target, "Waiting for reply watches this mailbox's Sent folder and shows each email you send from now on to your AI model once, to decide whether you are waiting for an answer. It does not read anything already in Sent; to follow an older email, press Follow for a reply on it in Sent. Only a short note is kept, never the email. If your AI model is a cloud service, the text of your sent emails goes to it. Turn it on?", () => run(e.target, async () => {
-        await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), waiting: true } } });
-        toast("Waiting for reply is on. It starts at the next sync."); mailboxesPage(me);
-      }), "Yes, turn it on", "primary");
-    } }) : null;
-    const autoOn = !(a.settings && a.settings.auto_sync === false);
-    const last = auto.accounts && auto.accounts[a.id];
-    const autoNote = !auto.enabled ? "Automatic sync is turned off on this server." : !autoOn ? "Automatic sync is off for this mailbox." :
-      last ? (last.ok ? `Last automatic check ${new Date(last.at * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}: ${last.added} new${last.removed ? `, ${last.removed} removed` : ""}.` : `Last automatic check failed (${last.error}). It tries again later.`) : `Checks every ${auto.minutes} minutes while Enveliq is unlocked.`;
-    const autoToggle = auto.enabled ? h("button", { class: "btn small", type: "button", text: autoOn ? "Turn automatic sync off" : "Turn automatic sync on", onclick: e => run(e.target, async () => {
-      await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), auto_sync: !autoOn } } });
-      toast(autoOn ? "Automatic sync is off" : "Automatic sync is on"); mailboxesPage(me);
-    }) }) : null;
-    return h("section", { class: "section" },
-      h("div", { class: "item" }, h("div", {}, h("strong", { text: a.display_name }), h("div", { class: "meta", text: `${a.email_address} · ${a.auth_method === "proton_bridge" ? `Proton Bridge at ${a.server}:${a.port}` : `${a.provider} (app password)`}${ai.configured ? ` · AI summaries ${aiOn ? "on" : "off"}` : ""}` }), h("div", { class: "hint", text: autoNote }), colorField, nameSlot),
-        isMail(a) ? h("div", { class: "row" }, check, sync, rename, autoToggle, aiToggle, waitToggle, diag, remove) : h("div", { class: "row" }, rename, remove)), status);
+    const st = mailboxState(a, auto);
+    const sync = h("button", { class: "btn small", type: "button", text: "Sync now", onclick: e => syncNow(a, ai, e.target, status) });
+    return h("div", { class: "mbcard", "data-mailbox": a.id },
+      h("div", { class: "mbwho" }, mailboxLogo(a),
+        h("div", {}, h("strong", { text: a.display_name }), h("div", { class: "meta", text: a.email_address }))),
+      h("div", { class: "mbstate" }, h("span", { class: st.bad ? "mbdot amber" : "mbdot" }), st.text),
+      status,
+      h("div", { class: "mbacts" }, isMail(a) ? sync : null, h("button", { class: "btn small", type: "button", "aria-label": `Edit ${a.display_name}`, text: "Edit", onclick: () => mailboxesPage(me, null, a.id) })));
   });
 
   show(...chrome(me, "mailboxes",
-    h("h1", { text: "Mailboxes" }),
-    ...(cards.length ? cards : [h("section", { class: "section" }, h("p", { class: "lead", text: "No mailboxes yet. Add one below. Gmail, iCloud, Yahoo, Fastmail, Proton Mail and any IMAP service work." }))]),
-    h("section", { class: "section" }, h("h2", { text: "Add a mailbox" }),
-      h("p", { class: "lead" }, "Enveliq reads only the headers of unread mail, shows the original on request, and never stores message bodies. The ", h("a", { href: "/welcome", text: "Setup guide" }), " explains every field."),
-      h("p", { class: "hint guide-note" }, "Step by step on the Enveliq website: ", guide("install/after-install.md#step-4-connect-your-email", "Connecting your email"), " · ", guide("EMAIL_SERVICES.md", "Gmail, iCloud, Yahoo and others"), " · ", guide("MICROSOFT.md", "Outlook and Microsoft 365"), " · ", guide("PROTON_BRIDGE.md", "Proton Mail")), addPanel), out));
+    h("div", { class: "mbhead" }, h("div", {}, h("h1", { text: "Your mailboxes" }), h("p", { class: "lead", text: accounts.length ? "The email accounts Enveliq checks for you." : "No mailboxes yet. Add one to begin. Gmail, iCloud, Yahoo, Fastmail, Proton Mail and any IMAP service work." })), addButton),
+    accounts.length ? h("div", { class: "mbgrid" }, cards) : null,
+    accounts.length ? h("p", { class: "hint", text: "Checking for new mail, AI summaries and Waiting for reply are on for every new mailbox. Press Edit to change them for one mailbox." }) : null,
+    addSection));
+}
+async function syncNow(a, ai, button, status) {
+  button.disabled = true; const label = button.textContent;
+  try {
+    const r = await api(`/accounts/${a.id}/sync`, { method: "POST", body: {} });
+    let summarised = 0, aiProblem = null;
+    if (ai.configured && a.settings && a.settings.ai_summaries) {
+      try {
+        for (let i = 0; i < 5; i++) {
+          button.textContent = `Summarising… ${summarised}`;
+          const s = await api(`/accounts/${a.id}/summarise`, { method: "POST", body: {} });
+          summarised += s.summarised;
+          if (!s.remaining || !s.summarised) break;
+        }
+      } catch (er) { aiProblem = er.message; }
+    }
+    status.replaceChildren(...[alertBox("good", `${r.added} new${r.removed ? `, ${r.removed} no longer unread removed` : ""}${summarised ? `, ${summarised} summarised` : ""}.`), aiProblem ? alertBox("bad", `AI summaries: ${aiProblem}`) : null].filter(Boolean));
+  } catch (er) { status.replaceChildren(alertBox("bad", er.message)); }
+  finally { button.disabled = false; button.textContent = label; }
+}
+// The page for one mailbox. Ticking a box or choosing a colour saves at once; nothing here needs a Save button.
+function mailboxEditPage(me, a, { auto, ai }) {
+  const status = h("div", { class: "hint" });
+  const st = mailboxState(a, auto);
+  const savedTag = () => h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
+  const flash = tag => { tag.textContent = "Saved ✓"; tag.classList.add("show"); clearTimeout(tag._t); tag._t = setTimeout(() => tag.classList.remove("show"), 1800); };
+  const save = async (patch, tag, undo) => {
+    try {
+      const settings = { ...(a.settings || {}), ...patch };
+      await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings } });
+      a.settings = settings; flash(tag);
+    } catch (er) { if (undo) undo(); status.replaceChildren(alertBox("bad", `Could not save: ${er.message}`)); }
+  };
+  const tick = (id, title, hint, on, key, tag, extra) => h("label", { class: "optrow", for: id },
+    h("input", { id, type: "checkbox", checked: on, onchange: e => { const box = e.target; save({ [key]: box.checked }, tag, () => { box.checked = !box.checked; }); if (extra) extra(box.checked); } }),
+    h("span", {}, h("strong", { text: title }), h("span", { class: "hint", text: hint })));
+  const tagA = savedTag(), tagB = savedTag();
+  const autoOn = !(a.settings && a.settings.auto_sync === false);
+  const rows = [
+    auto.enabled && isMail(a) ? tick(`mb_auto_${a.id}`, "Check for new mail automatically", `Enveliq looks every ${auto.minutes} minutes. Turn off to check only when you press Sync now.`, autoOn, "auto_sync", tagA) : null,
+    ai.configured ? tick(`mb_ai_${a.id}`, "Write AI summaries", "Each email gets a short summary, marked as written by AI. The email text goes to your AI model and is not kept.", !!(a.settings && a.settings.ai_summaries), "ai_summaries", tagA) : null,
+    ai.configured && isMail(a) ? tick(`mb_wait_${a.id}`, "Follow sent mail for replies", "Shows Waiting for reply. Each new email you send is shown to your AI model once, to decide whether you expect an answer. Older sent mail is not read, and only a short note is kept.", !!(a.settings && a.settings.waiting), "waiting", tagA) : null,
+  ].filter(Boolean);
+  const nameBox = h("input", { id: `rn_${a.id}`, type: "text", maxlength: 128, value: a.display_name, "aria-label": "Mailbox name", autocomplete: "off", onchange: async e => {
+    const name = e.target.value.trim();
+    if (!name) { e.target.value = a.display_name; status.replaceChildren(alertBox("bad", "Type a name for this mailbox.")); return; }
+    if (name === a.display_name) return;
+    try { await api(`/accounts/${a.id}`, { method: "PATCH", body: { display_name: name } }); a.display_name = name; flash(tagB); title.textContent = name; remove.textContent = `Remove ${name}`; logo.textContent = name.charAt(0).toUpperCase(); }
+    catch (er) { e.target.value = a.display_name; status.replaceChildren(alertBox("bad", er.message)); }
+  } });
+  const colorSel = h("select", { id: `col_${a.id}`, "aria-label": `Label colour for ${a.display_name}`, onchange: async e => {
+    const color = e.target.value;
+    try { await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), color } } }); a.settings = { ...(a.settings || {}), color }; flash(tagB); logo.style.background = mailboxHex(a); toast(color ? `Label colour set to ${color}` : "Label colour is automatic"); }
+    catch (er) { status.replaceChildren(alertBox("bad", er.message)); }
+  } }, MAILBOX_COLOR_CHOICES.map(([v, t]) => h("option", { value: v, text: t, selected: ((a.settings && a.settings.color) || "") === v })));
+  const logo = mailboxLogo(a);
+  const title = h("h1", { text: a.display_name });
+  const checkBtn = h("button", { class: "btn small", type: "button", text: "Check connection", onclick: async e => {
+    e.target.disabled = true;
+    try {
+      const r = await api(`/accounts/${a.id}/bridge/check`, { method: "POST", body: {} });
+      status.replaceChildren(...["imap", "smtp"].map(k => alertBox(r[k] === "ok" ? "good" : "bad", `${k.toUpperCase()}: ${r[k] === "ok" ? "working" : (r[k + "_message"] || r[k])}`)));
+    } catch (er) { status.replaceChildren(alertBox("bad", er.message)); } finally { e.target.disabled = false; }
+  } });
+  const syncBtn = h("button", { class: "btn small primary", type: "button", text: "Sync now", onclick: e => syncNow(a, ai, e.target, status) });
+  const remove = h("button", { class: "btn danger", type: "button", text: `Remove ${a.display_name}`, onclick: e => confirmThen(e.target, `Remove ${a.display_name} and its saved summaries? Your mail stays with your email service.`, async () => {
+    try { await api(`/accounts/${a.id}`, { method: "DELETE" }); toast("Mailbox removed"); mailboxesPage(me); } catch (er) { toast(er.message); }
+  }) });
+  const detail = a.auth_method === "proton_bridge" ? `Proton Bridge at ${a.server}:${a.port}` : a.auth_method === "imap" ? `${a.provider} (app password)` : a.provider || "Connected";
+  show(...chrome(me, "mailboxes",
+    h("button", { class: "linkback", type: "button", text: "‹ Mailboxes", onclick: () => mailboxesPage(me) }),
+    h("div", { class: "mbtitle" }, logo, h("div", {}, title, h("div", { class: "meta", text: a.email_address })), h("span", { class: st.bad ? "mbchip amber" : "mbchip", text: st.bad ? "Needs you" : "Working" }),
+      isMail(a) ? h("div", { class: "mbacts" }, syncBtn, checkBtn) : null),
+    status,
+    h("div", { class: "mbedit" },
+      h("div", { class: "mbcol" },
+        rows.length ? h("section", { class: "section" }, h("h2", {}, "Checking and summaries ", tagA), h("p", { class: "lead", text: "Your choices save as you make them." }), ...rows) : null,
+        h("section", { class: "section" }, h("h2", {}, "Look ", tagB), h("p", { class: "lead", text: "The name and colour you see in your lists." }), nameBox, h("label", { class: "color-pick", for: `col_${a.id}` }, "Label colour ", colorSel))),
+      h("div", { class: "mbcol" },
+        h("section", { class: "section" }, h("h2", { text: "Connection" }), h("p", { class: "lead", text: detail }), st.bad ? alertBox("bad", st.text) : h("p", { class: "hint", text: st.text }),
+          isMail(a) ? more("Diagnostics", h("p", { class: "hint", text: "Shows what Enveliq holds for this mailbox, for finding out why something looks wrong." }), h("button", { class: "btn small", type: "button", text: "Open diagnostics", onclick: () => mailboxesPage(me, a.id) })) : null),
+        h("section", { class: "section mbremove" }, h("h2", { text: "Remove this mailbox" }), h("p", { class: "lead", text: "Enveliq stops checking it and forgets its saved summaries. Your email itself is not touched." }), remove)))));
 }
 // What Enveliq holds for one mailbox, with the same actions as the inbox. For finding out why something looks wrong.
 async function diagnosticsPage(me, account, back) {
@@ -1921,6 +2065,7 @@ function confirmThen(button, question, action, yes = "Yes, delete", cls = "dange
 }
 
 if (!window.ENVELIQ_EMBED) {
+  watchPolish(app);
   addChrome(); route();
   if (!["/login", "/setup", "/unlock", "/terms", "/privacy", "/security", "/welcome"].includes(location.pathname) && !new URLSearchParams(location.search).has("enroll")) sendWatcher();
 }

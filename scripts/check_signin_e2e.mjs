@@ -25,7 +25,7 @@ await (async () => {
   await p.screenshot({ path: `${process.env.ENVELIQ_E2E_SHOTS || '.'}/e2e-setup.png`, fullPage: true });
   await p.fill('#setup_code', SETUP_CODE); await p.fill('#display_name', 'Morgan'); await p.fill('#username', 'morgan');
   await p.fill('#password', 'Admin password 2026 e2e'); await p.fill('#password2', 'Admin password 2026 e2e');
-  await p.fill('#passphrase', 'Vault passphrase 2026 e2e'); await p.fill('#passphrase2', 'Vault passphrase 2026 e2e');
+  
   await p.click('button[type=submit]'); await p.waitForURL('**/account?enroll=1'); step('setup done, admin sent to two-factor setup');
   await p.screenshot({ path: `${process.env.ENVELIQ_E2E_SHOTS || '.'}/e2e-enroll.png`, fullPage: true });
 

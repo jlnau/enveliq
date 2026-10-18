@@ -86,3 +86,12 @@ v0.33 adds two outputs. `Reporter.otlp_payload` renders the same registry as Ope
 ## Live email updates
 
 Authenticated clients connect to `GET /api/v1/me/mail-events` through same-origin Server-Sent Events. The stream checks an owner-scoped fingerprint of encrypted-vault message metadata and opened indicators; no message content, sender, subject, account names or secrets are sent in events. Changed events instruct the existing mail client to re-fetch using normal user-scoped API calls. Browser EventSource reconnects automatically, while a periodic fallback and page visibility/network wake-up recover missed updates. The client retains selected-message identity and scroll offset during refresh. The stream does not itself trigger provider mailbox synchronization; the existing server sync scheduler continues to do so.
+
+## Find any email (v0.94)
+
+- `backend/mail/find.py`: turns the typed words into IMAP criteria (`TEXT`, or Gmail's `X-GM-RAW`), picks the folders (the "all mail" folder if the service has one, otherwise every normal folder; Spam and Bin only when asked) and runs a search as a short-lived job in server memory. A job keeps folder and message numbers only. Each mailbox searches on its own thread with a long socket timeout, a separate lock (never the sync lock) and a cancel that shuts the socket. Results are ordered newest first by reading the dates of the newest 100 per folder.
+- `backend/mail/find_routes.py`: `/api/v1/find/...` start, progress and results, cancel, open original, keep, and the Fast search switches.
+- `backend/mail/find_index.py`: the optional word list. An in-memory SQLite full-text index (no copy of the text), serialised, compressed and sealed per person with a key from `vault.derive_key`, loaded after unlock and dropped when the vault locks. A background thread per mailbox builds it newest first in small throttled batches and keeps it current.
+- Message locations gain a folder (`FOLDER|<name>|<validity>|<uid>`); old `INBOX|validity|uid` locations are unchanged and read the same way.
+- Kept results reuse the quiet `from_all_mail` entries and add `found_until`, so sync, alerts and unread counts already ignore them.
+

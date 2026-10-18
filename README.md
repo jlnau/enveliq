@@ -91,9 +91,10 @@ You do **not** need to know Linux or Docker. Every guide below tells you exactly
 
 **The short version** (Windows, Mac or Linux, with [Docker](https://www.docker.com/get-started/) installed):
 
-1. Download [`install/docker-compose.yml`](install/docker-compose.yml).
-2. Open it in any text editor and change the three lines marked `<-- CHANGE THIS` ([what to put](docs/install/choose-settings.md)).
-3. Start it with `docker compose up -d`, then open **http://localhost:8765**.
+1. Make a folder, download [`install/docker-compose.yml`](install/docker-compose.yml) into it, and make your vault key: `echo "ENVELIQ_VAULT_KEY=$(openssl rand -hex 32)" > .env`. Save a copy of that line in your password manager.
+2. Start it with `docker compose up -d`, then open **http://localhost:8765**.
+
+The [one-page install guide](docs/install/README.md) has the whole copy-and-paste block for Mac, Linux and Windows.
 
 **Pick the guide that matches what you have:**
 

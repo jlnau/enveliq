@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-KEYS = ("compose", "address_book", "sent", "media", "all_mail", "shipping", "subscriptions", "travel", "waiting", "messages", "write_help", "rss", "tags")
+KEYS = ("compose", "address_book", "sent", "media", "all_mail", "shipping", "subscriptions", "travel", "waiting", "messages", "write_help", "rss", "tags", "find_mail")
 LABELS = {
     "compose": "New email",
     "address_book": "Address book",
@@ -24,6 +24,7 @@ LABELS = {
     "write_help": "Writing help (AI suggests or checks a reply)",
     "rss": "News feeds (follow websites you like)",
     "tags": "Tags (the labels from your mail service)",
+    "find_mail": "Find any email (search all your mail)",
 }
 RECORD = "features"
 

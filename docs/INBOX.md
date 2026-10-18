@@ -30,7 +30,7 @@ Enveliq remembers where you were in the inbox and the email you had selected. Wh
 
 ## When new mail appears
 
-If the mailbox uses AI summaries, a new email is not shown in your inbox until its summary, and the summaries of any attached files, are ready. A small bar at the bottom of the page shows the AI queue (*1 being written, 2 waiting*). If a summary fails after a few tries, the email is shown anyway with **Could not summarise** and a **Try again** button. [The AI guide](AI_SUMMARIES.md#the-ai-queue) has the details.
+If the mailbox uses AI summaries, a new email is not shown in your inbox until its summary, and the summaries of any attached files, are ready. A small bar at the bottom of the page shows the AI queue (*1 being written, 2 waiting*). If a summary fails after a few tries, the email is shown anyway with **Could not summarise** and a **Try again** button. An email that still has no summary is tried again automatically a few times, and its card has a **Generate summary** button and says why if it cannot be done. [The AI guide](AI_SUMMARIES.md#the-ai-queue) has the details.
 
 ## What each email shows
 
@@ -110,6 +110,8 @@ Normally Enveliq signs you out after 30 minutes without use. If an administrator
 The main inbox shows **Needs action**, **Today**, **Packages**, and **Waiting** at the top. These open the corresponding views. The **Today** section shows tasks that need attention; **Coming up** shows the next tasks due later. On a phone, the task sections start folded so you can reach the email list sooner; tap a section heading or its arrow to open it.
 
 The **All emails** switch fetches inbox headers from the last 60 days without a message count limit, across connected mailboxes. Entries from this view are quiet until you choose to generate a summary. It reads headers only and does not store original email bodies or attachments. Larger inboxes may take longer to load on the first request. The Sent, Drafts and other views retain their existing limits.
+
+**Found emails** lists the emails you found with **Search all my mail** and chose to keep. Each stays for 60 days, or until you press **Reviewed**. See [Find any email](FIND_MAIL.md).
 
 The **Recent emails** section lists your mail. **Inbox options** starts closed on computers and phones. Press it to show the mailbox filter, sorting, **All emails**, **Expand all**, and the other available inbox controls; press it again to hide them. On phones, **Recent emails** can also be expanded or collapsed.
 
@@ -203,6 +205,14 @@ The name you gave a mailbox when you connected it (for example "Proton Test") ca
 ### Choosing the label's colour
 
 On the same Mailboxes card, the **Label colour** drop-down picks the colour of that mailbox's label: Blue, Green, Orange, Pink, Red, Teal, Purple or Lime. **Automatic** (the start) lets Enveliq choose one for you. The choice is saved at once and shows in the mail list and in the open email the next time the inbox loads. It is only a colour; nothing else about the mailbox changes.
+
+On a computer, moving the mouse over an email shows its quick buttons in place of the date: **Reviewed**, **Archive** and **Bin** on mail in your inbox, in every layout including the reading pane on the right, and a single **Remove from this list** button on emails in the Reviewed and Archived lists. They look and sit the same everywhere. Sent and Drafts have no such buttons because they hold nothing to archive. On a phone the buttons stay out of the way (swipe instead).
+
+**View** next to a file under an email opens that file in its own viewer (a picture viewer for pictures, a document viewer for PDFs, text and spreadsheets), on top of the email you were reading. Close it and you are back at the same place. **Save to my device** in the viewer still downloads the file. Pictures and attachment previews must be switched on (Administration, Features).
+
+When you scroll down an open email on a phone, it now stays where you scrolled when the page refreshes in the background or a summary or picture arrives, instead of jumping back to the top.
+
+The search box clears by itself when you choose something from the menu (My inbox, Needs action, Tasks and so on), so the next page is never left filtered by words you typed earlier. Pressing the X in the box still clears it too.
 
 ## Searching your tasks
 

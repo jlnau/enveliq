@@ -146,6 +146,8 @@ jobs:
         run: node scripts/check_search_everywhere.mjs
       - name: A blank install shows no sample mail (simulated server)
         run: node scripts/check_blank_install.mjs
+      - name: The setup page asks for a vault key first (simulated server)
+        run: node scripts/check_vault_key_setup.mjs
       - name: Calm mode (made-up mail, no server)
         run: node scripts/check_calm_mode.mjs
       - name: Inbox backdrop and plain logo (made-up mail, no server)
@@ -170,6 +172,10 @@ jobs:
         run: node scripts/check_drafts.mjs
       - name: On a phone every email opens full screen, whatever layout is chosen (made-up mail, no server)
         run: node scripts/check_phone_reader.mjs
+      - name: View original email shows the email as the sender formatted it, safely (made-up mail, real cleaner)
+        run: node scripts/check_original_html.mjs
+      - name: The View button on an attachment opens that file in its own viewer (made-up mail, no server)
+        run: node scripts/check_attachment_view.mjs
       - name: The Back button returns to the previous section inside the app (made-up mail, no server)
         run: node scripts/check_back_button.mjs
       - name: A Task button on every email adds a task of your own (made-up mail, no server)
@@ -203,6 +209,10 @@ jobs:
       - run: npx playwright install ${{ vars.RUNNER_LABELS == '' && '--with-deps' || '' }} chromium
       - name: A label on each email says which mailbox it came from when there are several (made-up mail, no server)
         run: node scripts/check_mailbox_label.mjs
+      - name: Browser check of the Mailboxes page and its Edit page
+        run: node scripts/check_mailboxes_page.mjs
+      - name: The inbox list stays where it was scrolled to when the page refreshes (made-up mail, no server)
+        run: node scripts/check_list_scroll.mjs
       - name: Searching your tasks by typing part of their words (made-up tasks, no server)
         run: node scripts/check_task_search.mjs
       - name: On a phone an open email is never wider than the screen, so the page does not look zoomed in (made-up mail, no server)
@@ -253,6 +263,8 @@ jobs:
         run: node scripts/check_scrolllock.mjs
       - name: Settings and Administration on a phone
         run: node scripts/check_mobile_settings.mjs
+      - name: Look of every Settings and Administration page (simulated server)
+        run: node scripts/check_settings_look.mjs
       - name: User menu, Profile settings and tidied Settings (simulated server)
         run: node scripts/check_user_menu.mjs
       - name: Messages page, sidebar count and Home card (simulated server)
@@ -265,6 +277,10 @@ jobs:
         run: node scripts/check_waiting.mjs
       - name: All emails switch and Generate summary (simulated server)
         run: node scripts/check_all_mail.mjs
+      - name: Find any email - search, view, summarise, Found emails and the phone layout (simulated server)
+        run: node scripts/check_find.mjs
+      - name: Fast search in Settings - warning, tick box, progress and turning it off (simulated server)
+        run: node scripts/check_fast_search.mjs
       - name: Notification links, new-email alert switches and install manifest (simulated server)
         run: node scripts/check_notification_link.mjs
 

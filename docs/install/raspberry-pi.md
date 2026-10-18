@@ -25,17 +25,15 @@ git clone https://github.com/jlnau/enveliq.git
 cd enveliq/install
 ```
 
-## Step 4. Change the three lines
+## Step 4. Make your vault key
 
-1. Read [Choose your settings](choose-settings.md) and decide your answers.
-2. Open the file:
+The vault key is a long secret that locks everything Enveliq keeps. Enveliq will not finish setup without one. This command makes it and saves it in a file called `.env` next to the install file, which Docker Compose reads by itself:
 
-   ```
-   nano docker-compose.build.yml
-   ```
+```
+echo "ENVELIQ_VAULT_KEY=$(openssl rand -hex 32)" > .env
+```
 
-3. Change the lines marked `<-- CHANGE THIS`. Keep the quote marks.
-4. Save and leave: **Ctrl + O**, **Enter**, **Ctrl + X**.
+Now **save a copy in your password manager**: run `cat .env` and copy the line. If that file is ever lost, the key is the only way to open your data again. You do not need to edit the install file.
 
 ## Step 5. Build and start
 

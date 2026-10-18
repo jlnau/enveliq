@@ -5,7 +5,7 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 ## I want to install Enveliq
 
 - [Install Enveliq: pick your guide](install/README.md)
-- [Choose your settings](install/choose-settings.md) (the three lines in the install file)
+- [Choose your settings](install/choose-settings.md) (optional settings, for opening Enveliq from other devices)
 - [Settings reference](ENVIRONMENT.md): every environment variable and what it does
 - On a computer: [Windows or Mac](install/docker-desktop.md) · [Linux](install/docker-compose.md) · [Raspberry Pi](install/raspberry-pi.md) · [Proxmox](install/proxmox.md)
 - With a control panel: [Arcane](install/arcane.md) · [Portainer](install/portainer.md) · [Dockge](install/dockge.md)

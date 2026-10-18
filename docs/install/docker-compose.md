@@ -6,7 +6,7 @@ For a Linux computer or server (Ubuntu, Debian, Fedora and others), or a virtual
 
 ## The install file
 
-This is the whole file. Copy it, or [download it](../../install/docker-compose.yml). [Step 3](#step-3-change-the-three-lines) shows the lines to change. The steps below start from nothing and put it on your computer.
+This is the whole file. Copy it, or [download it](../../install/docker-compose.yml). [Step 3](#step-3-make-your-vault-key) shows the one thing you must set, the vault key. The steps below start from nothing and put it on your computer.
 
 <!-- include: install/docker-compose.yml -->
 
@@ -55,17 +55,15 @@ curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/jlnau/enveliq
 
 **Check:** `ls` lists `docker-compose.yml`.
 
-## Step 3. Change the three lines
+## Step 3. Make your vault key
 
-1. Open [Choose your settings](choose-settings.md), decide your answers, and come back.
-2. Open the file in a simple editor called nano:
+The vault key is a long secret that locks everything Enveliq keeps. Enveliq will not finish setup without one. This one command makes it and saves it in a file called `.env` next to the install file, which Docker Compose reads by itself:
 
-   ```
-   nano docker-compose.yml
-   ```
+```
+echo "ENVELIQ_VAULT_KEY=$(openssl rand -hex 32)" > .env
+```
 
-3. Use the arrow keys to move to each line marked `<-- CHANGE THIS` and change it. Keep the quote marks.
-4. Save and leave: press **Ctrl + O**, then **Enter**, then **Ctrl + X**.
+Now **save a copy in your password manager**: run `cat .env` and copy the line. If that file is ever lost, the key is the only way to open your data again. You do not need to edit the install file.
 
 ## Step 4. Start Enveliq
 

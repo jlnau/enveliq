@@ -1,8 +1,8 @@
 """Switch an existing vault between a typed passphrase and a key file.
 
-    docker compose exec -it enveliq python -m backend.vault_key adopt
-    docker compose exec -it enveliq python -m backend.vault_key use-passphrase
-    docker compose exec enveliq python -m backend.vault_key status
+    docker exec -it enveliq python -m backend.vault_key adopt
+    docker exec -it enveliq python -m backend.vault_key use-passphrase
+    docker exec -it enveliq python -m backend.vault_key status
 
 Nothing stored is re-encrypted: the vault's master key is wrapped with the new
 secret. Run it on the server (it needs the data folder), then restart Enveliq.
@@ -40,7 +40,8 @@ def _configured(create: bool = False) -> tuple[str | None, bool]:
             raise keyfile.KeyFileError("too_short")
         return env, True
     except keyfile.KeyFileError as err:
-        sys.exit({"unreadable": "Cannot read the key file.", "too_short": "The key is too short (use at least 32 characters, e.g. openssl rand -base64 48).",
+        sys.exit({"unreadable": "Cannot read the key file.", "too_short": f"The key is too short: {'it has ' + str(len(env)) + ' characters and ' if not path else ''}it needs at least {keyfile.MIN_CHARS} characters (for example from openssl rand -hex 32). "
+                  "Check the ENVELIQ_VAULT_KEY line in your .env file, then run docker compose up -d so Enveliq sees the change.",
                   "cannot_create": "Cannot create the key file: make its folder writable."}[err.code])
 
 

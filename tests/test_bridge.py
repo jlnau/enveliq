@@ -243,6 +243,33 @@ def test_view_original_is_plain_text_and_not_stored(env):
     assert not any(appm.vault.plaintext_scan(["Hello Dana", "Numbers are attached"]).values())
 
 
+def test_the_formatted_page_is_served_with_its_own_policy_and_can_only_be_framed_by_the_app(env):
+    from backend.mail import htmlview
+    appm, client, bridge, _ = env
+    bridge.add(4, html_mail().replace(b"http://tracker.invalid", b"https://tracker.invalid"))
+    aid, m = synced(client, bridge)
+    mid = m["Rich message"]["id"]
+    assert client.get(f"/api/v1/accounts/{aid}/messages/{mid}/original").json()["has_html"] is True
+    r = client.get(f"/api/v1/accounts/{aid}/messages/{mid}/original/html")
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/html")
+    assert r.headers["cache-control"] == "no-store" and r.headers["x-frame-options"] == "SAMEORIGIN"
+    assert r.headers["content-security-policy"] == htmlview.policy_header(False)
+    assert "Hello" in r.text and "alert(1)" not in r.text and "tracker.invalid" not in r.text
+    shown = client.get(f"/api/v1/accounts/{aid}/messages/{mid}/original/html?images=true")
+    assert "https://tracker.invalid/p.gif" in shown.text and shown.headers["content-security-policy"] == htmlview.policy_header(True)
+    appm.vault.lock()
+    assert not any(appm.vault.plaintext_scan(["Hello Dana", "tracker.invalid"]).values())          # nothing of it was stored
+
+
+def test_an_email_without_html_has_no_formatted_page_and_error_answers_are_never_frameable(env):
+    _, client, bridge, _ = env
+    aid, m = synced(client, bridge)
+    plain = client.get(f"/api/v1/accounts/{aid}/messages/{m['Quarterly update']['id']}/original/html")
+    assert plain.status_code == 404
+    assert plain.headers["x-frame-options"] == "DENY" and "frame-ancestors 'none'" in plain.headers["content-security-policy"]
+    assert client.get("/api/v1/status").headers["x-frame-options"] == "DENY"
+
+
 def test_view_fails_cleanly_when_mailbox_changed(env):
     _, client, bridge, _ = env
     aid, m = synced(client, bridge)
@@ -411,6 +438,7 @@ def test_other_users_and_other_providers(env):
         ("post", f"/api/v1/accounts/{aid}/sync", {}),
         ("post", f"/api/v1/accounts/{aid}/bridge/check", None),
         ("get", f"/api/v1/accounts/{aid}/messages/{mid}/original", None),
+        ("get", f"/api/v1/accounts/{aid}/messages/{mid}/original/html", None),
         ("post", f"/api/v1/accounts/{aid}/messages/{mid}/reply", {"body": "hi"}),
     ):
         r = getattr(cara, method)(url, **({"json": body} if body is not None else {}))

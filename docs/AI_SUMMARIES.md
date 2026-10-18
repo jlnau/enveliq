@@ -43,6 +43,16 @@ summary, then its files, then it is shown.
   **Could not summarise** with the reason and a **Try again** button, so mail is
   never hidden for good. A file that cannot be read (a scan, a picture, a damaged
   file) does not hold its email back: that file is marked **Not summarised**.
+- **Emails left without a summary are tried again.** If an email is shown without
+  a summary (a try failed, or it arrived before AI summaries were switched on),
+  Enveliq puts it back in the line on its own after each mailbox check. It waits
+  longer each time (2 minutes, 10 minutes, 30 minutes, then 2 hours) and stops
+  after five tries. While an email has no summary its card has a **Generate
+  summary** button (**Try again** after a failure) and says why: no AI model is
+  set up, summaries are switched off for the mailbox, or the last reason Enveliq
+  could not summarise it. Pressing the button starts the count again. Nothing is
+  tried while there is no model or the mailbox has summaries off. The tries are
+  kept in the server's memory (ids only), so a restart starts them again.
 - **If the AI is switched off** (or the mailbox no longer uses AI summaries) the
   waiting emails are shown as they are.
 - **After a restart.** The line lives in the server's memory. Emails that were
@@ -115,6 +125,8 @@ model to summarise a made-up email before it saves anything, and says what to tr
 if that fails. The settings are stored encrypted in Enveliq's vault and the key is
 never shown again. Environment settings (below) take priority if they are set.
 
+**Not sure of the model name?** Put in the server address and press **Find models**. Enveliq asks that server which models it has and shows them as a list; tap one to fill in the name. If the server needs a key, type it first. Only the address (and key) is sent, never any email, and an administrator is needed. The same address rules as the Test button apply.
+
 **Or with environment settings.** Add these settings to the Enveliq container (in `docker-compose.yml`, `.env` or
 your Docker manager's environment editor):
 
@@ -138,8 +150,10 @@ wrong (`ai_unreachable`, `ai_refused`, `host_not_allowed`, `ai_bad_reply`).
 
 ## 3. Switch it on per mailbox
 
-Open **Mailboxes**. Tick "Summarise with the AI model" when adding a mailbox, or
-press "Turn AI summaries on" on an existing one. **Sync now** (Mailboxes) and
+Open Settings, **Mailboxes**. A new mailbox starts with "Summarise with the AI model"
+ticked (and with Waiting for reply on); untick it when adding if you do not want
+it. To change it later, press **Edit** on the mailbox's card and tick or untick
+**Write AI summaries**. It saves the moment you tick it. **Sync now** (Mailboxes) and
 **Sync mail** (Inbox) then summarise new emails, newest first, up to 50 per press.
 
 ## Notes

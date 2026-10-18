@@ -17,6 +17,10 @@ GOOD = {"summary": "Dentist appointment on Friday at 2:30 PM.", "category": "Per
 
 
 class Model(BaseHTTPRequestHandler):
+    def do_GET(self):
+        payload = json.dumps({"object": "list", "data": [{"id": "zeta-7b"}, {"id": "alpha-3b"}, {"id": "Beta-8b"}]}).encode()
+        self.send_response(200); self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(payload))); self.end_headers(); self.wfile.write(payload)
+
     def do_POST(self):
         self.rfile.read(int(self.headers["Content-Length"]))
         payload = json.dumps({"choices": [{"message": {"role": "assistant", "content": json.dumps(GOOD)}}]}).encode()
@@ -39,7 +43,7 @@ bridge.folders.append(("\\HasNoChildren \\Sent", "Sent"))
 for uid, subject, days in ((501, "Recent sent mail", 1), (502, "Old sent mail", 30)):
     when = format_datetime(datetime.now(timezone.utc) - timedelta(days=days))
     bridge.add(uid, f"From: me@example.invalid\r\nTo: Zed <zed@example.invalid>\r\nSubject: {subject}\r\nDate: {when}\r\nMessage-ID: <s{uid}@example.invalid>\r\n\r\nSent body text\r\n".encode(), folder="Sent")
-env = dict(os.environ, ENVELIQ_DATA_DIR=str(tmp / "data"), ENVELIQ_SETUP_CODE="e2e-setup-code-12345", ENVELIQ_PORT="8797", ENVELIQ_SYNC_MINUTES="0",
+env = dict(os.environ, ENVELIQ_VAULT_KEY="e2e-vault-key-0123456789abcdef0123456789abcdef", ENVELIQ_DATA_DIR=str(tmp / "data"), ENVELIQ_SETUP_CODE="e2e-setup-code-12345", ENVELIQ_PORT="8797", ENVELIQ_SYNC_MINUTES="0",
            ENVELIQ_PUBLIC_URL="http://localhost:8797", ENVELIQ_BRIDGE_CA_FILE=str(bridge.cert_path), ENVELIQ_MAIL_CA_FILE=str(bridge.cert_path), ENVELIQ_MAIL_ALLOWED_HOSTS="127.0.0.1",
            PYTHONPATH=os.pathsep.join([str(ROOT), os.environ.get("PYTHONPATH", "")]))
 env.pop("ENVELIQ_LLM_URL", None); env.pop("ENVELIQ_LLM_MODEL", None)
@@ -50,7 +54,7 @@ try:
             if httpx.get("http://localhost:8797/api/v1/health").status_code == 200: break
         except Exception: time.sleep(0.3)
     c = httpx.Client(base_url="http://localhost:8797", headers={"Origin": "http://localhost:8797"})
-    r = c.post("/api/v1/setup", json={"setup_code": "e2e-setup-code-12345", "passphrase": "Correct Horse Battery Staple 2026!", "username": "morgan", "password": "Admin password for tests 2026"}); assert r.status_code == 201, r.text
+    r = c.post("/api/v1/setup", json={"setup_code": "e2e-setup-code-12345", "username": "morgan", "password": "Admin password for tests 2026"}); assert r.status_code == 201, r.text
     secret = c.post("/api/v1/auth/totp/setup").json()["secret"]
     r = c.post("/api/v1/auth/totp/confirm", json={"code": totp.code_at(secret, totp.current_step())}); assert r.status_code == 200, r.text
     cookies = [{"name": k, "value": v, "url": "http://localhost:8797"} for k, v in c.cookies.items()]

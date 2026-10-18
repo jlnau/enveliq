@@ -143,3 +143,67 @@ def test_new_mail_waiting_does_not_count_against_the_button_limit():
         q.add("sam", "a1", f"auto{i}", auto=True)
     q.add("sam", "a1", "pressed")                                     # still allowed
     assert q.listing("sam")["waiting"] == MAX_WAITING + 6
+
+
+# ---------- unread emails that still have no summary are tried again, and the reason is said when they cannot be ----------
+
+def _with_summaries(appm, aid, on=True):
+    acct = appm.vault.get_account(aid)
+    return {**acct, "settings": {**(acct.get("settings") or {}), "ai_summaries": on}}
+
+
+def _placeholder_mail(held, ai=False):
+    appm, client, bridge, model = held
+    bridge.add(1, PLAIN)
+    aid = account(client, bridge, ai=ai)
+    assert client.post(f"/api/v1/accounts/{aid}/sync", json={}).json()["added"] == 1
+    got = listing(client, aid)
+    assert len(got) == 1 and got[0]["summary"].startswith("Not summarised yet")
+    return appm, client, aid
+
+
+def test_mail_that_arrived_before_summaries_were_switched_on_is_summarised_by_the_next_sync(held):
+    appm, client, aid = _placeholder_mail(held, ai=False)
+    acct = _with_summaries(appm, aid)
+    assert appm.mail_service.enqueue_unsummarised(appm.vault, acct) == 1
+    done = wait_for(lambda: [m for m in listing(client, aid) if m["summary"] == GOOD["summary"]])
+    assert len(done) == 1
+
+
+def test_a_failed_try_is_repeated_with_waits_and_then_stops_with_a_reason(held, monkeypatch):
+    appm, client, aid = _placeholder_mail(held, ai=False)
+    svc, acct = appm.mail_service, _with_summaries(appm, aid)
+    monkeypatch.setattr(appm.vault, "list_accounts", lambda: [acct])          # the mailbox as it is with summaries on
+    queued: list[str] = []
+    svc.on_pending = lambda account, ids: queued.extend(ids)         # nobody works the line: only count the tries
+    now = 1000.0
+    assert svc.enqueue_unsummarised(appm.vault, acct, now) == 1
+    assert svc.enqueue_unsummarised(appm.vault, acct, now + 10) == 0                 # too soon
+    for step in svc.RETRY_DELAYS:
+        now += step + 1
+        assert svc.enqueue_unsummarised(appm.vault, acct, now) == 1
+    now += 100000
+    assert svc.enqueue_unsummarised(appm.vault, acct, now) == 0                      # gave up
+    assert len(queued) == len(svc.RETRY_DELAYS) + 1
+    svc.problems[queued[0]] = "The AI model did not answer."
+    notice = svc.summary_notice(appm.vault, appm.vault.get_account(aid)["owner_user_id"])
+    assert notice and notice["retrying"] is False and "tried several times" in notice["text"] and "did not answer" in notice["text"]
+    svc.retry_now(queued[0])                                                          # Try again starts the count over
+    assert svc.enqueue_unsummarised(appm.vault, acct, now) == 1
+
+
+def test_the_reason_is_said_when_no_model_is_set_up_or_summaries_are_off(held):
+    appm, client, aid = _placeholder_mail(held, ai=False)
+    svc, user = appm.mail_service, appm.vault.get_account(aid)["owner_user_id"]
+    assert "switched off for this mailbox" in svc.summary_notice(appm.vault, user)["text"]
+    assert svc.enqueue_unsummarised(appm.vault, appm.vault.get_account(aid)) == 0      # nothing is tried while it cannot work
+    acct = _with_summaries(appm, aid)
+    assert svc.summary_notice(appm.vault, "someone-else") is None                      # nobody else's mailbox is described
+    svc.summariser.config = type(svc.summariser.config)()                              # no model
+    assert svc.enqueue_unsummarised(appm.vault, acct) == 0
+
+
+def test_the_queue_route_carries_the_notice_only_for_the_signed_in_person(held):
+    appm, client, aid = _placeholder_mail(held, ai=False)
+    r = client.get("/api/v1/me/summary-queue").json()
+    assert r["notice"]["count"] == 1 and "switched off" in r["notice"]["text"]
