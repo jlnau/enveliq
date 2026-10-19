@@ -53,6 +53,20 @@ import kotlinx.coroutines.withContext
 
 // Settings: one short list of topics. Tapping a topic opens its own page; anything that needs a longer explanation or a choice opens one more page.
 
+/** True when [latest] is a higher number than [mine]. A test build (not a number) is never told to update. */
+private fun newerVersion(latest: String, mine: String): Boolean {
+    fun parts(v: String): List<Int> = v.trim().removePrefix("v").split(".").map { it.toIntOrNull() ?: return emptyList() }
+    val a = parts(latest)
+    val b = parts(mine)
+    if (a.isEmpty() || b.isEmpty()) return false
+    for (i in 0 until maxOf(a.size, b.size)) {
+        val x = a.getOrElse(i) { 0 }
+        val y = b.getOrElse(i) { 0 }
+        if (x != y) return x > y
+    }
+    return false
+}
+
 private fun appVersion(context: Context): String = try {
     context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
 } catch (e: Exception) {
@@ -422,6 +436,47 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                 }
             }
             if (lockNote.isNotEmpty()) Footnote(lockNote, Amber)
+            Group { NavRow("", tintTool, "Your devices", note = "See where you are signed in and sign one out.") { page = "devices" } }
+        }
+        "devices" -> Page("Your devices", back("security")) {
+            var devices by remember { mutableStateOf<List<DeviceInfo>?>(null) }
+            var devNote by remember { mutableStateOf("") }
+            var reload by remember { mutableStateOf(0) }
+            LaunchedEffect(reload) {
+                try {
+                    devices = withContext(Dispatchers.IO) { api.devices() }
+                } catch (e: Exception) {
+                    devNote = "Could not load your devices. Check your connection and try again."
+                }
+            }
+            val list = devices
+            if (list == null && devNote.isEmpty()) Footnote("Loading...")
+            if (list != null) {
+                Group {
+                    list.forEachIndexed { i, d ->
+                        if (i > 0) HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(d.name + if (d.current) " (this phone)" else "", color = Ink, fontSize = 16.sp)
+                                if (d.signedIn > 0) Text("Signed in " + whenText(d.signedIn), color = Muted, fontSize = 13.sp)
+                            }
+                            if (!d.current) TextButton(onClick = {
+                                scope.launch {
+                                    try {
+                                        withContext(Dispatchers.IO) { api.signDeviceOut(d.id) }
+                                        devNote = ""
+                                    } catch (e: Exception) {
+                                        devNote = "Could not sign that device out. Please try again."
+                                    }
+                                    reload++
+                                }
+                            }) { Text("Sign out", color = Red) }
+                        }
+                    }
+                }
+                Footnote("Signing a device out takes effect straight away. To sign out of this phone, use Account.")
+            }
+            if (devNote.isNotEmpty()) Footnote(devNote, Amber)
         }
         "account" -> Page("Account", back("home")) {
             Group {
@@ -432,6 +487,37 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
         }
         "about" -> Page("About", back("home")) {
             Group { NavRow("", tintTool, "Version", value = appVersion(context)) { } }
+            var upNote by remember { mutableStateOf("") }
+            var upUrl by remember { mutableStateOf("") }
+            var upBusy by remember { mutableStateOf(false) }
+            Group {
+                NavRow("", tintTool, if (upBusy) "Checking..." else "Check for a new version") {
+                    if (!upBusy) {
+                        upBusy = true
+                        upNote = ""
+                        upUrl = ""
+                        scope.launch {
+                            try {
+                                val latest = withContext(Dispatchers.IO) { api.latestRelease() }
+                                val mine = appVersion(context)
+                                if (latest == null) upNote = "Your server did not report a newest version. An administrator may have switched the update notice off."
+                                else if (newerVersion(latest.first, mine)) { upNote = "Version " + latest.first + " is ready."; upUrl = latest.second }
+                                else upNote = "You have the newest version."
+                            } catch (e: Exception) {
+                                upNote = "Could not check. Please try again."
+                            }
+                            upBusy = false
+                        }
+                    }
+                }
+                if (upUrl.isNotEmpty()) {
+                    HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                    NavRow("", Blue, "Download it", note = "Opens the download page. Open the file it saves to update.") {
+                        try { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(upUrl))) } catch (e: Exception) { upNote = "No app on this phone could open the page." }
+                    }
+                }
+            }
+            if (upNote.isNotEmpty()) Footnote(upNote)
             Footnote("Email is held in memory while it is on the screen and is never saved on this phone. Backups are switched off.")
             Footnote("The only thing kept is your sign-in, encrypted on this phone, if you chose to stay signed in. The app only talks to the server you typed, over HTTPS.")
         }

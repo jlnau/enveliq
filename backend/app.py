@@ -815,6 +815,17 @@ def put_update_notice(body: UpdateNoticeBody, session: Session = Depends(admin_s
     return {"enabled": body.enabled, "current": VERSION, "update": update_checker.newer() if body.enabled else None}
 
 
+@app.get("/api/v1/app-update")
+def app_update(session: Session = Depends(full_session)):
+    """The newest published release, for the Android app to compare with its own number. Anyone signed in may ask.
+    The phone never contacts GitHub: this server already does (once a day), and only a version number and Enveliq's own
+    release page address are passed on. Empty when the administrator switched the update notice off."""
+    if not update_notice_enabled():
+        return {"latest": None}
+    update_checker.maybe_refresh()
+    return {"latest": dict(update_checker.latest) if update_checker.latest else None}
+
+
 @app.get("/api/v1/system")
 def system_endpoint(session: Session = Depends(full_session)):
     """What the inbox and the Security page show about this Enveliq. Signed-in people only; the technical

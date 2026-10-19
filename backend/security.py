@@ -58,6 +58,10 @@ class Session:
     # A "keep me signed in on this device" session lasts its own, longer time (set by the administrator, at most
     # 14 days). 0 means the manager's normal idle time and 12-hour limit apply.
     remember_seconds: int = 0
+    # A public handle for "Your devices" (never the token) and a plain name for where it signed in from.
+    device_id: str = ""
+    label: str = ""
+    signed_in_at: float = 0.0               # wall clock, for display only
 
 
 class SessionManager:
@@ -134,7 +138,9 @@ class SessionManager:
         elapsed = max(0.0, self.clock() - float(row["started"]))
         now = time.monotonic()
         session = Session(token=token, principal=principal, expires_at=now + seconds - elapsed, created_at=now - elapsed,
-                          state="full", auth_method=str(row.get("method", "passkey")), remember_seconds=seconds)
+                          state="full", auth_method=str(row.get("method", "passkey")), remember_seconds=seconds,
+                          device_id=str(row.get("device_id") or self._hash(token)[:16]), label=str(row.get("label", "")),
+                          signed_in_at=float(row["started"]))
         with self._lock:
             self._sessions.setdefault(token, session)
             return self._sessions[token]
@@ -147,12 +153,13 @@ class SessionManager:
         """How long it may sit unused. A remembered session may be left for its whole time."""
         return session.remember_seconds or self.ttl_seconds
 
-    def create(self, principal: Principal, *, state: str = "full", auth_method: str = "password", remember_seconds: int = 0) -> Session:
+    def create(self, principal: Principal, *, state: str = "full", auth_method: str = "password", remember_seconds: int = 0, label: str = "") -> Session:
         now = time.monotonic()
         token = secrets.token_urlsafe(48)
         remember = int(remember_seconds) if state == "full" and remember_seconds and remember_seconds > 0 else 0
         session = Session(token=token, principal=principal, expires_at=now + (remember or self.ttl_seconds), created_at=now,
-                          state=state, auth_method=auth_method, remember_seconds=remember)
+                          state=state, auth_method=auth_method, remember_seconds=remember,
+                          device_id=secrets.token_hex(8), label=label[:80], signed_in_at=self.clock())
         with self._lock:
             self._prune_locked(now)
             while len(self._sessions) >= self.max_sessions:
@@ -160,7 +167,8 @@ class SessionManager:
                 self._sessions.pop(oldest, None)
             self._sessions[token] = session
         if remember:
-            row = {"user_id": principal.user_id, "started": self.clock(), "seconds": remember, "method": auth_method}
+            row = {"user_id": principal.user_id, "started": self.clock(), "seconds": remember, "method": auth_method,
+                   "device_id": session.device_id, "label": session.label}
             self._store_edit(lambda items: items.__setitem__(self._hash(token), row))
         return session
 
@@ -193,6 +201,44 @@ class SessionManager:
                 self._sessions.pop(key, None)
         keep = self._hash(except_token) if except_token else None
         self._store_edit(lambda items: [items.pop(k) for k in [k for k, v in items.items() if v.get("user_id") == user_id and k != keep]])
+
+    def devices_of(self, user_id: str, current_token: str = "") -> list[dict]:
+        """This person's signed-in devices, newest first (fully signed in, not run out). Never includes a token."""
+        now = time.monotonic()
+        with self._lock:
+            live = [s for s in self._sessions.values() if s.principal.user_id == user_id and s.state == "full" and not self._expired(s, now)]
+        rows = [{"id": s.device_id, "label": s.label, "signed_in_at": s.signed_in_at, "method": s.auth_method,
+                 "remembered": bool(s.remember_seconds), "current": s.token == current_token} for s in live]
+        # A remembered sign-in not used since a restart is still a device.
+        try:
+            with self._plock:
+                stored = self._stored()
+        except VaultLocked:
+            stored = {}
+        seen = {r["id"] for r in rows}
+        for key, row in stored.items():
+            did = str(row.get("device_id") or key[:16])
+            if row.get("user_id") == user_id and did not in seen:
+                rows.append({"id": did, "label": str(row.get("label", "")), "signed_in_at": float(row.get("started", 0)),
+                             "method": str(row.get("method", "")), "remembered": True, "current": False})
+        return sorted(rows, key=lambda r: r["signed_in_at"], reverse=True)
+
+    def revoke_device(self, user_id: str, device_id: str) -> bool:
+        """Sign one of this person's devices out. False when there is no such device (someone else's answers the same)."""
+        if not device_id:
+            return False
+        found = False
+        with self._lock:
+            for key in [k for k, s in self._sessions.items() if s.principal.user_id == user_id and s.device_id == device_id]:
+                self._sessions.pop(key, None)
+                found = True
+        def edit(items: dict[str, dict]) -> None:
+            nonlocal found
+            for k in [k for k, v in items.items() if v.get("user_id") == user_id and str(v.get("device_id") or k[:16]) == device_id]:
+                items.pop(k)
+                found = True
+        self._store_edit(edit)
+        return found
 
     def update_principal(self, token: str, principal: Principal) -> None:
         with self._lock:

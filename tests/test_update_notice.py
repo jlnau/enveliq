@@ -147,3 +147,17 @@ def test_the_change_is_recorded_in_the_audit_log(env):
     m.vault.audit = lambda payload: (seen.append(payload), original(payload))[1]
     admin.put("/api/v1/admin/update-notice", json={"enabled": False})
     assert any(e.get("event") == "update_notice_changed" and e.get("enabled") is False for e in seen)
+
+
+# ---------- for the Android app ----------
+
+def test_the_app_can_ask_for_the_newest_release_when_signed_in(env):
+    m, admin = env
+    assert sam(m).get("/api/v1/app-update").json() == {"latest": NEWER}
+    assert TestClient(m.app).get("/api/v1/app-update").status_code in (401, 403)
+
+
+def test_the_app_is_told_nothing_when_the_notice_is_switched_off(env):
+    m, admin = env
+    assert admin.put("/api/v1/admin/update-notice", json={"enabled": False}).status_code == 200
+    assert sam(m).get("/api/v1/app-update").json() == {"latest": None}

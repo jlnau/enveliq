@@ -92,6 +92,8 @@ class EnveliqApi(address: String) {
             conn.connectTimeout = 15000
             conn.readTimeout = 30000
             conn.setRequestProperty("Accept", "application/json")
+            // Lets "Your devices" show a plain name for this phone.
+            conn.setRequestProperty("X-Enveliq-Device", "Enveliq app on " + android.os.Build.MODEL.take(40))
             if (body != null) {
                 conn.doOutput = true
                 conn.setRequestProperty("Content-Type", "application/json")
@@ -377,6 +379,27 @@ class EnveliqApi(address: String) {
     /** Puts the unread mark back on an email that was marked Reviewed. */
     fun markUnread(mail: Mail) {
         call("POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/unread")
+    }
+
+    /** Where the person is signed in. */
+    fun devices(): List<DeviceInfo> {
+        val items = JSONObject(call("GET", "/api/v1/auth/devices")).optJSONArray("items") ?: return emptyList()
+        return (0 until items.length()).map {
+            val o = items.getJSONObject(it)
+            DeviceInfo(o.str("id"), o.str("label").ifBlank { "A device" }, o.optDouble("signed_in_at", 0.0).toLong(), o.optBoolean("current", false))
+        }
+    }
+
+    fun signDeviceOut(id: String) {
+        call("DELETE", "/api/v1/auth/devices/" + enc(id))
+    }
+
+    /** The newest published release as (version, page address), or null when the server has none to offer. */
+    fun latestRelease(): Pair<String, String>? {
+        val latest = JSONObject(call("GET", "/api/v1/app-update")).optJSONObject("latest") ?: return null
+        val v = latest.str("version")
+        val u = latest.str("url")
+        return if (v.isBlank() || !u.startsWith("https://github.com/")) null else v to u
     }
 
     /** Asks the address whether it is an Enveliq that answers. Throws a plain-words [ApiException] when it does not. */

@@ -44,6 +44,9 @@ Settings is a short list of topics: **Notifications**, **Swipe on an email**, **
 
 When you have more than one address (a mailbox's own address and its aliases, from the mailbox's "send as" list), the writing screen shows **From** at the top. Tap it to pick another address. A reply or forward can only use the addresses of the mailbox the email arrived in; a new email can use any of your mailboxes. Your mailbox's own address is the default, and when it is picked the app sends nothing extra, so the mail service behaves exactly as before. The choice is kept in drafts.
 
+## Your devices and updates
+Settings, Security, **Your devices** lists the places you are signed in and lets you sign another one out. Names come from the app ("Enveliq app on <phone model>") or, for a browser, a short guess such as "Chrome on Windows". Sign-ins you chose to keep across a restart are listed too. The list is yours alone. About, **Check for a new version** asks your own server (which checks GitHub once a day) for the newest release and, if it is newer than the app, offers to open its download page; the app never contacts GitHub itself. Installing is Android's own step. If an administrator switched the update notice off, the app says it has no answer.
+
 ## Tags, files, links and views
 
 - **Tags:** on an opened email, **Choose tags** opens a full screen list with a search box at the top and tick boxes. Tick or untick several, then **Save tags** applies them together. The email's current tags start ticked, so nothing is lost. **Make the tag "..."** appears when what you typed does not exist yet (only if your mail service lets tags be made). Shown only if your mail service keeps tags.
