@@ -61,10 +61,10 @@ _POSITION_ANY = re.compile(r"position\s*:\s*(?:fixed|sticky)", re.I)
 # The one script of ours. It never reads the email; it reports the height and the link that was pressed.
 SCRIPT = (
     "(function(){var p=window.parent;function h(){var b=document.body;if(!b)return 0;var r=b.getBoundingClientRect(),m=parseFloat(getComputedStyle(b).marginBottom)||0;"
-    "return Math.ceil(r.bottom+(window.pageYOffset||0)+m)+2}"
+    "return Math.ceil(Math.max(r.bottom+(window.pageYOffset||0)+m,b.scrollHeight))+2}"
     "function s(){p.postMessage({enveliq:'height',height:h()},'*')}"
-    "addEventListener('load',s);addEventListener('resize',s);"
-    "if(window.ResizeObserver&&document.body)new ResizeObserver(s).observe(document.body);"
+    "addEventListener('load',s);addEventListener('resize',s);setTimeout(s,300);setTimeout(s,1500);"
+    "if(window.ResizeObserver&&document.body){var o=new ResizeObserver(s);o.observe(document.body);o.observe(document.documentElement)}"
     "document.addEventListener('click',function(e){var t=e.target,a=t&&t.closest?t.closest('a[href]'):null;if(!a)return;"
     "e.preventDefault();p.postMessage({enveliq:'link',href:a.href},'*')},true);s()})();"
 )
@@ -73,6 +73,10 @@ SCRIPT_HASH = "sha256-" + base64.b64encode(hashlib.sha256(SCRIPT.encode()).diges
 BASE_CSS = ("html{color-scheme:light}html,body{margin:0;padding:0}body{background:#fff;color:#202124;font:15px/1.5 -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;"
             "padding:12px;overflow-wrap:anywhere}img{max-width:100%;height:auto}table{max-width:100%}pre{white-space:pre-wrap}"
             "a[href]{color:#1a56c4}[data-blocked]{display:inline-block;min-width:8px;min-height:8px}")
+
+
+# Last word on the page's own size: the email may not give the page a fixed height or its own scrollbar, or the email would sit in a small box.
+GROW_CSS = "html,body{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important}"
 
 
 def policy_header(images: bool) -> str:

@@ -103,3 +103,9 @@ def test_inline_pictures_are_taken_from_the_email_by_content_id():
            b"--R\r\nContent-Type: image/png\r\nContent-ID: <pic1@x>\r\nContent-Transfer-Encoding: base64\r\n\r\n" + TINY.split(",")[1].encode() + b"\r\n--R--\r\n")
     built = htmlview.render(raw)
     assert built is not None and TINY in built.page and built.blocked == 0
+
+
+def test_the_page_always_grows_with_the_email_and_never_gets_its_own_scrollbar():
+    page = rebuild('<html><head><style>body{height:150px;overflow:auto}</style></head><body style="height:100px"><p>hi</p></body></html>').page
+    assert "overflow:visible!important" in page and "height:auto!important" in page
+    assert page.index("height:150px") < page.index("height:auto!important")        # ours comes last, so it wins
