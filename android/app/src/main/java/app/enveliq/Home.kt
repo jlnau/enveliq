@@ -961,7 +961,6 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
                         shape = shape, border = BorderStroke(1.dp, Line), contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                     ) { Icon(Icons.Filled.MoreVert, contentDescription = null, tint = Ink) }
                     DropdownMenu(expanded = moreMenu, onDismissRequest = { moreMenu = false }, containerColor = Panel) {
-                        DropdownMenuItem(text = { Text("Show the original email", color = Ink) }, onClick = { moreMenu = false; showOriginal = true })
                         DropdownMenuItem(text = { Text("Send to Junk", color = Ink) }, onClick = { moreMenu = false; onJunk(false) })
                         if (mail.address.isNotBlank()) DropdownMenuItem(text = { Text("Block sender", color = Ink) }, onClick = { moreMenu = false; askBlock = true })
                         if (mail.unsubUrl != null || mail.unsubMailto != null) DropdownMenuItem(text = { Text("Unsubscribe from this sender", color = Ink) }, onClick = {
@@ -976,6 +975,13 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
                     }
                 }
             }
+
+            // The original email: a smaller button with its words, just under the reply row.
+            OutlinedButton(
+                onClick = { showOriginal = true },
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp).height(38.dp),
+                shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
+            ) { Text("Show original email", color = Ink, fontSize = 13.sp) }
 
             if (mail.taskTitle != null) {
                 Surface(
