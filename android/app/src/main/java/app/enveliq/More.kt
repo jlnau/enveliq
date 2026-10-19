@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -182,10 +184,12 @@ internal fun MoreTab(api: EnveliqApi) {
         page == "trips" -> TripsPage(api, back)
         page == "news" -> NewsPage(api, back)
         page == "chat" -> ChatsPage(api, back)
+        page == "find" -> FindPage(api, back)
         else -> Column(Modifier.fillMaxSize()) {
             Heading("More", "")
             LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(listOf(
+                    Triple("find", "Find any email", "Search everything in your mailboxes, old email too."),
                     Triple("bell", "Notes and alerts", "Things your other services told Enveliq."),
                     Triple("chat", "Messages", "Chat with the people in your household."),
                     Triple("shipping", "Shipping", "Parcels on their way and when they arrive."),
@@ -392,6 +396,97 @@ private fun ChatThread(api: EnveliqApi, chat: Chat, onBack: () -> Unit) {
                     }
                 }) { Text("Send") }
             }
+        }
+    }
+}
+
+@Composable
+private fun FindPage(api: EnveliqApi, onBack: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var query by remember { mutableStateOf("") }
+    var junk by remember { mutableStateOf(false) }
+    var jobId by remember { mutableStateOf("") }
+    var running by remember { mutableStateOf(false) }
+    var note by remember { mutableStateOf("") }
+    val rows = remember { androidx.compose.runtime.mutableStateListOf<FoundRow>() }
+    var more by remember { mutableStateOf(false) }
+    var reading by remember { mutableStateOf<FoundRow?>(null) }
+    var text by remember { mutableStateOf("") }
+
+    val row = reading
+    if (row != null) {
+        SubPage(row.subject, row.from, onBack = { reading = null }) {
+            LaunchedEffect(row.token) {
+                text = ""
+                try { text = withContext(Dispatchers.IO) { api.findOriginal(row.token) } }
+                catch (e: ApiException) { text = e.message ?: "Could not open this email." }
+                catch (e: Exception) { text = "Could not open this email. Check your connection." }
+            }
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+                if (text.isEmpty()) CircularProgressIndicator(color = Blue) else Text(text, color = Ink, fontSize = 16.sp, lineHeight = 24.sp)
+            }
+        }
+        return
+    }
+
+    fun search() {
+        if (query.isBlank() || running) return
+        rows.clear(); more = false; note = ""; running = true
+        scope.launch {
+            try {
+                var p = withContext(Dispatchers.IO) { api.findStart(query.trim(), junk) }
+                jobId = p.id
+                var shown = 0
+                var tries = 0
+                while (true) {
+                    if (p.listed > shown || p.done) {
+                        var offset = shown
+                        while (offset < p.listed && offset < 100) {
+                            val (got, hasMore) = withContext(Dispatchers.IO) { api.findPage(p.id, offset) }
+                            if (got.isEmpty()) break
+                            rows.addAll(got); offset += 25; more = hasMore
+                        }
+                        shown = p.listed
+                    }
+                    if (p.done || ++tries > 90) break
+                    kotlinx.coroutines.delay(1500)
+                    p = withContext(Dispatchers.IO) { api.findProgress(p.id) }
+                }
+                note = if (rows.isEmpty()) "Nothing found. Try fewer or different words." else p.notes.joinToString(" ")
+            } catch (e: ApiException) {
+                note = e.message ?: "The search did not work."
+            } catch (e: Exception) {
+                note = "The search did not work. Check your connection."
+            }
+            running = false
+        }
+    }
+
+    SubPage("Find any email", onBack = onBack) {
+        LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp).imePadding(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            item {
+                OutlinedTextField(
+                    value = query, onValueChange = { query = it.take(300) }, singleLine = true, label = { Text("Words to look for") },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.Switch(checked = junk, onCheckedChange = { junk = it })
+                    Text("Look in Junk too", color = Ink, fontSize = 15.sp, modifier = Modifier.padding(start = 10.dp))
+                }
+                Button(onClick = { search() }, enabled = !running && query.isNotBlank(), modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                    Text(if (running) "Searching..." else "Search")
+                }
+                if (running) TextButton(onClick = { scope.launch { withContext(Dispatchers.IO) { api.findCancel(jobId) } } }) { Text("Stop searching", color = Blue) }
+                if (note.isNotEmpty()) Text(note, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
+            }
+            items(rows, key = { it.token }) { r ->
+                Card(onClick = { reading = r }) {
+                    Text(r.subject, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(r.from, color = Muted, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(listOf(r.date.take(10), r.mailbox, r.folder).filter { it.isNotBlank() }.joinToString(" · "), color = Muted, fontSize = 12.sp)
+                }
+            }
+            item { if (more && !running) Text("Only the first results are shown. Add more words to narrow it down.", color = Muted, fontSize = 13.sp) }
         }
     }
 }

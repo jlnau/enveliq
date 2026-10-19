@@ -88,3 +88,9 @@ data class Rule(val id: String, val sender: String, val subject: String, val act
 
 /** Where the newest Android app is published. */
 const val APP_DOWNLOAD_PAGE = "https://github.com/jlnau/enveliq/releases/latest"
+
+/** One email found by "Find any email". [token] opens it; the email itself stays at the mailbox. */
+data class FoundRow(val token: String, val from: String, val subject: String, val date: String, val mailbox: String, val folder: String)
+
+/** How a search is going: [done] when every mailbox has answered. */
+data class FindProgress(val id: String, val done: Boolean, val listed: Int, val notes: List<String>)

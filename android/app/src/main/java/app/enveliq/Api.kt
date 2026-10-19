@@ -552,6 +552,41 @@ class EnveliqApi(address: String) {
         }
     }
 
+    fun findStart(query: String, includeJunk: Boolean): FindProgress =
+        findProgressOf(JSONObject(call("POST", "/api/v1/find/searches", JSONObject().put("query", query).put("include_junk", includeJunk))))
+
+    fun findProgress(id: String): FindProgress = findProgressOf(JSONObject(call("GET", "/api/v1/find/searches/" + enc(id))))
+
+    private fun findProgressOf(r: JSONObject): FindProgress {
+        val notes = ArrayList<String>()
+        val boxes = r.optJSONArray("mailboxes")
+        if (boxes != null) for (i in 0 until boxes.length()) {
+            val m = boxes.optJSONObject(i) ?: continue
+            if (m.str("message").isNotBlank()) notes.add(m.str("label") + ": " + m.str("message"))
+        }
+        return FindProgress(r.str("id"), r.optBoolean("done", false) || r.optBoolean("cancelled", false), r.optInt("listed", 0), notes)
+    }
+
+    /** One page (25) of results. Returns the rows and whether there are more. */
+    fun findPage(id: String, offset: Int): Pair<List<FoundRow>, Boolean> {
+        val r = JSONObject(call("GET", "/api/v1/find/searches/" + enc(id) + "/results?offset=" + offset))
+        val arr = r.optJSONArray("rows")
+        val rows = ArrayList<FoundRow>()
+        if (arr != null) for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            rows.add(FoundRow(o.str("token"), o.str("from_name").ifBlank { o.str("from_address") }, o.str("subject"), o.str("date"), o.str("account"), o.str("folder")))
+        }
+        return rows to r.optBoolean("more", false)
+    }
+
+    fun findCancel(id: String) {
+        try { call("DELETE", "/api/v1/find/searches/" + enc(id)) } catch (e: Exception) { }
+    }
+
+    /** The plain text of a found email. Fetched now and not kept. */
+    fun findOriginal(token: String): String =
+        JSONObject(call("GET", "/api/v1/find/results/" + enc(token) + "/original")).str("text").ifBlank { "(no text content)" }
+
     /** From now on, new email from this address goes straight to the mailbox's Junk folder. The server keeps important people safe. */
     fun blockSender(address: String) {
         call("POST", "/api/v1/me/rules", JSONObject().put("sender", address).put("subject", "").put("action", "junked"))
