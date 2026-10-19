@@ -683,6 +683,26 @@ async function accountPage(me, params) {
       sections.push(h("section", { class: "section" }, h("h2", { text: "Password" }), pw));
     }
 
+    // Your devices: where you are signed in, with a button to sign any other one out.
+    const devSlot = h("div", {});
+    const devices = h("section", { class: "section", id: "devices" }, h("h2", { text: "Your devices" }),
+      h("p", { class: "lead", text: "Where you are signed in. Signing a device out takes effect straight away." }), devSlot,
+      h("p", { class: "hint" }, "Using Android? ", h("a", { href: "https://github.com/jlnau/enveliq/releases/latest", target: "_blank", rel: "noopener noreferrer", text: "Download the Enveliq app" }), "."));
+    const loadDevices = async () => {
+      try {
+        const out = await api("/auth/devices");
+        devSlot.replaceChildren(...(out.items || []).map(d => h("div", { class: "item" },
+          h("div", {}, h("strong", { text: (d.label || "A device") + (d.current ? " (this one)" : "") }),
+            h("div", { class: "meta", text: d.signed_in_at ? `Signed in ${new Date(d.signed_in_at * 1000).toLocaleDateString()}` : "" })),
+          d.current ? null : h("button", { class: "btn small danger", type: "button", text: "Sign out", onclick: async () => {
+            try { await api(`/auth/devices/${encodeURIComponent(d.id)}`, { method: "DELETE" }); toast("Device signed out"); loadDevices(); } catch (er) { toast(er.message); }
+          } }))));
+        if (!(out.items || []).length) devSlot.append(h("p", { class: "lead", text: "No devices to show." }));
+      } catch (er) { devSlot.replaceChildren(h("p", { class: "lead", text: "Could not load your devices. Please try again." })); }
+    };
+    loadDevices();
+    protect.push(devices);
+
     // SSO link
     if (me.sso && me.sso.enabled) {
       const s = h("section", { class: "section" }, h("h2", { text: "Single sign-on" }));
@@ -1468,7 +1488,8 @@ function androidCard(ch, redraw) {
     h("button", { class: "btn small", type: "button", text: "Remove", onclick: async () => { try { await api(`/me/notifications/android/${d.id}`, { method: "DELETE" }); toast("Removed"); redraw(); } catch (err) { toast(err.message); } } })));
   const body = h("div", { class: "chan-form" }, h("p", { class: "hint", text: ch.blurb }),
     ch.available || ch.devices.length ? h("ol", { class: "howto" }, ch.steps.slice(0, 3).map(t => h("li", { text: t }))) : alertBox("info", "Your administrator has not set this up yet."),
-    ...list, ch.last_error ? alertBox("bad", `The last send failed: ${ch.last_error}`) : null);
+    ...list, ch.last_error ? alertBox("bad", `The last send failed: ${ch.last_error}`) : null,
+    h("p", { class: "hint" }, h("a", { href: "https://github.com/jlnau/enveliq/releases/latest", target: "_blank", rel: "noopener noreferrer", text: "Download the Android app" }), " (a file ending in .apk, saved from the newest release)."));
   return h("details", { class: "chan", open: !!(ch.devices.length || ch.last_error) }, h("summary", {}, h("strong", { text: ch.label }), " ", status), body);
 }
 function channelCard(ch, redraw) {

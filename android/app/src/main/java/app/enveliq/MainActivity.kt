@@ -63,8 +63,10 @@ class MainActivity : FragmentActivity() {
         val link = intent?.data
         if (link != null && link.scheme == "mailto" && (intent?.action == Intent.ACTION_SENDTO || intent?.action == Intent.ACTION_VIEW)) {
             val to = (link.schemeSpecificPart.substringBefore("?")).take(500)
-            val subject = (try { link.getQueryParameter("subject") } catch (e: Exception) { null } ?: intent?.getStringExtra(Intent.EXTRA_SUBJECT) ?: "").take(300)
-            val text = (try { link.getQueryParameter("body") } catch (e: Exception) { null } ?: intent?.getStringExtra(Intent.EXTRA_TEXT) ?: "").take(20000)
+            // A mailto link is "opaque", so its ?subject=...&body=... part is read as an ordinary web query.
+            val query = android.net.Uri.parse("http://x/?" + link.schemeSpecificPart.substringAfter("?", ""))
+            val subject = (query.getQueryParameter("subject") ?: intent?.getStringExtra(Intent.EXTRA_SUBJECT) ?: "").take(300)
+            val text = (query.getQueryParameter("body") ?: intent?.getStringExtra(Intent.EXTRA_TEXT) ?: "").take(20000)
             mailtoRequest = Triple(to, subject, text)
             return
         }

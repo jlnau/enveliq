@@ -15,6 +15,7 @@
   <a href="#built-for-your-own-infrastructure">Self hosted AI</a> ·
   <a href="#install">Install options</a> ·
   <a href="#questions">Questions</a> ·
+  <a href="docs/ANDROID.md">Android app</a> ·
   <a href="docs/README.md">All guides</a>
 </p>
 

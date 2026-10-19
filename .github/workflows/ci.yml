@@ -1,8 +1,8 @@
 # Automated checks for every push and pull request.
 # Actions are pinned to full commit hashes; Dependabot proposes updates.
 #
-# Where the checks run: on GitHub's own machines by default. To use your own machine instead (for example while the
-# repository is private and the free minutes run low), add a repository VARIABLE (Settings, Secrets and variables,
+# Where the checks run: on GitHub's own machines by default. To use your own machine instead (for example when the
+# free minutes run low), add a repository VARIABLE (Settings, Secrets and variables,
 # Actions, Variables) named RUNNER_LABELS with the value ["self-hosted","linux","x64"]. Delete the variable to go back.
 # On your own machine, install the browser libraries once: sudo npx playwright@1.56.0 install-deps chromium
 #
@@ -142,6 +142,8 @@ jobs:
         run: node scripts/check_check_address.mjs
       - name: Sign in to the Android app through the browser (simulated server)
         run: node scripts/check_app_signin.mjs
+      - name: Your devices on the Sign-in and security page (simulated server)
+        run: node scripts/check_devices_page.mjs
       - name: Snooze (simulated server)
         run: node scripts/check_snooze.mjs
       - name: Search everywhere (simulated server)
@@ -463,7 +465,7 @@ jobs:
           PY
           exit $status
 
-  # Publishes the two images to GitHub's private package store, but only when a GitHub Release is published, and only
+  # Publishes the two images to GitHub's package store, but only when a GitHub Release is published, and only
   # after every check above has passed on that release's code. Merging pull requests into main runs the checks but
   # publishes nothing, so several merges can go out together as one version.
   # To release: see docs/RELEASING.md. In short: merge a pull request that sets VERSION in backend/version.py, then on

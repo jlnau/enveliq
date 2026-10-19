@@ -4,8 +4,8 @@ A rule tells Enveliq what to do with **new** email from a sender you choose. The
 
 ## Make a rule
 
-- **From an email.** Open an email and press **Always archive these**. From now on, new email from that sender is archived for you.
-- **In Settings.** Open **Settings, Mail rules**. Type who the email is from: one address (`news@example.com`), or a whole website with an at sign (`@example.com`, meaning everyone at example.com). If you like, add words the subject must contain. Choose **Archive it** or **Mark it reviewed** and press **Add rule**.
+- **From an email.** Open an email and press **Always archive these**. From now on, new email from that sender is archived for you. **Block sender** is the same idea with Junk: new email from that sender goes to your mailbox's Junk folder (see [Junk mail](JUNK_MAIL.md)).
+- **In Settings.** Open **Settings, Mail rules**. Type who the email is from: one address (`news@example.com`), or a whole website with an at sign (`@example.com`, meaning everyone at example.com). If you like, add words the subject must contain. Choose **Archive it**, **Mark it reviewed** or **Send it to Junk** and press **Add rule**.
 
 The same page lists your rules and lets you remove any of them with the **×**.
 
@@ -13,6 +13,7 @@ The same page lists your rules and lets you remove any of them with the **×**.
 
 - **Archive it** moves the email to your mailbox's Archive folder and marks it read, exactly as pressing Archive does. Enveliq keeps a short card for a few days, as it does for anything you archive, so you can still find it.
 - **Mark it reviewed** marks the email read and leaves it where it is.
+- **Send it to Junk** moves the email to your mailbox's Junk or Spam folder. Nothing is deleted, and you can move it back from there.
 
 ## What a rule never does
 

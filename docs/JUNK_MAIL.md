@@ -28,7 +28,16 @@ The email is fetched from your mailbox when you open it and is not kept.
 
 ## Not Junk
 
-**Not Junk** (on a card, and in the viewer) moves the email from the Junk or Spam folder to the **Inbox at your mail service** (Gmail, Microsoft, Proton or any other IMAP mailbox), marks it unread, and takes it off the Junk Mail list. Enveliq then checks that mailbox, so the email shows up in your Enveliq inbox as new mail and gets its normal summary. Nothing is ever moved to Junk, deleted or unsubscribed by Enveliq.
+**Not Junk** (on a card, and in the viewer) moves the email from the Junk or Spam folder to the **Inbox at your mail service** (Gmail, Microsoft, Proton or any other IMAP mailbox), marks it unread, and takes it off the Junk Mail list. Enveliq then checks that mailbox, so the email shows up in your Enveliq inbox as new mail and gets its normal summary. Enveliq never deletes or unsubscribes.
+
+## Sending email to Junk, and blocking a sender
+
+On an opened email (on the website and in the Android app) there are two buttons:
+
+- **Send to Junk** moves that one email to your mailbox's own Junk or Spam folder (Gmail's Spam, Outlook's Junk Email, and so on). It leaves your inbox at once, and the page offers Undo for a few seconds. It is a normal move, so you can still find it in that folder, and **Not Junk** on this page, or your mail app, puts it back.
+- **Block sender** does the same and also adds a rule, so new email from that address goes straight to Junk from then on. Blocked senders are listed under **Settings, Mail rules** (website) or **Settings, Blocked senders** (Android), and removing the rule unblocks them. The rule only acts on new email as it arrives, never on mail already in your inbox, and never on people on your important list.
+
+Enveliq moves the email and nothing else; it does not delete, report or answer it.
 
 ## What is kept
 

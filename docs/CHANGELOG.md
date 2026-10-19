@@ -4,6 +4,24 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Junk and Block sender.** On an opened email, **Send to Junk** moves it to your mailbox's own Junk or Spam folder (Undo works for a few seconds), and **Block sender** does that and also sends all new email from that address to Junk from then on. A new Mail rules action, **Send it to Junk**, does the same for a sender or words in the subject, and never touches your important people. Touches `backend/models.py`, `backend/mail/service.py`, `backend/mail/rules.py`, `prototype/index.html`, `web/static/auth.js`, `tests/test_rules.py`, `docs/JUNK_MAIL.md`, `docs/MAIL_RULES.md`, `SECURITY.md`.
+
+**Android: Junk, Block sender and Blocked senders.** The same two buttons on an opened email, and **Settings, Blocked senders** to see and undo blocks. The block is made after the Undo time. Touches `android/`.
+
+**Android: warnings and unsubscribe.** A boxed "Take care with this one" note shows why an email looks odd, and **Unsubscribe from this sender** appears when the email carries one (the link asks first). Touches `android/`.
+
+**Android: Find any email.** More, Find any email searches all your mailboxes, old email and Junk too. Touches `android/`.
+
+**Android: write better.** Attach files to a new email, your saved signature is put in the box, pick an address from the phone's contacts (no permission needed), and `mailto:` links from other apps open a new email in Enveliq. Touches `android/` (`Compose.kt`, `MainActivity.kt`, `Api.kt`, manifest).
+
+**Android: open the next email.** A Settings switch: after you archive or mark reviewed the email you are reading, the next one opens. Touches `android/`.
+
+**Your devices on the website.** The Sign-in and security page now lists where you are signed in and lets you sign another device out, as the Android app already did. Touches `web/static/auth.js`, `scripts/check_devices_page.mjs`, `.github/workflows/ci.yml`.
+
+**Download the Android app.** A link on the website's front page and guide menu, in the website's Settings, and in the app (Settings, About, Get the Android app). They open the newest release page. Touches `website/`, `web/static/auth.js`, `prototype/index.html`, `android/`.
+
+**Guides.** The Android guide is rewritten (it no longer says the repository is private or that features are missing that now exist), and the Android and Junk mail guides are now in the website's menu. Touches `docs/ANDROID.md`, `docs/JUNK_MAIL.md`, `website/build.mjs`, `.github/workflows/ci.yml` (comments).
+
 **Fix: Junk Mail drops an email that is no longer there.** If an email had been moved or deleted since the page last looked, pressing View original email or Not Junk only said "no longer in Junk Mail" and the card stayed. Now the card is taken off the list at once (on the server and on the page). Touches `backend/mail/junk.py`, `backend/mail/junk_routes.py`, `prototype/index.html`, `tests/test_junk.py`, `docs/JUNK_MAIL.md`.
 
 **Fix: "Show the original email" no longer sits in a small scrolling box.** Some emails (for example an invoice with fixed heights in its own styles) made the formatted view a short box with its own scrollbar. The formatted page now always takes the height of the whole email, so you scroll the window as you read it. Touches `backend/mail/htmlview.py`, `tests/test_htmlview.py`.

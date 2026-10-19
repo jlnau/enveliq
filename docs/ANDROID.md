@@ -1,6 +1,6 @@
 # Enveliq for Android
 
-A real Android app (not a web page in a frame), written in Kotlin with Jetpack Compose. It lives in the `android/` folder. It is not on the Play Store: you install the APK file yourself.
+A real Android app (not a web page in a frame), written in Kotlin with Jetpack Compose. It lives in the `android/` folder. It is not on the Play Store: you install the APK file yourself. The newest one is always on the [download page](https://github.com/jlnau/enveliq/releases/latest) (this repository is public, so no sign-in is needed).
 
 ## Install it
 
@@ -27,7 +27,7 @@ The app's version is the release tag (for example `v0.96` gives version `0.96`);
 
 ## Settings
 
-Settings is a short list of topics: **Notifications**, **Swipe on an email**, **Security**, **Account** and **About**. Tap a topic to open its own page, with a Back button fixed at the top. On a page, switches turn things on and off with one tap on the whole row; a choice (for example what a swipe does, or how alerts reach the phone) opens one more page with a tick-list. Nothing needs long scrolling: longer explanations sit under the setting they belong to.
+Settings is a short list of topics: **Notifications**, **Swipe on an email**, **Appearance**, **Security**, **Open the next email**, **Blocked senders**, **Account** and **About**. Tap a topic to open its own page, with a Back button fixed at the top. On a page, switches turn things on and off with one tap on the whole row; a choice (for example what a swipe does, or how alerts reach the phone) opens one more page with a tick-list. Nothing needs long scrolling: longer explanations sit under the setting they belong to.
 
 ## Look, alerts and comfort
 
@@ -67,9 +67,25 @@ Settings, Security, **Your devices** lists the places you are signed in and lets
 - **Inbox, Reviewed, Archived:** the chips at the top switch views. Reviewed and Archived show what the server still keeps (a few days).
 - **More than one mailbox:** a chip for each mailbox appears and filters the list.
 
-## Not in the app yet
+## Added in version 0.97
 
-Passkeys and single sign-on, notes from Home Assistant and other services, task reminders, app lock, search, replying and sending, shipping, calendar and the other screens, and an in-app 'new version' button (it needs a public place to look for releases, because this repository is private). The plan for all of these is in the project's Android plan (phases 0 to 5). Settings, Administration and mailbox setup stay on the website.
+- **Junk and Block sender.** On an opened email, **Send to Junk** moves it to your mailbox's own Junk or Spam folder (Undo works for a few seconds). **Block sender** does that and also makes a rule, so new email from that address goes to Junk from then on. The rule is only made after the Undo time has passed. People on your important list are never blocked. **Settings, Blocked senders** lists the blocked addresses, each with **Unblock**. It is the same rule the website uses (see [Junk mail](JUNK_MAIL.md) and [Mail rules](MAIL_RULES.md)).
+- **Take care with this one.** When Enveliq's check finds something odd about an email (for example a sender name that does not match the address), a boxed note above the summary says why in plain words.
+- **Unsubscribe from this sender.** Shown when the email carries an unsubscribe link or address. A web link asks first and names the site it goes to; a mail address opens a new email in your mail app. Enveliq never opens the link by itself.
+- **Find any email** (More tab) searches all your mailboxes, old email too, and can include Junk. Results list sender, subject, date and mailbox; tap one to read its text. The email is fetched when you open it and is not kept. It uses the website's [Find any email](FIND_MAIL.md); an administrator can switch it off.
+- **Attach files to a new email.** **Attach files** on a new email opens Android's file picker (up to 10 files, 10 MB together). The files are held in memory while you write and sent with the email; they are not saved on the phone. Replies and forwards work as on the website (a forward carries the original's files).
+- **Signature.** The signature you saved on the website is put in the box when a new email starts, where you can change or remove it.
+- **Pick from phone contacts** on a new email opens Android's contact picker. Only the one address you choose is handed over, so Enveliq does not need permission to read your contacts.
+- **Links that start an email.** Tapping an email address or `mailto:` link in another app can offer Enveliq, and a new email opens with the address (and subject or text, if the link had them) filled in. Nothing is sent until you press Send.
+- **Open the next email** (Settings): after you archive or mark reviewed the email you are reading, the next one in the list opens.
+- **Get the Android app** (Settings, About) opens the download page, for this or another phone. The same link is on the website's front page and guide menu, and in the website's Settings.
+
+## Not in the app
+
+- **Installing an update from inside the app.** About, Check for a new version opens the download page; Android's own installer does the rest. The app does not ask for permission to install apps, which keeps it simpler to trust.
+- **Send later** and **separate alert switches for tasks, messages and shipping.** The app alerts for new email only; task reminders and other alerts use your other channels. Both are on the wish list.
+- **A calendar of events.** Trips and bookings are listed under More, Trips and calendar.
+- **Settings, Administration and mailbox setup** stay on the website. Shipping, trips and news are read-only in the app (set them up on the website).
 
 ## How new-email alerts work
 
@@ -104,7 +120,7 @@ Which emails alert you, quiet hours and the "important people only" filter are t
 
 - **Swipe an email** right or left to Archive, Bin or mark it Reviewed (Settings, Swipe on an email; to begin with right is Archive and left is Bin, or choose Nothing to switch a side off). Every swipe can be undone for a few seconds.
 - **Select several:** press and hold an email, tap more to add them, then Reviewed, Archive or Bin for all of them. **Select all** ticks everything in the list.
-- **Search** your inbox (the Search button at the top): it looks at the sender, subject and summary of the emails already in your inbox. Searching all your mail is still on the website.
+- **Search** your inbox (the Search button at the top): it looks at the sender, subject and summary of the emails already in your inbox. To search all your mail, use More, Find any email.
 - **Remind me later** (on an opened email): put it away until in 3 hours, tomorrow morning or next Monday morning. It comes back in your inbox then, and the website shows it as snoozed too. Undo brings it back at once.
 - **Reply, Reply all and Forward** are at the top of an opened email. The email you are answering is added underneath, as on the website.
 - **New email:** the round pencil button on the inbox. In To, Cc and Bcc, suggestions from your address list appear as you type (if the address list is switched on in Enveliq). If you have more than one mailbox, you pick which one to send from.
