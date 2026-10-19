@@ -667,3 +667,11 @@ def test_a_relay_that_is_down_gives_a_plain_message(env, relay, monkeypatch):
     assert r.status_code == 502 and "Could not reach the push relay" in r.json()["detail"]
     monkeypatch.setattr(fcm.outbound, "request_full", lambda *a, **k: (503, {}, b"{}"))
     assert "not set up with a Firebase key" in client.post(f"/api/v1/me/notifications/android/{device}/test").json()["detail"]
+
+
+def test_the_phone_is_told_which_emails_are_no_longer_waiting():
+    from backend.mail.notify_routes import mail_changes
+    before = {("a1", "m1"), ("a1", "m2")}
+    now = {("a1", "m2"), ("a1", "m3")}
+    assert mail_changes(before, now) == ([("a1", "m3")], [("a1", "m1")])
+    assert mail_changes(before, before) == ([], [])

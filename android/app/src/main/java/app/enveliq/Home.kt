@@ -13,6 +13,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -90,7 +93,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class Stage { Opening, SignIn, Home }
+private enum class Stage { Opening, SignIn, Welcome, Home }
 private enum class Tab { Inbox, Tasks, Drafts, Settings }
 
 @Composable
@@ -101,6 +104,7 @@ fun EnveliqApp(activity: MainActivity) {
     var api by remember { mutableStateOf<EnveliqApi?>(null) }
     var server by remember { mutableStateOf("") }
     var notice by remember { mutableStateOf("") }
+    var startOnSettings by remember { mutableStateOf(false) }
 
     // A kept sign-in is tried first, so you land straight in your inbox.
     LaunchedEffect(Unit) {
@@ -141,9 +145,15 @@ fun EnveliqApp(activity: MainActivity) {
                     }
                     api = client
                     server = address
-                    stage = Stage.Home
+                    // A brand-new sign-in on this phone starts with a short, calm welcome; after that it never comes back.
+                    stage = if (prefs.getBoolean("welcomed", false)) Stage.Home else Stage.Welcome
                 },
             )
+        }
+        Stage.Welcome -> WelcomeScreen { openSettings ->
+            prefs.edit().putBoolean("welcomed", true).apply()
+            startOnSettings = openSettings
+            stage = Stage.Home
         }
         Stage.Home -> {
             val client = api
@@ -152,6 +162,7 @@ fun EnveliqApp(activity: MainActivity) {
                 prefs = prefs,
                 api = client,
                 server = server,
+                startOnSettings = startOnSettings,
                 onLeave = { signedOutByServer ->
                     val pushId = AlertPrefs.pushDevice(activity)
                     Thread {
@@ -173,11 +184,11 @@ fun EnveliqApp(activity: MainActivity) {
 }
 
 @Composable
-private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: EnveliqApi, server: String, onLeave: (Boolean) -> Unit) {
+private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: EnveliqApi, server: String, startOnSettings: Boolean = false, onLeave: (Boolean) -> Unit) {
     val mails = remember { mutableStateListOf<Mail>() }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
-    var tab by remember { mutableStateOf(Tab.Inbox) }
+    var tab by remember { mutableStateOf(if (startOnSettings) Tab.Settings else Tab.Inbox) }
     var opened by remember { mutableStateOf<Mail?>(null) }
     var loaded by remember { mutableStateOf(false) }
     var view by remember { mutableStateOf("inbox") }
@@ -230,6 +241,25 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     var askSnooze by remember { mutableStateOf(false) }
     var composing by remember { mutableStateOf<ComposeTarget?>(null) }
     fun keyOf(m: Mail) = m.accountId + ":" + m.id
+
+    // Puts the unread mark back on an email you had marked Reviewed. It goes back to the inbox.
+    fun markUnread(m: Mail) {
+        val at = mails.indexOf(m).coerceAtLeast(0)
+        mails.remove(m)
+        opened = null
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) { api.markUnread(m) }
+                snack.showSnackbar("Marked unread. It is back in your inbox.")
+            } catch (e: ApiException) {
+                mails.add(at.coerceAtMost(mails.size), m)
+                snack.showSnackbar(e.message ?: "That did not work.")
+            } catch (e: Exception) {
+                mails.add(at.coerceAtMost(mails.size), m)
+                snack.showSnackbar("That did not work. Please try again.")
+            }
+        }
+    }
 
     // The emails leave the list at once. They are only marked at your mailbox when the Undo time has passed.
     fun resolveAll(items: List<Mail>, outcome: Outcome) {
@@ -341,7 +371,10 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         },
         bottomBar = {
             if (current != null) {
-                ActionBar(onResolve = { outcome -> resolve(current, outcome) }, onSnooze = { askSnooze = true })
+                ActionBar(
+                    onResolve = { outcome -> resolve(current, outcome) }, onSnooze = { askSnooze = true },
+                    onUnread = if (current.state == "reviewed") ({ markUnread(current) }) else null,
+                )
             } else if (selected.isNotEmpty() && tab == Tab.Inbox) {
                 val chosen = mails.filter { selected.contains(keyOf(it)) }
                 SelectionBar(chosen.size, onResolve = { outcome -> resolveAll(chosen, outcome) }, onCancel = { selected.clear() })
@@ -546,6 +579,14 @@ private fun SwipeRow(
         },
     )
     SwipeToDismissBox(
+        modifier = Modifier.semantics {
+            // Swiping is hard or impossible with a screen reader, so the same actions are offered in TalkBack's actions menu.
+            customActions = listOf(
+                CustomAccessibilityAction("Mark reviewed") { onSwipe(Outcome.Reviewed); true },
+                CustomAccessibilityAction("Archive") { onSwipe(Outcome.Archived); true },
+                CustomAccessibilityAction("Move to Bin") { onSwipe(Outcome.Binned); true },
+            )
+        },
         state = state,
         enableDismissFromStartToEnd = rightOutcome != null && !selecting,
         enableDismissFromEndToStart = leftOutcome != null && !selecting,
@@ -666,7 +707,19 @@ private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompos
 
 /** Fixed at the bottom, so the buttons can always be reached. */
 @Composable
-private fun ActionBar(onResolve: (Outcome) -> Unit, onSnooze: () -> Unit) {
+private fun ActionBar(onResolve: (Outcome) -> Unit, onSnooze: () -> Unit, onUnread: (() -> Unit)? = null) {
+    if (onUnread != null) {
+        Column(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Button(onClick = onUnread, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
+                Text("Mark unread", fontWeight = FontWeight.SemiBold)
+            }
+            OutlinedButton(
+                onClick = { onResolve(Outcome.Archived) }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp).height(46.dp),
+                shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
+            ) { Text("Archive", color = Ink) }
+        }
+        return
+    }
     Column(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Button(

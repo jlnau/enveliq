@@ -29,6 +29,17 @@ The app's version is the release tag (for example `v0.96` gives version `0.96`);
 
 Settings is a short list of topics: **Notifications**, **Swipe on an email**, **Security**, **Account** and **About**. Tap a topic to open its own page, with a Back button fixed at the top. On a page, switches turn things on and off with one tap on the whole row; a choice (for example what a swipe does, or how alerts reach the phone) opens one more page with a tick-list. Nothing needs long scrolling: longer explanations sit under the setting they belong to.
 
+## Look, alerts and comfort
+
+- **Appearance** (Settings): follow the phone's light or dark setting, or pick Light or Dark yourself; and a text size (Normal, Large, Extra large) that is added to Android's own text size. Rotating the phone or changing these no longer restarts the app, so you keep your place.
+- **What to alert me about** (Settings, Notifications): all new email, only email that needs action, or only email from people on your important list. Email you are not alerted about still waits in your inbox. This is a setting, and "all new email" is the default.
+- **Hide the watching note:** a button that opens Android's own switch for the small "watching" note (alerts keep working).
+- **Alerts clear at once:** when an email is reviewed, archived or moved somewhere else, the server tells the phone and its alert is taken down straight away (the phone does not need to wait until the app next looks).
+- **Mark unread:** open an email in the Reviewed view and tap **Mark unread**. The mailbox gets its unread mark back and the email returns to the inbox. Only emails you marked Reviewed can be marked unread (an archived email has moved to another folder). A Reviewed card keeps its pointer to the mailbox for this; an Archived card still drops it.
+- **Check connection** on the sign-in screen says in plain words whether the address answers.
+- **A welcome** after your first sign-in explains summaries, alerts and the lock in three short cards, with a button that goes straight to those settings. It shows once.
+- **Screen reader:** every email row offers Mark reviewed, Archive and Move to Bin in TalkBack's actions menu (swiping is hard with a screen reader).
+
 ## Writing: who it comes from
 
 When you have more than one address (a mailbox's own address and its aliases, from the mailbox's "send as" list), the writing screen shows **From** at the top. Tap it to pick another address. A reply or forward can only use the addresses of the mailbox the email arrived in; a new email can use any of your mailboxes. Your mailbox's own address is the default, and when it is picked the app sends nothing extra, so the mail service behaves exactly as before. The choice is kept in drafts.
@@ -42,7 +53,6 @@ When you have more than one address (a mailbox's own address and its aliases, fr
 - **Links:** every link, in the formatted email or the plain text, asks first and names the site it goes to. Unusual links (plain http, look-alike characters, bare numbers) get an extra warning.
 - **Inbox, Reviewed, Archived:** the chips at the top switch views. Reviewed and Archived show what the server still keeps (a few days).
 - **More than one mailbox:** a chip for each mailbox appears and filters the list.
-- Not done: marking an email unread (the server has no way to do this yet).
 
 ## Not in the app yet
 

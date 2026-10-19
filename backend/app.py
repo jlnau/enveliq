@@ -1036,6 +1036,29 @@ def resolve_message_endpoint(
     return Response(status_code=204)
 
 
+@app.post("/api/v1/accounts/{account_id}/messages/{message_id}/unread", status_code=204)
+def mark_message_unread(account_id: AccountId, message_id: MessageId, session: Session = Depends(current_session)):
+    """Marks a Reviewed email unread again: the real mailbox gets its unread mark back and the email returns to the inbox list."""
+    load_account(account_id, session.principal, owner_only=True, action="mark this email unread")
+    try:
+        stored = vault.get_message(account_id, message_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Message not found") from exc
+    if stored.get("state") != "reviewed" or stored.get("found_until"):
+        raise HTTPException(status_code=409, detail="Only an email you marked Reviewed can be marked unread.")
+    try:
+        mail_service.mark_unread(vault.get_account(account_id), stored)
+    except BridgeError as err:
+        raise HTTPException(status_code=BRIDGE_HTTP_STATUS.get(err.code, 502),
+                            detail={"code": err.code, "message": err.message}) from None
+    data = {k: v for k, v in stored.items() if k != "id"}
+    data.update(state="unread", resolved_at=None)
+    vault.update_message(account_id, message_id, data)
+    vault.audit({"event": "message_marked_unread", "actor_user_id": session.principal.user_id, "account_id": account_id,
+                 "message_id": message_id, "at": time.time()})
+    return Response(status_code=204)
+
+
 def resolve_message(account_id: str, message_id: str, outcome: str, user_id: str, *, by: str | None = None) -> None:
     """Reviewed, archived, binned or expired, for one message. Shared by the buttons and by a person's rules.
 

@@ -60,6 +60,14 @@ private fun appVersion(context: Context): String = try {
 }
 
 private val swipeNames = listOf("archive" to "Archive", "bin" to "Bin", "reviewed" to "Reviewed", "none" to "Nothing")
+private val scopeNames = listOf(
+    Triple("all", "All new email", "Every new email gets a quiet note."),
+    Triple("action", "Only email that needs action", "Emails the AI marked as needing something from you."),
+    Triple("important", "Only from important people", "People on your important list (Settings on the website)."),
+)
+private fun scopeName(id: String) = scopeNames.firstOrNull { it.first == id }?.second ?: "All new email"
+private fun themeName(id: String) = when (id) { "light" -> "Light"; "dark" -> "Dark"; else -> "Follow phone" }
+
 private fun swipeName(id: String) = swipeNames.firstOrNull { it.first == id }?.second ?: "Nothing"
 
 /** A rounded card that holds a few rows. */
@@ -154,6 +162,7 @@ private val tintSwipe = Color(0xFF3E63DD)
 private val tintSecurity = Color(0xFF30A46C)
 private val tintAccount = Color(0xFF8E4EC6)
 private val tintAbout = Color(0xFF6B7A90)
+private val tintAppearance = Color(0xFFF76B15)
 private val tintTool = Color(0xFF2B3A55)
 
 @Composable
@@ -178,6 +187,9 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
     var appLock by remember { mutableStateOf(prefs.getBoolean("app_lock", false)) }
     var lockNote by remember { mutableStateOf("") }
     var testNote by remember { mutableStateOf("") }
+    var alertScope by remember { mutableStateOf(AlertPrefs.scope(context)) }
+    var theme by remember { mutableStateOf(Look.theme) }
+    var textSize by remember { mutableStateOf(prefs.getString("text_size", "normal") ?: "normal") }
 
     LaunchedEffect(mailAlerts) {
         googleOffered = false
@@ -260,6 +272,8 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
             if (alertNote.isNotEmpty()) Footnote(alertNote)
             if (mailAlerts) {
                 Group {
+                    NavRow("", tintTool, "What to alert me about", value = scopeName(alertScope)) { page = "scope" }
+                    HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
                     if (googleOffered || mode == "google") {
                         NavRow("", tintTool, "How alerts reach this phone", value = if (mode == "google") "Google" else "Direct") { page = "delivery" }
                         HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
@@ -292,6 +306,16 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                         unrestricted = power.isIgnoringBatteryOptimizations(context.packageName)
                     }
                 }
+                if (mailAlerts && mode == "direct") {
+                    HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                    NavRow("", tintTool, "Hide the watching note", note = "Opens Android's switch for that one note. Alerts keep working.") {
+                        context.startActivity(
+                            Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+                                .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                .putExtra(Settings.EXTRA_CHANNEL_ID, Notifier.CHANNEL_WATCH),
+                        )
+                    }
+                }
                 HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
                 NavRow("", tintTool, "Android's notification settings", note = "Sounds, lock screen and channels.") {
                     context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName))
@@ -299,6 +323,42 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
             }
             if (testNote.isNotEmpty()) Footnote(testNote)
             if (mailAlerts) Footnote("Enveliq stays signed in on this phone and keeps one quiet connection to your server. It uses almost no battery, and does nothing while the phone has no signal.")
+        }
+        "scope" -> Page("What to alert me about", back("alerts")) {
+            Group {
+                scopeNames.forEachIndexed { i, (id, label, note) ->
+                    if (i > 0) HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                    ChoiceRow(label, note, alertScope == id) {
+                        alertScope = id
+                        AlertPrefs.setScope(context, id)
+                    }
+                }
+            }
+            Footnote("Email that you are not alerted about still waits in your inbox.")
+        }
+        "appearance" -> Page("Appearance", back("home")) {
+            Group {
+                listOf("system" to "Follow my phone", "light" to "Light", "dark" to "Dark").forEachIndexed { i, (id, label) ->
+                    if (i > 0) HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                    ChoiceRow(label, selected = theme == id) {
+                        theme = id
+                        Look.theme = id
+                        prefs.edit().putString("theme", id).apply()
+                    }
+                }
+            }
+            Footnote("Text size", Ink)
+            Group {
+                listOf("normal" to "Normal", "large" to "Large", "larger" to "Extra large").forEachIndexed { i, (id, label) ->
+                    if (i > 0) HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                    ChoiceRow(label, selected = textSize == id) {
+                        textSize = id
+                        Look.textScale = Look.scaleOf(id)
+                        prefs.edit().putString("text_size", id).apply()
+                    }
+                }
+            }
+            Footnote("This is added to the text size you chose in Android's own settings.")
         }
         "delivery" -> Page("How alerts reach this phone", back("alerts")) {
             Group {
@@ -390,6 +450,8 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                 NavRow("🔔", tintAlerts, "Notifications", value = if (mailAlerts) "On" else "Off") { page = "alerts" }
                 RowLine()
                 NavRow("↔", tintSwipe, "Swipe on an email", value = swipeName(swipeRight) + " · " + swipeName(swipeLeft)) { page = "swipe" }
+                RowLine()
+                NavRow("🎨", tintAppearance, "Appearance", value = themeName(theme)) { page = "appearance" }
                 RowLine()
                 NavRow("🔒", tintSecurity, "Security", value = if (appLock) "Lock on" else "") { page = "security" }
             }

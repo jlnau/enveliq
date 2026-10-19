@@ -368,6 +368,23 @@ class EnveliqApi(address: String) {
         call("DELETE", "/api/v1/me/drafts/" + enc(id))
     }
 
+    /** The addresses on the person's important list, in lower case. */
+    fun importantAddresses(): Set<String> {
+        val items = JSONObject(call("GET", "/api/v1/me/important")).optJSONArray("items") ?: return emptySet()
+        return (0 until items.length()).map { items.getJSONObject(it).str("address").lowercase() }.filter { it.isNotBlank() }.toSet()
+    }
+
+    /** Puts the unread mark back on an email that was marked Reviewed. */
+    fun markUnread(mail: Mail) {
+        call("POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/unread")
+    }
+
+    /** Asks the address whether it is an Enveliq that answers. Throws a plain-words [ApiException] when it does not. */
+    fun checkConnection() {
+        val r = JSONObject(call("GET", "/api/v1/health"))
+        if (!r.optBoolean("ok", false)) throw ApiException("That address answered, but it does not look like Enveliq.")
+    }
+
     /** The tags this mailbox has, or null when its mail service does not keep tags (or tags are switched off). */
     fun tagInfo(accountId: String): TagInfo? = try {
         val r = JSONObject(call("GET", "/api/v1/accounts/" + enc(accountId) + "/tags"))

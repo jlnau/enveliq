@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -63,7 +64,31 @@ fun SignInScreen(initialAddress: String, notice: String, onDone: (EnveliqApi, St
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
     var api by remember { mutableStateOf<EnveliqApi?>(null) }
+    var checking by remember { mutableStateOf(false) }
+    var checkNote by remember { mutableStateOf("") }
+    var checkOk by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    fun check() {
+        if (checking) return
+        checking = true
+        checkNote = ""
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) { EnveliqApi(address).checkConnection() }
+                checkOk = true
+                checkNote = "Enveliq answered at that address. You can sign in."
+            } catch (e: ApiException) {
+                checkOk = false
+                checkNote = e.message ?: "Could not reach that address."
+            } catch (e: Exception) {
+                checkOk = false
+                checkNote = "Could not reach that address."
+            } finally {
+                checking = false
+            }
+        }
+    }
 
     fun go() {
         if (busy) return
@@ -119,6 +144,11 @@ fun SignInScreen(initialAddress: String, notice: String, onDone: (EnveliqApi, St
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     modifier = Modifier.fillMaxWidth(),
                 )
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { check() }, enabled = !checking) { Text("Check connection", color = Blue, fontSize = 15.sp) }
+                    if (checking) CircularProgressIndicator(Modifier.size(18.dp), color = Blue, strokeWidth = 2.dp)
+                }
+                if (checkNote.isNotEmpty()) Text(checkNote, color = if (checkOk) Green else Red, fontSize = 14.sp, lineHeight = 20.sp)
                 Text("Username", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 16.dp, bottom = 6.dp))
                 // The content types tell password managers such as Bitwarden which box is the username, the password and the code.
                 OutlinedTextField(
@@ -196,6 +226,46 @@ fun LockScreen(onUnlock: () -> Unit) {
         Text("Enveliq is locked.", color = Ink, fontSize = 18.sp, modifier = Modifier.padding(top = 6.dp, bottom = 24.dp))
         Button(onClick = onUnlock, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
             Text("Unlock", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+
+/** Shown once, right after the first sign-in: a calm tour of the three things worth knowing. */
+@Composable
+fun WelcomeScreen(onDone: (openSettings: Boolean) -> Unit) {
+    Column(Modifier.fillMaxSize().background(Navy).systemBarsPadding()) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 22.dp)) {
+            Text("You're in.", color = Ink, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 36.dp))
+            Text("Three things worth knowing. You can change all of them later in Settings.", color = Muted, fontSize = 16.sp, lineHeight = 23.sp, modifier = Modifier.padding(top = 8.dp, bottom = 12.dp))
+            WelcomeCard("✦", "Calm summaries", "Each email has a short summary, marked as written by the AI. It can be wrong, so open the original when it matters. Nothing is deleted until you choose Reviewed, Archive or Bin, and you can always Undo.")
+            WelcomeCard("🔔", "Alerts, if you want them", "Enveliq can tell you when an email is ready, only for the emails that matter to you if you like. The lock screen only says \"New email\". Choose this in Settings, Notifications.")
+            WelcomeCard("🔒", "A lock, if you want one", "Ask for your fingerprint, face or PIN to open Enveliq. Your email is never saved on this phone. Choose this in Settings, Security.")
+        }
+        Column(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 22.dp, vertical = 12.dp)) {
+            Button(onClick = { onDone(false) }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
+                Text("Go to my inbox", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+            }
+            OutlinedButton(
+                onClick = { onDone(true) }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp).height(48.dp),
+                shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
+            ) { Text("Set up alerts and the lock", color = Ink) }
+        }
+    }
+}
+
+@Composable
+private fun WelcomeCard(symbol: String, title: String, text: String) {
+    androidx.compose.material3.Surface(
+        color = Panel, shape = RoundedCornerShape(18.dp), border = BorderStroke(1.dp, Line),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+    ) {
+        Row(Modifier.padding(16.dp)) {
+            Text(symbol, fontSize = 24.sp, modifier = Modifier.padding(end = 14.dp))
+            Column {
+                Text(title, color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                Text(text, color = Muted, fontSize = 14.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 4.dp))
+            }
         }
     }
 }

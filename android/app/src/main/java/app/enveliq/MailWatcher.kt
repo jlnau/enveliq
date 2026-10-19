@@ -26,6 +26,9 @@ object AlertPrefs {
 
     fun on(c: Context) = prefs(c).getBoolean("mail_alerts", false)
     fun setOn(c: Context, v: Boolean) = prefs(c).edit().putBoolean("mail_alerts", v).apply()
+    /** Which new email gets an alert: "all", "action" (only emails that need action) or "important" (only from people on the important list). */
+    fun scope(c: Context): String = prefs(c).getString("alert_scope", "all") ?: "all"
+    fun setScope(c: Context, v: String) = prefs(c).edit().putString("alert_scope", v).apply()
     fun quietOn(c: Context) = prefs(c).getBoolean("quiet_on", false)
     fun setQuietOn(c: Context, v: Boolean) = prefs(c).edit().putBoolean("quiet_on", v).apply()
     /** Minutes after midnight. */
@@ -201,14 +204,18 @@ class MailWatcherService : Service() {
             if (code == 401 || code == 403) throw ApiException("signed out", 401)
             if (code >= 400) throw ApiException("The server did not accept the connection.", code)
             var event = ""
+            var data = ""
             conn.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
                 while (running) {
                     val line = reader.readLine() ?: break
                     if (line.startsWith("event:")) event = line.substring(6).trim()
+                    else if (line.startsWith("data:")) data = line.substring(5).trim()
                     else if (line.isEmpty()) {
                         if (event == "new") Alerts.catchUp(this, api)
+                        if (event == "gone") Alerts.gone(this, data)
                         if (event == "reconnect") break
                         event = ""
+                        data = ""
                     }
                 }
             }
@@ -258,7 +265,32 @@ object Alerts {
         if (fresh.isEmpty()) return
         alerted.addAll(fresh.map { it.id })
         AlertPrefs.setAlerted(context, alerted)
-        Notifier.newMail(context, fresh, AlertPrefs.inQuietHours(context))
+        // Everything new is remembered as announced, but only what the person asked to hear about makes a sound.
+        val toTell = when (AlertPrefs.scope(context)) {
+            "action" -> fresh.filter { it.needsAction }
+            "important" -> {
+                val people = try { api.importantAddresses() } catch (e: ApiException) { if (e.code == 401) throw e else emptySet() }
+                fresh.filter { it.address.lowercase() in people }
+            }
+            else -> fresh
+        }
+        if (toTell.isEmpty()) return
+        Notifier.newMail(context, toTell, AlertPrefs.inQuietHours(context))
+    }
+
+    /** The server says these emails are no longer waiting (reviewed or moved somewhere else): take their alerts down at once. */
+    fun gone(context: Context, data: String) {
+        try {
+            val ids = org.json.JSONObject(data).optJSONArray("ids") ?: return
+            val manager = context.getSystemService(android.app.NotificationManager::class.java)
+            for (i in 0 until ids.length()) {
+                val id = ids.optJSONObject(i)?.optString("m", "") ?: ""
+                if (id.isEmpty()) continue
+                Notifier.clearOne(context, id)
+            }
+            if (manager.activeNotifications.none { it.id >= 3000 && it.id < 3000 + 0x10000 }) manager.cancel(Notifier.GROUP_ID)
+        } catch (_: Exception) {
+        }
     }
 
     /** Signs in with the kept session and checks once. Used when Google's push wakes the app. Never throws. */

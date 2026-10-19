@@ -130,3 +130,30 @@ def test_kept_cards_hold_no_email_text_or_mailbox_link(env):
     stored = [x for x in appm.vault.list_messages(aid) if x.get("state") == "archived"][0]
     assert stored["source_locator"] is None and stored["attachments"] == [] and stored["attachment_summaries"] == []
     assert appm.vault.plaintext_scan(["Quarterly update", GOOD["summary"]]) == {"Quarterly update": False, GOOD["summary"]: False}
+
+
+def test_a_reviewed_email_can_be_marked_unread_again(env):
+    appm, client, bridge, _, aid = env
+    m = by_state(client, aid)["unread"]
+    mid = m["Quarterly update"]["id"]
+    assert resolve(client, aid, mid, "reviewed").status_code == 204
+    assert "\\Seen" in bridge.messages[1]["flags"]
+    assert client.post(f"/api/v1/accounts/{aid}/messages/{mid}/unread").status_code == 204
+    assert "\\Seen" not in bridge.messages[1]["flags"]            # the real mailbox has its unread mark back
+    states = by_state(client, aid)
+    assert "Quarterly update" in states["unread"] and "Quarterly update" not in states.get("reviewed", {})
+    # it can only be done for a Reviewed email, never twice, and never for an email that moved
+    assert client.post(f"/api/v1/accounts/{aid}/messages/{mid}/unread").status_code == 409
+    other = states["unread"]["Weekly news"]["id"]
+    assert resolve(client, aid, other, "archived").status_code == 204
+    assert client.post(f"/api/v1/accounts/{aid}/messages/{other}/unread").status_code == 409
+    assert client.post(f"/api/v1/accounts/{aid}/messages/nope/unread").status_code in (404, 422)
+
+
+def test_only_a_reviewed_card_keeps_its_mailbox_link(env):
+    appm, client, _, _, aid = env
+    m = by_state(client, aid)["unread"]
+    resolve(client, aid, m["Quarterly update"]["id"], "reviewed")
+    resolve(client, aid, m["Weekly news"]["id"], "archived")
+    stored = {x["subject"]: x for x in appm.vault.list_messages(aid) if x.get("state") in ("reviewed", "archived")}
+    assert stored["Quarterly update"]["source_locator"] and stored["Weekly news"]["source_locator"] is None

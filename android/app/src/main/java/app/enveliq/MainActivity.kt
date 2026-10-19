@@ -28,6 +28,12 @@ class MainActivity : FragmentActivity() {
         Notifier.ensureChannels(this)
         MailWatcherService.start(this)          // only does anything when the person has alerts on and a kept sign-in
         val prefs = getSharedPreferences("enveliq", MODE_PRIVATE)
+        Look.load(prefs)
+        Pal.dark = when (Look.theme) {
+            "light" -> false
+            "dark" -> true
+            else -> (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        }
         setSecure(prefs.getBoolean("hide_in_recents", false))
         locked = prefs.getBoolean("app_lock", false) && canLock()
         readRequest(intent)

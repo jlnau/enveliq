@@ -1018,6 +1018,16 @@ class MailService:
 
     # ---------- resolve ----------
 
+    def mark_unread(self, account: dict[str, Any], message: dict[str, Any]) -> None:
+        """Put the unread mark back on a Reviewed email, in the real mailbox."""
+        if account.get("auth_method") not in MAIL_METHODS or not message.get("source_locator"):
+            raise BridgeError("not_found", "Enveliq can no longer find this email in the mailbox.")
+        validity, uid = parse_locator(message["source_locator"])
+        with self.bridge.session(self.target(account)) as s:
+            if s.select_inbox(readonly=False) != validity:
+                raise BridgeError("not_found", "The mailbox was reset on the server. Sync again.")
+            s.mark_unseen(uid)
+
     def apply_outcome(self, account: dict[str, Any], message: dict[str, Any], outcome: str) -> None:
         """Do the matching thing in the real mailbox before the local record is
         removed, so a reviewed email does not come back on the next sync."""

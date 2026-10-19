@@ -4,7 +4,9 @@ When someone marks an email Reviewed or Archives it, the real mailbox is changed
 straight away (marked read, or moved to Archive). Enveliq can also keep the
 short summary card for a few days so they can look again. Only the fields that
 were already stored (sender, subject, summary and the like) are kept; the email
-text, attachment details and the link back to the mailbox message are dropped.
+text and attachment details are dropped, and so is the link back to the mailbox
+message, except on a Reviewed card, which keeps it so the email can be marked
+unread again.
 
 Each person chooses whether to keep each list and for how many days; an
 administrator sets the longest anyone may choose. Cards past their time are
@@ -156,10 +158,12 @@ def kept_state_for(vault: Any, user_id: str | None, outcome: str) -> str | None:
 
 
 def keep_record(message: dict[str, Any], state: str, now: float | None = None) -> dict[str, Any]:
-    """The stored card for a resolved item: no mailbox link, no attachment details."""
+    """The stored card for a resolved item: no attachment details. An Archived card has no mailbox link (the email has moved);
+    a Reviewed card keeps its link, which is only a pointer to the email's place in the mailbox, so Mark unread can find it again."""
     data = {k: v for k, v in message.items() if k != "id"}
     data.update(state=state, resolved_at=now if now is not None else time.time(),
-                source_locator=None, attachments=[], attachment_summaries=[], from_all_mail=False, snoozed_until=None)
+                source_locator=message.get("source_locator") if state == "reviewed" else None,
+                attachments=[], attachment_summaries=[], from_all_mail=False, snoozed_until=None)
     return data
 
 
