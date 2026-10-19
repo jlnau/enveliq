@@ -104,6 +104,18 @@ Still to do. Everything the website does that makes sense on a phone, roughly in
 - Links in an email open only after a tap and a plain "this goes to …" check.
 - Folders and views as on the website (Today, Needs attention, and your folders), and more than one mailbox.
 
+**Wishes added after the first weeks of testing**
+- **Attach files when writing** a new email, reply or forward (a photo or any file from the phone).
+- **Unsubscribe button** on an email, using the website's existing unsubscribe.
+- **Scam and sender warnings** in the original-email view, as on the website (look-alike senders, suspicious links).
+- **Junk and block:** mark an email as junk and block a sender, in the Android app **and in Enveliq itself** (the website and server, not only the app).
+- **Search all mail**, not just the inbox, as the website's search everywhere does.
+- **Alerts only for the emails that matter:** a setting to alert only for "needs action" or important people.
+- **Open the next email after archiving:** a setting users can switch on, for working through a pile without going back to the list.
+- **Send later:** pick a time for an email to go (first check what the server supports).
+- **Pick someone from the phone's contacts**, and let Enveliq handle "email this person" links from other apps.
+- **A signature** added to emails you send.
+
 **Beyond email** (each as its own screen, as on the website)
 - Tasks in full, the bell (notes and messages), shipping, calendar, news feeds and chat messages.
 
