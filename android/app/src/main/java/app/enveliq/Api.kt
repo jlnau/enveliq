@@ -236,6 +236,89 @@ class EnveliqApi(address: String) {
         call("POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/snooze", body)
     }
 
+    private fun JSONObject.people(key: String): List<String> {
+        val a = optJSONArray(key) ?: return emptyList()
+        return (0 until a.length()).map { a.optString(it) }.filter { it.isNotBlank() }
+    }
+
+    private fun sentFrom(text: String): Sent {
+        val r = JSONObject(text)
+        val queued = r.optBoolean("queued", false)
+        val left = if (queued) (r.optDouble("send_at", 0.0) - r.optDouble("now", 0.0)).toInt().coerceAtLeast(0) else 0
+        return Sent(queued, r.str("id"), left)
+    }
+
+    /** The mailboxes this person can send from (the same ones the inbox reads). */
+    fun mailboxes(): List<Mailbox> {
+        val accounts = JSONArray(call("GET", "/api/v1/accounts"))
+        val out = ArrayList<Mailbox>()
+        for (i in 0 until accounts.length()) {
+            val a = accounts.getJSONObject(i)
+            val method = a.str("auth_method")
+            if (a.optBoolean("check_address", false)) continue
+            if (method != "proton_bridge" && method != "imap") continue
+            if (userId.isNotEmpty() && a.str("owner_user_id") != userId) continue
+            out.add(Mailbox(a.str("id"), a.str("display_name").ifBlank { a.str("email_address") }))
+        }
+        return out
+    }
+
+    fun reply(mail: Mail, all: Boolean, text: String): Sent = sentFrom(
+        call(
+            "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/reply",
+            JSONObject().put("body", text).put("kind", if (all) "reply_all" else "reply"),
+        ),
+    )
+
+    fun forward(mail: Mail, to: List<String>, cc: List<String>, bcc: List<String>, text: String): Sent = sentFrom(
+        call(
+            "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/forward",
+            JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("body", text),
+        ),
+    )
+
+    fun sendNew(accountId: String, to: List<String>, cc: List<String>, bcc: List<String>, subject: String, text: String): Sent = sentFrom(
+        call(
+            "POST", "/api/v1/accounts/" + enc(accountId) + "/send",
+            JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("subject", subject).put("body", text),
+        ),
+    )
+
+    /** Takes back an email that is still waiting out its "undo send" time. */
+    fun cancelSend(outboxId: String) {
+        call("DELETE", "/api/v1/me/outbox/" + enc(outboxId))
+    }
+
+    /** People from the address list whose name or address contains [q]. */
+    fun contacts(q: String): List<Contact> {
+        val items = JSONObject(call("GET", "/api/v1/me/contacts?q=" + enc(q))).optJSONArray("items") ?: return emptyList()
+        return (0 until items.length()).map { items.getJSONObject(it) }.map { Contact(it.str("name"), it.str("address")) }.filter { it.address.isNotBlank() }
+    }
+
+    private fun draftFrom(r: JSONObject) = Draft(
+        id = r.str("id"), kind = r.str("kind"), accountId = r.str("account_id"), messageId = r.str("message_id"),
+        to = r.people("to"), cc = r.people("cc"), bcc = r.people("bcc"), subject = r.str("subject"), body = r.str("body"),
+    )
+
+    fun drafts(): List<Draft> {
+        val items = JSONObject(call("GET", "/api/v1/me/drafts")).optJSONArray("items") ?: return emptyList()
+        return (0 until items.length()).map { draftFrom(items.getJSONObject(it)) }
+    }
+
+    /** Creates a draft (when [id] is null) or replaces one. */
+    fun saveDraft(id: String?, d: Draft): Draft {
+        val body = JSONObject().put("kind", d.kind).put("to", JSONArray(d.to)).put("cc", JSONArray(d.cc)).put("bcc", JSONArray(d.bcc))
+            .put("subject", d.subject).put("body", d.body)
+        if (d.accountId.isNotBlank()) body.put("account_id", d.accountId)
+        if (d.messageId.isNotBlank()) body.put("message_id", d.messageId)
+        val text = if (id == null) call("POST", "/api/v1/me/drafts", body) else call("PUT", "/api/v1/me/drafts/" + enc(id), body)
+        return draftFrom(JSONObject(text))
+    }
+
+    fun deleteDraft(id: String) {
+        call("DELETE", "/api/v1/me/drafts/" + enc(id))
+    }
+
     fun resolve(mail: Mail, outcome: Outcome) {
         call(
             "POST",

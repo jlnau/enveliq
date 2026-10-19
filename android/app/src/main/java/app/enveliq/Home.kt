@@ -35,12 +35,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -82,11 +85,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.util.Calendar
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private enum class Stage { Opening, SignIn, Home }
-private enum class Tab { Inbox, Tasks, Settings }
+private enum class Tab { Inbox, Tasks, Drafts, Settings }
 
 @Composable
 fun EnveliqApp(activity: MainActivity) {
@@ -222,6 +226,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
 
     val selected = remember { mutableStateListOf<String>() }
     var askSnooze by remember { mutableStateOf(false) }
+    var composing by remember { mutableStateOf<ComposeTarget?>(null) }
     fun keyOf(m: Mail) = m.accountId + ":" + m.id
 
     // The emails leave the list at once. They are only marked at your mailbox when the Undo time has passed.
@@ -279,10 +284,59 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         }
     }
 
+    // After a send: say so, and while the "undo send" time lasts, let the person take it back.
+    fun afterSend(result: Sent) {
+        composing = null
+        scope.launch {
+            if (result.queued && result.secondsLeft > 0) {
+                val timer = launch {
+                    delay(result.secondsLeft * 1000L)
+                    snack.currentSnackbarData?.dismiss()
+                }
+                val answer = snack.showSnackbar(
+                    message = "Sending in " + result.secondsLeft + " seconds", actionLabel = "Undo", duration = SnackbarDuration.Indefinite,
+                )
+                timer.cancel()
+                if (answer == SnackbarResult.ActionPerformed) {
+                    try {
+                        withContext(Dispatchers.IO) { api.cancelSend(result.outboxId) }
+                        snack.showSnackbar("Not sent. The email was taken back.")
+                    } catch (e: Exception) {
+                        snack.showSnackbar("It may already have been sent.")
+                    }
+                }
+            } else {
+                snack.showSnackbar("Sent")
+            }
+        }
+    }
+
+    fun mailForDraft(d: Draft): Mail? {
+        if (d.kind == "new") return null
+        return mails.firstOrNull { it.id == d.messageId && it.accountId == d.accountId }
+            ?: Mail(
+                id = d.messageId, accountId = d.accountId, sender = "", address = "",
+                subject = d.subject.removePrefix("Re: ").removePrefix("Fwd: "), summary = "", whenText = "", needsAction = false,
+            )
+    }
+
+    val writing = composing
+    if (writing != null) {
+        ComposeScreen(writing, api, onClose = { composing = null }, onSent = { afterSend(it) })
+        return
+    }
+
     val current = opened
     Scaffold(
         containerColor = Navy,
         snackbarHost = { SnackbarHost(snack) },
+        floatingActionButton = {
+            if (current == null && tab == Tab.Inbox && selected.isEmpty()) {
+                FloatingActionButton(onClick = { composing = ComposeTarget("new") }, containerColor = Blue, contentColor = Navy) {
+                    Icon(Icons.Filled.Create, contentDescription = "New email")
+                }
+            }
+        },
         bottomBar = {
             if (current != null) {
                 ActionBar(onResolve = { outcome -> resolve(current, outcome) }, onSnooze = { askSnooze = true })
@@ -307,6 +361,10 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                         icon = { Icon(Icons.Filled.CheckCircle, contentDescription = null) }, label = { Text("Tasks") },
                     )
                     NavigationBarItem(
+                        selected = tab == Tab.Drafts, onClick = { tab = Tab.Drafts }, colors = colors,
+                        icon = { Icon(Icons.Filled.Edit, contentDescription = null) }, label = { Text("Drafts") },
+                    )
+                    NavigationBarItem(
                         selected = tab == Tab.Settings, onClick = { tab = Tab.Settings }, colors = colors,
                         icon = { Icon(Icons.Filled.Settings, contentDescription = null) }, label = { Text("Settings") },
                     )
@@ -319,7 +377,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         }
         Box(Modifier.padding(inner).fillMaxSize()) {
             if (current != null) {
-                DetailBody(current, api, onBack = { opened = null })
+                DetailBody(current, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) })
             } else {
                 when (tab) {
                     Tab.Inbox -> InboxTab(
@@ -331,6 +389,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                         onRefresh = { load() },
                     )
                     Tab.Tasks -> TasksTab(mails, onOpen = { opened = it })
+                    Tab.Drafts -> DraftsTab(api, onOpen = { d -> composing = ComposeTarget(d.kind, mailForDraft(d), d) })
                     Tab.Settings -> SettingsTab(activity, prefs, server, api, onLeave)
                 }
             }
@@ -339,7 +398,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
 }
 
 @Composable
-private fun Heading(title: String, subtitle: String, trailing: @Composable () -> Unit = {}) {
+internal fun Heading(title: String, subtitle: String, trailing: @Composable () -> Unit = {}) {
     Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 14.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(title, color = Ink, fontSize = 28.sp, fontWeight = FontWeight.Bold)
@@ -516,7 +575,7 @@ private fun MailRow(mail: Mail, picked: Boolean, onClick: () -> Unit, onLongClic
 }
 
 @Composable
-private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit) {
+private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit) {
     var original by remember(mail.id) { mutableStateOf<String?>(null) }
     var loadingOriginal by remember(mail.id) { mutableStateOf(false) }
     var originalError by remember(mail.id) { mutableStateOf("") }
@@ -530,6 +589,12 @@ private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit) {
             Text(mail.subject, color = Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 30.sp)
             Text(mail.sender + if (mail.whenText.isNotEmpty()) " · " + mail.whenText else "", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 6.dp))
             if (mail.address.isNotEmpty()) Text(mail.address, color = Muted, fontSize = 13.sp)
+
+            Row(Modifier.fillMaxWidth().padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { onCompose("reply") }, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line)) { Text("Reply", color = Ink, fontSize = 14.sp) }
+                OutlinedButton(onClick = { onCompose("reply_all") }, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line)) { Text("Reply all", color = Ink, fontSize = 14.sp, maxLines = 1) }
+                OutlinedButton(onClick = { onCompose("forward") }, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line)) { Text("Forward", color = Ink, fontSize = 14.sp) }
+            }
 
             Surface(
                 color = Panel, shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Line),

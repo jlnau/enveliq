@@ -64,6 +64,11 @@ Which emails alert you, quiet hours and the "important people only" filter are t
 - **Select several:** press and hold an email, tap more to add them, then Reviewed, Archive or Bin for all of them. **Select all** ticks everything in the list.
 - **Search** your inbox (the Search button at the top): it looks at the sender, subject and summary of the emails already in your inbox. Searching all your mail is still on the website.
 - **Remind me later** (on an opened email): put it away until in 3 hours, tomorrow morning or next Monday morning. It comes back in your inbox then, and the website shows it as snoozed too. Undo brings it back at once.
+- **Reply, Reply all and Forward** are at the top of an opened email. The email you are answering is added underneath, as on the website.
+- **New email:** the round pencil button on the inbox. In To, Cc and Bcc, suggestions from your address list appear as you type (if the address list is switched on in Enveliq). If you have more than one mailbox, you pick which one to send from.
+- **Undo send:** if you have an "undo send" time in Settings on the website, a bar at the bottom says "Sending in … seconds" with **Undo**.
+- **Drafts:** closing a half-written email offers to keep it. The **Drafts** tab lists them (kept for 14 days, the same drafts the website shows); tap one to carry on, or Delete it.
+- The writing screen opens full screen, with Close at the top and **Send** and **Save draft** fixed at the bottom.
 - **Pull down** on the inbox to refresh. The list keeps its place when you switch tabs.
 - **Ask for my fingerprint, face or PIN** (Settings, Security): Enveliq asks for it when you open it, and again after it has been out of sight for a minute. It needs a screen lock to be set up in Android first; the app never locks you out of a phone that has none. This is a convenience on top of your sign-in, not a replacement for it.
 
@@ -74,8 +79,6 @@ Done in version 0.95: https:// filled in, Show password, plainer errors, tap an 
 Still to do. Everything the website does that makes sense on a phone, roughly in this order:
 
 **Everyday email**
-- Reply, Reply all and Forward, with the same drafts and sending rules as the website.
-- New email, with access to your **address list** (suggestions as you type a name).
 - **Email tags**: see, add and remove tags, and filter the inbox by tag.
 - The rest of the website's actions: Task, mark unread (needs a way to see reviewed email first, so it comes with folders and views), and move.
 - Attachments: their summaries, a View button (page pictures held in memory only) and Save or Share.
