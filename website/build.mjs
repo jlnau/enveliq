@@ -55,6 +55,7 @@ const NAV = [
     ["docs/UPDATES.md", "New versions"],
     ["docs/DEMO.md", "The demo"],
     ["docs/UNDO.md", "Undo"],
+    ["docs/SEND_LATER.md", "Send later"],
     ["docs/SEND_CHECKS.md", "Checks before sending"],
     ["docs/INBOX.md", "Your inbox, day to day"],
     ["docs/IMPORTANT_PEOPLE.md", "Important people"],

@@ -835,6 +835,38 @@ def app_update(session: Session = Depends(full_session)):
     return {"latest": dict(update_checker.latest) if update_checker.latest else None}
 
 
+_apk_lock = threading.Lock()
+
+
+@app.get("/api/v1/app-update/apk")
+def app_update_apk(session: Session = Depends(full_session)):
+    """The newest Android app, passed on from Enveliq's own releases so the phone never contacts GitHub. The server
+    checks it against the checksum published with it first. Nothing about the person is sent to GitHub."""
+    import tempfile
+    from starlette.background import BackgroundTask
+    from .update_check import ApkError, fetch_apk
+    latest = dict(update_checker.latest) if update_notice_enabled() and update_checker.latest else None
+    if not latest:
+        raise HTTPException(status_code=404, detail="No update is offered.")
+    if not _apk_lock.acquire(blocking=False):
+        raise HTTPException(status_code=429, detail="Another download is already running. Try again in a minute.")
+    tmp = tempfile.NamedTemporaryFile(prefix="enveliq-apk-", suffix=".apk", delete=False)
+    try:
+        try:
+            digest = fetch_apk(latest["version"], tmp)
+        except ApkError:
+            raise HTTPException(status_code=502, detail="The new version could not be fetched safely. Try again later.")
+    except BaseException:
+        tmp.close()
+        os.unlink(tmp.name)
+        raise
+    finally:
+        _apk_lock.release()
+    tmp.close()
+    return FileResponse(tmp.name, media_type="application/vnd.android.package-archive", filename="Enveliq-" + latest["version"] + ".apk",
+                        headers={"X-Enveliq-Sha256": digest}, background=BackgroundTask(os.unlink, tmp.name))
+
+
 @app.get("/api/v1/system")
 def system_endpoint(session: Session = Depends(full_session)):
     """What the inbox and the Security page show about this Enveliq. Signed-in people only; the technical

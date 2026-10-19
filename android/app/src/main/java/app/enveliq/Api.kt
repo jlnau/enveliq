@@ -472,6 +472,40 @@ class EnveliqApi(address: String) {
         return if (v.isBlank() || !u.startsWith("https://github.com/")) null else v to u
     }
 
+    /** Fetches the newest app from the person's own server (which checked it against its published checksum) into [dest]. Returns whether the file matches the checksum the server named. */
+    fun downloadUpdate(dest: java.io.File): Boolean {
+        val conn = URL(base + "/api/v1/app-update/apk").openConnection() as HttpURLConnection
+        try {
+            conn.connectTimeout = 15000
+            conn.readTimeout = 120000
+            val code = conn.responseCode
+            if (code >= 400) {
+                val text = conn.errorStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
+                throw ApiException(detail(text, code), code)
+            }
+            val expected = conn.getHeaderField("X-Enveliq-Sha256")?.lowercase() ?: ""
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
+            conn.inputStream.use { input ->
+                dest.outputStream().use { out ->
+                    val buf = ByteArray(64 * 1024)
+                    while (true) {
+                        val n = input.read(buf)
+                        if (n < 0) break
+                        digest.update(buf, 0, n)
+                        out.write(buf, 0, n)
+                    }
+                }
+            }
+            return expected.length == 64 && digest.digest().joinToString("") { "%02x".format(it) } == expected
+        } catch (e: ApiException) {
+            throw e
+        } catch (e: IOException) {
+            throw ApiException("The download did not finish. Check your connection and try again.")
+        } finally {
+            conn.disconnect()
+        }
+    }
+
     // ---------- beyond email: tasks, bell, shipping, trips, news and messages ----------
 
     private fun JSONObject.list(key: String): List<JSONObject> {

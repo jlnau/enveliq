@@ -80,16 +80,19 @@ Settings, Security, **Your devices** lists the places you are signed in and lets
 - **Open the next email** (Settings): after you archive or mark reviewed the email you are reading, the next one in the list opens.
 - **Get the Android app** (Settings, About) opens the download page, for this or another phone. The website's front page and Settings link to this guide, which has the download button.
 
+- **Send later.** **Later** beside Send on a new email, reply or forward picks a time; **More, Waiting to send** lists and takes back what is waiting. Files cannot wait. See [Send later](SEND_LATER.md).
+- **Attach files to replies and forwards**, as on the website. A forward keeps the files of the original unless you untick them.
+- **Alerts for messages, notes and alerts, tasks due today and parcels to confirm.** **Settings, Notifications** has a switch for each, off until you turn it on. Direct mode only (not Google's push). The server's alert stream tells the app only *which kind* has something new, never any words, so the note says just "New message", "A task is due" and so on. They follow your quiet hours.
+- **Install updates from inside the app.** **Settings, About, Install it**: the app downloads the new version through your own server (which checks it against its published checksum), then Android asks you to confirm. Android asks once to allow Enveliq to install apps. See [Updates](UPDATES.md).
+
 ## Not in the app
 
-- **Installing an update from inside the app.** About, Check for a new version opens the download page; Android's own installer does the rest. The app does not ask for permission to install apps, which keeps it simpler to trust.
-- **Send later** and **separate alert switches for tasks, messages and shipping.** The app alerts for new email only; task reminders and other alerts use your other channels. Both are on the wish list.
 - **A calendar of events.** Trips and bookings are listed under More, Trips and calendar.
 - **Settings, Administration and mailbox setup** stay on the website. Shipping, trips and news are read-only in the app (set them up on the website).
 
 ## How new-email alerts work
 
-- The server has one small stream for the app, `GET /api/v1/me/new-mail-events`. It only says which emails have just become ready (their AI summary is finished). It carries ids, never any text, and the server only ever lists the signed-in person's own email.
+- The server has one small stream for the app, `GET /api/v1/me/new-mail-events`. It says which emails have just become ready (their AI summary is finished) and, about every 30 seconds, which other kinds (messages, notes, tasks, parcels) have grown. It carries ids and kind names, never any text, and the server only ever lists the signed-in person's own email.
 - The app holds one connection to that stream. The server sends one line a minute so the connection is not dropped; in between, the app does nothing. There is no polling.
 - When the server says something is ready, the app fetches the inbox once, and shows an alert for each email it has not already told you about. It remembers only the ids it has announced (up to 400), so an email is never announced twice. The first time you turn alerts on, the email already in your inbox is not announced.
 - No network, no connection: while the phone has no signal the app does not try, and it reconnects the moment a network returns. After a failed try it waits 15 seconds, then longer each time, up to 5 minutes.

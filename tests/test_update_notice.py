@@ -161,3 +161,61 @@ def test_the_app_is_told_nothing_when_the_notice_is_switched_off(env):
     m, admin = env
     assert admin.put("/api/v1/admin/update-notice", json={"enabled": False}).status_code == 200
     assert sam(m).get("/api/v1/app-update").json() == {"latest": None}
+
+
+# ---------- installing the update from inside the app ----------
+
+import hashlib
+import io
+
+APK = b"PK\x03\x04 pretend app " * 50
+GOOD = hashlib.sha256(APK).hexdigest()
+
+
+class _Reply(io.BytesIO):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def _opener(sha: str, body: bytes = APK):
+    def open_(req):
+        return _Reply((sha + "  Enveliq-9.9.apk\n").encode() if req.full_url.endswith(".sha256") else body)
+    return open_
+
+
+def test_the_app_file_is_kept_only_if_it_matches_its_published_checksum():
+    out = io.BytesIO()
+    assert uc.fetch_apk("9.9", out, _opener(GOOD)) == GOOD and out.getvalue() == APK
+    for bad in (_opener("0" * 64), _opener("not a checksum"), _opener(GOOD, APK + b"x")):
+        with pytest.raises(uc.ApkError):
+            uc.fetch_apk("9.9", io.BytesIO(), bad)
+    with pytest.raises(uc.ApkError):
+        uc.fetch_apk("../../x", io.BytesIO(), _opener(GOOD))
+
+    def broken(req):
+        raise OSError("offline")
+    with pytest.raises(uc.ApkError):
+        uc.fetch_apk("9.9", io.BytesIO(), broken)
+
+
+def test_the_server_passes_the_app_on_and_the_phone_never_contacts_github(env, monkeypatch):
+    m, admin = env
+    asked = []
+    monkeypatch.setattr(uc, "fetch_apk", lambda v, dest, opener=None: (asked.append(v), dest.write(APK), GOOD)[2])
+    r = sam(m).get("/api/v1/app-update/apk")
+    assert r.status_code == 200 and r.content == APK and r.headers["x-enveliq-sha256"] == GOOD and asked == ["9.9"]
+    assert TestClient(m.app).get("/api/v1/app-update/apk").status_code in (401, 403)
+
+
+def test_a_bad_download_or_a_switched_off_notice_gives_nothing(env, monkeypatch):
+    m, admin = env
+
+    def bad(v, dest, opener=None):
+        raise uc.ApkError("checksum does not match")
+    monkeypatch.setattr(uc, "fetch_apk", bad)
+    assert sam(m).get("/api/v1/app-update/apk").status_code == 502
+    admin.put("/api/v1/admin/update-notice", json={"enabled": False})
+    assert sam(m).get("/api/v1/app-update/apk").status_code == 404

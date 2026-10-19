@@ -285,6 +285,16 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                 }
             }
             if (alertNote.isNotEmpty()) Footnote(alertNote)
+            if (mailAlerts && mode == "direct") {
+                Group {
+                    AlertPrefs.otherKinds.forEachIndexed { i, (id, label) ->
+                        if (i > 0) HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                        var on by remember { mutableStateOf(AlertPrefs.kindOn(context, id)) }
+                        ToggleRow(label.first, label.second, on) { on = it; AlertPrefs.setKind(context, id, it) }
+                    }
+                }
+                Footnote("These come through the same quiet connection as new email, and follow your quiet hours. They are not available with Google's push service.")
+            }
             if (mailAlerts) {
                 Group {
                     NavRow("", tintTool, "What to alert me about", value = scopeName(alertScope)) { page = "scope" }
@@ -547,7 +557,41 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                 }
                 if (upUrl.isNotEmpty()) {
                     HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
-                    NavRow("", Blue, "Download it", note = "Opens the download page. Open the file it saves to update.") {
+                    NavRow("", Blue, if (upBusy) "Downloading..." else "Install it", note = "Downloads it through your own server, then Android asks you to confirm.") {
+                        if (!upBusy) {
+                            if (!context.packageManager.canRequestPackageInstalls()) {
+                                upNote = "Android needs your permission first. Allow Enveliq on the next screen, come back, and press Install it again."
+                                try { context.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, android.net.Uri.parse("package:" + context.packageName))) } catch (_: Exception) { }
+                            } else {
+                                upBusy = true
+                                upNote = "Downloading the new version..."
+                                scope.launch {
+                                    try {
+                                        val file = java.io.File(java.io.File(context.cacheDir, "updates").also { it.mkdirs() }, "Enveliq-update.apk")
+                                        val sound = withContext(Dispatchers.IO) { api.downloadUpdate(file) }
+                                        if (!sound) {
+                                            file.delete()
+                                            upNote = "The download did not match its checksum, so it was not installed. Try again."
+                                        } else {
+                                            val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".updates", file)
+                                            context.startActivity(
+                                                Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
+                                                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK),
+                                            )
+                                            upNote = "Ready. Confirm on the next screen to finish updating."
+                                        }
+                                    } catch (e: ApiException) {
+                                        upNote = e.message ?: "Could not download it."
+                                    } catch (_: Exception) {
+                                        upNote = "Could not start the install. You can still use the download page."
+                                    }
+                                    upBusy = false
+                                }
+                            }
+                        }
+                    }
+                    HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                    NavRow("", tintTool, "Open the download page", note = "If you would rather install it yourself.") {
                         try { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(upUrl))) } catch (e: Exception) { upNote = "No app on this phone could open the page." }
                     }
                 }

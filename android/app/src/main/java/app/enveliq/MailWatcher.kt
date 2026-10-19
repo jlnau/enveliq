@@ -69,7 +69,18 @@ object AlertPrefs {
         setAlerted(c, emptyList())
         setMode(c, "direct")
         setPushDevice(c, null)
+        otherKinds.forEach { setKind(c, it.first, false) }
     }
+
+    /** Other things worth a quiet note, each off until the person turns it on: "messages", "bell", "tasks", "shipping". */
+    val otherKinds = listOf(
+        "messages" to ("Messages" to "A note when someone sends you a message in Enveliq."),
+        "bell" to ("Notes and alerts" to "A note when something new appears under the bell."),
+        "tasks" to ("Tasks due today" to "A note when a task becomes due."),
+        "shipping" to ("Parcels to confirm" to "A note when a parcel needs you to confirm it arrived."),
+    )
+    fun kindOn(c: Context, kind: String) = prefs(c).getBoolean("alert_kind_$kind", false)
+    fun setKind(c: Context, kind: String, v: Boolean) = prefs(c).edit().putBoolean("alert_kind_$kind", v).apply()
 
     fun timeText(minutes: Int): String = "%02d:%02d".format(minutes / 60, minutes % 60)
 }
@@ -213,6 +224,7 @@ class MailWatcherService : Service() {
                     else if (line.isEmpty()) {
                         if (event == "new") Alerts.catchUp(this, api)
                         if (event == "gone") Alerts.gone(this, data)
+                        if (event == "other") Alerts.other(this, data)
                         if (event == "reconnect") break
                         event = ""
                         data = ""
@@ -276,6 +288,21 @@ object Alerts {
         }
         if (toTell.isEmpty()) return
         Notifier.newMail(context, toTell, AlertPrefs.inQuietHours(context))
+    }
+
+    /** The server says more messages, notes, tasks or parcels are waiting. It sends only which kinds, never any words. */
+    fun other(context: Context, data: String) {
+        try {
+            val kinds = org.json.JSONObject(data).optJSONArray("kinds") ?: return
+            val names = AlertPrefs.otherKinds.toMap()
+            for (i in 0 until kinds.length()) {
+                val kind = kinds.optString(i)
+                if (!AlertPrefs.kindOn(context, kind)) continue
+                val text = names[kind]?.second ?: continue
+                Notifier.other(context, kind, text, AlertPrefs.inQuietHours(context))
+            }
+        } catch (_: Exception) {
+        }
     }
 
     /** The server says these emails are no longer waiting (reviewed or moved somewhere else): take their alerts down at once. */
