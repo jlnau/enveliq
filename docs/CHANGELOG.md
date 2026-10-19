@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Android: pinch to zoom now zooms where you pinch.** Zooming a picture or PDF used to grow from the top left corner. It now keeps the spot between your fingers in place, as you would expect, and double-tap and the + and − buttons zoom around the spot you tapped or the middle of the screen. Touches `android/` (`AttachmentViewer.kt`).
+
 **Android: the notification bell is on the top row.** A bell sits next to search on the top row of every screen. It opens Notes and alerts and shows a small red dot when something is new. Touches `android/` (`Chrome.kt`, `Home.kt`, `More.kt`).
 
 **Android: the task on an open email now matches the website.** The task card has a three-dot menu with **Move** (Later today, Tomorrow morning, This weekend, Next week, or Pick a day) and **Remove**, and says when it is due in the website's words: Today (with the time for a reminder), Tomorrow, a weekday or date, or "Waiting since". Your own tasks say "Your task", the AI's say "Task added", and a finished one has **Put back**. Touches `android/` (`TaskCard.kt`, `Home.kt`, `Api.kt`, `Data.kt`).
