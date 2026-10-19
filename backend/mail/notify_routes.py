@@ -113,6 +113,34 @@ def mail_changes(before: set[tuple[str, str]], now: set[tuple[str, str]]) -> tup
     return sorted(now - before), sorted(before - now)
 
 
+def other_counts(ctx: Any, user_id: str) -> dict[str, int]:
+    """How many things of each other kind are waiting for this person. Only numbers, never any text."""
+    out: dict[str, int] = {}
+    try:
+        if ctx.messages.enabled(user_id):
+            out["messages"] = int(ctx.messages.summary(user_id).get("unread") or 0)
+    except Exception:
+        pass
+    try:
+        out["bell"] = int(ctx.inbound.unread(user_id))
+    except Exception:
+        pass
+    try:
+        out["tasks"] = sum(1 for t in ctx.tasks.view(user_id)["tasks"] if t["state"] == "open" and t["days"] <= 0)
+    except Exception:
+        pass
+    try:
+        out["shipping"] = sum(1 for o in ctx.shipping.view(user_id).get("orders", []) if o.get("needs_confirm"))
+    except Exception:
+        pass
+    return out
+
+
+def grown(before: dict[str, int], latest: dict[str, int]) -> list[str]:
+    """The kinds that have more waiting than before. A kind that went down (the person dealt with it) is not news."""
+    return sorted(k for k, n in latest.items() if n > before.get(k, 0))
+
+
 def build_notify_router(ctx: Any) -> APIRouter:
     router = APIRouter(prefix="/api/v1")
     notifier: Notifier = ctx.notifier
@@ -222,8 +250,10 @@ def build_notify_router(ctx: Any) -> APIRouter:
 
         async def stream():
             seen = set(await asyncio.to_thread(cached_ready, user_id))
+            counts = await asyncio.to_thread(other_counts, ctx, user_id)
             yield "retry: 30000\nevent: ready\ndata: {}\n\n"
             ticks = 0
+            rounds = 0
             while not await request.is_disconnected():
                 await asyncio.sleep(5)
                 try:
@@ -231,6 +261,14 @@ def build_notify_router(ctx: Any) -> APIRouter:
                 except Exception:
                     yield "event: reconnect\ndata: {}\n\n"
                     return
+                rounds += 1
+                if rounds % 6 == 0:                       # every half minute: did more messages, notes, tasks or parcels start waiting?
+                    latest = await asyncio.to_thread(other_counts, ctx, user_id)
+                    grew = grown(counts, latest)
+                    counts = latest
+                    if grew:
+                        yield "event: other\ndata: " + json.dumps({"kinds": grew}, separators=(",", ":")) + "\n\n"
+                        ticks = 0
                 fresh, gone = mail_changes(seen, now)
                 seen = set(now)
                 if gone:                              # reviewed, archived or moved somewhere else: the phone takes its alert down at once

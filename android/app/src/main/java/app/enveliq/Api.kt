@@ -228,14 +228,32 @@ class EnveliqApi(address: String) {
                 val snoozedUntil = r.optDouble("snoozed_until", 0.0)
                 if (view == "inbox" && snoozedUntil * 1000 > System.currentTimeMillis()) continue        // snoozed: it comes back when the time is up
                 val files = ArrayList<Attachment>()
-                val rawFiles = r.optJSONArray("attachments")
+                val rawFiles = r.optJSONArray("attachment_summaries")
                 if (rawFiles != null) {
                     for (k in 0 until rawFiles.length()) {
                         val f = rawFiles.optJSONObject(k) ?: continue
-                        files.add(Attachment(f.optInt("index", k), f.str("filename").ifBlank { "Attachment " + (k + 1) }, f.optLong("size_bytes", 0L), f.str("summary")))
+                        val parts = ArrayList<Pair<String, String>>()
+                        f.optJSONArray("parts")?.let { arr ->
+                            for (q in 0 until arr.length()) arr.optJSONObject(q)?.let { parts.add(it.str("title") to it.str("text")) }
+                        }
+                        files.add(
+                            Attachment(
+                                f.optInt("index", k), f.str("filename").ifBlank { "Attachment " + (k + 1) }, f.optLong("size_bytes", 0L), f.str("summary"),
+                                mime = f.str("mime_type"), state = f.str("state"), note = f.str("note"), reason = f.str("reason"),
+                                parts = parts, pages = f.optInt("pages", 0),
+                            ),
+                        )
                     }
                 }
                 val received = r.optLong("received_at", 0L)
+                val warnReasons = ArrayList<String>()
+                r.optJSONObject("scam_warning")?.optJSONArray("reasons")?.let { arr ->
+                    for (k in 0 until arr.length()) {
+                        val t = arr.optJSONObject(k)?.str("text") ?: arr.optString(k)
+                        if (t.isNotBlank()) warnReasons.add(t)
+                    }
+                }
+                val unsub = r.optJSONObject("unsubscribe")
                 val task = r.optJSONObject("suggested_task")
                 val taskTitle = task?.str("title") ?: ""
                 out.add(
@@ -253,8 +271,13 @@ class EnveliqApi(address: String) {
                         received = received,
                         tags = r.optJSONArray("tags").strings(),
                         attachments = files,
+                        hasFiles = files.isNotEmpty() || r.optBoolean("has_attachments", false),
                         mailbox = mailbox,
                         state = state,
+                        scamReasons = warnReasons,
+                        unsubUrl = unsub?.str("url")?.ifBlank { null },
+                        unsubMailto = unsub?.str("mailto")?.ifBlank { null },
+                        unsubSubject = unsub?.str("subject") ?: "",
                     )
                 )
             }
@@ -336,27 +359,60 @@ class EnveliqApi(address: String) {
         return out
     }
 
-    fun reply(mail: Mail, all: Boolean, text: String, from: String? = null): Sent = sentFrom(
+    private fun filesJson(files: List<PickedFile>): JSONArray = JSONArray(files.map {
+        JSONObject().put("name", it.name).put("type", it.type).put("data", android.util.Base64.encodeToString(it.bytes, android.util.Base64.NO_WRAP))
+    })
+
+    fun reply(mail: Mail, all: Boolean, text: String, from: String? = null, files: List<PickedFile> = emptyList()): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/reply",
-            JSONObject().put("body", text).put("kind", if (all) "reply_all" else "reply").also { if (from != null) it.put("from_address", from) },
+            JSONObject().put("body", text).put("kind", if (all) "reply_all" else "reply").also { if (from != null) it.put("from_address", from) }
+                .also { if (files.isNotEmpty()) it.put("files", filesJson(files)) },
         ),
     )
 
-    fun forward(mail: Mail, to: List<String>, cc: List<String>, bcc: List<String>, text: String, from: String? = null): Sent = sentFrom(
+    fun forward(mail: Mail, to: List<String>, cc: List<String>, bcc: List<String>, text: String, from: String? = null, files: List<PickedFile> = emptyList()): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/forward",
-            JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("body", text).also { if (from != null) it.put("from_address", from) },
+            JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("body", text).also { if (from != null) it.put("from_address", from) }
+                .also { if (files.isNotEmpty()) it.put("files", filesJson(files)) },
         ),
     )
 
-    fun sendNew(accountId: String, to: List<String>, cc: List<String>, bcc: List<String>, subject: String, text: String, from: String? = null): Sent = sentFrom(
+    fun sendNew(accountId: String, to: List<String>, cc: List<String>, bcc: List<String>, subject: String, text: String, from: String? = null, files: List<PickedFile> = emptyList()): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(accountId) + "/send",
             JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("subject", subject).put("body", text)
-                .also { if (from != null) it.put("from_address", from) },
+                .also { if (from != null) it.put("from_address", from) }
+                .also { body ->
+                    if (files.isNotEmpty()) body.put("files", JSONArray(files.map {
+                        JSONObject().put("name", it.name).put("type", it.type).put("data", android.util.Base64.encodeToString(it.bytes, android.util.Base64.NO_WRAP))
+                    }))
+                },
         ),
     )
+
+    /** Keeps the email at the server and sends it from the person's own mailbox at [atSeconds] (Unix time). Files cannot wait. */
+    fun scheduleSend(kind: String, accountId: String, messageId: String?, to: List<String>, cc: List<String>, bcc: List<String>, subject: String, text: String, from: String?, atSeconds: Double): String {
+        val body = JSONObject().put("kind", kind).put("account_id", accountId).put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc))
+            .put("subject", subject).put("body", text).put("send_at", atSeconds)
+        if (messageId != null) body.put("message_id", messageId)
+        if (from != null) body.put("from_address", from)
+        return JSONObject(call("POST", "/api/v1/me/scheduled", body)).str("id")
+    }
+
+    fun waiting(): List<Waiting> {
+        val arr = JSONObject(call("GET", "/api/v1/me/scheduled")).optJSONArray("items") ?: return emptyList()
+        return (0 until arr.length()).mapNotNull { i ->
+            val o = arr.optJSONObject(i) ?: return@mapNotNull null
+            Waiting(o.str("id"), o.str("subject").ifBlank { "(no subject)" }, o.str("to"), o.optInt("people", 1), o.optDouble("send_at", 0.0).toLong(), o.str("state"), o.str("error"))
+        }
+    }
+
+    fun cancelWaiting(id: String) { call("DELETE", "/api/v1/me/scheduled/" + enc(id)) }
+
+    /** The signature the person saved on the website, or empty. */
+    fun signature(): String = JSONObject(call("GET", "/api/v1/me/saved")).str("signature")
 
     /** Takes back an email that is still waiting out its "undo send" time. */
     fun cancelSend(outboxId: String) {
@@ -425,6 +481,40 @@ class EnveliqApi(address: String) {
         val v = latest.str("version")
         val u = latest.str("url")
         return if (v.isBlank() || !u.startsWith("https://github.com/")) null else v to u
+    }
+
+    /** Fetches the newest app from the person's own server (which checked it against its published checksum) into [dest]. Returns whether the file matches the checksum the server named. */
+    fun downloadUpdate(dest: java.io.File): Boolean {
+        val conn = URL(base + "/api/v1/app-update/apk").openConnection() as HttpURLConnection
+        try {
+            conn.connectTimeout = 15000
+            conn.readTimeout = 120000
+            val code = conn.responseCode
+            if (code >= 400) {
+                val text = conn.errorStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
+                throw ApiException(detail(text, code), code)
+            }
+            val expected = conn.getHeaderField("X-Enveliq-Sha256")?.lowercase() ?: ""
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
+            conn.inputStream.use { input ->
+                dest.outputStream().use { out ->
+                    val buf = ByteArray(64 * 1024)
+                    while (true) {
+                        val n = input.read(buf)
+                        if (n < 0) break
+                        digest.update(buf, 0, n)
+                        out.write(buf, 0, n)
+                    }
+                }
+            }
+            return expected.length == 64 && digest.digest().joinToString("") { "%02x".format(it) } == expected
+        } catch (e: ApiException) {
+            throw e
+        } catch (e: IOException) {
+            throw ApiException("The download did not finish. Check your connection and try again.")
+        } finally {
+            conn.disconnect()
+        }
     }
 
     // ---------- beyond email: tasks, bell, shipping, trips, news and messages ----------
@@ -520,8 +610,8 @@ class EnveliqApi(address: String) {
     }
 
     /** A file from the email, fetched from the mailbox for this one request. The app does not keep it. */
-    fun download(mail: Mail, index: Int): ByteArray {
-        val conn = URL(base + "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/attachments/" + index).openConnection() as HttpURLConnection
+    fun download(mail: Mail, index: Int, preview: Boolean = false): ByteArray {
+        val conn = URL(base + "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/attachments/" + index + (if (preview) "?preview=true" else "")).openConnection() as HttpURLConnection
         try {
             conn.connectTimeout = 15000
             conn.readTimeout = 60000
@@ -538,6 +628,86 @@ class EnveliqApi(address: String) {
         } finally {
             conn.disconnect()
         }
+    }
+
+    /** A readable copy of a file (PDF pages as pictures, a table, or text), made by the server in memory. Nothing is kept. Same route as the website's viewer. */
+    fun viewAttachment(mail: Mail, index: Int): JSONObject =
+        JSONObject(call("GET", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/attachments/" + index + "/view"))
+
+    /** Who is signed in (name and picture version), for the top bar. */
+    fun me(): Me {
+        val o = JSONObject(call("GET", "/api/v1/me"))
+        val name = o.str("display_name").ifBlank { o.str("username") }
+        val initials = name.split(Regex("\\s+")).mapNotNull { it.firstOrNull()?.toString() }.joinToString("").take(2).uppercase().ifBlank { "?" }
+        return Me(o.str("id"), name, initials, o.str("avatar_v"))
+    }
+
+    /** The person's own picture, or null when they have none. */
+    fun avatar(me: Me): ByteArray? {
+        if (me.avatarVersion.isBlank()) return null
+        val conn = URL(base + "/api/v1/users/" + enc(me.id) + "/avatar?v=" + enc(me.avatarVersion)).openConnection() as HttpURLConnection
+        return try {
+            conn.connectTimeout = 15000
+            conn.readTimeout = 30000
+            if (conn.responseCode >= 400) null else conn.inputStream.use { it.readBytes() }
+        } catch (_: Exception) {
+            null
+        } finally {
+            conn.disconnect()
+        }
+    }
+
+    fun findStart(query: String, includeJunk: Boolean): FindProgress =
+        findProgressOf(JSONObject(call("POST", "/api/v1/find/searches", JSONObject().put("query", query).put("include_junk", includeJunk))))
+
+    fun findProgress(id: String): FindProgress = findProgressOf(JSONObject(call("GET", "/api/v1/find/searches/" + enc(id))))
+
+    private fun findProgressOf(r: JSONObject): FindProgress {
+        val notes = ArrayList<String>()
+        val boxes = r.optJSONArray("mailboxes")
+        if (boxes != null) for (i in 0 until boxes.length()) {
+            val m = boxes.optJSONObject(i) ?: continue
+            if (m.str("message").isNotBlank()) notes.add(m.str("label") + ": " + m.str("message"))
+        }
+        return FindProgress(r.str("id"), r.optBoolean("done", false) || r.optBoolean("cancelled", false), r.optInt("listed", 0), notes)
+    }
+
+    /** One page (25) of results. Returns the rows and whether there are more. */
+    fun findPage(id: String, offset: Int): Pair<List<FoundRow>, Boolean> {
+        val r = JSONObject(call("GET", "/api/v1/find/searches/" + enc(id) + "/results?offset=" + offset))
+        val arr = r.optJSONArray("rows")
+        val rows = ArrayList<FoundRow>()
+        if (arr != null) for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            rows.add(FoundRow(o.str("token"), o.str("from_name").ifBlank { o.str("from_address") }, o.str("subject"), o.str("date"), o.str("account"), o.str("folder")))
+        }
+        return rows to r.optBoolean("more", false)
+    }
+
+    fun findCancel(id: String) {
+        try { call("DELETE", "/api/v1/find/searches/" + enc(id)) } catch (e: Exception) { }
+    }
+
+    /** The plain text of a found email. Fetched now and not kept. */
+    fun findOriginal(token: String): String =
+        JSONObject(call("GET", "/api/v1/find/results/" + enc(token) + "/original")).str("text").ifBlank { "(no text content)" }
+
+    /** From now on, new email from this address goes straight to the mailbox's Junk folder. The server keeps important people safe. */
+    fun blockSender(address: String) {
+        call("POST", "/api/v1/me/rules", JSONObject().put("sender", address).put("subject", "").put("action", "junked"))
+    }
+
+    /** The rules this person has made: id, what to match, and what happens. */
+    fun rules(): List<Rule> {
+        val arr = JSONObject(call("GET", "/api/v1/me/rules")).optJSONArray("rules") ?: return emptyList()
+        return (0 until arr.length()).mapNotNull { i ->
+            val r = arr.optJSONObject(i) ?: return@mapNotNull null
+            Rule(r.str("id"), r.str("sender"), r.str("subject"), r.str("action"))
+        }
+    }
+
+    fun deleteRule(id: String) {
+        call("DELETE", "/api/v1/me/rules/" + enc(id))
     }
 
     fun resolve(mail: Mail, outcome: Outcome) {

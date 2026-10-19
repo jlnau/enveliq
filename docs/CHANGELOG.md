@@ -4,9 +4,39 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**Android: a slower, clearer swipe.** Swiping an email now slides it off, shows its symbol (tick, archive box or bin) growing on the coloured bar, then folds the gap closed before the Undo bar appears. Touches `android/` (`Home.kt`).
 
-## v0.96 (2026-10-19)
+**Android: files and summaries on an email, with the website's viewer.** The app now shows each file with the AI's summary (it was reading the wrong field before, so nothing appeared), and **View** opens PDFs, pictures, tables and text in the same viewer as the website. Touches `android/` (`AttachmentViewer.kt`, `Api.kt`).
+
+**Android: a cleaner main screen.** Menu, logo, search and your picture on one row; the bottom tabs moved into the menu; a thin row with the Inbox/Reviewed/Archived filter and a second filter button; pull down to refresh; symbols instead of words on the Reviewed, Archive and Bin buttons. Touches `android/` (`Home.kt`, `Chrome.kt`).
+
+**Send later.** **Later** beside Send on a new email, reply or forward sends it at a time you choose (within 30 days). Waiting emails are listed under Sent, **Waiting to send** (website) and More, Waiting to send (Android) and can be taken back. They are kept encrypted in the vault, so they survive a restart; files cannot wait. Touches `backend/mail/scheduled.py`, `backend/mail/scheduled_routes.py`, `backend/app.py`, `backend/export.py`, `prototype/index.html`, `android/`, `tests/test_scheduled.py`, `scripts/check_send_later.mjs`, `docs/SEND_LATER.md`, `SECURITY.md`.
+
+**Attach files to replies and forwards** (website and Android). A forward keeps the files of the original unless unticked and adds new ones. Touches `backend/mail/service.py`, `backend/mail/routes.py`, `prototype/index.html`, `android/`, `tests/test_attach_reply_forward.py`.
+
+**Android: alerts for messages, notes and alerts, tasks and parcels.** Separate switches in Settings, Notifications (off by default, direct mode). The alert stream gains an `other` event that names only the kind. Touches `backend/mail/notify_routes.py`, `android/`, `tests/test_notify.py`, `docs/ANDROID.md`.
+
+**Android: install updates from inside the app.** Settings, About, **Install it** downloads the new version through your own server, which checks it against the published checksum. The phone never contacts GitHub. Touches `backend/update_check.py`, `backend/app.py` (`GET /api/v1/app-update/apk`), `android/`, `tests/test_update_notice.py`, `docs/UPDATES.md`, `SECURITY.md`.
+
+**Fix: signing in to the Android app with a passkey or single sign-on.** After pressing **Open the Enveliq app** in the browser, the app used to show "Something went wrong" and stay on the sign-in screen: the app cancelled its own sign-in half way. It now finishes the sign-in. The "Sign in with a passkey or single sign-on" button also no longer cuts its words off on a narrow phone. Touches `android/` (`Screens.kt`).
+
+**Junk and Block sender.** On an opened email, **Send to Junk** moves it to your mailbox's own Junk or Spam folder (Undo works for a few seconds), and **Block sender** does that and also sends all new email from that address to Junk from then on. A new Mail rules action, **Send it to Junk**, does the same for a sender or words in the subject, and never touches your important people. Touches `backend/models.py`, `backend/mail/service.py`, `backend/mail/rules.py`, `prototype/index.html`, `web/static/auth.js`, `tests/test_rules.py`, `docs/JUNK_MAIL.md`, `docs/MAIL_RULES.md`, `SECURITY.md`.
+
+**Android: Junk, Block sender and Blocked senders.** The same two buttons on an opened email, and **Settings, Blocked senders** to see and undo blocks. The block is made after the Undo time. Touches `android/`.
+
+**Android: warnings and unsubscribe.** A boxed "Take care with this one" note shows why an email looks odd, and **Unsubscribe from this sender** appears when the email carries one (the link asks first). Touches `android/`.
+
+**Android: Find any email.** More, Find any email searches all your mailboxes, old email and Junk too. Touches `android/`.
+
+**Android: write better.** Attach files to a new email, your saved signature is put in the box, pick an address from the phone's contacts (no permission needed), and `mailto:` links from other apps open a new email in Enveliq. Touches `android/` (`Compose.kt`, `MainActivity.kt`, `Api.kt`, manifest).
+
+**Android: open the next email.** A Settings switch: after you archive or mark reviewed the email you are reading, the next one opens. Touches `android/`.
+
+**Your devices on the website.** The Sign-in and security page now lists where you are signed in and lets you sign another device out, as the Android app already did. Touches `web/static/auth.js`, `scripts/check_devices_page.mjs`, `.github/workflows/ci.yml`.
+
+**Download the Android app.** A link on the website's front page and guide menu, in the website's Settings, and in the app (Settings, About, Get the Android app). They open the newest release page. Touches `website/`, `web/static/auth.js`, `prototype/index.html`, `android/`.
+
+**Guides.** The Android guide is rewritten (it no longer says the repository is private or that features are missing that now exist), and the Android and Junk mail guides are now in the website's menu. Touches `docs/ANDROID.md`, `docs/JUNK_MAIL.md`, `website/build.mjs`, `.github/workflows/ci.yml` (comments).
 
 **Fix: Junk Mail drops an email that is no longer there.** If an email had been moved or deleted since the page last looked, pressing View original email or Not Junk only said "no longer in Junk Mail" and the card stayed. Now the card is taken off the list at once (on the server and on the page). Touches `backend/mail/junk.py`, `backend/mail/junk_routes.py`, `prototype/index.html`, `tests/test_junk.py`, `docs/JUNK_MAIL.md`.
 

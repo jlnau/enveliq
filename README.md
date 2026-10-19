@@ -15,6 +15,7 @@
   <a href="#built-for-your-own-infrastructure">Self hosted AI</a> ·
   <a href="#install">Install options</a> ·
   <a href="#questions">Questions</a> ·
+  <a href="docs/ANDROID.md">Android app</a> ·
   <a href="docs/README.md">All guides</a>
 </p>
 
@@ -269,7 +270,7 @@ All the guides are listed, by what you want to do, in the [**documentation index
 The full list is in [docs/VERSION_HISTORY.md](docs/VERSION_HISTORY.md), and a more technical one is in the [change log](docs/CHANGELOG.md).
 </details>
 
-Current version: **v0.96**
+Current version: **v0.95**
 
 Version 0.88 includes a cosier Calm mode, a **Back to My inbox** button, easier phone use, and a website with a light and dark switch and new pictures. See the [v0.88 change log](docs/CHANGELOG.md#v088-2026-10-14) for details.
 

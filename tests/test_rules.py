@@ -20,7 +20,7 @@ def test_a_new_person_has_no_rules_and_it_is_never_cached(env):
     _, client, _, _ = env
     r = client.get("/api/v1/me/rules")
     assert r.status_code == 200 and r.headers["cache-control"] == "no-store"
-    assert r.json()["rules"] == [] and set(r.json()["actions"]) == {"archived", "reviewed"}
+    assert r.json()["rules"] == [] and set(r.json()["actions"]) == {"archived", "reviewed", "junked"}
 
 
 def test_adding_listing_and_removing_a_rule(env):
@@ -48,7 +48,7 @@ def test_a_bad_sender_or_action_is_refused_in_plain_words(env):
         r = add_rule(client, bad)
         assert r.status_code == 422 and "email address" in str(r.json()["detail"]), bad
     r = add_rule(client, ALICE, "binned")                  # there is deliberately no rule that bins mail
-    assert r.status_code == 422 and "archive it, or mark it reviewed" in str(r.json()["detail"])
+    assert r.status_code == 422 and "archive it, mark it reviewed, or send it to Junk" in str(r.json()["detail"])
     assert add_rule(client, ALICE, "deleted").status_code == 422
     assert client.post("/api/v1/me/rules", json={"sender": ALICE, "action": "archived", "extra": 1}).status_code == 422
     assert rules(client) == []
@@ -174,3 +174,22 @@ def test_the_resolve_buttons_still_work_the_same(env):
     aid, m = synced(client, bridge)
     r = client.post(f"/api/v1/accounts/{aid}/messages/{m['Quarterly update']['id']}/resolve", json={"outcome": "archived"})
     assert r.status_code == 204 and bridge.messages[1]["folder"] == "Archive"
+
+
+def test_a_junk_rule_sends_new_mail_from_that_sender_to_the_junk_folder(env):
+    _, client, bridge, _ = env
+    bridge.folders.append(("\\HasNoChildren \\Junk", "Spam"))
+    add_rule(client, ALICE, "junked")
+    aid, _ = synced(client, bridge)
+    assert bridge.messages[1]["folder"] == "Spam" and bridge.messages[2]["folder"] == "INBOX"
+    listed = client.get(f"/api/v1/accounts/{aid}/messages").json()
+    assert "Quarterly update" not in [x["subject"] for x in listed]          # no card is left behind for junk
+
+
+def test_one_email_can_be_sent_to_junk_by_hand(env):
+    _, client, bridge, _ = env
+    bridge.folders.append(("\\HasNoChildren \\Junk", "Spam"))
+    aid, m = synced(client, bridge)
+    r = client.post(f"/api/v1/accounts/{aid}/messages/{m['Quarterly update']['id']}/resolve", json={"outcome": "junked"})
+    assert r.status_code == 204 and bridge.messages[1]["folder"] == "Spam"
+    assert "Quarterly update" not in [x["subject"] for x in client.get(f"/api/v1/accounts/{aid}/messages").json()]

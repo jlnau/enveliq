@@ -683,6 +683,26 @@ async function accountPage(me, params) {
       sections.push(h("section", { class: "section" }, h("h2", { text: "Password" }), pw));
     }
 
+    // Your devices: where you are signed in, with a button to sign any other one out.
+    const devSlot = h("div", {});
+    const devices = h("section", { class: "section", id: "devices" }, h("h2", { text: "Your devices" }),
+      h("p", { class: "lead", text: "Where you are signed in. Signing a device out takes effect straight away." }), devSlot,
+      h("p", { class: "hint" }, "Using Android? ", h("a", { href: "https://enveliq.app/docs/android/", target: "_blank", rel: "noopener noreferrer", text: "Get the Enveliq app" }), "."));
+    const loadDevices = async () => {
+      try {
+        const out = await api("/auth/devices");
+        devSlot.replaceChildren(...(out.items || []).map(d => h("div", { class: "item" },
+          h("div", {}, h("strong", { text: (d.label || "A device") + (d.current ? " (this one)" : "") }),
+            h("div", { class: "meta", text: d.signed_in_at ? `Signed in ${new Date(d.signed_in_at * 1000).toLocaleDateString()}` : "" })),
+          d.current ? null : h("button", { class: "btn small danger", type: "button", text: "Sign out", onclick: async () => {
+            try { await api(`/auth/devices/${encodeURIComponent(d.id)}`, { method: "DELETE" }); toast("Device signed out"); loadDevices(); } catch (er) { toast(er.message); }
+          } }))));
+        if (!(out.items || []).length) devSlot.append(h("p", { class: "lead", text: "No devices to show." }));
+      } catch (er) { devSlot.replaceChildren(h("p", { class: "lead", text: "Could not load your devices. Please try again." })); }
+    };
+    loadDevices();
+    protect.push(devices);
+
     // SSO link
     if (me.sso && me.sso.enabled) {
       const s = h("section", { class: "section" }, h("h2", { text: "Single sign-on" }));
@@ -1468,7 +1488,8 @@ function androidCard(ch, redraw) {
     h("button", { class: "btn small", type: "button", text: "Remove", onclick: async () => { try { await api(`/me/notifications/android/${d.id}`, { method: "DELETE" }); toast("Removed"); redraw(); } catch (err) { toast(err.message); } } })));
   const body = h("div", { class: "chan-form" }, h("p", { class: "hint", text: ch.blurb }),
     ch.available || ch.devices.length ? h("ol", { class: "howto" }, ch.steps.slice(0, 3).map(t => h("li", { text: t }))) : alertBox("info", "Your administrator has not set this up yet."),
-    ...list, ch.last_error ? alertBox("bad", `The last send failed: ${ch.last_error}`) : null);
+    ...list, ch.last_error ? alertBox("bad", `The last send failed: ${ch.last_error}`) : null,
+    h("p", { class: "hint" }, h("a", { href: "https://enveliq.app/docs/android/", target: "_blank", rel: "noopener noreferrer", text: "Get the Android app" }), " (how to download and install it)."));
   return h("details", { class: "chan", open: !!(ch.devices.length || ch.last_error) }, h("summary", {}, h("strong", { text: ch.label }), " ", status), body);
 }
 function channelCard(ch, redraw) {
@@ -1872,7 +1893,7 @@ async function savedPage(me) {
 
 // ---------- mail rules: "archive (or mark reviewed) new mail from this sender" ----------
 async function rulesPage(me) {
-  let state = { rules: [], actions: { archived: "Archive it", reviewed: "Mark it reviewed" }, max: 50 };
+  let state = { rules: [], actions: { archived: "Archive it", reviewed: "Mark it reviewed", junked: "Send it to Junk" }, max: 50 };
   const list = h("div", { class: "ab-list" });
   const sender = h("input", { id: "ru_sender", type: "text", placeholder: "name@example.com, or @example.com for a whole website", "aria-label": "Mail from", autocomplete: "off", maxlength: 320 });
   const words = h("input", { id: "ru_subject", type: "text", placeholder: "Only if the subject has these words (optional)", "aria-label": "Subject contains", autocomplete: "off", maxlength: 80 });
@@ -1884,7 +1905,7 @@ async function rulesPage(me) {
       h("span", { class: "ab-who" }, h("strong", { text: `${state.actions[r.action] || r.action}` }), h("small", { text: `New mail from ${who(r)}${r.subject ? ` with \u201c${r.subject}\u201d in the subject` : ""}` })),
       h("button", { class: "ab-x", type: "button", "aria-label": `Remove the rule for ${who(r)}`, text: "\u00d7", onclick: async () => {
         try { state = await api(`/me/rules/${r.id}`, { method: "DELETE" }); paint(); toast("Rule removed"); } catch (er) { toast(er.message); }
-      } }))) : [h("p", { class: "hint", text: "No rules yet. Add one below, or open an email in your inbox and press Always archive these." })]));
+      } }))) : [h("p", { class: "hint", text: "No rules yet. Add one below, or open an email in your inbox and press Always archive these or Block sender." })]));
   }
   async function add() {
     if (!sender.value.trim()) { toast("Type who the email is from first"); sender.focus(); return; }

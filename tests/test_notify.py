@@ -675,3 +675,25 @@ def test_the_phone_is_told_which_emails_are_no_longer_waiting():
     now = {("a1", "m2"), ("a1", "m3")}
     assert mail_changes(before, now) == ([("a1", "m3")], [("a1", "m1")])
     assert mail_changes(before, before) == ([], [])
+
+
+def test_other_kinds_only_count_and_only_growth_is_news():
+    from types import SimpleNamespace as NS
+    from backend.mail.notify_routes import grown, other_counts
+
+    ctx = NS(
+        messages=NS(enabled=lambda u: True, summary=lambda u: {"unread": 2}),
+        inbound=NS(unread=lambda u: 1),
+        tasks=NS(view=lambda u: {"tasks": [
+            {"state": "open", "days": 0}, {"state": "open", "days": 3}, {"state": "done", "days": -1}]}),
+        shipping=NS(view=lambda u: {"orders": [{"needs_confirm": True}, {"needs_confirm": False}]}),
+    )
+    now = other_counts(ctx, "u1")
+    assert now == {"messages": 2, "bell": 1, "tasks": 1, "shipping": 1}
+    assert grown(now, now) == []
+    assert grown({"messages": 2, "bell": 1, "tasks": 2, "shipping": 1}, now) == []
+    assert grown({"messages": 1, "bell": 1, "tasks": 1, "shipping": 0}, now) == ["messages", "shipping"]
+
+    broken = NS(messages=NS(enabled=lambda u: 1 / 0), inbound=NS(unread=lambda u: 4),
+                tasks=None, shipping=None)
+    assert other_counts(broken, "u1") == {"bell": 4}

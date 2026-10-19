@@ -24,6 +24,9 @@ class MainActivity : FragmentActivity() {
     /** Text shared to Enveliq from another app: (subject, text). The inbox opens a new email with it once the person is signed in. */
     var shareRequest by mutableStateOf<Pair<String, String>?>(null)
 
+    /** A "mailto:" link tapped in another app: (to, subject, body). Opens a new email with those filled in. */
+    var mailtoRequest by mutableStateOf<Triple<String, String, String>?>(null)
+
     /** True while the app is locked and waiting for the fingerprint, face or PIN. */
     var locked by mutableStateOf(false)
     private var stoppedAt = 0L
@@ -58,6 +61,15 @@ class MainActivity : FragmentActivity() {
             return
         }
         val link = intent?.data
+        if (link != null && link.scheme == "mailto" && (intent?.action == Intent.ACTION_SENDTO || intent?.action == Intent.ACTION_VIEW)) {
+            val to = (link.schemeSpecificPart.substringBefore("?")).take(500)
+            // A mailto link is "opaque", so its ?subject=...&body=... part is read as an ordinary web query.
+            val query = android.net.Uri.parse("http://x/?" + link.schemeSpecificPart.substringAfter("?", ""))
+            val subject = (query.getQueryParameter("subject") ?: intent?.getStringExtra(Intent.EXTRA_SUBJECT) ?: "").take(300)
+            val text = (query.getQueryParameter("body") ?: intent?.getStringExtra(Intent.EXTRA_TEXT) ?: "").take(20000)
+            mailtoRequest = Triple(to, subject, text)
+            return
+        }
         if (link != null && link.scheme == "enveliq" && link.host == "signin") {
             val code = link.getQueryParameter("code") ?: ""
             if (Regex("[A-Za-z0-9_-]{20,100}").matches(code)) linkCode = code

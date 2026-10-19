@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -119,17 +120,22 @@ fun SignInScreen(initialAddress: String, notice: String, linkCode: String?, onLi
             error = "That sign-in took too long or did not start here. Please try again."
             return@LaunchedEffect
         }
-        busy = true
-        try {
-            val client = EnveliqApi(addr)
-            withContext(Dispatchers.IO) { client.exchangeLink(code, verifier, keepIt) }
-            onDone(client, addr, keepIt)
-        } catch (e: ApiException) {
-            error = e.message ?: "That did not work."
-        } catch (e: Exception) {
-            error = "Something went wrong. Please try again."
-        } finally {
-            busy = false
+        // Run in the screen's own scope: clearing linkCode (onLinkUsed) ends this effect, which would cancel the exchange half way.
+        scope.launch {
+            busy = true
+            try {
+                val client = EnveliqApi(addr)
+                withContext(Dispatchers.IO) { client.exchangeLink(code, verifier, keepIt) }
+                onDone(client, addr, keepIt)
+            } catch (e: ApiException) {
+                error = e.message ?: "That did not work."
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                error = "Something went wrong. Please try again."
+            } finally {
+                busy = false
+            }
         }
     }
 
@@ -236,7 +242,7 @@ fun SignInScreen(initialAddress: String, notice: String, linkCode: String?, onLi
                 OutlinedButton(
                     onClick = { openBrowser() },
                     enabled = !busy && address.trim().removePrefix("https://").removePrefix("http://").isNotBlank(),
-                    modifier = Modifier.fillMaxWidth().padding(top = 18.dp).height(48.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 18.dp).heightIn(min = 48.dp),
                     shape = RoundedCornerShape(14.dp),
                 ) { Text("Sign in with a passkey or single sign-on", fontSize = 15.sp) }
                 Text("Opens your browser to sign in there, then brings you back here.", color = Muted, fontSize = 13.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))

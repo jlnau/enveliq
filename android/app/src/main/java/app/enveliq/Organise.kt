@@ -221,62 +221,10 @@ internal fun TagFilterScreen(counts: List<Pair<String, Int>>, current: String?, 
     }
 }
 
-private fun sizeText(bytes: Long): String = when {
+internal fun sizeText(bytes: Long): String = when {
     bytes <= 0L -> ""
     bytes < 1024L * 1024L -> ((bytes + 1023L) / 1024L).toString() + " KB"
     else -> String.format("%.1f MB", bytes / 1048576.0)
-}
-
-/** The files that came with an email. The AI's note on each is labelled. Save puts the file where the person chooses; the app keeps nothing. */
-@Composable
-internal fun AttachmentsSection(mail: Mail, api: EnveliqApi) {
-    if (mail.attachments.isEmpty()) return
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var pending by remember(mail.id) { mutableStateOf<Attachment?>(null) }
-    var status by remember(mail.id) { mutableStateOf("") }
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri: Uri? ->
-        val file = pending
-        pending = null
-        if (uri != null && file != null) {
-            status = "Saving " + file.name + "…"
-            scope.launch {
-                try {
-                    val bytes = withContext(Dispatchers.IO) { api.download(mail, file.index) }
-                    withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) } }
-                    status = "Saved " + file.name + "."
-                } catch (e: ApiException) {
-                    status = e.message ?: "Could not save the file."
-                } catch (e: Exception) {
-                    status = "Could not save the file."
-                }
-            }
-        }
-    }
-    Column(Modifier.fillMaxWidth().padding(top = 18.dp)) {
-        Text("Files with this email", color = Muted, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-        mail.attachments.forEach { file ->
-            Surface(
-                color = Panel, shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-            ) {
-                Column(Modifier.padding(14.dp)) {
-                    Text(file.name, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                    val size = sizeText(file.size)
-                    if (size.isNotEmpty()) Text(size, color = Muted, fontSize = 13.sp)
-                    if (file.summary.isNotBlank()) {
-                        Text("✦ " + file.summary, color = Ink, fontSize = 14.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 6.dp))
-                        Text("Written by the AI. It can be wrong.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
-                    }
-                    OutlinedButton(
-                        onClick = { pending = file; picker.launch(file.name) },
-                        modifier = Modifier.padding(top = 8.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
-                    ) { Text("Save to my phone", color = Ink) }
-                }
-            }
-        }
-        if (status.isNotEmpty()) Text(status, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 6.dp))
-    }
 }
 
 private val linkPattern = Regex("""https?://[^\s<>"')\]]+""")

@@ -25,3 +25,7 @@ It is **on by default**. An administrator can switch it off under **Administrati
 ## Updating
 
 Pressing the card only shows the release notes. To update, redeploy the new image the way you installed Enveliq (for example, press **Redeploy** in Arcane). Releases are published by the maintainer, and images are built only from a published release.
+
+## Updating the Android app
+
+In the Android app, **Settings, About, Check for a new version** asks your own server for the newest release. If it is newer, **Install it** downloads the app **through your own server**, which fetches it from Enveliq's releases, checks it against the checksum published with it and passes it on. The phone never contacts GitHub. Android then asks you to confirm the install, and a new version installs over the old one only if it is signed with the same key. The first time, Android asks you to allow Enveliq to install apps. **Open the download page** is still there if you would rather install by hand.

@@ -2,7 +2,7 @@
 
 One encrypted record per person (`rules:<user id>`) under the vault's master key. A rule holds a sender (one
 address, or a whole domain written `@example.com`), an optional piece of the subject, and one of two actions:
-archive, or mark reviewed. There is deliberately no rule that bins mail. A rule is checked against the
+archive, mark reviewed, or send to the mailbox's Junk folder (which is how a sender is blocked; the email can still be rescued from Junk). There is deliberately no rule that bins mail. A rule is checked against the
 sender and subject of mail that has just arrived (nothing else about an email is read) and is never applied to
 mail already in the inbox. Mail from a person's important people is never touched by a rule.
 """
@@ -18,7 +18,7 @@ from .contacts import clean_address
 RECORD_PREFIX = "rules:"
 MAX_RULES = 50
 MAX_SUBJECT = 80
-ACTIONS = {"archived": "Archive it", "reviewed": "Mark it reviewed"}
+ACTIONS = {"archived": "Archive it", "reviewed": "Mark it reviewed", "junked": "Send it to Junk"}
 _LOCK = threading.Lock()
 _CTRL = re.compile(r"[\x00-\x1f\x7f]")
 _DOMAIN = re.compile(r"^@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,24}$")
@@ -68,7 +68,7 @@ class Rules:
     def add(self, user_id: str, sender: Any, subject: Any, action: Any) -> list[dict[str, Any]]:
         who, words = clean_sender(sender), clean_subject(subject)
         if action not in ACTIONS:
-            raise RuleError("Choose what to do with the email: archive it, or mark it reviewed.")
+            raise RuleError("Choose what to do with the email: archive it, mark it reviewed, or send it to Junk.")
         with _LOCK:
             rules = self._load(user_id)
             if any(r["sender"] == who and r.get("subject", "").lower() == words.lower() and r["action"] == action for r in rules):

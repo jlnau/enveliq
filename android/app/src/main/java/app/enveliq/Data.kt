@@ -17,10 +17,26 @@ data class Mail(
     val attachments: List<Attachment> = emptyList(),
     val mailbox: String = "",
     val state: String = "unread",
+    /** Plain reasons the server gives for a warning about this email, empty when there is none. */
+    val scamReasons: List<String> = emptyList(),
+    /** Where "unsubscribe" goes: a web address, or a mailto address to write to. Null when the email has none. */
+    val unsubUrl: String? = null,
+    val unsubMailto: String? = null,
+    val unsubSubject: String = "",
+    /** The email has files (known even before the AI has read them). */
+    val hasFiles: Boolean = false,
 )
 
 /** A file that came with an email. [summary] is written by the AI and is labelled that way where it is shown. */
-data class Attachment(val index: Int, val name: String, val size: Long, val summary: String)
+/** A file that came with an email: its name, size, the AI's summary (when it was read) and, when it was not, why. */
+data class Attachment(
+    val index: Int, val name: String, val size: Long, val summary: String,
+    val mime: String = "", val state: String = "", val note: String = "", val reason: String = "",
+    val parts: List<Pair<String, String>> = emptyList(), val pages: Int = 0,
+)
+
+/** Who is signed in: for the round picture (or initials) at the top of the inbox. */
+data class Me(val id: String, val name: String, val initials: String, val avatarVersion: String)
 
 /** The tags the mail service keeps for a mailbox, and whether a new one can be made. */
 data class TagInfo(val names: List<String>, val canCreate: Boolean)
@@ -29,6 +45,7 @@ enum class Outcome(val api: String, val done: String) {
     Reviewed("reviewed", "Marked reviewed"),
     Archived("archived", "Archived"),
     Binned("binned", "Moved to Bin"),
+    Junked("junked", "Sent to Junk"),
 }
 
 /** A mailbox the person can send from. */
@@ -58,7 +75,10 @@ data class Draft(
 )
 
 /** What the server said after a send. When [queued], the email waits [secondsLeft] seconds (the "undo send" time) and can still be taken back. */
-class Sent(val queued: Boolean, val outboxId: String, val secondsLeft: Int)
+class Sent(val queued: Boolean, val outboxId: String, val secondsLeft: Int, val scheduledId: String = "", val scheduledText: String = "")
+
+/** An email waiting for the time it was set to go. [state] is pending or failed (with [error] saying why). [at] is in seconds since 1970. */
+data class Waiting(val id: String, val subject: String, val to: String, val people: Int, val at: Long, val state: String, val error: String)
 
 /** One place the person is signed in. [signedIn] is in seconds since 1970. */
 data class DeviceInfo(val id: String, val name: String, val signedIn: Long, val current: Boolean)
@@ -75,3 +95,15 @@ data class ChatMessage(val id: String, val name: String, val mine: Boolean, val 
 
 /** A list from a feature that an administrator or the person may have switched off. */
 data class Section<T>(val enabled: Boolean, val items: List<T>)
+
+/** A rule: email from [sender] (and, when set, with [subject] words) gets [action] ("archived", "reviewed" or "junked"). */
+data class Rule(val id: String, val sender: String, val subject: String, val action: String)
+
+/** Where the newest Android app is published. */
+const val APP_DOWNLOAD_PAGE = "https://github.com/jlnau/enveliq/releases/latest"
+
+/** One email found by "Find any email". [token] opens it; the email itself stays at the mailbox. */
+data class FoundRow(val token: String, val from: String, val subject: String, val date: String, val mailbox: String, val folder: String)
+
+/** How a search is going: [done] when every mailbox has answered. */
+data class FindProgress(val id: String, val done: Boolean, val listed: Int, val notes: List<String>)

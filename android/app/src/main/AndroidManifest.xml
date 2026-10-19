@@ -8,6 +8,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- Only used when the person presses "Install it" for a new version of this app; Android still asks them to confirm. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- No backups: nothing from this app is copied to Google or to a new phone. HTTPS only. -->
     <application
@@ -36,6 +38,12 @@
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
+            </intent-filter>
+            <!-- Links that start an email (mailto:) from other apps open a new email here. Nothing is sent until the person presses Send. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SENDTO" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="mailto" />
             </intent-filter>
             <!-- The browser hands the app a one-time code here after the person signs in there. The code alone is useless without the secret only this app holds. -->
             <intent-filter>
@@ -74,6 +82,15 @@
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/waiting_widget_info" />
         </receiver>
+
+        <!-- Lets Android's installer read the one downloaded update file, and nothing else. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
+        </provider>
 
         <receiver android:name=".MailActionReceiver" android:exported="false" />
 

@@ -44,6 +44,8 @@ from .mail.rules import Rules
 from .mail.rules_routes import build_rules_router
 from .mail.drafts import Drafts
 from .mail.drafts_routes import build_drafts_router
+from .mail.scheduled import ScheduledMail, ScheduledSender
+from .mail.scheduled_routes import build_scheduled_router
 from .mail.saved_writing import SavedWriting
 from .mail.saved_writing_routes import build_saved_writing_router
 from .mail.junk import JunkBook
@@ -372,6 +374,7 @@ async def lifespan(_: FastAPI):
     auto_sync.start()
     backups.start()
     reminders.start()
+    scheduled_sender.start()
     rss_refresher.start()
     sync.start()
     reporter.start()
@@ -383,6 +386,7 @@ async def lifespan(_: FastAPI):
         auto_sync.stop()
         backups.stop()
         reminders.stop()
+        scheduled_sender.stop()
         rss_refresher.stop()
         sync.stop()
         outbox.stop()
@@ -518,6 +522,7 @@ def delete_user_data(user_id: str) -> None:
     importantbook.forget_user(user_id)
     savedbook.forget_user(user_id)
     draftbook.forget_user(user_id)
+    scheduledbook.forget_user(user_id)
     rulebook.forget_user(user_id)
     junkbook.forget_user(user_id)
     finder = getattr(mail_ctx, "find_index", None)
@@ -635,6 +640,8 @@ subbook = SubBook(vault, taskbook.timezone_of)
 importantbook = ImportantPeople(vault)
 savedbook = SavedWriting(vault)
 draftbook = Drafts(vault)
+scheduledbook = ScheduledMail(vault)
+scheduled_sender = ScheduledSender(vault, mail_service, scheduledbook, vault.audit)
 rulebook = Rules(vault)
 tripbook = TripBook(vault, taskbook.timezone_of)
 messagebook = MessageBook(vault, users)
@@ -686,7 +693,7 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, scheduled=scheduledbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))
@@ -700,6 +707,7 @@ app.include_router(build_subscriptions_router(mail_ctx))
 app.include_router(build_important_router(mail_ctx))
 app.include_router(build_saved_writing_router(mail_ctx))
 app.include_router(build_drafts_router(mail_ctx))
+app.include_router(build_scheduled_router(mail_ctx))
 app.include_router(build_rules_router(mail_ctx))
 app.include_router(build_trips_router(mail_ctx))
 app.include_router(build_waiting_router(mail_ctx))
@@ -707,7 +715,8 @@ app.include_router(build_junk_router(mail_ctx))
 app.include_router(build_check_router(mail_ctx))
 def apply_rules(account: dict, arrived: list) -> None:
     """Mail that has just arrived: apply the owner's rules (archive it, or mark it reviewed). Nothing else about the
-    email is read. Mail from the owner's important people is never touched, and a rule never bins anything."""
+    email is read. Mail from the owner's important people is never touched, and a rule never bins anything (sending to Junk is
+    not binning: the email stays in the mailbox's Junk folder)."""
     user = account.get("owner_user_id")
     if not user:
         return
@@ -824,6 +833,38 @@ def app_update(session: Session = Depends(full_session)):
         return {"latest": None}
     update_checker.maybe_refresh()
     return {"latest": dict(update_checker.latest) if update_checker.latest else None}
+
+
+_apk_lock = threading.Lock()
+
+
+@app.get("/api/v1/app-update/apk")
+def app_update_apk(session: Session = Depends(full_session)):
+    """The newest Android app, passed on from Enveliq's own releases so the phone never contacts GitHub. The server
+    checks it against the checksum published with it first. Nothing about the person is sent to GitHub."""
+    import tempfile
+    from starlette.background import BackgroundTask
+    from .update_check import ApkError, fetch_apk
+    latest = dict(update_checker.latest) if update_notice_enabled() and update_checker.latest else None
+    if not latest:
+        raise HTTPException(status_code=404, detail="No update is offered.")
+    if not _apk_lock.acquire(blocking=False):
+        raise HTTPException(status_code=429, detail="Another download is already running. Try again in a minute.")
+    tmp = tempfile.NamedTemporaryFile(prefix="enveliq-apk-", suffix=".apk", delete=False)
+    try:
+        try:
+            digest = fetch_apk(latest["version"], tmp)
+        except ApkError:
+            raise HTTPException(status_code=502, detail="The new version could not be fetched safely. Try again later.")
+    except BaseException:
+        tmp.close()
+        os.unlink(tmp.name)
+        raise
+    finally:
+        _apk_lock.release()
+    tmp.close()
+    return FileResponse(tmp.name, media_type="application/vnd.android.package-archive", filename="Enveliq-" + latest["version"] + ".apk",
+                        headers={"X-Enveliq-Sha256": digest}, background=BackgroundTask(os.unlink, tmp.name))
 
 
 @app.get("/api/v1/system")
@@ -1071,7 +1112,7 @@ def mark_message_unread(account_id: AccountId, message_id: MessageId, session: S
 
 
 def resolve_message(account_id: str, message_id: str, outcome: str, user_id: str, *, by: str | None = None) -> None:
-    """Reviewed, archived, binned or expired, for one message. Shared by the buttons and by a person's rules.
+    """Reviewed, archived, binned, junked or expired, for one message. Shared by the buttons and by a person's rules.
 
     Archive/bin/mark-read happens at the mail provider first. Only after that succeeds do we purge local
     retained metadata/summaries and any temporary safe preview leases, so a failed action leaves the item

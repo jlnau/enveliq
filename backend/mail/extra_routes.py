@@ -19,7 +19,7 @@ from .limits import SlidingWindowLimiter
 from .summary_queue import SummaryQueue
 from .render import view as render_view
 from .parse import PREVIEW_IMAGE_TYPES, attachment_bytes, render_original, sending_identities
-from .routes import AccountId, MessageId, fail
+from .routes import AccountId, FileIn, MessageId, fail
 
 log = logging.getLogger("enveliq.queue")
 
@@ -52,17 +52,6 @@ class FollowBody(StrictModel):
 
 class MyFeaturesBody(FeaturesBody):
     address_book_auto: bool | None = None
-
-
-class FileIn(StrictModel):
-    name: str = Field(min_length=1, max_length=255)
-    type: str = Field(default="application/octet-stream", max_length=127)
-    data: str = Field(max_length=14_500_000)          # base64; the total is checked again after decoding
-
-    @field_validator("name", "type")
-    @classmethod
-    def safe(cls, value: str) -> str:
-        return header_safe(value)
 
 
 class NewMailBody(StrictModel):

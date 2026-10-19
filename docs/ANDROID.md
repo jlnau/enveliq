@@ -1,6 +1,6 @@
 # Enveliq for Android
 
-A real Android app (not a web page in a frame), written in Kotlin with Jetpack Compose. It lives in the `android/` folder. It is not on the Play Store: you install the APK file yourself.
+A real Android app (not a web page in a frame), written in Kotlin with Jetpack Compose. It lives in the `android/` folder. It is not on the Play Store: you install the APK file yourself. The newest one is always on the [download page](https://github.com/jlnau/enveliq/releases/latest) (this repository is public, so no sign-in is needed).
 
 ## Install it
 
@@ -27,7 +27,7 @@ The app's version is the release tag (for example `v0.96` gives version `0.96`);
 
 ## Settings
 
-Settings is a short list of topics: **Notifications**, **Swipe on an email**, **Security**, **Account** and **About**. Tap a topic to open its own page, with a Back button fixed at the top. On a page, switches turn things on and off with one tap on the whole row; a choice (for example what a swipe does, or how alerts reach the phone) opens one more page with a tick-list. Nothing needs long scrolling: longer explanations sit under the setting they belong to.
+Settings is a short list of topics: **Notifications**, **Swipe on an email**, **Appearance**, **Security**, **Open the next email**, **Blocked senders**, **Account** and **About**. Tap a topic to open its own page, with a Back button fixed at the top. On a page, switches turn things on and off with one tap on the whole row; a choice (for example what a swipe does, or how alerts reach the phone) opens one more page with a tick-list. Nothing needs long scrolling: longer explanations sit under the setting they belong to.
 
 ## Look, alerts and comfort
 
@@ -67,13 +67,35 @@ Settings, Security, **Your devices** lists the places you are signed in and lets
 - **Inbox, Reviewed, Archived:** the chips at the top switch views. Reviewed and Archived show what the server still keeps (a few days).
 - **More than one mailbox:** a chip for each mailbox appears and filters the list.
 
-## Not in the app yet
+## Added in version 0.97
 
-Passkeys and single sign-on, notes from Home Assistant and other services, task reminders, app lock, search, replying and sending, shipping, calendar and the other screens, and an in-app 'new version' button (it needs a public place to look for releases, because this repository is private). The plan for all of these is in the project's Android plan (phases 0 to 5). Settings, Administration and mailbox setup stay on the website.
+- **Junk and Block sender.** On an opened email, **Send to Junk** moves it to your mailbox's own Junk or Spam folder (Undo works for a few seconds). **Block sender** does that and also makes a rule, so new email from that address goes to Junk from then on. The rule is only made after the Undo time has passed. People on your important list are never blocked. **Settings, Blocked senders** lists the blocked addresses, each with **Unblock**. It is the same rule the website uses (see [Junk mail](JUNK_MAIL.md) and [Mail rules](MAIL_RULES.md)).
+- **Take care with this one.** When Enveliq's check finds something odd about an email (for example a sender name that does not match the address), a boxed note above the summary says why in plain words.
+- **Unsubscribe from this sender.** Shown when the email carries an unsubscribe link or address. A web link asks first and names the site it goes to; a mail address opens a new email in your mail app. Enveliq never opens the link by itself.
+- **Find any email** (More tab) searches all your mailboxes, old email too, and can include Junk. Results list sender, subject, date and mailbox; tap one to read its text. The email is fetched when you open it and is not kept. It uses the website's [Find any email](FIND_MAIL.md); an administrator can switch it off.
+- **Attach files to a new email.** **Attach files** on a new email opens Android's file picker (up to 10 files, 10 MB together). The files are held in memory while you write and sent with the email; they are not saved on the phone. Replies and forwards work as on the website (a forward carries the original's files).
+- **Signature.** The signature you saved on the website is put in the box when a new email starts, where you can change or remove it.
+- **Pick from phone contacts** on a new email opens Android's contact picker. Only the one address you choose is handed over, so Enveliq does not need permission to read your contacts.
+- **Links that start an email.** Tapping an email address or `mailto:` link in another app can offer Enveliq, and a new email opens with the address (and subject or text, if the link had them) filled in. Nothing is sent until you press Send.
+- **Open the next email** (Settings): after you archive or mark reviewed the email you are reading, the next one in the list opens.
+- **Get the Android app** (Settings, About) opens the download page, for this or another phone. The website's front page and Settings link to this guide, which has the download button.
+
+- **Files and their summaries.** An email's files are listed under the AI summary with the AI's note on each (labelled), or the reason a file was not read. **View** (or **Preview** for a picture) opens the same viewer as the website: PDF pages with zoom, pictures, tables and plain text, made by your server in memory. **Save to my phone** keeps a copy where you choose. Nothing is kept by Enveliq or the app.
+- **A paperclip** beside the time on any email in the list that has files.
+- **A cleaner main screen.** The top row is a menu button, the Enveliq logo, search, and your picture (or initials). Tap the picture for **Your account** (opens the website's account page) and **Settings**. The menu button opens Inbox, Tasks, Drafts, More and Settings, which no longer take space at the bottom. A thin row under it says where you are, with a filter button (Inbox, Reviewed, Archived) and a second button for needs action, mailbox and tags. Pull down to refresh. An open email fills the screen, and its bottom bar is symbols: a tick (Reviewed), an archive box, a bin and a clock (Remind me later).
+- **Send later.** **Later** beside Send on a new email, reply or forward picks a time; **More, Waiting to send** lists and takes back what is waiting. Files cannot wait. See [Send later](SEND_LATER.md).
+- **Attach files to replies and forwards**, as on the website. A forward keeps the files of the original unless you untick them.
+- **Alerts for messages, notes and alerts, tasks due today and parcels to confirm.** **Settings, Notifications** has a switch for each, off until you turn it on. Direct mode only (not Google's push). The server's alert stream tells the app only *which kind* has something new, never any words, so the note says just "New message", "A task is due" and so on. They follow your quiet hours.
+- **Install updates from inside the app.** **Settings, About, Install it**: the app downloads the new version through your own server (which checks it against its published checksum), then Android asks you to confirm. Android asks once to allow Enveliq to install apps. See [Updates](UPDATES.md).
+
+## Not in the app
+
+- **A calendar of events.** Trips and bookings are listed under More, Trips and calendar.
+- **Settings, Administration and mailbox setup** stay on the website. Shipping, trips and news are read-only in the app (set them up on the website).
 
 ## How new-email alerts work
 
-- The server has one small stream for the app, `GET /api/v1/me/new-mail-events`. It only says which emails have just become ready (their AI summary is finished). It carries ids, never any text, and the server only ever lists the signed-in person's own email.
+- The server has one small stream for the app, `GET /api/v1/me/new-mail-events`. It says which emails have just become ready (their AI summary is finished) and, about every 30 seconds, which other kinds (messages, notes, tasks, parcels) have grown. It carries ids and kind names, never any text, and the server only ever lists the signed-in person's own email.
 - The app holds one connection to that stream. The server sends one line a minute so the connection is not dropped; in between, the app does nothing. There is no polling.
 - When the server says something is ready, the app fetches the inbox once, and shows an alert for each email it has not already told you about. It remembers only the ids it has announced (up to 400), so an email is never announced twice. The first time you turn alerts on, the email already in your inbox is not announced.
 - No network, no connection: while the phone has no signal the app does not try, and it reconnects the moment a network returns. After a failed try it waits 15 seconds, then longer each time, up to 5 minutes.
@@ -104,7 +126,7 @@ Which emails alert you, quiet hours and the "important people only" filter are t
 
 - **Swipe an email** right or left to Archive, Bin or mark it Reviewed (Settings, Swipe on an email; to begin with right is Archive and left is Bin, or choose Nothing to switch a side off). Every swipe can be undone for a few seconds.
 - **Select several:** press and hold an email, tap more to add them, then Reviewed, Archive or Bin for all of them. **Select all** ticks everything in the list.
-- **Search** your inbox (the Search button at the top): it looks at the sender, subject and summary of the emails already in your inbox. Searching all your mail is still on the website.
+- **Search** your inbox (the Search button at the top): it looks at the sender, subject and summary of the emails already in your inbox. To search all your mail, use More, Find any email.
 - **Remind me later** (on an opened email): put it away until in 3 hours, tomorrow morning or next Monday morning. It comes back in your inbox then, and the website shows it as snoozed too. Undo brings it back at once.
 - **Reply, Reply all and Forward** are at the top of an opened email. The email you are answering is added underneath, as on the website.
 - **New email:** the round pencil button on the inbox. In To, Cc and Bcc, suggestions from your address list appear as you type (if the address list is switched on in Enveliq). If you have more than one mailbox, you pick which one to send from.

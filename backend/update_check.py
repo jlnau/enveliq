@@ -50,6 +50,50 @@ def fetch_latest() -> dict[str, str] | None:
         return accept(json.loads(r.read(200_000).decode("utf-8")))
 
 
+APK_MAX = 120 * 1024 * 1024     # the app is about 30 MB; anything far bigger is not it
+_ASSET = "https://github.com/jlnau/enveliq/releases/download/v{v}/Enveliq-{v}.apk"
+
+
+class ApkError(Exception):
+    pass
+
+
+def fetch_apk(version: str, dest: Any, opener: Callable[..., Any] | None = None) -> str:
+    """Downloads the published Android app for exactly this version into [dest] (an open binary file) and returns its
+    SHA-256. The file is only accepted if it matches the checksum published beside it. Raises ApkError otherwise."""
+    ver = parse_version(version)
+    if ver is None:
+        raise ApkError("bad version")
+    v = ".".join(str(p) for p in ver)
+    opener = opener or (lambda req: urllib.request.urlopen(req, timeout=30))      # noqa: S310 - fixed https addresses
+    headers = {"User-Agent": "Enveliq-update-check"}
+    try:
+        with opener(urllib.request.Request(_ASSET.format(v=v) + ".sha256", headers=headers)) as r:
+            published = r.read(2000).decode("ascii", "replace").split()[0].lower()
+        if not re.fullmatch(r"[0-9a-f]{64}", published):
+            raise ApkError("no checksum")
+        import hashlib
+        h, size = hashlib.sha256(), 0
+        with opener(urllib.request.Request(_ASSET.format(v=v), headers=headers)) as r:
+            while True:
+                chunk = r.read(256 * 1024)
+                if not chunk:
+                    break
+                size += len(chunk)
+                if size > APK_MAX:
+                    raise ApkError("too big")
+                h.update(chunk)
+                dest.write(chunk)
+    except ApkError:
+        raise
+    except Exception as e:                       # no internet, no such file, a strange answer
+        raise ApkError("download failed") from e
+    if h.hexdigest() != published:
+        raise ApkError("checksum does not match")
+    dest.flush()
+    return published
+
+
 class UpdateChecker:
     def __init__(self, current: str, fetch: Callable[[], dict[str, str] | None] | None = None, now: Callable[[], float] = time.time):
         self.current = parse_version(current) or (0,)

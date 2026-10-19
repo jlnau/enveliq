@@ -197,6 +197,7 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
     var swipeLeft by remember { mutableStateOf(prefs.getString("swipe_left", "bin") ?: "bin") }
     val power = remember { context.getSystemService(android.os.PowerManager::class.java) }
     var unrestricted by remember { mutableStateOf(power.isIgnoringBatteryOptimizations(context.packageName)) }
+    var openNext by remember { mutableStateOf(prefs.getBoolean("open_next", false)) }
     var hide by remember { mutableStateOf(prefs.getBoolean("hide_in_recents", false)) }
     var appLock by remember { mutableStateOf(prefs.getBoolean("app_lock", false)) }
     var lockNote by remember { mutableStateOf("") }
@@ -284,6 +285,16 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                 }
             }
             if (alertNote.isNotEmpty()) Footnote(alertNote)
+            if (mailAlerts && mode == "direct") {
+                Group {
+                    AlertPrefs.otherKinds.forEachIndexed { i, (id, label) ->
+                        if (i > 0) HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                        var on by remember { mutableStateOf(AlertPrefs.kindOn(context, id)) }
+                        ToggleRow(label.first, label.second, on) { on = it; AlertPrefs.setKind(context, id, it) }
+                    }
+                }
+                Footnote("These come through the same quiet connection as new email, and follow your quiet hours. They are not available with Google's push service.")
+            }
             if (mailAlerts) {
                 Group {
                     NavRow("", tintTool, "What to alert me about", value = scopeName(alertScope)) { page = "scope" }
@@ -478,6 +489,40 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
             }
             if (devNote.isNotEmpty()) Footnote(devNote, Amber)
         }
+        "blocked" -> Page("Blocked senders", back("home")) {
+            var rules by remember { mutableStateOf<List<Rule>?>(null) }
+            var note by remember { mutableStateOf("") }
+            var reload by remember { mutableStateOf(0) }
+            LaunchedEffect(reload) {
+                try { rules = withContext(Dispatchers.IO) { api.rules().filter { it.action == "junked" } } }
+                catch (e: Exception) { note = "Could not load this list. Check your connection and try again." }
+            }
+            val list = rules
+            if (list == null && note.isEmpty()) Footnote("Loading...")
+            if (list != null && list.isEmpty()) Footnote("No one is blocked. Open an email and press Block sender to add someone.")
+            if (list != null && list.isNotEmpty()) {
+                Group {
+                    list.forEachIndexed { i, r ->
+                        if (i > 0) HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(r.sender, color = Ink, fontSize = 16.sp)
+                                if (r.subject.isNotBlank()) Text("Only when the subject has: " + r.subject, color = Muted, fontSize = 13.sp)
+                            }
+                            TextButton(onClick = {
+                                scope.launch {
+                                    try { withContext(Dispatchers.IO) { api.deleteRule(r.id) }; note = "" }
+                                    catch (e: Exception) { note = "Could not unblock that sender. Please try again." }
+                                    reload++
+                                }
+                            }) { Text("Unblock", color = Blue) }
+                        }
+                    }
+                }
+                Footnote("New email from these senders goes to your mailbox's Junk folder. Anyone you marked as important is never blocked.")
+            }
+            if (note.isNotEmpty()) Footnote(note, Amber)
+        }
         "account" -> Page("Account", back("home")) {
             Group {
                 NavRow("", tintTool, "Server", value = server.removePrefix("https://")) { }
@@ -512,12 +557,51 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                 }
                 if (upUrl.isNotEmpty()) {
                     HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
-                    NavRow("", Blue, "Download it", note = "Opens the download page. Open the file it saves to update.") {
+                    NavRow("", Blue, if (upBusy) "Downloading..." else "Install it", note = "Downloads it through your own server, then Android asks you to confirm.") {
+                        if (!upBusy) {
+                            if (!context.packageManager.canRequestPackageInstalls()) {
+                                upNote = "Android needs your permission first. Allow Enveliq on the next screen, come back, and press Install it again."
+                                try { context.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, android.net.Uri.parse("package:" + context.packageName))) } catch (_: Exception) { }
+                            } else {
+                                upBusy = true
+                                upNote = "Downloading the new version..."
+                                scope.launch {
+                                    try {
+                                        val file = java.io.File(java.io.File(context.cacheDir, "updates").also { it.mkdirs() }, "Enveliq-update.apk")
+                                        val sound = withContext(Dispatchers.IO) { api.downloadUpdate(file) }
+                                        if (!sound) {
+                                            file.delete()
+                                            upNote = "The download did not match its checksum, so it was not installed. Try again."
+                                        } else {
+                                            val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".updates", file)
+                                            context.startActivity(
+                                                Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
+                                                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK),
+                                            )
+                                            upNote = "Ready. Confirm on the next screen to finish updating."
+                                        }
+                                    } catch (e: ApiException) {
+                                        upNote = e.message ?: "Could not download it."
+                                    } catch (_: Exception) {
+                                        upNote = "Could not start the install. You can still use the download page."
+                                    }
+                                    upBusy = false
+                                }
+                            }
+                        }
+                    }
+                    HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                    NavRow("", tintTool, "Open the download page", note = "If you would rather install it yourself.") {
                         try { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(upUrl))) } catch (e: Exception) { upNote = "No app on this phone could open the page." }
                     }
                 }
             }
             if (upNote.isNotEmpty()) Footnote(upNote)
+            Group {
+                NavRow("", tintTool, "Get the Android app", note = "Opens the download page for the newest version, for this or another phone.") {
+                    try { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(APP_DOWNLOAD_PAGE))) } catch (e: Exception) { upNote = "No app on this phone could open the page." }
+                }
+            }
             Footnote("Email is held in memory while it is on the screen and is never saved on this phone. Backups are switched off.")
             Footnote("The only thing kept is your sign-in, encrypted on this phone, if you chose to stay signed in. The app only talks to the server you typed, over HTTPS.")
         }
@@ -540,6 +624,14 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                 NavRow("🎨", tintAppearance, "Appearance", value = themeName(theme)) { page = "appearance" }
                 RowLine()
                 NavRow("🔒", tintSecurity, "Security", value = if (appLock) "Lock on" else "") { page = "security" }
+            }
+            Group {
+                ToggleRow("Open the next email", "After you archive or mark an email reviewed, open the next one.", openNext) {
+                    openNext = it
+                    prefs.edit().putBoolean("open_next", it).apply()
+                }
+                HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                NavRow("🚫", tintAlerts, "Blocked senders") { page = "blocked" }
             }
             Group {
                 NavRow("👤", tintAccount, "Account") { page = "account" }

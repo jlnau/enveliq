@@ -841,6 +841,24 @@ class MailService:
                 raise BridgeError("not_configured", f"“{clean(raw, 80)}” is not a valid email address.") from None
         return out
 
+    def attach_files(self, msg: EmailMessage, files: list[dict[str, str]], already: int = 0, already_bytes: int = 0) -> None:
+        """Add the files a person chose (name, type, base64 data) to a message. Counted together with any [already] on it."""
+        if already + len(files) > self.MAX_FILES:
+            raise BridgeError("too_large", f"Attach at most {self.MAX_FILES} files.")
+        total = already_bytes
+        for f in files:
+            try:
+                data = base64.b64decode(f.get("data", ""), validate=True)
+            except Exception:
+                raise BridgeError("not_configured", "An attachment could not be read.") from None
+            total += len(data)
+            if total > self.MAX_FILE_BYTES:
+                raise BridgeError("too_large", "Attachments can total at most 10 MB.")
+            ctype = str(f.get("type") or "").lower()
+            main, _, sub = (ctype if _MIME.match(ctype) else "application/octet-stream").partition("/")
+            name = clean(str(f.get("name") or "attachment").replace("\\", "/").split("/")[-1], 200) or "attachment"
+            msg.add_attachment(data, maintype=main, subtype=sub, filename=name)
+
     def build_new(self, account: dict[str, Any], to: list[str], cc: list[str], bcc: list[str], subject: str, body: str,
                   from_address: str | None, files: list[dict[str, str]]) -> tuple[EmailMessage, str, list[str]]:
         identities = {i.lower(): i for i in sending_identities(account)}
@@ -863,21 +881,7 @@ class MailService:
         msg["Date"] = format_datetime(datetime.now(timezone.utc))
         msg["Message-ID"] = make_msgid(domain=chosen.rsplit("@", 1)[1])
         msg.set_content(body.replace("\r\n", "\n"))
-        if len(files) > self.MAX_FILES:
-            raise BridgeError("too_large", f"Attach at most {self.MAX_FILES} files.")
-        total = 0
-        for f in files:
-            try:
-                data = base64.b64decode(f.get("data", ""), validate=True)
-            except Exception:
-                raise BridgeError("not_configured", "An attachment could not be read.") from None
-            total += len(data)
-            if total > self.MAX_FILE_BYTES:
-                raise BridgeError("too_large", "Attachments can total at most 10 MB.")
-            ctype = str(f.get("type") or "").lower()
-            main, _, sub = (ctype if _MIME.match(ctype) else "application/octet-stream").partition("/")
-            name = clean(str(f.get("name") or "attachment").replace("\\", "/").split("/")[-1], 200) or "attachment"
-            msg.add_attachment(data, maintype=main, subtype=sub, filename=name)
+        self.attach_files(msg, files)
         recipients = [a.addr_spec for a in to_a + cc_a + bcc_a]
         return msg, chosen, recipients
 
@@ -915,7 +919,7 @@ class MailService:
 
     def build_reply(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None,
                     to: list[str] | None = None, cc: list[str] | None = None, bcc: list[str] | None = None,
-                    kind: str = "reply", add_original: bool = True) -> tuple[EmailMessage, str, list[str]]:
+                    kind: str = "reply", add_original: bool = True, files: list[dict[str, str]] | None = None) -> tuple[EmailMessage, str, list[str]]:
         """A reply. Unless the person already put the original into their own message (add_original False), the whole
         original email is fetched from the mailbox now and quoted under their words. It is never kept."""
         ctx = message.get("reply_context")
@@ -955,10 +959,13 @@ class MailService:
                 raise
             text = text + "\n\n" + quoted
         msg.set_content(text)
+        if files:
+            self.attach_files(msg, files)
         return msg, chosen, [a.addr_spec for a in to_a + cc_a + bcc_a]
 
     def build_forward(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None,
-                      to: list[str], cc: list[str], bcc: list[str], keep_files: list[int] | None) -> tuple[EmailMessage, str, list[str]]:
+                      to: list[str], cc: list[str], bcc: list[str], keep_files: list[int] | None,
+                      extra_files: list[dict[str, str]] | None = None) -> tuple[EmailMessage, str, list[str]]:
         """Forward an email: the original is fetched from the mailbox now, quoted under the person's note, and never kept.
         keep_files are the numbers of the original's files to send along (None sends all of them)."""
         ctx = message.get("reply_context") or {}
@@ -990,6 +997,8 @@ class MailService:
             ctype = ctype.lower()
             main, _, sub = (ctype if _MIME.match(ctype) else "application/octet-stream").partition("/")
             msg.add_attachment(data, maintype=main, subtype=sub, filename=clean(name, 200) or "attachment")
+        if extra_files:
+            self.attach_files(msg, extra_files, already=len(files), already_bytes=total)
         return msg, chosen, [a.addr_spec for a in to_a + cc_a + bcc_a]
 
     def reply(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None,
@@ -1048,3 +1057,6 @@ class MailService:
                 s.move(uid, s.folder_for("archive"))
             elif outcome == "binned":
                 s.move(uid, s.folder_for("trash"))
+            elif outcome == "junked":
+                from .junk import junk_folder          # the mailbox's own Junk or Spam folder; the mail service learns from it too
+                s.move(uid, junk_folder(s, self.target(account).kind))

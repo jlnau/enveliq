@@ -45,6 +45,22 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -198,6 +214,20 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     var loaded by remember { mutableStateOf(false) }
     var view by remember { mutableStateOf("inbox") }
     val inboxList = rememberLazyListState()
+    val drawer = rememberDrawerState(DrawerValue.Closed)
+    var searching by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
+    var me by remember { mutableStateOf<Me?>(null) }
+    var picture by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    LaunchedEffect(Unit) {
+        try {
+            val who = withContext(Dispatchers.IO) { api.me() }
+            me = who
+            val bytes = withContext(Dispatchers.IO) { api.avatar(who) }
+            if (bytes != null) picture = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        } catch (_: Exception) {
+        }
+    }
     val snack = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -242,6 +272,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         activity.openRequest = null
     }
     BackHandler(enabled = opened != null) { opened = null }
+    BackHandler(enabled = drawer.isOpen) { scope.launch { drawer.close() } }
 
     val selected = remember { mutableStateListOf<String>() }
     var askSnooze by remember { mutableStateOf(false) }
@@ -254,6 +285,13 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         val sh = activity.shareRequest ?: return@LaunchedEffect
         composing = ComposeTarget("new", presetSubject = sh.first, presetBody = sh.second)
         activity.shareRequest = null
+    }
+    // A "mailto:" link from another app: a new email with the address filled in, ready to check and send.
+    val mailto = activity.mailtoRequest
+    LaunchedEffect(mailto) {
+        val mt = activity.mailtoRequest ?: return@LaunchedEffect
+        composing = ComposeTarget("new", presetSubject = mt.second, presetBody = mt.third, presetTo = mt.first)
+        activity.mailtoRequest = null
     }
     fun keyOf(m: Mail) = m.accountId + ":" + m.id
 
@@ -277,12 +315,15 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     }
 
     // The emails leave the list at once. They are only marked at your mailbox when the Undo time has passed.
-    fun resolveAll(items: List<Mail>, outcome: Outcome) {
+    fun resolveAll(items: List<Mail>, outcome: Outcome, onCommitted: (() -> Unit)? = null) {
         if (items.isEmpty()) return
         val placed = items.map { it to mails.indexOf(it).coerceAtLeast(0) }
+        // "Open the next email" (a Settings choice): after archiving or reviewing the one you were reading, the next one in the list opens.
+        val next = if (items.size == 1 && opened == items[0] && prefs.getBoolean("open_next", false) && (outcome == Outcome.Archived || outcome == Outcome.Reviewed))
+            mails.getOrNull(mails.indexOf(items[0]) + 1) else null
         items.forEach { mails.remove(it); Notifier.clearOne(activity, it.id) }
         selected.clear()
-        opened = null
+        opened = next
         scope.launch {
             val label = if (items.size == 1) outcome.done else outcome.done + " (" + items.size + ")"
             val result = snack.showSnackbar(message = label, actionLabel = "Undo", duration = SnackbarDuration.Short)
@@ -303,12 +344,29 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 if (failed.isNotEmpty()) {
                     putBack(failed)
                     snack.showSnackbar("That did not work for " + failed.size + ". They are back in your list.")
+                } else {
+                    onCommitted?.invoke()
                 }
             }
         }
     }
 
     fun resolve(mail: Mail, outcome: Outcome) = resolveAll(listOf(mail), outcome)
+
+    // Junk: the email goes to the mailbox's Junk folder. "Block" also sends everything from that sender there from now on.
+    // The block is only made once the Undo time has passed, so Undo takes back both.
+    fun junk(mail: Mail, block: Boolean) = resolveAll(listOf(mail), Outcome.Junked) {
+        if (block && mail.address.isNotBlank()) {
+            scope.launch {
+                try {
+                    withContext(Dispatchers.IO) { api.blockSender(mail.address) }
+                    snack.showSnackbar("Blocked. New email from " + mail.address + " goes to Junk.")
+                } catch (e: Exception) {
+                    snack.showSnackbar((e as? ApiException)?.message ?: "The email is in Junk, but blocking the sender did not work.")
+                }
+            }
+        }
+    }
 
     // Snooze: the email leaves the list until the time you pick, then comes back. Undo brings it back at once.
     fun snooze(mail: Mail, until: Long, label: String) {
@@ -335,7 +393,17 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     fun afterSend(result: Sent) {
         composing = null
         scope.launch {
-            if (result.queued && result.secondsLeft > 0) {
+            if (result.scheduledId.isNotEmpty()) {
+                val answer = snack.showSnackbar(message = "It will be sent " + result.scheduledText, actionLabel = "Undo", duration = SnackbarDuration.Long)
+                if (answer == SnackbarResult.ActionPerformed) {
+                    try {
+                        withContext(Dispatchers.IO) { api.cancelWaiting(result.scheduledId) }
+                        snack.showSnackbar("Taken back. It will not be sent.")
+                    } catch (e: Exception) {
+                        snack.showSnackbar("Could not take it back. Look under More, Waiting to send.")
+                    }
+                }
+            } else if (result.queued && result.secondsLeft > 0) {
                 val timer = launch {
                     delay(result.secondsLeft * 1000L)
                     snack.currentSnackbarData?.dismiss()
@@ -374,6 +442,34 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     }
 
     val current = opened
+    fun goTo(t: Tab) { tab = t; opened = null; scope.launch { drawer.close() } }
+    ModalNavigationDrawer(
+        drawerState = drawer,
+        gesturesEnabled = drawer.isOpen,      // opened with the menu button; swiping the list is for archiving, so the edge swipe is left off
+        drawerContent = {
+            ModalDrawerSheet(drawerContainerColor = Panel) {
+                androidx.compose.foundation.Image(
+                    androidx.compose.ui.res.painterResource(R.drawable.wordmark), contentDescription = "Enveliq",
+                    modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 16.dp).height(40.dp),
+                )
+                val colors = NavigationDrawerItemDefaults.colors(
+                    selectedContainerColor = PanelHigh, unselectedContainerColor = Panel,
+                    selectedTextColor = Blue, unselectedTextColor = Ink, selectedIconColor = Blue, unselectedIconColor = Muted,
+                )
+                listOf(
+                    Triple(Tab.Inbox, "Inbox", Icons.Filled.Email), Triple(Tab.Tasks, "Tasks", Icons.Filled.CheckCircle),
+                    Triple(Tab.Drafts, "Drafts", Icons.Filled.Edit), Triple(Tab.More, "More", Icons.Filled.Menu),
+                    Triple(Tab.Settings, "Settings", Icons.Filled.Settings),
+                ).forEach { (t, label, icon) ->
+                    NavigationDrawerItem(
+                        label = { Text(label, fontSize = 16.sp) }, selected = tab == t, onClick = { goTo(t) },
+                        icon = { Icon(icon, contentDescription = null) }, colors = colors,
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                    )
+                }
+            }
+        },
+    ) {
     Scaffold(
         containerColor = Navy,
         snackbarHost = { SnackbarHost(snack) },
@@ -393,36 +489,6 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
             } else if (selected.isNotEmpty() && tab == Tab.Inbox) {
                 val chosen = mails.filter { selected.contains(keyOf(it)) }
                 SelectionBar(chosen.size, onResolve = { outcome -> resolveAll(chosen, outcome) }, onCancel = { selected.clear() })
-            } else {
-                NavigationBar(containerColor = Panel) {
-                    val colors = NavigationBarItemDefaults.colors(
-                        indicatorColor = PanelHigh,
-                        selectedIconColor = Blue,
-                        selectedTextColor = Blue,
-                        unselectedIconColor = Muted,
-                        unselectedTextColor = Muted,
-                    )
-                    NavigationBarItem(
-                        selected = tab == Tab.Inbox, onClick = { tab = Tab.Inbox }, colors = colors,
-                        icon = { Icon(Icons.Filled.Email, contentDescription = null) }, label = { Text("Inbox") },
-                    )
-                    NavigationBarItem(
-                        selected = tab == Tab.Tasks, onClick = { tab = Tab.Tasks }, colors = colors,
-                        icon = { Icon(Icons.Filled.CheckCircle, contentDescription = null) }, label = { Text("Tasks") },
-                    )
-                    NavigationBarItem(
-                        selected = tab == Tab.Drafts, onClick = { tab = Tab.Drafts }, colors = colors,
-                        icon = { Icon(Icons.Filled.Edit, contentDescription = null) }, label = { Text("Drafts") },
-                    )
-                    NavigationBarItem(
-                        selected = tab == Tab.More, onClick = { tab = Tab.More }, colors = colors,
-                        icon = { Icon(Icons.Filled.Menu, contentDescription = null) }, label = { Text("More") },
-                    )
-                    NavigationBarItem(
-                        selected = tab == Tab.Settings, onClick = { tab = Tab.Settings }, colors = colors,
-                        icon = { Icon(Icons.Filled.Settings, contentDescription = null) }, label = { Text("Settings") },
-                    )
-                }
             }
         },
     ) { inner ->
@@ -434,6 +500,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         val inboxPane: @Composable () -> Unit = {
             InboxTab(
                         mails, loading, error, inboxList, selected, view, onView = { view = it; selected.clear() },
+                        searching = searching, query = query, onQuery = { query = it },
                         swipeRight = prefs.getString("swipe_right", "archive") ?: "archive",
                         swipeLeft = prefs.getString("swipe_left", "bin") ?: "bin",
                         onOpen = { opened = it },
@@ -441,17 +508,28 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                         onRefresh = { load() },
                     )
         }
-        Box(Modifier.padding(inner).fillMaxSize()) {
+        val topBar: @Composable () -> Unit = {
+            AppTopBar(
+                me, picture, showSearch = tab == Tab.Inbox, searching = searching,
+                onMenu = { scope.launch { drawer.open() } },
+                onSearch = { searching = !searching; if (!searching) query = "" },
+                onAccount = { try { activity.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(EnveliqApi.normalise(server) + "/account"))) } catch (_: Exception) { } },
+                onSettings = { goTo(Tab.Settings) },
+            )
+        }
+        Column(Modifier.padding(inner).fillMaxSize()) {
+          if (current == null || wide) topBar()
+          Box(Modifier.weight(1f).fillMaxWidth()) {
             if (wide && tab == Tab.Inbox) {
                 Row(Modifier.fillMaxSize()) {
                     Box(Modifier.weight(0.42f).fillMaxHeight()) { inboxPane() }
                     Box(Modifier.weight(0.58f).fillMaxHeight()) {
-                        if (current != null) DetailBody(current, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) })
+                        if (current != null) DetailBody(current, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) })
                         else Text("Choose an email to read it here.", color = Muted, fontSize = 16.sp, modifier = Modifier.padding(32.dp))
                     }
                 }
             } else if (current != null) {
-                DetailBody(current, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) })
+                DetailBody(current, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) })
             } else {
                 when (tab) {
                     Tab.Inbox -> inboxPane()
@@ -461,7 +539,9 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                     Tab.Settings -> SettingsTab(activity, prefs, server, api, onLeave)
                 }
             }
+          }
         }
+    }
     }
 }
 
@@ -481,16 +561,17 @@ internal fun Heading(title: String, subtitle: String, trailing: @Composable () -
 private fun InboxTab(
     mails: List<Mail>, loading: Boolean, error: String, listState: LazyListState, selected: MutableList<String>,
     view: String, onView: (String) -> Unit,
+    searching: Boolean, query: String, onQuery: (String) -> Unit,
     swipeRight: String, swipeLeft: String,
     onOpen: (Mail) -> Unit, onSwipe: (Mail, Outcome) -> Unit, onRefresh: () -> Unit,
 ) {
     var onlyAction by remember { mutableStateOf(false) }
-    var searching by remember { mutableStateOf(false) }
-    var query by remember { mutableStateOf("") }
     var tag by remember { mutableStateOf<String?>(null) }
     var box by remember { mutableStateOf<String?>(null) }
     val q = query.trim()
     var pickingTag by remember { mutableStateOf(false) }
+    var viewMenu by remember { mutableStateOf(false) }
+    var otherMenu by remember { mutableStateOf(false) }
     val tagCounts = mails.flatMap { it.tags }.groupBy { it.lowercase() }.values.map { it.first() to it.size }.sortedBy { it.first.lowercase() }
     val boxes = mails.map { it.mailbox }.filter { it.isNotBlank() }.distinct()
     val base = mails.filter {
@@ -506,48 +587,50 @@ private fun InboxTab(
     val selecting = selected.isNotEmpty()
     fun keyOf(m: Mail) = m.accountId + ":" + m.id
     Column(Modifier.fillMaxSize()) {
-        Heading(
-            when (view) { "reviewed" -> "Reviewed"; "archived" -> "Archived"; else -> "My inbox" },
-            when {
-                selecting -> selected.size.toString() + " selected. Tap more to add, or choose what to do below."
-                loading -> "Looking for your email…"
-                view == "inbox" -> "${mails.size} emails to look at, $needs need you"
-                else -> "${mails.size} emails kept for a few days"
-            },
-        ) {
+        // One thin row: where you are, the list filter (Inbox, Reviewed, Archived) and the other filters (needs action, mailbox, tags).
+        Row(Modifier.fillMaxWidth().height(40.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             if (selecting) {
-                TextButton(onClick = { shown.forEach { if (!selected.contains(keyOf(it))) selected.add(keyOf(it)) } }) { Text("Select all", color = Blue, fontSize = 15.sp) }
-                TextButton(onClick = { selected.clear() }) { Text("Cancel", color = Blue, fontSize = 15.sp) }
+                Text(selected.size.toString() + " selected", color = Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                TextButton(onClick = { shown.forEach { if (!selected.contains(keyOf(it))) selected.add(keyOf(it)) } }) { Text("Select all", color = Blue, fontSize = 14.sp) }
+                TextButton(onClick = { selected.clear() }) { Text("Cancel", color = Blue, fontSize = 14.sp) }
             } else {
-                TextButton(onClick = { searching = !searching; if (!searching) query = "" }) { Text(if (searching) "Close search" else "Search", color = Blue, fontSize = 15.sp) }
-                TextButton(onClick = onRefresh, enabled = !loading) { Text("Refresh", color = Blue, fontSize = 15.sp) }
+                Text(
+                    when (view) { "reviewed" -> "Reviewed"; "archived" -> "Archived"; else -> "Inbox" },
+                    color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+                )
+                Box {
+                    IconButton(onClick = { viewMenu = true }) { FilterIcon(if (view != "inbox") Blue else Muted) }
+                    DropdownMenu(expanded = viewMenu, onDismissRequest = { viewMenu = false }, containerColor = Panel) {
+                        listOf("inbox" to "Inbox", "reviewed" to "Reviewed", "archived" to "Archived").forEach { (id, label) ->
+                            DropdownMenuItem(text = { Text((if (view == id) "✓  " else "") + label, color = Ink) }, onClick = { viewMenu = false; onView(id) })
+                        }
+                    }
+                }
+                val narrowed = onlyAction || tag != null || box != null
+                Box {
+                    IconButton(onClick = { otherMenu = true }) { TagIcon(if (narrowed) Blue else Muted) }
+                    DropdownMenu(expanded = otherMenu, onDismissRequest = { otherMenu = false }, containerColor = Panel) {
+                        DropdownMenuItem(text = { Text((if (!narrowed) "✓  " else "") + "All", color = Ink) }, onClick = { otherMenu = false; onlyAction = false; tag = null; box = null })
+                        DropdownMenuItem(text = { Text((if (onlyAction) "✓  " else "") + "Needs action", color = Ink) }, onClick = { otherMenu = false; onlyAction = !onlyAction })
+                        if (boxes.size > 1) boxes.forEach { b ->
+                            DropdownMenuItem(text = { Text((if (box == b) "✓  " else "") + b, color = Ink) }, onClick = { otherMenu = false; box = if (box == b) null else b })
+                        }
+                        if (tagCounts.isNotEmpty() || tag != null) DropdownMenuItem(text = { Text((if (tag != null) "✓  # " + tag else "Tags…"), color = Ink) }, onClick = { otherMenu = false; pickingTag = true })
+                    }
+                }
+                Spacer(Modifier.weight(1f))
+                Text(
+                    if (loading && mails.isEmpty()) "" else if (view == "inbox") "${mails.size}" + (if (needs > 0) " · $needs need you" else "") else "${mails.size} kept for a few days",
+                    color = Muted, fontSize = 12.sp,
+                )
             }
         }
         if (searching) {
             OutlinedTextField(
-                value = query, onValueChange = { query = it }, singleLine = true,
+                value = query, onValueChange = onQuery, singleLine = true,
                 placeholder = { Text("Search your inbox") },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
             )
-        }
-        Row(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = view == "inbox", onClick = { onView("inbox") }, label = { Text("Inbox") })
-            FilterChip(selected = view == "reviewed", onClick = { onView("reviewed") }, label = { Text("Reviewed") })
-            FilterChip(selected = view == "archived", onClick = { onView("archived") }, label = { Text("Archived") })
-        }
-        Row(
-            Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            FilterChip(selected = !onlyAction && tag == null && box == null, onClick = { onlyAction = false; tag = null; box = null }, label = { Text("All") })
-            FilterChip(selected = onlyAction, onClick = { onlyAction = !onlyAction }, label = { Text("Needs action") })
-            if (boxes.size > 1) boxes.forEach { b ->
-                FilterChip(selected = box == b, onClick = { box = if (box == b) null else b }, label = { Text(b) })
-            }
-            if (tagCounts.isNotEmpty() || tag != null) {
-                FilterChip(selected = tag != null, onClick = { pickingTag = true }, label = { Text(if (tag == null) "Tags" else "# " + tag) })
-                if (tag != null) FilterChip(selected = false, onClick = { tag = null }, label = { Text("Clear ✕") })
-            }
         }
         if (pickingTag) TagFilterScreen(tagCounts, tag, onPick = { tag = it; pickingTag = false }, onClose = { pickingTag = false })
         PullToRefreshBox(isRefreshing = loading && mails.isNotEmpty(), onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {
@@ -596,6 +679,8 @@ private fun SwipeRow(
 ) {
     val rightOutcome = swipeOutcome(right)
     val leftOutcome = swipeOutcome(left)
+    var chosen by remember { mutableStateOf<Outcome?>(null) }
+    var collapsed by remember { mutableStateOf(false) }
     val state = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             val outcome = when (value) {
@@ -604,13 +689,32 @@ private fun SwipeRow(
                 else -> null
             }
             if (outcome != null) {
-                onSwipe(outcome)
+                chosen = outcome          // the row finishes its slide and folds away first; only then is it really actioned
                 true
             } else {
                 false
             }
         },
     )
+    // A slower, visible finish: the row slides off, the coloured bar holds for a moment, then the gap folds closed. Then the email is actioned and Undo appears.
+    val outcomeNow = chosen
+    LaunchedEffect(outcomeNow) {
+        if (outcomeNow == null) return@LaunchedEffect
+        kotlinx.coroutines.delay(350)
+        collapsed = true
+        kotlinx.coroutines.delay(450)
+        onSwipe(outcomeNow)
+    }
+    val fold by androidx.compose.animation.core.animateFloatAsState(
+        if (collapsed) 0f else 1f, androidx.compose.animation.core.tween(450, easing = androidx.compose.animation.core.FastOutSlowInEasing), label = "fold",
+    )
+    Box(
+        Modifier.layout { measurable, constraints ->
+            val p = measurable.measure(constraints)
+            val h = (p.height * fold).toInt()
+            layout(p.width, h) { p.placeRelative(0, 0) }
+        }.graphicsLayer { alpha = fold }.clipToBounds(),
+    ) {
     SwipeToDismissBox(
         modifier = Modifier.semantics {
             // Swiping is hard or impossible with a screen reader, so the same actions are offered in TalkBack's actions menu.
@@ -632,18 +736,31 @@ private fun SwipeRow(
                 Outcome.Binned -> Color(0xFF3A1D22)
                 else -> Navy
             }
+            val settled = chosen != null || state.targetValue != SwipeToDismissBoxValue.Settled
+            val grow by androidx.compose.animation.core.animateFloatAsState(
+                if (settled) 1.25f else 0.85f, androidx.compose.animation.core.spring(dampingRatio = 0.4f, stiffness = 300f), label = "grow",
+            )
             Box(
                 Modifier.fillMaxSize().background(color).padding(horizontal = 24.dp),
                 contentAlignment = if (toRight) Alignment.CenterStart else Alignment.CenterEnd,
             ) {
-                Text(
-                    when (outcome) { Outcome.Reviewed -> "Reviewed"; Outcome.Archived -> "Archive"; Outcome.Binned -> "Bin"; else -> "" },
-                    color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
-                )
+                Row(Modifier.graphicsLayer { scaleX = grow; scaleY = grow }, verticalAlignment = Alignment.CenterVertically) {
+                    when (outcome) {
+                        Outcome.Reviewed -> Icon(Icons.Filled.Check, contentDescription = null, tint = Green)
+                        Outcome.Archived -> ArchiveIcon(Color(0xFF8DB8FF))
+                        Outcome.Binned -> Icon(Icons.Filled.Delete, contentDescription = null, tint = Red)
+                        else -> {}
+                    }
+                    Text(
+                        when (outcome) { Outcome.Reviewed -> "  Reviewed"; Outcome.Archived -> "  Archive"; Outcome.Binned -> "  Bin"; else -> "" },
+                        color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+                    )
+                }
             }
         },
     ) {
         MailRow(mail, picked, onClick, onLongClick)
+    }
     }
 }
 
@@ -667,6 +784,10 @@ private fun MailRow(mail: Mail, picked: Boolean, onClick: () -> Unit, onLongClic
                 mail.sender, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
                 maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
             )
+            if (mail.hasFiles) {
+                PaperclipIcon(Muted)
+                Spacer(Modifier.size(4.dp))
+            }
             Text(mail.whenText, color = Muted, fontSize = 13.sp)
         }
         Text(mail.subject, color = Ink, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
@@ -678,12 +799,15 @@ private fun MailRow(mail: Mail, picked: Boolean, onClick: () -> Unit, onLongClic
 }
 
 @Composable
-private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit) {
+private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit, onJunk: (Boolean) -> Unit) {
     var showOriginal by remember(mail.id) { mutableStateOf(false) }
+    var unsubLink by remember(mail.id) { mutableStateOf<String?>(null) }
+    var askBlock by remember(mail.id) { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onBack) { Text("‹ Back", color = Blue, fontSize = 16.sp) }
+            IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = Ink) }
         }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
             Text(mail.subject, color = Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 30.sp)
@@ -694,6 +818,19 @@ private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompos
                 OutlinedButton(onClick = { onCompose("reply") }, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line)) { Text("Reply", color = Ink, fontSize = 14.sp) }
                 OutlinedButton(onClick = { onCompose("reply_all") }, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line)) { Text("Reply all", color = Ink, fontSize = 14.sp, maxLines = 1) }
                 OutlinedButton(onClick = { onCompose("forward") }, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line)) { Text("Forward", color = Ink, fontSize = 14.sp) }
+            }
+
+            if (mail.scamReasons.isNotEmpty()) {
+                Surface(
+                    color = Panel, shape = RoundedCornerShape(16.dp), border = BorderStroke(2.dp, Amber),
+                    modifier = Modifier.fillMaxWidth().padding(top = 18.dp),
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("Take care with this one", color = Amber, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        mail.scamReasons.forEach { Text("• " + it, color = Ink, fontSize = 15.sp, modifier = Modifier.padding(top = 4.dp)) }
+                        Text("Do not open links or send money or details unless you are sure it is real.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp))
+                    }
+                }
             }
 
             Surface(
@@ -726,6 +863,24 @@ private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompos
             TagsSection(mail, api)
             AttachmentsSection(mail, api)
 
+            if (mail.unsubUrl != null || mail.unsubMailto != null) {
+                OutlinedButton(
+                    onClick = {
+                        if (mail.unsubUrl != null) unsubLink = mail.unsubUrl
+                        else try {
+                            val to = mail.unsubMailto ?: ""
+                            val uri = android.net.Uri.parse("mailto:" + to + if (mail.unsubSubject.isNotBlank()) "?subject=" + android.net.Uri.encode(mail.unsubSubject) else "")
+                            context.startActivity(android.content.Intent(android.content.Intent.ACTION_SENDTO, uri).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                        } catch (e: Exception) { }
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(46.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
+                ) { Text("Unsubscribe from this sender", color = Ink, fontSize = 15.sp) }
+            }
+            Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { onJunk(false) }, modifier = Modifier.weight(1f).height(46.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line)) { Text("Send to Junk", color = Ink, fontSize = 14.sp) }
+                if (mail.address.isNotBlank()) OutlinedButton(onClick = { askBlock = true }, modifier = Modifier.weight(1f).height(46.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line)) { Text("Block sender", color = Ink, fontSize = 14.sp) }
+            }
+
             OutlinedButton(
                 onClick = { showOriginal = true },
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(50.dp),
@@ -736,42 +891,29 @@ private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompos
         }
     }
     if (showOriginal) OriginalScreen(mail, api) { showOriginal = false }
+    unsubLink?.let { LinkConfirm(it) { unsubLink = null } }
+    if (askBlock) AlertDialog(
+        onDismissRequest = { askBlock = false },
+        containerColor = Panel,
+        title = { Text("Block this sender?", color = Ink) },
+        text = { Text("This email goes to Junk, and so will new email from " + mail.address + ". People you marked as important are never blocked. You can undo it any time in Settings, Blocked senders.", color = Ink) },
+        confirmButton = { TextButton(onClick = { askBlock = false; onJunk(true) }) { Text("Block", color = Blue) } },
+        dismissButton = { TextButton(onClick = { askBlock = false }) { Text("Cancel", color = Muted) } },
+    )
 }
 
-/** Fixed at the bottom, so the buttons can always be reached. */
+/** Fixed at the bottom, so the buttons can always be reached. Symbols only: tick (reviewed), archive box, bin and clock (remind me later). */
 @Composable
 private fun ActionBar(onResolve: (Outcome) -> Unit, onSnooze: () -> Unit, onUnread: (() -> Unit)? = null) {
-    if (onUnread != null) {
-        Column(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Button(onClick = onUnread, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
-                Text("Mark unread", fontWeight = FontWeight.SemiBold)
-            }
-            OutlinedButton(
-                onClick = { onResolve(Outcome.Archived) }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp).height(46.dp),
-                shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
-            ) { Text("Archive", color = Ink) }
+    Row(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (onUnread != null) {
+            BarIcon("Mark unread", Blue, Color(0xFF173056), onUnread) { Icon(Icons.Filled.Email, contentDescription = null, tint = Color(0xFF8DB8FF)) }
+        } else {
+            BarIcon("Reviewed", Green, Color(0xFF16382B), { onResolve(Outcome.Reviewed) }) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
         }
-        return
-    }
-    Column(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Button(
-                onClick = { onResolve(Outcome.Reviewed) }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16382B), contentColor = Green),
-            ) { Text("Reviewed", fontWeight = FontWeight.SemiBold) }
-            Button(
-                onClick = { onResolve(Outcome.Archived) }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF173056), contentColor = Color(0xFF8DB8FF)),
-            ) { Text("Archive", fontWeight = FontWeight.SemiBold) }
-            Button(
-                onClick = { onResolve(Outcome.Binned) }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3A1D22), contentColor = Red),
-            ) { Text("Bin", fontWeight = FontWeight.SemiBold) }
-        }
-        OutlinedButton(
-            onClick = onSnooze, modifier = Modifier.fillMaxWidth().padding(top = 8.dp).height(46.dp),
-            shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
-        ) { Text("Remind me later", color = Ink) }
+        BarIcon("Archive", Color(0xFF8DB8FF), Color(0xFF173056), { onResolve(Outcome.Archived) }) { ArchiveIcon(Color(0xFF8DB8FF)) }
+        if (onUnread == null) BarIcon("Bin", Red, Color(0xFF3A1D22), { onResolve(Outcome.Binned) }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Red) }
+        BarIcon("Remind me later", Ink, PanelHigh, onSnooze) { ClockIcon(Ink) }
     }
 }
 
@@ -781,18 +923,9 @@ private fun SelectionBar(count: Int, onResolve: (Outcome) -> Unit, onCancel: () 
     Column(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(if (count == 1) "1 email selected" else "$count emails selected", color = Ink, fontSize = 15.sp, modifier = Modifier.padding(bottom = 8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Button(
-                onClick = { onResolve(Outcome.Reviewed) }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16382B), contentColor = Green),
-            ) { Text("Reviewed", fontWeight = FontWeight.SemiBold) }
-            Button(
-                onClick = { onResolve(Outcome.Archived) }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF173056), contentColor = Color(0xFF8DB8FF)),
-            ) { Text("Archive", fontWeight = FontWeight.SemiBold) }
-            Button(
-                onClick = { onResolve(Outcome.Binned) }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3A1D22), contentColor = Red),
-            ) { Text("Bin", fontWeight = FontWeight.SemiBold) }
+            BarIcon("Reviewed", Green, Color(0xFF16382B), { onResolve(Outcome.Reviewed) }) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
+            BarIcon("Archive", Color(0xFF8DB8FF), Color(0xFF173056), { onResolve(Outcome.Archived) }) { ArchiveIcon(Color(0xFF8DB8FF)) }
+            BarIcon("Bin", Red, Color(0xFF3A1D22), { onResolve(Outcome.Binned) }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Red) }
         }
         TextButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) { Text("Cancel", color = Blue) }
     }

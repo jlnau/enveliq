@@ -35,6 +35,7 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 - [Knowing when a new version is out](UPDATES.md)
 - [The demo](DEMO.md)
 - [Undo for Reviewed, Archive and Bin](UNDO.md)
+- [Send later](SEND_LATER.md) (write now, send at a time you choose)
 - [Reply, Reply all and Forward](REPLY_FORWARD.md) (several people in To, Cc and Bcc as chips)
 - [Drafts](DRAFTS.md) (save an unfinished email for 14 days)
 - [Checks before sending](SEND_CHECKS.md) (a gentle question if a new email has no subject or a forgotten attachment)
