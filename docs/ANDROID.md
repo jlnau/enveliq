@@ -41,14 +41,13 @@ Passkeys and single sign-on, notes from Home Assistant and other services, task 
 
 ## Google's push service (optional)
 
-By default the app keeps its own connection to your server (above). If your administrator has set up Google's push service, **Settings, Tell me when new email arrives** offers a second choice, **Google's push service**: alerts arrive instantly, even when the phone has been still for hours, and the "watching" note disappears. The cost: Google is told that a notification was sent to your phone, and when. The message itself holds only the word "mail" (or "test") and a count. The sender, subject and summary never go through Google: the phone wakes up and asks your Enveliq for the details itself, then shows them only once the phone is unlocked.
+By default the app keeps its own connection to your server (above). **Settings, Tell me when new email arrives** also offers a second choice, **Google's push service**: alerts arrive instantly, even when the phone has been still for hours, and the "watching" note disappears. The cost: Google is told that a notification was sent to your phone, and when. The message itself holds only the word "mail" (or "test") and a count. The sender, subject and summary never go through Google: the phone wakes up and asks your Enveliq for the details itself, then shows them only once the phone is unlocked.
+
+There is nothing to set up on your server and nothing in Administration. The app sends the wake-up request through the shared Enveliq push relay (see [Push relay](PUSH_RELAY.md)), which holds the one Firebase key for the whole app. The choice only shows when this build of the app includes Google push and the relay address is built in.
 
 Until you choose it the app never contacts Google: Firebase's automatic start-up and analytics are switched off. Switching back to the direct connection, turning alerts off, or signing out deletes the phone's Google address and removes the phone from your Enveliq.
 
-**Set-up, once:**
-1. Make a free Firebase project at console.firebase.google.com and add an Android app with the package name `app.enveliq`.
-2. Download its `google-services.json` and add it to the GitHub repository as an encrypted secret called `GOOGLE_SERVICES_JSON`. The **Build Android app** workflow writes it into the build; the workflow summary says "Google push is included". Without the secret the app is built without Google push and the choice is not shown.
-3. In the Firebase project, Project settings, Service accounts, **Generate new private key**. In Enveliq, **Administration, Notifications, Android app alerts**, paste the whole file and Save. It is checked, kept encrypted, and never shown again. **Remove the key** switches Google push off for everyone.
+**For whoever publishes the app, once:** deploy the relay ([Push relay](PUSH_RELAY.md)) and add the Firebase project's `google-services.json` to the GitHub repository as the encrypted secret `GOOGLE_SERVICES_JSON` (the **Build Android app** workflow writes it into the build).
 
 Which emails alert you, quiet hours and the "important people only" filter are the same settings as for browser alerts (Settings, Alerts), because the app is one more place those alerts go. Switching on alerts in the app switches on **New email alerts** there. Only new-email alerts go to the app; task reminders use your other channels.
 

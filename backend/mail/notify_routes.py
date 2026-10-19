@@ -87,10 +87,6 @@ class AndroidDeviceBody(StrictModel):
     replaces: str | None = Field(default=None, pattern=r"^[0-9a-f]{12}$")
 
 
-class AndroidKeyBody(StrictModel):
-    key: str = Field(min_length=2, max_length=8000)
-
-
 class AdminBody(StrictModel):
     channels: dict[str, bool] | None = Field(default=None, max_length=30)
     local_hosts: list[str] | None = Field(default=None, max_length=50)
@@ -410,7 +406,7 @@ def build_notify_router(ctx: Any) -> APIRouter:
     @router.get("/me/notifications/android")
     def android_status(session: Session = Depends(session_dep)):
         """Lets the app know whether Google push can be offered. Says nothing about the key itself."""
-        return {"available": fcm.load(ctx.vault) is not None and bool(notifier.admin()["channels"].get("android", True))}
+        return {"available": bool(fcm.relay_url()) and bool(notifier.admin()["channels"].get("android", True))}
 
     @router.post("/me/notifications/android")
     def android_add(body: AndroidDeviceBody, session: Session = Depends(session_dep)):
@@ -444,29 +440,6 @@ def build_notify_router(ctx: Any) -> APIRouter:
     def android_remove(device_id: Annotated[str, PathParam(pattern=r"^[0-9a-f]{12}$")], session: Session = Depends(session_dep)):
         extra_channels.remove_android_device(notifier, session.principal.user_id, device_id)
         return {"ok": True}
-
-    @router.get("/admin/android-push")
-    def android_key_get(session: Session = Depends(admin_dep)):
-        return fcm.public(ctx.vault)
-
-    @router.put("/admin/android-push")
-    def android_key_put(body: AndroidKeyBody, session: Session = Depends(admin_dep)):
-        """The Firebase key is write-only: it is checked, kept encrypted, and never sent back."""
-        try:
-            cfg = fcm.parse_key(body.key)
-        except fcm.FcmKeyError as err:
-            raise HTTPException(status_code=422, detail=str(err)) from None
-        ctx.vault.set_global(fcm.RECORD, cfg)
-        fcm.forget_token()
-        ctx.vault.audit({"event": "android_push_key_saved", "actor_user_id": session.principal.user_id, "at": time.time()})
-        return fcm.public(ctx.vault)
-
-    @router.delete("/admin/android-push")
-    def android_key_delete(session: Session = Depends(admin_dep)):
-        ctx.vault.set_global(fcm.RECORD, {})
-        fcm.forget_token()
-        ctx.vault.audit({"event": "android_push_key_removed", "actor_user_id": session.principal.user_id, "at": time.time()})
-        return fcm.public(ctx.vault)
 
     @router.get("/admin/notifications")
     def admin_get(session: Session = Depends(admin_dep)):

@@ -561,100 +561,108 @@ def test_ready_mail_lists_only_this_persons_finished_unread_emails():
     assert ready_mail(FakeVault(), "nobody") == set()
 
 
-# ---------- the Enveliq Android app, through Google's push service ----------
-
-def _service_key(project="enveliq-app-test", email="push@enveliq-app-test.iam.gserviceaccount.com"):
-    from cryptography.hazmat.primitives import serialization
-    from cryptography.hazmat.primitives.asymmetric import rsa
-    pem = rsa.generate_private_key(public_exponent=65537, key_size=2048).private_bytes(
-        serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()).decode()
-    return json.dumps({"type": "service_account", "project_id": project, "client_email": email, "private_key": pem, "client_id": "1"})
-
+# ---------- the Enveliq Android app, through the shared push relay ----------
 
 FCM_TOKEN = "dGVzdC10b2tlbi1mb3ItYW5kcm9pZDpBUEE5MWI" + "x" * 40
+RELAY = "https://enveliq-push.example.com"
 
 
-def test_the_firebase_key_is_checked_and_never_shown_again(env):
-    appm, client, _, _ = env
-    for bad, word in (("not json", "not the key file"), (json.dumps({"type": "user"}), "not a service-account key"),
-                      (json.dumps({"type": "service_account", "project_id": "x", "client_email": "y", "private_key": "z"}), "missing its project")):
-        r = client.put("/api/v1/admin/android-push", json={"key": bad})
-        assert r.status_code == 422 and word in r.json()["detail"]
-        assert bad not in r.text
-    key = _service_key()
-    ok = client.put("/api/v1/admin/android-push", json={"key": key})
-    assert ok.status_code == 200 and ok.json() == {"set": True, "project_id": "enveliq-app-test", "client_email": "push@enveliq-app-test.iam.gserviceaccount.com"}
-    assert "PRIVATE KEY" not in ok.text and "PRIVATE KEY" not in client.get("/api/v1/admin/android-push").text
-    assert client.delete("/api/v1/admin/android-push").json()["set"] is False
+@pytest.fixture
+def relay(monkeypatch):
+    monkeypatch.setenv("ENVELIQ_PUSH_RELAY", RELAY)
+
+
+def test_the_relay_address_is_built_in_and_only_an_https_address_can_replace_it(monkeypatch):
+    from backend.mail import fcm
+    monkeypatch.delenv("ENVELIQ_PUSH_RELAY", raising=False)
+    assert fcm.relay_url() == fcm.DEFAULT_RELAY
+    for bad in ("http://relay.example.com", "relay.example.com", "https://user:pw@relay.example.com", "https://relay.example.com/x?y=1"):
+        monkeypatch.setenv("ENVELIQ_PUSH_RELAY", bad)
+        assert fcm.relay_url() == "", bad
+    monkeypatch.setenv("ENVELIQ_PUSH_RELAY", RELAY + "/")
+    assert fcm.relay_url() == RELAY
+
+
+def test_no_admin_routes_or_keys_for_android_alerts(env):
+    _, client, _, _ = env
+    assert client.get("/api/v1/admin/android-push").status_code in (404, 405)
+    assert client.put("/api/v1/admin/android-push", json={"key": "x"}).status_code in (404, 405)
 
 
 def test_android_routes_need_sign_in(env):
     from fastapi.testclient import TestClient
     appm, _, _, _ = env
     anon = TestClient(appm.app)
-    for method, path in (("get", "/api/v1/me/notifications/android"), ("post", "/api/v1/me/notifications/android"),
-                         ("get", "/api/v1/admin/android-push"), ("put", "/api/v1/admin/android-push")):
+    for method, path in (("get", "/api/v1/me/notifications/android"), ("post", "/api/v1/me/notifications/android")):
         assert getattr(anon, method)(path).status_code in (401, 403, 422)
 
 
-def test_a_phone_cannot_register_until_the_administrator_adds_the_key(env):
+def test_a_phone_cannot_register_while_no_relay_is_available(env, monkeypatch):
+    from backend.mail import fcm
+    monkeypatch.setattr(fcm, "DEFAULT_RELAY", "")
+    monkeypatch.delenv("ENVELIQ_PUSH_RELAY", raising=False)
     _, client, _, _ = env
     assert client.get("/api/v1/me/notifications/android").json() == {"available": False}
     r = client.post("/api/v1/me/notifications/android", json={"token": FCM_TOKEN, "label": "Pixel", "alerts": True})
-    assert r.status_code == 422 and "administrator" in r.json()["detail"]
+    assert r.status_code == 422 and "not available" in r.json()["detail"]
 
 
-def test_android_alerts_send_a_message_with_no_email_words_in_it(env, monkeypatch):
+def test_android_alerts_ask_the_relay_with_no_email_words_in_the_message(env, relay, monkeypatch):
     from backend.mail import fcm
     appm, client, _, _ = env
-    client.put("/api/v1/admin/android-push", json={"key": _service_key()})
     assert client.get("/api/v1/me/notifications/android").json() == {"available": True}
     r = client.post("/api/v1/me/notifications/android", json={"token": FCM_TOKEN, "label": "Pixel 8", "alerts": True})
     assert r.status_code == 200
     device = r.json()["id"]
     uid = appm.vault.list_users()[0]["id"]
-    assert appm.notifier.settings(uid)["mail_on"] is True              # the app's switch is the New email alerts switch
+    assert appm.notifier.settings(uid)["mail_on"] is True              # the app's switch is the same New email alerts switch
 
     sent = []
 
     def fake_request(method, url, **kw):
-        if "oauth2.googleapis.com" in url:
-            assert kw["form"]["grant_type"].endswith("jwt-bearer") and kw["form"]["assertion"].count(".") == 2
-            return 200, {}, b'{"access_token": "tok"}'
-        sent.append((url, kw["json_body"], kw["headers"]))
-        return 200, {}, b"{}"
+        sent.append((method, url, kw["json_body"]))
+        return 200, {}, b'{"result": "sent"}'
     monkeypatch.setattr(fcm.outbound, "request_full", fake_request)
-    fcm.forget_token()
 
     note = appm.auto_sync.mail_alerts.note([{"account_id": "a", "id": "m", "sender_display": "Larch Street Primary", "subject": "Excursion form", "priority": "high"}], True)
-    results = appm.notifier.send_all(uid, note)
-    assert results.get("android") is None
-    url, payload, headers = sent[-1]
-    assert url == "https://fcm.googleapis.com/v1/projects/enveliq-app-test/messages:send" and headers["Authorization"] == "Bearer tok"
-    assert payload["message"]["data"] == {"kind": "mail", "count": "1"}
-    assert payload["message"]["android"]["priority"] == "HIGH"
-    assert "Larch" not in json.dumps(payload) and "Excursion" not in json.dumps(payload)      # nothing from the email goes through Google
+    assert appm.notifier.send_all(uid, note).get("android") is None
+    method, url, payload = sent[-1]
+    assert method == "POST" and url == RELAY + "/v1/push"
+    assert payload == {"token": FCM_TOKEN, "kind": "mail", "count": 1}
+    assert "Larch" not in json.dumps(payload) and "Excursion" not in json.dumps(payload)         # nothing from the email goes out
 
     n = len(sent)
     appm.notifier.send_all(uid, {"title": "Task due", "body": "Pay the bill", "priority": "normal"})       # reminders do not go to the app
     assert len(sent) == n
 
     assert client.post(f"/api/v1/me/notifications/android/{device}/test").status_code == 200
-    assert sent[-1][1]["message"]["data"] == {"kind": "test"}
+    assert sent[-1][2]["kind"] == "test"
     assert client.post("/api/v1/me/notifications/android/" + "c" * 12 + "/test").status_code == 404
     assert client.delete(f"/api/v1/me/notifications/android/{device}").status_code == 200
     assert client.post(f"/api/v1/me/notifications/android/{device}/test").status_code == 404
 
 
-def test_a_phone_google_says_is_gone_is_removed(env, monkeypatch):
-    from backend.mail import fcm
+def test_a_phone_the_relay_says_is_gone_is_removed(env, relay, monkeypatch):
+    from backend.mail import extra_channels, fcm
     appm, client, _, _ = env
-    client.put("/api/v1/admin/android-push", json={"key": _service_key()})
     device = client.post("/api/v1/me/notifications/android", json={"token": FCM_TOKEN, "label": "Old phone"}).json()["id"]
-    monkeypatch.setattr(fcm.outbound, "request_full", lambda m, u, **kw: (200, {}, b'{"access_token": "t"}') if "oauth2" in u else (404, {}, b'{"error": {"status": "NOT_FOUND"}}'))
-    fcm.forget_token()
+    monkeypatch.setattr(fcm.outbound, "request_full", lambda m, u, **kw: (410, {}, b'{"result": "gone"}'))
     r = client.post(f"/api/v1/me/notifications/android/{device}/test")
     assert r.status_code == 502 and "no longer has the Enveliq app" in r.json()["detail"]
     uid = appm.vault.list_users()[0]["id"]
-    from backend.mail import extra_channels
     assert extra_channels.android_devices(appm.notifier.get_values(uid, "android")) == []
+
+
+def test_a_relay_that_is_down_gives_a_plain_message(env, relay, monkeypatch):
+    from backend.mail import fcm
+    from backend.mail.outbound import OutboundError
+    _, client, _, _ = env
+    device = client.post("/api/v1/me/notifications/android", json={"token": FCM_TOKEN, "label": "Pixel"}).json()["id"]
+
+    def down(*a, **k):
+        raise OutboundError("unreachable", "Could not reach it.")
+    monkeypatch.setattr(fcm.outbound, "request_full", down)
+    r = client.post(f"/api/v1/me/notifications/android/{device}/test")
+    assert r.status_code == 502 and "Could not reach the push relay" in r.json()["detail"]
+    monkeypatch.setattr(fcm.outbound, "request_full", lambda *a, **k: (503, {}, b"{}"))
+    assert "not set up with a Firebase key" in client.post(f"/api/v1/me/notifications/android/{device}/test").json()["detail"]

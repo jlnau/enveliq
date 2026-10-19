@@ -283,8 +283,8 @@ jobs:
         run: node scripts/check_junk.mjs
       - name: Google Calendar - new or existing calendar choice, picker and the phone layout (simulated server)
         run: node scripts/check_google_calendar.mjs
-      - name: Android app alerts in Administration - the Firebase key is checked, write-only and removable (simulated server)
-        run: node scripts/check_android_push_admin.mjs
+      - name: Push relay for the Android app - what it forwards, what it refuses, and that nothing private passes through
+        run: node relay/test.mjs
       - name: Original email in the reading panel - tick box, order, own scroll, no reload and the phone layout (simulated server)
         run: node scripts/check_original_inline.mjs
       - name: Fast search in Settings - warning, tick box, progress and turning it off (simulated server)

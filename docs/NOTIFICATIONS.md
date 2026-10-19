@@ -87,7 +87,7 @@ Notifications and installing need the `https://` address you use for Enveliq (se
 
 ## The Enveliq Android app
 
-The Android app is one more place new-email alerts can go (**The Enveliq app (Android)** in the channel list, added by the app itself, up to 5 phones). It uses Google's push service, needs the Firebase key an administrator pastes under **Administration, Notifications, Android app alerts**, and carries no words: only "mail" or "test" and a count. Reminders and notes from services do not go to it. Press **Send a test** to check a phone. See [Enveliq for Android](ANDROID.md).
+The Android app is one more place new-email alerts can go (**The Enveliq app (Android)** in the channel list, added by the app itself, up to 5 phones). It uses Google's push service through the shared Enveliq push relay, so there is nothing to set up on the server or in Administration, and it carries no words: only "mail" or "test" and a count. Reminders and notes from services do not go to it. Press **Send a test** to check a phone. See [Enveliq for Android](ANDROID.md).
 
 ## Channels
 

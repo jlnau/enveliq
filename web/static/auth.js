@@ -1115,33 +1115,6 @@ async function adminPage(me, only) {
     if (gForm.querySelector("#gc_secret").value) body.client_secret = gForm.querySelector("#gc_secret").value;
     await api("/admin/google", { method: "PUT", body }); toast("Saved");
   });
-  const ap = (!only || only === "reminders") ? await api("/admin/android-push").catch(() => null) : null;
-  const apState = ap ? h("p", { class: "hint", id: "ap_state" }) : null;
-  const apRemove = ap ? h("button", { class: "btn", type: "button", id: "ap_remove", text: "Remove the key" }) : null;
-  const apShow = d => { if (apRemove) apRemove.hidden = !d.set; if (apState) apState.textContent = d.set ? `A key is saved for the Firebase project ${d.project_id}. It is never shown again.` : "No key saved yet, so the app uses its own direct connection."; };
-  if (ap) apShow(ap);
-  const apForm = ap ? h("form", {},
-    h("p", { class: "lead", text: "Lets the Enveliq Android app get new-email alerts through Google's push service: instant, and with no \"watching\" note kept in the phone's notification list. Google is only told that a notification was sent, never what it says (no sender, subject or summary). Needs a free Firebase project." }),
-    more("Show the steps, one by one",
-      h("ol", { class: "lead" },
-        h("li", {}, "Make a Firebase project: ", h("a", { href: "https://console.firebase.google.com/", target: "_blank", rel: "noopener noreferrer", text: "console.firebase.google.com" }), ". Add an Android app with the package name app.enveliq."),
-        h("li", {}, "Project settings, Service accounts, Generate new private key. A .json file downloads."),
-        h("li", {}, "Paste everything in that file below and Save. Keep the file somewhere safe; anyone holding it can send notifications as your project."),
-        h("li", {}, "The app itself needs the other file (google-services.json) added to the GitHub repository as a secret called GOOGLE_SERVICES_JSON before it is built."))),
-    apState,
-    field("Firebase key (the .json file)", h("textarea", { id: "ap_key", rows: 6, spellcheck: "false", autocomplete: "off", autocapitalize: "none", placeholder: ap.set ? "Saved. Paste a new key here to replace it." : "{ \"type\": \"service_account\", … }" }),
-      "Open the downloaded file in a text editor, copy everything and paste it here."),
-    h("div", { class: "row" }, h("button", { class: "btn primary", type: "submit", text: "Save the key" }),
-      apRemove)) : null;
-  if (apForm) onSubmit(apForm, async () => {
-    const key = apForm.querySelector("#ap_key").value.trim();
-    if (!key) throw new Error("Paste the key file first.");
-    const d = await api("/admin/android-push", { method: "PUT", body: { key } });
-    apForm.querySelector("#ap_key").value = ""; apShow(d); toast("Saved");
-  });
-  if (apRemove) apRemove.addEventListener("click", async () => {
-    try { apShow(await api("/admin/android-push", { method: "DELETE" })); toast("Key removed"); } catch (e) { toast(e.message || "Could not remove the key"); }
-  });
   const ck = (!only || only === "check") ? await api("/admin/check-address").catch(() => null) : null;
   const ckForm = ck ? h("form", {},
     h("p", { class: "lead", text: "Lets people forward a suspicious email to one address of yours and get a one-line answer back, for example “Be careful: a link says paypal.com but really goes to evil.example.” It uses the same plain checks as the Be careful label. The AI is not involved, nothing is saved, and the answer never says an email is safe." }),
@@ -1294,7 +1267,7 @@ async function adminPage(me, only) {
     microsoft: msConf ? h("section", { class: "section" }, h("h2", { text: "Microsoft sign-in (Outlook, Hotmail, Microsoft 365)" }), guideNote("MICROSOFT.md", "A longer guide with pictures of each step is on the Enveliq website.", "Open the Microsoft guide"), microsoftSection(msConf, () => adminPage(me, only))) : null,
     features: featForm ? h("section", { class: "section" }, h("h2", { text: "Features" }), featForm) : null,
     agent: agForm ? h("section", { class: "section" }, h("h2", { text: "Agent chat" }), guideNote("AGENT.md", "", "How to connect a Hermes agent"), agForm) : null,
-    reminders: remForm ? h("section", { class: "section" }, h("h2", { text: "Reminders" }), guideNote("NOTIFICATIONS.md", "", "How to set up reminders"), remForm, gForm ? h("h2", { text: "Google Calendar" }) : null, gForm ? guideNote("CALENDAR.md", "Every click, step by step:", "Google Calendar guide") : null, gForm, apForm ? h("h2", { text: "Android app alerts" }) : null, apForm ? guideNote("ANDROID.md", "", "How the Android app gets alerts") : null, apForm) : null,
+    reminders: remForm ? h("section", { class: "section" }, h("h2", { text: "Reminders" }), guideNote("NOTIFICATIONS.md", "", "How to set up reminders"), remForm, gForm ? h("h2", { text: "Google Calendar" }) : null, gForm ? guideNote("CALENDAR.md", "Every click, step by step:", "Google Calendar guide") : null, gForm) : null,
     check: ckForm ? h("section", { class: "section" }, h("h2", { text: "Forward to check" }), guideNote("SCAM_WARNING.md#forward-to-check", "", "How Forward to check works"), ckForm) : null,
     backup: bkSection ? h("section", { class: "section" }, h("h2", { text: "Backup and restore" }), guideNote("BACKUP.md", "", "How backup and restore work"), ...bkSection) : null,
     updates: updForm ? h("section", { class: "section" }, h("h2", { text: "Updates" }), guideNote("UPDATES.md", "", "How the new-version notice works"), updForm) : null,

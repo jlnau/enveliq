@@ -212,15 +212,15 @@ def android_devices(values: dict[str, str]) -> list[dict[str, Any]]:
 
 def _describe_android(values: dict[str, str], notifier: Notifier) -> dict[str, Any]:
     return {"devices": [{"id": d["id"], "label": d.get("label", "A phone"), "added": d.get("added")} for d in android_devices(values)],
-            "available": fcm.load(notifier.vault) is not None}
+            "available": bool(fcm.relay_url())}
 
 
 def add_android_device(notifier: Notifier, user_id: str, token: str, label: str, replaces: str | None = None) -> str:
     token = _clean(token, 500)
     if not fcm.DEVICE_TOKEN.match(token):
         raise ValueError("That phone did not give a usable address.")
-    if fcm.load(notifier.vault) is None:
-        raise ValueError("Your administrator has not set up Android alerts yet.")
+    if not fcm.relay_url():
+        raise ValueError("Android alerts are not available on this server yet.")
     with notifier._lock:
         values = notifier.get_values(user_id, "android")
         current = [d for d in android_devices(values) if d["token"] != token and d["id"] != replaces]
@@ -281,7 +281,7 @@ register_extra("android", {
     "steps": ["Install the Enveliq app and sign in.",
               "In the app, open Settings, switch on Tell me when new email arrives, then choose Through Google's push service.",
               "Press Send a test here. The phone should show a note within a few seconds.",
-              "Your administrator must first add the Firebase key (Administration, Android app alerts)."],
+              "Nothing to set up on the server: the app uses the built-in push relay."],
     "send": _send_android, "local_ok": False, "describe": _describe_android,
     "keep": "Turn alerts on in the Enveliq app first.",
 }, lambda v: {})
