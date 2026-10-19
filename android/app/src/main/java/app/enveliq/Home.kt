@@ -902,6 +902,12 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
     var moreMenu by remember(mail.id) { mutableStateOf(false) }
     var addressMenu by remember(mail.id) { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = rememberCoroutineScope()
+    var important by remember(mail.id) { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(mail.id) {
+        important = try { withContext(Dispatchers.IO) { api.importantAddresses() }.contains(mail.address.lowercase()) } catch (_: Exception) { null }
+    }
+    fun tell(words: String) = android.widget.Toast.makeText(context, words, android.widget.Toast.LENGTH_LONG).show()
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -963,7 +969,7 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
             Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 val shape = RoundedCornerShape(12.dp)
                 ReplyAction("Reply", { onCompose("reply") }) { ReplyIcon(Ink) }
-                ReplyAction("Reply all", { onCompose("reply_all") }) { ReplyAllIcon(Ink) }
+                if (mail.replyCc.isNotEmpty()) ReplyAction("Reply all", { onCompose("reply_all") }) { ReplyAllIcon(Ink) }
                 ReplyAction("Forward", { onCompose("forward") }) { ForwardIcon(Ink) }
                 Box {
                     OutlinedButton(
@@ -971,6 +977,40 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
                         shape = shape, border = BorderStroke(1.dp, Line), contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                     ) { Icon(Icons.Filled.MoreVert, contentDescription = null, tint = Ink) }
                     DropdownMenu(expanded = moreMenu, onDismissRequest = { moreMenu = false }, containerColor = Panel) {
+                        if (mail.address.isNotBlank() && important != null) DropdownMenuItem(
+                            text = { Text(if (important == true) "Not an important person" else "Important person", color = Ink) },
+                            onClick = {
+                                moreMenu = false
+                                val on = important != true
+                                scope.launch {
+                                    try {
+                                        withContext(Dispatchers.IO) { api.setImportant(mail.address.lowercase(), mail.sender, on) }
+                                        important = on
+                                        tell(if (on) (mail.sender.ifBlank { mail.address }) + " is now an important person." else (mail.sender.ifBlank { mail.address }) + " is no longer marked important.")
+                                    } catch (e: ApiException) {
+                                        tell(e.message ?: "That did not work.")
+                                    } catch (e: Exception) {
+                                        tell("That did not work. Please try again.")
+                                    }
+                                }
+                            },
+                        )
+                        if (mail.address.isNotBlank() && important == false) DropdownMenuItem(
+                            text = { Text("Always archive these", color = Ink) },
+                            onClick = {
+                                moreMenu = false
+                                scope.launch {
+                                    try {
+                                        withContext(Dispatchers.IO) { api.archiveFrom(mail.address) }
+                                        tell("From now on, new email from " + (mail.sender.ifBlank { mail.address }) + " is archived for you. You can change this in Mail rules on the website.")
+                                    } catch (e: ApiException) {
+                                        tell(e.message ?: "That did not work.")
+                                    } catch (e: Exception) {
+                                        tell("That did not work. Please try again.")
+                                    }
+                                }
+                            },
+                        )
                         DropdownMenuItem(text = { Text("Send to Junk", color = Ink) }, onClick = { moreMenu = false; onJunk(false) })
                         if (mail.address.isNotBlank()) DropdownMenuItem(text = { Text("Block sender", color = Ink) }, onClick = { moreMenu = false; askBlock = true })
                         if (mail.unsubUrl != null || mail.unsubMailto != null) DropdownMenuItem(text = { Text("Unsubscribe from this sender", color = Ink) }, onClick = {

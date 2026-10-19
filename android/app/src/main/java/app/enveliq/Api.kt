@@ -278,6 +278,9 @@ class EnveliqApi(address: String) {
                         unsubUrl = unsub?.str("url")?.ifBlank { null },
                         unsubMailto = unsub?.str("mailto")?.ifBlank { null },
                         unsubSubject = unsub?.str("subject") ?: "",
+                        replyTo = r.optJSONObject("reply_context")?.str("reply_to") ?: "",
+                        replyCc = r.optJSONObject("reply_context")?.optJSONArray("cc").strings(),
+                        replyAlsoTo = r.optJSONObject("reply_context")?.optJSONArray("also_to").strings(),
                     )
                 )
             }
@@ -363,10 +366,14 @@ class EnveliqApi(address: String) {
         JSONObject().put("name", it.name).put("type", it.type).put("data", android.util.Base64.encodeToString(it.bytes, android.util.Base64.NO_WRAP))
     })
 
-    fun reply(mail: Mail, all: Boolean, text: String, from: String? = null, files: List<PickedFile> = emptyList()): Sent = sentFrom(
+    fun reply(
+        mail: Mail, all: Boolean, text: String, from: String? = null, files: List<PickedFile> = emptyList(),
+        to: List<String>? = null, cc: List<String>? = null, bcc: List<String>? = null,
+    ): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/reply",
             JSONObject().put("body", text).put("kind", if (all) "reply_all" else "reply").also { if (from != null) it.put("from_address", from) }
+                .also { if (to != null) it.put("to", JSONArray(to)) }.also { if (cc != null) it.put("cc", JSONArray(cc)) }.also { if (bcc != null) it.put("bcc", JSONArray(bcc)) }
                 .also { if (files.isNotEmpty()) it.put("files", filesJson(files)) },
         ),
     )
@@ -696,6 +703,17 @@ class EnveliqApi(address: String) {
         JSONObject(call("GET", "/api/v1/find/results/" + enc(token) + "/original")).str("text").ifBlank { "(no text content)" }
 
     /** From now on, new email from this address goes straight to the mailbox's Junk folder. The server keeps important people safe. */
+    /** Marks the sender as an important person (or takes them off the list). */
+    fun setImportant(address: String, name: String, on: Boolean) {
+        if (on) call("POST", "/api/v1/me/important", JSONObject().put("address", address).put("name", name))
+        else call("POST", "/api/v1/me/important/remove", JSONObject().put("address", address))
+    }
+
+    /** From now on, new email from this address is archived for the person. */
+    fun archiveFrom(address: String) {
+        call("POST", "/api/v1/me/rules", JSONObject().put("sender", address).put("subject", "").put("action", "archived"))
+    }
+
     fun blockSender(address: String) {
         call("POST", "/api/v1/me/rules", JSONObject().put("sender", address).put("subject", "").put("action", "junked"))
     }

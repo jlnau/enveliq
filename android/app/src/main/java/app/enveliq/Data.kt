@@ -25,6 +25,10 @@ data class Mail(
     val unsubSubject: String = "",
     /** The email has files (known even before the AI has read them). */
     val hasFiles: Boolean = false,
+    /** Who a reply goes to, and the other people on the email (for Reply all). */
+    val replyTo: String = "",
+    val replyCc: List<String> = emptyList(),
+    val replyAlsoTo: List<String> = emptyList(),
 )
 
 /** A file that came with an email. [summary] is written by the AI and is labelled that way where it is shown. */
