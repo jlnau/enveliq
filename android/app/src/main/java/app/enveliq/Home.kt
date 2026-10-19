@@ -369,8 +369,18 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     // The Tag button: finds out which tags this mailbox offers, then opens the picker.
     fun openTags(m: Mail) {
         scope.launch {
-            val info = try { withContext(Dispatchers.IO) { api.tagInfo(m.accountId) } } catch (e: Exception) { null }
-            if (info == null) snack.showSnackbar("Your mail service does not keep tags.") else tagPicker = m to info
+            var problem = ""
+            val info = try {
+                withContext(Dispatchers.IO) { api.tagInfo(m.accountId) }
+            } catch (e: ApiException) {
+                if (e.code == 401) { onLeave(true); return@launch }
+                problem = e.message ?: "Could not load the tags."
+                null
+            } catch (e: Exception) {
+                problem = "Could not load the tags. Please try again."
+                null
+            }
+            if (info != null) tagPicker = m to info else snack.showSnackbar(problem.ifBlank { "Your mail service does not keep tags." })
         }
     }
 

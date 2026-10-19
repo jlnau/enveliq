@@ -596,12 +596,10 @@ class EnveliqApi(address: String) {
     }
 
     /** The tags this mailbox has, or null when its mail service does not keep tags (or tags are switched off). */
-    fun tagInfo(accountId: String): TagInfo? = try {
+    /** The tags this mailbox offers, or null when the mail service does not keep tags. Any other problem is thrown, so it can be said plainly. */
+    fun tagInfo(accountId: String): TagInfo? {
         val r = JSONObject(call("GET", "/api/v1/accounts/" + enc(accountId) + "/tags"))
-        if (!r.optBoolean("supported", false)) null else TagInfo(r.optJSONArray("names").strings(), r.optBoolean("can_create", false))
-    } catch (e: ApiException) {
-        if (e.code == 401) throw e
-        null
+        return if (!r.optBoolean("supported", false)) null else TagInfo(r.optJSONArray("names").strings(), r.optBoolean("can_create", false))
     }
 
     fun createTag(accountId: String, name: String) {
