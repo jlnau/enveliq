@@ -497,7 +497,8 @@ jobs:
         run: echo "$TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - name: Build and push Enveliq
         run: |
-          docker build --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+          docker build --build-arg "ENVELIQ_PUSH_RELAY=${{ vars.ENVELIQ_PUSH_RELAY }}" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
             --label "org.opencontainers.image.version=${VERSION}" --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
             -t "${MAIN}:latest" -t "${MAIN}:v${VERSION}" -t "${MAIN}:sha-${SHORT}" .
           docker push --all-tags "${MAIN}"

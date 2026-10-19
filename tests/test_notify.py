@@ -572,10 +572,13 @@ def relay(monkeypatch):
     monkeypatch.setenv("ENVELIQ_PUSH_RELAY", RELAY)
 
 
-def test_the_relay_address_is_built_in_and_only_an_https_address_can_replace_it(monkeypatch):
+def test_there_is_no_relay_address_in_the_source_and_only_an_https_address_is_used(monkeypatch):
     from backend.mail import fcm
+    assert not hasattr(fcm, "DEFAULT_RELAY")                          # forks and source builds have no relay unless they set one
     monkeypatch.delenv("ENVELIQ_PUSH_RELAY", raising=False)
-    assert fcm.relay_url() == fcm.DEFAULT_RELAY
+    assert fcm.relay_url() == ""
+    monkeypatch.setenv("ENVELIQ_PUSH_RELAY", "")
+    assert fcm.relay_url() == ""
     for bad in ("http://relay.example.com", "relay.example.com", "https://user:pw@relay.example.com", "https://relay.example.com/x?y=1"):
         monkeypatch.setenv("ENVELIQ_PUSH_RELAY", bad)
         assert fcm.relay_url() == "", bad
@@ -598,8 +601,6 @@ def test_android_routes_need_sign_in(env):
 
 
 def test_a_phone_cannot_register_while_no_relay_is_available(env, monkeypatch):
-    from backend.mail import fcm
-    monkeypatch.setattr(fcm, "DEFAULT_RELAY", "")
     monkeypatch.delenv("ENVELIQ_PUSH_RELAY", raising=False)
     _, client, _, _ = env
     assert client.get("/api/v1/me/notifications/android").json() == {"available": False}

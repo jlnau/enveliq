@@ -32,7 +32,9 @@ npx wrangler deploy
 npx wrangler secret put FCM_SERVICE_ACCOUNT     # paste the whole Firebase service-account JSON
 ```
 
-The service-account key comes from the Firebase project (Project settings, Service accounts, Generate new private key). It is pasted only into that prompt, never into the repository, chat or an Enveliq page. Then set the Worker's address as `DEFAULT_RELAY` in `backend/mail/fcm.py` and add the project's `google-services.json` as the GitHub secret `GOOGLE_SERVICES_JSON` so the app is built with Google push.
+The service-account key comes from the Firebase project (Project settings, Service accounts, Generate new private key). It is pasted only into that prompt, never into the repository, chat or an Enveliq page. Then, in the GitHub repository, add the Worker's address (`https://...`) as a repository **variable** (not a secret) called `ENVELIQ_PUSH_RELAY`, and the project's `google-services.json` as the secret `GOOGLE_SERVICES_JSON`. The release and preview image builds pass the variable into the server image, and the Android build writes the file into the app. Lock the Firebase project's Android API key to the package `app.enveliq` and your signing certificate (Google Cloud, APIs & Services, Credentials), so only your signed app can get phone addresses from your project.
+
+The address is not written in the source code. A fork, or anyone building from source, has no address and no Firebase file, so Google push is simply not offered in their build (direct-connection alerts still work). They set up their own relay and Firebase project the same way.
 
 Add a Cloudflare rate-limiting (WAF) rule on `/v1/push` so one address cannot flood it.
 
@@ -42,7 +44,7 @@ Cloudflare Workers' free plan allows 100,000 requests a day; the paid plan (abou
 
 ## Running your own
 
-Deploy the Worker in your own Cloudflare account with your own Firebase project, build the app yourself with your `google-services.json`, and set `ENVELIQ_PUSH_RELAY=https://your-relay.example.com` on your Enveliq server. The address must be https, with no sign-in details, query or fragment.
+Deploy the Worker in your own Cloudflare account with your own Firebase project, build the app yourself with your `google-services.json`, and give your Enveliq server `ENVELIQ_PUSH_RELAY=https://your-relay.example.com` (as an environment setting, or as the repository variable of the same name when you build images from your fork). The address must be https, with no sign-in details, query or fragment.
 
 ## Checks
 
