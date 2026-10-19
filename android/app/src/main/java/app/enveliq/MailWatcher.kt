@@ -81,10 +81,7 @@ class MailWatcherService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (!AlertPrefs.on(this) || SessionVault.load(this) == null) {
-            stopSelf()
-            return START_NOT_STICKY
-        }
+        // Android insists that a service started as a foreground service says so straight away, so this comes first.
         Notifier.ensureChannels(this)
         val note = Notification.Builder(this, Notifier.CHANNEL_WATCH)
             .setSmallIcon(R.drawable.ic_notification)
@@ -92,12 +89,25 @@ class MailWatcherService : Service() {
             .setContentText("Quietly. Turn this off in Settings, New email alerts.")
             .setOngoing(true)
             .build()
-        if (Build.VERSION.SDK_INT >= 34) startForeground(Notifier.WATCH_ID, note, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-        else startForeground(Notifier.WATCH_ID, note)
-        if (!running) {
-            running = true
-            watchNetwork()
-            worker = Thread({ loop() }, "enveliq-watch").also { it.start() }
+        try {
+            if (Build.VERSION.SDK_INT >= 34) startForeground(Notifier.WATCH_ID, note, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            else startForeground(Notifier.WATCH_ID, note)
+            if (!AlertPrefs.on(this) || SessionVault.load(this) == null) {
+                stopSelf()
+                return START_NOT_STICKY
+            }
+            if (!running) {
+                running = true
+                watchNetwork()
+                worker = Thread({ loop() }, "enveliq-watch").also { it.start() }
+            }
+        } catch (e: Exception) {
+            // Alerts must never stop the app from opening: switch them off and say so, instead of crashing.
+            running = false
+            AlertPrefs.setOn(this, false)
+            Notifier.simple(this, 2004, "New-email alerts are off", "Enveliq could not keep watching for new email on this phone. Open Settings in Enveliq to try again.")
+            stopSelf()
+            return START_NOT_STICKY
         }
         return START_STICKY
     }
@@ -112,7 +122,7 @@ class MailWatcherService : Service() {
 
     private fun watchNetwork() {
         val manager = getSystemService(ConnectivityManager::class.java)
-        online = manager.activeNetwork != null
+        online = try { manager.activeNetwork != null } catch (_: SecurityException) { true }
         val cb = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
                 online = true
@@ -133,6 +143,15 @@ class MailWatcherService : Service() {
     }
 
     private fun loop() {
+        try {
+            watch()
+        } catch (_: Throwable) {
+            AlertPrefs.setOn(this, false)
+        }
+        stopSelf()
+    }
+
+    private fun watch() {
         var wait = 15L
         while (running) {
             if (!AlertPrefs.on(this)) break
@@ -159,7 +178,6 @@ class MailWatcherService : Service() {
             wait = if (System.currentTimeMillis() - started > 60_000) 15L else minOf(wait * 2, 300L)
             pause(wait)
         }
-        stopSelf()
     }
 
     /** The server ended our session: say so once, plainly, and stop. */
@@ -217,7 +235,11 @@ class MailWatcherService : Service() {
 
     companion object {
         fun start(context: Context) {
-            if (AlertPrefs.on(context) && SessionVault.load(context) != null) context.startForegroundService(Intent(context, MailWatcherService::class.java))
+            try {
+                if (AlertPrefs.on(context) && SessionVault.load(context) != null) context.startForegroundService(Intent(context, MailWatcherService::class.java))
+            } catch (_: Exception) {
+                // Android may refuse to start it right now (for example from the background). The next time the app opens will try again.
+            }
         }
 
         fun stop(context: Context) {

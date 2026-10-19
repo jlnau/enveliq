@@ -20,7 +20,6 @@ The app's version is the release tag (for example `v0.96` gives version `0.96`);
 
 ## What you can do
 
-- **Look around with sample email** shows six made-up emails (nothing to set up). Open one to read its AI summary (labelled as the AI's), the task it found, and the original text. **Reviewed**, **Archive** and **Bin** sit fixed at the bottom; each has an **Undo** for a few seconds. The **Tasks** tab lists the tasks. **Settings** has the notification test.
 - **Sign in to my Enveliq** signs in to a real Enveliq with its address, your username and password, and a code if you use two-factor. It then lists your inbox (the same email as the website, newest first), opens an email's summary and original text, and marks emails Reviewed, Archived or Binned for real. The address must start with `https://`, and your Enveliq must be reachable from the phone.
 - **Tell me when new email arrives** (Settings) shows a quiet note when a new email's AI summary is done. The lock screen only says "New email" (or "3 new emails"); sender and subject show once the phone is unlocked. Android asks permission the first time. **Quiet hours** keep the note but without sound or buzz. Alerts work while the app is closed, and start again after the phone restarts or the app is updated. See "How new-email alerts work" below.
 - **Send a test notification to this phone** shows what an alert looks like. On the lock screen it only says "New email"; the words show once the phone is unlocked. Android asks permission the first time.

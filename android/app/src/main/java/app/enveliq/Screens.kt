@@ -33,7 +33,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -43,45 +48,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun StartScreen(notice: String, onSample: () -> Unit, onConnect: () -> Unit) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(Navy)
-            .systemBarsPadding()
-            .padding(28.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text("Enveliq", color = Blue, fontSize = 44.sp, fontWeight = FontWeight.ExtraBold)
-        Spacer(Modifier.height(6.dp))
-        Text("Turn email into clarity.", color = Ink, fontSize = 20.sp)
-        if (notice.isNotEmpty()) Text(notice, color = Amber, fontSize = 15.sp, modifier = Modifier.padding(top = 14.dp))
-        Spacer(Modifier.height(28.dp))
-        Text(
-            "Your email, calmly sorted. One thing at a time, with a short summary of each email and the buttons you need.",
-            color = Muted, fontSize = 16.sp, lineHeight = 24.sp,
-        )
-        Spacer(Modifier.height(32.dp))
-        Button(
-            onClick = onSample,
-            modifier = Modifier.fillMaxWidth().height(54.dp),
-            shape = RoundedCornerShape(14.dp),
-        ) { Text("Look around with sample email", fontSize = 17.sp, fontWeight = FontWeight.SemiBold) }
-        Text("Made-up email. Nothing to set up.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp, bottom = 18.dp))
-        OutlinedButton(
-            onClick = onConnect,
-            modifier = Modifier.fillMaxWidth().height(54.dp),
-            shape = RoundedCornerShape(14.dp),
-            border = BorderStroke(1.dp, Line),
-        ) { Text("Sign in to my Enveliq", fontSize = 17.sp, color = Ink) }
-        Text("Use your own Enveliq server.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
-    }
-}
-
-@Composable
-fun SignInScreen(initialAddress: String, onBack: () -> Unit, onDone: (EnveliqApi, String, Boolean) -> Unit) {
+fun SignInScreen(initialAddress: String, notice: String, onDone: (EnveliqApi, String, Boolean) -> Unit) {
     var address by remember { mutableStateOf(initialAddress) }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -132,11 +101,10 @@ fun SignInScreen(initialAddress: String, onBack: () -> Unit, onDone: (EnveliqApi
             .systemBarsPadding()
             .imePadding(),
     ) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onBack) { Text("‹ Back", color = Blue, fontSize = 16.sp) }
-            Text("Sign in to my Enveliq", color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
-        }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 22.dp)) {
+            Text("Enveliq", color = Blue, fontSize = 40.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 28.dp))
+            Text("Turn email into clarity.", color = Ink, fontSize = 18.sp, modifier = Modifier.padding(top = 4.dp))
+            if (notice.isNotEmpty()) Text(notice, color = Amber, fontSize = 15.sp, modifier = Modifier.padding(top = 14.dp))
             if (!needsCode) {
                 Text("Your Enveliq address", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
                 OutlinedTextField(
@@ -146,13 +114,18 @@ fun SignInScreen(initialAddress: String, onBack: () -> Unit, onDone: (EnveliqApi
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Text("Username", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 16.dp, bottom = 6.dp))
-                OutlinedTextField(value = username, onValueChange = { username = it }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                // The content types tell password managers such as Bitwarden which box is the username, the password and the code.
+                OutlinedTextField(
+                    value = username, onValueChange = { username = it }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+                    modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Username },
+                )
                 Text("Password", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 16.dp, bottom = 6.dp))
                 OutlinedTextField(
                     value = password, onValueChange = { password = it }, singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                    modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
                 )
             } else {
                 Text("Enter your code", color = Ink, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 16.dp))
@@ -162,8 +135,9 @@ fun SignInScreen(initialAddress: String, onBack: () -> Unit, onDone: (EnveliqApi
                 )
                 OutlinedTextField(
                     value = code, onValueChange = { code = it }, singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Verification code") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
+                    modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType("2faAppOTP") },
                 )
             }
             if (!needsCode) {

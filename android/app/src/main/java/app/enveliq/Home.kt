@@ -73,14 +73,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class Stage { Opening, Start, SignIn, Home }
+private enum class Stage { Opening, SignIn, Home }
 private enum class Tab { Inbox, Tasks, Settings }
 
 @Composable
 fun EnveliqApp(activity: MainActivity) {
     val prefs = remember { activity.getSharedPreferences("enveliq", Context.MODE_PRIVATE) }
     val kept = remember { SessionVault.load(activity) }
-    var stage by remember { mutableStateOf(if (kept != null) Stage.Opening else Stage.Start) }
+    var stage by remember { mutableStateOf(if (kept != null) Stage.Opening else Stage.SignIn) }
     var api by remember { mutableStateOf<EnveliqApi?>(null) }
     var server by remember { mutableStateOf("") }
     var notice by remember { mutableStateOf("") }
@@ -97,10 +97,10 @@ fun EnveliqApp(activity: MainActivity) {
         } catch (e: ApiException) {
             if (e.code == 401) SessionVault.clear(activity)
             notice = if (e.code == 401) "You were signed out. Please sign in again." else (e.message ?: "Could not reach your Enveliq.")
-            stage = Stage.Start
+            stage = Stage.SignIn
         } catch (e: Exception) {
             notice = "Could not reach your Enveliq. Try again."
-            stage = Stage.Start
+            stage = Stage.SignIn
         }
     }
 
@@ -111,16 +111,10 @@ fun EnveliqApp(activity: MainActivity) {
                 Text("Opening your inbox…", color = Muted, fontSize = 15.sp, modifier = Modifier.padding(top = 14.dp))
             }
         }
-        Stage.Start -> StartScreen(
-            notice = notice,
-            onSample = { api = null; server = ""; notice = ""; stage = Stage.Home },
-            onConnect = { notice = ""; stage = Stage.SignIn },
-        )
         Stage.SignIn -> {
-            BackHandler { stage = Stage.Start }
             SignInScreen(
                 initialAddress = prefs.getString("server", "") ?: "",
-                onBack = { stage = Stage.Start },
+                notice = notice,
                 onDone = { client, address, keep ->
                     prefs.edit().putString("server", address).apply()
                     if (keep) SessionVault.save(activity, address, client.sessionCookies()) else {
@@ -134,31 +128,30 @@ fun EnveliqApp(activity: MainActivity) {
                 },
             )
         }
-        Stage.Home -> HomeScreen(
-            activity = activity,
-            prefs = prefs,
-            api = api,
-            server = server,
-            onLeave = { signOut ->
-                if (signOut) {
-                    val client = api
-                    if (client != null) Thread { client.signOut() }.start()
+        Stage.Home -> {
+            val client = api
+            if (client != null) HomeScreen(
+                activity = activity,
+                prefs = prefs,
+                api = client,
+                server = server,
+                onLeave = { signedOutByServer ->
+                    Thread { client.signOut() }.start()
                     SessionVault.clear(activity)
                     AlertPrefs.reset(activity)
                     MailWatcherService.stop(activity)
-                }
-                EnveliqApi.forgetSession()
-                api = null
-                notice = ""
-                stage = Stage.Start
-            },
-        )
+                    EnveliqApi.forgetSession()
+                    api = null
+                    notice = if (signedOutByServer) "You were signed out. Please sign in again." else ""
+                    stage = Stage.SignIn
+                },
+            )
+        }
     }
 }
 
 @Composable
-private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: EnveliqApi?, server: String, onLeave: (Boolean) -> Unit) {
-    val demo = api == null
+private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: EnveliqApi, server: String, onLeave: (Boolean) -> Unit) {
     val mails = remember { mutableStateListOf<Mail>() }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
@@ -168,11 +161,6 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     val scope = rememberCoroutineScope()
 
     fun load() {
-        if (api == null) {
-            mails.clear()
-            mails.addAll(Demo.mails)
-            return
-        }
         loading = true
         error = ""
         scope.launch {
@@ -254,9 +242,9 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 DetailBody(current, api, onBack = { opened = null })
             } else {
                 when (tab) {
-                    Tab.Inbox -> InboxTab(mails, loading, error, demo, onOpen = { opened = it }, onRefresh = { load() })
+                    Tab.Inbox -> InboxTab(mails, loading, error, onOpen = { opened = it }, onRefresh = { load() })
                     Tab.Tasks -> TasksTab(mails, onOpen = { opened = it })
-                    Tab.Settings -> SettingsTab(activity, prefs, demo, server, api, onLeave)
+                    Tab.Settings -> SettingsTab(activity, prefs, server, api, onLeave)
                 }
             }
         }
@@ -275,14 +263,14 @@ private fun Heading(title: String, subtitle: String, trailing: @Composable () ->
 }
 
 @Composable
-private fun InboxTab(mails: List<Mail>, loading: Boolean, error: String, demo: Boolean, onOpen: (Mail) -> Unit, onRefresh: () -> Unit) {
+private fun InboxTab(mails: List<Mail>, loading: Boolean, error: String, onOpen: (Mail) -> Unit, onRefresh: () -> Unit) {
     var onlyAction by remember { mutableStateOf(false) }
     val shown = if (onlyAction) mails.filter { it.needsAction } else mails
     val needs = mails.count { it.needsAction }
     Column(Modifier.fillMaxSize()) {
         Heading(
             "My inbox",
-            if (loading) "Looking for your email…" else "${mails.size} emails to look at, $needs need you" + if (demo) " · sample email" else "",
+            if (loading) "Looking for your email…" else "${mails.size} emails to look at, $needs need you",
         ) {
             TextButton(onClick = onRefresh, enabled = !loading) { Text("Refresh", color = Blue, fontSize = 15.sp) }
         }
@@ -330,7 +318,7 @@ private fun MailRow(mail: Mail, onClick: () -> Unit) {
 }
 
 @Composable
-private fun DetailBody(mail: Mail, api: EnveliqApi?, onBack: () -> Unit) {
+private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit) {
     var original by remember(mail.id) { mutableStateOf<String?>(null) }
     var loadingOriginal by remember(mail.id) { mutableStateOf(false) }
     var originalError by remember(mail.id) { mutableStateOf("") }
@@ -376,9 +364,7 @@ private fun DetailBody(mail: Mail, api: EnveliqApi?, onBack: () -> Unit) {
             if (text == null) {
                 OutlinedButton(
                     onClick = {
-                        if (mail.demoBody != null) {
-                            original = mail.demoBody
-                        } else if (api != null && !loadingOriginal) {
+                        if (!loadingOriginal) {
                             loadingOriginal = true
                             originalError = ""
                             scope.launch {
@@ -479,7 +465,7 @@ private fun SwitchRow(title: String, note: String, checked: Boolean, onChange: (
 }
 
 @Composable
-private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, demo: Boolean, server: String, api: EnveliqApi?, onLeave: (Boolean) -> Unit) {
+private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, server: String, api: EnveliqApi, onLeave: (Boolean) -> Unit) {
     val context = LocalContext.current
     var mailAlerts by remember { mutableStateOf(AlertPrefs.on(context)) }
     var quietOn by remember { mutableStateOf(AlertPrefs.quietOn(context)) }
@@ -491,7 +477,7 @@ private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, demo: 
     var hide by remember { mutableStateOf(prefs.getBoolean("hide_in_recents", false)) }
     var message by remember { mutableStateOf("") }
     fun turnOnAlerts() {
-        api?.let { SessionVault.save(context, server, it.sessionCookies()) }     // alerts need a kept sign-in
+        SessionVault.save(context, server, api.sessionCookies())     // alerts need a kept sign-in
         AlertPrefs.setSeeded(context, false)       // what is in the inbox now is not new
         AlertPrefs.setOn(context, true)
         mailAlerts = true
@@ -511,12 +497,10 @@ private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, demo: 
         SectionTitle("Notifications")
         SwitchRow(
             "Tell me when new email arrives",
-            if (demo) "Sign in to your Enveliq to use this." else "A quiet note once the AI has finished reading it. The lock screen only says \"New email\".",
+            "A quiet note once the AI has finished reading it. The lock screen only says \"New email\".",
             mailAlerts,
         ) { on ->
-            if (demo) {
-                alertNote = "Sign in to your own Enveliq first. Sample email never changes."
-            } else if (!on) {
+            if (!on) {
                 AlertPrefs.setOn(context, false)
                 mailAlerts = false
                 MailWatcherService.stop(context)
@@ -601,14 +585,14 @@ private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, demo: 
 
         SectionTitle("Account")
         Text(
-            if (demo) "You are looking at made-up sample email. Nothing here is real." else "Signed in to $server. You stay signed in on this phone until you sign out.",
+            "Signed in to $server. You stay signed in on this phone until you sign out.",
             color = Ink, fontSize = 15.sp, lineHeight = 22.sp,
         )
         OutlinedButton(
-            onClick = { onLeave(true) },
+            onClick = { onLeave(false) },
             modifier = Modifier.fillMaxWidth().padding(top = 10.dp).height(48.dp),
             shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
-        ) { Text(if (demo) "Leave sample email" else "Sign out", color = Ink) }
+        ) { Text("Sign out", color = Ink) }
 
         SectionTitle("About")
         Text("Enveliq for Android · version " + appVersion(context), color = Ink, fontSize = 15.sp)
