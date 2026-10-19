@@ -425,6 +425,73 @@ class EnveliqApi(address: String) {
         return if (v.isBlank() || !u.startsWith("https://github.com/")) null else v to u
     }
 
+    // ---------- beyond email: tasks, bell, shipping, trips, news and messages ----------
+
+    private fun JSONObject.list(key: String): List<JSONObject> {
+        val a = optJSONArray(key) ?: return emptyList()
+        return (0 until a.length()).mapNotNull { a.optJSONObject(it) }
+    }
+
+    fun myTasks(): List<MyTask> = JSONObject(call("GET", "/api/v1/me/tasks?tz=" + enc(java.util.TimeZone.getDefault().id))).list("tasks").map {
+        MyTask(it.str("id"), it.str("account_id"), it.str("message_id"), it.str("title"), it.str("sender"), it.str("priority"), it.str("due"),
+            it.optInt("days", 0), it.str("state"), it.optBoolean("manual", false))
+    }
+
+    /** action: done, reopen, remove, not_today, or move (with [to] one of later_today, tomorrow, weekend, next_week). */
+    fun taskAct(id: String, action: String, to: String? = null) {
+        val body = if (to != null) JSONObject().put("to", to) else null
+        call("POST", "/api/v1/me/tasks/" + enc(id) + "/" + action, body)
+    }
+
+    fun bell(): List<BellNote> = JSONObject(call("GET", "/api/v1/me/bell")).list("items").map {
+        BellNote(it.str("id"), it.str("title"), it.str("message"), it.str("source"), it.optDouble("at", 0.0).toLong(), it.optBoolean("unread", false))
+    }
+    fun bellRead() { call("POST", "/api/v1/me/bell/read") }
+    fun bellDismiss(id: String) { call("DELETE", "/api/v1/me/bell/" + enc(id)) }
+    fun bellClear() { call("DELETE", "/api/v1/me/bell") }
+
+    fun shipping(): Section<Order> {
+        val r = JSONObject(call("GET", "/api/v1/me/shipping"))
+        return Section(r.optBoolean("enabled", false), r.list("orders").map {
+            Order(it.str("id"), it.str("shop"), it.str("items"), it.str("status"), it.str("expected_text").ifBlank { it.str("expected") },
+                it.optBoolean("delayed", false), it.optDouble("delivered_at", 0.0) > 0, it.optBoolean("needs_confirm", false), it.str("track_url"))
+        })
+    }
+
+    fun trips(): Section<Trip> {
+        val r = JSONObject(call("GET", "/api/v1/me/trips"))
+        return Section(r.optBoolean("enabled", false), r.list("trips").map { t ->
+            Trip(t.str("title"), t.str("start"), t.str("end"), t.str("state"), t.optBoolean("cancelled", false), t.list("bookings").map { b ->
+                Booking(b.str("kind"), b.str("provider"), b.str("detail"), b.str("from"), b.str("to"), b.str("start"), b.str("start_time"), b.str("reference"), b.str("status") == "cancelled")
+            })
+        })
+    }
+
+    private fun feedsOf(r: JSONObject): Section<Feed> = Section(r.optBoolean("enabled", false), r.list("feeds").map { f ->
+        Feed(f.str("id"), f.str("title"), f.str("error"), f.optInt("new", 0), f.list("items").map { i ->
+            FeedItem(i.str("title"), i.str("text"), i.str("link"), i.optDouble("at", 0.0).toLong(), i.optBoolean("new", false))
+        })
+    })
+    fun news(): Section<Feed> = feedsOf(JSONObject(call("GET", "/api/v1/me/rss")))
+    fun newsRefresh(): Section<Feed> = feedsOf(JSONObject(call("POST", "/api/v1/me/rss/refresh")))
+    fun newsSeen() { call("POST", "/api/v1/me/rss/seen") }
+
+    fun threads(): List<Chat> = JSONObject(call("GET", "/api/v1/messages/threads")).list("threads").map {
+        val last = it.optJSONObject("last")
+        Chat(it.str("id"), it.str("title"), it.optInt("unread", 0), if (last == null) "" else (if (last.optBoolean("mine", false)) "You: " else "") + last.str("text"),
+            it.optDouble("updated", 0.0).toLong(), it.optBoolean("muted", false))
+    }
+
+    fun thread(id: String): List<ChatMessage> {
+        val msgs = JSONObject(call("GET", "/api/v1/messages/threads/" + enc(id))).list("messages").map {
+            ChatMessage(it.str("id"), it.str("name"), it.optBoolean("mine", false), it.optDouble("at", 0.0).toLong(), it.str("text"), it.optBoolean("deleted", false))
+        }
+        try { call("POST", "/api/v1/messages/threads/" + enc(id) + "/read") } catch (e: ApiException) { /* not worth failing the page */ }
+        return msgs
+    }
+
+    fun sendChat(id: String, text: String) { call("POST", "/api/v1/messages/threads/" + enc(id) + "/messages", JSONObject().put("text", text)) }
+
     /** Asks the address whether it is an Enveliq that answers. Throws a plain-words [ApiException] when it does not. */
     fun checkConnection() {
         val r = JSONObject(call("GET", "/api/v1/health"))

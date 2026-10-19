@@ -21,6 +21,9 @@ class MainActivity : FragmentActivity() {
     /** The one-time code the browser handed back after signing in there. Used once by the sign-in screen. */
     var linkCode by mutableStateOf<String?>(null)
 
+    /** Text shared to Enveliq from another app: (subject, text). The inbox opens a new email with it once the person is signed in. */
+    var shareRequest by mutableStateOf<Pair<String, String>?>(null)
+
     /** True while the app is locked and waiting for the fingerprint, face or PIN. */
     var locked by mutableStateOf(false)
     private var stoppedAt = 0L
@@ -49,6 +52,11 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun readRequest(intent: Intent?) {
+        if (intent?.action == Intent.ACTION_SEND && intent.type?.startsWith("text/") == true) {
+            val text = intent.getStringExtra(Intent.EXTRA_TEXT) ?: ""
+            if (text.isNotBlank()) shareRequest = (intent.getStringExtra(Intent.EXTRA_SUBJECT) ?: "").take(300) to text.take(20000)
+            return
+        }
         val link = intent?.data
         if (link != null && link.scheme == "enveliq" && link.host == "signin") {
             val code = link.getQueryParameter("code") ?: ""

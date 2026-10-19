@@ -55,7 +55,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** What the writing screen is for. [kind] is new, reply, reply_all or forward; [mail] is the email being answered or forwarded; [draft] is a saved draft being continued. */
-data class ComposeTarget(val kind: String, val mail: Mail? = null, val draft: Draft? = null)
+data class ComposeTarget(val kind: String, val mail: Mail? = null, val draft: Draft? = null, val presetSubject: String = "", val presetBody: String = "")
 
 private val SEPARATORS = Regex("[,;\\s]+")
 
@@ -81,8 +81,8 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
     var cc by remember { mutableStateOf(draft?.cc?.joinToString(", ") ?: "") }
     var bcc by remember { mutableStateOf(draft?.bcc?.joinToString(", ") ?: "") }
     var showCc by remember { mutableStateOf(draft != null && (draft.cc.isNotEmpty() || draft.bcc.isNotEmpty())) }
-    var subject by remember { mutableStateOf(if (kind == "new") draft?.subject ?: "" else "") }
-    var body by remember { mutableStateOf(draft?.body ?: "") }
+    var subject by remember { mutableStateOf(if (kind == "new") draft?.subject ?: target.presetSubject else "") }
+    var body by remember { mutableStateOf(draft?.body ?: target.presetBody) }
     var options by remember { mutableStateOf<List<FromOption>>(emptyList()) }
     var from by remember { mutableStateOf<FromOption?>(null) }
     val boxId = from?.accountId ?: ""

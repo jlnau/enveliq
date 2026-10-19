@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,6 +42,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
@@ -94,7 +96,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private enum class Stage { Opening, SignIn, Welcome, Home }
-private enum class Tab { Inbox, Tasks, Drafts, Settings }
+private enum class Tab { Inbox, Tasks, Drafts, More, Settings }
 
 @Composable
 fun EnveliqApp(activity: MainActivity) {
@@ -175,6 +177,7 @@ fun EnveliqApp(activity: MainActivity) {
                     SessionVault.clear(activity)
                     AlertPrefs.reset(activity)
                     MailWatcherService.stop(activity)
+                    WaitingWidget.clear(activity)
                     EnveliqApi.forgetSession()
                     api = null
                     notice = if (signedOutByServer) "You were signed out. Please sign in again." else ""
@@ -206,6 +209,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 val list = withContext(Dispatchers.IO) { api.inbox(view) }
                 mails.clear()
                 mails.addAll(list)
+                if (view == "inbox") WaitingWidget.update(activity, list.size)
                 if (view == "inbox") Notifier.clearGone(activity, list.map { it.id }, AlertPrefs.alerted(activity))     // reviewed elsewhere: take its alert down
             } catch (e: ApiException) {
                 if (e.code == 401) {
@@ -242,6 +246,13 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     val selected = remember { mutableStateListOf<String>() }
     var askSnooze by remember { mutableStateOf(false) }
     var composing by remember { mutableStateOf<ComposeTarget?>(null) }
+    // "Share" from another app: the text arrives in a new email, ready to address.
+    val shared = activity.shareRequest
+    LaunchedEffect(shared) {
+        val sh = activity.shareRequest ?: return@LaunchedEffect
+        composing = ComposeTarget("new", presetSubject = sh.first, presetBody = sh.second)
+        activity.shareRequest = null
+    }
     fun keyOf(m: Mail) = m.accountId + ":" + m.id
 
     // Puts the unread mark back on an email you had marked Reviewed. It goes back to the inbox.
@@ -402,6 +413,10 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                         icon = { Icon(Icons.Filled.Edit, contentDescription = null) }, label = { Text("Drafts") },
                     )
                     NavigationBarItem(
+                        selected = tab == Tab.More, onClick = { tab = Tab.More }, colors = colors,
+                        icon = { Icon(Icons.Filled.Menu, contentDescription = null) }, label = { Text("More") },
+                    )
+                    NavigationBarItem(
                         selected = tab == Tab.Settings, onClick = { tab = Tab.Settings }, colors = colors,
                         icon = { Icon(Icons.Filled.Settings, contentDescription = null) }, label = { Text("Settings") },
                     )
@@ -412,12 +427,10 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         if (askSnooze && current != null) {
             SnoozeChoices(onPick = { until, label -> askSnooze = false; snooze(current, until, label) }, onCancel = { askSnooze = false })
         }
-        Box(Modifier.padding(inner).fillMaxSize()) {
-            if (current != null) {
-                DetailBody(current, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) })
-            } else {
-                when (tab) {
-                    Tab.Inbox -> InboxTab(
+        // A wide screen (a tablet, or a phone on its side) shows the list and the open email side by side.
+        val wide = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp >= 720
+        val inboxPane: @Composable () -> Unit = {
+            InboxTab(
                         mails, loading, error, inboxList, selected, view, onView = { view = it; selected.clear() },
                         swipeRight = prefs.getString("swipe_right", "archive") ?: "archive",
                         swipeLeft = prefs.getString("swipe_left", "bin") ?: "bin",
@@ -425,7 +438,23 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                         onSwipe = { m, outcome -> resolve(m, outcome) },
                         onRefresh = { load() },
                     )
-                    Tab.Tasks -> TasksTab(mails.filter { it.state != "reviewed" && it.state != "archived" }, onOpen = { opened = it })
+        }
+        Box(Modifier.padding(inner).fillMaxSize()) {
+            if (wide && tab == Tab.Inbox) {
+                Row(Modifier.fillMaxSize()) {
+                    Box(Modifier.weight(0.42f).fillMaxHeight()) { inboxPane() }
+                    Box(Modifier.weight(0.58f).fillMaxHeight()) {
+                        if (current != null) DetailBody(current, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) })
+                        else Text("Choose an email to read it here.", color = Muted, fontSize = 16.sp, modifier = Modifier.padding(32.dp))
+                    }
+                }
+            } else if (current != null) {
+                DetailBody(current, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) })
+            } else {
+                when (tab) {
+                    Tab.Inbox -> inboxPane()
+                    Tab.Tasks -> TasksScreen(api, mails, onOpen = { opened = it })
+                    Tab.More -> MoreTab(api)
                     Tab.Drafts -> DraftsTab(api, onOpen = { d -> composing = ComposeTarget(d.kind, mailForDraft(d), d) })
                     Tab.Settings -> SettingsTab(activity, prefs, server, api, onLeave)
                 }
@@ -799,28 +828,3 @@ private fun SnoozeChoices(onPick: (Long, String) -> Unit, onCancel: () -> Unit) 
     )
 }
 
-@Composable
-private fun TasksTab(mails: List<Mail>, onOpen: (Mail) -> Unit) {
-    val tasks = mails.filter { it.taskTitle != null }
-    Column(Modifier.fillMaxSize()) {
-        Heading("Tasks", if (tasks.isEmpty()) "" else "${tasks.size} to do")
-        if (tasks.isEmpty()) {
-            Text("No tasks right now. Tasks appear here when an email needs something from you.", color = Muted, fontSize = 16.sp, modifier = Modifier.padding(20.dp))
-        } else {
-            LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(tasks, key = { "t" + it.accountId + ":" + it.id }) { m ->
-                    Surface(
-                        color = Panel, shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Line),
-                        modifier = Modifier.fillMaxWidth().clickable { onOpen(m) },
-                    ) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text(m.taskTitle ?: "", color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-                            if (!m.taskDue.isNullOrBlank()) Text("Due: " + m.taskDue, color = Amber, fontSize = 14.sp, modifier = Modifier.padding(top = 3.dp))
-                            Text("From " + m.sender, color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 3.dp))
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
