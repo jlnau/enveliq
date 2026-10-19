@@ -117,7 +117,9 @@ jobs:
           cp android/app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/Enveliq-${APP_VERSION}.apk"
           cd "$RUNNER_TEMP"
           sha256sum "Enveliq-${APP_VERSION}.apk" > "Enveliq-${APP_VERSION}.apk.sha256"
-          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "Enveliq-${APP_VERSION}.apk" | head -3
+          APKSIGNER="$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)"
+          CERTS="$("$APKSIGNER" verify --print-certs "Enveliq-${APP_VERSION}.apk")"
+          echo "$CERTS" | head -3
           {
             echo "### Enveliq for Android ${APP_VERSION}"
             echo "Signed with ${SIGNING}. ${PUSH}."
@@ -126,7 +128,7 @@ jobs:
             echo '```'
             echo "Signing certificate (for locking the Firebase API key to this app; these are public):"
             echo '```'
-            "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "Enveliq-${APP_VERSION}.apk" | grep -E 'SHA-(1|256) digest'
+            echo "$CERTS" | grep -i 'digest' | grep -v -i 'md5' || true
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
