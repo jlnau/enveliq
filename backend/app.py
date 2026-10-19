@@ -707,7 +707,8 @@ app.include_router(build_junk_router(mail_ctx))
 app.include_router(build_check_router(mail_ctx))
 def apply_rules(account: dict, arrived: list) -> None:
     """Mail that has just arrived: apply the owner's rules (archive it, or mark it reviewed). Nothing else about the
-    email is read. Mail from the owner's important people is never touched, and a rule never bins anything."""
+    email is read. Mail from the owner's important people is never touched, and a rule never bins anything (sending to Junk is
+    not binning: the email stays in the mailbox's Junk folder)."""
     user = account.get("owner_user_id")
     if not user:
         return
@@ -1071,7 +1072,7 @@ def mark_message_unread(account_id: AccountId, message_id: MessageId, session: S
 
 
 def resolve_message(account_id: str, message_id: str, outcome: str, user_id: str, *, by: str | None = None) -> None:
-    """Reviewed, archived, binned or expired, for one message. Shared by the buttons and by a person's rules.
+    """Reviewed, archived, binned, junked or expired, for one message. Shared by the buttons and by a person's rules.
 
     Archive/bin/mark-read happens at the mail provider first. Only after that succeeds do we purge local
     retained metadata/summaries and any temporary safe preview leases, so a failed action leaves the item

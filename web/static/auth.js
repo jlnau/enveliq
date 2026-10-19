@@ -1872,7 +1872,7 @@ async function savedPage(me) {
 
 // ---------- mail rules: "archive (or mark reviewed) new mail from this sender" ----------
 async function rulesPage(me) {
-  let state = { rules: [], actions: { archived: "Archive it", reviewed: "Mark it reviewed" }, max: 50 };
+  let state = { rules: [], actions: { archived: "Archive it", reviewed: "Mark it reviewed", junked: "Send it to Junk" }, max: 50 };
   const list = h("div", { class: "ab-list" });
   const sender = h("input", { id: "ru_sender", type: "text", placeholder: "name@example.com, or @example.com for a whole website", "aria-label": "Mail from", autocomplete: "off", maxlength: 320 });
   const words = h("input", { id: "ru_subject", type: "text", placeholder: "Only if the subject has these words (optional)", "aria-label": "Subject contains", autocomplete: "off", maxlength: 80 });
@@ -1884,7 +1884,7 @@ async function rulesPage(me) {
       h("span", { class: "ab-who" }, h("strong", { text: `${state.actions[r.action] || r.action}` }), h("small", { text: `New mail from ${who(r)}${r.subject ? ` with \u201c${r.subject}\u201d in the subject` : ""}` })),
       h("button", { class: "ab-x", type: "button", "aria-label": `Remove the rule for ${who(r)}`, text: "\u00d7", onclick: async () => {
         try { state = await api(`/me/rules/${r.id}`, { method: "DELETE" }); paint(); toast("Rule removed"); } catch (er) { toast(er.message); }
-      } }))) : [h("p", { class: "hint", text: "No rules yet. Add one below, or open an email in your inbox and press Always archive these." })]));
+      } }))) : [h("p", { class: "hint", text: "No rules yet. Add one below, or open an email in your inbox and press Always archive these or Block sender." })]));
   }
   async function add() {
     if (!sender.value.trim()) { toast("Type who the email is from first"); sender.focus(); return; }

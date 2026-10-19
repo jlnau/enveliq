@@ -155,7 +155,7 @@ class RetainedAttachmentRef(StrictModel):
 
 
 class ResolveMessageRequest(StrictModel):
-    outcome: Literal["reviewed", "archived", "binned", "expired"]
+    outcome: Literal["reviewed", "archived", "binned", "junked", "expired"]
 
 
 class AttachmentPolicyPatch(StrictModel):

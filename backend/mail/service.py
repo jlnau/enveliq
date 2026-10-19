@@ -1048,3 +1048,6 @@ class MailService:
                 s.move(uid, s.folder_for("archive"))
             elif outcome == "binned":
                 s.move(uid, s.folder_for("trash"))
+            elif outcome == "junked":
+                from .junk import junk_folder          # the mailbox's own Junk or Spam folder; the mail service learns from it too
+                s.move(uid, junk_folder(s, self.target(account).kind))

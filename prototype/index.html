@@ -3917,6 +3917,18 @@ async function addRuleFor(m,btn){
     btn.textContent="Rule saved";
   }catch(er){toast(er.message,6000);btn.disabled=false}
 }
+// "Send to Junk" moves one email to the mailbox's Junk folder; "Block sender" also adds a rule so new email from that sender goes there too.
+async function junkThis(m,btn,block){
+  const who=m.sender||m.address;
+  if(block){
+    try{await secureBackendRequest("/api/v1/me/rules",{method:"POST",body:JSON.stringify({sender:m.address,subject:"",action:"junked"})})}
+    catch(er){toast(er.message,6000);return}
+  }
+  const ok=await resolveRealOne(m,"junked",btn,true);
+  if(!ok)return;
+  render();refreshTasks();
+  toast(block?`Blocked ${who}. New email from them goes to Junk. You can change this in Settings, Mail rules.`:"Sent to Junk in your mailbox. Not Junk in Junk Mail brings it back.",6000,"success");
+}
 async function setImportant(m,on){
   const addr=impKey(m.address),who=m.sender||addr;
   if(!realMail){if(on)impSet.add(addr);else impSet.delete(addr);render();toast(on?`${who} is now an important person`:`${who} is no longer marked important`);return}
@@ -4156,7 +4168,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
     const OR=!m.kept&&origOn(m);
     const detail=m.kept
       ?`<div class="qdetail"><div class="qfrom">${boxChip(m)}<span class="addr">&lt;${esc(m.address)}&gt;</span></div>${tagChips(m)}<div class="qsummary"><span class="qsummary-label">✦ AI summary</span><span class="qsummary-copy">${esc(m.summary)}</span></div>${taskHtml}${attachmentsBlock(m)}<div class="kept-note">${m.status==="archived"?"Archived":"Marked reviewed"} in your mailbox. Kept here until ${esc(m.keptUntil)}.${m.replied?` You replied ${esc(m.repliedAt||"just now")}.`:""}</div><div class="actions">${m.replyTo?`<button class="action reply" data-reply="${esc(m.id)}">↩ Reply</button>`:""}${moreReplyBtns(m,"action reply")}<button class="action reply" data-task-add="${esc(m.id)}" aria-haspopup="dialog">Task</button><button class="action trash" data-id="${esc(m.id)}" data-status="expired">Remove from this list</button></div></div>`
-      :`<div class="qdetail split${OR?" has-orig":""}"><div class="qmainc">${scamHtml(m.scam)}${tagChips(m)}${m.ungen&&m.real?genBlock(m):`<div class="qsummary"><span class="qsummary-head"><span class="qsummary-label">✦ AI summary</span><button type="button" class="linkbtn view-email summary-original-link" data-open-email="${esc(m.id)}">View original email</button></span><span class="qsummary-copy">${esc(m.summary)}</span></div>`}${attachmentsBlock(m)}${taskHtml}${OR?"":`<div class="qfill"></div>`}<div class="qfoot"><span class="qleft">${replyBtn}${m.kept||!m.address?"":`<button class="subtle" data-important="${esc(m.id)}" aria-pressed="${isImp(m)}">&#9733; ${isImp(m)?"Not important":"Important person"}</button>`}${m.kept||!m.address||!realMail||isImp(m)?"":`<button class="subtle" data-rule="${esc(m.id)}">Always archive these</button>`}${unsubHtml(m.unsub,!!m.scam)}</span></div>${OR?origBox(m):""}</div>
+      :`<div class="qdetail split${OR?" has-orig":""}"><div class="qmainc">${scamHtml(m.scam)}${tagChips(m)}${m.ungen&&m.real?genBlock(m):`<div class="qsummary"><span class="qsummary-head"><span class="qsummary-label">✦ AI summary</span><button type="button" class="linkbtn view-email summary-original-link" data-open-email="${esc(m.id)}">View original email</button></span><span class="qsummary-copy">${esc(m.summary)}</span></div>`}${attachmentsBlock(m)}${taskHtml}${OR?"":`<div class="qfill"></div>`}<div class="qfoot"><span class="qleft">${replyBtn}${m.kept||!m.address?"":`<button class="subtle" data-important="${esc(m.id)}" aria-pressed="${isImp(m)}">&#9733; ${isImp(m)?"Not important":"Important person"}</button>`}${m.kept||!m.address||!realMail||isImp(m)?"":`<button class="subtle" data-rule="${esc(m.id)}">Always archive these</button>`}${m.kept||!m.real||m.found?"":`<button class="subtle" data-junk-this="${esc(m.id)}">Send to Junk</button>`}${m.kept||!m.address||!realMail||m.found||isImp(m)?"":`<button class="subtle" data-block-sender="${esc(m.id)}">Block sender</button>`}${unsubHtml(m.unsub,!!m.scam)}</span></div>${OR?origBox(m):""}</div>
         <aside class="qside" aria-label="Email details"><div class="qkv"><span>From</span><span class="addr">${esc(m.address)}</span></div>${multiBox()&&m.real?`<div class="qkv"><span>Mailbox</span><span>${boxChip(m)}</span></div>`:""}<div class="qkv"><span>Received</span><span>${esc(m.time)}</span></div>${m.replied?`<div class="qkv replied-kv"><span>Replied</span><span>${esc(m.repliedAt||"Just now")}</span></div>`:""}<div class="qkv"><span>Category</span><span>${esc(category)}</span></div><div class="qkv"><span>Attachments</span><span>${esc(attCount)}</span></div>
         <div class="qbtns"><button class="action reviewed" data-id="${esc(m.id)}" data-status="reviewed">${ICON_OK}Reviewed</button><div class="two"><button class="action archive" data-id="${esc(m.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(m.id)}" data-status="trashed">${ICON_BIN}Bin</button></div></div></aside></div>`;
     if(mode==="detail")return detail;
@@ -5722,6 +5734,7 @@ document.addEventListener("click",e=>{
   const retryAtt=e.target.closest("[data-att-retry]");if(retryAtt){const m=data.find(x=>x.id===+retryAtt.dataset.attRetry&&x.owner===currentUser.id);if(m&&m.real){retryAtt.disabled=true;secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/attachments/summarise`,{method:"POST",body:"{}"}).then(()=>{toast("Reading the files again. This can take a minute.",4000);m.attachments.forEach(a=>{if(a.state==="failed")a.state="working"});render()}).catch(er=>{retryAtt.disabled=false;toast(er.message,6000)})}return}
   const openAtt=e.target.closest("[data-open-attachment]");if(openAtt){openAttachmentViewer(openAtt.dataset.openAttachment);return}
   const openEmail=e.target.closest("[data-open-email]");if(openEmail){openEmailViewer(openEmail.dataset.openEmail);return}
+  const jb=e.target.closest("[data-junk-this],[data-block-sender]");if(jb){const m=data.find(x=>x.id===Number(jb.dataset.junkThis||jb.dataset.blockSender)&&x.owner===currentUser.id);if(m)junkThis(m,jb,jb.hasAttribute("data-block-sender"));return}
   const ruleBtn=e.target.closest("[data-rule]");if(ruleBtn){const m=data.find(x=>x.id===Number(ruleBtn.dataset.rule)&&x.owner===currentUser.id);if(m)addRuleFor(m,ruleBtn);return}
   const impBtn=e.target.closest("[data-important]");if(impBtn){const m=data.find(x=>x.id===Number(impBtn.dataset.important)&&x.owner===currentUser.id);if(m)setImportant(m,!isImp(m));return}
   const replyBtn=e.target.closest("[data-reply]");if(replyBtn){openComposer(replyBtn.dataset.reply);return}
@@ -6271,7 +6284,7 @@ async function openRealEmail(m){
     presentOriginal(o,{title:m.subject,context:`${m.sender} · ${m.date||m.time}`,attach:base+"/attachments",htmlUrl:base+"/original/html",replyTo:m.replyTo,account:m.account,fallbackDate:m.date||m.time,replyId:m.replyTo?m.id:null,unsub:m.unsub,scam:m.scam,messageId:m.id});
   }catch(er){toast(er.message,6000)}
 }
-const WORKING={reviewed:"Marking reviewed…",archived:"Archiving…",trashed:"Moving to Bin…",expired:"Removing…"};
+const WORKING={reviewed:"Marking reviewed…",archived:"Archiving…",trashed:"Moving to Bin…",junked:"Sending to Junk…",expired:"Removing…"};
 async function resolveRealOne(m,status,button,quiet){
   // Show something straight away: the mailbox takes about a second to answer.
   const card=button.closest(".mail"),label=button.textContent;
@@ -6284,7 +6297,7 @@ async function resolveRealOne(m,status,button,quiet){
     if(keep){m.status=status;m.kept=true;m.keptUntil=new Date(Date.now()+realPrefs.keep_days*86400000).toLocaleDateString(undefined,{day:"numeric",month:"short"});m.attachments=[]}
     else{const ix=data.indexOf(m);if(ix>=0)data.splice(ix,1)}
     selected.delete(m.id);if(quiet)return true;if(currentViewerMessageId===m.id)closeAttachmentViewer();render();refreshTasks();
-    toast(status==="trashed"?"Moved to Bin in your mailbox":status==="expired"?"Removed from this list":(status==="archived"?"Archived in your mailbox":"Marked read in your mailbox")+(keep?`. Kept in ${status==="archived"?"Archived":"Reviewed"} for ${realPrefs.keep_days} day${realPrefs.keep_days===1?"":"s"}`:""),2600,"success");
+    toast(status==="trashed"?"Moved to Bin in your mailbox":status==="junked"?"Sent to Junk in your mailbox":status==="expired"?"Removed from this list":(status==="archived"?"Archived in your mailbox":"Marked read in your mailbox")+(keep?`. Kept in ${status==="archived"?"Archived":"Reviewed"} for ${realPrefs.keep_days} day${realPrefs.keep_days===1?"":"s"}`:""),2600,"success");
     return true;
   }catch(er){
     button.disabled=false;button.classList.remove("working");button.textContent=label;
