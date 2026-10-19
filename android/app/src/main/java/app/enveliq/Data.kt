@@ -34,6 +34,12 @@ enum class Outcome(val api: String, val done: String) {
 /** A mailbox the person can send from. */
 data class Mailbox(val id: String, val label: String)
 
+/** An address a mailbox may send from: its own, or one of its aliases. [isDefault] marks the mailbox's own address. */
+data class FromOption(val accountId: String, val address: String, val label: String, val isDefault: Boolean)
+
+/** What the server says about an original email: its plain text, and whether a formatted (HTML) version exists. */
+data class OriginalInfo(val text: String, val hasHtml: Boolean, val remoteImages: Int)
+
 /** A person from the address list, for suggestions while typing. */
 data class Contact(val name: String, val address: String)
 
@@ -48,6 +54,7 @@ data class Draft(
     val bcc: List<String>,
     val subject: String,
     val body: String,
+    val fromAddress: String = "",
 )
 
 /** What the server said after a send. When [queued], the email waits [secondsLeft] seconds (the "undo send" time) and can still be taken back. */

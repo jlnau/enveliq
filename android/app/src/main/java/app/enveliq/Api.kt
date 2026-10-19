@@ -288,24 +288,46 @@ class EnveliqApi(address: String) {
         return out
     }
 
-    fun reply(mail: Mail, all: Boolean, text: String): Sent = sentFrom(
+    /** Every address the person can send from: each mailbox's own address first, then its aliases. */
+    fun fromOptions(): List<FromOption> {
+        val accounts = JSONArray(call("GET", "/api/v1/accounts"))
+        val out = ArrayList<FromOption>()
+        for (i in 0 until accounts.length()) {
+            val a = accounts.getJSONObject(i)
+            val method = a.str("auth_method")
+            if (a.optBoolean("check_address", false)) continue
+            if (method != "proton_bridge" && method != "imap") continue
+            if (userId.isNotEmpty() && a.str("owner_user_id") != userId) continue
+            val id = a.str("id")
+            val own = a.str("email_address")
+            val label = a.str("display_name").ifBlank { own }
+            val seen = HashSet<String>()
+            if (own.isNotBlank() && seen.add(own.lowercase())) out.add(FromOption(id, own, label, true))
+            val extra = a.optJSONObject("settings")?.optJSONArray("send_identities").strings()
+            extra.forEach { if (seen.add(it.lowercase())) out.add(FromOption(id, it, label, false)) }
+        }
+        return out
+    }
+
+    fun reply(mail: Mail, all: Boolean, text: String, from: String? = null): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/reply",
-            JSONObject().put("body", text).put("kind", if (all) "reply_all" else "reply"),
+            JSONObject().put("body", text).put("kind", if (all) "reply_all" else "reply").also { if (from != null) it.put("from_address", from) },
         ),
     )
 
-    fun forward(mail: Mail, to: List<String>, cc: List<String>, bcc: List<String>, text: String): Sent = sentFrom(
+    fun forward(mail: Mail, to: List<String>, cc: List<String>, bcc: List<String>, text: String, from: String? = null): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/forward",
-            JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("body", text),
+            JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("body", text).also { if (from != null) it.put("from_address", from) },
         ),
     )
 
-    fun sendNew(accountId: String, to: List<String>, cc: List<String>, bcc: List<String>, subject: String, text: String): Sent = sentFrom(
+    fun sendNew(accountId: String, to: List<String>, cc: List<String>, bcc: List<String>, subject: String, text: String, from: String? = null): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(accountId) + "/send",
-            JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("subject", subject).put("body", text),
+            JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("subject", subject).put("body", text)
+                .also { if (from != null) it.put("from_address", from) },
         ),
     )
 
@@ -323,6 +345,7 @@ class EnveliqApi(address: String) {
     private fun draftFrom(r: JSONObject) = Draft(
         id = r.str("id"), kind = r.str("kind"), accountId = r.str("account_id"), messageId = r.str("message_id"),
         to = r.people("to"), cc = r.people("cc"), bcc = r.people("bcc"), subject = r.str("subject"), body = r.str("body"),
+        fromAddress = r.str("from_address"),
     )
 
     fun drafts(): List<Draft> {
@@ -336,6 +359,7 @@ class EnveliqApi(address: String) {
             .put("subject", d.subject).put("body", d.body)
         if (d.accountId.isNotBlank()) body.put("account_id", d.accountId)
         if (d.messageId.isNotBlank()) body.put("message_id", d.messageId)
+        if (d.fromAddress.isNotBlank()) body.put("from_address", d.fromAddress)
         val text = if (id == null) call("POST", "/api/v1/me/drafts", body) else call("PUT", "/api/v1/me/drafts/" + enc(id), body)
         return draftFrom(JSONObject(text))
     }
@@ -390,6 +414,34 @@ class EnveliqApi(address: String) {
             "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/resolve",
             JSONObject().put("outcome", outcome.api),
         )
+    }
+
+    /** The email as the server describes it: its plain text, and whether a formatted (HTML) version exists. */
+    fun originalInfo(mail: Mail): OriginalInfo {
+        val r = JSONObject(call("GET", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/original"))
+        return OriginalInfo(r.str("text").ifBlank { "(no text content)" }, r.optBoolean("has_html", false), r.optInt("remote_images", 0))
+    }
+
+    /** The email as its sender formatted it, rebuilt by the server from allowed parts only. Pictures from the internet come only when [images] is true. */
+    fun originalHtml(mail: Mail, images: Boolean): String {
+        val url = base + "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/original/html" + if (images) "?images=true" else ""
+        val conn = URL(url).openConnection() as HttpURLConnection
+        try {
+            conn.connectTimeout = 15000
+            conn.readTimeout = 60000
+            val code = conn.responseCode
+            if (code >= 400) {
+                val text = conn.errorStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
+                throw ApiException(if (code == 404) "This email has no formatted version." else detail(text, code), code)
+            }
+            return conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        } catch (e: ApiException) {
+            throw e
+        } catch (e: IOException) {
+            throw ApiException("Could not open the email. Check your connection and try again.")
+        } finally {
+            conn.disconnect()
+        }
     }
 
     /** The email's own words as plain text, fetched from the mailbox for this one request. Not stored. */

@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,7 +26,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Surface
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -79,8 +83,9 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
     var showCc by remember { mutableStateOf(draft != null && (draft.cc.isNotEmpty() || draft.bcc.isNotEmpty())) }
     var subject by remember { mutableStateOf(if (kind == "new") draft?.subject ?: "" else "") }
     var body by remember { mutableStateOf(draft?.body ?: "") }
-    var boxes by remember { mutableStateOf<List<Mailbox>>(emptyList()) }
-    var boxId by remember { mutableStateOf(draft?.accountId ?: "") }
+    var options by remember { mutableStateOf<List<FromOption>>(emptyList()) }
+    var from by remember { mutableStateOf<FromOption?>(null) }
+    val boxId = from?.accountId ?: ""
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
     var askClose by remember { mutableStateOf(false) }
@@ -95,10 +100,15 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
     val hasContent = body.isNotBlank() || to.isNotBlank() || (kind == "new" && subject.isNotBlank())
 
     LaunchedEffect(Unit) {
-        if (kind != "new") return@LaunchedEffect
         try {
-            boxes = withContext(Dispatchers.IO) { api.mailboxes() }
-            if (boxes.none { it.id == boxId }) boxId = boxes.firstOrNull()?.id ?: ""
+            val all = withContext(Dispatchers.IO) { api.fromOptions() }
+            // A reply or forward is sent from the mailbox the email arrived in; a new email can use any of them.
+            val usable = if (kind == "new") all else all.filter { it.accountId == mail?.accountId }
+            options = usable
+            from = usable.firstOrNull { draft != null && draft.fromAddress.isNotBlank() && it.address.equals(draft.fromAddress, ignoreCase = true) }
+                ?: usable.firstOrNull { draft != null && draft.accountId.isNotBlank() && it.accountId == draft.accountId && it.isDefault }
+                ?: usable.firstOrNull { it.isDefault }
+                ?: usable.firstOrNull()
         } catch (e: ApiException) {
             error = e.message ?: "Could not find your mailboxes."
         } catch (e: Exception) {
@@ -118,7 +128,7 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
                 val toSave = Draft(
                     id = "", kind = kind, accountId = if (kind == "new") boxId else mail?.accountId ?: "",
                     messageId = mail?.id ?: "", to = addresses(to), cc = addresses(cc), bcc = addresses(bcc),
-                    subject = shownSubject, body = body,
+                    subject = shownSubject, body = body, fromAddress = from?.address ?: "",
                 )
                 withContext(Dispatchers.IO) { api.saveDraft(draft?.id, toSave) }
                 onClose()
@@ -157,14 +167,15 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             return
         }
         busy = true
+        val chosen = from?.takeIf { !it.isDefault }?.address        // the mailbox's own address is the default, so nothing is sent for it
         scope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
                     when (kind) {
-                        "reply" -> api.reply(mail!!, false, body)
-                        "reply_all" -> api.reply(mail!!, true, body)
-                        "forward" -> api.forward(mail!!, toList, ccList, bccList, body)
-                        else -> api.sendNew(boxId, toList, ccList, bccList, subject, body)
+                        "reply" -> api.reply(mail!!, false, body, chosen)
+                        "reply_all" -> api.reply(mail!!, true, body, chosen)
+                        "forward" -> api.forward(mail!!, toList, ccList, bccList, body, chosen)
+                        else -> api.sendNew(boxId, toList, ccList, bccList, subject, body, chosen)
                     }
                 }
                 if (draft != null) {
@@ -190,6 +201,7 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             Text(kindName(kind), color = Ink, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f).padding(start = 8.dp))
         }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
+            if (options.size > 1) FromPicker(options, from) { from = it }
             if (kind == "reply" || kind == "reply_all") {
                 Text(
                     if (kind == "reply") "Going to the sender" + (mail?.address?.takeIf { it.isNotBlank() }?.let { ": $it" } ?: "")
@@ -198,12 +210,6 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
                 )
                 Text(shownSubject, color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
             } else {
-                if (kind == "new" && boxes.size > 1) {
-                    Text("From", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 10.dp, bottom = 4.dp))
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        boxes.forEach { b -> FilterChip(selected = boxId == b.id, onClick = { boxId = b.id }, label = { Text(b.label, maxLines = 1, overflow = TextOverflow.Ellipsis) }) }
-                    }
-                }
                 AddressField("To", to, { to = it }, api)
                 if (showCc) {
                     AddressField("Cc", cc, { cc = it }, api)
@@ -259,6 +265,37 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
                 }
             },
         )
+    }
+}
+
+/** Who the email goes out as. Tap to choose another of your addresses or aliases. */
+@Composable
+private fun FromPicker(options: List<FromOption>, selected: FromOption?, onPick: (FromOption) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+        Surface(color = Panel, shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line), modifier = Modifier.fillMaxWidth().clickable { open = true }) {
+            Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("From", color = Muted, fontSize = 14.sp)
+                Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
+                    Text(selected?.address ?: "", color = Ink, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (selected != null && selected.label != selected.address) Text(selected.label, color = Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                Text("▾", color = Muted, fontSize = 16.sp)
+            }
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            options.forEach { o ->
+                DropdownMenuItem(
+                    text = {
+                        Column {
+                            Text(o.address, fontSize = 16.sp)
+                            Text(if (o.isDefault) o.label + " · main address" else o.label + " · alias", fontSize = 12.sp)
+                        }
+                    },
+                    onClick = { open = false; onPick(o) },
+                )
+            }
+        }
     }
 }
 

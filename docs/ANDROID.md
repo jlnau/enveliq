@@ -25,11 +25,21 @@ The app's version is the release tag (for example `v0.96` gives version `0.96`);
 - **Send a test notification to this phone** shows what an alert looks like. On the lock screen it only says "New email"; the words show once the phone is unlocked. Android asks permission the first time.
 - **Hide Enveliq in recent apps** hides the app's picture in the recent-apps view and stops screenshots.
 
+## Settings
+
+Settings is a short list of topics: **Notifications**, **Swipe on an email**, **Security**, **Account** and **About**. Tap a topic to open its own page, with a Back button fixed at the top. On a page, switches turn things on and off with one tap on the whole row; a choice (for example what a swipe does, or how alerts reach the phone) opens one more page with a tick-list. Nothing needs long scrolling: longer explanations sit under the setting they belong to.
+
+## Writing: who it comes from
+
+When you have more than one address (a mailbox's own address and its aliases, from the mailbox's "send as" list), the writing screen shows **From** at the top. Tap it to pick another address. A reply or forward can only use the addresses of the mailbox the email arrived in; a new email can use any of your mailboxes. Your mailbox's own address is the default, and when it is picked the app sends nothing extra, so the mail service behaves exactly as before. The choice is kept in drafts.
+
 ## Tags, files, links and views
 
-- **Tags:** on an opened email, tap a tag to put it on or take it off, or **+ New tag**. Shown only if your mail service keeps tags. In the inbox, a `#tag` chip shows just the emails with that tag.
+- **Tags:** on an opened email, **Choose tags** opens a full screen list with a search box at the top and tick boxes. Tick or untick several, then **Save tags** applies them together. The email's current tags start ticked, so nothing is lost. **Make the tag "..."** appears when what you typed does not exist yet (only if your mail service lets tags be made). Shown only if your mail service keeps tags.
+- **Filter by tag:** in the inbox, the **Tags** control opens a full screen list of the tags on the emails you have, with how many emails each one has. Tap a tag to show only those emails. **Clear filter** (in that screen) or **Clear ✕** (next to the control) removes the filter.
 - **Files with this email:** each file's size and the AI's note (labelled). **Save to my phone** asks where to save it. The file is fetched at that moment and not kept by the app.
-- **Links in this email:** after **Show the original email**, each link is listed with the site it goes to. Tapping one asks first; unusual links (plain http, look-alike characters, bare numbers) get an extra warning.
+- **Show the original email:** opens the email full screen as its sender made it: layout, colours, tables, pictures that came inside the email, and links. If an email has no formatted version, you see its plain text instead, and **Plain text** can always be chosen. Pictures that live on the internet are held back (they can tell the sender you opened the email) until you tap **Show pictures**. It uses the same safe copy the website shows: the server rebuilds the email from allowed parts only (no scripts, forms or frames), and the app shows it with JavaScript off, no file or storage access and no network until you allow pictures. Pinch to zoom.
+- **Links:** every link, in the formatted email or the plain text, asks first and names the site it goes to. Unusual links (plain http, look-alike characters, bare numbers) get an extra warning.
 - **Inbox, Reviewed, Archived:** the chips at the top switch views. Reviewed and Archived show what the server still keeps (a few days).
 - **More than one mailbox:** a chip for each mailbox appears and filters the list.
 - Not done: marking an email unread (the server has no way to do this yet).

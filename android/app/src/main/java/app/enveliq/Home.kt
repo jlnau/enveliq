@@ -424,7 +424,8 @@ private fun InboxTab(
     var tag by remember { mutableStateOf<String?>(null) }
     var box by remember { mutableStateOf<String?>(null) }
     val q = query.trim()
-    val allTags = mails.flatMap { it.tags }.distinctBy { it.lowercase() }.sortedBy { it.lowercase() }
+    var pickingTag by remember { mutableStateOf(false) }
+    val tagCounts = mails.flatMap { it.tags }.groupBy { it.lowercase() }.values.map { it.first() to it.size }.sortedBy { it.first.lowercase() }
     val boxes = mails.map { it.mailbox }.filter { it.isNotBlank() }.distinct()
     val base = mails.filter {
         (!onlyAction || it.needsAction) &&
@@ -477,10 +478,12 @@ private fun InboxTab(
             if (boxes.size > 1) boxes.forEach { b ->
                 FilterChip(selected = box == b, onClick = { box = if (box == b) null else b }, label = { Text(b) })
             }
-            allTags.forEach { t ->
-                FilterChip(selected = tag.equals(t, ignoreCase = true), onClick = { tag = if (tag.equals(t, ignoreCase = true)) null else t }, label = { Text("# $t") })
+            if (tagCounts.isNotEmpty() || tag != null) {
+                FilterChip(selected = tag != null, onClick = { pickingTag = true }, label = { Text(if (tag == null) "Tags" else "# " + tag) })
+                if (tag != null) FilterChip(selected = false, onClick = { tag = null }, label = { Text("Clear ✕") })
             }
         }
+        if (pickingTag) TagFilterScreen(tagCounts, tag, onPick = { tag = it; pickingTag = false }, onClose = { pickingTag = false })
         PullToRefreshBox(isRefreshing = loading && mails.isNotEmpty(), onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {
         when {
             loading && mails.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Blue) }
@@ -602,10 +605,7 @@ private fun MailRow(mail: Mail, picked: Boolean, onClick: () -> Unit, onLongClic
 
 @Composable
 private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit) {
-    var original by remember(mail.id) { mutableStateOf<String?>(null) }
-    var loadingOriginal by remember(mail.id) { mutableStateOf(false) }
-    var originalError by remember(mail.id) { mutableStateOf("") }
-    val scope = rememberCoroutineScope()
+    var showOriginal by remember(mail.id) { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -652,45 +652,16 @@ private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompos
             TagsSection(mail, api)
             AttachmentsSection(mail, api)
 
-            val text = original
-            if (text == null) {
-                OutlinedButton(
-                    onClick = {
-                        if (!loadingOriginal) {
-                            loadingOriginal = true
-                            originalError = ""
-                            scope.launch {
-                                try {
-                                    original = withContext(Dispatchers.IO) { api.originalText(mail) }
-                                } catch (e: ApiException) {
-                                    originalError = e.message ?: "Could not open the original email."
-                                } catch (e: Exception) {
-                                    originalError = "Could not open the original email."
-                                } finally {
-                                    loadingOriginal = false
-                                }
-                            }
-                        }
-                    },
-                    enabled = !loadingOriginal,
-                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(50.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, Line),
-                ) {
-                    if (loadingOriginal) CircularProgressIndicator(Modifier.size(20.dp), color = Blue, strokeWidth = 2.dp)
-                    else Text("Show the original email", color = Ink, fontSize = 16.sp)
-                }
-                if (originalError.isNotEmpty()) Text(originalError, color = Red, fontSize = 14.sp, modifier = Modifier.padding(top = 8.dp))
-            } else {
-                Text("Original email · plain text, links and pictures switched off", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 18.dp, bottom = 6.dp))
-                Surface(color = Color.White, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    Text(text, color = Color(0xFF1B2430), fontSize = 15.sp, lineHeight = 23.sp, modifier = Modifier.padding(16.dp))
-                }
-                LinksSection(text)
-            }
+            OutlinedButton(
+                onClick = { showOriginal = true },
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(50.dp),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, Line),
+            ) { Text("Show the original email", color = Ink, fontSize = 16.sp) }
             Spacer(Modifier.height(24.dp))
         }
     }
+    if (showOriginal) OriginalScreen(mail, api) { showOriginal = false }
 }
 
 /** Fixed at the bottom, so the buttons can always be reached. */
@@ -795,264 +766,6 @@ private fun TasksTab(mails: List<Mail>, onOpen: (Mail) -> Unit) {
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun SectionTitle(text: String) {
-    Text(text, color = Blue, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 22.dp, bottom = 8.dp))
-}
-
-@Composable
-private fun SwitchRow(title: String, note: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f).padding(end = 12.dp)) {
-            Text(title, color = Ink, fontSize = 16.sp)
-            Text(note, color = Muted, fontSize = 13.sp, lineHeight = 18.sp)
-        }
-        Switch(checked = checked, onCheckedChange = onChange)
-    }
-}
-
-@Composable
-private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, server: String, api: EnveliqApi, onLeave: (Boolean) -> Unit) {
-    val context = LocalContext.current
-    var mailAlerts by remember { mutableStateOf(AlertPrefs.on(context)) }
-    var quietOn by remember { mutableStateOf(AlertPrefs.quietOn(context)) }
-    var quietFrom by remember { mutableStateOf(AlertPrefs.quietFrom(context)) }
-    var quietTo by remember { mutableStateOf(AlertPrefs.quietTo(context)) }
-    var alertNote by remember { mutableStateOf("") }
-    var mode by remember { mutableStateOf(AlertPrefs.mode(context)) }
-    var googleOffered by remember { mutableStateOf(false) }
-    var working by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    LaunchedEffect(mailAlerts) {
-        googleOffered = false
-        if (mailAlerts && Push.installed(context)) googleOffered = try { withContext(Dispatchers.IO) { api.pushAvailable() } } catch (_: Exception) { false }
-    }
-    fun useGoogle() {
-        if (working) return
-        working = true
-        alertNote = ""
-        scope.launch {
-            try {
-                val token = Push.token(context) ?: throw ApiException("Google's push service did not answer. Check that this phone has Google Play services and a connection, then try again.")
-                val id = withContext(Dispatchers.IO) { api.registerPush(token, Build.MODEL, AlertPrefs.pushDevice(context)) }
-                AlertPrefs.setPushDevice(context, id)
-                AlertPrefs.setMode(context, "google")
-                mode = "google"
-                MailWatcherService.stop(context)
-                alertNote = "Done. New-email alerts now come through Google's push service, and the watching note is gone."
-            } catch (e: ApiException) {
-                alertNote = e.message ?: "Could not set up Google push."
-            } catch (_: Exception) {
-                alertNote = "Could not set up Google push. Try again."
-            } finally {
-                working = false
-            }
-        }
-    }
-    fun useDirect() {
-        val id = AlertPrefs.pushDevice(context)
-        AlertPrefs.setMode(context, "direct")
-        AlertPrefs.setPushDevice(context, null)
-        mode = "direct"
-        Push.stop(context)
-        if (id != null) scope.launch(Dispatchers.IO) { try { api.unregisterPush(id) } catch (_: Exception) { } }
-        MailWatcherService.start(context)
-        alertNote = ""
-    }
-    val power = remember { context.getSystemService(android.os.PowerManager::class.java) }
-    var unrestricted by remember { mutableStateOf(power.isIgnoringBatteryOptimizations(context.packageName)) }
-    var hide by remember { mutableStateOf(prefs.getBoolean("hide_in_recents", false)) }
-    var appLock by remember { mutableStateOf(prefs.getBoolean("app_lock", false)) }
-    var lockNote by remember { mutableStateOf("") }
-    var message by remember { mutableStateOf("") }
-    fun turnOnAlerts() {
-        SessionVault.save(context, server, api.sessionCookies())     // alerts need a kept sign-in
-        AlertPrefs.setSeeded(context, false)       // what is in the inbox now is not new
-        AlertPrefs.setMode(context, "direct")
-        mode = "direct"
-        AlertPrefs.setOn(context, true)
-        mailAlerts = true
-        alertNote = ""
-        MailWatcherService.start(context)
-    }
-    val askMailPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) turnOnAlerts() else alertNote = "Notifications are off for Enveliq. Turn them on in Android's settings, then try again."
-    }
-    val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        message = if (granted && Notifier.sendTest(context)) "Sent. Lock your phone to see how it looks on the lock screen."
-        else "Notifications are off for Enveliq. Turn them on in Android's settings."
-    }
-
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
-        Heading("Settings", "")
-        SectionTitle("Notifications")
-        SwitchRow(
-            "Tell me when new email arrives",
-            "A quiet note once the AI has finished reading it. The lock screen only says \"New email\".",
-            mailAlerts,
-        ) { on ->
-            if (!on) {
-                if (AlertPrefs.mode(context) == "google") useDirect()
-                AlertPrefs.setOn(context, false)
-                mailAlerts = false
-                mode = "direct"
-                MailWatcherService.stop(context)
-            } else if (!Notifier.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
-                askMailPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-            } else turnOnAlerts()
-        }
-        if (mailAlerts) Text(
-            "Enveliq stays signed in on this phone and keeps one quiet connection to your server. It uses almost no battery, and does nothing at all while the phone has no signal.",
-            color = Muted, fontSize = 13.sp, lineHeight = 18.sp, modifier = Modifier.padding(bottom = 6.dp),
-        )
-        if (mailAlerts && googleOffered) {
-            Text("How should alerts reach this phone?", color = Ink, fontSize = 15.sp, modifier = Modifier.padding(top = 4.dp, bottom = 4.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = mode == "direct", enabled = !working, onClick = { if (mode != "direct") useDirect() }, label = { Text("Direct from my server") })
-                FilterChip(selected = mode == "google", enabled = !working, onClick = { if (mode != "google") useGoogle() }, label = { Text("Google's push service") })
-            }
-            Text(
-                if (mode == "google") "Instant, with no \"watching\" note. Google is told that a notification was sent, never what it says."
-                else "Nothing goes through any other company. Android shows a small \"watching\" note while it waits.",
-                color = Muted, fontSize = 13.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp, bottom = 4.dp),
-            )
-            if (mode == "google") OutlinedButton(
-                onClick = {
-                    val id = AlertPrefs.pushDevice(context)
-                    if (id != null && !working) {
-                        working = true
-                        scope.launch {
-                            alertNote = try { withContext(Dispatchers.IO) { api.testPush(id) }; "Sent. A note should appear in a few seconds." }
-                            catch (e: ApiException) { e.message ?: "The test did not go through." } catch (_: Exception) { "The test did not go through." }
-                            working = false
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).height(48.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
-            ) { Text("Send a test through Google", color = Ink) }
-        }
-        if (alertNote.isNotEmpty()) Text(alertNote, color = Muted, fontSize = 13.sp, modifier = Modifier.padding(bottom = 6.dp))
-        if (mailAlerts) {
-            SwitchRow("Quiet hours", "No sound or buzz. New email still waits for you in the notification list.", quietOn) {
-                quietOn = it
-                AlertPrefs.setQuietOn(context, it)
-            }
-            if (quietOn) Row(Modifier.fillMaxWidth().padding(bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedButton(
-                    onClick = {
-                        android.app.TimePickerDialog(context, { _, h, m ->
-                            quietFrom = h * 60 + m
-                            AlertPrefs.setQuiet(context, quietFrom, quietTo)
-                        }, quietFrom / 60, quietFrom % 60, true).show()
-                    },
-                    modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
-                ) { Text("From " + AlertPrefs.timeText(quietFrom), color = Ink) }
-                OutlinedButton(
-                    onClick = {
-                        android.app.TimePickerDialog(context, { _, h, m ->
-                            quietTo = h * 60 + m
-                            AlertPrefs.setQuiet(context, quietFrom, quietTo)
-                        }, quietTo / 60, quietTo % 60, true).show()
-                    },
-                    modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
-                ) { Text("Until " + AlertPrefs.timeText(quietTo), color = Ink) }
-            }
-            if (!unrestricted && mode == "direct") {
-                Text(
-                    "If alerts sometimes arrive late when the phone has been still for a while, let Enveliq run without Android's battery limit. It still uses very little.",
-                    color = Muted, fontSize = 13.sp, lineHeight = 18.sp,
-                )
-                OutlinedButton(
-                    onClick = {
-                        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, android.net.Uri.parse("package:" + context.packageName))
-                        context.startActivity(intent)
-                        unrestricted = power.isIgnoringBatteryOptimizations(context.packageName)
-                    },
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp).height(48.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
-                ) { Text("Keep alerts on time", color = Ink) }
-            }
-        }
-        Button(
-            onClick = {
-                if (Notifier.canNotify(context)) {
-                    Notifier.sendTest(context)
-                    message = "Sent. Lock your phone to see how it looks on the lock screen."
-                } else if (Build.VERSION.SDK_INT >= 33) {
-                    askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
-            },
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp).height(50.dp),
-            shape = RoundedCornerShape(14.dp),
-        ) { Text("Send a test notification to this phone") }
-        if (message.isNotEmpty()) Text(message, color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
-        OutlinedButton(
-            onClick = {
-                val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                context.startActivity(intent)
-            },
-            modifier = Modifier.fillMaxWidth().padding(top = 10.dp).height(48.dp),
-            shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
-        ) { Text("Android's notification settings", color = Ink) }
-
-        SectionTitle("Swipe on an email")
-        SwipeChoice("Swipe right to", "swipe_right", "archive", prefs)
-        SwipeChoice("Swipe left to", "swipe_left", "bin", prefs)
-        Text("Swiping can be undone for a few seconds. Press and hold an email to select several.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp))
-
-        SectionTitle("Security")
-        SwitchRow("Hide Enveliq in recent apps", "Also stops screenshots of the app.", hide) {
-            hide = it
-            prefs.edit().putBoolean("hide_in_recents", it).apply()
-            activity.setSecure(it)
-        }
-        SwitchRow("Ask for my fingerprint, face or PIN", "To open Enveliq, and again after it has been out of sight for a minute.", appLock) {
-            if (it && !activity.canLock()) {
-                lockNote = "Set up a fingerprint, face or PIN in Android's settings first, then switch this on."
-            } else {
-                lockNote = ""
-                appLock = it
-                prefs.edit().putBoolean("app_lock", it).apply()
-            }
-        }
-        if (lockNote.isNotEmpty()) Text(lockNote, color = Amber, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp))
-
-        SectionTitle("Account")
-        Text(
-            "Signed in to $server. You stay signed in on this phone until you sign out.",
-            color = Ink, fontSize = 15.sp, lineHeight = 22.sp,
-        )
-        OutlinedButton(
-            onClick = { onLeave(false) },
-            modifier = Modifier.fillMaxWidth().padding(top = 10.dp).height(48.dp),
-            shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
-        ) { Text("Sign out", color = Ink) }
-
-        SectionTitle("About")
-        Text("Enveliq for Android · version " + appVersion(context), color = Ink, fontSize = 15.sp)
-        Text(
-            "Email is held in memory while it is on the screen and is never saved on this phone. Backups are switched off. The only thing kept is your sign-in, encrypted on this phone, if you chose to stay signed in. The app only talks to the server you typed, over HTTPS.",
-            color = Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 4.dp, bottom = 30.dp),
-        )
-    }
-}
-
-private fun appVersion(context: Context): String = try {
-    context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
-} catch (e: Exception) {
-    ""
-}
-
-@Composable
-private fun SwipeChoice(title: String, key: String, default: String, prefs: SharedPreferences) {
-    var value by remember { mutableStateOf(prefs.getString(key, default) ?: default) }
-    Text(title, color = Ink, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        listOf("archive" to "Archive", "bin" to "Bin", "reviewed" to "Reviewed", "none" to "Nothing").forEach { (id, label) ->
-            FilterChip(selected = value == id, onClick = { value = id; prefs.edit().putString(key, id).apply() }, label = { Text(label) })
         }
     }
 }
