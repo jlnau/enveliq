@@ -67,18 +67,41 @@ Which emails alert you, quiet hours and the "important people only" filter are t
 
 Done in this version: https:// filled in, Show password, plainer errors, tap an alert to open the email, Reviewed/Archive buttons on the alert, alerts that clear themselves, pull to refresh, fingerprint/face/PIN lock.
 
-Still to do (in rough order):
+Still to do. Everything the website does that makes sense on a phone, roughly in this order:
+
+**Everyday email**
+- Reply, Reply all and Forward, with the same drafts and sending rules as the website.
+- New email, with access to your **address list** (suggestions as you type a name).
+- **Swipe left and right** on an email to Archive or Bin it. In Settings you choose what each direction does (Archive, Bin, Reviewed, or nothing), with Undo as now.
+- **Email tags**: see, add and remove tags, and filter the inbox by tag.
+- The full set of actions the website has: Task, Undo, mark unread, move, and bulk select ("select several, then Archive").
+- Attachments: their summaries, a View button (page pictures held in memory only) and Save or Share.
+- Links in an email open only after a tap and a plain "this goes to …" check.
 - Search the inbox.
-- Snooze ("remind me later") on an email.
-- Light and dark follow the phone's setting (today the app is dark).
-- **Your devices** list on the website, so a lost phone can be signed out (needs the per-device token work on the server).
-- A home-screen widget showing how many emails are waiting.
-- Passkeys and single sign-on.
-- Reply, forward, and tasks screens in full.
-- "Check for an update" in About.
-- A "Check connection" button on the sign-in screen.
-- Alerts that clear the moment the email is reviewed elsewhere (today they clear when the app next checks; instant clearing needs the server to announce it).
+- Snooze ("remind me later").
+- Folders and views as on the website (Today, Needs attention, and your folders), and more than one mailbox.
+
+**Beyond email** (each as its own screen, as on the website)
+- Tasks in full, the bell (notes and messages), shipping, calendar, news feeds and chat messages.
+
+**Alerts**
 - One switch per kind of alert, and the optional "Hide the watching note" button.
+- Alerts that clear the moment an email is reviewed elsewhere (today they clear when the app next checks; instant clearing needs the server to announce it).
+
+**Look and comfort**
+- Light and dark follow the phone's setting (today the app is dark).
+- Bigger text and screen reader support checked screen by screen.
+- A tablet and landscape layout.
+- A home-screen widget showing how many emails are waiting.
+- Share to Enveliq: send a link or a note from another app into a task.
+
+**Account and safety**
+- **Your devices** list on the website, so a lost phone can be signed out (needs the per-device token work on the server).
+- Passkeys and single sign-on.
+- "Check for an update" in About, and a "Check connection" button on the sign-in screen.
+- A calm first-run welcome that explains notifications and the lock.
+
+Anything here that adds a screen opens forms full screen with Close at the top and the buttons at the bottom, as the rest of Enveliq does on a phone.
 
 ## Privacy
 
