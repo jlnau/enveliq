@@ -329,6 +329,8 @@ class MailService:
                 for stored in stored_all:
                     if stored.get("from_all_mail"):
                         continue                   # kept by "All emails": not unread, so not judged by the unread list
+                    if stored.get("state", "unread") != "unread":
+                        continue                   # a Reviewed card keeps its pointer (for Mark unread) but is already read: not judged either
                     if (account_id, stored["id"]) in held:
                         continue                   # it has an open task: it stays until the task is done or removed
                     parts = str(stored.get("source_locator") or "").split("|")
