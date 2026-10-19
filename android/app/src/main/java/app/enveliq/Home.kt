@@ -531,7 +531,13 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     }
 
     val current = opened
-    fun goTo(t: Tab) { tab = t; opened = null; scope.launch { drawer.close() } }
+    var moreStart by remember { mutableStateOf("home") }
+    var moreKey by remember { mutableStateOf(0) }
+    var bellUnread by remember { mutableStateOf(false) }
+    LaunchedEffect(tab, moreKey) {
+        bellUnread = try { withContext(Dispatchers.IO) { api.bell() }.any { it.unread } } catch (_: Exception) { false }
+    }
+    fun goTo(t: Tab) { moreStart = "home"; moreKey++; tab = t; opened = null; scope.launch { drawer.close() } }
     ModalNavigationDrawer(
         drawerState = drawer,
         gesturesEnabled = drawer.isOpen,      // opened with the menu button; swiping the list is for archiving, so the edge swipe is left off
@@ -611,6 +617,8 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 onSearch = { searching = !searching; if (!searching) query = "" },
                 onAccount = { try { activity.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(EnveliqApi.normalise(server) + "/account"))) } catch (_: Exception) { } },
                 onSettings = { goTo(Tab.Settings) },
+                bellUnread = bellUnread,
+                onBell = { tab = Tab.More; opened = null; moreStart = "bell"; moreKey++ },
             )
         }
         Column(Modifier.padding(inner).fillMaxSize()) {
@@ -630,7 +638,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 when (tab) {
                     Tab.Inbox -> inboxPane()
                     Tab.Tasks -> TasksScreen(api, mails, onOpen = { opened = it })
-                    Tab.More -> MoreTab(api)
+                    Tab.More -> androidx.compose.runtime.key(moreKey) { MoreTab(api, moreStart) }
                     Tab.Drafts -> DraftsTab(api, onOpen = { d -> composing = ComposeTarget(d.kind, mailForDraft(d), d) })
                     Tab.Settings -> SettingsTab(activity, prefs, server, api, onLeave)
                 }

@@ -94,12 +94,19 @@ internal fun AvatarCircle(me: Me?, picture: Bitmap?, size: Int = 34) {
 internal fun AppTopBar(
     me: Me?, picture: Bitmap?, showSearch: Boolean, searching: Boolean,
     onMenu: () -> Unit, onSearch: () -> Unit, onAccount: () -> Unit, onSettings: () -> Unit,
+    bellUnread: Boolean = false, onBell: () -> Unit = {},
 ) {
     var open by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onMenu) { Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = Ink) }
         Image(painterResource(R.drawable.wordmark), contentDescription = "Enveliq", contentScale = ContentScale.Fit, modifier = Modifier.height(30.dp).widthIn(max = 110.dp))
         Spacer(Modifier.weight(1f))
+        IconButton(onClick = onBell) {
+            Box(contentAlignment = Alignment.TopEnd) {
+                BellIcon(Ink, Modifier.size(24.dp))
+                if (bellUnread) Box(Modifier.size(9.dp).clip(CircleShape).background(Color(0xFFE5484D)))
+            }
+        }
         if (showSearch) IconButton(onClick = onSearch) { Icon(Icons.Filled.Search, contentDescription = if (searching) "Close search" else "Search", tint = if (searching) Blue else Ink) }
         Box(Modifier.padding(start = 2.dp, end = 10.dp)) {
             Box(Modifier.clip(CircleShape).clickable { open = true }.padding(2.dp)) { AvatarCircle(me, picture) }
@@ -173,4 +180,23 @@ internal fun AddTaskIcon(tint: Color, modifier: Modifier = Modifier.size(24.dp))
     drawRoundRect(tint, Offset(4f * u, 4f * u), Size(16f * u, 16f * u), androidx.compose.ui.geometry.CornerRadius(3f * u), style = st)
     drawLine(tint, Offset(12f * u, 8.5f * u), Offset(12f * u, 15.5f * u), strokeWidth = 2f * u, cap = StrokeCap.Round)
     drawLine(tint, Offset(8.5f * u, 12f * u), Offset(15.5f * u, 12f * u), strokeWidth = 2f * u, cap = StrokeCap.Round)
+}
+
+/** The notification bell: notes and alerts from your other services. */
+@Composable
+internal fun BellIcon(tint: Color, modifier: Modifier = Modifier.size(24.dp)) = Canvas(modifier) {
+    val u = size.width / 24f
+    val p = androidx.compose.ui.graphics.Path()
+    p.moveTo(5.5f * u, 17f * u)
+    p.cubicTo(7f * u, 15.5f * u, 7f * u, 13f * u, 7f * u, 10.5f * u)
+    p.cubicTo(7f * u, 7.5f * u, 9.2f * u, 5.5f * u, 12f * u, 5.5f * u)
+    p.cubicTo(14.8f * u, 5.5f * u, 17f * u, 7.5f * u, 17f * u, 10.5f * u)
+    p.cubicTo(17f * u, 13f * u, 17f * u, 15.5f * u, 18.5f * u, 17f * u)
+    p.close()
+    val st = Stroke(width = 2f * u, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+    drawPath(p, tint, style = st)
+    drawLine(tint, Offset(12f * u, 3.5f * u), Offset(12f * u, 5.5f * u), strokeWidth = 2f * u, cap = StrokeCap.Round)
+    val c = androidx.compose.ui.graphics.Path()
+    c.moveTo(10f * u, 19.5f * u); c.quadraticBezierTo(12f * u, 21.8f * u, 14f * u, 19.5f * u)
+    drawPath(c, tint, style = st)
 }

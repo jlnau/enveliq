@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Android: the notification bell is on the top row.** A bell sits next to search on the top row of every screen. It opens Notes and alerts and shows a small red dot when something is new. Touches `android/` (`Chrome.kt`, `Home.kt`, `More.kt`).
+
 **Android: the task on an open email now matches the website.** The task card has a three-dot menu with **Move** (Later today, Tomorrow morning, This weekend, Next week, or Pick a day) and **Remove**, and says when it is due in the website's words: Today (with the time for a reminder), Tomorrow, a weekday or date, or "Waiting since". Your own tasks say "Your task", the AI's say "Task added", and a finished one has **Put back**. Touches `android/` (`TaskCard.kt`, `Home.kt`, `Api.kt`, `Data.kt`).
 
 **Android: choose who a reply goes to, and write to several people.** Reply and Reply all now show To, Cc and Bcc and start with the people the website would pick (the sender; for Reply all, also the other people and everyone on Cc). You can take anyone off or add more. In every kind of email (new, reply, forward) each person becomes a small chip with a cross; type the next one and press Enter, a comma or a space, and names are suggested from your address list. Reply all is only offered when the email has people on Cc, as on the website. The three-dot menu on an open email also has **Important person** (or **Not an important person**) and **Always archive these**. Touches `android/` (`Compose.kt`, `Home.kt`, `Api.kt`, `Data.kt`).
