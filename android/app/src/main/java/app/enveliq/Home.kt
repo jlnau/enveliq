@@ -1033,18 +1033,7 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
                 shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
             ) { Text("Show original email", color = Ink, fontSize = 13.sp) }
 
-            if (mail.taskTitle != null) {
-                Surface(
-                    color = Panel, shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Line),
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                ) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text("Task", color = Amber, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                        Text(mail.taskTitle, color = Ink, fontSize = 17.sp, modifier = Modifier.padding(top = 4.dp))
-                        if (!mail.taskDue.isNullOrBlank()) Text("Due: " + mail.taskDue, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 2.dp))
-                    }
-                }
-            }
+            EmailTasks(mail, api)
 
             AttachmentsSection(mail, api)
             Spacer(Modifier.height(24.dp))

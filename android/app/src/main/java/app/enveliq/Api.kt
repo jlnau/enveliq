@@ -533,7 +533,7 @@ class EnveliqApi(address: String) {
 
     fun myTasks(): List<MyTask> = JSONObject(call("GET", "/api/v1/me/tasks?tz=" + enc(java.util.TimeZone.getDefault().id))).list("tasks").map {
         MyTask(it.str("id"), it.str("account_id"), it.str("message_id"), it.str("title"), it.str("sender"), it.str("priority"), it.str("due"),
-            it.optInt("days", 0), it.str("state"), it.optBoolean("manual", false))
+            it.optInt("days", 0), it.str("state"), it.optBoolean("manual", false), it.str("detail"), it.optLong("remind_at", 0L))
     }
 
     /** Adds a task of your own for this email. [on] is a date, YYYY-MM-DD. */
@@ -541,9 +541,9 @@ class EnveliqApi(address: String) {
         call("POST", "/api/v1/me/tasks", JSONObject().put("account_id", mail.accountId).put("message_id", mail.id).put("title", title).put("on", on))
     }
 
-    /** action: done, reopen, remove, not_today, or move (with [to] one of later_today, tomorrow, weekend, next_week). */
-    fun taskAct(id: String, action: String, to: String? = null) {
-        val body = if (to != null) JSONObject().put("to", to) else null
+    /** action: done, reopen, remove, not_today, or move (with [to] one of later_today, tomorrow, weekend, next_week, or "date" with [on] as YYYY-MM-DD). */
+    fun taskAct(id: String, action: String, to: String? = null, on: String? = null) {
+        val body = if (to != null) JSONObject().put("to", to).also { if (on != null) it.put("on", on) } else null
         call("POST", "/api/v1/me/tasks/" + enc(id) + "/" + action, body)
     }
 
