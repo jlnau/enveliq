@@ -236,6 +236,14 @@ class EnveliqApi(address: String) {
                     }
                 }
                 val received = r.optLong("received_at", 0L)
+                val warnReasons = ArrayList<String>()
+                r.optJSONObject("scam_warning")?.optJSONArray("reasons")?.let { arr ->
+                    for (k in 0 until arr.length()) {
+                        val t = arr.optJSONObject(k)?.str("text") ?: arr.optString(k)
+                        if (t.isNotBlank()) warnReasons.add(t)
+                    }
+                }
+                val unsub = r.optJSONObject("unsubscribe")
                 val task = r.optJSONObject("suggested_task")
                 val taskTitle = task?.str("title") ?: ""
                 out.add(
@@ -255,6 +263,10 @@ class EnveliqApi(address: String) {
                         attachments = files,
                         mailbox = mailbox,
                         state = state,
+                        scamReasons = warnReasons,
+                        unsubUrl = unsub?.str("url")?.ifBlank { null },
+                        unsubMailto = unsub?.str("mailto")?.ifBlank { null },
+                        unsubSubject = unsub?.str("subject") ?: "",
                     )
                 )
             }
@@ -538,6 +550,24 @@ class EnveliqApi(address: String) {
         } finally {
             conn.disconnect()
         }
+    }
+
+    /** From now on, new email from this address goes straight to the mailbox's Junk folder. The server keeps important people safe. */
+    fun blockSender(address: String) {
+        call("POST", "/api/v1/me/rules", JSONObject().put("sender", address).put("subject", "").put("action", "junked"))
+    }
+
+    /** The rules this person has made: id, what to match, and what happens. */
+    fun rules(): List<Rule> {
+        val arr = JSONObject(call("GET", "/api/v1/me/rules")).optJSONArray("rules") ?: return emptyList()
+        return (0 until arr.length()).mapNotNull { i ->
+            val r = arr.optJSONObject(i) ?: return@mapNotNull null
+            Rule(r.str("id"), r.str("sender"), r.str("subject"), r.str("action"))
+        }
+    }
+
+    fun deleteRule(id: String) {
+        call("DELETE", "/api/v1/me/rules/" + enc(id))
     }
 
     fun resolve(mail: Mail, outcome: Outcome) {

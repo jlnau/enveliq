@@ -277,12 +277,15 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     }
 
     // The emails leave the list at once. They are only marked at your mailbox when the Undo time has passed.
-    fun resolveAll(items: List<Mail>, outcome: Outcome) {
+    fun resolveAll(items: List<Mail>, outcome: Outcome, onCommitted: (() -> Unit)? = null) {
         if (items.isEmpty()) return
         val placed = items.map { it to mails.indexOf(it).coerceAtLeast(0) }
+        // "Open the next email" (a Settings choice): after archiving or reviewing the one you were reading, the next one in the list opens.
+        val next = if (items.size == 1 && opened == items[0] && prefs.getBoolean("open_next", false) && (outcome == Outcome.Archived || outcome == Outcome.Reviewed))
+            mails.getOrNull(mails.indexOf(items[0]) + 1) else null
         items.forEach { mails.remove(it); Notifier.clearOne(activity, it.id) }
         selected.clear()
-        opened = null
+        opened = next
         scope.launch {
             val label = if (items.size == 1) outcome.done else outcome.done + " (" + items.size + ")"
             val result = snack.showSnackbar(message = label, actionLabel = "Undo", duration = SnackbarDuration.Short)
@@ -303,12 +306,29 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 if (failed.isNotEmpty()) {
                     putBack(failed)
                     snack.showSnackbar("That did not work for " + failed.size + ". They are back in your list.")
+                } else {
+                    onCommitted?.invoke()
                 }
             }
         }
     }
 
     fun resolve(mail: Mail, outcome: Outcome) = resolveAll(listOf(mail), outcome)
+
+    // Junk: the email goes to the mailbox's Junk folder. "Block" also sends everything from that sender there from now on.
+    // The block is only made once the Undo time has passed, so Undo takes back both.
+    fun junk(mail: Mail, block: Boolean) = resolveAll(listOf(mail), Outcome.Junked) {
+        if (block && mail.address.isNotBlank()) {
+            scope.launch {
+                try {
+                    withContext(Dispatchers.IO) { api.blockSender(mail.address) }
+                    snack.showSnackbar("Blocked. New email from " + mail.address + " goes to Junk.")
+                } catch (e: Exception) {
+                    snack.showSnackbar((e as? ApiException)?.message ?: "The email is in Junk, but blocking the sender did not work.")
+                }
+            }
+        }
+    }
 
     // Snooze: the email leaves the list until the time you pick, then comes back. Undo brings it back at once.
     fun snooze(mail: Mail, until: Long, label: String) {
@@ -446,12 +466,12 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 Row(Modifier.fillMaxSize()) {
                     Box(Modifier.weight(0.42f).fillMaxHeight()) { inboxPane() }
                     Box(Modifier.weight(0.58f).fillMaxHeight()) {
-                        if (current != null) DetailBody(current, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) })
+                        if (current != null) DetailBody(current, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) })
                         else Text("Choose an email to read it here.", color = Muted, fontSize = 16.sp, modifier = Modifier.padding(32.dp))
                     }
                 }
             } else if (current != null) {
-                DetailBody(current, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) })
+                DetailBody(current, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) })
             } else {
                 when (tab) {
                     Tab.Inbox -> inboxPane()
@@ -678,8 +698,11 @@ private fun MailRow(mail: Mail, picked: Boolean, onClick: () -> Unit, onLongClic
 }
 
 @Composable
-private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit) {
+private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit, onJunk: (Boolean) -> Unit) {
     var showOriginal by remember(mail.id) { mutableStateOf(false) }
+    var unsubLink by remember(mail.id) { mutableStateOf<String?>(null) }
+    var askBlock by remember(mail.id) { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -694,6 +717,19 @@ private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompos
                 OutlinedButton(onClick = { onCompose("reply") }, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line)) { Text("Reply", color = Ink, fontSize = 14.sp) }
                 OutlinedButton(onClick = { onCompose("reply_all") }, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line)) { Text("Reply all", color = Ink, fontSize = 14.sp, maxLines = 1) }
                 OutlinedButton(onClick = { onCompose("forward") }, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line)) { Text("Forward", color = Ink, fontSize = 14.sp) }
+            }
+
+            if (mail.scamReasons.isNotEmpty()) {
+                Surface(
+                    color = Panel, shape = RoundedCornerShape(16.dp), border = BorderStroke(2.dp, Amber),
+                    modifier = Modifier.fillMaxWidth().padding(top = 18.dp),
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("Take care with this one", color = Amber, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        mail.scamReasons.forEach { Text("• " + it, color = Ink, fontSize = 15.sp, modifier = Modifier.padding(top = 4.dp)) }
+                        Text("Do not open links or send money or details unless you are sure it is real.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp))
+                    }
+                }
             }
 
             Surface(
@@ -726,6 +762,24 @@ private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompos
             TagsSection(mail, api)
             AttachmentsSection(mail, api)
 
+            if (mail.unsubUrl != null || mail.unsubMailto != null) {
+                OutlinedButton(
+                    onClick = {
+                        if (mail.unsubUrl != null) unsubLink = mail.unsubUrl
+                        else try {
+                            val to = mail.unsubMailto ?: ""
+                            val uri = android.net.Uri.parse("mailto:" + to + if (mail.unsubSubject.isNotBlank()) "?subject=" + android.net.Uri.encode(mail.unsubSubject) else "")
+                            context.startActivity(android.content.Intent(android.content.Intent.ACTION_SENDTO, uri).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                        } catch (e: Exception) { }
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(46.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
+                ) { Text("Unsubscribe from this sender", color = Ink, fontSize = 15.sp) }
+            }
+            Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { onJunk(false) }, modifier = Modifier.weight(1f).height(46.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line)) { Text("Send to Junk", color = Ink, fontSize = 14.sp) }
+                if (mail.address.isNotBlank()) OutlinedButton(onClick = { askBlock = true }, modifier = Modifier.weight(1f).height(46.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line)) { Text("Block sender", color = Ink, fontSize = 14.sp) }
+            }
+
             OutlinedButton(
                 onClick = { showOriginal = true },
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(50.dp),
@@ -736,6 +790,15 @@ private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompos
         }
     }
     if (showOriginal) OriginalScreen(mail, api) { showOriginal = false }
+    unsubLink?.let { LinkConfirm(it) { unsubLink = null } }
+    if (askBlock) AlertDialog(
+        onDismissRequest = { askBlock = false },
+        containerColor = Panel,
+        title = { Text("Block this sender?", color = Ink) },
+        text = { Text("This email goes to Junk, and so will new email from " + mail.address + ". People you marked as important are never blocked. You can undo it any time in Settings, Blocked senders.", color = Ink) },
+        confirmButton = { TextButton(onClick = { askBlock = false; onJunk(true) }) { Text("Block", color = Blue) } },
+        dismissButton = { TextButton(onClick = { askBlock = false }) { Text("Cancel", color = Muted) } },
+    )
 }
 
 /** Fixed at the bottom, so the buttons can always be reached. */

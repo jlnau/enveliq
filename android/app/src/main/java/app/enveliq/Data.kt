@@ -17,6 +17,12 @@ data class Mail(
     val attachments: List<Attachment> = emptyList(),
     val mailbox: String = "",
     val state: String = "unread",
+    /** Plain reasons the server gives for a warning about this email, empty when there is none. */
+    val scamReasons: List<String> = emptyList(),
+    /** Where "unsubscribe" goes: a web address, or a mailto address to write to. Null when the email has none. */
+    val unsubUrl: String? = null,
+    val unsubMailto: String? = null,
+    val unsubSubject: String = "",
 )
 
 /** A file that came with an email. [summary] is written by the AI and is labelled that way where it is shown. */
@@ -29,6 +35,7 @@ enum class Outcome(val api: String, val done: String) {
     Reviewed("reviewed", "Marked reviewed"),
     Archived("archived", "Archived"),
     Binned("binned", "Moved to Bin"),
+    Junked("junked", "Sent to Junk"),
 }
 
 /** A mailbox the person can send from. */
@@ -75,3 +82,9 @@ data class ChatMessage(val id: String, val name: String, val mine: Boolean, val 
 
 /** A list from a feature that an administrator or the person may have switched off. */
 data class Section<T>(val enabled: Boolean, val items: List<T>)
+
+/** A rule: email from [sender] (and, when set, with [subject] words) gets [action] ("archived", "reviewed" or "junked"). */
+data class Rule(val id: String, val sender: String, val subject: String, val action: String)
+
+/** Where the newest Android app is published. */
+const val APP_DOWNLOAD_PAGE = "https://github.com/jlnau/enveliq/releases/latest"
