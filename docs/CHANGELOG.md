@@ -4,6 +4,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+No changes recorded yet.
+
+## v0.97 (2026-10-19)
+
 **Android: a slower, clearer swipe.** Swiping an email now slides it off, shows its symbol (tick, archive box or bin) growing on the coloured bar, then folds the gap closed before the Undo bar appears. Touches `android/` (`Home.kt`).
 
 **Android: files and summaries on an email, with the website's viewer.** The app now shows each file with the AI's summary (it was reading the wrong field before, so nothing appeared), and **View** opens PDFs, pictures, tables and text in the same viewer as the website. Touches `android/` (`AttachmentViewer.kt`, `Api.kt`).
