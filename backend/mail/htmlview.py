@@ -331,6 +331,6 @@ def rebuild(html: str, cids: dict[str, str] | None = None, remote_images: bool =
     parser.finish()
     css = clean_css("".join(parser.css)[:400_000], remote_images, parser.blocked)
     page = ("<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-            "<meta name=\"referrer\" content=\"no-referrer\"><style>" + BASE_CSS + "</style><style>" + css + "</style></head>"
+            "<meta name=\"referrer\" content=\"no-referrer\"><style>" + BASE_CSS + "</style><style>" + css + "</style><style>" + GROW_CSS + "</style></head>"
             "<body" + parser.body_attrs + ">" + "".join(parser.out) + "<script>" + SCRIPT + "</script></body></html>")
     return Result(page, min(parser.blocked[0], 999))
