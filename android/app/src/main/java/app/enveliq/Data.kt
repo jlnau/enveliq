@@ -13,7 +13,17 @@ data class Mail(
     val taskTitle: String? = null,
     val taskDue: String? = null,
     val received: Long = 0L,
+    val tags: List<String> = emptyList(),
+    val attachments: List<Attachment> = emptyList(),
+    val mailbox: String = "",
+    val state: String = "unread",
 )
+
+/** A file that came with an email. [summary] is written by the AI and is labelled that way where it is shown. */
+data class Attachment(val index: Int, val name: String, val size: Long, val summary: String)
+
+/** The tags the mail service keeps for a mailbox, and whether a new one can be made. */
+data class TagInfo(val names: List<String>, val canCreate: Boolean)
 
 enum class Outcome(val api: String, val done: String) {
     Reviewed("reviewed", "Marked reviewed"),

@@ -25,6 +25,15 @@ The app's version is the release tag (for example `v0.96` gives version `0.96`);
 - **Send a test notification to this phone** shows what an alert looks like. On the lock screen it only says "New email"; the words show once the phone is unlocked. Android asks permission the first time.
 - **Hide Enveliq in recent apps** hides the app's picture in the recent-apps view and stops screenshots.
 
+## Tags, files, links and views
+
+- **Tags:** on an opened email, tap a tag to put it on or take it off, or **+ New tag**. Shown only if your mail service keeps tags. In the inbox, a `#tag` chip shows just the emails with that tag.
+- **Files with this email:** each file's size and the AI's note (labelled). **Save to my phone** asks where to save it. The file is fetched at that moment and not kept by the app.
+- **Links in this email:** after **Show the original email**, each link is listed with the site it goes to. Tapping one asks first; unusual links (plain http, look-alike characters, bare numbers) get an extra warning.
+- **Inbox, Reviewed, Archived:** the chips at the top switch views. Reviewed and Archived show what the server still keeps (a few days).
+- **More than one mailbox:** a chip for each mailbox appears and filters the list.
+- Not done: marking an email unread (the server has no way to do this yet).
+
 ## Not in the app yet
 
 Passkeys and single sign-on, notes from Home Assistant and other services, task reminders, app lock, search, replying and sending, shipping, calendar and the other screens, and an in-app 'new version' button (it needs a public place to look for releases, because this repository is private). The plan for all of these is in the project's Android plan (phases 0 to 5). Settings, Administration and mailbox setup stay on the website.

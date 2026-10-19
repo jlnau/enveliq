@@ -169,7 +169,15 @@ class EnveliqApi(address: String) {
         }
     }
 
-    fun inbox(): List<Mail> {
+    private fun JSONArray?.strings(): List<String> {
+        if (this == null) return emptyList()
+        val out = ArrayList<String>()
+        for (i in 0 until length()) { val t = optString(i, ""); if (t.isNotBlank()) out.add(t) }
+        return out
+    }
+
+    /** [view] is "inbox" (still to look at), "reviewed" or "archived". */
+    fun inbox(view: String = "inbox"): List<Mail> {
         val accounts = JSONArray(call("GET", "/api/v1/accounts"))
         val out = ArrayList<Mail>()
         for (i in 0 until accounts.length()) {
@@ -179,14 +187,27 @@ class EnveliqApi(address: String) {
             if (method != "proton_bridge" && method != "imap") continue
             if (userId.isNotEmpty() && a.str("owner_user_id") != userId) continue
             val accountId = a.str("id")
+            val mailbox = a.str("display_name").ifBlank { a.str("email_address") }
             val messages = JSONArray(call("GET", "/api/v1/accounts/" + enc(accountId) + "/messages"))
             for (j in 0 until messages.length()) {
                 val r = messages.getJSONObject(j)
                 val state = r.str("state")
-                if (state == "reviewed" || state == "archived") continue
+                if (view == "inbox") {
+                    if (state == "reviewed" || state == "archived") continue
+                } else if (state != view) {
+                    continue
+                }
                 if (r.optBoolean("from_all_mail", false)) continue
                 val snoozedUntil = r.optDouble("snoozed_until", 0.0)
-                if (snoozedUntil * 1000 > System.currentTimeMillis()) continue        // snoozed: it comes back when the time is up
+                if (view == "inbox" && snoozedUntil * 1000 > System.currentTimeMillis()) continue        // snoozed: it comes back when the time is up
+                val files = ArrayList<Attachment>()
+                val rawFiles = r.optJSONArray("attachments")
+                if (rawFiles != null) {
+                    for (k in 0 until rawFiles.length()) {
+                        val f = rawFiles.optJSONObject(k) ?: continue
+                        files.add(Attachment(f.optInt("index", k), f.str("filename").ifBlank { "Attachment " + (k + 1) }, f.optLong("size_bytes", 0L), f.str("summary")))
+                    }
+                }
                 val received = r.optLong("received_at", 0L)
                 val task = r.optJSONObject("suggested_task")
                 val taskTitle = task?.str("title") ?: ""
@@ -203,6 +224,10 @@ class EnveliqApi(address: String) {
                         taskTitle = taskTitle.ifBlank { null },
                         taskDue = task?.str("due")?.ifBlank { null },
                         received = received,
+                        tags = r.optJSONArray("tags").strings(),
+                        attachments = files,
+                        mailbox = mailbox,
+                        state = state,
                     )
                 )
             }
@@ -317,6 +342,46 @@ class EnveliqApi(address: String) {
 
     fun deleteDraft(id: String) {
         call("DELETE", "/api/v1/me/drafts/" + enc(id))
+    }
+
+    /** The tags this mailbox has, or null when its mail service does not keep tags (or tags are switched off). */
+    fun tagInfo(accountId: String): TagInfo? = try {
+        val r = JSONObject(call("GET", "/api/v1/accounts/" + enc(accountId) + "/tags"))
+        if (!r.optBoolean("supported", false)) null else TagInfo(r.optJSONArray("names").strings(), r.optBoolean("can_create", false))
+    } catch (e: ApiException) {
+        if (e.code == 401) throw e
+        null
+    }
+
+    fun createTag(accountId: String, name: String) {
+        call("POST", "/api/v1/accounts/" + enc(accountId) + "/tags", JSONObject().put("name", name))
+    }
+
+    /** Puts a tag on the email or takes it off. Gives back the email's tags as they are now. */
+    fun setTag(mail: Mail, name: String, on: Boolean): List<String> {
+        val r = JSONObject(call("PUT", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/tags", JSONObject().put("name", name).put("on", on)))
+        return r.optJSONArray("tags").strings()
+    }
+
+    /** A file from the email, fetched from the mailbox for this one request. The app does not keep it. */
+    fun download(mail: Mail, index: Int): ByteArray {
+        val conn = URL(base + "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/attachments/" + index).openConnection() as HttpURLConnection
+        try {
+            conn.connectTimeout = 15000
+            conn.readTimeout = 60000
+            val code = conn.responseCode
+            if (code >= 400) {
+                val text = conn.errorStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
+                throw ApiException(detail(text, code), code)
+            }
+            return conn.inputStream.use { it.readBytes() }
+        } catch (e: ApiException) {
+            throw e
+        } catch (e: IOException) {
+            throw ApiException("Could not get the file. Check your connection and try again.")
+        } finally {
+            conn.disconnect()
+        }
     }
 
     fun resolve(mail: Mail, outcome: Outcome) {

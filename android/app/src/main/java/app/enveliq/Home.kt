@@ -13,6 +13,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -179,6 +180,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     var tab by remember { mutableStateOf(Tab.Inbox) }
     var opened by remember { mutableStateOf<Mail?>(null) }
     var loaded by remember { mutableStateOf(false) }
+    var view by remember { mutableStateOf("inbox") }
     val inboxList = rememberLazyListState()
     val snack = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -188,10 +190,10 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         error = ""
         scope.launch {
             try {
-                val list = withContext(Dispatchers.IO) { api.inbox() }
+                val list = withContext(Dispatchers.IO) { api.inbox(view) }
                 mails.clear()
                 mails.addAll(list)
-                Notifier.clearGone(activity, list.map { it.id }, AlertPrefs.alerted(activity))     // reviewed elsewhere: take its alert down
+                if (view == "inbox") Notifier.clearGone(activity, list.map { it.id }, AlertPrefs.alerted(activity))     // reviewed elsewhere: take its alert down
             } catch (e: ApiException) {
                 if (e.code == 401) {
                     onLeave(true)
@@ -207,7 +209,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         }
     }
 
-    LaunchedEffect(Unit) { load() }
+    LaunchedEffect(view) { load() }
 
     // Tapping a new-email alert opens that email. If the list is already showing, it is refreshed first.
     val request = activity.openRequest
@@ -381,14 +383,14 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
             } else {
                 when (tab) {
                     Tab.Inbox -> InboxTab(
-                        mails, loading, error, inboxList, selected,
+                        mails, loading, error, inboxList, selected, view, onView = { view = it; selected.clear() },
                         swipeRight = prefs.getString("swipe_right", "archive") ?: "archive",
                         swipeLeft = prefs.getString("swipe_left", "bin") ?: "bin",
                         onOpen = { opened = it },
                         onSwipe = { m, outcome -> resolve(m, outcome) },
                         onRefresh = { load() },
                     )
-                    Tab.Tasks -> TasksTab(mails, onOpen = { opened = it })
+                    Tab.Tasks -> TasksTab(mails.filter { it.state != "reviewed" && it.state != "archived" }, onOpen = { opened = it })
                     Tab.Drafts -> DraftsTab(api, onOpen = { d -> composing = ComposeTarget(d.kind, mailForDraft(d), d) })
                     Tab.Settings -> SettingsTab(activity, prefs, server, api, onLeave)
                 }
@@ -412,14 +414,23 @@ internal fun Heading(title: String, subtitle: String, trailing: @Composable () -
 @Composable
 private fun InboxTab(
     mails: List<Mail>, loading: Boolean, error: String, listState: LazyListState, selected: MutableList<String>,
+    view: String, onView: (String) -> Unit,
     swipeRight: String, swipeLeft: String,
     onOpen: (Mail) -> Unit, onSwipe: (Mail, Outcome) -> Unit, onRefresh: () -> Unit,
 ) {
     var onlyAction by remember { mutableStateOf(false) }
     var searching by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
+    var tag by remember { mutableStateOf<String?>(null) }
+    var box by remember { mutableStateOf<String?>(null) }
     val q = query.trim()
-    val base = if (onlyAction) mails.filter { it.needsAction } else mails
+    val allTags = mails.flatMap { it.tags }.distinctBy { it.lowercase() }.sortedBy { it.lowercase() }
+    val boxes = mails.map { it.mailbox }.filter { it.isNotBlank() }.distinct()
+    val base = mails.filter {
+        (!onlyAction || it.needsAction) &&
+            (tag == null || it.tags.any { t -> t.equals(tag, ignoreCase = true) }) &&
+            (box == null || it.mailbox == box)
+    }
     val shown = if (q.length < 2) base else base.filter {
         it.sender.contains(q, ignoreCase = true) || it.subject.contains(q, ignoreCase = true) ||
             it.summary.contains(q, ignoreCase = true) || it.address.contains(q, ignoreCase = true)
@@ -429,11 +440,12 @@ private fun InboxTab(
     fun keyOf(m: Mail) = m.accountId + ":" + m.id
     Column(Modifier.fillMaxSize()) {
         Heading(
-            "My inbox",
+            when (view) { "reviewed" -> "Reviewed"; "archived" -> "Archived"; else -> "My inbox" },
             when {
                 selecting -> selected.size.toString() + " selected. Tap more to add, or choose what to do below."
                 loading -> "Looking for your email…"
-                else -> "${mails.size} emails to look at, $needs need you"
+                view == "inbox" -> "${mails.size} emails to look at, $needs need you"
+                else -> "${mails.size} emails kept for a few days"
             },
         ) {
             if (selecting) {
@@ -451,9 +463,23 @@ private fun InboxTab(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
             )
         }
-        Row(Modifier.padding(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = !onlyAction, onClick = { onlyAction = false }, label = { Text("All") })
-            FilterChip(selected = onlyAction, onClick = { onlyAction = true }, label = { Text("Needs action") })
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = view == "inbox", onClick = { onView("inbox") }, label = { Text("Inbox") })
+            FilterChip(selected = view == "reviewed", onClick = { onView("reviewed") }, label = { Text("Reviewed") })
+            FilterChip(selected = view == "archived", onClick = { onView("archived") }, label = { Text("Archived") })
+        }
+        Row(
+            Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FilterChip(selected = !onlyAction && tag == null && box == null, onClick = { onlyAction = false; tag = null; box = null }, label = { Text("All") })
+            FilterChip(selected = onlyAction, onClick = { onlyAction = !onlyAction }, label = { Text("Needs action") })
+            if (boxes.size > 1) boxes.forEach { b ->
+                FilterChip(selected = box == b, onClick = { box = if (box == b) null else b }, label = { Text(b) })
+            }
+            allTags.forEach { t ->
+                FilterChip(selected = tag.equals(t, ignoreCase = true), onClick = { tag = if (tag.equals(t, ignoreCase = true)) null else t }, label = { Text("# $t") })
+            }
         }
         PullToRefreshBox(isRefreshing = loading && mails.isNotEmpty(), onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {
         when {
@@ -463,7 +489,7 @@ private fun InboxTab(
                 OutlinedButton(onClick = onRefresh, modifier = Modifier.padding(top = 14.dp)) { Text("Try again") }
             }
             shown.isEmpty() -> Text(
-                if (q.length >= 2) "Nothing in your inbox matches that." else if (onlyAction) "Nothing needs you right now." else "You're all caught up.",
+                if (q.length >= 2) "Nothing here matches that." else if (view != "inbox") "Nothing here at the moment." else if (tag != null || box != null) "Nothing matches that." else if (onlyAction) "Nothing needs you right now." else "You're all caught up.",
                 color = Muted, fontSize = 17.sp, modifier = Modifier.padding(24.dp),
             )
             else -> LazyColumn(Modifier.fillMaxSize(), state = listState) {
@@ -623,6 +649,9 @@ private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompos
                 }
             }
 
+            TagsSection(mail, api)
+            AttachmentsSection(mail, api)
+
             val text = original
             if (text == null) {
                 OutlinedButton(
@@ -657,6 +686,7 @@ private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompos
                 Surface(color = Color.White, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
                     Text(text, color = Color(0xFF1B2430), fontSize = 15.sp, lineHeight = 23.sp, modifier = Modifier.padding(16.dp))
                 }
+                LinksSection(text)
             }
             Spacer(Modifier.height(24.dp))
         }
