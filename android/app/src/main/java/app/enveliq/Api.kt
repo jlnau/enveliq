@@ -362,13 +362,21 @@ class EnveliqApi(address: String) {
         ),
     )
 
-    fun sendNew(accountId: String, to: List<String>, cc: List<String>, bcc: List<String>, subject: String, text: String, from: String? = null): Sent = sentFrom(
+    fun sendNew(accountId: String, to: List<String>, cc: List<String>, bcc: List<String>, subject: String, text: String, from: String? = null, files: List<PickedFile> = emptyList()): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(accountId) + "/send",
             JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("subject", subject).put("body", text)
-                .also { if (from != null) it.put("from_address", from) },
+                .also { if (from != null) it.put("from_address", from) }
+                .also { body ->
+                    if (files.isNotEmpty()) body.put("files", JSONArray(files.map {
+                        JSONObject().put("name", it.name).put("type", it.type).put("data", android.util.Base64.encodeToString(it.bytes, android.util.Base64.NO_WRAP))
+                    }))
+                },
         ),
     )
+
+    /** The signature the person saved on the website, or empty. */
+    fun signature(): String = JSONObject(call("GET", "/api/v1/me/saved")).str("signature")
 
     /** Takes back an email that is still waiting out its "undo send" time. */
     fun cancelSend(outboxId: String) {

@@ -37,6 +37,12 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
+            <!-- Links that start an email (mailto:) from other apps open a new email here. Nothing is sent until the person presses Send. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SENDTO" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="mailto" />
+            </intent-filter>
             <!-- The browser hands the app a one-time code here after the person signs in there. The code alone is useless without the secret only this app holds. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

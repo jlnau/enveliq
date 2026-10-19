@@ -24,6 +24,9 @@ class MainActivity : FragmentActivity() {
     /** Text shared to Enveliq from another app: (subject, text). The inbox opens a new email with it once the person is signed in. */
     var shareRequest by mutableStateOf<Pair<String, String>?>(null)
 
+    /** A "mailto:" link tapped in another app: (to, subject, body). Opens a new email with those filled in. */
+    var mailtoRequest by mutableStateOf<Triple<String, String, String>?>(null)
+
     /** True while the app is locked and waiting for the fingerprint, face or PIN. */
     var locked by mutableStateOf(false)
     private var stoppedAt = 0L
@@ -58,6 +61,13 @@ class MainActivity : FragmentActivity() {
             return
         }
         val link = intent?.data
+        if (link != null && link.scheme == "mailto" && (intent?.action == Intent.ACTION_SENDTO || intent?.action == Intent.ACTION_VIEW)) {
+            val to = (link.schemeSpecificPart.substringBefore("?")).take(500)
+            val subject = (try { link.getQueryParameter("subject") } catch (e: Exception) { null } ?: intent?.getStringExtra(Intent.EXTRA_SUBJECT) ?: "").take(300)
+            val text = (try { link.getQueryParameter("body") } catch (e: Exception) { null } ?: intent?.getStringExtra(Intent.EXTRA_TEXT) ?: "").take(20000)
+            mailtoRequest = Triple(to, subject, text)
+            return
+        }
         if (link != null && link.scheme == "enveliq" && link.host == "signin") {
             val code = link.getQueryParameter("code") ?: ""
             if (Regex("[A-Za-z0-9_-]{20,100}").matches(code)) linkCode = code

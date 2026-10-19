@@ -55,7 +55,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** What the writing screen is for. [kind] is new, reply, reply_all or forward; [mail] is the email being answered or forwarded; [draft] is a saved draft being continued. */
-data class ComposeTarget(val kind: String, val mail: Mail? = null, val draft: Draft? = null, val presetSubject: String = "", val presetBody: String = "")
+data class ComposeTarget(val kind: String, val mail: Mail? = null, val draft: Draft? = null, val presetSubject: String = "", val presetBody: String = "", val presetTo: String = "")
+
+/** A file chosen to attach. Kept in memory only. */
+class PickedFile(val name: String, val type: String, val bytes: ByteArray)
+
+private fun sizeText(n: Int): String = if (n >= 1024 * 1024) String.format(java.util.Locale.US, "%.1f MB", n / 1048576.0) else maxOf(1, n / 1024).toString() + " KB"
+
+private fun readPicked(context: android.content.Context, uri: android.net.Uri): PickedFile? = try {
+    val resolver = context.contentResolver
+    var name = "attachment"
+    resolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { if (it.moveToFirst()) name = it.getString(0) ?: name }
+    val bytes = resolver.openInputStream(uri)?.use { it.readBytes() }
+    if (bytes == null) null else PickedFile(name, resolver.getType(uri) ?: "application/octet-stream", bytes)
+} catch (e: Exception) { null }
 
 private val SEPARATORS = Regex("[,;\\s]+")
 
@@ -77,7 +90,7 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
     val kind = target.kind
     val mail = target.mail
     val draft = target.draft
-    var to by remember { mutableStateOf(draft?.to?.joinToString(", ") ?: "") }
+    var to by remember { mutableStateOf(draft?.to?.joinToString(", ") ?: target.presetTo) }
     var cc by remember { mutableStateOf(draft?.cc?.joinToString(", ") ?: "") }
     var bcc by remember { mutableStateOf(draft?.bcc?.joinToString(", ") ?: "") }
     var showCc by remember { mutableStateOf(draft != null && (draft.cc.isNotEmpty() || draft.bcc.isNotEmpty())) }
@@ -90,6 +103,26 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
     var error by remember { mutableStateOf("") }
     var askClose by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    // Files for a new email. They are held in memory only, sent, and never saved on this phone.
+    val files = remember { androidx.compose.runtime.mutableStateListOf<PickedFile>() }
+    val picker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetMultipleContents()) { uris ->
+        for (uri in uris) {
+            val f = readPicked(context, uri)
+            if (f == null) { error = "That file could not be read."; continue }
+            if (files.size >= 10) { error = "You can attach up to 10 files."; break }
+            if (files.sumOf { it.bytes.size } + f.bytes.size > 10 * 1024 * 1024) { error = "Files can add up to 10 MB at most."; break }
+            files.add(f)
+        }
+    }
+    // "Pick a person" from the phone's contacts. Android hands over only the one address chosen, so no contacts permission is needed.
+    val contactPicker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { res ->
+        val uri = res.data?.data ?: return@rememberLauncherForActivityResult
+        val address = try {
+            context.contentResolver.query(uri, arrayOf(android.provider.ContactsContract.CommonDataKinds.Email.ADDRESS), null, null, null)?.use { if (it.moveToFirst()) it.getString(0) else null }
+        } catch (e: Exception) { null }
+        if (address.isNullOrBlank()) error = "Could not read that contact's address." else to = if (to.isBlank()) address else to.trimEnd(',', ' ') + ", " + address
+    }
 
     val original = mail?.subject.orEmpty().ifBlank { "(no subject)" }
     val shownSubject = when (kind) {
@@ -98,6 +131,16 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
         else -> subject
     }
     val hasContent = body.isNotBlank() || to.isNotBlank() || (kind == "new" && subject.isNotBlank())
+
+    // Your signature (from Settings on the website) is put in the box when a new message starts, where you can change or remove it.
+    LaunchedEffect(Unit) {
+        if (draft == null && body.isBlank()) {
+            try {
+                val sig = withContext(Dispatchers.IO) { api.signature() }
+                if (sig.isNotBlank() && body.isBlank()) body = "\n\n" + sig
+            } catch (_: Exception) { }
+        }
+    }
 
     LaunchedEffect(Unit) {
         try {
@@ -175,7 +218,7 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
                         "reply" -> api.reply(mail!!, false, body, chosen)
                         "reply_all" -> api.reply(mail!!, true, body, chosen)
                         "forward" -> api.forward(mail!!, toList, ccList, bccList, body, chosen)
-                        else -> api.sendNew(boxId, toList, ccList, bccList, subject, body, chosen)
+                        else -> api.sendNew(boxId, toList, ccList, bccList, subject, body, chosen, files.toList())
                     }
                 }
                 if (draft != null) {
@@ -211,6 +254,10 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
                 Text(shownSubject, color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
             } else {
                 AddressField("To", to, { to = it }, api)
+                TextButton(onClick = {
+                    try { contactPicker.launch(android.content.Intent(android.content.Intent.ACTION_PICK, android.provider.ContactsContract.CommonDataKinds.Email.CONTENT_URI)) }
+                    catch (e: Exception) { error = "This phone has no contacts app to pick from." }
+                }) { Text("Pick from phone contacts", color = Blue, fontSize = 15.sp) }
                 if (showCc) {
                     AddressField("Cc", cc, { cc = it }, api)
                     AddressField("Bcc", bcc, { bcc = it }, api)
@@ -227,6 +274,15 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             }
             Text(if (kind == "forward") "Your note (optional)" else "Message", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 14.dp, bottom = 6.dp))
             OutlinedTextField(value = body, onValueChange = { body = it }, minLines = 8, modifier = Modifier.fillMaxWidth())
+            if (kind == "new") {
+                files.forEachIndexed { i, f ->
+                    Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(f.name + " (" + sizeText(f.bytes.size) + ")", color = Ink, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                        TextButton(onClick = { files.removeAt(i) }) { Text("Remove", color = Red) }
+                    }
+                }
+                TextButton(onClick = { picker.launch("*/*") }) { Text(if (files.isEmpty()) "Attach files" else "Attach more files", color = Blue, fontSize = 15.sp) }
+            }
             if (kind == "reply" || kind == "reply_all") {
                 Text("The email you are answering is added underneath.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
             }

@@ -255,6 +255,13 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         composing = ComposeTarget("new", presetSubject = sh.first, presetBody = sh.second)
         activity.shareRequest = null
     }
+    // A "mailto:" link from another app: a new email with the address filled in, ready to check and send.
+    val mailto = activity.mailtoRequest
+    LaunchedEffect(mailto) {
+        val mt = activity.mailtoRequest ?: return@LaunchedEffect
+        composing = ComposeTarget("new", presetSubject = mt.second, presetBody = mt.third, presetTo = mt.first)
+        activity.mailtoRequest = null
+    }
     fun keyOf(m: Mail) = m.accountId + ":" + m.id
 
     // Puts the unread mark back on an email you had marked Reviewed. It goes back to the inbox.
