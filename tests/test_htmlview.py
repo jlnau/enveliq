@@ -106,6 +106,6 @@ def test_inline_pictures_are_taken_from_the_email_by_content_id():
 
 
 def test_the_page_always_grows_with_the_email_and_never_gets_its_own_scrollbar():
-    page = rebuild('<html><head><style>body{height:150px;overflow:auto}</style></head><body style="height:100px"><p>hi</p></body></html>').page
+    page = htmlview.rebuild('<html><head><style>body{height:150px;overflow:auto}</style></head><body style="height:100px"><p>hi</p></body></html>').page
     assert "overflow:visible!important" in page and "height:auto!important" in page
     assert page.index("height:150px") < page.index("height:auto!important")        # ours comes last, so it wins
