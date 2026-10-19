@@ -119,17 +119,22 @@ fun SignInScreen(initialAddress: String, notice: String, linkCode: String?, onLi
             error = "That sign-in took too long or did not start here. Please try again."
             return@LaunchedEffect
         }
-        busy = true
-        try {
-            val client = EnveliqApi(addr)
-            withContext(Dispatchers.IO) { client.exchangeLink(code, verifier, keepIt) }
-            onDone(client, addr, keepIt)
-        } catch (e: ApiException) {
-            error = e.message ?: "That did not work."
-        } catch (e: Exception) {
-            error = "Something went wrong. Please try again."
-        } finally {
-            busy = false
+        // Run in the screen's own scope: clearing linkCode (onLinkUsed) ends this effect, which would cancel the exchange half way.
+        scope.launch {
+            busy = true
+            try {
+                val client = EnveliqApi(addr)
+                withContext(Dispatchers.IO) { client.exchangeLink(code, verifier, keepIt) }
+                onDone(client, addr, keepIt)
+            } catch (e: ApiException) {
+                error = e.message ?: "That did not work."
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                error = "Something went wrong. Please try again."
+            } finally {
+                busy = false
+            }
         }
     }
 
