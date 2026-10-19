@@ -84,6 +84,8 @@ class EnveliqApi(address: String) {
     private fun detail(text: String, code: Int): String {
         try {
             val d = JSONObject(text).opt("detail")
+            // A route the server does not have: it is an older Enveliq than this app.
+            if (code == 404 && d == "Not Found") return "Your Enveliq server does not have this yet. Update the server to the newest version, then try again."
             if (d is String && d.isNotBlank()) return d
             if (d is JSONObject && d.str("message").isNotBlank()) return d.str("message")
         } catch (_: Exception) {

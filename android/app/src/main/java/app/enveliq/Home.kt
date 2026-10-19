@@ -246,6 +246,8 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     val selected = remember { mutableStateListOf<String>() }
     var askSnooze by remember { mutableStateOf(false) }
     var composing by remember { mutableStateOf<ComposeTarget?>(null) }
+    // Back from Tasks, Drafts, More or Settings goes to the inbox first; Back from the inbox leaves the app.
+    BackHandler(enabled = tab != Tab.Inbox && opened == null && composing == null) { tab = Tab.Inbox }
     // "Share" from another app: the text arrives in a new email, ready to address.
     val shared = activity.shareRequest
     LaunchedEffect(shared) {
