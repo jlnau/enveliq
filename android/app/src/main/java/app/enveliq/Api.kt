@@ -271,6 +271,7 @@ class EnveliqApi(address: String) {
                         received = received,
                         tags = r.optJSONArray("tags").strings(),
                         attachments = files,
+                        hasFiles = files.isNotEmpty() || r.optBoolean("has_attachments", false),
                         mailbox = mailbox,
                         state = state,
                         scamReasons = warnReasons,

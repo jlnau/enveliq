@@ -747,6 +747,10 @@ private fun MailRow(mail: Mail, picked: Boolean, onClick: () -> Unit, onLongClic
                 mail.sender, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
                 maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
             )
+            if (mail.hasFiles) {
+                PaperclipIcon(Muted)
+                Spacer(Modifier.size(4.dp))
+            }
             Text(mail.whenText, color = Muted, fontSize = 13.sp)
         }
         Text(mail.subject, color = Ink, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))

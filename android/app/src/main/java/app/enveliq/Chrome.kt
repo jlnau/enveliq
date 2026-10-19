@@ -124,3 +124,17 @@ internal fun RowScope.BarIcon(label: String, tint: Color, container: Color, onCl
 
 private fun Modifier.androidx_semantics(label: String): Modifier =
     this.then(Modifier.semantics { contentDescription = label })
+
+/** A small paperclip: this email has files. */
+@Composable
+internal fun PaperclipIcon(tint: Color, modifier: Modifier = Modifier.size(16.dp)) = Canvas(modifier) {
+    val u = size.width / 24f
+    val p = androidx.compose.ui.graphics.Path()
+    p.moveTo(9f * u, 7f * u)
+    p.lineTo(9f * u, 16f * u)
+    p.arcTo(androidx.compose.ui.geometry.Rect(9f * u, 12.5f * u, 16f * u, 19.5f * u), 180f, -180f, false)
+    p.lineTo(16f * u, 6f * u)
+    p.arcTo(androidx.compose.ui.geometry.Rect(11f * u, 3.5f * u, 16f * u, 8.5f * u), 0f, -180f, false)
+    p.lineTo(11f * u, 15f * u)
+    drawPath(p, tint, style = Stroke(width = 2f * u, cap = StrokeCap.Round))
+}

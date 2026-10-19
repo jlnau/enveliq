@@ -23,6 +23,8 @@ data class Mail(
     val unsubUrl: String? = null,
     val unsubMailto: String? = null,
     val unsubSubject: String = "",
+    /** The email has files (known even before the AI has read them). */
+    val hasFiles: Boolean = false,
 )
 
 /** A file that came with an email. [summary] is written by the AI and is labelled that way where it is shown. */
