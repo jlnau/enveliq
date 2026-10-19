@@ -20,6 +20,7 @@ for (const ev of ["uncaughtException", "unhandledRejection"]) process.on(ev, (e)
 const now = Math.floor(Date.now() / 1000);
 
 const mails = [1, 2, 3, 4, 5, 6, 7].map((n) => ({ id: "m" + n, subject: "Email number " + n, sender_display: "Sender " + n, sender_address: `s${n}@example.invalid`, summary: "Summary " + n, priority: "normal", category: null, action_required: false, received_at: now - n * 60, reply_context: { reply_to: `s${n}@example.invalid`, delivered_to: null, via_alias: null, message_id: `<m${n}@x>`, references: [] } }));
+let queue = { items: [], waiting: 0, writing: 0 };
 const handler = async (route) => {
   const req = route.request(), u = new URL(req.url()), p = u.pathname;
   const json = (status, body) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
@@ -35,6 +36,7 @@ const handler = async (route) => {
   if (p === "/api/v1/me/preferences") return json(200, { keep_reviewed: true, keep_archived: true, keep_days: 7, max_days: 14, instructions: "", undo_send_seconds: 0 });
   if (p === "/api/v1/me/features") return json(200, { effective: {}, admin: {}, user: {}, labels: {} });
   if (p === "/api/v1/sync/status") return json(200, { enabled: true, minutes: 10, now: Date.now() / 1000, accounts: { a1: { ok: true, at: now } } });
+  if (p === "/api/v1/me/summary-queue") return json(200, queue);
   return json(404, { detail: "not found" });
 };
 
@@ -78,8 +80,57 @@ await page.locator("#clear").click();
 await tick(4, true);
 check("Shift + tick with nothing ticked before acts like a plain tick", (await ticked()) === "4");
 check("the bulk bar shows when several are selected", await (async () => { await tick(6, true); return (await page.locator("#bulk.show").count()) === 1; })());
+
+// ---- Select all ----
+await page.locator("#clear").click();
+const all = page.locator("#selectAll");
+check("a Select all control sits above the list", await all.isVisible() && (await page.locator("#selectAllWrap").innerText()).includes("Select all"));
+check("it starts unticked", !(await all.isChecked()));
+await all.check();
+check("Select all ticks every email in the list", (await ticked()) === "1,2,3,4,5,6,7" && (await page.locator("#selectedCount").innerText()) === "7");
+check("the bulk bar shows with all of them selected", (await page.locator("#bulk.show").count()) === 1);
+await all.uncheck();
+check("unticking Select all clears the list", (await ticked()) === "");
+await tick(2);
+check("with some ticked it shows as partly ticked", await all.evaluate((e) => e.indeterminate && !e.checked));
+await all.check();
+check("Select all completes a partial selection", (await ticked()) === "1,2,3,4,5,6,7");
+await tick(3);
+check("unticking one email takes the tick off Select all", !(await all.isChecked()) && (await ticked()) === "1,2,4,5,6,7");
+await tick(7, true);
+check("Shift unticking a run still works after Select all", (await ticked()) === "1,2");
+await page.locator("#clear").click();
+check("Clear empties a Select all", (await ticked()) === "" && !(await all.isChecked()));
+// An AI summary finishing reloads the list in the background. The emails you ticked stay ticked.
+await tick(2); await tick(3, true);
+check("two emails are ticked before the summary finishes", (await ticked()) === "2,3");
+queue = { items: [{ account_id: "a1", message_id: "m1", state: "done" }], waiting: 0, writing: 0 };
+await page.evaluate(() => pollSummaries(false));
+await page.waitForTimeout(600);
+check("a finished AI summary does not untick the emails", (await ticked()) === "2,3" && (await page.locator("#selectedCount").innerText()) === "2");
+await all.check();
+await page.locator('#bulk [data-bulk="reviewed"]').click();
+await page.waitForFunction(() => document.querySelectorAll("article.mail.leaving").length === 7, null, { timeout: 15000 });
+check("the bulk Reviewed button acts on every email a Select all ticked", true);
 check("no script errors", errors.length === 0);
 if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, "shift-select.png") });
+
+// ---- the same on a phone ----
+{
+  const pc = await browser.newContext({ viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true });
+  await pc.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); } catch (e) {} });
+  const pp = await pc.newPage();
+  await pc.route("**/*", handler);
+  await pp.goto(`${ORIGIN}/`);
+  await pp.waitForSelector("article.mail");
+  const sa = pp.locator("#selectAll");
+  check("on a phone Select all is there and easy to press", await sa.isVisible() && (await pp.locator("#selectAllWrap").boundingBox()).height >= 30);
+  await pp.locator("#selectAllWrap").tap();
+  check("on a phone Select all ticks every email", (await pp.locator("input[data-select]:checked").count()) === 7);
+  check("on a phone nothing scrolls sideways", await pp.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  if (process.env.SHOTS) await pp.screenshot({ path: path.join(process.env.SHOTS, "select-all-phone.png") });
+  await pc.close();
+}
 await browser.close();
 if (failed) process.exit(1);
 console.log("All Shift-select checks passed.");

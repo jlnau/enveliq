@@ -1,0 +1,6 @@
+# Deploy with:  cd relay && npx wrangler deploy
+# Then add the Firebase key once:  npx wrangler secret put FCM_SERVICE_ACCOUNT   (paste the whole service-account .json file)
+name = "enveliq-push"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+workers_dev = true

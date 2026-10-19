@@ -1289,6 +1289,7 @@ const FEATURE_HINTS = {
   address_book: "Remember names and email addresses (never email text) so they can be suggested when writing. Stored encrypted, one private book per person.",
   sent: "A read-only list of the last 14 days of sent mail, read from the mailbox when opened and never stored.",
   media: "Show pictures that are part of an email, preview picture attachments and save attachments, fetched only when asked for and never stored.",
+  junk_mail: "Adds a Junk Mail folder to the left menu. Enveliq reads the sender, subject and date of recent mail in each mailbox's Junk or Spam folder, and the AI says whether each one is junk or needs a look, with a short summary. The email stays in the mailbox. You can view an email with links, pictures from the internet and anything that runs switched off, and press Not junk to move it back to the Inbox at your mail service. Only the AI's short answer is stored, encrypted.",
   find_mail: "Adds a Search all my mail button under the inbox search box. It asks each of your mail services to search the whole mailbox and lists every match as sender, subject and date only. Nothing found is stored. Press Summarise on a result to keep that one email in Found emails for 60 days, or until you press Reviewed. Your search words go only to your own mail service and are never logged.",
   all_mail: "Adds an All emails switch to the inbox that also lists mail you have already read, for the last 14 days (newest 100). Only the sender, subject and date are kept, encrypted. A summary is written only when you press Generate summary, which sends that email's text to your AI model.",
   subscriptions: "Follows your subscriptions and free trials. When a summary finds that an email is about one, Enveliq keeps the service, the price as written, how often it is charged and the renewal or trial-end date (never the email) in a Subscriptions list, shows what is coming up on Home, and can send a reminder a few days before. The AI only copies what the email says; Enveliq works out every date itself. Emails that carry a Be careful warning are never filed. No extra AI request is made.",
@@ -1430,8 +1431,25 @@ function browserCard(ch, redraw) {
       null));
   return h("details", { class: "chan", open: !!(ch.devices.length || ch.last_error) }, h("summary", {}, h("strong", { text: ch.label }), " ", status), body);
 }
+// The Enveliq Android app signs itself up from inside the app; here a person only sees their phones and can test or remove them.
+function androidCard(ch, redraw) {
+  const status = ch.last_error ? h("span", { class: "pill off", text: "Last send failed" }) : ch.enabled && ch.devices.length ? h("span", { class: "pill on", text: `${ch.devices.length} ${ch.devices.length === 1 ? "phone" : "phones"}` }) : h("span", { class: "pill", text: "Off" });
+  const list = ch.devices.map(d => h("div", { class: "row" }, h("span", { text: d.label }),
+    h("button", { class: "btn small", type: "button", text: "Test", onclick: async e => {
+      const button = e.currentTarget; button.disabled = true;
+      try { await api(`/me/notifications/android/${d.id}/test`, { method: "POST", body: {} }); toast(`Test sent to ${d.label}.`); }
+      catch (err) { toast(`Test failed for ${d.label}: ${err.message}`); }
+      finally { button.disabled = false; }
+    } }),
+    h("button", { class: "btn small", type: "button", text: "Remove", onclick: async () => { try { await api(`/me/notifications/android/${d.id}`, { method: "DELETE" }); toast("Removed"); redraw(); } catch (err) { toast(err.message); } } })));
+  const body = h("div", { class: "chan-form" }, h("p", { class: "hint", text: ch.blurb }),
+    ch.available || ch.devices.length ? h("ol", { class: "howto" }, ch.steps.slice(0, 3).map(t => h("li", { text: t }))) : alertBox("info", "Your administrator has not set this up yet."),
+    ...list, ch.last_error ? alertBox("bad", `The last send failed: ${ch.last_error}`) : null);
+  return h("details", { class: "chan", open: !!(ch.devices.length || ch.last_error) }, h("summary", {}, h("strong", { text: ch.label }), " ", status), body);
+}
 function channelCard(ch, redraw) {
   if (ch.id === "browser") return browserCard(ch, redraw);
+  if (ch.id === "android") return androidCard(ch, redraw);
   const id = ch.id;
   const status = ch.last_error ? h("span", { class: "pill off", text: "Last send failed" }) : ch.enabled && ch.last_ok ? h("span", { class: "pill on", text: "Working" }) : ch.enabled ? h("span", { class: "pill on", text: "On" }) : h("span", { class: "pill", text: "Off" });
   const form = h("form", { class: "chan-form" },
@@ -1488,7 +1506,7 @@ async function remindersPage(me) {
     toast("Saved");
   });
   const mine = ov.channels.filter(c => c.allowed);
-  const live = mine.filter(c => c.id === "browser" ? c.enabled && c.devices.length : c.enabled && c.configured);
+  const live = mine.filter(c => c.id === "browser" || c.id === "android" ? c.enabled && c.devices.length : c.enabled && c.configured);
   const reach = live.length
     ? alertBox("info", `Notifications reach you in Enveliq and on: ${live.map(c => c.label).join(", ")}.`)
     : alertBox("info", "Right now notifications only appear inside Enveliq. To get them on your phone, turn on a place in step 1.");
@@ -1529,9 +1547,9 @@ function mirrorCard(kind, title, blurb, steps, fields, st, redraw) {
   const status = st.last_error ? h("span", { class: "pill off", text: "Last sync failed" }) : st.enabled && st.last_ok ? h("span", { class: "pill on", text: "Working" }) : st.enabled ? h("span", { class: "pill on", text: "On" }) : h("span", { class: "pill", text: "Off" });
   return h("details", { class: "chan", open: !!(st.configured || st.last_error) }, h("summary", {}, h("strong", { text: title }), " ", status), form);
 }
-async function syncPage(me, fresh) {
+async function syncPage(me, fresh, wantPick) {
   const ov = await api("/me/sync");
-  const redraw = (url) => syncPage(me, url);
+  const redraw = (url, pick) => syncPage(me, url, pick);
   const feed = ov.feed;
   const copy = async (el) => { try { await navigator.clipboard.writeText(el.value); toast("Copied"); } catch { el.select(); } };
   let feedBox;
@@ -1559,16 +1577,38 @@ async function syncPage(me, fresh) {
     feedBox);
   const gg = ov.google;
   const gstatus = gg.last_error ? h("span", { class: "pill off", text: "Last sync failed" }) : gg.connected && gg.enabled ? h("span", { class: "pill on", text: gg.last_ok ? "Working" : "On" }) : h("span", { class: "pill", text: gg.connected ? "Paused" : "Off" });
+  const radio = (value, title, hint) => h("label", { class: "check", for: "gm_" + value }, h("input", { id: "gm_" + value, type: "radio", name: "gmode", value, checked: (gg.connected ? gg.mode : "new") === value }),
+    h("span", {}, h("strong", { text: title }), h("div", { class: "hint", text: hint })));
+  const modeBox = h("div", { class: "chan-form" },
+    radio("new", "Make a new calendar called “Enveliq tasks”", "Enveliq can only see and change that one calendar, nothing else in your Google account."),
+    radio("existing", "Use a calendar I already have", "Google will ask for wider permission: Enveliq can see and change events on all your Google calendars, and list them so you can choose one. It only ever adds, moves and removes its own events, in the calendar you choose."));
+  const chosenMode = () => { const c = modeBox.querySelector("input[name=gmode]:checked"); return c ? c.value : "new"; };
+  const pickSelect = h("select", { id: "gm_pick", "aria-label": "Your calendars" }, h("option", { value: "", text: "Loading your calendars…" }));
+  const pickBox = h("div", { class: "chan-form" }, field("Which calendar should Enveliq use?", pickSelect),
+    h("div", { class: "hint", text: "Only calendars you can add events to are shown. Enveliq will not change any event it did not make." }),
+    h("div", { class: "row" }, h("button", { class: "btn primary", type: "button", text: "Use this calendar", onclick: async () => {
+      if (!pickSelect.value) { toast("Choose a calendar first."); return; }
+      try { await api("/me/sync/google/calendar", { method: "PUT", body: { calendar_id: pickSelect.value } }); toast("Saved"); redraw(); } catch (err) { toast(err.message); } } })));
+  if (gg.available && gg.connected && gg.mode === "existing" && (gg.needs_pick || wantPick)) {
+    api("/me/sync/google/calendars").then(r => { pickSelect.replaceChildren(...(r.calendars || []).map(c => h("option", { value: c.id, text: c.name + (c.primary ? " (main calendar)" : "") }))); if (!pickSelect.options.length) pickSelect.append(h("option", { value: "", text: "No calendar found" })); })
+      .catch(err => { pickSelect.replaceChildren(h("option", { value: "", text: "Could not load your calendars" })); toast(err.message); });
+  }
   const gbody = h("div", { class: "chan-form" },
-    h("p", { class: "hint", text: "Enveliq makes one calendar in your Google account called “Enveliq tasks” and adds, moves and deletes the events itself, so a finished task leaves the calendar within a minute. It can only see and change that calendar, nothing else in your Google account." }),
+    h("p", { class: "hint", text: gg.connected && gg.mode === "existing"
+      ? (gg.needs_pick ? "Google Calendar is connected. Choose which of your calendars Enveliq should use." : `Enveliq adds, moves and removes its own events in your calendar “${gg.calendar_name || "Calendar"}”, so a finished task leaves it within a minute. It never changes your other events and never deletes the calendar.`)
+      : "Enveliq adds, moves and deletes the events itself, so a finished task leaves the calendar within a minute. Choose below whether it makes a new calendar or uses one you already have." }),
+    gg.available && gg.needs_pick ? pickBox : null,
     !gg.available ? alertBox("info", "An administrator needs to set this up once first: Administration, Reminders, Google Calendar (there is a step-by-step guide below). Until then, use the calendar link above.") : null,
     !gg.available ? guideNote("CALENDAR.md", "", "Open the Google Calendar guide") : null,
     gg.last_error ? alertBox("bad", `The last sync failed: ${gg.last_error}`) : null,
     gg.connected && gg.last_ok && !gg.last_error ? h("div", { class: "hint", text: `Last synced ${ago(gg.last_ok)}. ${gg.count} ${gg.count === 1 ? "event" : "events"} showing.` }) : null,
+    gg.available && !gg.needs_pick ? modeBox : null,
+    gg.available && gg.connected && gg.mode === "existing" && !gg.needs_pick ? h("div", { class: "row" }, h("button", { class: "btn small", type: "button", text: "Choose a different calendar", onclick: () => redraw(undefined, true) })) : null,
+    gg.available && gg.connected && gg.mode === "existing" && !gg.needs_pick && wantPick ? pickBox : null,
     h("div", { class: "row" },
-      gg.available ? h("button", { class: "btn primary", type: "button", text: gg.connected ? "Connect again" : "Connect Google Calendar", onclick: async () => { try { const r = await api("/me/sync/google/start", { method: "POST", body: {} }); location.assign(r.url); } catch (err) { toast(err.message); } } }) : null,
-      gg.connected ? h("button", { class: "btn", type: "button", text: gg.enabled ? "Pause" : "Resume", onclick: async () => { try { await api("/me/sync/google", { method: "PUT", body: { enabled: !gg.enabled } }); redraw(); } catch (err) { toast(err.message); } } }) : null,
-      gg.connected ? h("button", { class: "btn small", type: "button", text: "Disconnect and delete the calendar", onclick: async () => { try { await api("/me/sync/google", { method: "DELETE" }); toast("Disconnected"); redraw(); } catch (err) { toast(err.message); } } }) : null));
+      gg.available && !gg.needs_pick ? h("button", { class: "btn primary", type: "button", text: gg.connected ? "Connect again" : "Connect Google Calendar", onclick: async () => { try { const r = await api("/me/sync/google/start", { method: "POST", body: { mode: chosenMode() } }); location.assign(r.url); } catch (err) { toast(err.message); } } }) : null,
+      gg.connected && !gg.needs_pick ? h("button", { class: "btn", type: "button", text: gg.enabled ? "Pause" : "Resume", onclick: async () => { try { await api("/me/sync/google", { method: "PUT", body: { enabled: !gg.enabled } }); redraw(); } catch (err) { toast(err.message); } } }) : null,
+      gg.connected ? h("button", { class: "btn small", type: "button", text: gg.mode === "existing" ? "Disconnect and remove Enveliq's events" : "Disconnect and delete the calendar", onclick: async () => { try { await api("/me/sync/google", { method: "DELETE" }); toast("Disconnected"); redraw(); } catch (err) { toast(err.message); } } }) : null));
   const google = h("details", { class: "chan", open: !!(gg.connected || gg.last_error) }, h("summary", {}, h("strong", { text: "Google Calendar (instant)" }), " ", gstatus), gbody);
   const caldav = mirrorCard("caldav", "Instant calendar (CalDAV: Nextcloud, Radicale, Baikal, Fastmail…)",
     "Enveliq writes the events itself and deletes them the moment a task ends, usually within a minute. For Google Calendar use the card above.",

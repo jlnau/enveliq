@@ -1,6 +1,7 @@
 """Find any email: start a search, watch it, cancel it, open a result, keep one in Found emails."""
 from __future__ import annotations
 
+import re
 import time
 from typing import Annotated, Any
 
@@ -19,7 +20,9 @@ from .routes import AccountId, fail
 from .service import MAIL_METHODS, target_for
 
 JobId = Annotated[str, PathParam(pattern=r"^[A-Za-z0-9_-]{8,16}$")]
-Token = Annotated[str, PathParam(pattern=r"^[A-Za-z0-9_-]{8,16}\.\d{1,6}\.[0-9a-f]{24}$")]
+TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{8,16}\.\d{1,6}\.[0-9a-f]{24}$")
+Token = Annotated[str, PathParam(pattern=TOKEN_RE.pattern)]
+MAX_KEEP_MANY = 100
 
 
 class FastBody(StrictModel):
@@ -32,6 +35,10 @@ class StartBody(StrictModel):
     include_junk: bool = False
 
 
+class KeepManyBody(StrictModel):
+    tokens: list[str]
+
+
 def build_find_router(ctx: Any) -> APIRouter:
     router = APIRouter(prefix="/api/v1/find")
     service = ctx.mail
@@ -41,6 +48,7 @@ def build_find_router(ctx: Any) -> APIRouter:
     page_limit = SlidingWindowLimiter(max_events=120, window=60)
     view_limit = SlidingWindowLimiter(max_events=60, window=60)
     keep_limit = SlidingWindowLimiter(max_events=60, window=60)
+    keep_many_limit = SlidingWindowLimiter(max_events=6, window=60)
     index = FindIndex(vault, service.bridge, lambda account_id: vault.get_account(account_id), service.target, vault.db_path.parent / "find-index")
     ctx.find_index = index
     index.watch()
@@ -156,11 +164,8 @@ def build_find_router(ctx: Any) -> APIRouter:
         no_store(response)
         return render_original(raw)
 
-    @router.post("/results/{token}/keep")
-    def keep(token: Token, response: Response, session: Session = Depends(session_dep)):
-        user = need(session)
-        if not keep_limit.allow(f"findkeep:{user}"):
-            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+    def keep_one(user: str, token: str) -> dict[str, Any]:
+        """Keep one found email in Found emails and queue its summary. Raises HTTPException on a problem."""
         try:
             raw, ref = jobs.headers_of(user, token)
             account = vault.get_account(ref.account_id)
@@ -187,7 +192,36 @@ def build_find_router(ctx: Any) -> APIRouter:
                 queued = False
         stored = vault.get_message(ref.account_id, message_id)
         vault.audit({"event": "found_email_kept", "actor_user_id": user, "account_id": ref.account_id, "message_id": message_id, "at": time.time()})
-        no_store(response)
         return {"already": False, "account_id": ref.account_id, "message_id": message_id, "found_until": stored.get("found_until"), "summary_queued": queued}
+
+    @router.post("/results/{token}/keep")
+    def keep(token: Token, response: Response, session: Session = Depends(session_dep)):
+        user = need(session)
+        if not keep_limit.allow(f"findkeep:{user}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        out = keep_one(user, token)
+        no_store(response)
+        return out
+
+    @router.post("/results/keep")
+    def keep_many(body: KeepManyBody, response: Response, session: Session = Depends(session_dep)):
+        """Summarise several found emails at once: each is kept in Found emails and put in the same AI summary queue as one."""
+        user = need(session)
+        tokens = list(dict.fromkeys(body.tokens))
+        if not 1 <= len(tokens) <= MAX_KEEP_MANY:
+            raise HTTPException(status_code=422, detail=f"Choose between 1 and {MAX_KEEP_MANY} emails.")
+        if not keep_many_limit.allow(f"findkeepmany:{user}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        results: dict[str, Any] = {}
+        for token in tokens:
+            if not TOKEN_RE.match(token):
+                results[token] = {"ok": False, "detail": "That result is no longer available."}
+                continue
+            try:
+                results[token] = {"ok": True, **keep_one(user, token)}
+            except HTTPException as err:
+                results[token] = {"ok": False, "detail": str(err.detail)}
+        no_store(response)
+        return {"results": results}
 
     return router

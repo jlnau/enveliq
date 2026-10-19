@@ -36,3 +36,5 @@ jobs:
           push: true
           tags: ${{ matrix.image }}:ui-preview
           platforms: linux/amd64
+          build-args: |
+            ENVELIQ_PUSH_RELAY=${{ vars.ENVELIQ_PUSH_RELAY }}

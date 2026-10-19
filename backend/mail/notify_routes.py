@@ -5,6 +5,7 @@ from typing import Annotated, Any, Literal
 import asyncio
 import hashlib
 import json
+import time
 
 from fastapi import Request
 from fastapi.responses import StreamingResponse
@@ -16,7 +17,7 @@ from pydantic import Field, field_validator
 from ..models import StrictModel
 from ..security import Session
 from .limits import SlidingWindowLimiter
-from . import extra_channels
+from . import extra_channels, fcm
 from .notify import CHANNELS, Notifier
 from .outbound import OutboundError
 
@@ -64,6 +65,7 @@ class MailViewBody(StrictModel):
     rows: str = Field(pattern=r"^(collapsed|open)$")
     peek: bool
     action_feedback: bool = True
+    show_original: bool = False
 
 
 class MailContextBody(StrictModel):
@@ -78,9 +80,32 @@ class DeviceBody(StrictModel):
     label: str = Field(default="", max_length=80)
 
 
+class AndroidDeviceBody(StrictModel):
+    token: str = Field(min_length=20, max_length=400)
+    label: str = Field(default="", max_length=60)
+    alerts: bool = False                       # true: the person switched on "Tell me when new email arrives" in the app
+    replaces: str | None = Field(default=None, pattern=r"^[0-9a-f]{12}$")
+
+
 class AdminBody(StrictModel):
     channels: dict[str, bool] | None = Field(default=None, max_length=30)
     local_hosts: list[str] | None = Field(default=None, max_length=50)
+
+
+def ready_mail(vault: Any, user_id: str) -> set[tuple[str, str]]:
+    """The (account, message) pairs of this person's unread emails that are ready to be told about: stored, not from All Mail,
+    and not still waiting for the AI summary. Only ids are returned, never any text."""
+    ready: set[tuple[str, str]] = set()
+    for account in vault.list_accounts():
+        if account.get("owner_user_id") != user_id:
+            continue
+        try:
+            for m in vault.list_messages(account["id"]):
+                if m.get("state", "unread") == "unread" and not m.get("from_all_mail") and not m.get("ai_pending"):
+                    ready.add((str(account["id"]), str(m.get("id", ""))))
+        except (KeyError, ValueError):
+            continue
+    return ready
 
 
 def build_notify_router(ctx: Any) -> APIRouter:
@@ -166,6 +191,56 @@ def build_notify_router(ctx: Any) -> APIRouter:
                                  headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no",
                                           "Content-Security-Policy": "default-src 'none'"})
 
+
+    ready_cache: dict[str, tuple[float, set[tuple[str, str]]]] = {}
+
+    def cached_ready(user_id: str) -> set[tuple[str, str]]:
+        import time
+        with fingerprint_lock:
+            now = time.monotonic()
+            hit = ready_cache.get(user_id)
+            if hit and now - hit[0] < 4:
+                return hit[1]
+            value = ready_mail(ctx.vault, user_id)
+            ready_cache[user_id] = (now, value)
+            if len(ready_cache) > 256:
+                for uid, (stamp, _) in list(ready_cache.items()):
+                    if now - stamp > 60:
+                        ready_cache.pop(uid, None)
+            return value
+
+    @router.get("/me/new-mail-events")
+    async def new_mail_events(request: Request, session: Session = Depends(session_dep)):
+        """For the Android app: one quiet stream that only says "these emails are ready" (their AI summary is done).
+        It carries ids, never text. A short heartbeat every minute keeps the connection alive without waking the phone often."""
+        user_id = session.principal.user_id
+
+        async def stream():
+            seen = set(await asyncio.to_thread(cached_ready, user_id))
+            yield "retry: 30000\nevent: ready\ndata: {}\n\n"
+            ticks = 0
+            while not await request.is_disconnected():
+                await asyncio.sleep(5)
+                try:
+                    now = await asyncio.to_thread(cached_ready, user_id)
+                except Exception:
+                    yield "event: reconnect\ndata: {}\n\n"
+                    return
+                fresh = sorted(now - seen)
+                seen = set(now)
+                if fresh:
+                    ids = [{"a": a, "m": m} for a, m in fresh[:50]]
+                    yield "event: new\ndata: " + json.dumps({"count": len(fresh), "ids": ids}, separators=(",", ":")) + "\n\n"
+                    ticks = 0
+                else:
+                    ticks += 1
+                    if ticks >= 12:                       # a minute of quiet: one tiny line, so the connection is not dropped
+                        ticks = 0
+                        yield ": heartbeat\n\n"
+
+        return StreamingResponse(stream(), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no",
+                                          "Content-Security-Policy": "default-src 'none'"})
 
     @router.get("/me/mail-opened")
     def get_mail_opened(session: Session = Depends(session_dep)):
@@ -325,6 +400,46 @@ def build_notify_router(ctx: Any) -> APIRouter:
     def browser_remove(device_id: Annotated[str, PathParam(pattern=r"^[0-9a-f]{12}$")], session: Session = Depends(session_dep)):
         extra_channels.remove_device(notifier, session.principal.user_id, device_id)
         return notifier.overview(session.principal.user_id)
+
+    # ---- the Enveliq Android app, through Google's push service ----
+
+    @router.get("/me/notifications/android")
+    def android_status(session: Session = Depends(session_dep)):
+        """Lets the app know whether Google push can be offered. Says nothing about the key itself."""
+        return {"available": bool(fcm.relay_url()) and bool(notifier.admin()["channels"].get("android", True))}
+
+    @router.post("/me/notifications/android")
+    def android_add(body: AndroidDeviceBody, session: Session = Depends(session_dep)):
+        user = session.principal.user_id
+        if not save_limit.allow(f"n:{user}"):
+            raise HTTPException(status_code=429, detail="Too many changes. Wait a minute.")
+        if not notifier.admin()["channels"].get("android", True):
+            raise HTTPException(status_code=403, detail="Your administrator has switched this channel off.")
+        try:
+            device_id = extra_channels.add_android_device(notifier, user, body.token, body.label, body.replaces)
+        except ValueError as err:
+            raise HTTPException(status_code=422, detail=str(err)) from None
+        if body.alerts:
+            notifier.save_settings(user, {"mail_on": True})     # the switch in the app is the same "New email alerts" switch as on the website
+        return {"id": device_id}
+
+    @router.post("/me/notifications/android/{device_id}/test")
+    def android_test(device_id: Annotated[str, PathParam(pattern=r"^[0-9a-f]{12}$")], session: Session = Depends(session_dep)):
+        user = session.principal.user_id
+        if not test_limit.allow(f"t:{user}"):
+            raise HTTPException(status_code=429, detail="Too many tests. Wait a minute.")
+        if not notifier.admin()["channels"].get("android", True):
+            raise HTTPException(status_code=403, detail="Your administrator has switched this channel off.")
+        try:
+            extra_channels.test_android_device(notifier, user, device_id)
+        except OutboundError as err:
+            raise HTTPException(status_code=502 if err.code != "not_found" else 404, detail=err.message) from None
+        return {"ok": True}
+
+    @router.delete("/me/notifications/android/{device_id}")
+    def android_remove(device_id: Annotated[str, PathParam(pattern=r"^[0-9a-f]{12}$")], session: Session = Depends(session_dep)):
+        extra_channels.remove_android_device(notifier, session.principal.user_id, device_id)
+        return {"ok": True}
 
     @router.get("/admin/notifications")
     def admin_get(session: Session = Depends(admin_dep)):

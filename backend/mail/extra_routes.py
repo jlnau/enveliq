@@ -43,6 +43,7 @@ class FeaturesBody(StrictModel):
     rss: bool | None = None
     tags: bool | None = None
     find_mail: bool | None = None
+    junk_mail: bool | None = None
 
 
 class FollowBody(StrictModel):

@@ -26,7 +26,10 @@ RUN mkdir -p /data && chown enveliq:enveliq /data && chmod 700 /data
 
 # Inside the container the server listens on all interfaces; the compose file
 # publishes it to the host's loopback only, for a reverse proxy to use.
-ENV ENVELIQ_DATA_DIR=/data \
+# The official release and preview builds pass the push relay's address here (docs/PUSH_RELAY.md); a build without it offers no Google push.
+ARG ENVELIQ_PUSH_RELAY=
+ENV ENVELIQ_PUSH_RELAY=${ENVELIQ_PUSH_RELAY} \
+    ENVELIQ_DATA_DIR=/data \
     ENVELIQ_BIND=0.0.0.0 \
     ENVELIQ_ALLOW_NON_LOOPBACK=1 \
     ENVELIQ_PORT=8765

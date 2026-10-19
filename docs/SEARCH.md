@@ -27,4 +27,4 @@ Only what Enveliq already keeps for you: the sender, subject and summary of each
 
 ## Search all my mail
 
-If the email you want is not in Enveliq's lists, the box also offers **Search all my mail**. That asks your mail service to search every folder of your mailbox. See [Find any email](FIND_MAIL.md).
+If the email you want is not in Enveliq's lists, the box also offers **Search all my mail**. That asks your mail service to search every folder of your mailbox. The results open right in the list area, with tick boxes, Select all and a **Summarise Emails** button. See [Find any email](FIND_MAIL.md).

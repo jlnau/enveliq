@@ -2,8 +2,11 @@
 
 The administrator makes a free "OAuth client" in their own Google Cloud project (docs/CALENDAR.md has every click) and pastes its
 ID and secret into Administration, Reminders. Each person then presses Connect Google Calendar and agrees on Google's page.
-Enveliq asks only for the narrow permission "calendar.app.created": it may make calendars of its own and change what is in
-them, and cannot see or touch anything else in the person's Google account. It makes one calendar called "Enveliq tasks".
+By default Enveliq asks only for the narrow permission "calendar.app.created": it may make calendars of its own and change what
+is in them, and cannot see or touch anything else in the person's Google account. It makes one calendar called "Enveliq tasks".
+A person can instead choose "Use a calendar I already have". That needs the wider permissions "calendar.events" (see and change
+events on every calendar) and "calendar.calendarlist.readonly" (list the calendars, to pick one). Enveliq then only ever adds, moves
+and removes events it made itself in the one calendar picked, and never deletes the calendar.
 All requests go to Google over https through outbound.py.
 """
 from __future__ import annotations
@@ -22,6 +25,8 @@ from .outbound import OutboundError
 
 RECORD = "google_oauth"
 SCOPE = "https://www.googleapis.com/auth/calendar.app.created"
+SCOPES_EXISTING = ("https://www.googleapis.com/auth/calendar.events", "https://www.googleapis.com/auth/calendar.calendarlist.readonly")
+MODES = ("new", "existing")
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 REVOKE_URL = "https://oauth2.googleapis.com/revoke"
@@ -71,13 +76,17 @@ class Google:
         return load(self.vault)
 
     # ----- signing in -----
-    def authorization_url(self, redirect_uri: str) -> tuple[str, dict[str, str]]:
+    @staticmethod
+    def scopes_for(mode: str) -> tuple[str, ...]:
+        return SCOPES_EXISTING if mode == "existing" else (SCOPE,)
+
+    def authorization_url(self, redirect_uri: str, mode: str = "new") -> tuple[str, dict[str, str]]:
         cfg = self.config()
         if not ready(cfg):
             raise OutboundError("not_set", "An administrator needs to set up Google Calendar first (Administration, Reminders).")
         verifier, challenge = pkce_pair()
         state = secrets.token_urlsafe(24)
-        query = urllib.parse.urlencode({"client_id": cfg["client_id"], "redirect_uri": redirect_uri, "response_type": "code", "scope": SCOPE, "access_type": "offline",
+        query = urllib.parse.urlencode({"client_id": cfg["client_id"], "redirect_uri": redirect_uri, "response_type": "code", "scope": " ".join(self.scopes_for(mode)), "access_type": "offline",
                                         "prompt": "consent", "state": state, "code_challenge": challenge, "code_challenge_method": "S256", "include_granted_scopes": "false"})
         return f"{AUTH_URL}?{query}", {"state": state, "verifier": verifier}
 
@@ -96,12 +105,14 @@ class Google:
             raise OutboundError("error", "Google did not accept the sign-in.")
         return data
 
-    def exchange(self, code: str, redirect_uri: str, verifier: str) -> dict[str, Any]:
+    def exchange(self, code: str, redirect_uri: str, verifier: str, mode: str = "new") -> dict[str, Any]:
         data = self._token({"grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri, "code_verifier": verifier})
         if not data.get("refresh_token") or not data.get("access_token"):
             raise OutboundError("error", "Google did not give a long-lasting connection. Remove Enveliq at myaccount.google.com/permissions and try again.")
-        if SCOPE not in str(data.get("scope", "")).split():
-            raise OutboundError("error", "The permission to manage Enveliq's own calendar was not given.")
+        granted = str(data.get("scope", "")).split()
+        if any(s not in granted for s in self.scopes_for(mode)):
+            raise OutboundError("error", "Google did not give every permission asked for. Connect again and tick them all." if mode == "existing"
+                                else "The permission to manage Enveliq's own calendar was not given.")
         return data
 
     def access_token(self, uid: str, refresh_token: str) -> str:
@@ -148,6 +159,19 @@ class Google:
         if status >= 400 or not isinstance(data, dict) or not data.get("id"):
             raise OutboundError("error", "Google would not make the calendar.")
         return str(data["id"])
+
+    def list_calendars(self, uid: str, refresh_token: str) -> list[dict[str, Any]]:
+        """The person's calendars that Enveliq may write to: id, name and whether it is the main one. Used for the picker and to check a choice."""
+        status, data = self.call(uid, refresh_token, "GET", "/users/me/calendarList?minAccessRole=writer&maxResults=100&fields=items(id,summary,summaryOverride,primary,accessRole)")
+        if status >= 400 or not isinstance(data, dict):
+            raise OutboundError("error", "Google would not list your calendars.")
+        out: list[dict[str, Any]] = []
+        for item in data.get("items") or []:
+            if not isinstance(item, dict) or not item.get("id") or item.get("accessRole") not in ("owner", "writer"):
+                continue
+            name = re.sub(r"[\x00-\x1f\x7f]", "", str(item.get("summaryOverride") or item.get("summary") or item["id"])).strip()[:100]
+            out.append({"id": str(item["id"])[:300], "name": name or "Calendar", "primary": bool(item.get("primary"))})
+        return out
 
     def delete_calendar(self, uid: str, refresh_token: str, calendar_id: str) -> None:
         try:

@@ -97,7 +97,7 @@ const visibleBtn = (page) => page.locator("[data-rss-open]:visible").first();
   await btn.click();
   await page.locator("#rssUrl").fill("http://feeds.example.com/x");
   await page.locator("#rssPop button[type=submit]").click();
-  await page.waitForSelector("#rssPop .sa-err");
+  await page.waitForFunction(() => /https/.test(document.querySelector("#rssPop .sa-err")?.textContent || ""), null, { timeout: 10000 }).catch(() => {});
   check("a feed address that is not accepted says why, in plain words", /https/.test(await page.locator("#rssPop .sa-err").innerText()));
   await page.locator("#rssUrl").fill("https://feeds.example.com/second");
   await page.locator("#rssUrl").press("Enter");

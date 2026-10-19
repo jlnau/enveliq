@@ -279,6 +279,14 @@ jobs:
         run: node scripts/check_all_mail.mjs
       - name: Find any email - search, view, summarise, Found emails and the phone layout (simulated server)
         run: node scripts/check_find.mjs
+      - name: Junk Mail - list, AI answers, safe viewer, Not Junk and the phone layout (simulated server)
+        run: node scripts/check_junk.mjs
+      - name: Google Calendar - new or existing calendar choice, picker and the phone layout (simulated server)
+        run: node scripts/check_google_calendar.mjs
+      - name: Push relay for the Android app - what it forwards, what it refuses, and that nothing private passes through
+        run: node relay/test.mjs
+      - name: Original email in the reading panel - tick box, order, own scroll, no reload and the phone layout (simulated server)
+        run: node scripts/check_original_inline.mjs
       - name: Fast search in Settings - warning, tick box, progress and turning it off (simulated server)
         run: node scripts/check_fast_search.mjs
       - name: Notification links, new-email alert switches and install manifest (simulated server)
@@ -489,7 +497,8 @@ jobs:
         run: echo "$TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - name: Build and push Enveliq
         run: |
-          docker build --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+          docker build --build-arg "ENVELIQ_PUSH_RELAY=${{ vars.ENVELIQ_PUSH_RELAY }}" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
             --label "org.opencontainers.image.version=${VERSION}" --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
             -t "${MAIN}:latest" -t "${MAIN}:v${VERSION}" -t "${MAIN}:sha-${SHORT}" .
           docker push --all-tags "${MAIN}"

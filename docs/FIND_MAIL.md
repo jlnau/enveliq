@@ -7,10 +7,11 @@ It is on for everyone and needs no setup. An administrator can switch it off for
 ## How to use it
 
 1. Type at least two letters in **Search inbox**. A box appears above the list. Press **Search all my mail**.
-2. A window opens and asks each of your mail services to search. Each mailbox shows how many it found as it goes. Gmail may take a second. Proton Mail can take about twenty seconds for a very large mailbox. **Cancel search** stops it.
+2. The results open in the main list area, in the same place as ordinary search results (not in a pop-up), and Enveliq asks each of your mail services to search. Each mailbox shows how many it found as it goes. Gmail may take a second. Proton Mail can take about twenty seconds for a very large mailbox. **Cancel search** stops it.
 3. Every match is listed with the total, newest first, 25 at a time (**Show more**). Each shows who it is from, the subject, the date, which mailbox and folder it is in, and whether it has files. Spam and Bin are left out. Tick **Include Spam and Bin** to add them.
 4. **View original email** opens the whole email to read. Nothing is kept. Close it and you are back at the list.
-5. **Summarise** keeps that one email in **Found emails** and queues its summary with the other summaries. You are told it will be kept for 60 days, or until you press **Reviewed**.
+5. Each result has a tick box on its left. Tick one, or hold **Shift** and tick another to tick everything between, or use **Select all** at the top of the results. Once two or more are ticked, a **Summarise Emails** button appears above the results: it keeps all the ticked emails in **Found emails** and adds them to the AI summary queue (up to 100 at a time), the same queue the Summarise button uses. **Clear** unticks them.
+6. **Summarise** on one result keeps that one email in **Found emails** and queues its summary with the other summaries. You are told it will be kept for 60 days, or until you press **Reviewed**.
 
 ## Found emails
 
@@ -37,6 +38,7 @@ Some mailboxes are slow to search, mostly Proton Mail through Bridge with tens o
 
 It is off. Turn it on, for one mailbox at a time, in **Settings, General, Fast search**. A plain warning appears and you must tick **I understand** before it starts.
 
+- **Searching by itself:** when Fast search is ready on every one of your mailboxes, you no longer need the button. Typing in the search box searches all your mail after a short pause, and the results appear in the list. If you press **Close**, the same words do not search again until you change them. If any mailbox has Fast search off or is still being built, the **Search all my mail** button stays and nothing starts by itself, because a live search of a large mailbox is slow.
 - It is recommended for Proton Mail only. Other services already search quickly on their own servers.
 - It gets ready in the background, newest mail first, a little at a time. It shows "Getting ready: 62% of your mail". Searching still works while it builds, just more slowly.
 - It keeps itself up to date as mail arrives or goes.

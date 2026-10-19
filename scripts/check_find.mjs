@@ -43,6 +43,7 @@ function makeServer(opts = {}) {
       if (state.kept) out.push({ id: "f1", subject: "Canvas order", sender_display: "Dana", sender_address: "dana@example.invalid", summary: "Not summarised yet.", priority: "normal", category: null, action_required: false, state: "unread", received_at: now - 3 * 86400, reply_context: ctx("f1"), attachment_summaries: [], tags: [], from_all_mail: true, found_until: now + 60 * 86400 });
       return json(200, out);
     }
+    if (p === "/api/v1/find/fast") return opts.fast === undefined ? json(404, { detail: "not found" }) : json(200, { mailboxes: [{ account_id: "a1", enabled: true, state: opts.fast, label: "me@example.invalid" }] });
     if (p === "/api/v1/find/searches" && req.method() === "POST") { const b = JSON.parse(req.postData() || "{}"); calls.push(["start", b.query, b.include_junk]); state.junk = !!b.include_junk; state.polls = 0; return json(201, progress(false)); }
     if (p === "/api/v1/find/searches/AAAAAAAAAAAA/results") {
       state.polls++; const done = state.polls >= 2; const list = state.junk ? [...rows, { ...rows[1], token: "AAAAAAAAAAAA.2.cccccccccccccccccccccccc", subject: "Junk offer", folder: "Spam" }] : rows;
@@ -50,6 +51,7 @@ function makeServer(opts = {}) {
     }
     if (p === "/api/v1/find/searches/AAAAAAAAAAAA" && req.method() === "DELETE") { calls.push(["cancel"]); return route.fulfill({ status: 204 }); }
     if (/\/api\/v1\/find\/results\/[^/]+\/original$/.test(p)) { calls.push(["view"]); return json(200, { subject: "Canvas order", from: { name: "Dana", address: "dana@example.invalid" }, to: [{ name: "", address: "me@example.invalid" }], date: "Mon, 5 Oct 2026 10:00:00 +0000", text: "Your canvases are on the way.", truncated: false, attachments: [], file_count: 0, remote_images: 0, unsubscribe: null, links: [], warning: null, sender_check: null }); }
+    if (p === "/api/v1/find/results/keep" && req.method() === "POST") { const b = JSON.parse(req.postData() || "{}"); calls.push(["keepmany", b.tokens]); state.kept = true; return json(200, { results: Object.fromEntries(b.tokens.map((t) => [t, { ok: true, already: false, account_id: "a1", message_id: "f1", summary_queued: true }])) }); }
     if (/\/api\/v1\/find\/results\/[^/]+\/keep$/.test(p)) { calls.push(["keep"]); state.kept = true; return json(200, { already: false, account_id: "a1", message_id: "f1", found_until: now + 60 * 86400, summary_queued: true }); }
     if (p === "/api/v1/accounts/a1/messages/f1/resolve") { calls.push(["resolve", JSON.parse(req.postData() || "{}").outcome]); state.kept = false; return route.fulfill({ status: 204 }); }
     if (p === "/api/v1/me/summary-queue") return json(200, { items: [], waiting: 0, writing: 0 });
@@ -87,14 +89,14 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.fill("#search", "canvas");
   check("two or more letters offer Search all my mail", await page.locator("[data-find-open]").isVisible());
   await page.click("[data-find-open]");
-  await page.waitForSelector("#findPop:not([hidden]) .find-row");
-  check("the results open in a pop-up with the search words shown", (await page.locator("#findPop").innerText()).includes("canvas"));
-  await page.waitForFunction(() => /^2 emails/.test(document.querySelector("#findPop .find-total")?.innerText || ""));
-  check("the total and each mailbox are shown", (await page.locator("#findPop .find-mbx").innerText()).includes("2 found"));
+  await page.waitForSelector("#findInline .find-row");
+  check("the results open in the main list area (not a pop-up) with the search words shown", (await page.locator("#list #findInline").innerText()).includes("canvas") && (await page.locator("#findPop").count()) === 0);
+  await page.waitForFunction(() => /^2 emails/.test(document.querySelector("#findInline .find-total")?.innerText || ""));
+  check("the total and each mailbox are shown", (await page.locator("#findInline .find-mbx").innerText()).includes("2 found"));
   check("two rows, newest first, with folder and date", (await page.locator(".find-row").count()) === 2 && (await page.locator(".find-row b").first().innerText()) === "Canvas order" && (await page.locator(".find-row .fr-meta").first().innerText()).includes("Archive"));
   check("a row with files says so", (await page.locator(".find-row .fr-meta").nth(1).innerText()).includes("has files"));
   check("each row has View original email and Summarise", (await page.locator(".find-row [data-find-view]").count()) === 2 && (await page.locator(".find-row [data-find-keep]").count()) === 2);
-  check("nothing is shown that could name a message number or folder path", !(await page.locator("#findPop").innerHTML()).includes("source_locator"));
+  check("nothing is shown that could name a message number or folder path", !(await page.locator("#findInline").innerHTML()).includes("source_locator"));
   await shot(page, "results");
 
   await page.check("[data-find-junk]");
@@ -103,20 +105,49 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.uncheck("[data-find-junk]");
   await page.waitForFunction(() => document.querySelectorAll(".find-row").length === 2);
 
+  // Tick boxes, Select all and Summarise Emails
+  check("each result has a tick box on its left, and Summarise Emails is not offered yet", (await page.locator(".find-row > input[data-find-sel]").count()) === 2 && (await page.locator("[data-find-sum]").count()) === 0);
+  const boxes = await page.evaluate(() => { const c = document.querySelector(".find-row > input").getBoundingClientRect(), t = document.querySelector(".find-row b").getBoundingClientRect(); return c.right <= t.left; });
+  check("the tick box sits to the left of the email", boxes);
+  await page.locator(".find-row [data-find-sel]").nth(0).check();
+  check("one ticked email still shows no Summarise Emails button", (await page.locator("[data-find-sum]").count()) === 0 && (await page.locator(".fi-count").innerText()).includes("1 selected"));
+  await page.locator(".find-row [data-find-sel]").nth(1).check();
+  check("two ticked emails show the Summarise Emails button above the results", await page.locator("[data-find-sum]").isVisible() && await page.evaluate(() => document.querySelector("[data-find-sum]").getBoundingClientRect().bottom <= document.querySelector(".find-row").getBoundingClientRect().top));
+  await page.locator("[data-find-all]").uncheck();
+  check("Select all unticked clears them", (await page.locator(".find-row [data-find-sel]:checked").count()) === 0 && (await page.locator("[data-find-sum]").count()) === 0);
+  await page.locator("[data-find-all]").check();
+  check("Select all ticks every listed email", (await page.locator(".find-row [data-find-sel]:checked").count()) === 2);
+  await page.locator("[data-find-clear]").click();
+  await page.check("[data-find-junk]");
+  await page.waitForFunction(() => document.querySelectorAll(".find-row").length === 3);
+  await page.locator(".find-row [data-find-sel]").nth(0).check();
+  await page.locator(".find-row [data-find-sel]").nth(2).click({ modifiers: ["Shift"] });
+  check("Shift ticks every email between two ticks", (await page.locator(".find-row [data-find-sel]:checked").count()) === 3);
+  await page.uncheck("[data-find-junk]");
+  await page.waitForFunction(() => document.querySelectorAll(".find-row").length === 2);
+  await page.locator(".find-row [data-find-sel]").nth(0).check();
+  await page.locator(".find-row [data-find-sel]").nth(1).check();
+  await page.click("[data-find-sum]");
+  await page.waitForFunction(() => /added to Found emails and sent to be summarised/.test(document.querySelector("#findInline")?.innerText || ""));
+  check("Summarise Emails sends every ticked email to the server in one go", server.calls.some((c) => c[0] === "keepmany" && c[1].length === 2));
+  check("the ticks clear and each row says it was added", (await page.locator(".find-row [data-find-sel]:checked").count()) === 0 && (await page.locator(".find-row .fr-note").count()) === 2);
+  server.state.kept = false;
+  await page.click("[data-find-again]");
+  await page.waitForFunction(() => document.querySelectorAll(".find-row").length === 2 && !/added to Found/.test(document.querySelector("#findInline")?.innerText || ""));
   await page.locator("[data-find-view]").first().click();
   await page.waitForSelector("#attachmentModal.open");
-  check("View original email shows the email and puts the results aside", (await page.locator("#attachmentModal").innerText()).includes("canvases are on the way") && (await page.locator("#findPop").isHidden()));
+  check("View original email shows the email", (await page.locator("#attachmentModal").innerText()).includes("canvases are on the way"));
   await page.evaluate(() => closeAttachmentViewer());
-  await page.waitForSelector("#findPop:not([hidden]) .find-row");
-  check("closing the email brings the results back", (await page.locator(".find-row").count()) === 2);
+  await page.waitForSelector("#findInline .find-row");
+  check("closing the email leaves the results where they were", (await page.locator(".find-row").count()) === 2);
 
   await page.locator("[data-find-keep]").first().click();
-  await page.waitForFunction(() => /Added to Found emails/.test(document.querySelector("#findPop")?.innerText || ""));
+  await page.waitForFunction(() => /Added to Found emails/.test(document.querySelector("#findInline")?.innerText || ""));
   check("Summarise says it was added and for how long", (await page.locator(".find-row .fr-note").first().innerText()).includes("60 days"));
   check("the button cannot be pressed twice", await page.locator("[data-find-keep]").first().isDisabled());
   await shot(page, "kept");
   await page.click("[data-find-close]");
-  check("closing leaves the pop-up hidden", await page.locator("#findPop").isHidden());
+  check("closing removes the results panel", (await page.locator("#findInline").count()) === 0);
   await page.fill("#search", "");
   await page.waitForSelector("#foundNav:not([hidden])");
   check("Found emails appears in the menu with a count", (await page.locator("#foundBadge").innerText()) === "1");
@@ -135,6 +166,37 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 }
 
 {
+  // With Fast search ready on every mailbox, typing searches all mail by itself.
+  const server = makeServer({ fast: "ready" });
+  const { page, errors, csp, context } = await open(server);
+  await page.fill("#search", "canvas");
+  await page.waitForSelector("#findInline .find-row", { timeout: 5000 });
+  check("Fast search ready: typing opens the results in the list by itself, with no button press", server.calls.some((c) => c[0] === "start" && c[1] === "canvas") && (await page.locator("[data-find-open]").count()) === 0);
+  await page.fill("#search", "canvas order");
+  await page.waitForFunction(() => true);
+  await page.waitForTimeout(900);
+  check("changing the words searches again", server.calls.filter((c) => c[0] === "start").length >= 2 && server.calls.some((c) => c[0] === "start" && c[1] === "canvas order"));
+  await page.locator("[data-find-close]").first().click();
+  await page.waitForTimeout(900);
+  const starts = server.calls.filter((c) => c[0] === "start").length;
+  check("after Close the same words do not search again", (await page.locator("#findInline").count()) === 0 && server.calls.filter((c) => c[0] === "start").length === starts);
+  await page.fill("#search", "");
+  check("clearing the words leaves nothing open", (await page.locator("#findInline").count()) === 0);
+  check("no errors with automatic search", errors.length === 0 && csp.length === 0);
+  await context.close();
+}
+
+{
+  // A mailbox still building its index: the button stays and nothing starts by itself.
+  const server = makeServer({ fast: "building" });
+  const { page, context } = await open(server);
+  await page.fill("#search", "canvas");
+  await page.waitForTimeout(1000);
+  check("Fast search not ready everywhere: the button is offered and nothing starts by itself", await page.locator("[data-find-open]").isVisible() && !server.calls.some((c) => c[0] === "start"));
+  await context.close();
+}
+
+{
   const server = makeServer({ find_mail: false });
   const { page, errors, csp, context } = await open(server);
   await page.fill("#search", "canvas");
@@ -149,14 +211,12 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.evaluate(() => { document.body.classList.add("msearch"); });
   await page.fill("#search", "canvas");
   await page.click("[data-find-open]");
-  await page.waitForSelector("#findPop:not([hidden]) .find-row");
-  const box = await page.evaluate(() => {
-    const r = (s) => { const b = document.querySelector(s).getBoundingClientRect(); return { t: b.top, l: b.left, w: b.width, h: b.height, b: b.bottom }; };
-    return { pop: r("#findPop"), top: r("#findPop .sf-top"), foot: r("#findPop .sf-foot"), vh: innerHeight, vw: innerWidth, overflow: getComputedStyle(document.querySelector("#findPop .sf-body")).overflowY };
-  });
-  check("on a phone the search opens full screen", box.pop.l === 0 && box.pop.t === 0 && Math.round(box.pop.w) === box.vw && Math.round(box.pop.h) === box.vh);
-  check("the title and Close stay at the top and the buttons at the bottom", box.top.t === 0 && Math.round(box.foot.b) === box.vh && box.overflow === "auto");
-  check("the Close button is easy to press", (await page.locator("#findPop .sf-close").first().boundingBox()).height >= 44);
+  await page.waitForSelector("#findInline .find-row");
+  check("on a phone the results are in the page, not a pop-up", (await page.locator("#findPop").count()) === 0 && (await page.locator("#list #findInline").count()) === 1);
+  check("the tick boxes and buttons are easy to press", (await page.locator(".find-row [data-find-view]").first().boundingBox()).height >= 44 && (await page.locator("[data-find-close]").first().boundingBox()).height >= 44);
+  await page.locator(".find-row [data-find-sel]").nth(0).check();
+  await page.locator(".find-row [data-find-sel]").nth(1).check();
+  check("Summarise Emails is easy to press on a phone", (await page.locator("[data-find-sum]").boundingBox()).height >= 44);
   await shot(page, "phone-results");
   check("no sideways scrolling on the phone", await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   check("no errors on the phone", errors.length === 0 && csp.length === 0);

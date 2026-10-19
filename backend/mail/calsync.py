@@ -143,7 +143,7 @@ def _empty() -> dict[str, Any]:
     return {"titles": True, "feed": {"hash": None, "made": None},
             "caldav": {"enabled": False, "url": "", "user": "", "password": "", "pushed": {}, "last_ok": None, "last_error": None},
             "todo": {"enabled": False, "url": "", "token": "", "entity": "", "pushed": {}, "last_ok": None, "last_error": None},
-            "google": {"enabled": False, "refresh_token": "", "calendar_id": "", "pushed": {}, "last_ok": None, "last_error": None}}
+            "google": {"enabled": False, "refresh_token": "", "calendar_id": "", "mode": "new", "calendar_name": "", "pushed": {}, "last_ok": None, "last_error": None}}
 
 
 def _url(value: str, label: str) -> str:
@@ -195,6 +195,7 @@ class Sync:
         return {"titles": rec["titles"], "internet_ready": self.internet_ready(), "origin": self.origin,
                 "feed": {"on": bool(rec["feed"]["hash"]), "made": rec["feed"]["made"]},
                 "google": {"available": gcal.ready(self.google.config()), "connected": bool(gd["refresh_token"]), "enabled": gd["enabled"], "count": len(gd["pushed"]),
+                           "mode": gd["mode"], "calendar_name": gd["calendar_name"] if gd["mode"] == "existing" else "", "needs_pick": bool(gd["refresh_token"] and gd["mode"] == "existing" and not gd["calendar_id"]),
                            "last_ok": gd["last_ok"], "last_error": gd["last_error"]},
                 "caldav": {"enabled": cd["enabled"], "url": cd["url"], "user": cd["user"], "password_set": bool(cd["password"]), "configured": bool(cd["url"]),
                            "count": len(cd["pushed"]), "last_ok": cd["last_ok"], "last_error": cd["last_error"]},
@@ -277,17 +278,55 @@ class Sync:
             self._save(uid, rec)
         self.mark(uid)
 
-    def connect_google(self, uid: str, refresh_token: str) -> None:
-        """Called after the person agreed on Google's page: keep the connection and make the calendar."""
-        tz = self.tasks.timezone_of(uid)
-        calendar_id = self.google.make_calendar(uid, refresh_token, tz)
+    def _leave_google_calendar(self, uid: str, old: dict[str, Any], refresh_token: str) -> None:
+        """Before another calendar is used: a calendar Enveliq made is deleted; in a calendar the person already had, only Enveliq's own events are removed."""
+        if not (old.get("refresh_token") and old.get("calendar_id")):
+            return
+        if old.get("mode") == "existing":
+            try:
+                self._run(uid, "google", wipe=True)
+            except OutboundError:
+                pass
+        else:
+            self.google.delete_calendar(uid, refresh_token, old["calendar_id"])
+
+    def connect_google(self, uid: str, refresh_token: str, mode: str = "new") -> None:
+        """Called after the person agreed on Google's page. New: make the calendar. Existing: keep the connection and wait for the person to pick one."""
+        if mode not in gcal.MODES:
+            raise ValueError("Unknown choice.")
+        calendar_id = self.google.make_calendar(uid, refresh_token, self.tasks.timezone_of(uid)) if mode == "new" else ""
+        with self._lock:
+            old = self._load(uid)["google"]
+        keep = mode == "existing" and old.get("mode") == "existing" and bool(old.get("calendar_id"))          # connecting again keeps the calendar already picked
+        if not keep and (old.get("calendar_id") != calendar_id or old.get("mode") != mode):
+            self._leave_google_calendar(uid, old, refresh_token)
         with self._lock:
             rec = self._load(uid)
-            old = rec["google"]
-            rec["google"] = {"enabled": True, "refresh_token": refresh_token, "calendar_id": calendar_id, "pushed": {}, "last_ok": None, "last_error": None}
+            rec["google"] = {"enabled": True, "refresh_token": refresh_token, "calendar_id": old["calendar_id"] if keep else calendar_id, "mode": mode,
+                             "calendar_name": old.get("calendar_name", "") if keep else "", "pushed": old["pushed"] if keep else {}, "last_ok": None, "last_error": None}
             self._save(uid, rec)
-        if old.get("refresh_token") and old.get("calendar_id") and old["calendar_id"] != calendar_id:
-            self.google.delete_calendar(uid, refresh_token, old["calendar_id"])
+        self.mark(uid)
+
+    def google_calendars(self, uid: str) -> list[dict[str, Any]]:
+        g = self._load(uid)["google"]
+        if not g["refresh_token"] or g["mode"] != "existing":
+            raise ValueError("Choose Use a calendar I already have, then connect Google Calendar.")
+        return self.google.list_calendars(uid, g["refresh_token"])
+
+    def set_google_calendar(self, uid: str, calendar_id: str) -> None:
+        """The person picked one of their calendars. The server checks it is really one of theirs that can be written to."""
+        g = self._load(uid)["google"]
+        if not g["refresh_token"] or g["mode"] != "existing":
+            raise ValueError("Choose Use a calendar I already have, then connect Google Calendar.")
+        found = next((c for c in self.google.list_calendars(uid, g["refresh_token"]) if c["id"] == calendar_id), None)
+        if found is None:
+            raise ValueError("That calendar is not one Enveliq can write to. Pick another.")
+        if g["calendar_id"] and g["calendar_id"] != calendar_id:
+            self._leave_google_calendar(uid, g, g["refresh_token"])          # take Enveliq's own events out of the old one first
+        with self._lock:
+            rec = self._load(uid)
+            rec["google"].update(calendar_id=calendar_id, calendar_name=found["name"], enabled=True, pushed={}, last_error=None)
+            self._save(uid, rec)
         self.mark(uid)
 
     def set_google_enabled(self, uid: str, on: bool) -> None:
@@ -324,7 +363,13 @@ class Sync:
             rec = self._load(uid)["google"]
             if rec["refresh_token"]:
                 if remove_remote and rec["calendar_id"]:
-                    self.google.delete_calendar(uid, rec["refresh_token"], rec["calendar_id"])      # takes every event with it
+                    if rec["mode"] == "existing":
+                        try:
+                            self._run(uid, "google", wipe=True)          # only Enveliq's own events; the calendar itself is never deleted
+                        except Exception:
+                            pass
+                    else:
+                        self.google.delete_calendar(uid, rec["refresh_token"], rec["calendar_id"])      # Enveliq made it; takes every event with it
                 self.google.revoke(rec["refresh_token"])
             self.google.forget(uid)
             remove_remote = False

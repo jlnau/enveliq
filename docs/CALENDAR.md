@@ -23,6 +23,11 @@ The link is the only thing that opens without signing in, so treat it like a pas
 
 The link above makes Google check only about once a day. For instant changes Enveliq can write to Google Calendar itself. It makes one calendar called **Enveliq tasks** in your Google account and adds, moves and deletes the events in it. It asks Google only for the narrow permission "see, create, change and delete events on calendars Enveliq made", so it cannot see or touch the rest of your Google account.
 
+When you press **Connect Google Calendar** you choose between two things:
+
+* **Make a new calendar called "Enveliq tasks"** (the default). The narrow permission above. Enveliq can only see and change that one calendar.
+* **Use a calendar I already have.** Google asks for a wider permission: Enveliq can see and change events on all your Google calendars and list them. After you agree, Enveliq shows your calendars (only ones you can change) and you press **Use this calendar** on one. Enveliq then only adds, moves and removes the events it made itself in that one calendar. It never touches your other events and never deletes the calendar. **Choose a different calendar** changes the pick later. **Disconnect and remove Enveliq's events** removes only Enveliq's events and cancels the permission.
+
 Google makes every app register first. An administrator does the set-up below **once**, in their own free Google Cloud account. It takes about 10 minutes and costs nothing. You will end up with two things, a **Client ID** and a **Client secret**, to paste into Enveliq. After that, each person connects with one button.
 
 You need: the Enveliq address you use in your browser (it starts with `https://`), a Google account, and two browser tabs: one for Enveliq and one for Google. Below, `https://enveliq.example.com` stands for your own address.
@@ -104,7 +109,15 @@ Without this, Google disconnects everyone every 7 days. Publishing does not make
 5. Press **Add to table**. The scope appears in the table at the top of the panel with a tick.
 6. Press **Update** at the bottom of the panel. The panel closes.
 7. Scroll to the bottom of the page and press the blue **Save**.
-8. **Check:** under **Your non-sensitive scopes** you see `.../auth/calendar.app.created`, and the **Save** button is greyed out.
+8. **Optional, for "Use a calendar I already have":** repeat steps 2 to 7 and add these two scopes as well (one per line in the box). Without them, that choice fails with "Google did not give every permission asked for":
+
+   ```
+   https://www.googleapis.com/auth/calendar.events
+   https://www.googleapis.com/auth/calendar.calendarlist.readonly
+   ```
+
+   Google lists them under **Your sensitive scopes**. Anyone who connects before this step is done, or who connected earlier, must press **Connect Google Calendar** again.
+9. **Check:** under **Your non-sensitive scopes** you see `.../auth/calendar.app.created`, and the **Save** button is greyed out.
 
 ### Step 8. Copy the redirect address from Enveliq
 
@@ -141,7 +154,7 @@ If the address starts with `http://` (and is not `localhost`), Google will refus
 ### Step 11. Connect (everyone does this, including you)
 
 1. In Enveliq open **Settings**, then **Calendar & to-do**.
-2. Find **Google Calendar (instant)** and press **Connect Google Calendar**.
+2. Find **Google Calendar (instant)**, choose **Make a new calendar** or **Use a calendar I already have**, and press **Connect Google Calendar**. (If you chose an existing calendar, pick it from the list when you come back.)
 3. Google opens. Choose your Google account.
 4. Google shows **"Google hasn't verified this app"**. This is normal: the app is yours. Press **Advanced**, then **Go to Enveliq (unsafe)**.
 5. Press **Continue** to allow it.
