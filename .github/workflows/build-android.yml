@@ -124,6 +124,10 @@ jobs:
             echo '```'
             cat "Enveliq-${APP_VERSION}.apk.sha256"
             echo '```'
+            echo "Signing certificate (for locking the Firebase API key to this app; these are public):"
+            echo '```'
+            "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "Enveliq-${APP_VERSION}.apk" | grep -E 'SHA-(1|256) digest'
+            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
