@@ -16,6 +16,20 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.net.ssl.SSLException
 
+/** The secret and its fingerprint for signing in through the browser (PKCE): only the fingerprint travels through the browser. */
+object BrowserLink {
+    fun newVerifier(): String {
+        val bytes = ByteArray(32)
+        java.security.SecureRandom().nextBytes(bytes)
+        return android.util.Base64.encodeToString(bytes, android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING)
+    }
+
+    fun challengeOf(verifier: String): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256").digest(verifier.toByteArray(Charsets.US_ASCII))
+        return android.util.Base64.encodeToString(digest, android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING)
+    }
+}
+
 class ApiException(message: String, val code: Int = 0) : Exception(message)
 
 sealed class SignIn {
@@ -131,6 +145,15 @@ class EnveliqApi(address: String) {
     fun signIn(username: String, password: String, keep: Boolean): SignIn {
         val body = JSONObject().put("username", username.trim()).put("password", password).put("remember", keep)
         return finish(JSONObject(call("POST", "/api/v1/auth/login", body)))
+    }
+
+    /** The page in the phone's browser where the person signs in the usual way (passkey, single sign-on, two-factor) and is handed back to the app. */
+    fun browserSignInUrl(challenge: String): String = "$base/app-signin?c=" + enc(challenge)
+
+    /** Swaps the one-time code the browser handed back, with the secret only this app knows, for a normal session. */
+    fun exchangeLink(code: String, verifier: String, keep: Boolean): SignIn {
+        val body = JSONObject().put("code", code).put("verifier", verifier).put("remember", keep)
+        return finish(JSONObject(call("POST", "/api/v1/auth/app-link/exchange", body)))
     }
 
     fun code(code: String): SignIn = finish(JSONObject(call("POST", "/api/v1/auth/mfa", JSONObject().put("code", code.trim()))))

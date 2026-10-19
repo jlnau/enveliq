@@ -196,11 +196,35 @@ async function route() {
   if (path === "/setup" || path === "/unlock") return location.replace("/login");
   if (path === "/login") return loginPage(status, params);
   let me;
-  try { me = await api("/me"); } catch (err) { return location.replace("/login"); }
+  try { me = await api("/me"); } catch (err) { return location.replace(path === "/app-signin" ? "/login?then=" + encodeURIComponent(path + location.search) : "/login"); }
+  if (path === "/app-signin") return me.session.state === "full" ? appSigninPage(me, params) : location.replace("/account");
   if (path === "/admin") return me.role === "admin" && me.session.state === "full" ? adminPage(me) : location.replace("/account");
   if (path === "/mailboxes") return me.session.state === "full" ? mailboxesPage(me) : location.replace("/account");
   if (path === "/welcome") return me.session.state === "full" ? welcomePage(me, params) : location.replace("/account");
   return accountPage(me, params);
+}
+
+// ---------- signing in to the Android app through the browser ----------
+// Where to go after signing in: the app's sign-in page when that is where the person came from (only that exact shape is accepted), otherwise the inbox.
+function afterSignIn(out) {
+  if (out && out.next === "enroll_mfa") return "/account?enroll=1";
+  const then = new URLSearchParams(location.search).get("then") || "";
+  return /^\/app-signin\?c=[A-Za-z0-9_-]{43}$/.test(then) ? then : "/";
+}
+
+function appSigninPage(me, params) {
+  const challenge = params.get("c") || "";
+  if (!/^[A-Za-z0-9_-]{43}$/.test(challenge)) return show(brandCard(h("h1", { text: "Sign in to the app" }), alertBox("bad", "This link is not complete. Open it again from the Enveliq app.")));
+  const note = h("p", { class: "lead", text: "You are signed in as " + (me.display_name || me.username) + ". Press the button to finish signing in on your phone." });
+  const btn = h("button", { class: "btn primary full", type: "button", text: "Open the Enveliq app", onclick: async e => {
+    e.target.disabled = true;
+    try {
+      const out = await api("/auth/app-link", { method: "POST", body: { challenge } });
+      location.assign("enveliq://signin?code=" + encodeURIComponent(out.code));
+      note.textContent = "If the app did not open, go back to it and try again. This button works for the next two minutes.";
+    } catch (er) { toast(er.message); } finally { e.target.disabled = false; }
+  } });
+  show(brandCard(h("h1", { text: "Sign in to the app" }), note, btn));
 }
 
 // ---------- first run ----------
@@ -270,11 +294,11 @@ function loginPage(status, params) {
   onSubmit(passwordForm, async () => {
     const out = await api("/auth/login", { method: "POST", body: { username: passwordForm.querySelector("#username").value.trim(), password: passwordForm.querySelector("#password").value, ...(wantsRemember() ? { remember: true } : {}) } });
     if (out.next === "mfa") return mfaStep(out.methods);
-    location.replace(out.next === "enroll_mfa" ? "/account?enroll=1" : "/");
+    location.replace(afterSignIn(out));
   });
   const passkeyBtn = passkeysSupported() ? h("button", { class: "btn full", type: "button", text: "Sign in with a passkey", onclick: async e => {
     e.target.disabled = true;
-    try { const out = await passkeyGet("login", wantsRemember()); location.replace(out.next === "enroll_mfa" ? "/account?enroll=1" : "/"); }
+    try { const out = await passkeyGet("login", wantsRemember()); location.replace(afterSignIn(out)); }
     catch (er) { toast(er.message); } finally { e.target.disabled = false; }
   } }) : null;
   const ssoBtn = sso && sso.enabled ? h("a", { class: "btn full", href: "/api/v1/auth/sso/start", text: sso.label || "Sign in with single sign-on", role: "button" }) : null;
@@ -428,11 +452,11 @@ function mfaStep(methods) {
     h("button", { class: "btn primary full", type: "submit", text: "Verify" }));
   onSubmit(form, async () => {
     const out = await api("/auth/mfa", { method: "POST", body: { code: form.querySelector("#code").value.trim() } });
-    location.replace(out.next === "enroll_mfa" ? "/account?enroll=1" : "/");
+    location.replace(afterSignIn(out));
   });
   const pk = methods.includes("passkey") && passkeysSupported() ? h("button", { class: "btn full", type: "button", text: "Use a passkey instead", onclick: async e => {
     e.target.disabled = true;
-    try { await passkeyGet("mfa"); location.replace("/"); } catch (er) { toast(er.message); } finally { e.target.disabled = false; }
+    try { const out = await passkeyGet("mfa"); location.replace(afterSignIn(out)); } catch (er) { toast(er.message); } finally { e.target.disabled = false; }
   } }) : null;
   show(brandCard(h("h1", { text: "Two-factor sign-in" }), h("p", { class: "lead", text: "Confirm it's you with your second factor." }), form,
     pk ? h("div", { class: "divider", text: "or" }) : null, pk,
@@ -2107,7 +2131,7 @@ function confirmThen(button, question, action, yes = "Yes, delete", cls = "dange
 if (!window.ENVELIQ_EMBED) {
   watchPolish(app);
   addChrome(); route();
-  if (!["/login", "/setup", "/unlock", "/terms", "/privacy", "/security", "/welcome"].includes(location.pathname) && !new URLSearchParams(location.search).has("enroll")) sendWatcher();
+  if (!["/login", "/setup", "/unlock", "/terms", "/privacy", "/security", "/welcome", "/app-signin"].includes(location.pathname) && !new URLSearchParams(location.search).has("enroll")) sendWatcher();
 }
 
 if (window.ENVELIQ_EMBED) window.EnveliqEmbed = { setMount, api, profilePage, mailboxesPage, accountPage, welcomePage, adminPage, generalPage, aiInstructionsPage, addressBookPage, importantPage, savedPage, rulesPage, remindersPage, syncPage };

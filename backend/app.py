@@ -904,7 +904,7 @@ def app_page(request: Request):
     return FileResponse(APP_PAGE, media_type="text/html")
 
 
-for _route in ("/setup", "/unlock", "/login", "/account", "/admin", "/mailboxes", "/welcome", "/security", "/terms", "/privacy"):
+for _route in ("/setup", "/unlock", "/login", "/account", "/admin", "/mailboxes", "/welcome", "/security", "/terms", "/privacy", "/app-signin"):
     def _auth_page(request: Request) -> FileResponse:
         return FileResponse(WEB_DIR / "auth.html", media_type="text/html")
     app.add_api_route(_route, _auth_page, methods=["GET"], include_in_schema=False)

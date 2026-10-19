@@ -18,6 +18,9 @@ class MainActivity : FragmentActivity() {
     /** Set when someone taps a new-email alert: (account id, email id). The inbox opens that email once it has loaded. */
     var openRequest by mutableStateOf<Pair<String, String>?>(null)
 
+    /** The one-time code the browser handed back after signing in there. Used once by the sign-in screen. */
+    var linkCode by mutableStateOf<String?>(null)
+
     /** True while the app is locked and waiting for the fingerprint, face or PIN. */
     var locked by mutableStateOf(false)
     private var stoppedAt = 0L
@@ -46,6 +49,12 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun readRequest(intent: Intent?) {
+        val link = intent?.data
+        if (link != null && link.scheme == "enveliq" && link.host == "signin") {
+            val code = link.getQueryParameter("code") ?: ""
+            if (Regex("[A-Za-z0-9_-]{20,100}").matches(code)) linkCode = code
+            return
+        }
         val mail = intent?.getStringExtra(EXTRA_MAIL) ?: return
         val account = intent.getStringExtra(EXTRA_ACCOUNT) ?: return
         openRequest = account to mail

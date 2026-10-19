@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import base64
+import hashlib
+import hmac
 import secrets
 import time
 from typing import Any, Literal
@@ -32,6 +34,16 @@ class LoginBody(StrictModel):
     username: str = Field(min_length=1, max_length=320)
     password: SecretStr = Field(min_length=1, max_length=1024)
     remember: bool = False            # "Keep me signed in on this device"
+
+
+class AppLinkBody(StrictModel):
+    challenge: str = Field(pattern=r"^[A-Za-z0-9_-]{43}$")      # base64url of the SHA-256 of a secret only the app knows
+
+
+class AppExchangeBody(StrictModel):
+    code: str = Field(min_length=20, max_length=100)
+    verifier: str = Field(pattern=r"^[A-Za-z0-9_-]{43,128}$")
+    remember: bool = False
 
 
 class CodeBody(StrictModel):
@@ -344,6 +356,33 @@ def build_router(ctx) -> APIRouter:
             raise HTTPException(404, "Not found")
         vault.audit({"event": "device_signed_out", "user_id": session.principal.user_id, "at": time.time()})
         return Response(status_code=204)
+
+    # ---------- sign in to the Android app through the browser ----------
+    # The app opens /app-signin in the phone's browser, where the person signs in the usual way (password, two-factor,
+    # passkey or single sign-on). The signed-in page asks for a one-time code tied to a secret only the app knows (PKCE),
+    # and hands it to the app through its own link. The app swaps code and secret for a normal session.
+
+    @r.post("/auth/app-link")
+    def app_link(body: AppLinkBody, session: Session = Depends(ctx.full_session)):
+        code = flows.create("app-link", {"user_id": session.principal.user_id, "challenge": body.challenge}, ttl_seconds=120)
+        return {"code": code}
+
+    @r.post("/auth/app-link/exchange")
+    def app_link_exchange(body: AppExchangeBody, request: Request, response: Response):
+        ctx.login_limiter.acquire(client_key(request))
+        flow = flows.get(body.code, "app-link")
+        flows.pop(body.code)                                   # single use, right or wrong
+        wanted = base64.urlsafe_b64encode(hashlib.sha256(body.verifier.encode("ascii")).digest()).rstrip(b"=").decode("ascii")
+        if flow is None or not hmac.compare_digest(wanted, flow["data"]["challenge"]):
+            raise HTTPException(401, "That sign-in link has run out. Please try again.")
+        try:
+            user = users.get(flow["data"]["user_id"])
+        except Exception:
+            user = None
+        if not user or user.get("disabled"):
+            raise HTTPException(401, "That sign-in link has run out. Please try again.")
+        ctx.login_limiter.succeeded(client_key(request))
+        return set_session(response, user, method="browser", remember=body.remember, request=request)
 
     @r.get("/me")
     def me(session: Session = Depends(ctx.any_session)):

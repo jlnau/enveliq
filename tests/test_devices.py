@@ -50,3 +50,45 @@ def test_nobody_can_see_or_end_someone_elses_device(app):
     assert [i["id"] for i in kim.get("/api/v1/auth/devices").json()["items"]] != [sam_id]
     assert kim.delete(f"/api/v1/auth/devices/{sam_id}").status_code == 404
     assert sam.get("/api/v1/me").status_code == 200
+
+
+# ---------- signing in to the app through the browser ----------
+
+import base64
+import hashlib
+
+
+def pair():
+    verifier = base64.urlsafe_b64encode(b"v" * 32).rstrip(b"=").decode()
+    challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
+    return verifier, challenge
+
+
+def test_the_app_signs_in_with_a_code_from_a_signed_in_browser(app):
+    web = login(app, "sam")
+    verifier, challenge = pair()
+    code = web.post("/api/v1/auth/app-link", json={"challenge": challenge}).json()["code"]
+    phone = TestClient(app.app, raise_server_exceptions=False)
+    r = phone.post("/api/v1/auth/app-link/exchange", json={"code": code, "verifier": verifier}, headers={"X-Enveliq-Device": "Enveliq app on Pixel 8"})
+    assert r.status_code == 200 and r.json()["next"] == "done"
+    assert phone.get("/api/v1/me").json()["username"] == "sam"
+    labels = {i["label"] for i in web.get("/api/v1/auth/devices").json()["items"]}
+    assert "Enveliq app on Pixel 8" in labels
+
+
+def test_a_code_works_once_and_only_with_the_matching_secret(app):
+    web = login(app, "sam")
+    verifier, challenge = pair()
+    phone = TestClient(app.app, raise_server_exceptions=False)
+    code = web.post("/api/v1/auth/app-link", json={"challenge": challenge}).json()["code"]
+    wrong = base64.urlsafe_b64encode(b"w" * 32).rstrip(b"=").decode()
+    assert phone.post("/api/v1/auth/app-link/exchange", json={"code": code, "verifier": wrong}).status_code == 401
+    assert phone.post("/api/v1/auth/app-link/exchange", json={"code": code, "verifier": verifier}).status_code == 401   # a wrong try ends it
+    code = web.post("/api/v1/auth/app-link", json={"challenge": challenge}).json()["code"]
+    assert phone.post("/api/v1/auth/app-link/exchange", json={"code": code, "verifier": verifier}).status_code == 200
+    assert phone.post("/api/v1/auth/app-link/exchange", json={"code": code, "verifier": verifier}).status_code == 401
+
+
+def test_only_someone_signed_in_can_ask_for_a_code(app):
+    _, challenge = pair()
+    assert TestClient(app.app, raise_server_exceptions=False).post("/api/v1/auth/app-link", json={"challenge": challenge}).status_code in (401, 403)

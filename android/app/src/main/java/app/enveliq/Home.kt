@@ -136,6 +136,8 @@ fun EnveliqApp(activity: MainActivity) {
             SignInScreen(
                 initialAddress = prefs.getString("server", "") ?: "",
                 notice = notice,
+                linkCode = activity.linkCode,
+                onLinkUsed = { activity.linkCode = null },
                 onDone = { client, address, keep ->
                     prefs.edit().putString("server", address).apply()
                     if (keep) SessionVault.save(activity, address, client.sessionCookies()) else {

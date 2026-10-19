@@ -53,7 +53,9 @@ import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun SignInScreen(initialAddress: String, notice: String, onDone: (EnveliqApi, String, Boolean) -> Unit) {
+fun SignInScreen(initialAddress: String, notice: String, linkCode: String?, onLinkUsed: () -> Unit, onDone: (EnveliqApi, String, Boolean) -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val linkPrefs = remember { context.getSharedPreferences("enveliq_link", android.content.Context.MODE_PRIVATE) }
     var address by remember { mutableStateOf(initialAddress.ifBlank { "https://" }) }
     var showPassword by remember { mutableStateOf(false) }
     var username by remember { mutableStateOf("") }
@@ -87,6 +89,47 @@ fun SignInScreen(initialAddress: String, notice: String, onDone: (EnveliqApi, St
             } finally {
                 checking = false
             }
+        }
+    }
+
+    fun openBrowser() {
+        error = ""
+        try {
+            val client = EnveliqApi(address)
+            val verifier = BrowserLink.newVerifier()
+            linkPrefs.edit().putString("verifier", verifier).putString("address", address.trim()).putBoolean("keep", keep).putLong("at", System.currentTimeMillis()).apply()
+            context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(client.browserSignInUrl(BrowserLink.challengeOf(verifier)))))
+        } catch (e: ApiException) {
+            error = e.message ?: "That address is not right."
+        } catch (e: Exception) {
+            error = "No browser on this phone could open the page."
+        }
+    }
+
+    // The browser handed a one-time code back: swap it (with the secret kept here) for a session.
+    LaunchedEffect(linkCode) {
+        val code = linkCode ?: return@LaunchedEffect
+        val verifier = linkPrefs.getString("verifier", "") ?: ""
+        val addr = linkPrefs.getString("address", "") ?: ""
+        val keepIt = linkPrefs.getBoolean("keep", true)
+        val fresh = System.currentTimeMillis() - linkPrefs.getLong("at", 0L) < 10 * 60 * 1000
+        linkPrefs.edit().clear().apply()
+        onLinkUsed()
+        if (verifier.isEmpty() || addr.isEmpty() || !fresh) {
+            error = "That sign-in took too long or did not start here. Please try again."
+            return@LaunchedEffect
+        }
+        busy = true
+        try {
+            val client = EnveliqApi(addr)
+            withContext(Dispatchers.IO) { client.exchangeLink(code, verifier, keepIt) }
+            onDone(client, addr, keepIt)
+        } catch (e: ApiException) {
+            error = e.message ?: "That did not work."
+        } catch (e: Exception) {
+            error = "Something went wrong. Please try again."
+        } finally {
+            busy = false
         }
     }
 
@@ -189,8 +232,17 @@ fun SignInScreen(initialAddress: String, notice: String, onDone: (EnveliqApi, St
             if (error.isNotEmpty()) {
                 Text(error, color = Red, fontSize = 15.sp, modifier = Modifier.padding(top = 14.dp))
             }
+            if (!needsCode) {
+                OutlinedButton(
+                    onClick = { openBrowser() },
+                    enabled = !busy && address.trim().removePrefix("https://").removePrefix("http://").isNotBlank(),
+                    modifier = Modifier.fillMaxWidth().padding(top = 18.dp).height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                ) { Text("Sign in with a passkey or single sign-on", fontSize = 15.sp) }
+                Text("Opens your browser to sign in there, then brings you back here.", color = Muted, fontSize = 13.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
+            }
             Text(
-                "Passkeys and single sign-on are coming to the app. Until then, use your password. The app only talks to your own server, over a secure connection, and never keeps your password.",
+                "The app only talks to your own server, over a secure connection, and never keeps your password.",
                 color = Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 18.dp, bottom = 12.dp),
             )
         }

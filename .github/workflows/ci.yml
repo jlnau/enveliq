@@ -140,6 +140,8 @@ jobs:
         run: node scripts/check_link_check.mjs
       - name: Forward to check in Administration (simulated server)
         run: node scripts/check_check_address.mjs
+      - name: Sign in to the Android app through the browser (simulated server)
+        run: node scripts/check_app_signin.mjs
       - name: Snooze (simulated server)
         run: node scripts/check_snooze.mjs
       - name: Search everywhere (simulated server)

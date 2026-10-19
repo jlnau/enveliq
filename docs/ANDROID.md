@@ -44,6 +44,9 @@ Settings is a short list of topics: **Notifications**, **Swipe on an email**, **
 
 When you have more than one address (a mailbox's own address and its aliases, from the mailbox's "send as" list), the writing screen shows **From** at the top. Tap it to pick another address. A reply or forward can only use the addresses of the mailbox the email arrived in; a new email can use any of your mailboxes. Your mailbox's own address is the default, and when it is picked the app sends nothing extra, so the mail service behaves exactly as before. The choice is kept in drafts.
 
+## Passkeys and single sign-on
+On the sign-in screen, **Sign in with a passkey or single sign-on** opens your server's `/app-signin` page in the phone's browser. Sign in there the usual way; press **Open the Enveliq app** and the app finishes signing in (one-time code, two minutes, once, tied to a secret only the app holds). "Keep me signed in on this phone" is read when you press the button. After single sign-on the browser shows the inbox: go back to the app and press the button again, which now finishes straight away. The app registers the link `enveliq://signin` for this.
+
 ## Your devices and updates
 Settings, Security, **Your devices** lists the places you are signed in and lets you sign another one out. Names come from the app ("Enveliq app on <phone model>") or, for a browser, a short guess such as "Chrome on Windows". Sign-ins you chose to keep across a restart are listed too. The list is yours alone. About, **Check for a new version** asks your own server (which checks GitHub once a day) for the newest release and, if it is newer than the app, offers to open its download page; the app never contacts GitHub itself. Installing is Android's own step. If an administrator switched the update notice off, the app says it has no answer.
 
