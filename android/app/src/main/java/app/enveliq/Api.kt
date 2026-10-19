@@ -54,6 +54,9 @@ class EnveliqApi(address: String) {
             if (a.isEmpty()) throw ApiException("Type the address of your Enveliq, for example https://enveliq.example.com")
             if (!a.contains("://")) a = "https://$a"
             if (!a.startsWith("https://")) throw ApiException("The address must start with https://. The app only talks to your server over a secure connection.")
+            // People may type the address with /api (or /api/v1) on the end, for example when only that path is open
+            // through a security layer such as Cloudflare Access. The app adds /api/v1/... itself, so take it off.
+            a = a.replace(Regex("/api(/v1)?$", RegexOption.IGNORE_CASE), "").trimEnd('/')
             return a
         }
 
