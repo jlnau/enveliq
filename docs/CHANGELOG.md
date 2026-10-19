@@ -4,6 +4,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Android: files and summaries on an email, with the website's viewer.** The app now shows each file with the AI's summary (it was reading the wrong field before, so nothing appeared), and **View** opens PDFs, pictures, tables and text in the same viewer as the website. Touches `android/` (`AttachmentViewer.kt`, `Api.kt`).
+
+**Android: a cleaner main screen.** Menu, logo, search and your picture on one row; the bottom tabs moved into the menu; a thin row with the Inbox/Reviewed/Archived filter and a second filter button; pull down to refresh; symbols instead of words on the Reviewed, Archive and Bin buttons. Touches `android/` (`Home.kt`, `Chrome.kt`).
+
 **Send later.** **Later** beside Send on a new email, reply or forward sends it at a time you choose (within 30 days). Waiting emails are listed under Sent, **Waiting to send** (website) and More, Waiting to send (Android) and can be taken back. They are kept encrypted in the vault, so they survive a restart; files cannot wait. Touches `backend/mail/scheduled.py`, `backend/mail/scheduled_routes.py`, `backend/app.py`, `backend/export.py`, `prototype/index.html`, `android/`, `tests/test_scheduled.py`, `scripts/check_send_later.mjs`, `docs/SEND_LATER.md`, `SECURITY.md`.
 
 **Attach files to replies and forwards** (website and Android). A forward keeps the files of the original unless unticked and adds new ones. Touches `backend/mail/service.py`, `backend/mail/routes.py`, `prototype/index.html`, `android/`, `tests/test_attach_reply_forward.py`.

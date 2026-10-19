@@ -228,11 +228,21 @@ class EnveliqApi(address: String) {
                 val snoozedUntil = r.optDouble("snoozed_until", 0.0)
                 if (view == "inbox" && snoozedUntil * 1000 > System.currentTimeMillis()) continue        // snoozed: it comes back when the time is up
                 val files = ArrayList<Attachment>()
-                val rawFiles = r.optJSONArray("attachments")
+                val rawFiles = r.optJSONArray("attachment_summaries")
                 if (rawFiles != null) {
                     for (k in 0 until rawFiles.length()) {
                         val f = rawFiles.optJSONObject(k) ?: continue
-                        files.add(Attachment(f.optInt("index", k), f.str("filename").ifBlank { "Attachment " + (k + 1) }, f.optLong("size_bytes", 0L), f.str("summary")))
+                        val parts = ArrayList<Pair<String, String>>()
+                        f.optJSONArray("parts")?.let { arr ->
+                            for (q in 0 until arr.length()) arr.optJSONObject(q)?.let { parts.add(it.str("title") to it.str("text")) }
+                        }
+                        files.add(
+                            Attachment(
+                                f.optInt("index", k), f.str("filename").ifBlank { "Attachment " + (k + 1) }, f.optLong("size_bytes", 0L), f.str("summary"),
+                                mime = f.str("mime_type"), state = f.str("state"), note = f.str("note"), reason = f.str("reason"),
+                                parts = parts, pages = f.optInt("pages", 0),
+                            ),
+                        )
                     }
                 }
                 val received = r.optLong("received_at", 0L)
@@ -599,8 +609,8 @@ class EnveliqApi(address: String) {
     }
 
     /** A file from the email, fetched from the mailbox for this one request. The app does not keep it. */
-    fun download(mail: Mail, index: Int): ByteArray {
-        val conn = URL(base + "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/attachments/" + index).openConnection() as HttpURLConnection
+    fun download(mail: Mail, index: Int, preview: Boolean = false): ByteArray {
+        val conn = URL(base + "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/attachments/" + index + (if (preview) "?preview=true" else "")).openConnection() as HttpURLConnection
         try {
             conn.connectTimeout = 15000
             conn.readTimeout = 60000
@@ -614,6 +624,33 @@ class EnveliqApi(address: String) {
             throw e
         } catch (e: IOException) {
             throw ApiException("Could not get the file. Check your connection and try again.")
+        } finally {
+            conn.disconnect()
+        }
+    }
+
+    /** A readable copy of a file (PDF pages as pictures, a table, or text), made by the server in memory. Nothing is kept. Same route as the website's viewer. */
+    fun viewAttachment(mail: Mail, index: Int): JSONObject =
+        JSONObject(call("GET", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/attachments/" + index + "/view"))
+
+    /** Who is signed in (name and picture version), for the top bar. */
+    fun me(): Me {
+        val o = JSONObject(call("GET", "/api/v1/me"))
+        val name = o.str("display_name").ifBlank { o.str("username") }
+        val initials = name.split(Regex("\\s+")).mapNotNull { it.firstOrNull()?.toString() }.joinToString("").take(2).uppercase().ifBlank { "?" }
+        return Me(o.str("id"), name, initials, o.str("avatar_v"))
+    }
+
+    /** The person's own picture, or null when they have none. */
+    fun avatar(me: Me): ByteArray? {
+        if (me.avatarVersion.isBlank()) return null
+        val conn = URL(base + "/api/v1/users/" + enc(me.id) + "/avatar?v=" + enc(me.avatarVersion)).openConnection() as HttpURLConnection
+        return try {
+            conn.connectTimeout = 15000
+            conn.readTimeout = 30000
+            if (conn.responseCode >= 400) null else conn.inputStream.use { it.readBytes() }
+        } catch (_: Exception) {
+            null
         } finally {
             conn.disconnect()
         }
