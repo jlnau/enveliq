@@ -24,6 +24,7 @@ PLAIN_RECORDS = {
     "important_people": "important:",
     "signature_and_saved_replies": "saved:",
     "drafts": "drafts:",
+    "emails_to_send_later": "scheduled:",
     "rules": "rules:",
     "assistant_chats": "agent:",
 }

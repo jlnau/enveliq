@@ -351,6 +351,8 @@ body.backend .savebar{display:none}
 @media(max-width:640px){.srch-hit{flex-direction:column;gap:2px;align-items:flex-start;min-height:44px}.srch-w{max-width:100%}}
 .snz{display:block;color:var(--amber);font-size:11px;font-weight:600;line-height:1.3}.snz.back{color:var(--c-72df9f)}
 .snz-menu{position:fixed;z-index:60;width:min(280px,calc(100vw - 24px));padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);box-shadow:var(--shadow)}.snz-menu[hidden]{display:none}
+.snz-menu button[data-later-pick]{display:flex;width:100%;justify-content:space-between;align-items:baseline;gap:12px;border:0;background:transparent;color:var(--text);padding:10px;border-radius:8px;font-size:14px;text-align:left;min-height:44px}.snz-menu button[data-later-pick]:hover,.snz-menu button[data-later-pick]:focus-visible{background:var(--panel2)}
+@media(max-width:560px){.compose-foot small{display:none}}
 .snz-title{padding:6px 10px 4px;font-size:12px;font-weight:700;color:var(--muted)}.snz-menu button[data-snooze-pick]{display:flex;width:100%;justify-content:space-between;align-items:baseline;gap:12px;border:0;background:transparent;color:var(--text);padding:10px;border-radius:8px;font-size:14px;text-align:left;min-height:44px}.snz-menu button[data-snooze-pick]:hover,.snz-menu button[data-snooze-pick]:focus-visible{background:var(--panel2)}.snz-menu small{color:var(--muted);font-size:12px;white-space:nowrap}
 .snz-date{padding:8px 10px 6px;border-top:1px solid var(--line);margin-top:4px;font-size:13px}.snz-date label{display:block;margin-bottom:6px;color:var(--muted);font-size:12px;font-weight:700}.snz-date span{display:flex;gap:8px}.snz-date input{flex:1;min-width:0;min-height:40px;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:6px 8px;font:inherit}.snz-date button{min-height:40px;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:0 14px;font:inherit;font-weight:600}
 .find-inline{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:14px;margin:0 0 14px;display:grid;gap:10px}.find-inline[hidden]{display:none}.fi-head{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.fi-head b{font-size:16px}.fi-btns{display:flex;gap:8px;flex-wrap:wrap}.fi-tools{display:flex;gap:12px;align-items:center;flex-wrap:wrap;min-height:40px;padding:6px 4px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.fi-tools .selall{margin:0}.fi-count{color:var(--muted);font-size:13px}.fi-tools .obtn.blue{margin-left:auto}.find-box{display:grid;gap:10px}.find-q{margin:0;color:var(--muted);font-size:13.5px;overflow-wrap:anywhere}.find-q b{color:var(--text)}
@@ -1675,6 +1677,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
     <div class="sent-top"><span class="sent-tools"><select id="sentBox" aria-label="Mailbox" hidden></select><button class="btn" id="sentRefresh" type="button">Refresh</button></span></div>
     <div class="sent-note" role="note">Read from your mailbox when you open this page. Nothing is saved in Enveliq.</div>
     <div id="sentStatus" class="sent-status" role="status" aria-live="polite"></div>
+    <div id="sentWaiting" class="sent-list" hidden></div>
     <div id="sentList" class="sent-list"></div>
     <p id="sentFoot" class="sent-foot" hidden>Limited to the last 14 days.</p>
   </section>
@@ -2077,13 +2080,15 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
     <div class="saved-row" id="composeSavedRow" hidden><label for="composeSaved">Saved reply</label><select id="composeSaved"></select></div>
     <div><label for="composeText">Message</label><textarea id="composeText" placeholder="Write your reply"></textarea></div>
     <div class="wh" id="composeWh" hidden></div>
+    <div id="cmAttRow" hidden><label>Files you are adding</label><div class="nm-files" id="cmAtt"></div></div>
+    <div><button class="btn" type="button" id="cmAttach">Attach files</button><input type="file" id="cmFile" multiple hidden></div>
     <div id="cmFilesRow" hidden><label>Files from the original email</label><div class="nm-files" id="cmFiles"></div></div>
     <details><summary id="composeQuoteTitle">Original message (quoted below your reply)</summary><pre id="composeQuote"></pre></details>
     <div id="cmQuoteRow" hidden><button class="btn" type="button" id="cmQuoteIn">Put the original in my message</button><div class="compose-hint" id="cmQuoteHint">Adds the sender's email under your words so you can change or cut it. It is then not added a second time.</div></div>
   </form>
   <div class="compose-foot">
     <small>Prototype: nothing is sent. You always press Send yourself; the AI never sends mail.</small>
-    <div class="modal-actions"><button class="btn" id="composeCancel">Cancel</button><button class="primary" id="composeSend">Send reply</button></div>
+    <div class="modal-actions"><button class="btn" id="composeCancel">Cancel</button><button class="btn" id="composeLater" type="button">Send later</button><button class="primary" id="composeSend">Send reply</button></div>
   </div>
 </div>
 
@@ -2130,7 +2135,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
   <div class="compose-foot">
     <span class="nm-attach"><button class="btn" id="nmAttach" type="button">Attach</button><input type="file" id="nmFile" multiple hidden></span>
     <small id="nmHint"></small>
-    <div class="modal-actions"><button class="btn" id="nmCancel" type="button">Cancel</button><button class="primary" id="nmSend" type="button">Send</button></div>
+    <div class="modal-actions"><button class="btn" id="nmCancel" type="button">Cancel</button><button class="btn" id="nmLater" type="button">Send later</button><button class="primary" id="nmSend" type="button">Send</button></div>
   </div>
 </div>
 <div class="picbox" id="picBox" role="dialog" aria-modal="true" aria-labelledby="picName" hidden>
@@ -4376,6 +4381,16 @@ function cmCount(){
   el.hidden=!(composing.mode!=="reply"&&n>1)&&!(n>2);
   el.textContent=`This goes to ${n} people.`;
 }
+const cmExtra=[];       // files the person adds to a reply or forward: held in this page only until it is sent
+function paintCmExtra(){
+  $("cmAttRow").hidden=!cmExtra.length;
+  $("cmAtt").replaceChildren(...cmExtra.map((f,i)=>{
+    const sp=document.createElement("span");sp.className="nm-file";
+    const b=document.createElement("b");b.textContent=f.name;const z=document.createElement("span");z.textContent=kb(f.size);
+    const x=document.createElement("button");x.type="button";x.textContent="×";x.setAttribute("aria-label","Remove "+f.name);x.onclick=()=>{cmExtra.splice(i,1);paintCmExtra()};
+    sp.append(b,z,x);return sp;
+  }));
+}
 function paintCmFiles(){
   $("cmFilesRow").hidden=!cm.files.length;
   $("cmFiles").replaceChildren(...cm.files.map((f,i)=>{
@@ -4394,7 +4409,7 @@ function openComposer(id,mode,pre){
   if(mode==="reply_all"&&!(m.replyCc&&m.replyCc.length))mode="reply";
   if(mode==="forward"&&!(m.real&&realMail))mode="reply";
   composing={m,plan,mode,draftId:(pre&&pre.draftId)||null};
-  const f=cmFields();f.to.clear();f.cc.clear();f.bcc.clear();cm.files=[];cm.removed=0;paintCmFiles();
+  const f=cmFields();f.to.clear();f.cc.clear();f.bcc.clear();cm.files=[];cm.removed=0;cmExtra.length=0;paintCmExtra();paintCmFiles();
   const word=mode==="forward"?"Forward":mode==="reply_all"?"Reply all to":"Reply to";
   $("composeTitle").textContent=mode==="forward"?`Forward: ${m.subject}`:`${word} ${m.sender}`;
   $("composeContext").textContent=`${m.subject} · ${plan.acct?.name||m.account}`;
@@ -4485,8 +4500,8 @@ function sendReply(){
     const inlineQuote=hasInlineQuote(text);
     const plainDefault=!inlineQuote&&mode==="reply"&&!ccList.length&&!bccList.length&&toList.length===1&&toList[0]===plan.to;
     const req=mode==="forward"
-      ?secureBackendRequest(base+"/forward",{method:"POST",body:JSON.stringify({body:text,from_address:from,to:toList,cc:ccList,bcc:bccList,keep_files:cm.files.map(x=>x.index)})})
-      :secureBackendRequest(base+"/reply",{method:"POST",body:JSON.stringify(plainDefault?{body:text,from_address:from}:{body:text,from_address:from,kind:mode,to:toList,cc:ccList,bcc:bccList,add_original:!inlineQuote})});
+      ?secureBackendRequest(base+"/forward",{method:"POST",body:JSON.stringify({body:text,from_address:from,to:toList,cc:ccList,bcc:bccList,keep_files:cm.files.map(x=>x.index),files:cmExtra.map(x=>({name:x.name,type:x.type,data:x.data}))})})
+      :secureBackendRequest(base+"/reply",{method:"POST",body:JSON.stringify(plainDefault&&!cmExtra.length?{body:text,from_address:from}:{body:text,from_address:from,kind:mode,to:toList,cc:ccList,bcc:bccList,add_original:!inlineQuote,files:cmExtra.map(x=>({name:x.name,type:x.type,data:x.data}))})});
     const tgt=composing;
     req.then(async r=>{
         await settleAuto();const did=tgt.draftId;
@@ -6835,6 +6850,19 @@ function openNewMail(pre){
 function closeNewMail(){
   $("newMail").classList.remove("open");$("nmScrim").classList.remove("show");nm.files=[];nm.armed=false;nmWarned=false;nm.draftId=null;
 }
+$("cmAttach").onclick=()=>$("cmFile").click();
+$("cmFile").addEventListener("change",async e=>{
+  for(const f of [...e.target.files]){
+    const total=cmExtra.reduce((n,x)=>n+x.size,0);
+    if(cmExtra.length>=10){toast("Attach at most 10 files");break}
+    if(total+f.size>10*1024*1024){toast("Attachments can total at most 10 MB");break}
+    try{
+      const url=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result));r.onerror=()=>no(new Error("read"));r.readAsDataURL(f)});
+      cmExtra.push({name:f.name,type:f.type||"application/octet-stream",size:f.size,data:url.slice(url.indexOf(",")+1)});
+    }catch{toast(`Could not read ${f.name}`)}
+  }
+  e.target.value="";paintCmExtra();
+});
 $("nmFile").addEventListener("change",async e=>{
   for(const f of [...e.target.files]){
     const total=nm.files.reduce((n,x)=>n+x.size,0);
@@ -6905,6 +6933,86 @@ async function sendNew(){
   finally{nm.busy=false;btn.disabled=false;btn.textContent=label;btn.classList.remove("busy")}
 }
 
+// ---- Send later: the server keeps the email (encrypted, no files) and sends it from the mailbox at the chosen time ----
+let laterRun=null;
+function closeLaterMenu(){const m=$("laterMenu");if(m)m.hidden=true;laterRun=null}
+function openLaterMenu(btn,run){
+  if(!realMail||!feat.compose){toast("Send later is not available");return}
+  let menu=$("laterMenu");
+  if(!menu){menu=document.createElement("div");menu.id="laterMenu";menu.className="snz-menu";menu.setAttribute("role","menu");menu.style.zIndex="140";document.body.append(menu)}
+  const opts=snoozeOptions(new Date());
+  menu.innerHTML=`<div class="snz-title">Send it</div>`+opts.map(([label,when],i)=>`<button type="button" role="menuitem" data-later-pick="${i}"><span>${esc(label)}</span><small>${esc(snoozeWhen(+when))}</small></button>`).join("");
+  menu._opts=opts;laterRun=run;menu.hidden=false;
+  const r=btn.getBoundingClientRect(),w=Math.min(280,innerWidth-24);
+  menu.style.left=Math.max(12,Math.min(r.left,innerWidth-w-12))+"px";
+  const h=menu.offsetHeight;menu.style.top=Math.max(8,r.top-h-8)+"px";
+  const f=menu.querySelector("button");if(f)f.focus();
+}
+document.addEventListener("click",e=>{
+  const pick=e.target.closest&&e.target.closest("[data-later-pick]");
+  if(pick){const menu=$("laterMenu"),o=menu._opts&&menu._opts[+pick.dataset.laterPick],run=laterRun;closeLaterMenu();if(o&&run)run(+o[1]);return}
+  if($("laterMenu")&&!$("laterMenu").hidden&&!(e.target.closest&&e.target.closest("#nmLater,#composeLater,#laterMenu")))closeLaterMenu();
+});
+async function postLater(payload,ms){
+  const r=await secureBackendRequest("/api/v1/me/scheduled",{method:"POST",body:JSON.stringify({...payload,send_at:ms/1000})});
+  toast(`✓ It will be sent ${snoozeWhen(ms)}. You can take it back under Sent.`,6000);
+  return r;
+}
+async function laterNew(ms){
+  if(nm.busy)return;
+  const f=nmFields();
+  if(!f.to.commit()||!f.cc.commit()||!f.bcc.commit())return;
+  const to=f.to.items.map(addrText),cc=f.cc.items.map(addrText),bcc=f.bcc.items.map(addrText);
+  if(!to.length&&!cc.length&&!bcc.length){toast("Add at least one person to send this to");f.to.input.focus();return}
+  if(nm.files.length){toast("Files cannot wait for later. Send now, or take the files off.",6000);return}
+  const subject=$("nmSubject").value.trim(),body=$("nmText").value,[aid,from]=$("nmFrom").value.split("|");
+  nm.busy=true;
+  try{
+    await postLater({kind:"new",account_id:aid,to,cc,bcc,subject,body,from_address:from},ms);
+    await settleAuto();const did=nm.draftId;nm.busy=false;closeNewMail(true);if(did)deleteDraftQuiet(did);
+  }catch(er){toast(er.message,6000)}finally{nm.busy=false}
+}
+async function laterReply(ms){
+  if(!composing||sendingReply)return;
+  const {m,plan,mode}=composing;
+  if(!m.real){toast("Send later is not available");return}
+  const f=cmFields();
+  if(!f.to.commit()||!f.cc.commit()||!f.bcc.commit())return;
+  const text=$("composeText").value.trim();
+  if(mode!=="forward"&&isBare(text)){toast("Write your reply first");$("composeText").focus();return}
+  const from=$("composeFrom").value;
+  if(!plan.identities.includes(from)){toast("Choose one of your sending addresses");return}
+  if(!cmPeople().length){toast("Add at least one person to send this to");f.to.input.focus();return}
+  if(cmExtra.length){toast("Files you add cannot wait for later. Send now, or take them off.",6000);return}
+  const toList=f.to.items.map(p=>p.address),ccList=f.cc.items.map(p=>p.address),bccList=f.bcc.items.map(p=>p.address);
+  try{
+    await postLater({kind:mode,account_id:m.real.accountId,message_id:m.real.messageId,from_address:from,to:toList,cc:ccList,bcc:bccList,body:text},ms);
+    await settleAuto();const did=composing&&composing.draftId;closeComposer();if(did)deleteDraftQuiet(did);
+  }catch(er){toast(er.message,6000)}
+}
+async function loadWaiting(){
+  const box=$("sentWaiting");if(!box)return;
+  try{
+    const r=await secureBackendRequest("/api/v1/me/scheduled",{method:"GET",headers:{}});
+    if(!r.items.length){box.hidden=true;box.replaceChildren();return}
+    box.hidden=false;
+    box.replaceChildren(...r.items.map(it=>{
+      const row=document.createElement("div");row.className="sent-note";
+      const t=document.createElement("span");
+      t.textContent=(it.state==="failed"?"Could not be sent: ":"Waiting to send: ")+(it.subject||"(no subject)")+" to "+(it.to||"")+(it.state==="failed"?". "+(it.error||""):", "+snoozeWhen(it.send_at*1000))+" ";
+      const b=document.createElement("button");b.type="button";b.className="btn";b.textContent=it.state==="failed"?"Remove":"Take it back";
+      b.onclick=async()=>{
+        try{
+          const out=await secureBackendRequest("/api/v1/me/scheduled/"+encodeURIComponent(it.id),{method:"DELETE"});
+          if(it.state!=="failed"&&out&&out.kind==="new")openNewMail({account_id:out.account_id,from:out.from_address,to:out.to_list,cc:out.cc_list,bcc:out.bcc_list,subject:out.subject,body:out.body});
+          else toast(it.state==="failed"?"Removed":"Taken back. It will not be sent.");
+        }catch(er){toast(er.message)}
+        loadWaiting();
+      };
+      row.append(t,b);return row;
+    }));
+  }catch{box.hidden=true}
+}
 // ---- Sent: the last 14 days, read from the mailbox when opened, never stored ----
 let sentAcct="";
 async function loadSent(){
@@ -6915,6 +7023,7 @@ async function loadSent(){
     if(!sentAcct||!accounts.some(a=>a.id===sentAcct))sentAcct=accounts[0].id;
     box.value=sentAcct;box.hidden=false;
   }else{sentAcct=accounts[0].id;box.hidden=true}
+  loadWaiting();
   const aid=sentAcct,list=$("sentList"),status=$("sentStatus"),foot=$("sentFoot");
   list.replaceChildren();foot.hidden=true;status.textContent="Reading your Sent folder…";$("sentRefresh").disabled=true;
   try{
@@ -7299,6 +7408,8 @@ $("newMailBtn").onclick=()=>openNewMail();
 $("nmClose").onclick=requestCloseNewMail;$("nmCancel").onclick=requestCloseNewMail;
 $("nmSend").onclick=sendNew;$("nmForm").addEventListener("submit",e=>{e.preventDefault()});
 $("nmAttach").onclick=()=>$("nmFile").click();
+$("nmLater").onclick=e=>openLaterMenu(e.currentTarget,laterNew);
+$("composeLater").onclick=e=>openLaterMenu(e.currentTarget,laterReply);
 $("nmCcBtn").onclick=()=>{$("nmCcRow").hidden=false;nmFields().cc.input.focus()};
 $("nmBccBtn").onclick=()=>{$("nmBccRow").hidden=false;nmFields().bcc.input.focus()};
 $("cmCcBtn").onclick=()=>{$("cmCcRow").hidden=false;cmFields().cc.input.focus()};

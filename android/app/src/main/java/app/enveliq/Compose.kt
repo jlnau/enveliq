@@ -102,6 +102,8 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
     var askClose by remember { mutableStateOf(false) }
+    var askLater by remember { mutableStateOf(false) }
+    var laterLabel by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
     // Files for a new email. They are held in memory only, sent, and never saved on this phone.
@@ -187,7 +189,7 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
         }
     }
 
-    fun send() {
+    fun send(laterAtMs: Long? = null) {
         error = ""
         val toList = addresses(to)
         val ccList = addresses(cc)
@@ -209,15 +211,23 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             error = "There is no mailbox to send from."
             return
         }
+        if (laterAtMs != null && files.isNotEmpty()) {
+            error = "Files cannot wait for later. Send now, or take the files off."
+            return
+        }
         busy = true
         val chosen = from?.takeIf { !it.isDefault }?.address        // the mailbox's own address is the default, so nothing is sent for it
         scope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
+                    if (laterAtMs != null) {
+                        val id = api.scheduleSend(kind, if (kind == "new") boxId else mail!!.accountId, mail?.id, toList, ccList, bccList, subject, body, chosen, laterAtMs / 1000.0)
+                        return@withContext Sent(false, "", 0, id, laterLabel)
+                    }
                     when (kind) {
-                        "reply" -> api.reply(mail!!, false, body, chosen)
-                        "reply_all" -> api.reply(mail!!, true, body, chosen)
-                        "forward" -> api.forward(mail!!, toList, ccList, bccList, body, chosen)
+                        "reply" -> api.reply(mail!!, false, body, chosen, files.toList())
+                        "reply_all" -> api.reply(mail!!, true, body, chosen, files.toList())
+                        "forward" -> api.forward(mail!!, toList, ccList, bccList, body, chosen, files.toList())
                         else -> api.sendNew(boxId, toList, ccList, bccList, subject, body, chosen, files.toList())
                     }
                 }
@@ -274,7 +284,7 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             }
             Text(if (kind == "forward") "Your note (optional)" else "Message", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 14.dp, bottom = 6.dp))
             OutlinedTextField(value = body, onValueChange = { body = it }, minLines = 8, modifier = Modifier.fillMaxWidth())
-            if (kind == "new") {
+            run {
                 files.forEachIndexed { i, f ->
                     Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(f.name + " (" + sizeText(f.bytes.size) + ")", color = Ink, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
@@ -300,11 +310,48 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
                     modifier = Modifier.height(52.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
                 ) { Text("Save draft", color = Ink) }
             }
+            OutlinedButton(
+                onClick = { askLater = true }, enabled = !busy,
+                modifier = Modifier.height(52.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
+            ) { Text("Later", color = Ink) }
             Button(onClick = { send() }, enabled = !busy, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp)) {
                 if (busy) CircularProgressIndicator(Modifier.size(22.dp), color = Ink, strokeWidth = 2.dp)
                 else Text("Send", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
             }
         }
+    }
+
+    if (askLater) {
+        fun at(daysAhead: Int, hour: Int): Long {
+            val c = java.util.Calendar.getInstance()
+            c.add(java.util.Calendar.DAY_OF_YEAR, daysAhead)
+            c.set(java.util.Calendar.HOUR_OF_DAY, hour); c.set(java.util.Calendar.MINUTE, 0); c.set(java.util.Calendar.SECOND, 0); c.set(java.util.Calendar.MILLISECOND, 0)
+            return c.timeInMillis
+        }
+        fun pick(ms: Long, words: String) { askLater = false; laterLabel = words; send(ms) }
+        AlertDialog(
+            onDismissRequest = { askLater = false },
+            containerColor = Panel,
+            title = { Text("Send later", color = Ink) },
+            text = {
+                Column {
+                    Text("Enveliq keeps it, and sends it from your mailbox at that time. Files cannot wait.", color = Muted, fontSize = 13.sp)
+                    TextButton(onClick = { pick(System.currentTimeMillis() + 3 * 3600_000L, "in 3 hours") }) { Text("In 3 hours", color = Blue, fontSize = 16.sp) }
+                    TextButton(onClick = {
+                        val evening = at(0, 18)
+                        if (evening > System.currentTimeMillis() + 60_000L) pick(evening, "this evening") else pick(at(1, 18), "tomorrow evening")
+                    }) { Text("This evening", color = Blue, fontSize = 16.sp) }
+                    TextButton(onClick = { pick(at(1, 8), "tomorrow morning") }) { Text("Tomorrow morning", color = Blue, fontSize = 16.sp) }
+                    TextButton(onClick = {
+                        val c = java.util.Calendar.getInstance()
+                        val toMonday = ((java.util.Calendar.MONDAY - c.get(java.util.Calendar.DAY_OF_WEEK) + 7) % 7).let { if (it == 0) 7 else it }
+                        pick(at(toMonday, 8), "on Monday morning")
+                    }) { Text("Next Monday morning", color = Blue, fontSize = 16.sp) }
+                }
+            },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { askLater = false }) { Text("Cancel", color = Muted) } },
+        )
     }
 
     if (askClose) {

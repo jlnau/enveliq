@@ -65,7 +65,10 @@ data class Draft(
 )
 
 /** What the server said after a send. When [queued], the email waits [secondsLeft] seconds (the "undo send" time) and can still be taken back. */
-class Sent(val queued: Boolean, val outboxId: String, val secondsLeft: Int)
+class Sent(val queued: Boolean, val outboxId: String, val secondsLeft: Int, val scheduledId: String = "", val scheduledText: String = "")
+
+/** An email waiting for the time it was set to go. [state] is pending or failed (with [error] saying why). [at] is in seconds since 1970. */
+data class Waiting(val id: String, val subject: String, val to: String, val people: Int, val at: Long, val state: String, val error: String)
 
 /** One place the person is signed in. [signedIn] is in seconds since 1970. */
 data class DeviceInfo(val id: String, val name: String, val signedIn: Long, val current: Boolean)

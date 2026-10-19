@@ -185,11 +185,13 @@ internal fun MoreTab(api: EnveliqApi) {
         page == "news" -> NewsPage(api, back)
         page == "chat" -> ChatsPage(api, back)
         page == "find" -> FindPage(api, back)
+        page == "later" -> WaitingPage(api, back)
         else -> Column(Modifier.fillMaxSize()) {
             Heading("More", "")
             LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(listOf(
                     Triple("find", "Find any email", "Search everything in your mailboxes, old email too."),
+                    Triple("later", "Waiting to send", "Emails you set to go later, and any that could not go."),
                     Triple("bell", "Notes and alerts", "Things your other services told Enveliq."),
                     Triple("chat", "Messages", "Chat with the people in your household."),
                     Triple("shipping", "Shipping", "Parcels on their way and when they arrive."),
@@ -487,6 +489,36 @@ private fun FindPage(api: EnveliqApi, onBack: () -> Unit) {
                 }
             }
             item { if (more && !running) Text("Only the first results are shown. Add more words to narrow it down.", color = Muted, fontSize = 13.sp) }
+        }
+    }
+}
+
+@Composable
+private fun WaitingPage(api: EnveliqApi, onBack: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var reload by remember { mutableStateOf(0) }
+    var note by remember { mutableStateOf("") }
+    SubPage("Waiting to send", onBack = onBack) {
+        Loader(reload, { api.waiting() }) { items ->
+            LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (items.isEmpty()) item { Empty("Nothing is waiting. Press Later when you write an email to send it at a time you choose.") }
+                if (note.isNotEmpty()) item { Text(note, color = Amber, fontSize = 14.sp) }
+                items(items, key = { it.id }) { w ->
+                    Card {
+                        Text(w.subject, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text("To " + w.to + if (w.people > 1) " and " + (w.people - 1) + " more" else "", color = Muted, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        if (w.state == "failed") Text("Could not be sent: " + w.error.ifBlank { "Please try again." }, color = Red, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
+                        else Text("Goes " + whenText(w.at), color = Muted, fontSize = 14.sp)
+                        TextButton(onClick = {
+                            scope.launch {
+                                try { withContext(Dispatchers.IO) { api.cancelWaiting(w.id) }; note = if (w.state == "failed") "" else "Taken back. It will not be sent." }
+                                catch (e: Exception) { note = "Could not do that. Please try again." }
+                                reload++
+                            }
+                        }) { Text(if (w.state == "failed") "Remove" else "Take it back", color = Blue) }
+                    }
+                }
+            }
         }
     }
 }

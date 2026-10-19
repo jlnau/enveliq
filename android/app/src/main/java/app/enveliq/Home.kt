@@ -362,7 +362,17 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     fun afterSend(result: Sent) {
         composing = null
         scope.launch {
-            if (result.queued && result.secondsLeft > 0) {
+            if (result.scheduledId.isNotEmpty()) {
+                val answer = snack.showSnackbar(message = "It will be sent " + result.scheduledText, actionLabel = "Undo", duration = SnackbarDuration.Long)
+                if (answer == SnackbarResult.ActionPerformed) {
+                    try {
+                        withContext(Dispatchers.IO) { api.cancelWaiting(result.scheduledId) }
+                        snack.showSnackbar("Taken back. It will not be sent.")
+                    } catch (e: Exception) {
+                        snack.showSnackbar("Could not take it back. Look under More, Waiting to send.")
+                    }
+                }
+            } else if (result.queued && result.secondsLeft > 0) {
                 val timer = launch {
                     delay(result.secondsLeft * 1000L)
                     snack.currentSnackbarData?.dismiss()

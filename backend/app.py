@@ -44,6 +44,8 @@ from .mail.rules import Rules
 from .mail.rules_routes import build_rules_router
 from .mail.drafts import Drafts
 from .mail.drafts_routes import build_drafts_router
+from .mail.scheduled import ScheduledMail, ScheduledSender
+from .mail.scheduled_routes import build_scheduled_router
 from .mail.saved_writing import SavedWriting
 from .mail.saved_writing_routes import build_saved_writing_router
 from .mail.junk import JunkBook
@@ -372,6 +374,7 @@ async def lifespan(_: FastAPI):
     auto_sync.start()
     backups.start()
     reminders.start()
+    scheduled_sender.start()
     rss_refresher.start()
     sync.start()
     reporter.start()
@@ -383,6 +386,7 @@ async def lifespan(_: FastAPI):
         auto_sync.stop()
         backups.stop()
         reminders.stop()
+        scheduled_sender.stop()
         rss_refresher.stop()
         sync.stop()
         outbox.stop()
@@ -518,6 +522,7 @@ def delete_user_data(user_id: str) -> None:
     importantbook.forget_user(user_id)
     savedbook.forget_user(user_id)
     draftbook.forget_user(user_id)
+    scheduledbook.forget_user(user_id)
     rulebook.forget_user(user_id)
     junkbook.forget_user(user_id)
     finder = getattr(mail_ctx, "find_index", None)
@@ -635,6 +640,8 @@ subbook = SubBook(vault, taskbook.timezone_of)
 importantbook = ImportantPeople(vault)
 savedbook = SavedWriting(vault)
 draftbook = Drafts(vault)
+scheduledbook = ScheduledMail(vault)
+scheduled_sender = ScheduledSender(vault, mail_service, scheduledbook, vault.audit)
 rulebook = Rules(vault)
 tripbook = TripBook(vault, taskbook.timezone_of)
 messagebook = MessageBook(vault, users)
@@ -686,7 +693,7 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, scheduled=scheduledbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))
@@ -700,6 +707,7 @@ app.include_router(build_subscriptions_router(mail_ctx))
 app.include_router(build_important_router(mail_ctx))
 app.include_router(build_saved_writing_router(mail_ctx))
 app.include_router(build_drafts_router(mail_ctx))
+app.include_router(build_scheduled_router(mail_ctx))
 app.include_router(build_rules_router(mail_ctx))
 app.include_router(build_trips_router(mail_ctx))
 app.include_router(build_waiting_router(mail_ctx))

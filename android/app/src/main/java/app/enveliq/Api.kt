@@ -348,17 +348,23 @@ class EnveliqApi(address: String) {
         return out
     }
 
-    fun reply(mail: Mail, all: Boolean, text: String, from: String? = null): Sent = sentFrom(
+    private fun filesJson(files: List<PickedFile>): JSONArray = JSONArray(files.map {
+        JSONObject().put("name", it.name).put("type", it.type).put("data", android.util.Base64.encodeToString(it.bytes, android.util.Base64.NO_WRAP))
+    })
+
+    fun reply(mail: Mail, all: Boolean, text: String, from: String? = null, files: List<PickedFile> = emptyList()): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/reply",
-            JSONObject().put("body", text).put("kind", if (all) "reply_all" else "reply").also { if (from != null) it.put("from_address", from) },
+            JSONObject().put("body", text).put("kind", if (all) "reply_all" else "reply").also { if (from != null) it.put("from_address", from) }
+                .also { if (files.isNotEmpty()) it.put("files", filesJson(files)) },
         ),
     )
 
-    fun forward(mail: Mail, to: List<String>, cc: List<String>, bcc: List<String>, text: String, from: String? = null): Sent = sentFrom(
+    fun forward(mail: Mail, to: List<String>, cc: List<String>, bcc: List<String>, text: String, from: String? = null, files: List<PickedFile> = emptyList()): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/forward",
-            JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("body", text).also { if (from != null) it.put("from_address", from) },
+            JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("body", text).also { if (from != null) it.put("from_address", from) }
+                .also { if (files.isNotEmpty()) it.put("files", filesJson(files)) },
         ),
     )
 
@@ -374,6 +380,25 @@ class EnveliqApi(address: String) {
                 },
         ),
     )
+
+    /** Keeps the email at the server and sends it from the person's own mailbox at [atSeconds] (Unix time). Files cannot wait. */
+    fun scheduleSend(kind: String, accountId: String, messageId: String?, to: List<String>, cc: List<String>, bcc: List<String>, subject: String, text: String, from: String?, atSeconds: Double): String {
+        val body = JSONObject().put("kind", kind).put("account_id", accountId).put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc))
+            .put("subject", subject).put("body", text).put("send_at", atSeconds)
+        if (messageId != null) body.put("message_id", messageId)
+        if (from != null) body.put("from_address", from)
+        return JSONObject(call("POST", "/api/v1/me/scheduled", body)).str("id")
+    }
+
+    fun waiting(): List<Waiting> {
+        val arr = JSONObject(call("GET", "/api/v1/me/scheduled")).optJSONArray("items") ?: return emptyList()
+        return (0 until arr.length()).mapNotNull { i ->
+            val o = arr.optJSONObject(i) ?: return@mapNotNull null
+            Waiting(o.str("id"), o.str("subject").ifBlank { "(no subject)" }, o.str("to"), o.optInt("people", 1), o.optDouble("send_at", 0.0).toLong(), o.str("state"), o.str("error"))
+        }
+    }
+
+    fun cancelWaiting(id: String) { call("DELETE", "/api/v1/me/scheduled/" + enc(id)) }
 
     /** The signature the person saved on the website, or empty. */
     fun signature(): String = JSONObject(call("GET", "/api/v1/me/saved")).str("signature")
