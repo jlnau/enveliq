@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Android: Back clears the inbox filters.** When the inbox is filtered (Reviewed or Archived, needs action, a mailbox or a tag), Back now removes the filters and shows the whole inbox. Back from the unfiltered inbox is the last step and leaves the app, as before. Touches `android/` (`Home.kt`).
+
 **Android: pinch to zoom now zooms where you pinch.** Zooming a picture or PDF used to grow from the top left corner. It now keeps the spot between your fingers in place, as you would expect, and double-tap and the + and − buttons zoom around the spot you tapped or the middle of the screen. Touches `android/` (`AttachmentViewer.kt`).
 
 **Android: the notification bell is on the top row.** A bell sits next to search on the top row of every screen. It opens Notes and alerts and shows a small red dot when something is new. Touches `android/` (`Chrome.kt`, `Home.kt`, `More.kt`).

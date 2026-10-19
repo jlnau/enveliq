@@ -350,6 +350,13 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     var composing by remember { mutableStateOf<ComposeTarget?>(null) }
     // Back from Tasks, Drafts, More or Settings goes to the inbox first; Back from the inbox leaves the app.
     BackHandler(enabled = tab != Tab.Inbox && opened == null && composing == null) { tab = Tab.Inbox }
+    // Back from a filtered inbox (Reviewed, Archived, needs action, a mailbox or a tag) clears the filters and shows the whole inbox.
+    // Only then does Back leave the app.
+    val filters = remember { InboxFilters() }
+    BackHandler(enabled = tab == Tab.Inbox && opened == null && composing == null && !drawer.isOpen && selected.isEmpty() &&
+        (view != "inbox" || filters.active)) {
+        view = "inbox"; filters.clear()
+    }
     // "Share" from another app: the text arrives in a new email, ready to address.
     val shared = activity.shareRequest
     LaunchedEffect(shared) {
@@ -601,7 +608,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         val wide = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp >= 720
         val inboxPane: @Composable () -> Unit = {
             InboxTab(
-                        mails, loading, error, inboxList, selected, view, onView = { view = it; selected.clear() },
+                        mails, loading, error, inboxList, selected, view, filters, onView = { view = it; selected.clear() },
                         searching = searching, query = query, onQuery = { query = it },
                         swipeRight = prefs.getString("swipe_right", "archive") ?: "archive",
                         swipeLeft = prefs.getString("swipe_left", "bin") ?: "bin",
@@ -660,18 +667,27 @@ internal fun Heading(title: String, subtitle: String, trailing: @Composable () -
     }
 }
 
+/** The inbox filters that are not the Inbox/Reviewed/Archived choice. Kept here so Back can clear them. */
+internal class InboxFilters {
+    var onlyAction by mutableStateOf(false)
+    var tag by mutableStateOf<String?>(null)
+    var box by mutableStateOf<String?>(null)
+    val active: Boolean get() = onlyAction || tag != null || box != null
+    fun clear() { onlyAction = false; tag = null; box = null }
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun InboxTab(
     mails: List<Mail>, loading: Boolean, error: String, listState: LazyListState, selected: MutableList<String>,
-    view: String, onView: (String) -> Unit,
+    view: String, filters: InboxFilters, onView: (String) -> Unit,
     searching: Boolean, query: String, onQuery: (String) -> Unit,
     swipeRight: String, swipeLeft: String,
     onOpen: (Mail) -> Unit, onSwipe: (Mail, Outcome) -> Unit, onRefresh: () -> Unit,
 ) {
-    var onlyAction by remember { mutableStateOf(false) }
-    var tag by remember { mutableStateOf<String?>(null) }
-    var box by remember { mutableStateOf<String?>(null) }
+    var onlyAction by filters::onlyAction
+    var tag by filters::tag
+    var box by filters::box
     val q = query.trim()
     var pickingTag by remember { mutableStateOf(false) }
     var viewMenu by remember { mutableStateOf(false) }
