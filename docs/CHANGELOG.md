@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Android: a slower, clearer swipe.** Swiping an email now slides it off, shows its symbol (tick, archive box or bin) growing on the coloured bar, then folds the gap closed before the Undo bar appears. Touches `android/` (`Home.kt`).
+
 **Android: files and summaries on an email, with the website's viewer.** The app now shows each file with the AI's summary (it was reading the wrong field before, so nothing appeared), and **View** opens PDFs, pictures, tables and text in the same viewer as the website. Touches `android/` (`AttachmentViewer.kt`, `Api.kt`).
 
 **Android: a cleaner main screen.** Menu, logo, search and your picture on one row; the bottom tabs moved into the menu; a thin row with the Inbox/Reviewed/Archived filter and a second filter button; pull down to refresh; symbols instead of words on the Reviewed, Archive and Bin buttons. Touches `android/` (`Home.kt`, `Chrome.kt`).

@@ -58,6 +58,9 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -676,6 +679,8 @@ private fun SwipeRow(
 ) {
     val rightOutcome = swipeOutcome(right)
     val leftOutcome = swipeOutcome(left)
+    var chosen by remember { mutableStateOf<Outcome?>(null) }
+    var collapsed by remember { mutableStateOf(false) }
     val state = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             val outcome = when (value) {
@@ -684,13 +689,32 @@ private fun SwipeRow(
                 else -> null
             }
             if (outcome != null) {
-                onSwipe(outcome)
+                chosen = outcome          // the row finishes its slide and folds away first; only then is it really actioned
                 true
             } else {
                 false
             }
         },
     )
+    // A slower, visible finish: the row slides off, the coloured bar holds for a moment, then the gap folds closed. Then the email is actioned and Undo appears.
+    val outcomeNow = chosen
+    LaunchedEffect(outcomeNow) {
+        if (outcomeNow == null) return@LaunchedEffect
+        kotlinx.coroutines.delay(350)
+        collapsed = true
+        kotlinx.coroutines.delay(450)
+        onSwipe(outcomeNow)
+    }
+    val fold by androidx.compose.animation.core.animateFloatAsState(
+        if (collapsed) 0f else 1f, androidx.compose.animation.core.tween(450, easing = androidx.compose.animation.core.FastOutSlowInEasing), label = "fold",
+    )
+    Box(
+        Modifier.layout { measurable, constraints ->
+            val p = measurable.measure(constraints)
+            val h = (p.height * fold).toInt()
+            layout(p.width, h) { p.placeRelative(0, 0) }
+        }.graphicsLayer { alpha = fold }.clipToBounds(),
+    ) {
     SwipeToDismissBox(
         modifier = Modifier.semantics {
             // Swiping is hard or impossible with a screen reader, so the same actions are offered in TalkBack's actions menu.
@@ -712,18 +736,31 @@ private fun SwipeRow(
                 Outcome.Binned -> Color(0xFF3A1D22)
                 else -> Navy
             }
+            val settled = chosen != null || state.targetValue != SwipeToDismissBoxValue.Settled
+            val grow by androidx.compose.animation.core.animateFloatAsState(
+                if (settled) 1.25f else 0.85f, androidx.compose.animation.core.spring(dampingRatio = 0.4f, stiffness = 300f), label = "grow",
+            )
             Box(
                 Modifier.fillMaxSize().background(color).padding(horizontal = 24.dp),
                 contentAlignment = if (toRight) Alignment.CenterStart else Alignment.CenterEnd,
             ) {
-                Text(
-                    when (outcome) { Outcome.Reviewed -> "Reviewed"; Outcome.Archived -> "Archive"; Outcome.Binned -> "Bin"; else -> "" },
-                    color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
-                )
+                Row(Modifier.graphicsLayer { scaleX = grow; scaleY = grow }, verticalAlignment = Alignment.CenterVertically) {
+                    when (outcome) {
+                        Outcome.Reviewed -> Icon(Icons.Filled.Check, contentDescription = null, tint = Green)
+                        Outcome.Archived -> ArchiveIcon(Color(0xFF8DB8FF))
+                        Outcome.Binned -> Icon(Icons.Filled.Delete, contentDescription = null, tint = Red)
+                        else -> {}
+                    }
+                    Text(
+                        when (outcome) { Outcome.Reviewed -> "  Reviewed"; Outcome.Archived -> "  Archive"; Outcome.Binned -> "  Bin"; else -> "" },
+                        color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+                    )
+                }
             }
         },
     ) {
         MailRow(mail, picked, onClick, onLongClick)
+    }
     }
 }
 
