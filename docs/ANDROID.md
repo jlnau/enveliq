@@ -60,25 +60,26 @@ Which emails alert you, quiet hours and the "important people only" filter are t
 
 ## Using the app
 
+- **Swipe an email** right or left to Archive, Bin or mark it Reviewed (Settings, Swipe on an email; to begin with right is Archive and left is Bin, or choose Nothing to switch a side off). Every swipe can be undone for a few seconds.
+- **Select several:** press and hold an email, tap more to add them, then Reviewed, Archive or Bin for all of them. **Select all** ticks everything in the list.
+- **Search** your inbox (the Search button at the top): it looks at the sender, subject and summary of the emails already in your inbox. Searching all your mail is still on the website.
+- **Remind me later** (on an opened email): put it away until in 3 hours, tomorrow morning or next Monday morning. It comes back in your inbox then, and the website shows it as snoozed too. Undo brings it back at once.
 - **Pull down** on the inbox to refresh. The list keeps its place when you switch tabs.
 - **Ask for my fingerprint, face or PIN** (Settings, Security): Enveliq asks for it when you open it, and again after it has been out of sight for a minute. It needs a screen lock to be set up in Android first; the app never locks you out of a phone that has none. This is a convenience on top of your sign-in, not a replacement for it.
 
 ## Android app to-do list
 
-Done in this version: https:// filled in, Show password, plainer errors, tap an alert to open the email, Reviewed/Archive buttons on the alert, alerts that clear themselves, pull to refresh, fingerprint/face/PIN lock.
+Done in version 0.95: https:// filled in, Show password, plainer errors, tap an alert to open the email, Reviewed/Archive buttons on the alert, alerts that clear themselves, pull to refresh, fingerprint/face/PIN lock.
 
 Still to do. Everything the website does that makes sense on a phone, roughly in this order:
 
 **Everyday email**
 - Reply, Reply all and Forward, with the same drafts and sending rules as the website.
 - New email, with access to your **address list** (suggestions as you type a name).
-- **Swipe left and right** on an email to Archive or Bin it. In Settings you choose what each direction does (Archive, Bin, Reviewed, or nothing), with Undo as now.
 - **Email tags**: see, add and remove tags, and filter the inbox by tag.
-- The full set of actions the website has: Task, Undo, mark unread, move, and bulk select ("select several, then Archive").
+- The rest of the website's actions: Task, mark unread (needs a way to see reviewed email first, so it comes with folders and views), and move.
 - Attachments: their summaries, a View button (page pictures held in memory only) and Save or Share.
 - Links in an email open only after a tap and a plain "this goes to …" check.
-- Search the inbox.
-- Snooze ("remind me later").
 - Folders and views as on the website (Today, Needs attention, and your folders), and more than one mailbox.
 
 **Beyond email** (each as its own screen, as on the website)

@@ -185,6 +185,8 @@ class EnveliqApi(address: String) {
                 val state = r.str("state")
                 if (state == "reviewed" || state == "archived") continue
                 if (r.optBoolean("from_all_mail", false)) continue
+                val snoozedUntil = r.optDouble("snoozed_until", 0.0)
+                if (snoozedUntil * 1000 > System.currentTimeMillis()) continue        // snoozed: it comes back when the time is up
                 val received = r.optLong("received_at", 0L)
                 val task = r.optJSONObject("suggested_task")
                 val taskTitle = task?.str("title") ?: ""
@@ -225,6 +227,13 @@ class EnveliqApi(address: String) {
 
     fun unregisterPush(id: String) {
         call("DELETE", "/api/v1/me/notifications/android/" + enc(id))
+    }
+
+    /** Keeps an email out of the inbox until [untilSeconds] (a Unix time), or brings it back now when null. */
+    fun snooze(mail: Mail, untilSeconds: Double?) {
+        val body = JSONObject()
+        if (untilSeconds == null) body.put("until", JSONObject.NULL) else body.put("until", untilSeconds)
+        call("POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/snooze", body)
     }
 
     fun resolve(mail: Mail, outcome: Outcome) {

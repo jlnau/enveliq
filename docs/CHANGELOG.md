@@ -4,7 +4,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**Android: swipe, select several, search and remind me later.** Swipe an email right or left to Archive, Bin or mark it Reviewed (you choose each side in Settings, Swipe on an email, or switch a side off; Undo works as before). Press and hold an email to select several, then Reviewed, Archive or Bin for all of them, or Select all. **Search** looks through the emails in your inbox. **Remind me later** on an opened email puts it away until in 3 hours, tomorrow morning or next Monday morning (it uses the website's existing snooze, so it shows there as snoozed too); emails snoozed on the website no longer show in the app's inbox until their time. Touches `android/` (`Home.kt`, `Api.kt`), `docs/ANDROID.md`.
 
 ## v0.95 (2026-10-19)
 
