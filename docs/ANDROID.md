@@ -78,7 +78,7 @@ Settings, Security, **Your devices** lists the places you are signed in and lets
 - **Pick from phone contacts** on a new email opens Android's contact picker. Only the one address you choose is handed over, so Enveliq does not need permission to read your contacts.
 - **Links that start an email.** Tapping an email address or `mailto:` link in another app can offer Enveliq, and a new email opens with the address (and subject or text, if the link had them) filled in. Nothing is sent until you press Send.
 - **Open the next email** (Settings): after you archive or mark reviewed the email you are reading, the next one in the list opens.
-- **Get the Android app** (Settings, About) opens the download page, for this or another phone. The same link is on the website's front page and guide menu, and in the website's Settings.
+- **Get the Android app** (Settings, About) opens the download page, for this or another phone. The website's front page and Settings link to this guide, which has the download button.
 
 ## Not in the app
 

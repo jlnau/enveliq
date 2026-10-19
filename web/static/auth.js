@@ -687,7 +687,7 @@ async function accountPage(me, params) {
     const devSlot = h("div", {});
     const devices = h("section", { class: "section", id: "devices" }, h("h2", { text: "Your devices" }),
       h("p", { class: "lead", text: "Where you are signed in. Signing a device out takes effect straight away." }), devSlot,
-      h("p", { class: "hint" }, "Using Android? ", h("a", { href: "https://github.com/jlnau/enveliq/releases/latest", target: "_blank", rel: "noopener noreferrer", text: "Download the Enveliq app" }), "."));
+      h("p", { class: "hint" }, "Using Android? ", h("a", { href: "https://enveliq.app/docs/android/", target: "_blank", rel: "noopener noreferrer", text: "Get the Enveliq app" }), "."));
     const loadDevices = async () => {
       try {
         const out = await api("/auth/devices");
@@ -1489,7 +1489,7 @@ function androidCard(ch, redraw) {
   const body = h("div", { class: "chan-form" }, h("p", { class: "hint", text: ch.blurb }),
     ch.available || ch.devices.length ? h("ol", { class: "howto" }, ch.steps.slice(0, 3).map(t => h("li", { text: t }))) : alertBox("info", "Your administrator has not set this up yet."),
     ...list, ch.last_error ? alertBox("bad", `The last send failed: ${ch.last_error}`) : null,
-    h("p", { class: "hint" }, h("a", { href: "https://github.com/jlnau/enveliq/releases/latest", target: "_blank", rel: "noopener noreferrer", text: "Download the Android app" }), " (a file ending in .apk, saved from the newest release)."));
+    h("p", { class: "hint" }, h("a", { href: "https://enveliq.app/docs/android/", target: "_blank", rel: "noopener noreferrer", text: "Get the Android app" }), " (how to download and install it)."));
   return h("details", { class: "chan", open: !!(ch.devices.length || ch.last_error) }, h("summary", {}, h("strong", { text: ch.label }), " ", status), body);
 }
 function channelCard(ch, redraw) {
