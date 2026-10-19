@@ -39,6 +39,19 @@ Passkeys and single sign-on, notes from Home Assistant and other services, task 
 - Android needs a small permanent note while an app keeps a connection open ("Enveliq is watching for new email"). It is silent and tucked away. Turning the setting off removes it.
 - If the phone has been still for a long time, Android may pause background apps ("Doze") and alerts can come late. **Keep alerts on time** in Settings asks Android to let Enveliq run without that limit.
 
+## Google's push service (optional)
+
+By default the app keeps its own connection to your server (above). If your administrator has set up Google's push service, **Settings, Tell me when new email arrives** offers a second choice, **Google's push service**: alerts arrive instantly, even when the phone has been still for hours, and the "watching" note disappears. The cost: Google is told that a notification was sent to your phone, and when. The message itself holds only the word "mail" (or "test") and a count. The sender, subject and summary never go through Google: the phone wakes up and asks your Enveliq for the details itself, then shows them only once the phone is unlocked.
+
+Until you choose it the app never contacts Google: Firebase's automatic start-up and analytics are switched off. Switching back to the direct connection, turning alerts off, or signing out deletes the phone's Google address and removes the phone from your Enveliq.
+
+**Set-up, once:**
+1. Make a free Firebase project at console.firebase.google.com and add an Android app with the package name `app.enveliq`.
+2. Download its `google-services.json` and add it to the GitHub repository as an encrypted secret called `GOOGLE_SERVICES_JSON`. The **Build Android app** workflow writes it into the build; the workflow summary says "Google push is included". Without the secret the app is built without Google push and the choice is not shown.
+3. In the Firebase project, Project settings, Service accounts, **Generate new private key**. In Enveliq, **Administration, Notifications, Android app alerts**, paste the whole file and Save. It is checked, kept encrypted, and never shown again. **Remove the key** switches Google push off for everyone.
+
+Which emails alert you, quiet hours and the "important people only" filter are the same settings as for browser alerts (Settings, Alerts), because the app is one more place those alerts go. Switching on alerts in the app switches on **New email alerts** there. Only new-email alerts go to the app; task reminders use your other channels.
+
 ## Privacy
 
 - No email is written to the phone. It is held in memory while on the screen. The only thing kept is your sign-in (below), and the server address you typed.
@@ -50,4 +63,4 @@ Passkeys and single sign-on, notes from Home Assistant and other services, task 
 
 ## How it is built
 
-`android/` is a Gradle project (`app/` holds the code). `Api.kt` talks to the same JSON routes the website uses; `Home.kt` and `Screens.kt` are the screens; `SessionVault.kt` keeps the sign-in encrypted; `Notifier.kt` makes the notifications; `MailWatcher.kt` is the background service that keeps the one connection and the alert settings; `Data.kt` holds the small data types. The **Build Android app** workflow compiles it with the Android SDK on a GitHub runner, signs it, and attaches the APK. Version 1 for everyone needs the server groundwork in the plan first (per-device tokens, a list of devices, the public API list in Cloudflare).
+`android/` is a Gradle project (`app/` holds the code). `Api.kt` talks to the same JSON routes the website uses; `Home.kt` and `Screens.kt` are the screens; `SessionVault.kt` keeps the sign-in encrypted; `Notifier.kt` makes the notifications; `Push.kt` is Google's push service (only when chosen); `MailWatcher.kt` is the background service that keeps the one connection and the alert settings; `Data.kt` holds the small data types. The **Build Android app** workflow compiles it with the Android SDK on a GitHub runner, signs it, and attaches the APK. Version 1 for everyone needs the server groundwork in the plan first (per-device tokens, a list of devices, the public API list in Cloudflare).

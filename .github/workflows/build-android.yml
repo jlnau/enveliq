@@ -84,6 +84,16 @@ jobs:
         with:
           path: ~/.android/debug.keystore
           key: enveliq-android-debug-keystore
+      - name: Add the Google push file (when the secret is set)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+            echo "PUSH=Google push is included" >> "$GITHUB_ENV"
+          else
+            echo "PUSH=Google push is not included (add the GOOGLE_SERVICES_JSON secret)" >> "$GITHUB_ENV"
+          fi
       - name: Accept the Android SDK licences
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
       - name: Build the app
@@ -110,7 +120,7 @@ jobs:
           "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "Enveliq-${APP_VERSION}.apk" | head -3
           {
             echo "### Enveliq for Android ${APP_VERSION}"
-            echo "Signed with ${SIGNING}."
+            echo "Signed with ${SIGNING}. ${PUSH}."
             echo '```'
             cat "Enveliq-${APP_VERSION}.apk.sha256"
             echo '```'

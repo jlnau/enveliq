@@ -136,7 +136,12 @@ fun EnveliqApp(activity: MainActivity) {
                 api = client,
                 server = server,
                 onLeave = { signedOutByServer ->
-                    Thread { client.signOut() }.start()
+                    val pushId = AlertPrefs.pushDevice(activity)
+                    Thread {
+                        if (pushId != null) try { client.unregisterPush(pushId) } catch (_: Exception) { }
+                        client.signOut()
+                    }.start()
+                    if (pushId != null) Push.stop(activity)
                     SessionVault.clear(activity)
                     AlertPrefs.reset(activity)
                     MailWatcherService.stop(activity)
@@ -472,6 +477,46 @@ private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, server
     var quietFrom by remember { mutableStateOf(AlertPrefs.quietFrom(context)) }
     var quietTo by remember { mutableStateOf(AlertPrefs.quietTo(context)) }
     var alertNote by remember { mutableStateOf("") }
+    var mode by remember { mutableStateOf(AlertPrefs.mode(context)) }
+    var googleOffered by remember { mutableStateOf(false) }
+    var working by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(mailAlerts) {
+        googleOffered = false
+        if (mailAlerts && Push.installed(context)) googleOffered = try { withContext(Dispatchers.IO) { api.pushAvailable() } } catch (_: Exception) { false }
+    }
+    fun useGoogle() {
+        if (working) return
+        working = true
+        alertNote = ""
+        scope.launch {
+            try {
+                val token = Push.token(context) ?: throw ApiException("Google's push service did not answer. Check that this phone has Google Play services and a connection, then try again.")
+                val id = withContext(Dispatchers.IO) { api.registerPush(token, Build.MODEL, AlertPrefs.pushDevice(context)) }
+                AlertPrefs.setPushDevice(context, id)
+                AlertPrefs.setMode(context, "google")
+                mode = "google"
+                MailWatcherService.stop(context)
+                alertNote = "Done. New-email alerts now come through Google's push service, and the watching note is gone."
+            } catch (e: ApiException) {
+                alertNote = e.message ?: "Could not set up Google push."
+            } catch (_: Exception) {
+                alertNote = "Could not set up Google push. Try again."
+            } finally {
+                working = false
+            }
+        }
+    }
+    fun useDirect() {
+        val id = AlertPrefs.pushDevice(context)
+        AlertPrefs.setMode(context, "direct")
+        AlertPrefs.setPushDevice(context, null)
+        mode = "direct"
+        Push.stop(context)
+        if (id != null) scope.launch(Dispatchers.IO) { try { api.unregisterPush(id) } catch (_: Exception) { } }
+        MailWatcherService.start(context)
+        alertNote = ""
+    }
     val power = remember { context.getSystemService(android.os.PowerManager::class.java) }
     var unrestricted by remember { mutableStateOf(power.isIgnoringBatteryOptimizations(context.packageName)) }
     var hide by remember { mutableStateOf(prefs.getBoolean("hide_in_recents", false)) }
@@ -479,6 +524,8 @@ private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, server
     fun turnOnAlerts() {
         SessionVault.save(context, server, api.sessionCookies())     // alerts need a kept sign-in
         AlertPrefs.setSeeded(context, false)       // what is in the inbox now is not new
+        AlertPrefs.setMode(context, "direct")
+        mode = "direct"
         AlertPrefs.setOn(context, true)
         mailAlerts = true
         alertNote = ""
@@ -501,8 +548,10 @@ private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, server
             mailAlerts,
         ) { on ->
             if (!on) {
+                if (AlertPrefs.mode(context) == "google") useDirect()
                 AlertPrefs.setOn(context, false)
                 mailAlerts = false
+                mode = "direct"
                 MailWatcherService.stop(context)
             } else if (!Notifier.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
                 askMailPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -512,6 +561,32 @@ private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, server
             "Enveliq stays signed in on this phone and keeps one quiet connection to your server. It uses almost no battery, and does nothing at all while the phone has no signal.",
             color = Muted, fontSize = 13.sp, lineHeight = 18.sp, modifier = Modifier.padding(bottom = 6.dp),
         )
+        if (mailAlerts && googleOffered) {
+            Text("How should alerts reach this phone?", color = Ink, fontSize = 15.sp, modifier = Modifier.padding(top = 4.dp, bottom = 4.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = mode == "direct", enabled = !working, onClick = { if (mode != "direct") useDirect() }, label = { Text("Direct from my server") })
+                FilterChip(selected = mode == "google", enabled = !working, onClick = { if (mode != "google") useGoogle() }, label = { Text("Google's push service") })
+            }
+            Text(
+                if (mode == "google") "Instant, with no \"watching\" note. Google is told that a notification was sent, never what it says."
+                else "Nothing goes through any other company. Android shows a small \"watching\" note while it waits.",
+                color = Muted, fontSize = 13.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp, bottom = 4.dp),
+            )
+            if (mode == "google") OutlinedButton(
+                onClick = {
+                    val id = AlertPrefs.pushDevice(context)
+                    if (id != null && !working) {
+                        working = true
+                        scope.launch {
+                            alertNote = try { withContext(Dispatchers.IO) { api.testPush(id) }; "Sent. A note should appear in a few seconds." }
+                            catch (e: ApiException) { e.message ?: "The test did not go through." } catch (_: Exception) { "The test did not go through." }
+                            working = false
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).height(48.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
+            ) { Text("Send a test through Google", color = Ink) }
+        }
         if (alertNote.isNotEmpty()) Text(alertNote, color = Muted, fontSize = 13.sp, modifier = Modifier.padding(bottom = 6.dp))
         if (mailAlerts) {
             SwitchRow("Quiet hours", "No sound or buzz. New email still waits for you in the notification list.", quietOn) {
@@ -538,7 +613,7 @@ private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, server
                     modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
                 ) { Text("Until " + AlertPrefs.timeText(quietTo), color = Ink) }
             }
-            if (!unrestricted) {
+            if (!unrestricted && mode == "direct") {
                 Text(
                     "If alerts sometimes arrive late when the phone has been still for a while, let Enveliq run without Android's battery limit. It still uses very little.",
                     color = Muted, fontSize = 13.sp, lineHeight = 18.sp,

@@ -20,7 +20,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, utils
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-from . import outbound
+from . import fcm, outbound
 from .notify import CHANNELS, CHECKS, Notifier, _clean, f, register_extra
 from .outbound import OutboundError
 
@@ -197,6 +197,93 @@ register_extra("browser", {
               "Needs an https:// address (or localhost). If notifications are blocked, allow them in the browser's site settings."],
     "send": _send_browser, "local_ok": False, "describe": _describe_browser,
     "keep": "Press Turn on for this device first.",
+}, lambda v: {})
+
+
+# ---------- The Enveliq Android app, through Google's push service ----------
+
+def android_devices(values: dict[str, str]) -> list[dict[str, Any]]:
+    try:
+        raw = json.loads(values.get("subs") or "[]")
+    except ValueError:
+        return []
+    return [d for d in raw if isinstance(d, dict) and d.get("token") and d.get("id")]
+
+
+def _describe_android(values: dict[str, str], notifier: Notifier) -> dict[str, Any]:
+    return {"devices": [{"id": d["id"], "label": d.get("label", "A phone"), "added": d.get("added")} for d in android_devices(values)],
+            "available": fcm.load(notifier.vault) is not None}
+
+
+def add_android_device(notifier: Notifier, user_id: str, token: str, label: str, replaces: str | None = None) -> str:
+    token = _clean(token, 500)
+    if not fcm.DEVICE_TOKEN.match(token):
+        raise ValueError("That phone did not give a usable address.")
+    if fcm.load(notifier.vault) is None:
+        raise ValueError("Your administrator has not set up Android alerts yet.")
+    with notifier._lock:
+        values = notifier.get_values(user_id, "android")
+        current = [d for d in android_devices(values) if d["token"] != token and d["id"] != replaces]
+        if len(current) >= MAX_DEVICES:
+            raise ValueError(f"You can use up to {MAX_DEVICES} phones. Remove one first.")
+        device_id = secrets.token_hex(6)
+        current.append({"id": device_id, "token": token, "label": _clean(label, 60) or "A phone", "added": time.time()})
+        notifier.set_values(user_id, "android", {"subs": json.dumps(current)}, enabled=True)
+    return device_id
+
+
+def remove_android_device(notifier: Notifier, user_id: str, device_id: str) -> None:
+    with notifier._lock:
+        values = notifier.get_values(user_id, "android")
+        keep = [d for d in android_devices(values) if d["id"] != device_id]
+        notifier.set_values(user_id, "android", {"subs": json.dumps(keep)} if keep else {})
+
+
+def _send_android(values: dict[str, Any], note: dict[str, Any], ctx: dict[str, Any]) -> None:
+    """Only new-email alerts (and the Test button) go to the app. The message holds no text: the app asks Enveliq for the details itself."""
+    notifier: Notifier = ctx["notifier"]
+    user_id, vault = ctx["user_id"], ctx["vault"]
+    if note.get("test"):
+        data = {"kind": "test"}
+    elif isinstance(note.get("mail"), dict):
+        data = {"kind": "mail", "count": str(int(note["mail"].get("count") or 1))}
+    else:
+        return                                         # reminders and notes use the person's other channels
+    chosen = ctx.get("device_id")
+    targets = [d for d in android_devices(notifier.get_values(user_id, "android")) if not chosen or d["id"] == chosen]
+    if chosen and not targets:
+        raise OutboundError("not_found", "This phone is no longer registered.")
+    sent, last, dead = 0, None, []
+    for d in targets:
+        try:
+            if fcm.send(vault, d["token"], data) == "gone":
+                dead.append(d["id"])
+            else:
+                sent += 1
+        except OutboundError as err:
+            last = err
+    for did in dead:
+        remove_android_device(notifier, user_id, did)
+    if dead and not sent:
+        raise OutboundError("gone", "That phone no longer has the Enveliq app, so it was removed. Turn alerts on again in the app.")
+    if last and not sent:
+        raise last
+    if not sent and not dead:
+        raise OutboundError("not_set", "No phone is set up yet.")
+
+
+def test_android_device(notifier: Notifier, user_id: str, device_id: str) -> None:
+    _send_android({}, {"title": "Enveliq test", "body": "", "test": True}, {"notifier": notifier, "user_id": user_id, "vault": notifier.vault, "device_id": device_id})
+
+
+register_extra("android", {
+    "id": "android", "label": "The Enveliq app (Android)", "blurb": "New-email alerts on your phone through Google's push service. Nothing but \"new email\" goes through Google.", "fields": [],
+    "steps": ["Install the Enveliq app and sign in.",
+              "In the app, open Settings, switch on Tell me when new email arrives, then choose Through Google's push service.",
+              "Press Send a test here. The phone should show a note within a few seconds.",
+              "Your administrator must first add the Firebase key (Administration, Android app alerts)."],
+    "send": _send_android, "local_ok": False, "describe": _describe_android,
+    "keep": "Turn alerts on in the Enveliq app first.",
 }, lambda v: {})
 
 

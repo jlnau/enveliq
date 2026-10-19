@@ -41,6 +41,16 @@
                 android:value="Waits for the person's own server to say a new email is ready, then shows a notification." />
         </service>
 
+        <!-- Google's push service: receives a tiny wake-up message, only when the person chose it in Settings. -->
+        <service android:name=".PushService" android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <!-- Nothing contacts Google until the person chooses Google push: no automatic token, no analytics. -->
+        <meta-data android:name="firebase_messaging_auto_init_enabled" android:value="false" />
+        <meta-data android:name="firebase_analytics_collection_enabled" android:value="false" />
+
         <receiver android:name=".WatcherStarter" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

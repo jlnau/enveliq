@@ -4,12 +4,16 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// Google's push service needs the project's google-services.json (kept out of the repository; the build workflow writes it from a secret).
+// Without the file the app still builds and works with its direct connection, and simply does not offer Google push.
+if (file("google-services.json").exists()) apply(plugin = "com.google.gms.google-services")
+
 android {
     namespace = "app.enveliq"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "app.enveliq.android"
+        applicationId = "app.enveliq"
         minSdk = 28
         targetSdk = 35
         // The workflow passes the real version (for a release, its tag) and a number that goes up with every build.
@@ -61,4 +65,6 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-messaging")
 }

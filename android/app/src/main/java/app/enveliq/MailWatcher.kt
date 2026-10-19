@@ -51,11 +51,21 @@ object AlertPrefs {
     fun seeded(c: Context) = prefs(c).getBoolean("alerted_seeded", false)
     fun setSeeded(c: Context, v: Boolean) = prefs(c).edit().putBoolean("alerted_seeded", v).apply()
 
+    /** How alerts reach the phone: "direct" (the app keeps its own connection) or "google" (Google's push service wakes it). */
+    fun mode(c: Context): String = prefs(c).getString("alert_mode", "direct") ?: "direct"
+    fun setMode(c: Context, v: String) = prefs(c).edit().putString("alert_mode", v).apply()
+
+    /** The id Enveliq gave this phone when it signed up for Google push (not Google's own address). */
+    fun pushDevice(c: Context): String? = prefs(c).getString("push_device", null)
+    fun setPushDevice(c: Context, id: String?) = prefs(c).edit().putString("push_device", id).apply()
+
     /** Signing out forgets everything about alerts, so a different sign-in starts clean. */
     fun reset(c: Context) {
         setOn(c, false)
         setSeeded(c, false)
         setAlerted(c, emptyList())
+        setMode(c, "direct")
+        setPushDevice(c, null)
     }
 
     fun timeText(minutes: Int): String = "%02d:%02d".format(minutes / 60, minutes % 60)
@@ -92,7 +102,7 @@ class MailWatcherService : Service() {
         try {
             if (Build.VERSION.SDK_INT >= 34) startForeground(Notifier.WATCH_ID, note, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
             else startForeground(Notifier.WATCH_ID, note)
-            if (!AlertPrefs.on(this) || SessionVault.load(this) == null) {
+            if (!AlertPrefs.on(this) || AlertPrefs.mode(this) != "direct" || SessionVault.load(this) == null) {
                 stopSelf()
                 return START_NOT_STICKY
             }
@@ -154,7 +164,7 @@ class MailWatcherService : Service() {
     private fun watch() {
         var wait = 15L
         while (running) {
-            if (!AlertPrefs.on(this)) break
+            if (!AlertPrefs.on(this) || AlertPrefs.mode(this) != "direct") break
             if (!online) {                     // no network: sleep until the network callback wakes us
                 wake.poll(30, java.util.concurrent.TimeUnit.MINUTES)
                 continue
@@ -165,11 +175,11 @@ class MailWatcherService : Service() {
             try {
                 val api = EnveliqApi(kept.first)
                 api.restore(kept.second)
-                catchUp(api)
+                Alerts.catchUp(this, api)
                 listen(api, kept.first)
             } catch (e: ApiException) {
                 if (e.code == 401) {
-                    signedOut()
+                    Alerts.signedOut(this)
                     break
                 }
             } catch (_: Exception) {
@@ -178,13 +188,6 @@ class MailWatcherService : Service() {
             wait = if (System.currentTimeMillis() - started > 60_000) 15L else minOf(wait * 2, 300L)
             pause(wait)
         }
-    }
-
-    /** The server ended our session: say so once, plainly, and stop. */
-    private fun signedOut() {
-        SessionVault.clear(this)
-        AlertPrefs.setOn(this, false)
-        Notifier.simple(this, 2003, "Please sign in to Enveliq again", "Your new-email alerts stopped because you were signed out. Open Enveliq to sign in and turn them back on.")
     }
 
     private fun listen(api: EnveliqApi, server: String) {
@@ -203,7 +206,7 @@ class MailWatcherService : Service() {
                     val line = reader.readLine() ?: break
                     if (line.startsWith("event:")) event = line.substring(6).trim()
                     else if (line.isEmpty()) {
-                        if (event == "new") catchUp(api)
+                        if (event == "new") Alerts.catchUp(this, api)
                         if (event == "reconnect") break
                         event = ""
                     }
@@ -217,26 +220,10 @@ class MailWatcherService : Service() {
         }
     }
 
-    /** Looks at the inbox once and announces any email that is ready and has not had an alert yet. */
-    private fun catchUp(api: EnveliqApi) {
-        val mails = api.inbox()
-        val alerted = AlertPrefs.alerted(this)
-        if (!AlertPrefs.seeded(this)) {              // first time: what is already there is not new
-            AlertPrefs.setAlerted(this, mails.map { it.id })
-            AlertPrefs.setSeeded(this, true)
-            return
-        }
-        val fresh = mails.filter { it.id !in alerted }
-        if (fresh.isEmpty()) return
-        alerted.addAll(fresh.map { it.id })
-        AlertPrefs.setAlerted(this, alerted)
-        Notifier.newMail(this, fresh, AlertPrefs.inQuietHours(this))
-    }
-
     companion object {
         fun start(context: Context) {
             try {
-                if (AlertPrefs.on(context) && SessionVault.load(context) != null) context.startForegroundService(Intent(context, MailWatcherService::class.java))
+                if (AlertPrefs.on(context) && AlertPrefs.mode(context) == "direct" && SessionVault.load(context) != null) context.startForegroundService(Intent(context, MailWatcherService::class.java))
             } catch (_: Exception) {
                 // Android may refuse to start it right now (for example from the background). The next time the app opens will try again.
             }
@@ -252,5 +239,44 @@ class MailWatcherService : Service() {
 class WatcherStarter : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED || intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) MailWatcherService.start(context)
+    }
+}
+
+/** What the app does when it learns that new email may be ready, however it learned it (its own connection, or Google's push). */
+object Alerts {
+    /** Looks at the inbox once and announces any email that is ready and has not had an alert yet. */
+    fun catchUp(context: Context, api: EnveliqApi) {
+        val mails = api.inbox()
+        val alerted = AlertPrefs.alerted(context)
+        if (!AlertPrefs.seeded(context)) {              // first time: what is already there is not new
+            AlertPrefs.setAlerted(context, mails.map { it.id })
+            AlertPrefs.setSeeded(context, true)
+            return
+        }
+        val fresh = mails.filter { it.id !in alerted }
+        if (fresh.isEmpty()) return
+        alerted.addAll(fresh.map { it.id })
+        AlertPrefs.setAlerted(context, alerted)
+        Notifier.newMail(context, fresh, AlertPrefs.inQuietHours(context))
+    }
+
+    /** Signs in with the kept session and checks once. Used when Google's push wakes the app. Never throws. */
+    fun checkNow(context: Context) {
+        val kept = SessionVault.load(context) ?: return
+        try {
+            val api = EnveliqApi(kept.first)
+            api.restore(kept.second)
+            catchUp(context, api)
+        } catch (e: ApiException) {
+            if (e.code == 401) signedOut(context)
+        } catch (_: Exception) {
+        }
+    }
+
+    /** The server ended our session: say so once, plainly, and stop. */
+    fun signedOut(context: Context) {
+        SessionVault.clear(context)
+        AlertPrefs.reset(context)
+        Notifier.simple(context, 2003, "Please sign in to Enveliq again", "Your new-email alerts stopped because you were signed out. Open Enveliq to sign in and turn them back on.")
     }
 }

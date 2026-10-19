@@ -5,6 +5,7 @@ from typing import Annotated, Any, Literal
 import asyncio
 import hashlib
 import json
+import time
 
 from fastapi import Request
 from fastapi.responses import StreamingResponse
@@ -16,7 +17,7 @@ from pydantic import Field, field_validator
 from ..models import StrictModel
 from ..security import Session
 from .limits import SlidingWindowLimiter
-from . import extra_channels
+from . import extra_channels, fcm
 from .notify import CHANNELS, Notifier
 from .outbound import OutboundError
 
@@ -77,6 +78,17 @@ class DeviceBody(StrictModel):
     p256dh: str = Field(max_length=200)
     auth: str = Field(max_length=100)
     label: str = Field(default="", max_length=80)
+
+
+class AndroidDeviceBody(StrictModel):
+    token: str = Field(min_length=20, max_length=400)
+    label: str = Field(default="", max_length=60)
+    alerts: bool = False                       # true: the person switched on "Tell me when new email arrives" in the app
+    replaces: str | None = Field(default=None, pattern=r"^[0-9a-f]{12}$")
+
+
+class AndroidKeyBody(StrictModel):
+    key: str = Field(min_length=2, max_length=8000)
 
 
 class AdminBody(StrictModel):
@@ -392,6 +404,69 @@ def build_notify_router(ctx: Any) -> APIRouter:
     def browser_remove(device_id: Annotated[str, PathParam(pattern=r"^[0-9a-f]{12}$")], session: Session = Depends(session_dep)):
         extra_channels.remove_device(notifier, session.principal.user_id, device_id)
         return notifier.overview(session.principal.user_id)
+
+    # ---- the Enveliq Android app, through Google's push service ----
+
+    @router.get("/me/notifications/android")
+    def android_status(session: Session = Depends(session_dep)):
+        """Lets the app know whether Google push can be offered. Says nothing about the key itself."""
+        return {"available": fcm.load(ctx.vault) is not None and bool(notifier.admin()["channels"].get("android", True))}
+
+    @router.post("/me/notifications/android")
+    def android_add(body: AndroidDeviceBody, session: Session = Depends(session_dep)):
+        user = session.principal.user_id
+        if not save_limit.allow(f"n:{user}"):
+            raise HTTPException(status_code=429, detail="Too many changes. Wait a minute.")
+        if not notifier.admin()["channels"].get("android", True):
+            raise HTTPException(status_code=403, detail="Your administrator has switched this channel off.")
+        try:
+            device_id = extra_channels.add_android_device(notifier, user, body.token, body.label, body.replaces)
+        except ValueError as err:
+            raise HTTPException(status_code=422, detail=str(err)) from None
+        if body.alerts:
+            notifier.save_settings(user, {"mail_on": True})     # the switch in the app is the same "New email alerts" switch as on the website
+        return {"id": device_id}
+
+    @router.post("/me/notifications/android/{device_id}/test")
+    def android_test(device_id: Annotated[str, PathParam(pattern=r"^[0-9a-f]{12}$")], session: Session = Depends(session_dep)):
+        user = session.principal.user_id
+        if not test_limit.allow(f"t:{user}"):
+            raise HTTPException(status_code=429, detail="Too many tests. Wait a minute.")
+        if not notifier.admin()["channels"].get("android", True):
+            raise HTTPException(status_code=403, detail="Your administrator has switched this channel off.")
+        try:
+            extra_channels.test_android_device(notifier, user, device_id)
+        except OutboundError as err:
+            raise HTTPException(status_code=502 if err.code != "not_found" else 404, detail=err.message) from None
+        return {"ok": True}
+
+    @router.delete("/me/notifications/android/{device_id}")
+    def android_remove(device_id: Annotated[str, PathParam(pattern=r"^[0-9a-f]{12}$")], session: Session = Depends(session_dep)):
+        extra_channels.remove_android_device(notifier, session.principal.user_id, device_id)
+        return {"ok": True}
+
+    @router.get("/admin/android-push")
+    def android_key_get(session: Session = Depends(admin_dep)):
+        return fcm.public(ctx.vault)
+
+    @router.put("/admin/android-push")
+    def android_key_put(body: AndroidKeyBody, session: Session = Depends(admin_dep)):
+        """The Firebase key is write-only: it is checked, kept encrypted, and never sent back."""
+        try:
+            cfg = fcm.parse_key(body.key)
+        except fcm.FcmKeyError as err:
+            raise HTTPException(status_code=422, detail=str(err)) from None
+        ctx.vault.set_global(fcm.RECORD, cfg)
+        fcm.forget_token()
+        ctx.vault.audit({"event": "android_push_key_saved", "actor_user_id": session.principal.user_id, "at": time.time()})
+        return fcm.public(ctx.vault)
+
+    @router.delete("/admin/android-push")
+    def android_key_delete(session: Session = Depends(admin_dep)):
+        ctx.vault.set_global(fcm.RECORD, {})
+        fcm.forget_token()
+        ctx.vault.audit({"event": "android_push_key_removed", "actor_user_id": session.principal.user_id, "at": time.time()})
+        return fcm.public(ctx.vault)
 
     @router.get("/admin/notifications")
     def admin_get(session: Session = Depends(admin_dep)):

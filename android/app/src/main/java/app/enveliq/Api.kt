@@ -199,6 +199,24 @@ class EnveliqApi(address: String) {
         return out
     }
 
+    /** Whether the administrator has set up Google push, so the app can offer it. */
+    fun pushAvailable(): Boolean = JSONObject(call("GET", "/api/v1/me/notifications/android")).optBoolean("available", false)
+
+    /** Tells Enveliq this phone's Google push address. Also switches on "New email alerts" for this person. Returns the id Enveliq gave the phone. */
+    fun registerPush(token: String, label: String, replaces: String?): String {
+        val body = JSONObject().put("token", token).put("label", label).put("alerts", true)
+        if (replaces != null) body.put("replaces", replaces)
+        return JSONObject(call("POST", "/api/v1/me/notifications/android", body)).str("id")
+    }
+
+    fun testPush(id: String) {
+        call("POST", "/api/v1/me/notifications/android/" + enc(id) + "/test", JSONObject())
+    }
+
+    fun unregisterPush(id: String) {
+        call("DELETE", "/api/v1/me/notifications/android/" + enc(id))
+    }
+
     fun resolve(mail: Mail, outcome: Outcome) {
         call(
             "POST",

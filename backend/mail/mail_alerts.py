@@ -49,7 +49,8 @@ class MailAlerts:
             if n > MAX_LISTED:
                 lines.append(f"and {n - MAX_LISTED} more")
             body = "\n".join(lines)
-        return {"title": title, "body": body, "priority": "high" if high else "normal", "path": path, "url": (self.click_url + path) if self.click_url else None}
+        return {"title": title, "body": body, "priority": "high" if high else "normal", "path": path, "url": (self.click_url + path) if self.click_url else None,
+                "mail": {"count": n}}
 
     def send(self, user_id: str, new: list[dict[str, Any]]) -> int:
         """Send one message about `new`. Returns 1 if something went out, else 0. Never raises."""
