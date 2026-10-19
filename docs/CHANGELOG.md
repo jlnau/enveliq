@@ -4,6 +4,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+No changes recorded yet.
+
+## v0.96 (2026-10-19)
+
 **Fix: Junk Mail drops an email that is no longer there.** If an email had been moved or deleted since the page last looked, pressing View original email or Not Junk only said "no longer in Junk Mail" and the card stayed. Now the card is taken off the list at once (on the server and on the page). Touches `backend/mail/junk.py`, `backend/mail/junk_routes.py`, `prototype/index.html`, `tests/test_junk.py`, `docs/JUNK_MAIL.md`.
 
 **Fix: "Show the original email" no longer sits in a small scrolling box.** Some emails (for example an invoice with fixed heights in its own styles) made the formatted view a short box with its own scrollbar. The formatted page now always takes the height of the whole email, so you scroll the window as you read it. Touches `backend/mail/htmlview.py`, `tests/test_htmlview.py`.
