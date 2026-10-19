@@ -550,6 +550,17 @@ class EnveliqApi(address: String) {
         try { call("POST", "/api/v1/accounts/" + enc(accountId) + "/inbox/recent", JSONObject()) } catch (e: ApiException) { if (e.code == 401) throw e; recentAt.remove(accountId) }
     }
 
+    /** Emails you have opened in Enveliq (on any device), as "mailbox id:email id". The server keeps this per person. */
+    fun openedKeys(): Set<String> {
+        val a = JSONObject(call("GET", "/api/v1/me/mail-opened")).optJSONArray("keys") ?: return emptySet()
+        return (0 until a.length()).map { a.optString(it) }.toSet()
+    }
+
+    /** Records that you opened this email, so it stops standing out as new (here and on the website). */
+    fun markOpened(mail: Mail) {
+        call("POST", "/api/v1/me/mail-opened", JSONObject().put("account_id", mail.accountId).put("message_id", mail.id))
+    }
+
     /** True when "Include read mail" is switched on for this person on the server (administrators can switch it off). */
     fun includeReadAvailable(): Boolean = try {
         JSONObject(call("GET", "/api/v1/me/features")).optJSONObject("effective")?.optBoolean("all_mail", false) ?: false

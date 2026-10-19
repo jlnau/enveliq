@@ -37,6 +37,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -305,10 +306,22 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     var includeReadOk by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { includeReadOk = withContext(Dispatchers.IO) { api.includeReadAvailable() } }
 
+    // Which emails you have opened in Enveliq. The ones you have not opened glow softly in the list.
+    val openedKeys = remember { androidx.compose.runtime.mutableStateMapOf<String, Boolean>() }
+    var openedLoaded by remember { mutableStateOf(false) }
+    suspend fun loadOpened() {
+        try {
+            val keys = withContext(Dispatchers.IO) { api.openedKeys() }
+            keys.forEach { openedKeys[it] = true }
+            openedLoaded = true
+        } catch (_: Exception) { }
+    }
+
     fun load() {
         loading = true
         error = ""
         scope.launch {
+            loadOpened()
             try {
                 val list = withContext(Dispatchers.IO) { api.inbox(view, includeRead) }
                 mails.clear()
@@ -394,6 +407,15 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         activity.mailtoRequest = null
     }
     fun keyOf(m: Mail) = m.accountId + ":" + m.id
+    // Opening an email (from the list, an alert or anywhere else) records it as opened.
+    val openedNow = opened
+    LaunchedEffect(openedNow?.id) {
+        val m = openedNow ?: return@LaunchedEffect
+        if (openedKeys[keyOf(m)] != true) {
+            openedKeys[keyOf(m)] = true
+            try { withContext(Dispatchers.IO) { api.markOpened(m) } } catch (_: Exception) { }
+        }
+    }
 
     // The Tag button: finds out which tags this mailbox offers, then opens the picker.
     fun openTags(m: Mail) {
@@ -634,6 +656,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                         searching = searching, query = query, onQuery = { query = it },
                         swipeRight = prefs.getString("swipe_right", "archive") ?: "archive",
                         swipeLeft = prefs.getString("swipe_left", "bin") ?: "bin",
+                        fresh = { m -> openedLoaded && view == "inbox" && !m.quiet && openedKeys[keyOf(m)] != true },
                         includeRead = includeRead, includeReadOk = includeReadOk,
                         onIncludeRead = { on -> includeRead = on; prefs.edit().putBoolean("include_read", on).apply(); load() },
                         onOpen = { opened = it },
@@ -707,6 +730,7 @@ private fun InboxTab(
     view: String, filters: InboxFilters, onView: (String) -> Unit,
     searching: Boolean, query: String, onQuery: (String) -> Unit,
     swipeRight: String, swipeLeft: String,
+    fresh: (Mail) -> Boolean,
     includeRead: Boolean, includeReadOk: Boolean, onIncludeRead: (Boolean) -> Unit,
     onOpen: (Mail) -> Unit, onSwipe: (Mail, Outcome) -> Unit, onRefresh: () -> Unit,
 ) {
@@ -811,7 +835,7 @@ private fun InboxTab(
             else -> LazyColumn(Modifier.fillMaxSize(), state = listState) {
                 items(shown, key = { it.accountId + ":" + it.id }) { m ->
                     SwipeRow(
-                        mail = m, right = swipeRight, left = swipeLeft, selecting = selecting, picked = selected.contains(keyOf(m)),
+                        mail = m, right = swipeRight, left = swipeLeft, selecting = selecting, picked = selected.contains(keyOf(m)), fresh = fresh(m),
                         onSwipe = { outcome -> onSwipe(m, outcome) },
                         onClick = { if (selecting) toggle(selected, keyOf(m)) else onOpen(m) },
                         onLongClick = { toggle(selected, keyOf(m)) },
@@ -838,7 +862,7 @@ private fun swipeOutcome(name: String): Outcome? = when (name) {
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun SwipeRow(
-    mail: Mail, right: String, left: String, selecting: Boolean, picked: Boolean,
+    mail: Mail, right: String, left: String, selecting: Boolean, picked: Boolean, fresh: Boolean,
     onSwipe: (Outcome) -> Unit, onClick: () -> Unit, onLongClick: () -> Unit,
 ) {
     val rightOutcome = swipeOutcome(right)
@@ -923,29 +947,37 @@ private fun SwipeRow(
             }
         },
     ) {
-        MailRow(mail, picked, onClick, onLongClick)
+        MailRow(mail, picked, fresh, onClick, onLongClick)
     }
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun MailRow(mail: Mail, picked: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
+private fun MailRow(mail: Mail, picked: Boolean, fresh: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
+    // Three looks: an email you have not opened yet glows softly (a thin blue edge and a faint blue wash);
+    // read mail that has no summary yet is plain and quiet; everything else is as before.
+    val plain = mail.quiet && mail.ungenerated
+    val shape = RoundedCornerShape(12.dp)
+    val glow = if (fresh && !picked) Modifier
+        .background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Blue.copy(alpha = 0.13f), Color.Transparent)), shape)
+        .border(1.dp, Blue.copy(alpha = 0.42f), shape) else Modifier
     Column(
-        Modifier.fillMaxWidth().background(if (picked) PanelHigh else Navy)
+        Modifier.fillMaxWidth().background(if (picked) PanelHigh else Navy).padding(horizontal = 8.dp, vertical = 2.dp)
+            .clip(shape).then(glow)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = 12.dp, vertical = 10.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (picked) {
-                Text("✓", color = Blue, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("\u2713", color = Blue, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.size(8.dp))
             } else if (mail.needsAction) {
                 Box(Modifier.size(8.dp).clip(CircleShape).background(Amber))
                 Spacer(Modifier.size(8.dp))
             }
             Text(
-                mail.sender, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+                mail.sender, color = if (plain) Muted else Ink, fontSize = 16.sp, fontWeight = if (plain) FontWeight.Normal else FontWeight.SemiBold,
                 maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
             )
             if (mail.hasFiles) {
@@ -954,9 +986,14 @@ private fun MailRow(mail: Mail, picked: Boolean, onClick: () -> Unit, onLongClic
             }
             Text(mail.whenText, color = Muted, fontSize = 13.sp)
         }
-        Text(mail.subject, color = Ink, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
-        if (mail.summary.isNotBlank()) {
-            Text("✦ " + mail.summary, color = Muted, fontSize = 14.sp, lineHeight = 20.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 3.dp))
+        Text(
+            mail.subject, color = if (plain) Muted else Ink, fontSize = 15.sp, fontWeight = if (fresh) FontWeight.Bold else FontWeight.Normal,
+            maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp),
+        )
+        if (plain) {
+            Text("No summary yet", color = Muted, fontSize = 13.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, modifier = Modifier.padding(top = 3.dp))
+        } else if (mail.summary.isNotBlank()) {
+            Text("\u2726 " + mail.summary, color = Muted, fontSize = 14.sp, lineHeight = 20.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 3.dp))
         }
     }
     HorizontalDivider(color = Line)
