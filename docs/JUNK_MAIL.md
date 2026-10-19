@@ -39,3 +39,5 @@ Per person, one encrypted record holds for each email: the sender, subject, date
 - Switch: Administration, Features.
 - Needs an AI model for the answers. Without one the list still works.
 - Code: `backend/mail/junk.py` (folder reading, the encrypted list, Not Junk), `backend/mail/junk_routes.py` (`/api/v1/junk`), `judge_junk` in `backend/mail/llm.py`, and the no-links mode of `backend/mail/htmlview.py`.
+
+If an email has already left the Junk folder when you press **View original email** or **Not Junk** (moved or deleted somewhere else), Enveliq says so and takes its card off the list straight away.

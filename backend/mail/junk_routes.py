@@ -77,6 +77,9 @@ def build_junk_router(ctx: Any) -> APIRouter:
         except KeyError:
             raise gone() from None
         except BridgeError as err:
+            if err.code == "not_found":
+                book.forget(user, junk_id)                  # it is not in the Junk folder any more: take it off the list too
+                raise gone() from None
             raise fail(err) from None
         view = render_original(raw)
         # Junk is shown switched off: no links to press, no pictures from the internet, no files to open, no unsubscribe.
@@ -95,6 +98,9 @@ def build_junk_router(ctx: Any) -> APIRouter:
         except KeyError:
             raise gone() from None
         except BridgeError as err:
+            if err.code == "not_found":
+                book.forget(user, junk_id)                  # it is not in the Junk folder any more: take it off the list too
+                raise gone() from None
             raise fail(err) from None
         built = htmlview.render(raw, False, no_links=True)
         if built is None:
@@ -111,6 +117,9 @@ def build_junk_router(ctx: Any) -> APIRouter:
         except KeyError:
             raise gone() from None
         except BridgeError as err:
+            if err.code == "not_found":
+                book.forget(user, junk_id)                  # it is not in the Junk folder any more: take it off the list too
+                raise gone() from None
             raise fail(err) from None
         vault.audit({"event": "junk_marked_not_junk", "actor_user_id": user, "at": time.time()})
         return book.view(user)

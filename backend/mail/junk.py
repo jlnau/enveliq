@@ -201,6 +201,13 @@ class JunkBook:
                 raise BridgeError("not_found", "This email can no longer be found in the Junk folder.")
             return s.original(uid)
 
+    def forget(self, user: str, key: str) -> None:
+        """The email is no longer in the Junk folder (moved, deleted or the folder was reset): drop its card so it does not sit here for nothing."""
+        with self._lock:
+            data = self._load(user)
+            if data["items"].pop(key, None) is not None:
+                self._save(user, data)
+
     def original(self, user: str, key: str) -> bytes:
         _data, it, account = self._item(user, key)
         return self._fetch(account, it)
