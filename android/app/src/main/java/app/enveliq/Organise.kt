@@ -55,47 +55,9 @@ import kotlinx.coroutines.withContext
 import java.net.URI
 
 /** The tags on an email. Tap Choose tags to open a full screen list where several can be ticked at once. Hidden when the mail service does not keep tags. */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-internal fun TagsSection(mail: Mail, api: EnveliqApi) {
-    var tags by remember(mail.id) { mutableStateOf(mail.tags) }
-    var info by remember(mail.id) { mutableStateOf<TagInfo?>(null) }
-    var picking by remember(mail.id) { mutableStateOf(false) }
-
-    LaunchedEffect(mail.id) {
-        info = try { withContext(Dispatchers.IO) { api.tagInfo(mail.accountId) } } catch (e: Exception) { null }
-    }
-    val current = info
-    if (current == null && tags.isEmpty()) return
-
-    Column(Modifier.fillMaxWidth().padding(top = 18.dp)) {
-        Text("Tags", color = Muted, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-        if (tags.isEmpty()) {
-            Text("No tags on this email.", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
-        } else {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
-                tags.forEach { name ->
-                    Surface(color = PanelHigh, shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Line)) {
-                        Text("# " + name, color = Ink, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
-                    }
-                }
-            }
-        }
-        if (current != null) {
-            OutlinedButton(
-                onClick = { picking = true },
-                modifier = Modifier.padding(top = 10.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
-            ) { Text("Choose tags", color = Ink) }
-        }
-    }
-    if (picking && current != null) {
-        TagPickerScreen(mail, api, current, tags, onClose = { picking = false }, onSaved = { tags = it; picking = false })
-    }
-}
-
 /** Full screen: search at the top, a scrolling list of tags with tick boxes, Save fixed at the bottom. The email's current tags start ticked. */
 @Composable
-private fun TagPickerScreen(mail: Mail, api: EnveliqApi, info: TagInfo, start: List<String>, onClose: () -> Unit, onSaved: (List<String>) -> Unit) {
+internal fun TagPickerScreen(mail: Mail, api: EnveliqApi, info: TagInfo, start: List<String>, onClose: () -> Unit, onSaved: (List<String>) -> Unit) {
     var query by remember { mutableStateOf("") }
     val chosen = remember { mutableStateListOf<String>().also { it.addAll(start) } }
     var made by remember { mutableStateOf(listOf<String>()) }

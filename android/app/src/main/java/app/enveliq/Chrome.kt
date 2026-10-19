@@ -138,3 +138,39 @@ internal fun PaperclipIcon(tint: Color, modifier: Modifier = Modifier.size(16.dp
     p.lineTo(11f * u, 15f * u)
     drawPath(p, tint, style = Stroke(width = 2f * u, cap = StrokeCap.Round))
 }
+
+private fun reply(scope: androidx.compose.ui.graphics.drawscope.DrawScope, tint: Color, flip: Boolean, double: Boolean) = with(scope) {
+    val u = size.width / 24f
+    fun x(v: Float) = (if (flip) 24f - v else v) * u
+    val st = Stroke(width = 2f * u, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+    fun head(dx: Float) {
+        val p = androidx.compose.ui.graphics.Path()
+        p.moveTo(x(9f + dx), 7f * u); p.lineTo(x(4f + dx), 12f * u); p.lineTo(x(9f + dx), 17f * u)
+        drawPath(p, tint, style = st)
+    }
+    val body = androidx.compose.ui.graphics.Path()
+    val from = if (double) 9f else 4f
+    body.moveTo(x(from), 12f * u); body.lineTo(x(14f), 12f * u); body.quadraticBezierTo(x(21f), 12f * u, x(21f), 19f * u)
+    drawPath(body, tint, style = st)
+    head(if (double) 5f else 0f)
+    if (double) head(0f)
+}
+
+@Composable
+internal fun ReplyIcon(tint: Color, modifier: Modifier = Modifier.size(24.dp)) = Canvas(modifier) { reply(this, tint, flip = false, double = false) }
+
+@Composable
+internal fun ReplyAllIcon(tint: Color, modifier: Modifier = Modifier.size(24.dp)) = Canvas(modifier) { reply(this, tint, flip = false, double = true) }
+
+@Composable
+internal fun ForwardIcon(tint: Color, modifier: Modifier = Modifier.size(24.dp)) = Canvas(modifier) { reply(this, tint, flip = true, double = false) }
+
+/** A tick box with a plus: add a task. */
+@Composable
+internal fun AddTaskIcon(tint: Color, modifier: Modifier = Modifier.size(24.dp)) = Canvas(modifier) {
+    val u = size.width / 24f
+    val st = Stroke(width = 2f * u, cap = StrokeCap.Round)
+    drawRoundRect(tint, Offset(4f * u, 4f * u), Size(16f * u, 16f * u), androidx.compose.ui.geometry.CornerRadius(3f * u), style = st)
+    drawLine(tint, Offset(12f * u, 8.5f * u), Offset(12f * u, 15.5f * u), strokeWidth = 2f * u, cap = StrokeCap.Round)
+    drawLine(tint, Offset(8.5f * u, 12f * u), Offset(15.5f * u, 12f * u), strokeWidth = 2f * u, cap = StrokeCap.Round)
+}

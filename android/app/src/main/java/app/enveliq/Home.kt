@@ -61,6 +61,10 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -112,6 +116,70 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private enum class Stage { Opening, SignIn, Welcome, Home }
+@Composable
+private fun RowScope.ReplyAction(label: String, onClick: () -> Unit, icon: @Composable () -> Unit) {
+    OutlinedButton(
+        onClick = onClick, modifier = Modifier.weight(1f).height(44.dp).semantics { contentDescription = label },
+        shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line), contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+    ) { icon() }
+}
+
+/** Quick ways to add a task for this email: the date is one tap. */
+@Composable
+private fun AddTaskPopup(mail: Mail, api: EnveliqApi, onClose: () -> Unit, onDone: (String) -> Unit) {
+    var title by remember(mail.id) { mutableStateOf("") }
+    var busy by remember(mail.id) { mutableStateOf(false) }
+    var problem by remember(mail.id) { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+    fun day(add: Int): String {
+        val c = Calendar.getInstance()
+        c.add(Calendar.DAY_OF_YEAR, add)
+        return String.format(java.util.Locale.US, "%04d-%02d-%02d", c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH))
+    }
+    val toSaturday = (Calendar.SATURDAY - Calendar.getInstance().get(Calendar.DAY_OF_WEEK) + 7) % 7
+    val toMonday = ((Calendar.MONDAY - Calendar.getInstance().get(Calendar.DAY_OF_WEEK) + 7) % 7).let { if (it == 0) 7 else it }
+    fun add(on: String, label: String) {
+        if (busy) return
+        busy = true
+        problem = ""
+        val words = title.trim().ifBlank { "Follow up: " + mail.subject.take(80) }
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) { api.addTask(mail, words, on) }
+                onDone("Task added for " + label)
+            } catch (e: ApiException) {
+                problem = e.message ?: "That did not work. Try again."
+            } catch (e: Exception) {
+                problem = "That did not work. Try again."
+            }
+            busy = false
+        }
+    }
+    AlertDialog(
+        onDismissRequest = { if (!busy) onClose() },
+        containerColor = Panel,
+        title = { Text("Add a task", color = Ink) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = title, onValueChange = { title = it.take(300) }, singleLine = true,
+                    placeholder = { Text("What to do (optional)") }, modifier = Modifier.fillMaxWidth(),
+                )
+                Text("When?", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 10.dp))
+                listOf(
+                    Triple("Today", 0, "today"), Triple("Tomorrow", 1, "tomorrow"),
+                    Triple("This weekend", toSaturday, "the weekend"), Triple("Next week", toMonday, "next week"),
+                ).forEach { (label, ahead, said) ->
+                    TextButton(onClick = { add(day(ahead), said) }, enabled = !busy) { Text(label, color = Blue, fontSize = 16.sp) }
+                }
+                if (problem.isNotEmpty()) Text(problem, color = Red, fontSize = 14.sp)
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onClose, enabled = !busy) { Text("Cancel", color = Muted) } },
+    )
+}
+
 private enum class Tab { Inbox, Tasks, Drafts, More, Settings }
 
 @Composable
@@ -276,6 +344,9 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
 
     val selected = remember { mutableStateListOf<String>() }
     var askSnooze by remember { mutableStateOf(false) }
+    var askTask by remember { mutableStateOf(false) }
+    var tagPicker by remember { mutableStateOf<Pair<Mail, TagInfo>?>(null) }
+    val tagMap = remember { mutableStateMapOf<String, List<String>>() }
     var composing by remember { mutableStateOf<ComposeTarget?>(null) }
     // Back from Tasks, Drafts, More or Settings goes to the inbox first; Back from the inbox leaves the app.
     BackHandler(enabled = tab != Tab.Inbox && opened == null && composing == null) { tab = Tab.Inbox }
@@ -294,6 +365,14 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         activity.mailtoRequest = null
     }
     fun keyOf(m: Mail) = m.accountId + ":" + m.id
+
+    // The Tag button: finds out which tags this mailbox offers, then opens the picker.
+    fun openTags(m: Mail) {
+        scope.launch {
+            val info = try { withContext(Dispatchers.IO) { api.tagInfo(m.accountId) } } catch (e: Exception) { null }
+            if (info == null) snack.showSnackbar("Your mail service does not keep tags.") else tagPicker = m to info
+        }
+    }
 
     // Puts the unread mark back on an email you had marked Reviewed. It goes back to the inbox.
     fun markUnread(m: Mail) {
@@ -484,6 +563,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
             if (current != null) {
                 ActionBar(
                     onResolve = { outcome -> resolve(current, outcome) }, onSnooze = { askSnooze = true },
+                    onTag = { openTags(current) }, onTask = { askTask = true },
                     onUnread = if (current.state == "reviewed") ({ markUnread(current) }) else null,
                 )
             } else if (selected.isNotEmpty() && tab == Tab.Inbox) {
@@ -492,6 +572,12 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
             }
         },
     ) { inner ->
+        tagPicker?.let { (m, info) ->
+            TagPickerScreen(m, api, info, tagMap[keyOf(m)] ?: m.tags, onClose = { tagPicker = null }, onSaved = { tagMap[keyOf(m)] = it; tagPicker = null })
+        }
+        if (askTask && current != null) {
+            AddTaskPopup(current, api, onClose = { askTask = false }, onDone = { msg -> askTask = false; scope.launch { snack.showSnackbar(msg) } })
+        }
         if (askSnooze && current != null) {
             SnoozeChoices(onPick = { until, label -> askSnooze = false; snooze(current, until, label) }, onCancel = { askSnooze = false })
         }
@@ -524,12 +610,12 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 Row(Modifier.fillMaxSize()) {
                     Box(Modifier.weight(0.42f).fillMaxHeight()) { inboxPane() }
                     Box(Modifier.weight(0.58f).fillMaxHeight()) {
-                        if (current != null) DetailBody(current, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) })
+                        if (current != null) DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) })
                         else Text("Choose an email to read it here.", color = Muted, fontSize = 16.sp, modifier = Modifier.padding(32.dp))
                     }
                 }
             } else if (current != null) {
-                DetailBody(current, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) })
+                DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) })
             } else {
                 when (tab) {
                     Tab.Inbox -> inboxPane()
@@ -799,25 +885,42 @@ private fun MailRow(mail: Mail, picked: Boolean, onClick: () -> Unit, onLongClic
 }
 
 @Composable
-private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit, onJunk: (Boolean) -> Unit) {
+private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit, onJunk: (Boolean) -> Unit) {
     var showOriginal by remember(mail.id) { mutableStateOf(false) }
     var unsubLink by remember(mail.id) { mutableStateOf<String?>(null) }
     var askBlock by remember(mail.id) { mutableStateOf(false) }
+    var moreMenu by remember(mail.id) { mutableStateOf(false) }
+    var addressMenu by remember(mail.id) { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = Ink) }
         }
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
+        // Everything in the email can be selected and copied: press and hold, then drag.
+        androidx.compose.foundation.text.selection.SelectionContainer(Modifier.weight(1f)) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
             Text(mail.subject, color = Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 30.sp)
             Text(mail.sender + if (mail.whenText.isNotEmpty()) " · " + mail.whenText else "", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 6.dp))
-            if (mail.address.isNotEmpty()) Text(mail.address, color = Muted, fontSize = 13.sp)
-
-            Row(Modifier.fillMaxWidth().padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { onCompose("reply") }, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line)) { Text("Reply", color = Ink, fontSize = 14.sp) }
-                OutlinedButton(onClick = { onCompose("reply_all") }, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line)) { Text("Reply all", color = Ink, fontSize = 14.sp, maxLines = 1) }
-                OutlinedButton(onClick = { onCompose("forward") }, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line)) { Text("Forward", color = Ink, fontSize = 14.sp) }
+            if (mail.address.isNotEmpty()) Box {
+                // Tapping the address offers Copy. (Press and hold still selects it like any other text.)
+                Text(mail.address, color = Blue, fontSize = 13.sp, modifier = Modifier.clickable { addressMenu = true })
+                DropdownMenu(expanded = addressMenu, onDismissRequest = { addressMenu = false }, containerColor = Panel) {
+                    DropdownMenuItem(text = { Text("Copy " + mail.address, color = Ink) }, onClick = {
+                        addressMenu = false
+                        val clip = context.getSystemService(android.content.ClipboardManager::class.java)
+                        clip.setPrimaryClip(android.content.ClipData.newPlainText("Email address", mail.address))
+                        android.widget.Toast.makeText(context, "Address copied", android.widget.Toast.LENGTH_SHORT).show()
+                    })
+                }
+            }
+            // Tags: one slim line, only when there are some, with no heading.
+            if (tags.isNotEmpty()) Row(Modifier.fillMaxWidth().padding(top = 4.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                tags.forEach { name ->
+                    Surface(color = PanelHigh, shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Line)) {
+                        Text("# " + name, color = Ink, fontSize = 12.sp, maxLines = 1, modifier = Modifier.padding(horizontal = 8.dp, vertical = 1.dp))
+                    }
+                }
             }
 
             if (mail.scamReasons.isNotEmpty()) {
@@ -835,7 +938,7 @@ private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompos
 
             Surface(
                 color = Panel, shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Line),
-                modifier = Modifier.fillMaxWidth().padding(top = 18.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
             ) {
                 Column(Modifier.padding(16.dp)) {
                     Text("✦ AI summary", color = Blue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
@@ -843,7 +946,34 @@ private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompos
                         mail.summary.ifBlank { "No summary yet." },
                         color = Ink, fontSize = 17.sp, lineHeight = 26.sp, modifier = Modifier.padding(top = 6.dp),
                     )
-                    Text("Written by the AI. It can be wrong. Check the original when it matters.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+                }
+            }
+
+            // Reply, Reply all, Forward, and the less used actions behind the three dots, all on one line under the summary.
+            Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                val shape = RoundedCornerShape(12.dp)
+                ReplyAction("Reply", { onCompose("reply") }) { ReplyIcon(Ink) }
+                ReplyAction("Reply all", { onCompose("reply_all") }) { ReplyAllIcon(Ink) }
+                ReplyAction("Forward", { onCompose("forward") }) { ForwardIcon(Ink) }
+                Box {
+                    OutlinedButton(
+                        onClick = { moreMenu = true }, modifier = Modifier.size(44.dp).semantics { contentDescription = "More actions" },
+                        shape = shape, border = BorderStroke(1.dp, Line), contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                    ) { Icon(Icons.Filled.MoreVert, contentDescription = null, tint = Ink) }
+                    DropdownMenu(expanded = moreMenu, onDismissRequest = { moreMenu = false }, containerColor = Panel) {
+                        DropdownMenuItem(text = { Text("Show the original email", color = Ink) }, onClick = { moreMenu = false; showOriginal = true })
+                        DropdownMenuItem(text = { Text("Send to Junk", color = Ink) }, onClick = { moreMenu = false; onJunk(false) })
+                        if (mail.address.isNotBlank()) DropdownMenuItem(text = { Text("Block sender", color = Ink) }, onClick = { moreMenu = false; askBlock = true })
+                        if (mail.unsubUrl != null || mail.unsubMailto != null) DropdownMenuItem(text = { Text("Unsubscribe from this sender", color = Ink) }, onClick = {
+                            moreMenu = false
+                            if (mail.unsubUrl != null) unsubLink = mail.unsubUrl
+                            else try {
+                                val to = mail.unsubMailto ?: ""
+                                val uri = android.net.Uri.parse("mailto:" + to + if (mail.unsubSubject.isNotBlank()) "?subject=" + android.net.Uri.encode(mail.unsubSubject) else "")
+                                context.startActivity(android.content.Intent(android.content.Intent.ACTION_SENDTO, uri).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                            } catch (e: Exception) { }
+                        })
+                    }
                 }
             }
 
@@ -860,34 +990,9 @@ private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompos
                 }
             }
 
-            TagsSection(mail, api)
             AttachmentsSection(mail, api)
-
-            if (mail.unsubUrl != null || mail.unsubMailto != null) {
-                OutlinedButton(
-                    onClick = {
-                        if (mail.unsubUrl != null) unsubLink = mail.unsubUrl
-                        else try {
-                            val to = mail.unsubMailto ?: ""
-                            val uri = android.net.Uri.parse("mailto:" + to + if (mail.unsubSubject.isNotBlank()) "?subject=" + android.net.Uri.encode(mail.unsubSubject) else "")
-                            context.startActivity(android.content.Intent(android.content.Intent.ACTION_SENDTO, uri).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
-                        } catch (e: Exception) { }
-                    },
-                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(46.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
-                ) { Text("Unsubscribe from this sender", color = Ink, fontSize = 15.sp) }
-            }
-            Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { onJunk(false) }, modifier = Modifier.weight(1f).height(46.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line)) { Text("Send to Junk", color = Ink, fontSize = 14.sp) }
-                if (mail.address.isNotBlank()) OutlinedButton(onClick = { askBlock = true }, modifier = Modifier.weight(1f).height(46.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line)) { Text("Block sender", color = Ink, fontSize = 14.sp) }
-            }
-
-            OutlinedButton(
-                onClick = { showOriginal = true },
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(50.dp),
-                shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, Line),
-            ) { Text("Show the original email", color = Ink, fontSize = 16.sp) }
             Spacer(Modifier.height(24.dp))
+        }
         }
     }
     if (showOriginal) OriginalScreen(mail, api) { showOriginal = false }
@@ -902,18 +1007,17 @@ private fun DetailBody(mail: Mail, api: EnveliqApi, onBack: () -> Unit, onCompos
     )
 }
 
-/** Fixed at the bottom, so the buttons can always be reached. Symbols only: tick (reviewed), archive box, bin and clock (remind me later). */
+/** Always visible at the bottom of an open email. Symbols only: bin, archive, reviewed (or mark unread), tag, remind me later, add a task. */
 @Composable
-private fun ActionBar(onResolve: (Outcome) -> Unit, onSnooze: () -> Unit, onUnread: (() -> Unit)? = null) {
-    Row(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        if (onUnread != null) {
-            BarIcon("Mark unread", Blue, Color(0xFF173056), onUnread) { Icon(Icons.Filled.Email, contentDescription = null, tint = Color(0xFF8DB8FF)) }
-        } else {
-            BarIcon("Reviewed", Green, Color(0xFF16382B), { onResolve(Outcome.Reviewed) }) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
-        }
+private fun ActionBar(onResolve: (Outcome) -> Unit, onSnooze: () -> Unit, onTag: () -> Unit, onTask: () -> Unit, onUnread: (() -> Unit)? = null) {
+    Row(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 10.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        BarIcon("Bin", Red, Color(0xFF3A1D22), { onResolve(Outcome.Binned) }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Red) }
         BarIcon("Archive", Color(0xFF8DB8FF), Color(0xFF173056), { onResolve(Outcome.Archived) }) { ArchiveIcon(Color(0xFF8DB8FF)) }
-        if (onUnread == null) BarIcon("Bin", Red, Color(0xFF3A1D22), { onResolve(Outcome.Binned) }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Red) }
+        if (onUnread != null) BarIcon("Mark unread", Color(0xFF8DB8FF), Color(0xFF173056), onUnread) { Icon(Icons.Filled.Email, contentDescription = null, tint = Color(0xFF8DB8FF)) }
+        else BarIcon("Reviewed", Green, Color(0xFF16382B), { onResolve(Outcome.Reviewed) }) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
+        BarIcon("Tags", Ink, PanelHigh, onTag) { TagIcon(Ink) }
         BarIcon("Remind me later", Ink, PanelHigh, onSnooze) { ClockIcon(Ink) }
+        BarIcon("Add a task", Ink, PanelHigh, onTask) { AddTaskIcon(Ink) }
     }
 }
 

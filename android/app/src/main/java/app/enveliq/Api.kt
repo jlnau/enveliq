@@ -529,6 +529,11 @@ class EnveliqApi(address: String) {
             it.optInt("days", 0), it.str("state"), it.optBoolean("manual", false))
     }
 
+    /** Adds a task of your own for this email. [on] is a date, YYYY-MM-DD. */
+    fun addTask(mail: Mail, title: String, on: String) {
+        call("POST", "/api/v1/me/tasks", JSONObject().put("account_id", mail.accountId).put("message_id", mail.id).put("title", title).put("on", on))
+    }
+
     /** action: done, reopen, remove, not_today, or move (with [to] one of later_today, tomorrow, weekend, next_week). */
     fun taskAct(id: String, action: String, to: String? = null) {
         val body = if (to != null) JSONObject().put("to", to) else null
