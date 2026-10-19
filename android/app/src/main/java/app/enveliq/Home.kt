@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -42,7 +44,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -162,6 +166,8 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     var error by remember { mutableStateOf("") }
     var tab by remember { mutableStateOf(Tab.Inbox) }
     var opened by remember { mutableStateOf<Mail?>(null) }
+    var loaded by remember { mutableStateOf(false) }
+    val inboxList = rememberLazyListState()
     val snack = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -173,6 +179,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 val list = withContext(Dispatchers.IO) { api.inbox() }
                 mails.clear()
                 mails.addAll(list)
+                Notifier.clearGone(activity, list.map { it.id }, AlertPrefs.alerted(activity))     // reviewed elsewhere: take its alert down
             } catch (e: ApiException) {
                 if (e.code == 401) {
                     onLeave(true)
@@ -183,17 +190,33 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 error = "Could not load your email."
             } finally {
                 loading = false
+                loaded = true
             }
         }
     }
 
     LaunchedEffect(Unit) { load() }
+
+    // Tapping a new-email alert opens that email. If the list is already showing, it is refreshed first.
+    val request = activity.openRequest
+    LaunchedEffect(request) { if (request != null && loaded) load() }
+    LaunchedEffect(request, loaded, loading, mails.size) {
+        val r = activity.openRequest ?: return@LaunchedEffect
+        if (!loaded || loading) return@LaunchedEffect
+        val found = mails.firstOrNull { it.id == r.second && it.accountId == r.first }
+        if (found != null) {
+            tab = Tab.Inbox
+            opened = found
+        }
+        activity.openRequest = null
+    }
     BackHandler(enabled = opened != null) { opened = null }
 
     // The email leaves the list at once. It is only marked at your mailbox when the Undo time has passed.
     fun resolve(mail: Mail, outcome: Outcome) {
         val at = mails.indexOf(mail).coerceAtLeast(0)
         mails.remove(mail)
+        Notifier.clearOne(activity, mail.id)
         opened = null
         scope.launch {
             val result = snack.showSnackbar(message = outcome.done, actionLabel = "Undo", duration = SnackbarDuration.Short)
@@ -247,7 +270,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 DetailBody(current, api, onBack = { opened = null })
             } else {
                 when (tab) {
-                    Tab.Inbox -> InboxTab(mails, loading, error, onOpen = { opened = it }, onRefresh = { load() })
+                    Tab.Inbox -> InboxTab(mails, loading, error, inboxList, onOpen = { opened = it }, onRefresh = { load() })
                     Tab.Tasks -> TasksTab(mails, onOpen = { opened = it })
                     Tab.Settings -> SettingsTab(activity, prefs, server, api, onLeave)
                 }
@@ -267,8 +290,9 @@ private fun Heading(title: String, subtitle: String, trailing: @Composable () ->
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun InboxTab(mails: List<Mail>, loading: Boolean, error: String, onOpen: (Mail) -> Unit, onRefresh: () -> Unit) {
+private fun InboxTab(mails: List<Mail>, loading: Boolean, error: String, listState: LazyListState, onOpen: (Mail) -> Unit, onRefresh: () -> Unit) {
     var onlyAction by remember { mutableStateOf(false) }
     val shown = if (onlyAction) mails.filter { it.needsAction } else mails
     val needs = mails.count { it.needsAction }
@@ -283,6 +307,7 @@ private fun InboxTab(mails: List<Mail>, loading: Boolean, error: String, onOpen:
             FilterChip(selected = !onlyAction, onClick = { onlyAction = false }, label = { Text("All") })
             FilterChip(selected = onlyAction, onClick = { onlyAction = true }, label = { Text("Needs action") })
         }
+        PullToRefreshBox(isRefreshing = loading && mails.isNotEmpty(), onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {
         when {
             loading && mails.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Blue) }
             error.isNotEmpty() -> Column(Modifier.padding(24.dp)) {
@@ -293,9 +318,10 @@ private fun InboxTab(mails: List<Mail>, loading: Boolean, error: String, onOpen:
                 if (onlyAction) "Nothing needs you right now." else "You're all caught up.",
                 color = Muted, fontSize = 17.sp, modifier = Modifier.padding(24.dp),
             )
-            else -> LazyColumn(Modifier.fillMaxSize()) {
+            else -> LazyColumn(Modifier.fillMaxSize(), state = listState) {
                 items(shown, key = { it.accountId + ":" + it.id }) { m -> MailRow(m) { onOpen(m) } }
             }
+        }
         }
     }
 }
@@ -520,6 +546,8 @@ private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, server
     val power = remember { context.getSystemService(android.os.PowerManager::class.java) }
     var unrestricted by remember { mutableStateOf(power.isIgnoringBatteryOptimizations(context.packageName)) }
     var hide by remember { mutableStateOf(prefs.getBoolean("hide_in_recents", false)) }
+    var appLock by remember { mutableStateOf(prefs.getBoolean("app_lock", false)) }
+    var lockNote by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
     fun turnOnAlerts() {
         SessionVault.save(context, server, api.sessionCookies())     // alerts need a kept sign-in
@@ -656,7 +684,16 @@ private fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, server
             prefs.edit().putBoolean("hide_in_recents", it).apply()
             activity.setSecure(it)
         }
-        Text("App lock with your fingerprint, face or PIN is planned.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp))
+        SwitchRow("Ask for my fingerprint, face or PIN", "To open Enveliq, and again after it has been out of sight for a minute.", appLock) {
+            if (it && !activity.canLock()) {
+                lockNote = "Set up a fingerprint, face or PIN in Android's settings first, then switch this on."
+            } else {
+                lockNote = ""
+                appLock = it
+                prefs.edit().putBoolean("app_lock", it).apply()
+            }
+        }
+        if (lockNote.isNotEmpty()) Text(lockNote, color = Amber, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp))
 
         SectionTitle("Account")
         Text(

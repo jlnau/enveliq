@@ -27,6 +27,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +43,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
@@ -51,7 +53,8 @@ import kotlinx.coroutines.withContext
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SignInScreen(initialAddress: String, notice: String, onDone: (EnveliqApi, String, Boolean) -> Unit) {
-    var address by remember { mutableStateOf(initialAddress) }
+    var address by remember { mutableStateOf(initialAddress.ifBlank { "https://" }) }
+    var showPassword by remember { mutableStateOf(false) }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
@@ -108,7 +111,10 @@ fun SignInScreen(initialAddress: String, notice: String, onDone: (EnveliqApi, St
             if (!needsCode) {
                 Text("Your Enveliq address", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
                 OutlinedTextField(
-                    value = address, onValueChange = { address = it }, singleLine = true,
+                    value = address,
+                    // A pasted full address replaces the https:// that is already there instead of doubling it.
+                    onValueChange = { address = it.replace(Regex("^https?://(?=https?://)", RegexOption.IGNORE_CASE), "") },
+                    singleLine = true,
                     placeholder = { Text("https://enveliq.example.com") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     modifier = Modifier.fillMaxWidth(),
@@ -123,7 +129,8 @@ fun SignInScreen(initialAddress: String, notice: String, onDone: (EnveliqApi, St
                 Text("Password", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 16.dp, bottom = 6.dp))
                 OutlinedTextField(
                     value = password, onValueChange = { password = it }, singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = { TextButton(onClick = { showPassword = !showPassword }) { Text(if (showPassword) "Hide" else "Show", color = Blue, fontSize = 15.sp) } },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                     modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType.Password },
                 )
@@ -164,7 +171,7 @@ fun SignInScreen(initialAddress: String, notice: String, onDone: (EnveliqApi, St
         ) {
             Button(
                 onClick = { go() },
-                enabled = !busy && (if (needsCode) code.isNotBlank() else address.isNotBlank() && username.isNotBlank() && password.isNotBlank()),
+                enabled = !busy && (if (needsCode) code.isNotBlank() else address.trim().removePrefix("https://").removePrefix("http://").isNotBlank() && username.isNotBlank() && password.isNotBlank()),
                 modifier = Modifier.weight(1f).height(52.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(),
@@ -172,6 +179,23 @@ fun SignInScreen(initialAddress: String, notice: String, onDone: (EnveliqApi, St
                 if (busy) CircularProgressIndicator(Modifier.size(22.dp), color = Ink, strokeWidth = 2.dp)
                 else Text(if (needsCode) "Confirm" else "Sign in", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
             }
+        }
+    }
+}
+
+/** Shown while the app is locked. Android asks for the fingerprint, face or PIN on its own; the button asks again if it was closed. */
+@Composable
+fun LockScreen(onUnlock: () -> Unit) {
+    LaunchedEffect(Unit) { onUnlock() }
+    Column(
+        Modifier.fillMaxSize().background(Navy).systemBarsPadding().padding(horizontal = 22.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text("Enveliq", color = Blue, fontSize = 40.sp, fontWeight = FontWeight.ExtraBold)
+        Text("Enveliq is locked.", color = Ink, fontSize = 18.sp, modifier = Modifier.padding(top = 6.dp, bottom = 24.dp))
+        Button(onClick = onUnlock, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
+            Text("Unlock", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }

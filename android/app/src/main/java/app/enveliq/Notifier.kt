@@ -8,6 +8,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.drawable.Icon
 import android.os.Build
 
 /** The app's own notifications. Each kind has its own Android channel, so the phone's settings can mute each one. */
@@ -17,6 +18,22 @@ object Notifier {
     const val CHANNEL_QUIET = "mail_quiet"
     const val CHANNEL_WATCH = "watching"
     const val WATCH_ID = 1002
+    const val GROUP_ID = 2002
+
+    /** The notification number for one email's alert, so it can be found again to clear it. */
+    fun mailNoteId(mailId: String): Int = 3000 + (mailId.hashCode() and 0xffff)
+
+    /** Takes down the alerts for emails that are no longer waiting, for example because they were reviewed on another device. */
+    fun clearGone(context: Context, stillWaiting: Collection<String>, known: Collection<String>) {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        val keep = stillWaiting.toSet()
+        known.filter { it !in keep }.forEach { manager.cancel(mailNoteId(it)) }
+        if (keep.isEmpty()) manager.cancel(GROUP_ID)
+    }
+
+    fun clearOne(context: Context, mailId: String) {
+        context.getSystemService(NotificationManager::class.java).cancel(mailNoteId(mailId))
+    }
 
     fun ensureChannels(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
@@ -100,17 +117,34 @@ object Notifier {
         if (mails.size == 1) {
             val m = mails[0]
             builder.setContentTitle(m.sender).setContentText(m.subject)
-            id = 3000 + (m.id.hashCode() and 0xffff)
+            id = mailNoteId(m.id)
+            // Tapping the alert opens this email, and the two buttons act on it without opening the app.
+            val open = PendingIntent.getActivity(
+                context, id,
+                Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    .putExtra(MainActivity.EXTRA_MAIL, m.id).putExtra(MainActivity.EXTRA_ACCOUNT, m.accountId),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            builder.setContentIntent(open)
+            builder.addAction(action(context, id, 1, "Reviewed", m, Outcome.Reviewed))
+            builder.addAction(action(context, id, 2, "Archive", m, Outcome.Archived))
         } else {
             builder.setContentTitle("${mails.size} new emails")
             builder.setContentText(mails.take(3).joinToString(", ") { it.sender })
             val style = Notification.InboxStyle()
             mails.take(5).forEach { style.addLine(it.sender + ": " + it.subject) }
             builder.setStyle(style)
-            id = 2002
+            id = GROUP_ID
         }
-        builder.setVisibility(Notification.VISIBILITY_PRIVATE).setPublicVersion(generic)
-            .setContentIntent(openApp(context)).setAutoCancel(true)
+        builder.setVisibility(Notification.VISIBILITY_PRIVATE).setPublicVersion(generic).setAutoCancel(true)
+        if (mails.size != 1) builder.setContentIntent(openApp(context))
         manager.notify(id, builder.build())
+    }
+
+    private fun action(context: Context, noteId: Int, n: Int, label: String, mail: Mail, outcome: Outcome): Notification.Action {
+        val intent = Intent(context, MailActionReceiver::class.java)
+            .putExtra("account", mail.accountId).putExtra("mail", mail.id).putExtra("outcome", outcome.api).putExtra("nid", noteId)
+        val pending = PendingIntent.getBroadcast(context, noteId * 10 + n, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        return Notification.Action.Builder(Icon.createWithResource(context, R.drawable.ic_notification), label, pending).build()
     }
 }

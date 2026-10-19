@@ -253,6 +253,7 @@ object Alerts {
             AlertPrefs.setSeeded(context, true)
             return
         }
+        Notifier.clearGone(context, mails.map { it.id }, alerted)       // reviewed somewhere else: take its alert down
         val fresh = mails.filter { it.id !in alerted }
         if (fresh.isEmpty()) return
         alerted.addAll(fresh.map { it.id })

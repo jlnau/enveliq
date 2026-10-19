@@ -54,6 +54,7 @@ class EnveliqApi(address: String) {
             if (a.isEmpty()) throw ApiException("Type the address of your Enveliq, for example https://enveliq.example.com")
             if (!a.contains("://")) a = "https://$a"
             if (!a.startsWith("https://")) throw ApiException("The address must start with https://. The app only talks to your server over a secure connection.")
+            if (a.removePrefix("https://").isBlank()) throw ApiException("Type the address of your Enveliq after the https://, for example enveliq.example.com")
             // People may type the address with /api (or /api/v1) on the end, for example when only that path is open
             // through a security layer such as Cloudflare Access. The app adds /api/v1/... itself, so take it off.
             a = a.replace(Regex("/api(/v1)?$", RegexOption.IGNORE_CASE), "").trimEnd('/')
@@ -78,7 +79,9 @@ class EnveliqApi(address: String) {
             403 -> "That is not allowed."
             404 -> "Not found."
             429 -> "Too many tries. Wait a minute and try again."
-            else -> "The request was not accepted (HTTP $code)."
+            400, 422 -> "Something in that was not right. Check what you typed and try again."
+            502, 503, 504 -> "Your Enveliq could not be reached just now. It may be restarting. Try again in a minute."
+            else -> if (code >= 500) "Your Enveliq had a problem. Try again in a moment." else "That did not work. Please try again."
         }
     }
 
@@ -97,6 +100,10 @@ class EnveliqApi(address: String) {
             val code = conn.responseCode
             val stream = if (code >= 400) conn.errorStream else conn.inputStream
             val text = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
+            // A web page instead of an answer: usually a security layer (for example Cloudflare Access) in front of the site.
+            if (text.trimStart().startsWith("<")) {
+                throw ApiException("That address did not answer like Enveliq. If your site is behind a security layer such as Cloudflare Access, allow the /api path for the app.")
+            }
             if (code >= 400) throw ApiException(detail(text, code), code)
             return text
         } catch (e: ApiException) {

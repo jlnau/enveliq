@@ -20,7 +20,7 @@ The app's version is the release tag (for example `v0.96` gives version `0.96`);
 
 ## What you can do
 
-- **Sign in** opens the app: type your Enveliq's address, your username and password, and a code if you use two-factor. The boxes are marked as username, password and verification code, so a password manager such as Bitwarden can offer to fill them (turn on Bitwarden's autofill service in Android's settings). It then lists your inbox (the same email as the website, newest first), opens an email's summary and original text, and marks emails Reviewed, Archived or Binned for real. The address must start with `https://`, and your Enveliq must be reachable from the phone. You can type it with or without `/api` on the end (`https://enveliq.example.com` or `https://enveliq.example.com/api`). The app only ever asks for addresses that start with `/api/v1/`, so if a security layer such as Cloudflare Access protects your site, you can allow just the `/api` path for the app (a Bypass rule for `/api`) and keep everything else, including the website itself, behind it. Enveliq's own sign-in (and two-factor, if you use it) still protects everything under `/api`.
+- **Sign in** opens the app: type your Enveliq's address, your username and password, and a code if you use two-factor. The boxes are marked as username, password and verification code, so a password manager such as Bitwarden can offer to fill them (turn on Bitwarden's autofill service in Android's settings). It then lists your inbox (the same email as the website, newest first), opens an email's summary and original text, and marks emails Reviewed, Archived or Binned for real. The address must start with `https://`, and your Enveliq must be reachable from the phone. The box starts with `https://` already filled in (pasting a whole address does not double it), and **Show** beside the password lets you check what you typed. Errors are in plain words, including a clear message when the address answers with a web page instead of Enveliq (usually a security layer such as Cloudflare Access: allow the `/api` path for the app). You can type it with or without `/api` on the end (`https://enveliq.example.com` or `https://enveliq.example.com/api`). The app only ever asks for addresses that start with `/api/v1/`, so if a security layer such as Cloudflare Access protects your site, you can allow just the `/api` path for the app (a Bypass rule for `/api`) and keep everything else, including the website itself, behind it. Enveliq's own sign-in (and two-factor, if you use it) still protects everything under `/api`.
 - **Tell me when new email arrives** (Settings) shows a quiet note when a new email's AI summary is done. The lock screen only says "New email" (or "3 new emails"); sender and subject show once the phone is unlocked. Android asks permission the first time. **Quiet hours** keep the note but without sound or buzz. Alerts work while the app is closed, and start again after the phone restarts or the app is updated. See "How new-email alerts work" below.
 - **Send a test notification to this phone** shows what an alert looks like. On the lock screen it only says "New email"; the words show once the phone is unlocked. Android asks permission the first time.
 - **Hide Enveliq in recent apps** hides the app's picture in the recent-apps view and stops screenshots.
@@ -50,6 +50,35 @@ Until you choose it the app never contacts Google: Firebase's automatic start-up
 **For whoever publishes the app, once:** deploy the relay ([Push relay](PUSH_RELAY.md)) and add the Firebase project's `google-services.json` to the GitHub repository as the encrypted secret `GOOGLE_SERVICES_JSON` (the **Build Android app** workflow writes it into the build).
 
 Which emails alert you, quiet hours and the "important people only" filter are the same settings as for browser alerts (Settings, Alerts), because the app is one more place those alerts go. Switching on alerts in the app switches on **New email alerts** there. Only new-email alerts go to the app; task reminders use your other channels.
+
+## New-email alerts: what you can do from the alert
+
+- **Tap the alert** and Enveliq opens on that email.
+- **Reviewed** and **Archive** buttons on the alert mark the email at your mailbox without opening the app (they show once the phone is unlocked, never on the lock screen).
+- **The alert goes away by itself** when the email is no longer waiting (for example you reviewed it on the website or another phone). It is taken down when the app next checks, or when you open the app.
+- Several new emails at once make one alert; tap it to open the inbox.
+
+## Using the app
+
+- **Pull down** on the inbox to refresh. The list keeps its place when you switch tabs.
+- **Ask for my fingerprint, face or PIN** (Settings, Security): Enveliq asks for it when you open it, and again after it has been out of sight for a minute. It needs a screen lock to be set up in Android first; the app never locks you out of a phone that has none. This is a convenience on top of your sign-in, not a replacement for it.
+
+## Android app to-do list
+
+Done in this version: https:// filled in, Show password, plainer errors, tap an alert to open the email, Reviewed/Archive buttons on the alert, alerts that clear themselves, pull to refresh, fingerprint/face/PIN lock.
+
+Still to do (in rough order):
+- Search the inbox.
+- Snooze ("remind me later") on an email.
+- Light and dark follow the phone's setting (today the app is dark).
+- **Your devices** list on the website, so a lost phone can be signed out (needs the per-device token work on the server).
+- A home-screen widget showing how many emails are waiting.
+- Passkeys and single sign-on.
+- Reply, forward, and tasks screens in full.
+- "Check for an update" in About.
+- A "Check connection" button on the sign-in screen.
+- Alerts that clear the moment the email is reviewed elsewhere (today they clear when the app next checks; instant clearing needs the server to announce it).
+- One switch per kind of alert, and the optional "Hide the watching note" button.
 
 ## Privacy
 

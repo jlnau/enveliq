@@ -51,6 +51,9 @@
         <meta-data android:name="firebase_messaging_auto_init_enabled" android:value="false" />
         <meta-data android:name="firebase_analytics_collection_enabled" android:value="false" />
 
+        <!-- The Reviewed and Archive buttons on a new-email alert. -->
+        <receiver android:name=".MailActionReceiver" android:exported="false" />
+
         <receiver android:name=".WatcherStarter" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
