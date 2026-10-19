@@ -84,7 +84,9 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   const { page, errors, csp, context } = await open(server);
   check("Inbox options start collapsed", await page.locator("#allSwitch").isHidden());
   await page.click("#previewInboxOptions");
-  check("the switch is shown", await page.locator("#allSwitch").isVisible());
+  check("the Include read mail button is shown and its switch is folded away", (await page.locator("#allOpen").isVisible()) && (await page.locator("#allOpen").innerText()).includes("Include read mail") && (await page.locator("#allSwitch").isHidden()));
+  await page.click("#allOpen");
+  check("opening it explains what it does and shows the switch", (await page.locator("#allPanel").innerText()).includes("Adds mail you’ve already read from the last 60 days. Summaries only when you ask.") && (await page.locator("#allSwitch").isVisible()));
   check("off by default: only the unread email, today's design, no footer", (await page.locator("article.mail").count()) === 1 && !(await page.evaluate(() => document.body.classList.contains("allmail"))) && (await page.locator("#allFoot").isHidden()));
   check("nothing recent was read while it is off", !server.calls.some((c) => c[0] === "recent"));
   await shot(page, "off");
@@ -140,6 +142,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 
   // Off again: back to today's design
   await again.page.click("#previewInboxOptions");
+  await again.page.click("#allOpen");
   await again.page.click("#allSwitch");
   await again.page.waitForFunction(() => document.querySelectorAll("article.mail").length === 1);
   check("off again restores the default design", !(await again.page.evaluate(() => document.body.classList.contains("allmail"))) && (await again.page.locator("#allFoot").isHidden()));
@@ -149,7 +152,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 {
   const server = makeServer({ all_mail: false });
   const { page } = await open(server);
-  check("with the feature switched off there is no switch and no recent mail is read", (await page.locator("#allSwitch").isHidden()) && !server.calls.some((c) => c[0] === "recent") && (await page.locator("article.mail").count()) === 1);
+  check("with the feature switched off there is no switch and no recent mail is read", (await page.locator("#allOpen").isHidden()) && !server.calls.some((c) => c[0] === "recent") && (await page.locator("article.mail").count()) === 1);
   await page.close();
 }
 
@@ -157,6 +160,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   const server = makeServer({ advance: false });
   const { page, context } = await open(server, { light: true });
   await page.click("#previewInboxOptions");
+  await page.click("#allOpen");
   await page.click("#allSwitch");
   await page.waitForFunction(() => document.querySelectorAll("article.mail").length === 4);
   await shot(page, "on-light");

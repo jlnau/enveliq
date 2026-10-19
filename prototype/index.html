@@ -114,6 +114,10 @@ html[data-theme="light"] .back-inbox{background:rgba(255,255,255,.82);border-col
 
 .expall{font-size:12px;opacity:.75;margin-left:2px}.expall:hover,.expall:focus-visible{opacity:1}
 .linkbtn{border:0;background:transparent;color:var(--muted);font-size:13px;text-decoration:underline;text-underline-offset:3px;padding:4px 0}.linkbtn:hover{color:var(--text)}
+.allbox{position:relative;display:inline-block}.allbox[hidden]{display:none}
+.allopen{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:6px 11px;font:inherit;font-size:13px;cursor:pointer}.allopen.on{border-color:var(--accent)}
+.allpanel{position:absolute;z-index:30;top:calc(100% + 6px);left:0;width:min(280px,80vw);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.35)}.allpanel[hidden]{display:none}
+.allpanel p{margin:0 0 10px;font-size:13px;line-height:1.45;color:var(--muted)}
 .allsw{display:inline-flex;align-items:center;gap:8px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:6px 11px;font:inherit;font-size:13px;cursor:pointer}.allsw[hidden]{display:none}
 .allsw i{width:30px;height:17px;border-radius:99px;background:var(--line);position:relative;display:block;transition:background .15s}.allsw i:after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:var(--muted);transition:left .15s}
 .allsw[aria-checked="true"]{border-color:var(--accent)}.allsw[aria-checked="true"] i{background:var(--accent)}.allsw[aria-checked="true"] i:after{left:15px;background:#fff}
@@ -1652,7 +1656,13 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
     </div>
     <span class="sortbar">
       <select id="mailboxFilter" aria-label="Show mailbox" hidden></select>
-      <button class="allsw" id="allSwitch" type="button" role="switch" aria-checked="false" hidden><i aria-hidden="true"></i>All emails</button>
+      <span class="allbox" id="allBox" hidden>
+        <button class="allopen" id="allOpen" type="button" aria-expanded="false" aria-controls="allPanel">Include read mail ▾</button>
+        <div class="allpanel" id="allPanel" hidden>
+          <p>Adds mail you’ve already read from the last 60 days. Summaries only when you ask.</p>
+          <button class="allsw" id="allSwitch" type="button" role="switch" aria-checked="false"><i aria-hidden="true"></i>Include read mail</button>
+        </div>
+      </span>
       <label for="sortBy">Sort</label>
       <select id="sortBy" aria-label="Sort emails">
         <option value="newest">Newest first</option>
@@ -4054,8 +4064,13 @@ document.addEventListener("click",async e=>{
   }catch(er){toast(er.message||"Could not do that",5000);pollSummaries(false)}
 });
 function paintAllSwitch(){
-  const b=$("allSwitch");b.hidden=!(realMail&&feat.all_mail);b.setAttribute("aria-checked",String(!!allMail));
+  const on=!!(realMail&&feat.all_mail);$("allBox").hidden=!on;if(!on)closeAllPanel();
+  $("allSwitch").setAttribute("aria-checked",String(!!allMail));$("allOpen").classList.toggle("on",!!allMail);
 }
+function closeAllPanel(){$("allPanel").hidden=true;$("allOpen").setAttribute("aria-expanded","false")}
+$("allOpen").onclick=()=>{const open=$("allPanel").hidden;$("allPanel").hidden=!open;$("allOpen").setAttribute("aria-expanded",String(open))};
+document.addEventListener("click",e=>{if(!$("allPanel").hidden&&!e.target.closest("#allBox"))closeAllPanel()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("allPanel").hidden){closeAllPanel();$("allOpen").focus()}});
 $("allSwitch").onclick=async()=>{
   allMail=!allMail;try{localStorage.setItem("enveliq-all-mail",allMail?"1":"0")}catch{}
   recentAt=0;paintAllSwitch();

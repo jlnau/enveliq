@@ -29,6 +29,9 @@ data class Mail(
     val replyTo: String = "",
     val replyCc: List<String> = emptyList(),
     val replyAlsoTo: List<String> = emptyList(),
+    /** A quiet entry from "Include read mail": no summary until you ask for one. */
+    val quiet: Boolean = false,
+    val ungenerated: Boolean = false,
 )
 
 /** A file that came with an email. [summary] is written by the AI and is labelled that way where it is shown. */

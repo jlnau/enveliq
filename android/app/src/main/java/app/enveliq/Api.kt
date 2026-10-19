@@ -204,7 +204,7 @@ class EnveliqApi(address: String) {
     }
 
     /** [view] is "inbox" (still to look at), "reviewed" or "archived". */
-    fun inbox(view: String = "inbox"): List<Mail> {
+    fun inbox(view: String = "inbox", includeRead: Boolean = false): List<Mail> {
         val accounts = JSONArray(call("GET", "/api/v1/accounts"))
         val out = ArrayList<Mail>()
         for (i in 0 until accounts.length()) {
@@ -215,6 +215,7 @@ class EnveliqApi(address: String) {
             if (userId.isNotEmpty() && a.str("owner_user_id") != userId) continue
             val accountId = a.str("id")
             val mailbox = a.str("display_name").ifBlank { a.str("email_address") }
+            if (includeRead) keepRecent(accountId)
             val messages = JSONArray(call("GET", "/api/v1/accounts/" + enc(accountId) + "/messages"))
             for (j in 0 until messages.length()) {
                 val r = messages.getJSONObject(j)
@@ -224,7 +225,8 @@ class EnveliqApi(address: String) {
                 } else if (state != view) {
                     continue
                 }
-                if (r.optBoolean("from_all_mail", false)) continue
+                val quiet = r.optBoolean("from_all_mail", false)
+                if (quiet && (!includeRead || r.optDouble("found_until", 0.0) > 0)) continue      // quiet entries only when "Include read mail" is on
                 val snoozedUntil = r.optDouble("snoozed_until", 0.0)
                 if (view == "inbox" && snoozedUntil * 1000 > System.currentTimeMillis()) continue        // snoozed: it comes back when the time is up
                 val files = ArrayList<Attachment>()
@@ -280,6 +282,8 @@ class EnveliqApi(address: String) {
                         unsubSubject = unsub?.str("subject") ?: "",
                         replyTo = r.optJSONObject("reply_context")?.str("reply_to") ?: "",
                         replyCc = r.optJSONObject("reply_context")?.optJSONArray("cc").strings(),
+                        quiet = quiet,
+                        ungenerated = quiet && r.str("summary").startsWith("Not summarised yet"),
                         replyAlsoTo = r.optJSONObject("reply_context")?.optJSONArray("also_to").strings(),
                     )
                 )
@@ -534,6 +538,26 @@ class EnveliqApi(address: String) {
     fun myTasks(): List<MyTask> = JSONObject(call("GET", "/api/v1/me/tasks?tz=" + enc(java.util.TimeZone.getDefault().id))).list("tasks").map {
         MyTask(it.str("id"), it.str("account_id"), it.str("message_id"), it.str("title"), it.str("sender"), it.str("priority"), it.str("due"),
             it.optInt("days", 0), it.str("state"), it.optBoolean("manual", false), it.str("detail"), it.optLong("remind_at", 0L))
+    }
+
+    private val recentAt = HashMap<String, Long>()
+
+    /** Asks the server to list the last 60 days of read mail for one mailbox. At most once every five minutes per mailbox; a refusal is not an error here. */
+    private fun keepRecent(accountId: String) {
+        val now = System.currentTimeMillis()
+        if (now - (recentAt[accountId] ?: 0L) < 300_000L) return
+        recentAt[accountId] = now
+        try { call("POST", "/api/v1/accounts/" + enc(accountId) + "/inbox/recent", JSONObject()) } catch (e: ApiException) { if (e.code == 401) throw e; recentAt.remove(accountId) }
+    }
+
+    /** True when "Include read mail" is switched on for this person on the server (administrators can switch it off). */
+    fun includeReadAvailable(): Boolean = try {
+        JSONObject(call("GET", "/api/v1/me/features")).optJSONObject("effective")?.optBoolean("all_mail", false) ?: false
+    } catch (e: Exception) { false }
+
+    /** Asks for the AI summary of a quiet entry. It is sent to your AI model only now. */
+    fun askSummary(mail: Mail) {
+        call("POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/summary", JSONObject())
     }
 
     /** Adds a task of your own for this email. [on] is a date, YYYY-MM-DD. */

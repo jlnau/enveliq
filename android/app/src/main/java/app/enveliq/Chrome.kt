@@ -200,3 +200,14 @@ internal fun BellIcon(tint: Color, modifier: Modifier = Modifier.size(24.dp)) = 
     c.moveTo(10f * u, 19.5f * u); c.quadraticBezierTo(12f * u, 21.8f * u, 14f * u, 19.5f * u)
     drawPath(c, tint, style = st)
 }
+
+/** An envelope with a tick: "Include read mail". */
+@Composable
+internal fun ReadMailIcon(tint: Color, modifier: Modifier = Modifier.size(24.dp)) = Canvas(modifier) {
+    val u = size.width / 24f
+    val st = Stroke(width = 2f * u, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+    drawRoundRect(tint, topLeft = Offset(3f * u, 5f * u), size = Size(18f * u, 14f * u), cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.5f * u), style = st)
+    val p = androidx.compose.ui.graphics.Path()
+    p.moveTo(3.5f * u, 7f * u); p.lineTo(12f * u, 13.5f * u); p.lineTo(20.5f * u, 7f * u)
+    drawPath(p, tint, style = st)
+}

@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -299,15 +300,20 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     val snack = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    // "Include read mail": a setting that stays on until you switch it off, even after the app is closed.
+    var includeRead by remember { mutableStateOf(prefs.getBoolean("include_read", false)) }
+    var includeReadOk by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { includeReadOk = withContext(Dispatchers.IO) { api.includeReadAvailable() } }
+
     fun load() {
         loading = true
         error = ""
         scope.launch {
             try {
-                val list = withContext(Dispatchers.IO) { api.inbox(view) }
+                val list = withContext(Dispatchers.IO) { api.inbox(view, includeRead) }
                 mails.clear()
                 mails.addAll(list)
-                if (view == "inbox") WaitingWidget.update(activity, list.size)
+                if (view == "inbox") WaitingWidget.update(activity, list.count { !it.quiet })
                 if (view == "inbox") Notifier.clearGone(activity, list.map { it.id }, AlertPrefs.alerted(activity))     // reviewed elsewhere: take its alert down
             } catch (e: ApiException) {
                 if (e.code == 401) {
@@ -325,6 +331,22 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     }
 
     LaunchedEffect(view) { load() }
+
+    // After "Generate summary": look again every few seconds (for about two minutes) and show the summary when it is ready.
+    fun watchSummary(m: Mail) {
+        scope.launch {
+            repeat(24) {
+                delay(5000)
+                try {
+                    val list = withContext(Dispatchers.IO) { api.inbox(view, includeRead) }
+                    val found = list.firstOrNull { it.id == m.id && it.accountId == m.accountId }
+                    mails.clear(); mails.addAll(list)
+                    if (found != null && opened?.id == m.id) opened = found
+                    if (found == null || !found.ungenerated) return@launch
+                } catch (_: Exception) { }
+            }
+        }
+    }
 
     // Tapping a new-email alert opens that email. If the list is already showing, it is refreshed first.
     val request = activity.openRequest
@@ -612,6 +634,8 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                         searching = searching, query = query, onQuery = { query = it },
                         swipeRight = prefs.getString("swipe_right", "archive") ?: "archive",
                         swipeLeft = prefs.getString("swipe_left", "bin") ?: "bin",
+                        includeRead = includeRead, includeReadOk = includeReadOk,
+                        onIncludeRead = { on -> includeRead = on; prefs.edit().putBoolean("include_read", on).apply(); load() },
                         onOpen = { opened = it },
                         onSwipe = { m, outcome -> resolve(m, outcome) },
                         onRefresh = { load() },
@@ -635,12 +659,12 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 Row(Modifier.fillMaxSize()) {
                     Box(Modifier.weight(0.42f).fillMaxHeight()) { inboxPane() }
                     Box(Modifier.weight(0.58f).fillMaxHeight()) {
-                        if (current != null) DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) })
+                        if (current != null) DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) })
                         else Text("Choose an email to read it here.", color = Muted, fontSize = 16.sp, modifier = Modifier.padding(32.dp))
                     }
                 }
             } else if (current != null) {
-                DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) })
+                DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) })
             } else {
                 when (tab) {
                     Tab.Inbox -> inboxPane()
@@ -683,6 +707,7 @@ private fun InboxTab(
     view: String, filters: InboxFilters, onView: (String) -> Unit,
     searching: Boolean, query: String, onQuery: (String) -> Unit,
     swipeRight: String, swipeLeft: String,
+    includeRead: Boolean, includeReadOk: Boolean, onIncludeRead: (Boolean) -> Unit,
     onOpen: (Mail) -> Unit, onSwipe: (Mail, Outcome) -> Unit, onRefresh: () -> Unit,
 ) {
     var onlyAction by filters::onlyAction
@@ -738,9 +763,28 @@ private fun InboxTab(
                         if (tagCounts.isNotEmpty() || tag != null) DropdownMenuItem(text = { Text((if (tag != null) "✓  # " + tag else "Tags…"), color = Ink) }, onClick = { otherMenu = false; pickingTag = true })
                     }
                 }
+                if (includeReadOk) {
+                    var readMenu by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { readMenu = true }) { ReadMailIcon(if (includeRead) Blue else Muted) }
+                        DropdownMenu(expanded = readMenu, onDismissRequest = { readMenu = false }, containerColor = Panel) {
+                            Column(Modifier.widthIn(max = 280.dp).padding(horizontal = 16.dp, vertical = 8.dp)) {
+                                Text("Include read mail", color = Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    "Adds mail you\u2019ve already read from the last 60 days. Summaries only when you ask.",
+                                    color = Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
+                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(if (includeRead) "On" else "Off", color = Ink, fontSize = 14.sp, modifier = Modifier.weight(1f))
+                                    androidx.compose.material3.Switch(checked = includeRead, onCheckedChange = { onIncludeRead(it) })
+                                }
+                            }
+                        }
+                    }
+                }
                 Spacer(Modifier.weight(1f))
                 Text(
-                    if (loading && mails.isEmpty()) "" else if (view == "inbox") "${mails.size}" + (if (needs > 0) " · $needs need you" else "") else "${mails.size} kept for a few days",
+                    if (loading && mails.isEmpty()) "" else if (view == "inbox") "${mails.count { !it.quiet }}" + (if (needs > 0) " · $needs need you" else "") else "${mails.size} kept for a few days",
                     color = Muted, fontSize = 12.sp,
                 )
             }
@@ -919,7 +963,8 @@ private fun MailRow(mail: Mail, picked: Boolean, onClick: () -> Unit, onLongClic
 }
 
 @Composable
-private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit, onJunk: (Boolean) -> Unit) {
+private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit, onJunk: (Boolean) -> Unit, onAskedSummary: () -> Unit = {}) {
+    var summaryAsked by remember(mail.id) { mutableStateOf(false) }
     var showOriginal by remember(mail.id) { mutableStateOf(false) }
     var unsubLink by remember(mail.id) { mutableStateOf<String?>(null) }
     var askBlock by remember(mail.id) { mutableStateOf(false) }
@@ -982,7 +1027,25 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
             ) {
                 Column(Modifier.padding(16.dp)) {
                     Text("✦ AI summary", color = Blue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                    Text(
+                    if (mail.ungenerated) {
+                        Text(if (summaryAsked) "Writing the summary\u2026 it will appear here when it is ready." else "Summary not generated", color = Ink, fontSize = 17.sp, lineHeight = 26.sp, modifier = Modifier.padding(top = 6.dp))
+                        if (!summaryAsked) {
+                            OutlinedButton(
+                                onClick = {
+                                    scope.launch {
+                                        try {
+                                            withContext(Dispatchers.IO) { api.askSummary(mail) }
+                                            summaryAsked = true
+                                            onAskedSummary()
+                                        } catch (e: ApiException) { tell(e.message ?: "Could not ask for the summary.") }
+                                        catch (_: Exception) { tell("Could not ask for the summary. Check your connection.") }
+                                    }
+                                },
+                                modifier = Modifier.padding(top = 10.dp).height(38.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
+                            ) { Text("Generate summary", color = Ink, fontSize = 13.sp) }
+                            Text("Pressing the button sends this email\u2019s text to your AI model.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+                        }
+                    } else Text(
                         mail.summary.ifBlank { "No summary yet." },
                         color = Ink, fontSize = 17.sp, lineHeight = 26.sp, modifier = Modifier.padding(top = 6.dp),
                     )
