@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Fix: signing in to the Android app with a passkey or single sign-on.** After pressing **Open the Enveliq app** in the browser, the app used to show "Something went wrong" and stay on the sign-in screen: the app cancelled its own sign-in half way. It now finishes the sign-in. The "Sign in with a passkey or single sign-on" button also no longer cuts its words off on a narrow phone. Touches `android/` (`Screens.kt`).
+
 **Junk and Block sender.** On an opened email, **Send to Junk** moves it to your mailbox's own Junk or Spam folder (Undo works for a few seconds), and **Block sender** does that and also sends all new email from that address to Junk from then on. A new Mail rules action, **Send it to Junk**, does the same for a sender or words in the subject, and never touches your important people. Touches `backend/models.py`, `backend/mail/service.py`, `backend/mail/rules.py`, `prototype/index.html`, `web/static/auth.js`, `tests/test_rules.py`, `docs/JUNK_MAIL.md`, `docs/MAIL_RULES.md`, `SECURITY.md`.
 
 **Android: Junk, Block sender and Blocked senders.** The same two buttons on an opened email, and **Settings, Blocked senders** to see and undo blocks. The block is made after the Undo time. Touches `android/`.
