@@ -24,10 +24,25 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|uiMode|density|fontScale|layoutDirection|locale"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- "Share" from another app: shared text becomes a new email. Nothing is sent until the person presses Send. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <!-- The browser hands the app a one-time code here after the person signs in there. The code alone is useless without the secret only this app holds. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="enveliq" android:host="signin" />
             </intent-filter>
         </activity>
 
@@ -52,6 +67,14 @@
         <meta-data android:name="firebase_analytics_collection_enabled" android:value="false" />
 
         <!-- The Reviewed and Archive buttons on a new-email alert. -->
+        <!-- The home-screen square that shows how many emails are waiting (the number only). -->
+        <receiver android:name=".WaitingWidget" android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/waiting_widget_info" />
+        </receiver>
+
         <receiver android:name=".MailActionReceiver" android:exported="false" />
 
         <receiver android:name=".WatcherStarter" android:exported="false">

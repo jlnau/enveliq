@@ -108,6 +108,11 @@ def ready_mail(vault: Any, user_id: str) -> set[tuple[str, str]]:
     return ready
 
 
+def mail_changes(before: set[tuple[str, str]], now: set[tuple[str, str]]) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    """What changed between two looks at the ready emails: (new ones, ones that are no longer waiting). Only ids."""
+    return sorted(now - before), sorted(before - now)
+
+
 def build_notify_router(ctx: Any) -> APIRouter:
     router = APIRouter(prefix="/api/v1")
     notifier: Notifier = ctx.notifier
@@ -226,8 +231,12 @@ def build_notify_router(ctx: Any) -> APIRouter:
                 except Exception:
                     yield "event: reconnect\ndata: {}\n\n"
                     return
-                fresh = sorted(now - seen)
+                fresh, gone = mail_changes(seen, now)
                 seen = set(now)
+                if gone:                              # reviewed, archived or moved somewhere else: the phone takes its alert down at once
+                    ids = [{"a": a, "m": m} for a, m in gone[:50]]
+                    yield "event: gone\ndata: " + json.dumps({"ids": ids}, separators=(",", ":")) + "\n\n"
+                    ticks = 0
                 if fresh:
                     ids = [{"a": a, "m": m} for a, m in fresh[:50]]
                     yield "event: new\ndata: " + json.dumps({"count": len(fresh), "ids": ids}, separators=(",", ":")) + "\n\n"

@@ -815,6 +815,17 @@ def put_update_notice(body: UpdateNoticeBody, session: Session = Depends(admin_s
     return {"enabled": body.enabled, "current": VERSION, "update": update_checker.newer() if body.enabled else None}
 
 
+@app.get("/api/v1/app-update")
+def app_update(session: Session = Depends(full_session)):
+    """The newest published release, for the Android app to compare with its own number. Anyone signed in may ask.
+    The phone never contacts GitHub: this server already does (once a day), and only a version number and Enveliq's own
+    release page address are passed on. Empty when the administrator switched the update notice off."""
+    if not update_notice_enabled():
+        return {"latest": None}
+    update_checker.maybe_refresh()
+    return {"latest": dict(update_checker.latest) if update_checker.latest else None}
+
+
 @app.get("/api/v1/system")
 def system_endpoint(session: Session = Depends(full_session)):
     """What the inbox and the Security page show about this Enveliq. Signed-in people only; the technical
@@ -893,7 +904,7 @@ def app_page(request: Request):
     return FileResponse(APP_PAGE, media_type="text/html")
 
 
-for _route in ("/setup", "/unlock", "/login", "/account", "/admin", "/mailboxes", "/welcome", "/security", "/terms", "/privacy"):
+for _route in ("/setup", "/unlock", "/login", "/account", "/admin", "/mailboxes", "/welcome", "/security", "/terms", "/privacy", "/app-signin"):
     def _auth_page(request: Request) -> FileResponse:
         return FileResponse(WEB_DIR / "auth.html", media_type="text/html")
     app.add_api_route(_route, _auth_page, methods=["GET"], include_in_schema=False)
@@ -1033,6 +1044,29 @@ def resolve_message_endpoint(
     except BridgeError as err:
         raise HTTPException(status_code=BRIDGE_HTTP_STATUS.get(err.code, 502),
                             detail={"code": err.code, "message": err.message}) from None
+    return Response(status_code=204)
+
+
+@app.post("/api/v1/accounts/{account_id}/messages/{message_id}/unread", status_code=204)
+def mark_message_unread(account_id: AccountId, message_id: MessageId, session: Session = Depends(current_session)):
+    """Marks a Reviewed email unread again: the real mailbox gets its unread mark back and the email returns to the inbox list."""
+    load_account(account_id, session.principal, owner_only=True, action="mark this email unread")
+    try:
+        stored = vault.get_message(account_id, message_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Message not found") from exc
+    if stored.get("state") != "reviewed" or stored.get("found_until"):
+        raise HTTPException(status_code=409, detail="Only an email you marked Reviewed can be marked unread.")
+    try:
+        mail_service.mark_unread(vault.get_account(account_id), stored)
+    except BridgeError as err:
+        raise HTTPException(status_code=BRIDGE_HTTP_STATUS.get(err.code, 502),
+                            detail={"code": err.code, "message": err.message}) from None
+    data = {k: v for k, v in stored.items() if k != "id"}
+    data.update(state="unread", resolved_at=None)
+    vault.update_message(account_id, message_id, data)
+    vault.audit({"event": "message_marked_unread", "actor_user_id": session.principal.user_id, "account_id": account_id,
+                 "message_id": message_id, "at": time.time()})
     return Response(status_code=204)
 
 

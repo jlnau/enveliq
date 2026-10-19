@@ -18,6 +18,12 @@ class MainActivity : FragmentActivity() {
     /** Set when someone taps a new-email alert: (account id, email id). The inbox opens that email once it has loaded. */
     var openRequest by mutableStateOf<Pair<String, String>?>(null)
 
+    /** The one-time code the browser handed back after signing in there. Used once by the sign-in screen. */
+    var linkCode by mutableStateOf<String?>(null)
+
+    /** Text shared to Enveliq from another app: (subject, text). The inbox opens a new email with it once the person is signed in. */
+    var shareRequest by mutableStateOf<Pair<String, String>?>(null)
+
     /** True while the app is locked and waiting for the fingerprint, face or PIN. */
     var locked by mutableStateOf(false)
     private var stoppedAt = 0L
@@ -28,6 +34,12 @@ class MainActivity : FragmentActivity() {
         Notifier.ensureChannels(this)
         MailWatcherService.start(this)          // only does anything when the person has alerts on and a kept sign-in
         val prefs = getSharedPreferences("enveliq", MODE_PRIVATE)
+        Look.load(prefs)
+        Pal.dark = when (Look.theme) {
+            "light" -> false
+            "dark" -> true
+            else -> (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        }
         setSecure(prefs.getBoolean("hide_in_recents", false))
         locked = prefs.getBoolean("app_lock", false) && canLock()
         readRequest(intent)
@@ -40,6 +52,17 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun readRequest(intent: Intent?) {
+        if (intent?.action == Intent.ACTION_SEND && intent.type?.startsWith("text/") == true) {
+            val text = intent.getStringExtra(Intent.EXTRA_TEXT) ?: ""
+            if (text.isNotBlank()) shareRequest = (intent.getStringExtra(Intent.EXTRA_SUBJECT) ?: "").take(300) to text.take(20000)
+            return
+        }
+        val link = intent?.data
+        if (link != null && link.scheme == "enveliq" && link.host == "signin") {
+            val code = link.getQueryParameter("code") ?: ""
+            if (Regex("[A-Za-z0-9_-]{20,100}").matches(code)) linkCode = code
+            return
+        }
         val mail = intent?.getStringExtra(EXTRA_MAIL) ?: return
         val account = intent.getStringExtra(EXTRA_ACCOUNT) ?: return
         openRequest = account to mail

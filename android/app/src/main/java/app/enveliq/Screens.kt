@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -52,7 +53,9 @@ import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun SignInScreen(initialAddress: String, notice: String, onDone: (EnveliqApi, String, Boolean) -> Unit) {
+fun SignInScreen(initialAddress: String, notice: String, linkCode: String?, onLinkUsed: () -> Unit, onDone: (EnveliqApi, String, Boolean) -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val linkPrefs = remember { context.getSharedPreferences("enveliq_link", android.content.Context.MODE_PRIVATE) }
     var address by remember { mutableStateOf(initialAddress.ifBlank { "https://" }) }
     var showPassword by remember { mutableStateOf(false) }
     var username by remember { mutableStateOf("") }
@@ -63,7 +66,72 @@ fun SignInScreen(initialAddress: String, notice: String, onDone: (EnveliqApi, St
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
     var api by remember { mutableStateOf<EnveliqApi?>(null) }
+    var checking by remember { mutableStateOf(false) }
+    var checkNote by remember { mutableStateOf("") }
+    var checkOk by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    fun check() {
+        if (checking) return
+        checking = true
+        checkNote = ""
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) { EnveliqApi(address).checkConnection() }
+                checkOk = true
+                checkNote = "Enveliq answered at that address. You can sign in."
+            } catch (e: ApiException) {
+                checkOk = false
+                checkNote = e.message ?: "Could not reach that address."
+            } catch (e: Exception) {
+                checkOk = false
+                checkNote = "Could not reach that address."
+            } finally {
+                checking = false
+            }
+        }
+    }
+
+    fun openBrowser() {
+        error = ""
+        try {
+            val client = EnveliqApi(address)
+            val verifier = BrowserLink.newVerifier()
+            linkPrefs.edit().putString("verifier", verifier).putString("address", address.trim()).putBoolean("keep", keep).putLong("at", System.currentTimeMillis()).apply()
+            context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(client.browserSignInUrl(BrowserLink.challengeOf(verifier)))))
+        } catch (e: ApiException) {
+            error = e.message ?: "That address is not right."
+        } catch (e: Exception) {
+            error = "No browser on this phone could open the page."
+        }
+    }
+
+    // The browser handed a one-time code back: swap it (with the secret kept here) for a session.
+    LaunchedEffect(linkCode) {
+        val code = linkCode ?: return@LaunchedEffect
+        val verifier = linkPrefs.getString("verifier", "") ?: ""
+        val addr = linkPrefs.getString("address", "") ?: ""
+        val keepIt = linkPrefs.getBoolean("keep", true)
+        val fresh = System.currentTimeMillis() - linkPrefs.getLong("at", 0L) < 10 * 60 * 1000
+        linkPrefs.edit().clear().apply()
+        onLinkUsed()
+        if (verifier.isEmpty() || addr.isEmpty() || !fresh) {
+            error = "That sign-in took too long or did not start here. Please try again."
+            return@LaunchedEffect
+        }
+        busy = true
+        try {
+            val client = EnveliqApi(addr)
+            withContext(Dispatchers.IO) { client.exchangeLink(code, verifier, keepIt) }
+            onDone(client, addr, keepIt)
+        } catch (e: ApiException) {
+            error = e.message ?: "That did not work."
+        } catch (e: Exception) {
+            error = "Something went wrong. Please try again."
+        } finally {
+            busy = false
+        }
+    }
 
     fun go() {
         if (busy) return
@@ -119,6 +187,11 @@ fun SignInScreen(initialAddress: String, notice: String, onDone: (EnveliqApi, St
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     modifier = Modifier.fillMaxWidth(),
                 )
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { check() }, enabled = !checking) { Text("Check connection", color = Blue, fontSize = 15.sp) }
+                    if (checking) CircularProgressIndicator(Modifier.size(18.dp), color = Blue, strokeWidth = 2.dp)
+                }
+                if (checkNote.isNotEmpty()) Text(checkNote, color = if (checkOk) Green else Red, fontSize = 14.sp, lineHeight = 20.sp)
                 Text("Username", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 16.dp, bottom = 6.dp))
                 // The content types tell password managers such as Bitwarden which box is the username, the password and the code.
                 OutlinedTextField(
@@ -159,8 +232,17 @@ fun SignInScreen(initialAddress: String, notice: String, onDone: (EnveliqApi, St
             if (error.isNotEmpty()) {
                 Text(error, color = Red, fontSize = 15.sp, modifier = Modifier.padding(top = 14.dp))
             }
+            if (!needsCode) {
+                OutlinedButton(
+                    onClick = { openBrowser() },
+                    enabled = !busy && address.trim().removePrefix("https://").removePrefix("http://").isNotBlank(),
+                    modifier = Modifier.fillMaxWidth().padding(top = 18.dp).height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                ) { Text("Sign in with a passkey or single sign-on", fontSize = 15.sp) }
+                Text("Opens your browser to sign in there, then brings you back here.", color = Muted, fontSize = 13.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
+            }
             Text(
-                "Passkeys and single sign-on are coming to the app. Until then, use your password. The app only talks to your own server, over a secure connection, and never keeps your password.",
+                "The app only talks to your own server, over a secure connection, and never keeps your password.",
                 color = Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 18.dp, bottom = 12.dp),
             )
         }
@@ -196,6 +278,46 @@ fun LockScreen(onUnlock: () -> Unit) {
         Text("Enveliq is locked.", color = Ink, fontSize = 18.sp, modifier = Modifier.padding(top = 6.dp, bottom = 24.dp))
         Button(onClick = onUnlock, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
             Text("Unlock", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+
+/** Shown once, right after the first sign-in: a calm tour of the three things worth knowing. */
+@Composable
+fun WelcomeScreen(onDone: (openSettings: Boolean) -> Unit) {
+    Column(Modifier.fillMaxSize().background(Navy).systemBarsPadding()) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 22.dp)) {
+            Text("You're in.", color = Ink, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 36.dp))
+            Text("Three things worth knowing. You can change all of them later in Settings.", color = Muted, fontSize = 16.sp, lineHeight = 23.sp, modifier = Modifier.padding(top = 8.dp, bottom = 12.dp))
+            WelcomeCard("✦", "Calm summaries", "Each email has a short summary, marked as written by the AI. It can be wrong, so open the original when it matters. Nothing is deleted until you choose Reviewed, Archive or Bin, and you can always Undo.")
+            WelcomeCard("🔔", "Alerts, if you want them", "Enveliq can tell you when an email is ready, only for the emails that matter to you if you like. The lock screen only says \"New email\". Choose this in Settings, Notifications.")
+            WelcomeCard("🔒", "A lock, if you want one", "Ask for your fingerprint, face or PIN to open Enveliq. Your email is never saved on this phone. Choose this in Settings, Security.")
+        }
+        Column(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 22.dp, vertical = 12.dp)) {
+            Button(onClick = { onDone(false) }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
+                Text("Go to my inbox", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+            }
+            OutlinedButton(
+                onClick = { onDone(true) }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp).height(48.dp),
+                shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
+            ) { Text("Set up alerts and the lock", color = Ink) }
+        }
+    }
+}
+
+@Composable
+private fun WelcomeCard(symbol: String, title: String, text: String) {
+    androidx.compose.material3.Surface(
+        color = Panel, shape = RoundedCornerShape(18.dp), border = BorderStroke(1.dp, Line),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+    ) {
+        Row(Modifier.padding(16.dp)) {
+            Text(symbol, fontSize = 24.sp, modifier = Modifier.padding(end = 14.dp))
+            Column {
+                Text(title, color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                Text(text, color = Muted, fontSize = 14.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 4.dp))
+            }
         }
     }
 }

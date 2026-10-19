@@ -16,6 +16,20 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.net.ssl.SSLException
 
+/** The secret and its fingerprint for signing in through the browser (PKCE): only the fingerprint travels through the browser. */
+object BrowserLink {
+    fun newVerifier(): String {
+        val bytes = ByteArray(32)
+        java.security.SecureRandom().nextBytes(bytes)
+        return android.util.Base64.encodeToString(bytes, android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING)
+    }
+
+    fun challengeOf(verifier: String): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256").digest(verifier.toByteArray(Charsets.US_ASCII))
+        return android.util.Base64.encodeToString(digest, android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING)
+    }
+}
+
 class ApiException(message: String, val code: Int = 0) : Exception(message)
 
 sealed class SignIn {
@@ -70,6 +84,8 @@ class EnveliqApi(address: String) {
     private fun detail(text: String, code: Int): String {
         try {
             val d = JSONObject(text).opt("detail")
+            // A route the server does not have: it is an older Enveliq than this app.
+            if (code == 404 && d == "Not Found") return "Your Enveliq server does not have this yet. Update the server to the newest version, then try again."
             if (d is String && d.isNotBlank()) return d
             if (d is JSONObject && d.str("message").isNotBlank()) return d.str("message")
         } catch (_: Exception) {
@@ -92,6 +108,8 @@ class EnveliqApi(address: String) {
             conn.connectTimeout = 15000
             conn.readTimeout = 30000
             conn.setRequestProperty("Accept", "application/json")
+            // Lets "Your devices" show a plain name for this phone.
+            conn.setRequestProperty("X-Enveliq-Device", "Enveliq app on " + android.os.Build.MODEL.take(40))
             if (body != null) {
                 conn.doOutput = true
                 conn.setRequestProperty("Content-Type", "application/json")
@@ -129,6 +147,15 @@ class EnveliqApi(address: String) {
     fun signIn(username: String, password: String, keep: Boolean): SignIn {
         val body = JSONObject().put("username", username.trim()).put("password", password).put("remember", keep)
         return finish(JSONObject(call("POST", "/api/v1/auth/login", body)))
+    }
+
+    /** The page in the phone's browser where the person signs in the usual way (passkey, single sign-on, two-factor) and is handed back to the app. */
+    fun browserSignInUrl(challenge: String): String = "$base/app-signin?c=" + enc(challenge)
+
+    /** Swaps the one-time code the browser handed back, with the secret only this app knows, for a normal session. */
+    fun exchangeLink(code: String, verifier: String, keep: Boolean): SignIn {
+        val body = JSONObject().put("code", code).put("verifier", verifier).put("remember", keep)
+        return finish(JSONObject(call("POST", "/api/v1/auth/app-link/exchange", body)))
     }
 
     fun code(code: String): SignIn = finish(JSONObject(call("POST", "/api/v1/auth/mfa", JSONObject().put("code", code.trim()))))
@@ -169,7 +196,15 @@ class EnveliqApi(address: String) {
         }
     }
 
-    fun inbox(): List<Mail> {
+    private fun JSONArray?.strings(): List<String> {
+        if (this == null) return emptyList()
+        val out = ArrayList<String>()
+        for (i in 0 until length()) { val t = optString(i, ""); if (t.isNotBlank()) out.add(t) }
+        return out
+    }
+
+    /** [view] is "inbox" (still to look at), "reviewed" or "archived". */
+    fun inbox(view: String = "inbox"): List<Mail> {
         val accounts = JSONArray(call("GET", "/api/v1/accounts"))
         val out = ArrayList<Mail>()
         for (i in 0 until accounts.length()) {
@@ -179,12 +214,27 @@ class EnveliqApi(address: String) {
             if (method != "proton_bridge" && method != "imap") continue
             if (userId.isNotEmpty() && a.str("owner_user_id") != userId) continue
             val accountId = a.str("id")
+            val mailbox = a.str("display_name").ifBlank { a.str("email_address") }
             val messages = JSONArray(call("GET", "/api/v1/accounts/" + enc(accountId) + "/messages"))
             for (j in 0 until messages.length()) {
                 val r = messages.getJSONObject(j)
                 val state = r.str("state")
-                if (state == "reviewed" || state == "archived") continue
+                if (view == "inbox") {
+                    if (state == "reviewed" || state == "archived") continue
+                } else if (state != view) {
+                    continue
+                }
                 if (r.optBoolean("from_all_mail", false)) continue
+                val snoozedUntil = r.optDouble("snoozed_until", 0.0)
+                if (view == "inbox" && snoozedUntil * 1000 > System.currentTimeMillis()) continue        // snoozed: it comes back when the time is up
+                val files = ArrayList<Attachment>()
+                val rawFiles = r.optJSONArray("attachments")
+                if (rawFiles != null) {
+                    for (k in 0 until rawFiles.length()) {
+                        val f = rawFiles.optJSONObject(k) ?: continue
+                        files.add(Attachment(f.optInt("index", k), f.str("filename").ifBlank { "Attachment " + (k + 1) }, f.optLong("size_bytes", 0L), f.str("summary")))
+                    }
+                }
                 val received = r.optLong("received_at", 0L)
                 val task = r.optJSONObject("suggested_task")
                 val taskTitle = task?.str("title") ?: ""
@@ -201,6 +251,10 @@ class EnveliqApi(address: String) {
                         taskTitle = taskTitle.ifBlank { null },
                         taskDue = task?.str("due")?.ifBlank { null },
                         received = received,
+                        tags = r.optJSONArray("tags").strings(),
+                        attachments = files,
+                        mailbox = mailbox,
+                        state = state,
                     )
                 )
             }
@@ -227,12 +281,299 @@ class EnveliqApi(address: String) {
         call("DELETE", "/api/v1/me/notifications/android/" + enc(id))
     }
 
+    /** Keeps an email out of the inbox until [untilSeconds] (a Unix time), or brings it back now when null. */
+    fun snooze(mail: Mail, untilSeconds: Double?) {
+        val body = JSONObject()
+        if (untilSeconds == null) body.put("until", JSONObject.NULL) else body.put("until", untilSeconds)
+        call("POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/snooze", body)
+    }
+
+    private fun JSONObject.people(key: String): List<String> {
+        val a = optJSONArray(key) ?: return emptyList()
+        return (0 until a.length()).map { a.optString(it) }.filter { it.isNotBlank() }
+    }
+
+    private fun sentFrom(text: String): Sent {
+        val r = JSONObject(text)
+        val queued = r.optBoolean("queued", false)
+        val left = if (queued) (r.optDouble("send_at", 0.0) - r.optDouble("now", 0.0)).toInt().coerceAtLeast(0) else 0
+        return Sent(queued, r.str("id"), left)
+    }
+
+    /** The mailboxes this person can send from (the same ones the inbox reads). */
+    fun mailboxes(): List<Mailbox> {
+        val accounts = JSONArray(call("GET", "/api/v1/accounts"))
+        val out = ArrayList<Mailbox>()
+        for (i in 0 until accounts.length()) {
+            val a = accounts.getJSONObject(i)
+            val method = a.str("auth_method")
+            if (a.optBoolean("check_address", false)) continue
+            if (method != "proton_bridge" && method != "imap") continue
+            if (userId.isNotEmpty() && a.str("owner_user_id") != userId) continue
+            out.add(Mailbox(a.str("id"), a.str("display_name").ifBlank { a.str("email_address") }))
+        }
+        return out
+    }
+
+    /** Every address the person can send from: each mailbox's own address first, then its aliases. */
+    fun fromOptions(): List<FromOption> {
+        val accounts = JSONArray(call("GET", "/api/v1/accounts"))
+        val out = ArrayList<FromOption>()
+        for (i in 0 until accounts.length()) {
+            val a = accounts.getJSONObject(i)
+            val method = a.str("auth_method")
+            if (a.optBoolean("check_address", false)) continue
+            if (method != "proton_bridge" && method != "imap") continue
+            if (userId.isNotEmpty() && a.str("owner_user_id") != userId) continue
+            val id = a.str("id")
+            val own = a.str("email_address")
+            val label = a.str("display_name").ifBlank { own }
+            val seen = HashSet<String>()
+            if (own.isNotBlank() && seen.add(own.lowercase())) out.add(FromOption(id, own, label, true))
+            val extra = a.optJSONObject("settings")?.optJSONArray("send_identities").strings()
+            extra.forEach { if (seen.add(it.lowercase())) out.add(FromOption(id, it, label, false)) }
+        }
+        return out
+    }
+
+    fun reply(mail: Mail, all: Boolean, text: String, from: String? = null): Sent = sentFrom(
+        call(
+            "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/reply",
+            JSONObject().put("body", text).put("kind", if (all) "reply_all" else "reply").also { if (from != null) it.put("from_address", from) },
+        ),
+    )
+
+    fun forward(mail: Mail, to: List<String>, cc: List<String>, bcc: List<String>, text: String, from: String? = null): Sent = sentFrom(
+        call(
+            "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/forward",
+            JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("body", text).also { if (from != null) it.put("from_address", from) },
+        ),
+    )
+
+    fun sendNew(accountId: String, to: List<String>, cc: List<String>, bcc: List<String>, subject: String, text: String, from: String? = null): Sent = sentFrom(
+        call(
+            "POST", "/api/v1/accounts/" + enc(accountId) + "/send",
+            JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("subject", subject).put("body", text)
+                .also { if (from != null) it.put("from_address", from) },
+        ),
+    )
+
+    /** Takes back an email that is still waiting out its "undo send" time. */
+    fun cancelSend(outboxId: String) {
+        call("DELETE", "/api/v1/me/outbox/" + enc(outboxId))
+    }
+
+    /** People from the address list whose name or address contains [q]. */
+    fun contacts(q: String): List<Contact> {
+        val items = JSONObject(call("GET", "/api/v1/me/contacts?q=" + enc(q))).optJSONArray("items") ?: return emptyList()
+        return (0 until items.length()).map { items.getJSONObject(it) }.map { Contact(it.str("name"), it.str("address")) }.filter { it.address.isNotBlank() }
+    }
+
+    private fun draftFrom(r: JSONObject) = Draft(
+        id = r.str("id"), kind = r.str("kind"), accountId = r.str("account_id"), messageId = r.str("message_id"),
+        to = r.people("to"), cc = r.people("cc"), bcc = r.people("bcc"), subject = r.str("subject"), body = r.str("body"),
+        fromAddress = r.str("from_address"),
+    )
+
+    fun drafts(): List<Draft> {
+        val items = JSONObject(call("GET", "/api/v1/me/drafts")).optJSONArray("items") ?: return emptyList()
+        return (0 until items.length()).map { draftFrom(items.getJSONObject(it)) }
+    }
+
+    /** Creates a draft (when [id] is null) or replaces one. */
+    fun saveDraft(id: String?, d: Draft): Draft {
+        val body = JSONObject().put("kind", d.kind).put("to", JSONArray(d.to)).put("cc", JSONArray(d.cc)).put("bcc", JSONArray(d.bcc))
+            .put("subject", d.subject).put("body", d.body)
+        if (d.accountId.isNotBlank()) body.put("account_id", d.accountId)
+        if (d.messageId.isNotBlank()) body.put("message_id", d.messageId)
+        if (d.fromAddress.isNotBlank()) body.put("from_address", d.fromAddress)
+        val text = if (id == null) call("POST", "/api/v1/me/drafts", body) else call("PUT", "/api/v1/me/drafts/" + enc(id), body)
+        return draftFrom(JSONObject(text))
+    }
+
+    fun deleteDraft(id: String) {
+        call("DELETE", "/api/v1/me/drafts/" + enc(id))
+    }
+
+    /** The addresses on the person's important list, in lower case. */
+    fun importantAddresses(): Set<String> {
+        val items = JSONObject(call("GET", "/api/v1/me/important")).optJSONArray("items") ?: return emptySet()
+        return (0 until items.length()).map { items.getJSONObject(it).str("address").lowercase() }.filter { it.isNotBlank() }.toSet()
+    }
+
+    /** Puts the unread mark back on an email that was marked Reviewed. */
+    fun markUnread(mail: Mail) {
+        call("POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/unread")
+    }
+
+    /** Where the person is signed in. */
+    fun devices(): List<DeviceInfo> {
+        val items = JSONObject(call("GET", "/api/v1/auth/devices")).optJSONArray("items") ?: return emptyList()
+        return (0 until items.length()).map {
+            val o = items.getJSONObject(it)
+            DeviceInfo(o.str("id"), o.str("label").ifBlank { "A device" }, o.optDouble("signed_in_at", 0.0).toLong(), o.optBoolean("current", false))
+        }
+    }
+
+    fun signDeviceOut(id: String) {
+        call("DELETE", "/api/v1/auth/devices/" + enc(id))
+    }
+
+    /** The newest published release as (version, page address), or null when the server has none to offer. */
+    fun latestRelease(): Pair<String, String>? {
+        val latest = JSONObject(call("GET", "/api/v1/app-update")).optJSONObject("latest") ?: return null
+        val v = latest.str("version")
+        val u = latest.str("url")
+        return if (v.isBlank() || !u.startsWith("https://github.com/")) null else v to u
+    }
+
+    // ---------- beyond email: tasks, bell, shipping, trips, news and messages ----------
+
+    private fun JSONObject.list(key: String): List<JSONObject> {
+        val a = optJSONArray(key) ?: return emptyList()
+        return (0 until a.length()).mapNotNull { a.optJSONObject(it) }
+    }
+
+    fun myTasks(): List<MyTask> = JSONObject(call("GET", "/api/v1/me/tasks?tz=" + enc(java.util.TimeZone.getDefault().id))).list("tasks").map {
+        MyTask(it.str("id"), it.str("account_id"), it.str("message_id"), it.str("title"), it.str("sender"), it.str("priority"), it.str("due"),
+            it.optInt("days", 0), it.str("state"), it.optBoolean("manual", false))
+    }
+
+    /** action: done, reopen, remove, not_today, or move (with [to] one of later_today, tomorrow, weekend, next_week). */
+    fun taskAct(id: String, action: String, to: String? = null) {
+        val body = if (to != null) JSONObject().put("to", to) else null
+        call("POST", "/api/v1/me/tasks/" + enc(id) + "/" + action, body)
+    }
+
+    fun bell(): List<BellNote> = JSONObject(call("GET", "/api/v1/me/bell")).list("items").map {
+        BellNote(it.str("id"), it.str("title"), it.str("message"), it.str("source"), it.optDouble("at", 0.0).toLong(), it.optBoolean("unread", false))
+    }
+    fun bellRead() { call("POST", "/api/v1/me/bell/read") }
+    fun bellDismiss(id: String) { call("DELETE", "/api/v1/me/bell/" + enc(id)) }
+    fun bellClear() { call("DELETE", "/api/v1/me/bell") }
+
+    fun shipping(): Section<Order> {
+        val r = JSONObject(call("GET", "/api/v1/me/shipping"))
+        return Section(r.optBoolean("enabled", false), r.list("orders").map {
+            Order(it.str("id"), it.str("shop"), it.str("items"), it.str("status"), it.str("expected_text").ifBlank { it.str("expected") },
+                it.optBoolean("delayed", false), it.optDouble("delivered_at", 0.0) > 0, it.optBoolean("needs_confirm", false), it.str("track_url"))
+        })
+    }
+
+    fun trips(): Section<Trip> {
+        val r = JSONObject(call("GET", "/api/v1/me/trips"))
+        return Section(r.optBoolean("enabled", false), r.list("trips").map { t ->
+            Trip(t.str("title"), t.str("start"), t.str("end"), t.str("state"), t.optBoolean("cancelled", false), t.list("bookings").map { b ->
+                Booking(b.str("kind"), b.str("provider"), b.str("detail"), b.str("from"), b.str("to"), b.str("start"), b.str("start_time"), b.str("reference"), b.str("status") == "cancelled")
+            })
+        })
+    }
+
+    private fun feedsOf(r: JSONObject): Section<Feed> = Section(r.optBoolean("enabled", false), r.list("feeds").map { f ->
+        Feed(f.str("id"), f.str("title"), f.str("error"), f.optInt("new", 0), f.list("items").map { i ->
+            FeedItem(i.str("title"), i.str("text"), i.str("link"), i.optDouble("at", 0.0).toLong(), i.optBoolean("new", false))
+        })
+    })
+    fun news(): Section<Feed> = feedsOf(JSONObject(call("GET", "/api/v1/me/rss")))
+    fun newsRefresh(): Section<Feed> = feedsOf(JSONObject(call("POST", "/api/v1/me/rss/refresh")))
+    fun newsSeen() { call("POST", "/api/v1/me/rss/seen") }
+
+    fun threads(): List<Chat> = JSONObject(call("GET", "/api/v1/messages/threads")).list("threads").map {
+        val last = it.optJSONObject("last")
+        Chat(it.str("id"), it.str("title"), it.optInt("unread", 0), if (last == null) "" else (if (last.optBoolean("mine", false)) "You: " else "") + last.str("text"),
+            it.optDouble("updated", 0.0).toLong(), it.optBoolean("muted", false))
+    }
+
+    fun thread(id: String): List<ChatMessage> {
+        val msgs = JSONObject(call("GET", "/api/v1/messages/threads/" + enc(id))).list("messages").map {
+            ChatMessage(it.str("id"), it.str("name"), it.optBoolean("mine", false), it.optDouble("at", 0.0).toLong(), it.str("text"), it.optBoolean("deleted", false))
+        }
+        try { call("POST", "/api/v1/messages/threads/" + enc(id) + "/read") } catch (e: ApiException) { /* not worth failing the page */ }
+        return msgs
+    }
+
+    fun sendChat(id: String, text: String) { call("POST", "/api/v1/messages/threads/" + enc(id) + "/messages", JSONObject().put("text", text)) }
+
+    /** Asks the address whether it is an Enveliq that answers. Throws a plain-words [ApiException] when it does not. */
+    fun checkConnection() {
+        val r = JSONObject(call("GET", "/api/v1/health"))
+        if (!r.optBoolean("ok", false)) throw ApiException("That address answered, but it does not look like Enveliq.")
+    }
+
+    /** The tags this mailbox has, or null when its mail service does not keep tags (or tags are switched off). */
+    fun tagInfo(accountId: String): TagInfo? = try {
+        val r = JSONObject(call("GET", "/api/v1/accounts/" + enc(accountId) + "/tags"))
+        if (!r.optBoolean("supported", false)) null else TagInfo(r.optJSONArray("names").strings(), r.optBoolean("can_create", false))
+    } catch (e: ApiException) {
+        if (e.code == 401) throw e
+        null
+    }
+
+    fun createTag(accountId: String, name: String) {
+        call("POST", "/api/v1/accounts/" + enc(accountId) + "/tags", JSONObject().put("name", name))
+    }
+
+    /** Puts a tag on the email or takes it off. Gives back the email's tags as they are now. */
+    fun setTag(mail: Mail, name: String, on: Boolean): List<String> {
+        val r = JSONObject(call("PUT", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/tags", JSONObject().put("name", name).put("on", on)))
+        return r.optJSONArray("tags").strings()
+    }
+
+    /** A file from the email, fetched from the mailbox for this one request. The app does not keep it. */
+    fun download(mail: Mail, index: Int): ByteArray {
+        val conn = URL(base + "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/attachments/" + index).openConnection() as HttpURLConnection
+        try {
+            conn.connectTimeout = 15000
+            conn.readTimeout = 60000
+            val code = conn.responseCode
+            if (code >= 400) {
+                val text = conn.errorStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
+                throw ApiException(detail(text, code), code)
+            }
+            return conn.inputStream.use { it.readBytes() }
+        } catch (e: ApiException) {
+            throw e
+        } catch (e: IOException) {
+            throw ApiException("Could not get the file. Check your connection and try again.")
+        } finally {
+            conn.disconnect()
+        }
+    }
+
     fun resolve(mail: Mail, outcome: Outcome) {
         call(
             "POST",
             "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/resolve",
             JSONObject().put("outcome", outcome.api),
         )
+    }
+
+    /** The email as the server describes it: its plain text, and whether a formatted (HTML) version exists. */
+    fun originalInfo(mail: Mail): OriginalInfo {
+        val r = JSONObject(call("GET", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/original"))
+        return OriginalInfo(r.str("text").ifBlank { "(no text content)" }, r.optBoolean("has_html", false), r.optInt("remote_images", 0))
+    }
+
+    /** The email as its sender formatted it, rebuilt by the server from allowed parts only. Pictures from the internet come only when [images] is true. */
+    fun originalHtml(mail: Mail, images: Boolean): String {
+        val url = base + "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/original/html" + if (images) "?images=true" else ""
+        val conn = URL(url).openConnection() as HttpURLConnection
+        try {
+            conn.connectTimeout = 15000
+            conn.readTimeout = 60000
+            val code = conn.responseCode
+            if (code >= 400) {
+                val text = conn.errorStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
+                throw ApiException(if (code == 404) "This email has no formatted version." else detail(text, code), code)
+            }
+            return conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        } catch (e: ApiException) {
+            throw e
+        } catch (e: IOException) {
+            throw ApiException("Could not open the email. Check your connection and try again.")
+        } finally {
+            conn.disconnect()
+        }
     }
 
     /** The email's own words as plain text, fetched from the mailbox for this one request. Not stored. */

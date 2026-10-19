@@ -3698,7 +3698,14 @@ async function junkView(id){
     const base=`/api/v1/junk/${encodeURIComponent(id)}`,it=(junkData.items||[]).find(x=>x.id===id)||{};
     const o=await secureBackendRequest(base+"/original",{method:"GET",headers:{}});
     presentOriginal(o,{title:it.subject||o.subject,context:`${it.sender_display||it.sender_address||""} · Junk Mail`,htmlUrl:base+"/original/html",junk:id,fallbackDate:junkWhen(it.received_at)});
-  }catch(er){toast(er.message,6000)}
+  }catch(er){toast(er.message,6000);junkDropIfGone(id,er)}
+}
+// The server says the email is no longer in Junk Mail (moved or deleted elsewhere): take its card off the page too.
+function junkDropIfGone(id,er){
+  if(!/no longer in Junk Mail/i.test((er&&er.message)||""))return;
+  junkData={...junkData,items:(junkData.items||[]).filter(x=>x.id!==id)};
+  junkData.total=junkData.items.length;
+  render();fetchJunk().then(()=>{render();if(typeof subNavSync==="function")subNavSync()});
 }
 async function junkNot(id){
   const it=(junkData.items||[]).find(x=>x.id===id);
@@ -3708,7 +3715,7 @@ async function junkNot(id){
     toast(`Moved to your Inbox${it&&it.subject?": "+it.subject.slice(0,60):""}.`,4000);
     if(currentJunkId===id&&$("attachmentModal").classList.contains("open")){currentJunkId=null;$("attachmentModalClose").click()}
     setTimeout(()=>{if(typeof currentUser!=="undefined")scheduleLiveRefresh(currentUser,0)},400);
-  }catch(er){toast(er.message,6000)}
+  }catch(er){toast(er.message,6000);junkDropIfGone(id,er)}
   render();
 }
 document.addEventListener("click",e=>{

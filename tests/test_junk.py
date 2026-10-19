@@ -87,6 +87,16 @@ def test_an_email_that_leaves_the_junk_folder_leaves_the_list(env):
     assert client.post("/api/v1/junk/refresh").json()["total"] == 1
 
 
+def test_opening_an_email_that_has_already_left_the_folder_takes_it_off_the_list(env):
+    _, client, bridge, _ = env
+    account(client, bridge)
+    items = {i["subject"]: i for i in refreshed(client)["items"]}
+    bridge.messages[901]["folder"] = "Trash"               # moved elsewhere since the page last looked
+    r = client.get(f"/api/v1/junk/{items['You have won']['id']}/original")
+    assert r.status_code == 404 and "no longer in Junk Mail" in r.json()["detail"]
+    assert [i["subject"] for i in listing(client)["items"]] == ["Your invoice"]
+
+
 def test_a_bad_model_answer_leaves_the_email_waiting_and_stops_after_three_tries(tmp_path):
     model = FakeModel(reply="I think it is spam!")
     appm, client, bridge = start(tmp_path, model)

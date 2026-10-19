@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Enveliq</string>
+    <string name="widget_description">How many emails are waiting. Shows only the number.</string>
 </resources>

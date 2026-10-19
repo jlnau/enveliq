@@ -25,6 +25,48 @@ The app's version is the release tag (for example `v0.96` gives version `0.96`);
 - **Send a test notification to this phone** shows what an alert looks like. On the lock screen it only says "New email"; the words show once the phone is unlocked. Android asks permission the first time.
 - **Hide Enveliq in recent apps** hides the app's picture in the recent-apps view and stops screenshots.
 
+## Settings
+
+Settings is a short list of topics: **Notifications**, **Swipe on an email**, **Security**, **Account** and **About**. Tap a topic to open its own page, with a Back button fixed at the top. On a page, switches turn things on and off with one tap on the whole row; a choice (for example what a swipe does, or how alerts reach the phone) opens one more page with a tick-list. Nothing needs long scrolling: longer explanations sit under the setting they belong to.
+
+## Look, alerts and comfort
+
+- **Appearance** (Settings): follow the phone's light or dark setting, or pick Light or Dark yourself; and a text size (Normal, Large, Extra large) that is added to Android's own text size. Rotating the phone or changing these no longer restarts the app, so you keep your place.
+- **What to alert me about** (Settings, Notifications): all new email, only email that needs action, or only email from people on your important list. Email you are not alerted about still waits in your inbox. This is a setting, and "all new email" is the default.
+- **Hide the watching note:** a button that opens Android's own switch for the small "watching" note (alerts keep working).
+- **Alerts clear at once:** when an email is reviewed, archived or moved somewhere else, the server tells the phone and its alert is taken down straight away (the phone does not need to wait until the app next looks).
+- **Mark unread:** open an email in the Reviewed view and tap **Mark unread**. The mailbox gets its unread mark back and the email returns to the inbox. Only emails you marked Reviewed can be marked unread (an archived email has moved to another folder). A Reviewed card keeps its pointer to the mailbox for this; an Archived card still drops it.
+- **Check connection** on the sign-in screen says in plain words whether the address answers.
+- **A welcome** after your first sign-in explains summaries, alerts and the lock in three short cards, with a button that goes straight to those settings. It shows once.
+- **Screen reader:** every email row offers Mark reviewed, Archive and Move to Bin in TalkBack's actions menu (swiping is hard with a screen reader).
+
+## Writing: who it comes from
+
+When you have more than one address (a mailbox's own address and its aliases, from the mailbox's "send as" list), the writing screen shows **From** at the top. Tap it to pick another address. A reply or forward can only use the addresses of the mailbox the email arrived in; a new email can use any of your mailboxes. Your mailbox's own address is the default, and when it is picked the app sends nothing extra, so the mail service behaves exactly as before. The choice is kept in drafts.
+
+## Beyond email
+- **Tasks tab:** the website's task list. Done, Move, Not today, Remove, and Put back for finished ones.
+- **More tab:** Notes and alerts, Messages, Shipping, Trips and calendar, News feeds. Shipping, trips and news are read-only here (set them up on the website); Messages can be read and answered; the bell can be dismissed.
+- **Share to Enveliq:** use Android's Share menu on text in any app and choose Enveliq. A new email opens with the text in the body (and the shared title as the subject).
+- **Wide screens:** from 720 dp wide (a tablet, or a phone on its side) the inbox and the open email show side by side.
+- **Home-screen widget:** add "Enveliq" from the phone's widget list for a square that says how many emails are waiting. It shows the number only and is updated whenever the inbox loads; signing out clears it.
+
+## Passkeys and single sign-on
+On the sign-in screen, **Sign in with a passkey or single sign-on** opens your server's `/app-signin` page in the phone's browser. Sign in there the usual way; press **Open the Enveliq app** and the app finishes signing in (one-time code, two minutes, once, tied to a secret only the app holds). "Keep me signed in on this phone" is read when you press the button. After single sign-on the browser shows the inbox: go back to the app and press the button again, which now finishes straight away. The app registers the link `enveliq://signin` for this.
+
+## Your devices and updates
+Settings, Security, **Your devices** lists the places you are signed in and lets you sign another one out. Names come from the app ("Enveliq app on <phone model>") or, for a browser, a short guess such as "Chrome on Windows". Sign-ins you chose to keep across a restart are listed too. The list is yours alone. About, **Check for a new version** asks your own server (which checks GitHub once a day) for the newest release and, if it is newer than the app, offers to open its download page; the app never contacts GitHub itself. Installing is Android's own step. If an administrator switched the update notice off, the app says it has no answer.
+
+## Tags, files, links and views
+
+- **Tags:** on an opened email, **Choose tags** opens a full screen list with a search box at the top and tick boxes. Tick or untick several, then **Save tags** applies them together. The email's current tags start ticked, so nothing is lost. **Make the tag "..."** appears when what you typed does not exist yet (only if your mail service lets tags be made). Shown only if your mail service keeps tags.
+- **Filter by tag:** in the inbox, the **Tags** control opens a full screen list of the tags on the emails you have, with how many emails each one has. Tap a tag to show only those emails. **Clear filter** (in that screen) or **Clear ✕** (next to the control) removes the filter.
+- **Files with this email:** each file's size and the AI's note (labelled). **Save to my phone** asks where to save it. The file is fetched at that moment and not kept by the app.
+- **Show the original email:** opens the email full screen as its sender made it: layout, colours, tables, pictures that came inside the email, and links. If an email has no formatted version, you see its plain text instead, and **Plain text** can always be chosen. Pictures that live on the internet are held back (they can tell the sender you opened the email) until you tap **Show pictures**. It uses the same safe copy the website shows: the server rebuilds the email from allowed parts only (no scripts, forms or frames), and the app shows it with JavaScript off, no file or storage access and no network until you allow pictures. Pinch to zoom.
+- **Links:** every link, in the formatted email or the plain text, asks first and names the site it goes to. Unusual links (plain http, look-alike characters, bare numbers) get an extra warning.
+- **Inbox, Reviewed, Archived:** the chips at the top switch views. Reviewed and Archived show what the server still keeps (a few days).
+- **More than one mailbox:** a chip for each mailbox appears and filters the list.
+
 ## Not in the app yet
 
 Passkeys and single sign-on, notes from Home Assistant and other services, task reminders, app lock, search, replying and sending, shipping, calendar and the other screens, and an in-app 'new version' button (it needs a public place to look for releases, because this repository is private). The plan for all of these is in the project's Android plan (phases 0 to 5). Settings, Administration and mailbox setup stay on the website.
@@ -60,26 +102,42 @@ Which emails alert you, quiet hours and the "important people only" filter are t
 
 ## Using the app
 
+- **Swipe an email** right or left to Archive, Bin or mark it Reviewed (Settings, Swipe on an email; to begin with right is Archive and left is Bin, or choose Nothing to switch a side off). Every swipe can be undone for a few seconds.
+- **Select several:** press and hold an email, tap more to add them, then Reviewed, Archive or Bin for all of them. **Select all** ticks everything in the list.
+- **Search** your inbox (the Search button at the top): it looks at the sender, subject and summary of the emails already in your inbox. Searching all your mail is still on the website.
+- **Remind me later** (on an opened email): put it away until in 3 hours, tomorrow morning or next Monday morning. It comes back in your inbox then, and the website shows it as snoozed too. Undo brings it back at once.
+- **Reply, Reply all and Forward** are at the top of an opened email. The email you are answering is added underneath, as on the website.
+- **New email:** the round pencil button on the inbox. In To, Cc and Bcc, suggestions from your address list appear as you type (if the address list is switched on in Enveliq). If you have more than one mailbox, you pick which one to send from.
+- **Undo send:** if you have an "undo send" time in Settings on the website, a bar at the bottom says "Sending in … seconds" with **Undo**.
+- **Drafts:** closing a half-written email offers to keep it. The **Drafts** tab lists them (kept for 14 days, the same drafts the website shows); tap one to carry on, or Delete it.
+- The writing screen opens full screen, with Close at the top and **Send** and **Save draft** fixed at the bottom.
 - **Pull down** on the inbox to refresh. The list keeps its place when you switch tabs.
 - **Ask for my fingerprint, face or PIN** (Settings, Security): Enveliq asks for it when you open it, and again after it has been out of sight for a minute. It needs a screen lock to be set up in Android first; the app never locks you out of a phone that has none. This is a convenience on top of your sign-in, not a replacement for it.
 
 ## Android app to-do list
 
-Done in this version: https:// filled in, Show password, plainer errors, tap an alert to open the email, Reviewed/Archive buttons on the alert, alerts that clear themselves, pull to refresh, fingerprint/face/PIN lock.
+Done in version 0.95: https:// filled in, Show password, plainer errors, tap an alert to open the email, Reviewed/Archive buttons on the alert, alerts that clear themselves, pull to refresh, fingerprint/face/PIN lock.
 
 Still to do. Everything the website does that makes sense on a phone, roughly in this order:
 
 **Everyday email**
-- Reply, Reply all and Forward, with the same drafts and sending rules as the website.
-- New email, with access to your **address list** (suggestions as you type a name).
-- **Swipe left and right** on an email to Archive or Bin it. In Settings you choose what each direction does (Archive, Bin, Reviewed, or nothing), with Undo as now.
 - **Email tags**: see, add and remove tags, and filter the inbox by tag.
-- The full set of actions the website has: Task, Undo, mark unread, move, and bulk select ("select several, then Archive").
+- The rest of the website's actions: Task, mark unread (needs a way to see reviewed email first, so it comes with folders and views), and move.
 - Attachments: their summaries, a View button (page pictures held in memory only) and Save or Share.
 - Links in an email open only after a tap and a plain "this goes to …" check.
-- Search the inbox.
-- Snooze ("remind me later").
 - Folders and views as on the website (Today, Needs attention, and your folders), and more than one mailbox.
+
+**Wishes added after the first weeks of testing**
+- **Attach files when writing** a new email, reply or forward (a photo or any file from the phone).
+- **Unsubscribe button** on an email, using the website's existing unsubscribe.
+- **Scam and sender warnings** in the original-email view, as on the website (look-alike senders, suspicious links).
+- **Junk and block:** mark an email as junk and block a sender, in the Android app **and in Enveliq itself** (the website and server, not only the app).
+- **Search all mail**, not just the inbox, as the website's search everywhere does.
+- **Alerts only for the emails that matter:** a setting to alert only for "needs action" or important people.
+- **Open the next email after archiving:** a setting users can switch on, for working through a pile without going back to the list.
+- **Send later:** pick a time for an email to go (first check what the server supports).
+- **Pick someone from the phone's contacts**, and let Enveliq handle "email this person" links from other apps.
+- **A signature** added to emails you send.
 
 **Beyond email** (each as its own screen, as on the website)
 - Tasks in full, the bell (notes and messages), shipping, calendar, news feeds and chat messages.
