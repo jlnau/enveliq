@@ -66,5 +66,19 @@ const post = (body, raw) => worker.fetch(new Request("https://relay.example/v1/p
   let leaked = false; for (const a of answers) if ((await a.text()).includes(TOKEN)) leaked = true;
   check("no answer ever repeats the device address", !leaked);
 }
+{
+  // The rate limiter: a busy address is turned away before anything else happens; a broken limiter does not stop a good request.
+  const seen = [];
+  const limited = { ...env, RATE_LIMITER: { limit: async ({ key }) => { seen.push(key); return { success: seen.length <= 2 }; } } };
+  const send = () => worker.fetch(new Request("https://relay.example/v1/push", { method: "POST", headers: { "cf-connecting-ip": "203.0.113.9" }, body: JSON.stringify({ token: TOKEN, kind: "mail" }) }), limited);
+  const first = await send(), second = await send();
+  calls = [];
+  const third = await send();
+  check("requests under the limit go through, counted by the visitor's address", first.status === 200 && second.status === 200 && seen.every((k) => k === "203.0.113.9"));
+  check("a request over the limit answers 429 and Google is not asked", third.status === 429 && (await third.json()).result === "slow_down" && calls.length === 0);
+  const broken = { ...env, RATE_LIMITER: { limit: async () => { throw new Error("down"); } } };
+  const r = await worker.fetch(new Request("https://relay.example/v1/push", { method: "POST", body: JSON.stringify({ token: TOKEN, kind: "mail" }) }), broken);
+  check("a limiter that fails does not block a good request", r.status === 200);
+}
 if (failed) process.exit(1);
 console.log("All push relay checks passed.");

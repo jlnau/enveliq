@@ -16,6 +16,7 @@ The relay signs in to Google with the one Firebase key it holds, sends a data-on
 | 410 | the phone no longer has the app (the server forgets that phone) |
 | 400 | the request was not in the exact shape above |
 | 413 | the request was too large |
+| 429 | too many requests from one address in a minute |
 | 405 / 404 | wrong method or path |
 | 502 | Google refused or could not be reached |
 | 503 | the relay has no Firebase key yet |
@@ -36,7 +37,7 @@ The service-account key comes from the Firebase project (Project settings, Servi
 
 The address is not written in the source code. A fork, or anyone building from source, has no address and no Firebase file, so Google push is simply not offered in their build (direct-connection alerts still work). They set up their own relay and Firebase project the same way.
 
-Add a Cloudflare rate-limiting (WAF) rule on `/v1/push` so one address cannot flood it.
+**Rate limit.** The Worker limits each visiting address to 60 requests a minute (more get `429`, "slow_down"), using Cloudflare's own rate limiter, declared in `relay/wrangler.toml` as `RATE_LIMITER`. You do not need a domain of your own or a Cloudflare rule for this, and it works on a `workers.dev` address (Cloudflare's WAF rate-limit rules do not apply to those). Deploying again with `npx wrangler deploy` turns it on. The visiting address is used only as a temporary counter key inside Cloudflare's limiter; the relay never stores it or writes it to a log. If the limiter is ever missing or fails, requests carry on and the other checks above still apply.
 
 ## Scale
 
