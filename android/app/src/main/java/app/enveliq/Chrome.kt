@@ -211,3 +211,14 @@ internal fun ReadMailIcon(tint: Color, modifier: Modifier = Modifier.size(24.dp)
     p.moveTo(3.5f * u, 7f * u); p.lineTo(12f * u, 13.5f * u); p.lineTo(20.5f * u, 7f * u)
     drawPath(p, tint, style = st)
 }
+
+/** A key: sign in with a passkey. */
+@Composable
+internal fun KeyIcon(tint: Color, modifier: Modifier = Modifier.size(22.dp)) = Canvas(modifier) {
+    val u = size.width / 24f
+    val st = Stroke(width = 2f * u, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+    drawCircle(tint, radius = 4f * u, center = Offset(7.5f * u, 12f * u), style = st)
+    drawLine(tint, Offset(11.5f * u, 12f * u), Offset(21f * u, 12f * u), strokeWidth = 2f * u, cap = StrokeCap.Round)
+    drawLine(tint, Offset(17.5f * u, 12f * u), Offset(17.5f * u, 15.5f * u), strokeWidth = 2f * u, cap = StrokeCap.Round)
+    drawLine(tint, Offset(21f * u, 12f * u), Offset(21f * u, 15.5f * u), strokeWidth = 2f * u, cap = StrokeCap.Round)
+}

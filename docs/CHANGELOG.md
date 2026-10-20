@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Android: a nicer sign-in screen.** The sign-in screen now shows the real Enveliq logo instead of plain text, with the form on one calm card (labelled boxes with soft outlines), a clear blue Sign in button, and **Sign in with a passkey or single sign-on** as a proper button with a key symbol under an "or" line. The words and the way sign-in works are unchanged. Touches `android/` (`Screens.kt`, `Chrome.kt`), `docs/ANDROID.md`.
+
 **Android: the two-factor code box works with Bitwarden and the keyboard.** The code box on the sign-in screen is now the phone’s own text box, marked as a one-time code, so password managers such as Bitwarden recognise it as a two-factor code screen and can fill it, and the keyboard can offer to paste a code you have just copied. It is focused straight away (the keyboard opens) and the keyboard’s Done button confirms. Touches `android/` (`SpellField.kt`, `Screens.kt`, `res/values/ids.xml`), `docs/ANDROID.md`.
 
 **Android: tags show in the inbox list.** Each email in the list now shows its tags as small chips under the summary (up to three, then +more). Emails with no tags take no extra space. Touches `android/` (`Home.kt`), `docs/ANDROID.md`.
