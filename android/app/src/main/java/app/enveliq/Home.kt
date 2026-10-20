@@ -400,6 +400,10 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         (view != "inbox" || filters.active)) {
         view = "inbox"; filters.clear()
     }
+    // With emails ticked, Back unticks them first instead of leaving the app.
+    BackHandler(enabled = tab == Tab.Inbox && opened == null && composing == null && !drawer.isOpen && selected.isNotEmpty()) {
+        selected.clear()
+    }
     // "Share" from another app: the text arrives in a new email, ready to address.
     val shared = activity.shareRequest
     LaunchedEffect(shared) {

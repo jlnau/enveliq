@@ -180,5 +180,18 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.close(); await context.close();
 }
 
+{
+  // On a phone the Include read mail panel stays on screen and its switch can be reached
+  const server = makeServer({ advance: false });
+  const { page, context } = await open(server, { width: 390, height: 800 });
+  await page.click("#previewInboxOptions");
+  await page.click("#allOpen");
+  const box = await page.locator("#allPanel").boundingBox();
+  check("phone width: the Include read mail panel fits inside the screen", box && box.x >= 0 && box.x + box.width <= 390);
+  check("phone width: its switch can be pressed", await page.locator("#allSwitch").isVisible());
+  await shot(page, "panel-phone");
+  await page.close(); await context.close();
+}
+
 await browser.close();
 process.exit(failed ? 1 : 0);
