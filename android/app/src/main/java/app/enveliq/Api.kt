@@ -204,7 +204,7 @@ class EnveliqApi(address: String) {
     }
 
     /** [view] is "inbox" (still to look at), "reviewed" or "archived". */
-    fun inbox(view: String = "inbox"): List<Mail> {
+    fun inbox(view: String = "inbox", includeRead: Boolean = false): List<Mail> {
         val accounts = JSONArray(call("GET", "/api/v1/accounts"))
         val out = ArrayList<Mail>()
         for (i in 0 until accounts.length()) {
@@ -215,6 +215,7 @@ class EnveliqApi(address: String) {
             if (userId.isNotEmpty() && a.str("owner_user_id") != userId) continue
             val accountId = a.str("id")
             val mailbox = a.str("display_name").ifBlank { a.str("email_address") }
+            if (includeRead) keepRecent(accountId)
             val messages = JSONArray(call("GET", "/api/v1/accounts/" + enc(accountId) + "/messages"))
             for (j in 0 until messages.length()) {
                 val r = messages.getJSONObject(j)
@@ -224,7 +225,8 @@ class EnveliqApi(address: String) {
                 } else if (state != view) {
                     continue
                 }
-                if (r.optBoolean("from_all_mail", false)) continue
+                val quiet = r.optBoolean("from_all_mail", false)
+                if (quiet && (!includeRead || r.optDouble("found_until", 0.0) > 0)) continue      // quiet entries only when "Include read mail" is on
                 val snoozedUntil = r.optDouble("snoozed_until", 0.0)
                 if (view == "inbox" && snoozedUntil * 1000 > System.currentTimeMillis()) continue        // snoozed: it comes back when the time is up
                 val files = ArrayList<Attachment>()
@@ -278,6 +280,11 @@ class EnveliqApi(address: String) {
                         unsubUrl = unsub?.str("url")?.ifBlank { null },
                         unsubMailto = unsub?.str("mailto")?.ifBlank { null },
                         unsubSubject = unsub?.str("subject") ?: "",
+                        replyTo = r.optJSONObject("reply_context")?.str("reply_to") ?: "",
+                        replyCc = r.optJSONObject("reply_context")?.optJSONArray("cc").strings(),
+                        quiet = quiet,
+                        ungenerated = quiet && r.str("summary").startsWith("Not summarised yet"),
+                        replyAlsoTo = r.optJSONObject("reply_context")?.optJSONArray("also_to").strings(),
                     )
                 )
             }
@@ -363,10 +370,14 @@ class EnveliqApi(address: String) {
         JSONObject().put("name", it.name).put("type", it.type).put("data", android.util.Base64.encodeToString(it.bytes, android.util.Base64.NO_WRAP))
     })
 
-    fun reply(mail: Mail, all: Boolean, text: String, from: String? = null, files: List<PickedFile> = emptyList()): Sent = sentFrom(
+    fun reply(
+        mail: Mail, all: Boolean, text: String, from: String? = null, files: List<PickedFile> = emptyList(),
+        to: List<String>? = null, cc: List<String>? = null, bcc: List<String>? = null,
+    ): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/reply",
             JSONObject().put("body", text).put("kind", if (all) "reply_all" else "reply").also { if (from != null) it.put("from_address", from) }
+                .also { if (to != null) it.put("to", JSONArray(to)) }.also { if (cc != null) it.put("cc", JSONArray(cc)) }.also { if (bcc != null) it.put("bcc", JSONArray(bcc)) }
                 .also { if (files.isNotEmpty()) it.put("files", filesJson(files)) },
         ),
     )
@@ -526,12 +537,48 @@ class EnveliqApi(address: String) {
 
     fun myTasks(): List<MyTask> = JSONObject(call("GET", "/api/v1/me/tasks?tz=" + enc(java.util.TimeZone.getDefault().id))).list("tasks").map {
         MyTask(it.str("id"), it.str("account_id"), it.str("message_id"), it.str("title"), it.str("sender"), it.str("priority"), it.str("due"),
-            it.optInt("days", 0), it.str("state"), it.optBoolean("manual", false))
+            it.optInt("days", 0), it.str("state"), it.optBoolean("manual", false), it.str("detail"), it.optLong("remind_at", 0L))
     }
 
-    /** action: done, reopen, remove, not_today, or move (with [to] one of later_today, tomorrow, weekend, next_week). */
-    fun taskAct(id: String, action: String, to: String? = null) {
-        val body = if (to != null) JSONObject().put("to", to) else null
+    private val recentAt = HashMap<String, Long>()
+
+    /** Asks the server to list the last 60 days of read mail for one mailbox. At most once every five minutes per mailbox; a refusal is not an error here. */
+    private fun keepRecent(accountId: String) {
+        val now = System.currentTimeMillis()
+        if (now - (recentAt[accountId] ?: 0L) < 300_000L) return
+        recentAt[accountId] = now
+        try { call("POST", "/api/v1/accounts/" + enc(accountId) + "/inbox/recent", JSONObject()) } catch (e: ApiException) { if (e.code == 401) throw e; recentAt.remove(accountId) }
+    }
+
+    /** Emails you have opened in Enveliq (on any device), as "mailbox id:email id". The server keeps this per person. */
+    fun openedKeys(): Set<String> {
+        val a = JSONObject(call("GET", "/api/v1/me/mail-opened")).optJSONArray("keys") ?: return emptySet()
+        return (0 until a.length()).map { a.optString(it) }.toSet()
+    }
+
+    /** Records that you opened this email, so it stops standing out as new (here and on the website). */
+    fun markOpened(mail: Mail) {
+        call("POST", "/api/v1/me/mail-opened", JSONObject().put("account_id", mail.accountId).put("message_id", mail.id))
+    }
+
+    /** True when "Include read mail" is switched on for this person on the server (administrators can switch it off). */
+    fun includeReadAvailable(): Boolean = try {
+        JSONObject(call("GET", "/api/v1/me/features")).optJSONObject("effective")?.optBoolean("all_mail", false) ?: false
+    } catch (e: Exception) { false }
+
+    /** Asks for the AI summary of a quiet entry. It is sent to your AI model only now. */
+    fun askSummary(mail: Mail) {
+        call("POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/summary", JSONObject())
+    }
+
+    /** Adds a task of your own for this email. [on] is a date, YYYY-MM-DD. */
+    fun addTask(mail: Mail, title: String, on: String) {
+        call("POST", "/api/v1/me/tasks", JSONObject().put("account_id", mail.accountId).put("message_id", mail.id).put("title", title).put("on", on))
+    }
+
+    /** action: done, reopen, remove, not_today, or move (with [to] one of later_today, tomorrow, weekend, next_week, or "date" with [on] as YYYY-MM-DD). */
+    fun taskAct(id: String, action: String, to: String? = null, on: String? = null) {
+        val body = if (to != null) JSONObject().put("to", to).also { if (on != null) it.put("on", on) } else null
         call("POST", "/api/v1/me/tasks/" + enc(id) + "/" + action, body)
     }
 
@@ -591,12 +638,10 @@ class EnveliqApi(address: String) {
     }
 
     /** The tags this mailbox has, or null when its mail service does not keep tags (or tags are switched off). */
-    fun tagInfo(accountId: String): TagInfo? = try {
+    /** The tags this mailbox offers, or null when the mail service does not keep tags. Any other problem is thrown, so it can be said plainly. */
+    fun tagInfo(accountId: String): TagInfo? {
         val r = JSONObject(call("GET", "/api/v1/accounts/" + enc(accountId) + "/tags"))
-        if (!r.optBoolean("supported", false)) null else TagInfo(r.optJSONArray("names").strings(), r.optBoolean("can_create", false))
-    } catch (e: ApiException) {
-        if (e.code == 401) throw e
-        null
+        return if (!r.optBoolean("supported", false)) null else TagInfo(r.optJSONArray("names").strings(), r.optBoolean("can_create", false))
     }
 
     fun createTag(accountId: String, name: String) {
@@ -693,6 +738,17 @@ class EnveliqApi(address: String) {
         JSONObject(call("GET", "/api/v1/find/results/" + enc(token) + "/original")).str("text").ifBlank { "(no text content)" }
 
     /** From now on, new email from this address goes straight to the mailbox's Junk folder. The server keeps important people safe. */
+    /** Marks the sender as an important person (or takes them off the list). */
+    fun setImportant(address: String, name: String, on: Boolean) {
+        if (on) call("POST", "/api/v1/me/important", JSONObject().put("address", address).put("name", name))
+        else call("POST", "/api/v1/me/important/remove", JSONObject().put("address", address))
+    }
+
+    /** From now on, new email from this address is archived for the person. */
+    fun archiveFrom(address: String) {
+        call("POST", "/api/v1/me/rules", JSONObject().put("sender", address).put("subject", "").put("action", "archived"))
+    }
+
     fun blockSender(address: String) {
         call("POST", "/api/v1/me/rules", JSONObject().put("sender", address).put("subject", "").put("action", "junked"))
     }

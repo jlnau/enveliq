@@ -36,6 +36,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateCentroid
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -139,7 +148,33 @@ private sealed class Shown {
 @Composable
 private fun AttachmentViewer(mail: Mail, file: Attachment, api: EnveliqApi, onSave: () -> Unit, onClose: () -> Unit) {
     var shown by remember(file.index) { mutableStateOf<Shown>(Shown.Loading) }
-    var zoom by remember(file.index) { mutableStateOf(100) }
+    var zoom by remember(file.index) { mutableStateOf(1f) }
+    val zoomNow by androidx.compose.runtime.rememberUpdatedState(zoom)
+    // Zooming keeps the spot you pinch on under your fingers: when the size changes, the scroll position is moved to match.
+    val hScroll = rememberScrollState()
+    val vScroll = rememberScrollState()
+    val pending = remember { floatArrayOf(Float.NaN, Float.NaN) }
+    var viewport by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
+    fun zoomAround(target: Float, around: androidx.compose.ui.geometry.Offset) {
+        val old = zoomNow
+        val next = target.coerceIn(0.5f, 5f)
+        if (next == old) return
+        val f = next / old
+        val baseX = if (pending[0].isNaN()) hScroll.value.toFloat() else pending[0]
+        val baseY = if (pending[1].isNaN()) vScroll.value.toFloat() else pending[1]
+        pending[0] = (baseX + around.x) * f - around.x
+        pending[1] = (baseY + around.y) * f - around.y
+        zoom = next
+    }
+    LaunchedEffect(zoom) {
+        if (!pending[0].isNaN()) {
+            androidx.compose.runtime.withFrameNanos { }   // wait until the page has its new size
+            hScroll.scrollTo(pending[0].toInt().coerceAtLeast(0))
+            vScroll.scrollTo(pending[1].toInt().coerceAtLeast(0))
+            pending[0] = Float.NaN; pending[1] = Float.NaN
+        }
+    }
+    fun centre() = androidx.compose.ui.geometry.Offset(viewport.width / 2f, viewport.height / 2f)
     LaunchedEffect(file.index) {
         shown = try {
             withContext(Dispatchers.IO) {
@@ -193,26 +228,26 @@ private fun AttachmentViewer(mail: Mail, file: Attachment, api: EnveliqApi, onSa
                         if (sub.isNotBlank()) Text(sub, color = Muted, fontSize = 12.sp)
                     }
                     if (shown is Shown.Pages || shown is Shown.Picture) {
-                        TextButton(onClick = { zoom = (zoom - 20).coerceAtLeast(40) }) { Text("−", color = Blue, fontSize = 20.sp) }
-                        TextButton(onClick = { zoom = (zoom + 20).coerceAtMost(300) }) { Text("+", color = Blue, fontSize = 20.sp) }
+                        TextButton(onClick = { zoomAround(zoom - 0.25f, centre()) }) { Text("−", color = Blue, fontSize = 20.sp) }
+                        TextButton(onClick = { zoomAround(zoom + 0.25f, centre()) }) { Text("+", color = Blue, fontSize = 20.sp) }
                     }
                     TextButton(onClick = onSave) { Text("Save", color = Blue, fontSize = 15.sp) }
                     TextButton(onClick = onClose) { Text("Close", color = Blue, fontSize = 15.sp) }
                 }
                 val width = (LocalConfiguration.current.screenWidthDp - 24).dp
-                Box(Modifier.weight(1f).fillMaxWidth()) {
+                Box(Modifier.weight(1f).fillMaxWidth().onSizeChanged { viewport = it }.pinchZoom({ zoomNow }, { target, at -> zoomAround(target, at) })) {
                     when (val s = shown) {
                         is Shown.Loading -> Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                             CircularProgressIndicator(color = Blue)
                             Text("Fetching from your mailbox…", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 12.dp))
                         }
                         is Shown.Failed -> Text(s.text, color = Muted, fontSize = 16.sp, modifier = Modifier.padding(24.dp))
-                        is Shown.Picture -> Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).horizontalScroll(rememberScrollState())) {
-                            Image(s.bitmap.asImageBitmap(), contentDescription = file.name, contentScale = ContentScale.FillWidth, modifier = Modifier.width(width * zoom / 100).padding(12.dp))
+                        is Shown.Picture -> Box(Modifier.fillMaxSize().verticalScroll(vScroll).horizontalScroll(hScroll)) {
+                            Image(s.bitmap.asImageBitmap(), contentDescription = file.name, contentScale = ContentScale.FillWidth, modifier = Modifier.width(width * zoom).padding(12.dp))
                         }
-                        is Shown.Pages -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).horizontalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        is Shown.Pages -> Column(Modifier.fillMaxSize().verticalScroll(vScroll).horizontalScroll(hScroll).padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             s.pages.forEachIndexed { i, bmp ->
-                                Image(bmp.asImageBitmap(), contentDescription = "Page " + (i + 1) + " of " + s.total, contentScale = ContentScale.FillWidth, modifier = Modifier.width(width * zoom / 100).background(androidx.compose.ui.graphics.Color.White))
+                                Image(bmp.asImageBitmap(), contentDescription = "Page " + (i + 1) + " of " + s.total, contentScale = ContentScale.FillWidth, modifier = Modifier.width(width * zoom).background(androidx.compose.ui.graphics.Color.White))
                             }
                             if (s.pages.size < s.total) Text("Showing the first " + s.pages.size + " of " + s.total + " pages. Save to my phone to read the rest.", color = Muted, fontSize = 13.sp)
                         }
@@ -239,3 +274,24 @@ private fun AttachmentViewer(mail: Mail, file: Attachment, api: EnveliqApi, onSa
         }
     }
 }
+
+/**
+ * Two-finger pinch zooms in and out; a double tap goes back to the original fit. Panning is the ordinary scrolling of the page, so a single finger
+ * still scrolls and nothing here gets in its way: only a gesture with two fingers down is taken over.
+ */
+private fun Modifier.pinchZoom(current: () -> Float, onZoom: (Float, androidx.compose.ui.geometry.Offset) -> Unit): Modifier =
+    this.pointerInput(Unit) {
+        awaitEachGesture {
+            awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+            do {
+                val event = awaitPointerEvent(PointerEventPass.Initial)
+                if (event.changes.count { it.pressed } >= 2) {
+                    val z = event.calculateZoom()
+                    if (z != 1f) onZoom(current() * z, event.calculateCentroid())
+                    event.changes.forEach { if (it.positionChanged()) it.consume() }
+                }
+            } while (event.changes.any { it.pressed })
+        }
+    }.pointerInput(Unit) {
+        detectTapGestures(onDoubleTap = { at -> onZoom(if (current() > 1.05f) 1f else 2.5f, at) })
+    }

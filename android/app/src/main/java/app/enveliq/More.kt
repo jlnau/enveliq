@@ -175,8 +175,8 @@ internal fun TasksScreen(api: EnveliqApi, mails: List<Mail>, onOpen: (Mail) -> U
 // ---------- The More tab ----------
 
 @Composable
-internal fun MoreTab(api: EnveliqApi) {
-    var page by remember { mutableStateOf("home") }
+internal fun MoreTab(api: EnveliqApi, start: String = "home") {
+    var page by remember { mutableStateOf(start) }
     val back = { page = "home" }
     when {
         page == "bell" -> BellPage(api, back)

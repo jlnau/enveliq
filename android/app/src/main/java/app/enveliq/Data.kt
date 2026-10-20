@@ -25,6 +25,13 @@ data class Mail(
     val unsubSubject: String = "",
     /** The email has files (known even before the AI has read them). */
     val hasFiles: Boolean = false,
+    /** Who a reply goes to, and the other people on the email (for Reply all). */
+    val replyTo: String = "",
+    val replyCc: List<String> = emptyList(),
+    val replyAlsoTo: List<String> = emptyList(),
+    /** A quiet entry from "Include read mail": no summary until you ask for one. */
+    val quiet: Boolean = false,
+    val ungenerated: Boolean = false,
 )
 
 /** A file that came with an email. [summary] is written by the AI and is labelled that way where it is shown. */
@@ -83,7 +90,7 @@ data class Waiting(val id: String, val subject: String, val to: String, val peop
 /** One place the person is signed in. [signedIn] is in seconds since 1970. */
 data class DeviceInfo(val id: String, val name: String, val signedIn: Long, val current: Boolean)
 
-data class MyTask(val id: String, val accountId: String, val messageId: String, val title: String, val sender: String, val priority: String, val due: String, val days: Int, val state: String, val manual: Boolean)
+data class MyTask(val id: String, val accountId: String, val messageId: String, val title: String, val sender: String, val priority: String, val due: String, val days: Int, val state: String, val manual: Boolean, val detail: String = "", val remindAt: Long = 0L)
 data class BellNote(val id: String, val title: String, val message: String, val source: String, val at: Long, val unread: Boolean)
 data class Order(val id: String, val shop: String, val items: String, val status: String, val expected: String, val delayed: Boolean, val delivered: Boolean, val needsConfirm: Boolean, val trackUrl: String)
 data class Booking(val kind: String, val provider: String, val detail: String, val from: String, val to: String, val start: String, val startTime: String, val reference: String, val cancelled: Boolean)

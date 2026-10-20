@@ -94,12 +94,19 @@ internal fun AvatarCircle(me: Me?, picture: Bitmap?, size: Int = 34) {
 internal fun AppTopBar(
     me: Me?, picture: Bitmap?, showSearch: Boolean, searching: Boolean,
     onMenu: () -> Unit, onSearch: () -> Unit, onAccount: () -> Unit, onSettings: () -> Unit,
+    bellUnread: Boolean = false, onBell: () -> Unit = {},
 ) {
     var open by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onMenu) { Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = Ink) }
         Image(painterResource(R.drawable.wordmark), contentDescription = "Enveliq", contentScale = ContentScale.Fit, modifier = Modifier.height(30.dp).widthIn(max = 110.dp))
         Spacer(Modifier.weight(1f))
+        IconButton(onClick = onBell) {
+            Box(contentAlignment = Alignment.TopEnd) {
+                BellIcon(Ink, Modifier.size(24.dp))
+                if (bellUnread) Box(Modifier.size(9.dp).clip(CircleShape).background(Color(0xFFE5484D)))
+            }
+        }
         if (showSearch) IconButton(onClick = onSearch) { Icon(Icons.Filled.Search, contentDescription = if (searching) "Close search" else "Search", tint = if (searching) Blue else Ink) }
         Box(Modifier.padding(start = 2.dp, end = 10.dp)) {
             Box(Modifier.clip(CircleShape).clickable { open = true }.padding(2.dp)) { AvatarCircle(me, picture) }
@@ -137,4 +144,81 @@ internal fun PaperclipIcon(tint: Color, modifier: Modifier = Modifier.size(16.dp
     p.arcTo(androidx.compose.ui.geometry.Rect(11f * u, 3.5f * u, 16f * u, 8.5f * u), 0f, -180f, false)
     p.lineTo(11f * u, 15f * u)
     drawPath(p, tint, style = Stroke(width = 2f * u, cap = StrokeCap.Round))
+}
+
+private fun reply(scope: androidx.compose.ui.graphics.drawscope.DrawScope, tint: Color, flip: Boolean, double: Boolean) = with(scope) {
+    val u = size.width / 24f
+    fun x(v: Float) = (if (flip) 24f - v else v) * u
+    val st = Stroke(width = 2f * u, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+    fun head(dx: Float) {
+        val p = androidx.compose.ui.graphics.Path()
+        p.moveTo(x(9f + dx), 7f * u); p.lineTo(x(4f + dx), 12f * u); p.lineTo(x(9f + dx), 17f * u)
+        drawPath(p, tint, style = st)
+    }
+    val body = androidx.compose.ui.graphics.Path()
+    val from = if (double) 9f else 4f
+    body.moveTo(x(from), 12f * u); body.lineTo(x(14f), 12f * u); body.quadraticBezierTo(x(21f), 12f * u, x(21f), 19f * u)
+    drawPath(body, tint, style = st)
+    head(if (double) 5f else 0f)
+    if (double) head(0f)
+}
+
+@Composable
+internal fun ReplyIcon(tint: Color, modifier: Modifier = Modifier.size(24.dp)) = Canvas(modifier) { reply(this, tint, flip = false, double = false) }
+
+@Composable
+internal fun ReplyAllIcon(tint: Color, modifier: Modifier = Modifier.size(24.dp)) = Canvas(modifier) { reply(this, tint, flip = false, double = true) }
+
+@Composable
+internal fun ForwardIcon(tint: Color, modifier: Modifier = Modifier.size(24.dp)) = Canvas(modifier) { reply(this, tint, flip = true, double = false) }
+
+/** A tick box with a plus: add a task. */
+@Composable
+internal fun AddTaskIcon(tint: Color, modifier: Modifier = Modifier.size(24.dp)) = Canvas(modifier) {
+    val u = size.width / 24f
+    val st = Stroke(width = 2f * u, cap = StrokeCap.Round)
+    drawRoundRect(tint, Offset(4f * u, 4f * u), Size(16f * u, 16f * u), androidx.compose.ui.geometry.CornerRadius(3f * u), style = st)
+    drawLine(tint, Offset(12f * u, 8.5f * u), Offset(12f * u, 15.5f * u), strokeWidth = 2f * u, cap = StrokeCap.Round)
+    drawLine(tint, Offset(8.5f * u, 12f * u), Offset(15.5f * u, 12f * u), strokeWidth = 2f * u, cap = StrokeCap.Round)
+}
+
+/** The notification bell: notes and alerts from your other services. */
+@Composable
+internal fun BellIcon(tint: Color, modifier: Modifier = Modifier.size(24.dp)) = Canvas(modifier) {
+    val u = size.width / 24f
+    val p = androidx.compose.ui.graphics.Path()
+    p.moveTo(5.5f * u, 17f * u)
+    p.cubicTo(7f * u, 15.5f * u, 7f * u, 13f * u, 7f * u, 10.5f * u)
+    p.cubicTo(7f * u, 7.5f * u, 9.2f * u, 5.5f * u, 12f * u, 5.5f * u)
+    p.cubicTo(14.8f * u, 5.5f * u, 17f * u, 7.5f * u, 17f * u, 10.5f * u)
+    p.cubicTo(17f * u, 13f * u, 17f * u, 15.5f * u, 18.5f * u, 17f * u)
+    p.close()
+    val st = Stroke(width = 2f * u, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+    drawPath(p, tint, style = st)
+    drawLine(tint, Offset(12f * u, 3.5f * u), Offset(12f * u, 5.5f * u), strokeWidth = 2f * u, cap = StrokeCap.Round)
+    val c = androidx.compose.ui.graphics.Path()
+    c.moveTo(10f * u, 19.5f * u); c.quadraticBezierTo(12f * u, 21.8f * u, 14f * u, 19.5f * u)
+    drawPath(c, tint, style = st)
+}
+
+/** An envelope with a tick: "Include read mail". */
+@Composable
+internal fun ReadMailIcon(tint: Color, modifier: Modifier = Modifier.size(24.dp)) = Canvas(modifier) {
+    val u = size.width / 24f
+    val st = Stroke(width = 2f * u, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+    drawRoundRect(tint, topLeft = Offset(3f * u, 5f * u), size = Size(18f * u, 14f * u), cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.5f * u), style = st)
+    val p = androidx.compose.ui.graphics.Path()
+    p.moveTo(3.5f * u, 7f * u); p.lineTo(12f * u, 13.5f * u); p.lineTo(20.5f * u, 7f * u)
+    drawPath(p, tint, style = st)
+}
+
+/** A key: sign in with a passkey. */
+@Composable
+internal fun KeyIcon(tint: Color, modifier: Modifier = Modifier.size(22.dp)) = Canvas(modifier) {
+    val u = size.width / 24f
+    val st = Stroke(width = 2f * u, cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+    drawCircle(tint, radius = 4f * u, center = Offset(7.5f * u, 12f * u), style = st)
+    drawLine(tint, Offset(11.5f * u, 12f * u), Offset(21f * u, 12f * u), strokeWidth = 2f * u, cap = StrokeCap.Round)
+    drawLine(tint, Offset(17.5f * u, 12f * u), Offset(17.5f * u, 15.5f * u), strokeWidth = 2f * u, cap = StrokeCap.Round)
+    drawLine(tint, Offset(21f * u, 12f * u), Offset(21f * u, 15.5f * u), strokeWidth = 2f * u, cap = StrokeCap.Round)
 }

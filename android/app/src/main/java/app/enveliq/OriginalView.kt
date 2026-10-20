@@ -133,7 +133,9 @@ internal fun OriginalScreen(mail: Mail, api: EnveliqApi, onClose: () -> Unit) {
                             color = Muted, fontSize = 12.sp, modifier = Modifier.padding(bottom = 6.dp),
                         )
                         Surface(color = Color.White, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                            Text(known!!.text, color = Color(0xFF1B2430), fontSize = 15.sp, lineHeight = 23.sp, modifier = Modifier.padding(16.dp))
+                            androidx.compose.foundation.text.selection.SelectionContainer {
+                                Text(known!!.text, color = Color(0xFF1B2430), fontSize = 15.sp, lineHeight = 23.sp, modifier = Modifier.padding(16.dp))
+                            }
                         }
                         LinksSection(known!!.text)
                         androidx.compose.foundation.layout.Spacer(Modifier.padding(bottom = 24.dp))

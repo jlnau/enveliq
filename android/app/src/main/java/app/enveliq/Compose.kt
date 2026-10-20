@@ -23,6 +23,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -74,6 +78,9 @@ private val SEPARATORS = Regex("[,;\\s]+")
 
 private fun addresses(text: String): List<String> = text.split(SEPARATORS).map { it.trim() }.filter { it.isNotEmpty() }
 
+/** The people in a box plus whatever is still being typed, each once. */
+private fun people(done: String, typing: String): List<String> = (addresses(done) + addresses(typing)).distinctBy { it.lowercase() }
+
 private fun badAddress(list: List<String>): String? =
     list.firstOrNull { !it.contains("@") || it.startsWith("@") || it.endsWith("@") }
 
@@ -90,10 +97,18 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
     val kind = target.kind
     val mail = target.mail
     val draft = target.draft
-    var to by remember { mutableStateOf(draft?.to?.joinToString(", ") ?: target.presetTo) }
-    var cc by remember { mutableStateOf(draft?.cc?.joinToString(", ") ?: "") }
+    val isReply = kind == "reply" || kind == "reply_all"
+    // A reply starts with the people the website would offer: the sender (and, for Reply all, the others and Cc). All of it can be changed.
+    val startTo = if (isReply && mail != null) (listOf(mail.replyTo.ifBlank { mail.address }) + (if (kind == "reply_all") mail.replyAlsoTo else emptyList())).filter { it.isNotBlank() } else emptyList()
+    val startCc = if (kind == "reply_all" && mail != null) mail.replyCc else emptyList()
+    var to by remember { mutableStateOf(if (draft != null && draft.to.isNotEmpty()) draft.to.joinToString(", ") else startTo.joinToString(", ").ifBlank { target.presetTo }) }
+    var cc by remember { mutableStateOf(if (draft != null && draft.to.isNotEmpty()) draft.cc.joinToString(", ") else startCc.joinToString(", ")) }
     var bcc by remember { mutableStateOf(draft?.bcc?.joinToString(", ") ?: "") }
-    var showCc by remember { mutableStateOf(draft != null && (draft.cc.isNotEmpty() || draft.bcc.isNotEmpty())) }
+    // What has been typed in a box but not yet turned into a person (Enter, a comma or a space does that). Send and Save draft take it too.
+    var toTyping by remember { mutableStateOf("") }
+    var ccTyping by remember { mutableStateOf("") }
+    var bccTyping by remember { mutableStateOf("") }
+    var showCc by remember { mutableStateOf(cc.isNotBlank() || bcc.isNotBlank()) }
     var subject by remember { mutableStateOf(if (kind == "new") draft?.subject ?: target.presetSubject else "") }
     var body by remember { mutableStateOf(draft?.body ?: target.presetBody) }
     var options by remember { mutableStateOf<List<FromOption>>(emptyList()) }
@@ -132,7 +147,7 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
         "forward" -> "Fwd: $original"
         else -> subject
     }
-    val hasContent = body.isNotBlank() || to.isNotBlank() || (kind == "new" && subject.isNotBlank())
+    val hasContent = body.isNotBlank() || to.isNotBlank() || toTyping.isNotBlank() || (kind == "new" && subject.isNotBlank())
 
     // Your signature (from Settings on the website) is put in the box when a new message starts, where you can change or remove it.
     LaunchedEffect(Unit) {
@@ -172,7 +187,7 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             try {
                 val toSave = Draft(
                     id = "", kind = kind, accountId = if (kind == "new") boxId else mail?.accountId ?: "",
-                    messageId = mail?.id ?: "", to = addresses(to), cc = addresses(cc), bcc = addresses(bcc),
+                    messageId = mail?.id ?: "", to = people(to, toTyping), cc = people(cc, ccTyping), bcc = people(bcc, bccTyping),
                     subject = shownSubject, body = body, fromAddress = from?.address ?: "",
                 )
                 withContext(Dispatchers.IO) { api.saveDraft(draft?.id, toSave) }
@@ -191,15 +206,15 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
 
     fun send(laterAtMs: Long? = null) {
         error = ""
-        val toList = addresses(to)
-        val ccList = addresses(cc)
-        val bccList = addresses(bcc)
+        val toList = people(to, toTyping)
+        val ccList = people(cc, ccTyping)
+        val bccList = people(bcc, bccTyping)
         val bad = badAddress(toList + ccList + bccList)
         if (bad != null) {
             error = "\"$bad\" does not look like an email address."
             return
         }
-        if ((kind == "forward" || kind == "new") && toList.isEmpty()) {
+        if (toList.isEmpty()) {
             error = "Add who it is going to."
             return
         }
@@ -225,8 +240,8 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
                         return@withContext Sent(false, "", 0, id, laterLabel)
                     }
                     when (kind) {
-                        "reply" -> api.reply(mail!!, false, body, chosen, files.toList())
-                        "reply_all" -> api.reply(mail!!, true, body, chosen, files.toList())
+                        "reply" -> api.reply(mail!!, false, body, chosen, files.toList(), toList, ccList, bccList)
+                        "reply_all" -> api.reply(mail!!, true, body, chosen, files.toList(), toList, ccList, bccList)
                         "forward" -> api.forward(mail!!, toList, ccList, bccList, body, chosen, files.toList())
                         else -> api.sendNew(boxId, toList, ccList, bccList, subject, body, chosen, files.toList())
                     }
@@ -255,35 +270,28 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
         }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
             if (options.size > 1) FromPicker(options, from) { from = it }
-            if (kind == "reply" || kind == "reply_all") {
-                Text(
-                    if (kind == "reply") "Going to the sender" + (mail?.address?.takeIf { it.isNotBlank() }?.let { ": $it" } ?: "")
-                    else "Going to the sender and the other people on the email",
-                    color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 6.dp),
-                )
-                Text(shownSubject, color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
+            AddressField("To", to, { to = it }, toTyping, { toTyping = it }, api)
+            if (kind == "reply") Text("Starts with the sender. Add or take off anyone.", color = Muted, fontSize = 13.sp)
+            if (kind == "reply_all") Text("Starts with the sender, the other people on the email and everyone on Cc. Take off anyone you like.", color = Muted, fontSize = 13.sp)
+            TextButton(onClick = {
+                try { contactPicker.launch(android.content.Intent(android.content.Intent.ACTION_PICK, android.provider.ContactsContract.CommonDataKinds.Email.CONTENT_URI)) }
+                catch (e: Exception) { error = "This phone has no contacts app to pick from." }
+            }) { Text("Pick from phone contacts", color = Blue, fontSize = 15.sp) }
+            if (showCc) {
+                AddressField("Cc", cc, { cc = it }, ccTyping, { ccTyping = it }, api)
+                AddressField("Bcc", bcc, { bcc = it }, bccTyping, { bccTyping = it }, api)
             } else {
-                AddressField("To", to, { to = it }, api)
-                TextButton(onClick = {
-                    try { contactPicker.launch(android.content.Intent(android.content.Intent.ACTION_PICK, android.provider.ContactsContract.CommonDataKinds.Email.CONTENT_URI)) }
-                    catch (e: Exception) { error = "This phone has no contacts app to pick from." }
-                }) { Text("Pick from phone contacts", color = Blue, fontSize = 15.sp) }
-                if (showCc) {
-                    AddressField("Cc", cc, { cc = it }, api)
-                    AddressField("Bcc", bcc, { bcc = it }, api)
-                } else {
-                    TextButton(onClick = { showCc = true }) { Text("Add Cc or Bcc", color = Blue, fontSize = 15.sp) }
-                }
-                if (kind == "new") {
-                    Text("Subject", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
-                    OutlinedTextField(value = subject, onValueChange = { subject = it }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                } else {
-                    Text(shownSubject, color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 12.dp))
-                    Text("The email you are forwarding goes underneath, with its files.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp))
-                }
+                TextButton(onClick = { showCc = true }) { Text("Add Cc or Bcc", color = Blue, fontSize = 15.sp) }
+            }
+            if (kind == "new") {
+                Text("Subject", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
+                SpellField(subject, { subject = it }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            } else {
+                Text(shownSubject, color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 12.dp))
+                if (kind == "forward") Text("The email you are forwarding goes underneath, with its files.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp))
             }
             Text(if (kind == "forward") "Your note (optional)" else "Message", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 14.dp, bottom = 6.dp))
-            OutlinedTextField(value = body, onValueChange = { body = it }, minLines = 8, modifier = Modifier.fillMaxWidth())
+            SpellField(body, { body = it }, singleLine = false, minLines = 8, modifier = Modifier.fillMaxWidth())
             run {
                 files.forEachIndexed { i, f ->
                     Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -402,11 +410,22 @@ private fun FromPicker(options: List<FromOption>, selected: FromOption?, onPick:
     }
 }
 
-/** A box for one or more addresses, with suggestions from the address list as you type the last one. */
+/**
+ * One or more people. Each address becomes a small chip with a cross to take it off; type the next one and press Enter, a comma or a space.
+ * Suggestions from your address list appear as you type a name.
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun AddressField(label: String, value: String, onChange: (String) -> Unit, api: EnveliqApi) {
+private fun AddressField(label: String, value: String, onChange: (String) -> Unit, typing: String, onTyping: (String) -> Unit, api: EnveliqApi) {
     var found by remember { mutableStateOf<List<Contact>>(emptyList()) }
-    val token = value.split(SEPARATORS).lastOrNull().orEmpty()
+    val items = addresses(value)
+    fun add(text: String) {
+        val more = addresses(text)
+        if (more.isNotEmpty()) onChange((items + more).distinctBy { it.lowercase() }.joinToString(", "))
+        onTyping("")
+        found = emptyList()
+    }
+    val token = typing.trim()
     LaunchedEffect(token) {
         found = emptyList()
         if (token.length < 2 || token.contains("@")) return@LaunchedEffect
@@ -418,16 +437,36 @@ private fun AddressField(label: String, value: String, onChange: (String) -> Uni
         }
     }
     Text(label, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
+    if (items.isNotEmpty()) {
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+        ) {
+            items.forEach { who ->
+                val odd = !who.contains("@") || who.startsWith("@") || who.endsWith("@")
+                Surface(color = PanelHigh, shape = RoundedCornerShape(50), border = BorderStroke(1.dp, if (odd) Red else Line)) {
+                    Row(
+                        Modifier.clickable { onChange(items.filter { it != who }.joinToString(", ")) }.padding(start = 12.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(who, color = Ink, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 240.dp))
+                        Text("  ✕", color = Muted, fontSize = 14.sp, modifier = Modifier.semantics { contentDescription = "Take off $who" })
+                    }
+                }
+            }
+        }
+    }
     OutlinedTextField(
-        value = value, onValueChange = onChange,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-        modifier = Modifier.fillMaxWidth(),
+        value = typing,
+        onValueChange = { v -> if (v.endsWith(",") || v.endsWith(";") || v.endsWith(" ") || v.endsWith("\n")) add(v) else onTyping(v) },
+        singleLine = true,
+        placeholder = { Text(if (items.isEmpty()) "Type a name or an address" else "Add another person") },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { add(typing) }),
+        modifier = Modifier.fillMaxWidth().onFocusChanged { if (!it.isFocused && typing.isNotBlank()) add(typing) },
     )
     found.take(5).forEach { c ->
-        TextButton(onClick = {
-            onChange(value.substring(0, value.length - token.length) + c.address + ", ")
-            found = emptyList()
-        }) {
+        TextButton(onClick = { add(c.address) }) {
             Text((if (c.name.isNotBlank()) c.name + "  " else "") + c.address, color = Blue, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
