@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Android: the two-factor code box works with Bitwarden and the keyboard.** The code box on the sign-in screen is now the phone’s own text box, marked as a one-time code, so password managers such as Bitwarden recognise it as a two-factor code screen and can fill it, and the keyboard can offer to paste a code you have just copied. It is focused straight away (the keyboard opens) and the keyboard’s Done button confirms. Touches `android/` (`SpellField.kt`, `Screens.kt`, `res/values/ids.xml`), `docs/ANDROID.md`.
+
 **Android: tags show in the inbox list.** Each email in the list now shows its tags as small chips under the summary (up to three, then +more). Emails with no tags take no extra space. Touches `android/` (`Home.kt`), `docs/ANDROID.md`.
 
 **Android: the "Open this link?" box shows the whole link.** It used to say only which site the link goes to. It now also shows the full address exactly as it is in the email (wrapped, scrollable if very long, and you can select it), so you can see exactly what you are about to open. Touches `android/` (`Organise.kt`), `docs/ANDROID.md`.

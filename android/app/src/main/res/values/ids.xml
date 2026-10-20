@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The name of this id is read by password managers (such as Bitwarden): it says the box is for a two-factor code. -->
+    <item name="totp_code" type="id" />
+</resources>

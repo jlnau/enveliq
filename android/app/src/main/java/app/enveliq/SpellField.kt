@@ -64,3 +64,64 @@ internal fun SpellField(value: String, onChange: (String) -> Unit, singleLine: B
         },
     )
 }
+
+/**
+ * The box for a two-factor (authenticator app) code. It is the phone's own text box, marked as a one-time code, so password managers
+ * such as Bitwarden recognise it and can fill it, and the keyboard offers to paste a code you have just copied.
+ */
+@Composable
+internal fun CodeField(value: String, onChange: (String) -> Unit, onDone: () -> Unit, modifier: Modifier = Modifier) {
+    val latest by rememberUpdatedState(onChange)
+    val done by rememberUpdatedState(onDone)
+    val ink = Ink.toArgb()
+    val muted = Muted.toArgb()
+    val line = Line.toArgb()
+    val accent = Blue.toArgb()
+    AndroidView(
+        modifier = modifier,
+        factory = { ctx ->
+            EditText(ctx).apply {
+                id = R.id.totp_code
+                inputType = InputType.TYPE_CLASS_TEXT
+                maxLines = 1
+                isSingleLine = true
+                hint = "Verification code"
+                contentDescription = "Two-factor verification code"
+                importantForAutofill = android.view.View.IMPORTANT_FOR_AUTOFILL_YES
+                setAutofillHints("smsOTPCode", "oneTimeCode", "totp")
+                imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_DONE
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+                val pad = (14 * ctx.resources.displayMetrics.density).toInt()
+                setPadding(pad, pad, pad, pad)
+                setText(value)
+                setSelection(text.length)
+                addTextChangedListener(object : TextWatcher {
+                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                    override fun afterTextChanged(s: Editable?) { latest(s?.toString() ?: "") }
+                })
+                setOnEditorActionListener { _, action, _ ->
+                    if (action == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) { done(); true } else false
+                }
+                // Focus it straight away so the keyboard (with its paste suggestion) and the password manager are ready.
+                post { requestFocus(); (ctx.getSystemService(android.view.inputmethod.InputMethodManager::class.java))?.showSoftInput(this, 0) }
+            }
+        },
+        update = { et ->
+            et.setTextColor(ink)
+            et.setHintTextColor(muted)
+            et.highlightColor = (accent and 0x00FFFFFF) or 0x55000000
+            et.background = GradientDrawable().apply {
+                cornerRadius = 12f * et.resources.displayMetrics.density
+                setStroke((1 * et.resources.displayMetrics.density).toInt().coerceAtLeast(1), line)
+            }
+            if (Build.VERSION.SDK_INT >= 29) {
+                et.textCursorDrawable = GradientDrawable().apply { setColor(accent); setSize((2 * et.resources.displayMetrics.density).toInt().coerceAtLeast(2), 0) }
+            }
+            if (et.text.toString() != value) {
+                et.setText(value)
+                et.setSelection(et.text.length)
+            }
+        },
+    )
+}

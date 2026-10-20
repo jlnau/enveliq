@@ -219,12 +219,7 @@ fun SignInScreen(initialAddress: String, notice: String, linkCode: String?, onLi
                     "Open your authenticator app and type the 6 digit code. A recovery code works too.",
                     color = Muted, fontSize = 15.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 6.dp, bottom = 14.dp),
                 )
-                OutlinedTextField(
-                    value = code, onValueChange = { code = it }, singleLine = true,
-                    placeholder = { Text("Verification code") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
-                    modifier = Modifier.fillMaxWidth().semantics { contentType = ContentType("2faAppOTP") },
-                )
+                CodeField(code, { code = it }, onDone = { if (code.isNotBlank() && !busy) go() }, modifier = Modifier.fillMaxWidth())
             }
             if (!needsCode) {
                 Row(Modifier.fillMaxWidth().padding(top = 18.dp), verticalAlignment = Alignment.CenterVertically) {
