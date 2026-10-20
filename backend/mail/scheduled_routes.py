@@ -72,7 +72,7 @@ def build_scheduled_router(ctx: Any) -> APIRouter:
                     service._people(body.to, body.cc, body.bcc)
                     service._pick_from(account, body.from_address, (message.get("reply_context") or {}).get("delivered_to"))
                 else:
-                    service.build_reply(account, message, body.body, body.from_address, body.to or None, body.cc or None, body.bcc or None, body.kind, False)
+                    service.build_reply(account, message, body.body, body.from_address, body.to or None, body.cc or None, body.bcc or None, body.kind, False, None, body.subject or None)
             return book.add(user, body.model_dump())
         except BridgeError as err:
             raise fail(err) from None

@@ -386,20 +386,21 @@ class EnveliqApi(address: String) {
 
     fun reply(
         mail: Mail, all: Boolean, text: String, from: String? = null, files: List<PickedFile> = emptyList(),
-        to: List<String>? = null, cc: List<String>? = null, bcc: List<String>? = null,
+        to: List<String>? = null, cc: List<String>? = null, bcc: List<String>? = null, subject: String? = null,
     ): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/reply",
             JSONObject().put("body", text).put("kind", if (all) "reply_all" else "reply").also { if (from != null) it.put("from_address", from) }
-                .also { if (to != null) it.put("to", JSONArray(to)) }.also { if (cc != null) it.put("cc", JSONArray(cc)) }.also { if (bcc != null) it.put("bcc", JSONArray(bcc)) }
+                .also { if (!subject.isNullOrBlank()) it.put("subject", subject) }.also { if (to != null) it.put("to", JSONArray(to)) }.also { if (cc != null) it.put("cc", JSONArray(cc)) }.also { if (bcc != null) it.put("bcc", JSONArray(bcc)) }
                 .also { if (files.isNotEmpty()) it.put("files", filesJson(files)) },
         ),
     )
 
-    fun forward(mail: Mail, to: List<String>, cc: List<String>, bcc: List<String>, text: String, from: String? = null, files: List<PickedFile> = emptyList()): Sent = sentFrom(
+    fun forward(mail: Mail, to: List<String>, cc: List<String>, bcc: List<String>, text: String, from: String? = null, files: List<PickedFile> = emptyList(), subject: String? = null): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/forward",
             JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("body", text).also { if (from != null) it.put("from_address", from) }
+                .also { if (!subject.isNullOrBlank()) it.put("subject", subject) }
                 .also { if (files.isNotEmpty()) it.put("files", filesJson(files)) },
         ),
     )

@@ -919,7 +919,8 @@ class MailService:
 
     def build_reply(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None,
                     to: list[str] | None = None, cc: list[str] | None = None, bcc: list[str] | None = None,
-                    kind: str = "reply", add_original: bool = True, files: list[dict[str, str]] | None = None) -> tuple[EmailMessage, str, list[str]]:
+                    kind: str = "reply", add_original: bool = True, files: list[dict[str, str]] | None = None,
+                    subject: str | None = None) -> tuple[EmailMessage, str, list[str]]:
         """A reply. Unless the person already put the original into their own message (add_original False), the whole
         original email is fetched from the mailbox now and quoted under their words. It is never kept."""
         ctx = message.get("reply_context")
@@ -940,8 +941,9 @@ class MailService:
             msg["To"] = to_a
         if cc_a:
             msg["Cc"] = cc_a
+        own = clean(subject, 900) if subject else ""
         subject = clean(message.get("subject"), 900) or "(no subject)"
-        msg["Subject"] = subject if re.match(r"(?i)^re:", subject) else f"Re: {subject}"
+        msg["Subject"] = own or (subject if re.match(r"(?i)^re:", subject) else f"Re: {subject}")      # the person may have edited the subject
         msg["Date"] = format_datetime(datetime.now(timezone.utc))
         msg["Message-ID"] = make_msgid(domain=chosen.rsplit("@", 1)[1])
         original_id = ctx.get("message_id")
@@ -965,7 +967,7 @@ class MailService:
 
     def build_forward(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None,
                       to: list[str], cc: list[str], bcc: list[str], keep_files: list[int] | None,
-                      extra_files: list[dict[str, str]] | None = None) -> tuple[EmailMessage, str, list[str]]:
+                      extra_files: list[dict[str, str]] | None = None, subject: str | None = None) -> tuple[EmailMessage, str, list[str]]:
         """Forward an email: the original is fetched from the mailbox now, quoted under the person's note, and never kept.
         keep_files are the numbers of the original's files to send along (None sends all of them)."""
         ctx = message.get("reply_context") or {}
@@ -980,8 +982,9 @@ class MailService:
             msg["To"] = to_a
         if cc_a:
             msg["Cc"] = cc_a
+        own = clean(subject, 900) if subject else ""
         subject = clean(original.get("Subject"), 900) or clean(message.get("subject"), 900) or "(no subject)"
-        msg["Subject"] = subject if re.match(r"(?i)^fwd?:", subject) else f"Fwd: {subject}"
+        msg["Subject"] = own or (subject if re.match(r"(?i)^fwd?:", subject) else f"Fwd: {subject}")      # the person may have edited the subject
         msg["Date"] = format_datetime(datetime.now(timezone.utc))
         msg["Message-ID"] = make_msgid(domain=chosen.rsplit("@", 1)[1])
         note = body.replace("\r\n", "\n").rstrip()

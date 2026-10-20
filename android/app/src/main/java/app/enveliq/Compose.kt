@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
@@ -119,7 +120,16 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
     var ccTyping by remember { mutableStateOf("") }
     var bccTyping by remember { mutableStateOf("") }
     var showCc by remember { mutableStateOf(cc.isNotBlank() || bcc.isNotBlank()) }
-    var subject by remember { mutableStateOf(if (kind == "new") draft?.subject ?: target.presetSubject else "") }
+    // The subject can be changed in a reply or a forward too; it starts as "Re: ..." or "Fwd: ..." followed by the original's.
+    var subject by remember {
+        mutableStateOf(
+            when {
+                kind == "new" -> draft?.subject ?: target.presetSubject
+                !draft?.subject.isNullOrBlank() -> draft?.subject.orEmpty()
+                else -> (if (kind == "forward") "Fwd: " else "Re: ") + target.mail?.subject.orEmpty().ifBlank { "(no subject)" }.let { t -> t.removePrefix("Re: ").removePrefix("Fwd: ") }
+            },
+        )
+    }
     var body by remember { mutableStateOf(draft?.body ?: target.presetBody) }
     var options by remember { mutableStateOf<List<FromOption>>(emptyList()) }
     var from by remember { mutableStateOf<FromOption?>(null) }
@@ -164,11 +174,6 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
     }
 
     val original = mail?.subject.orEmpty().ifBlank { "(no subject)" }
-    val shownSubject = when (kind) {
-        "reply", "reply_all" -> "Re: $original"
-        "forward" -> "Fwd: $original"
-        else -> subject
-    }
     val hasContent = body.isNotBlank() || to.isNotBlank() || toTyping.isNotBlank() || (kind == "new" && subject.isNotBlank())
 
     // Your signature (from Settings on the website) is put in the box when a new message starts, where you can change or remove it.
@@ -210,7 +215,7 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
                 val toSave = Draft(
                     id = "", kind = kind, accountId = if (kind == "new") boxId else mail?.accountId ?: "",
                     messageId = mail?.id ?: "", to = people(to, toTyping), cc = people(cc, ccTyping), bcc = people(bcc, bccTyping),
-                    subject = shownSubject, body = body, fromAddress = from?.address ?: "",
+                    subject = subject, body = body, fromAddress = from?.address ?: "",
                 )
                 withContext(Dispatchers.IO) { api.saveDraft(draft?.id, toSave) }
                 onClose()
@@ -266,9 +271,9 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
                         return@withContext Sent(false, "", 0, id, laterLabel)
                     }
                     when (kind) {
-                        "reply" -> api.reply(mail!!, false, text, chosen, files.toList(), toList, ccList, bccList)
-                        "reply_all" -> api.reply(mail!!, true, text, chosen, files.toList(), toList, ccList, bccList)
-                        "forward" -> api.forward(mail!!, toList, ccList, bccList, text, chosen, files.toList())
+                        "reply" -> api.reply(mail!!, false, text, chosen, files.toList(), toList, ccList, bccList, subj)
+                        "reply_all" -> api.reply(mail!!, true, text, chosen, files.toList(), toList, ccList, bccList, subj)
+                        "forward" -> api.forward(mail!!, toList, ccList, bccList, text, chosen, files.toList(), subj)
                         else -> api.sendNew(boxId, toList, ccList, bccList, subj, text, chosen, files.toList())
                     }
                 }
@@ -339,21 +344,15 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             }
             if (kind == "reply") Text("Starts with the sender. Add or take off anyone.", color = Muted, fontSize = 12.sp)
             if (kind == "reply_all") Text("Starts with the sender, the other people on the email and everyone on Cc. Take off anyone you like.", color = Muted, fontSize = 12.sp)
-            if (kind == "new") {
-                Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Subject", color = Muted, fontSize = 14.sp, modifier = Modifier.width(52.dp))
-                    SpellField(subject, { subject = it }, singleLine = true, modifier = Modifier.weight(1f))
-                }
-            } else {
-                Text(shownSubject, color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 12.dp))
-                if (kind == "forward") Text("The email you are forwarding goes underneath, with its files.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp))
+            FieldBox("Subject:", Modifier.padding(top = 8.dp)) {
+                SpellField(subject, { subject = it }, singleLine = true, bare = true, modifier = Modifier.weight(1f))
             }
-            Text(if (kind == "forward") "Your note (optional)" else "Message", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 14.dp, bottom = 6.dp))
+            if (kind == "forward") Text("The email you are forwarding goes underneath, with its files.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp, start = 4.dp))
             // The box is as tall as the space above the keyboard, and when you tap it the page scrolls so it sits at the top of that space.
             val boxH = with(androidx.compose.ui.platform.LocalDensity.current) { (viewH.toDp() - 40.dp).coerceAtLeast(140.dp) }
             SpellField(
-                body, { body = it }, singleLine = false, minLines = 3, onFocus = { bodyFocused = it },
-                modifier = Modifier.fillMaxWidth().height(boxH).onGloballyPositioned { bodyTop = it.positionInParent().y.toInt() },
+                body, { body = it }, singleLine = false, minLines = 3, onFocus = { bodyFocused = it }, hint = if (kind == "forward") "Your note (optional)" else "Message",
+                modifier = Modifier.padding(top = 8.dp).fillMaxWidth().height(boxH).onGloballyPositioned { bodyTop = it.positionInParent().y.toInt() },
             )
             if (writeInfo != null && (kind == "new" || mail != null)) {
                 WriteHelpBox(api, writeInfo, mail, subject, body, kind == "new", wh) { body = it }
@@ -473,10 +472,10 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
 private fun FromPicker(options: List<FromOption>, selected: FromOption?, onPick: (FromOption) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box(Modifier.fillMaxWidth().padding(top = 4.dp)) {
-        Surface(color = Panel, shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line), modifier = Modifier.fillMaxWidth().clickable { open = true }) {
-            Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("From", color = Muted, fontSize = 14.sp, modifier = Modifier.width(40.dp))
-                Text(selected?.address ?: "", color = Ink, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(horizontal = 8.dp))
+        Surface(color = Color.Transparent, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line), modifier = Modifier.fillMaxWidth().clickable { open = true }) {
+            Row(Modifier.padding(horizontal = 12.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("From:", color = Muted, fontSize = 15.sp, modifier = Modifier.width(60.dp))
+                Text(selected?.address ?: "", color = Ink, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 Text("▾", color = Muted, fontSize = 16.sp)
             }
         }
@@ -525,51 +524,60 @@ private fun AddressField(
             // The address list may be switched off; typing an address still works.
         }
     }
-    Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.Top) {
-    Text(label, color = Muted, fontSize = 14.sp, modifier = Modifier.width(40.dp).padding(top = 16.dp))
-    Column(Modifier.weight(1f)) {
-    if (items.isNotEmpty()) {
-        androidx.compose.foundation.layout.FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
-        ) {
-            items.forEach { who ->
-                val odd = !who.contains("@") || who.startsWith("@") || who.endsWith("@")
-                Surface(color = PanelHigh, shape = RoundedCornerShape(50), border = BorderStroke(1.dp, if (odd) Red else Line)) {
-                    Row(
-                        Modifier.clickable { onChange(items.filter { it != who }.joinToString(", ")) }.padding(start = 12.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(who, color = Ink, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 240.dp))
-                        Text("  ✕", color = Muted, fontSize = 14.sp, modifier = Modifier.semantics { contentDescription = "Take off $who" })
+    Surface(color = Color.Transparent, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line), modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+        Row(Modifier.padding(start = 12.dp), verticalAlignment = Alignment.Top) {
+            Text("$label:", color = Muted, fontSize = 15.sp, modifier = Modifier.width(48.dp).padding(top = 14.dp))
+            androidx.compose.foundation.layout.FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.weight(1f).padding(vertical = 7.dp),
+            ) {
+                items.forEach { who ->
+                    val odd = !who.contains("@") || who.startsWith("@") || who.endsWith("@")
+                    Surface(color = PanelHigh, shape = RoundedCornerShape(50), border = BorderStroke(1.dp, if (odd) Red else Line)) {
+                        Row(
+                            Modifier.clickable { onChange(items.filter { it != who }.joinToString(", ")) }.padding(start = 12.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(who, color = Ink, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 220.dp))
+                            Text("  ✕", color = Muted, fontSize = 14.sp, modifier = Modifier.semantics { contentDescription = "Take off $who" })
+                        }
                     }
                 }
+                Box(Modifier.widthIn(min = 120.dp).heightIn(min = 34.dp), contentAlignment = Alignment.CenterStart) {
+                    if (typing.isEmpty() && items.isEmpty()) Text("Name or address", color = Muted, fontSize = 16.sp)
+                    androidx.compose.foundation.text.BasicTextField(
+                        value = typing,
+                        onValueChange = { v -> if (v.endsWith(",") || v.endsWith(";") || v.endsWith(" ") || v.endsWith("\n")) add(v) else onTyping(v) },
+                        singleLine = true,
+                        textStyle = androidx.compose.ui.text.TextStyle(color = Ink, fontSize = 16.sp),
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(Blue),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { add(typing) }),
+                        modifier = Modifier.fillMaxWidth().onFocusChanged { if (!it.isFocused && typing.isNotBlank()) add(typing) },
+                    )
+                }
+            }
+            IconButton(onClick = onPhone, modifier = Modifier.size(44.dp).semantics { contentDescription = "Pick from phone contacts" }) { Icon(Icons.Filled.Person, contentDescription = null, tint = Muted) }
+            if (onExpand != null) IconButton(onClick = onExpand, modifier = Modifier.size(44.dp).semantics { contentDescription = if (expanded) "Hide Cc and Bcc" else "Show Cc and Bcc" }) {
+                Icon(Icons.Filled.ArrowDropDown, contentDescription = null, tint = Muted, modifier = Modifier.rotate(if (expanded) 180f else 0f))
             }
         }
     }
-    OutlinedTextField(
-        value = typing,
-        onValueChange = { v -> if (v.endsWith(",") || v.endsWith(";") || v.endsWith(" ") || v.endsWith("\n")) add(v) else onTyping(v) },
-        singleLine = true,
-        placeholder = { Text(if (items.isEmpty()) "Name or address" else "Add another", fontSize = 15.sp) },
-        trailingIcon = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onPhone, modifier = Modifier.semantics { contentDescription = "Pick from phone contacts" }) { Icon(Icons.Filled.Person, contentDescription = null, tint = Muted) }
-                if (onExpand != null) IconButton(onClick = onExpand, modifier = Modifier.semantics { contentDescription = if (expanded) "Hide Cc and Bcc" else "Show Cc and Bcc" }) {
-                    Icon(Icons.Filled.ArrowDropDown, contentDescription = null, tint = Muted, modifier = Modifier.rotate(if (expanded) 180f else 0f))
-                }
-            }
-        },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = androidx.compose.ui.text.input.ImeAction.Next),
-        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { add(typing) }),
-        modifier = Modifier.fillMaxWidth().onFocusChanged { if (!it.isFocused && typing.isNotBlank()) add(typing) },
-    )
     found.take(5).forEach { c ->
         TextButton(onClick = { add(c.address) }) {
             Text((if (c.name.isNotBlank()) c.name + "  " else "") + c.address, color = Blue, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
-    }
+}
+
+/** A bordered line with its label inside it (Subject: ...), so every line of the draft looks the same. */
+@Composable
+private fun FieldBox(label: String, modifier: Modifier = Modifier, content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
+    Surface(color = Color.Transparent, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line), modifier = modifier.fillMaxWidth()) {
+        Row(Modifier.padding(start = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(label, color = Muted, fontSize = 15.sp, modifier = Modifier.width(72.dp))
+            content()
+        }
     }
 }
 

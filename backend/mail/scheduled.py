@@ -184,10 +184,10 @@ class ScheduledSender:
             else:
                 message = self.vault.get_message(item["account_id"], item["message_id"])
                 if kind == "forward":
-                    built = self.service.build_forward(account, message, item["body"], item.get("from_address"), item["to"], item["cc"], item["bcc"], None)
+                    built = self.service.build_forward(account, message, item["body"], item.get("from_address"), item["to"], item["cc"], item["bcc"], None, None, item.get("subject") or None)
                 else:
                     built = self.service.build_reply(account, message, item["body"], item.get("from_address"), item["to"] or None,
-                                                     item["cc"] or None, item["bcc"] or None, kind, True)
+                                                     item["cc"] or None, item["bcc"] or None, kind, True, None, item.get("subject") or None)
             self.service.bridge.send(self.service.target(account), built[0], built[1], built[2])
         except BridgeError as err:
             error = err.message or err.code

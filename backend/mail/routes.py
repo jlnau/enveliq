@@ -109,6 +109,7 @@ class ReplyBody(StrictModel):
     bcc: list[str] | None = Field(default=None, max_length=50)
     # The whole original email is quoted under the reply unless the person already put it into their own message.
     add_original: bool = True
+    subject: str | None = Field(default=None, max_length=900)           # the person's own subject; left out, it is "Re: " and the original's
     files: list[FileIn] = Field(default_factory=list, max_length=10)      # files the person attached (name, type, base64 data); held in memory only
 
     @field_validator("from_address")
@@ -133,6 +134,7 @@ class ForwardBody(StrictModel):
     from_address: str | None = Field(default=None, max_length=320)
     keep_files: list[int] | None = Field(default=None, max_length=50)    # numbers of the original's files to send; left out sends them all
     files: list[FileIn] = Field(default_factory=list, max_length=10)   # more files the person attached (name, type, base64 data)
+    subject: str | None = Field(default=None, max_length=900)          # the person's own subject; left out, it is "Fwd: " and the original's
 
     @field_validator("from_address")
     @classmethod
@@ -470,11 +472,11 @@ def build_mail_router(ctx: Any) -> APIRouter:
         try:
             if delay > 0:
                 # Undo send: check everything now, then hold the reply for the person's chosen time.
-                built = service.build_reply(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.kind, body.add_original, [f.model_dump() for f in body.files])
+                built = service.build_reply(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.kind, body.add_original, [f.model_dump() for f in body.files], body.subject)
                 item = outbox.enqueue(user, account_id, message_id, built, body.body, delay, kind=body.kind)
                 return {"queued": True, "id": item.id, "send_at": item.send_at, "now": time.time(), "from": item.chosen,
                         "to": item.recipients[0] if item.recipients else "", "people": len(item.recipients)}
-            built = service.build_reply(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.kind, body.add_original, [f.model_dump() for f in body.files])
+            built = service.build_reply(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.kind, body.add_original, [f.model_dump() for f in body.files], body.subject)
             sent_from = service.reply(account, message, body.body, body.from_address, built)
         except BridgeError as err:
             raise fail(err) from None
@@ -493,7 +495,7 @@ def build_mail_router(ctx: Any) -> APIRouter:
             raise HTTPException(status_code=429, detail="Too many emails sent recently. Wait a few minutes.")
         delay = review.user_prefs(vault, user)["undo_send_seconds"]
         try:
-            built = service.build_forward(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.keep_files, [f.model_dump() for f in body.files])
+            built = service.build_forward(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.keep_files, [f.model_dump() for f in body.files], body.subject)
             if delay > 0:
                 item = outbox.enqueue(user, account_id, message_id, built, body.body, delay, kind="forward")
                 return {"queued": True, "id": item.id, "send_at": item.send_at, "now": time.time(), "from": item.chosen,
