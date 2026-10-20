@@ -56,6 +56,15 @@ export default {
     if (url.pathname !== "/v1/push") return json(404, { result: "not_found" });
     if (request.method !== "POST") return json(405, { result: "method_not_allowed" });
 
+    // One address cannot flood the relay: Cloudflare's own rate limiter counts requests per visiting address (wrangler.toml).
+    // The address is only a temporary counter key inside that limiter; it is never stored or logged here. If the limiter is missing or
+    // fails, the request carries on (the checks below still apply).
+    if (env.RATE_LIMITER) {
+      let allowed = true;
+      try { allowed = (await env.RATE_LIMITER.limit({ key: request.headers.get("cf-connecting-ip") || "unknown" })).success !== false; } catch (e) { allowed = true; }
+      if (!allowed) return json(429, { result: "slow_down" });
+    }
+
     const text = await request.text();
     if (text.length > MAX_BODY) return json(413, { result: "too_big" });
     let body;

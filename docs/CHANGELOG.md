@@ -4,7 +4,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**Push relay: a built-in rate limit.** The Google push relay now limits each visiting address to 60 requests a minute (`429` after that), so one address cannot flood it. It uses Cloudflare's own rate limiter, so no domain or Cloudflare rule is needed (the old advice to add a WAF rule does not work for a `workers.dev` address). Redeploy the Worker once with `cd relay && npx wrangler deploy`. Touches `relay/worker.js`, `relay/wrangler.toml`, `relay/test.mjs`, `docs/PUSH_RELAY.md`.
 
 ## v0.100 (2026-10-20)
 

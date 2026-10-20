@@ -4,3 +4,9 @@ name = "enveliq-push"
 main = "worker.js"
 compatibility_date = "2025-01-01"
 workers_dev = true
+
+# One address can send at most 60 requests a minute (Cloudflare's rate limiter, free to use). Needs no domain of your own.
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 60, period = 60 }
