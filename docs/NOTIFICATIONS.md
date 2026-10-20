@@ -1,6 +1,6 @@
 # Reminders and notifications
 
-In Settings this page is called **Notifications** (it used to be called Reminders). It has two steps: **1. Where should notifications go?** (your phone, a chat app, email and so on) and **2. What should I tell you about?** (the morning summary, things that are due, and new email). A line at the top says where notifications reach you right now.
+In Settings this page is called **Notifications** (it used to be called Reminders). It has two steps: **1. Where should notifications go?** (your phone, a chat app, email and so on) and **2. What should I tell you about?** (the daily summary, things that are due, and new email). A line at the top says where notifications reach you right now.
 
 Enveliq makes a task for every email that needs you (see **Tasks** in the inbox). Tasks always show in Enveliq under **Today**. If you also want a nudge on your phone or in a chat app, add one or more channels under **Settings, Notifications**.
 
@@ -8,7 +8,8 @@ Each channel has the same four steps: follow the short guide on its card, fill i
 
 ## What gets sent
 
-* A **morning summary** (default 08:00): how many things are due today.
+* A **daily summary** (default 08:00): one message with what is due today, plus, when there is something to say, parcels that are out for delivery, emails you sent that are still waiting for a reply, and subscriptions or free trials coming up. It is the old morning summary made fuller, so nothing needs setting up again. If there is nothing to say, nothing is sent.
+* **Send new email in this summary instead** (off by default). New email is then counted in the daily summary ("4 unread emails waiting") and is not announced one by one, so your phone stays quiet all day. Email from your [important people](IMPORTANT_PEOPLE.md) still comes through at once. It needs the daily summary to be on; with the summary off, new email is announced as usual so it is never missed.
 * A **reminder** when a task is due, or when a new task for today appears after the summary.
 * A **nudge** if a task is still open (default every 2 hours, at most 2 times).
 * **Quiet hours** (default 21:00 to 07:00): nothing is sent; what was held goes out when they end.
@@ -88,6 +89,12 @@ Notifications and installing need the `https://` address you use for Enveliq (se
 ## The Enveliq Android app
 
 The Android app is one more place new-email alerts can go (**The Enveliq app (Android)** in the channel list, added by the app itself, up to 5 phones). It uses Google's push service through the shared Enveliq push relay, so there is nothing to set up on the server or in Administration, and it carries no words: only "mail" or "test" and a count. Reminders and notes from services do not go to it. Press **Send a test** to check a phone. See [Enveliq for Android](ANDROID.md).
+
+## What the daily summary is made from
+
+Enveliq counts it from lists it already keeps (tasks, sent emails waiting for a reply, parcels, subscriptions, and the unread count when you switch the option above on). The AI is not asked anything and never counts or decides. No email text is read, and no email subject or sender is ever put in the summary. With **Show task titles** off, the summary only says how many things there are. With it on, it also names the shops and services already on your lists. A subscription note you would have had on its own is folded into the summary instead of arriving as a second message.
+
+On the Enveliq Android app the summary is an optional note, **Daily summary** (Settings, Notifications); see [Enveliq for Android](ANDROID.md).
 
 ## Channels
 

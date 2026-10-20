@@ -108,6 +108,7 @@ object Notifier {
             "messages" -> "New message"
             "tasks" -> "A task is due"
             "shipping" -> "A parcel needs you"
+            "summary" -> "Your day"
             else -> "Something new in Enveliq"
         }
         val note = Notification.Builder(context, if (quiet) CHANNEL_QUIET else CHANNEL_REMINDERS)

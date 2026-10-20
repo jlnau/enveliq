@@ -1531,8 +1531,9 @@ async function remindersPage(me) {
   const box = (id, checked, title, hint) => h("label", { class: "check", for: id }, h("input", { id, type: "checkbox", checked }), h("span", {}, h("strong", { text: title }), hint ? h("div", { class: "hint", text: hint }) : null));
   const form = h("form", {},
     h("p", { class: "hint", text: "Choose what you would like to hear about. Each one goes to the places you turned on above." }),
-    box("rs_morning", s.morning_on, "A morning summary", "One message each morning saying what is due today."),
+    box("rs_morning", s.morning_on, "A daily summary", "One morning message: tasks due, parcels out for delivery, replies you are waiting for."),
     field("Send it at", input("rs_morning_time", { type: "time", value: s.morning_time })),
+    box("rs_digest", s.digest_mail, "Send new email in this summary instead", "New email is counted in the summary, not announced one by one. Important people still come through."),
     box("rs_due", s.due_on, "When something is due", "Sent once, when a task is due or when a new task for today appears."),
     box("rs_mail", s.mail_on, "When new email arrives", "One short message each time Enveliq finds new email for you. The email itself is never sent."),
     more("Repeats, quiet hours and privacy",
@@ -1548,7 +1549,7 @@ async function remindersPage(me) {
   onSubmit(form, async () => {
     const g = id => form.querySelector("#" + id);
     await api("/me/notifications/settings", { method: "PUT", body: { morning_on: g("rs_morning").checked, morning_time: g("rs_morning_time").value || "08:00", due_on: g("rs_due").checked,
-      repeat_hours: Number(g("rs_hours").value) || 2, repeat_max: Math.max(0, Number(g("rs_max").value) || 0), quiet_on: g("rs_quiet").checked, quiet_from: g("rs_from").value || "21:00", quiet_to: g("rs_to").value || "07:00", show_titles: g("rs_titles").checked, mail_on: g("rs_mail").checked, mail_details: g("rs_maildetails").checked } });
+      repeat_hours: Number(g("rs_hours").value) || 2, repeat_max: Math.max(0, Number(g("rs_max").value) || 0), quiet_on: g("rs_quiet").checked, quiet_from: g("rs_from").value || "21:00", quiet_to: g("rs_to").value || "07:00", show_titles: g("rs_titles").checked, mail_on: g("rs_mail").checked, mail_details: g("rs_maildetails").checked, digest_mail: g("rs_digest").checked } });
     toast("Saved");
   });
   const mine = ov.channels.filter(c => c.allowed);

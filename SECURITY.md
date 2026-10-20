@@ -494,3 +494,7 @@ A mailbox you add starts with Check for new mail automatically, Write AI summari
 ## Administration in the one Settings menu
 
 The Administration group in the Settings menu, and its search results, are only built for signed-in administrators. This is a convenience: every Administration request is still checked on the server from the signed-in session, and anyone else gets "not found".
+
+## Daily summary
+
+The daily summary (Settings, Notifications) is counted by Enveliq from lists the signed-in person already has: tasks, sent emails waiting for a reply, parcels, subscriptions and, if switched on, the number of unread emails. The AI is not involved, no email text is read, and no email subject or sender appears in it. With "Show task titles" off it contains only numbers. Every number is for the signed-in person alone, chosen by the server from the session. The only new thing kept is a small counter (how many summaries went out) in the person's own notification record, which the Android app watches to know a new summary is ready. `GET /api/v1/me/summary` returns counts and one yes/no, nothing else, and needs a signed-in session. The option "Send new email in this summary instead" only changes when a person is told; it never hides or moves mail, and important people still come through at once.

@@ -70,6 +70,7 @@ from .mail.checkbox import CheckBox
 from .mail.tasks import TaskBook
 from .mail.notify import Notifier
 from .mail.notify_routes import build_notify_router
+from .mail.summary import DailySummary
 from .mail.agent import Agent
 from .mail.agent_routes import build_agent_router
 from .mail.calsync import Sync
@@ -662,6 +663,8 @@ _click = "" if _pub.hostname in ("localhost", "127.0.0.1", "::1") else PUBLIC_OR
 reminders = Reminders(vault, taskbook, notifier, _click)
 auto_sync.mail_alerts = MailAlerts(notifier, _click, taskbook.timezone_of, important=importantbook)
 reminders.subs = subbook
+dailysummary = DailySummary(vault, shipbook, waitbook, subbook, taskbook.held)
+reminders.summary = dailysummary
 sync = Sync(vault, taskbook, notifier, PUBLIC_ORIGIN)
 backups = BackupManager(vault, DATA_DIR / "backups")
 sync.trips = tripbook
@@ -696,7 +699,7 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, scheduled=scheduledbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, scheduled=scheduledbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, waiting=waitbook, summary=dailysummary, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))

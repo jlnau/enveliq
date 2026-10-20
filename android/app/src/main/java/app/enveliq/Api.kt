@@ -300,6 +300,9 @@ class EnveliqApi(address: String) {
         return out
     }
 
+    /** The numbers behind the daily summary: tasks, waiting, parcels, coming, unread, and digest (true when new email waits for the summary). Counts only. */
+    fun dailySummary(): JSONObject = JSONObject(call("GET", "/api/v1/me/summary"))
+
     /** Whether the administrator has set up Google push, so the app can offer it. */
     fun pushAvailable(): Boolean = JSONObject(call("GET", "/api/v1/me/notifications/android")).optBoolean("available", false)
 

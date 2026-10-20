@@ -78,6 +78,7 @@ object AlertPrefs {
         "bell" to ("Notes and alerts" to "A note when something new appears under the bell."),
         "tasks" to ("Tasks due today" to "A note when a task becomes due."),
         "shipping" to ("Parcels to confirm" to "A note when a parcel needs you to confirm it arrived."),
+        "summary" to ("Daily summary" to "A note each morning with what is waiting for you."),
     )
     fun kindOn(c: Context, kind: String) = prefs(c).getBoolean("alert_kind_$kind", false)
     fun setKind(c: Context, kind: String, v: Boolean) = prefs(c).edit().putBoolean("alert_kind_$kind", v).apply()
@@ -224,7 +225,7 @@ class MailWatcherService : Service() {
                     else if (line.isEmpty()) {
                         if (event == "new") Alerts.catchUp(this, api)
                         if (event == "gone") Alerts.gone(this, data)
-                        if (event == "other") Alerts.other(this, data)
+                        if (event == "other") Alerts.other(this, data, api)
                         if (event == "reconnect") break
                         event = ""
                         data = ""
@@ -278,7 +279,9 @@ object Alerts {
         alerted.addAll(fresh.map { it.id })
         AlertPrefs.setAlerted(context, alerted)
         // Everything new is remembered as announced, but only what the person asked to hear about makes a sound.
-        val toTell = when (AlertPrefs.scope(context)) {
+        // When the person chose "new email in the daily summary instead", only their important people are announced one by one.
+        val digest = try { api.dailySummary().optBoolean("digest", false) } catch (e: ApiException) { if (e.code == 401) throw e else false }
+        val toTell = when (if (digest) "important" else AlertPrefs.scope(context)) {
             "action" -> fresh.filter { it.needsAction }
             "important" -> {
                 val people = try { api.importantAddresses() } catch (e: ApiException) { if (e.code == 401) throw e else emptySet() }
@@ -291,18 +294,34 @@ object Alerts {
     }
 
     /** The server says more messages, notes, tasks or parcels are waiting. It sends only which kinds, never any words. */
-    fun other(context: Context, data: String) {
+    fun other(context: Context, data: String, api: EnveliqApi? = null) {
         try {
             val kinds = org.json.JSONObject(data).optJSONArray("kinds") ?: return
             val names = AlertPrefs.otherKinds.toMap()
             for (i in 0 until kinds.length()) {
                 val kind = kinds.optString(i)
                 if (!AlertPrefs.kindOn(context, kind)) continue
+                if (kind == "summary") {
+                    val text = (if (api != null) summaryText(api) else null) ?: continue
+                    Notifier.other(context, kind, text, AlertPrefs.inQuietHours(context))
+                    continue
+                }
                 val text = names[kind]?.second ?: continue
                 Notifier.other(context, kind, text, AlertPrefs.inQuietHours(context))
             }
         } catch (_: Exception) {
         }
+    }
+
+    /** One plain line made from the daily summary's numbers, for example "2 tasks due · 1 parcel out for delivery". No names, no subjects. Null when there is nothing to say. */
+    private fun summaryText(api: EnveliqApi): String? {
+        val s = try { api.dailySummary() } catch (_: Exception) { return null }
+        fun n(key: String, one: String, many: String): String? = s.optInt(key, 0).let { if (it <= 0) null else "$it ${if (it == 1) one else many}" }
+        val parts = listOfNotNull(
+            n("tasks", "task due", "tasks due"), n("unread", "unread email", "unread emails"), n("waiting", "reply still waited for", "replies still waited for"),
+            n("parcels", "parcel out for delivery", "parcels out for delivery"), n("coming", "subscription coming up", "subscriptions coming up"),
+        )
+        return if (parts.isEmpty()) null else parts.joinToString(" · ")
     }
 
     /** The server says these emails are no longer waiting (reviewed or moved somewhere else): take their alerts down at once. */

@@ -62,6 +62,9 @@ class MailAlerts:
                 return 0
             muted = set(st.get("mail_muted_accounts", []))
             new = [m for m in new if m.get("account_id") not in muted]
+            if st.get("digest_mail") and st.get("morning_on", True):
+                # New email waits for the daily summary. Only people the person chose to see first still come through at once.
+                new = [m for m in new if self.important is not None and self.important.contains(user_id, m.get("sender_address"))]
             mode = st.get("mail_filter", "all")
             if mode == "important":
                 new = [m for m in new if self.important is not None and self.important.contains(user_id, m.get("sender_address"))]

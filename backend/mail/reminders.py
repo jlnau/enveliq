@@ -44,6 +44,7 @@ class Reminders:
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         self.subs: Any = None                           # set by the application: renewals and free trials (mail/subscriptions.py)
+        self.summary: Any = None                        # set by the application: the daily summary's extra lines (mail/summary.py)
 
     # ---------- the words ----------
     def _list(self, tasks: list[dict[str, Any]], private: bool, today: date) -> str:
@@ -56,6 +57,24 @@ class Reminders:
         if len(tasks) > MAX_LISTED:
             lines.append(f"and {len(tasks) - MAX_LISTED} more")
         return "\n".join(lines)
+
+    def morning_note(self, tasks: list[dict[str, Any]], counts: dict[str, Any], private: bool, today: date) -> dict[str, Any]:
+        """The daily summary: the tasks due today (as before) and, when there is more to say, one short line for each other thing."""
+        extra = self.summary.extra(counts) if self.summary is not None else 0
+        if not extra:
+            return self.note("morning", tasks, private, today)
+        lines = self.summary.lines(counts, private)
+        n_things = len(tasks) + int(counts.get("waiting", 0)) + int(counts.get("parcels", 0)) + int(counts.get("coming", 0))
+        title = self.summary.title_for(len(tasks), counts)
+        if private:
+            body = ("You have " + (f"{n_things} thing{'s' if n_things != 1 else ''} to look at today" if n_things else f"{counts.get('unread', 0)} unread email{'s' if counts.get('unread', 0) != 1 else ''}")
+                    + ". Open Enveliq to see " + ("them." if n_things != 1 else "it."))
+            title = "Enveliq"
+        else:
+            parts = ([self._list(tasks, False, today)] if tasks else []) + lines
+            body = "\n".join(parts)
+        high = any(t.get("priority") == "high" for t in tasks)
+        return {"title": title, "body": body, "priority": "high" if high else "normal", "url": self.click_url or None}
 
     def note(self, kind: str, tasks: list[dict[str, Any]], private: bool, today: date) -> dict[str, Any]:
         n = len(tasks)
@@ -89,13 +108,17 @@ class Reminders:
         """Send whatever is due for this person. Returns how many messages went out."""
         now = self.clock() if now is None else now
         n = self.notifier
-        if not n.has_any(uid):
-            return 0
+        has = n.has_any(uid)                                # a person with no channel can still use the Android app's daily-summary note
         state = n.get_state(uid)
         before = json.dumps(state, sort_keys=True)
         if float(state.get("retry_at") or 0) > now:
             return 0
         st = n.settings(uid)
+        if not has:
+            if not st["morning_on"]:
+                return 0
+            if state.get("morning_date") == datetime.fromtimestamp(now, zone(self.tasks.timezone_of(uid))).date().isoformat():
+                return 0                                  # no channel: only the Android daily-summary note is kept, once a day
         self.tasks.reconcile(uid)
         tz = zone(self.tasks.timezone_of(uid))
         local = datetime.fromtimestamp(now, tz)
@@ -115,11 +138,14 @@ class Reminders:
         plan: list[tuple[dict[str, Any], list[str], str]] = []
         in_summary: set[str] = set()
         morning_now = st["morning_on"] and local >= start and state.get("morning_date") != today.isoformat() and local - start < MORNING_WINDOW
+        folded_subs = False
         if morning_now:
             listed = [t for t in due_today if not t.get("remind_at") or t["remind_at"] <= now]
-            if listed:
-                plan.append((self.note("morning", listed, private, today), [key(t) for t in listed], "morning"))
+            counts = self.summary.counts(uid, with_unread=bool(st.get("digest_mail")), now=now) if self.summary is not None else {}
+            if listed or (self.summary is not None and self.summary.extra(counts)):
+                plan.append((self.morning_note(listed, counts, private, today), [key(t) for t in listed], "morning"))
                 in_summary = {key(t) for t in listed}
+                folded_subs = bool(counts.get("coming"))        # the summary already says what is coming up, so no second note about it
             else:
                 state["morning_date"] = today.isoformat()
         if st["due_on"]:
@@ -147,20 +173,26 @@ class Reminders:
             for k in [k for k in subs_state if k not in live_subs]:
                 del subs_state[k]
             fresh_subs = [d for d in coming if d["key"] not in subs_state]
-            if fresh_subs:
+            if fresh_subs and folded_subs:
+                for d in fresh_subs:
+                    subs_state[d["key"]] = {"count": 1, "last": now}
+            elif fresh_subs:
                 plan.append((self.sub_note(fresh_subs, private), [d["key"] for d in fresh_subs], "subs"))
         sent = 0
         failed = False
+        if not has:
+            plan = [p for p in plan if p[2] == "morning"]
         for note, keys, kind in plan:
-            results = n.send_all(uid, note)
+            results = n.send_all(uid, note) if has else {"app": None}
             if any(v is None for v in results.values()):
-                sent += 1
+                sent += 1 if has else 0
                 for k in keys:
                     e = (subs_state if kind == "subs" else sent_state).setdefault(k, {"count": 0, "last": 0})
                     e["count"] += 1
                     e["last"] = now
                 if kind == "morning":
                     state["morning_date"] = today.isoformat()
+                    state["summary_seq"] = int(state.get("summary_seq") or 0) + 1       # the Android app watches this number (notify_routes.other_counts)
             else:
                 failed = True
         if failed and not sent:

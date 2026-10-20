@@ -697,3 +697,23 @@ def test_other_kinds_only_count_and_only_growth_is_news():
     broken = NS(messages=NS(enabled=lambda u: 1 / 0), inbound=NS(unread=lambda u: 4),
                 tasks=None, shipping=None)
     assert other_counts(broken, "u1") == {"bell": 4}
+
+
+# ---------- the daily summary ----------
+
+def test_the_summary_instead_of_alerts_switch_is_saved_and_checked(env):
+    _, client, _, _ = env
+    assert client.get("/api/v1/me/notifications").json()["settings"]["digest_mail"] is False        # off until the person turns it on
+    r = client.put("/api/v1/me/notifications/settings", json={"digest_mail": True})
+    assert r.status_code == 200 and r.json()["settings"]["digest_mail"] is True
+    assert client.put("/api/v1/me/notifications/settings", json={"digest_mail": "maybe"}).status_code == 422
+
+
+def test_the_summary_numbers_for_the_phone_are_only_counts_and_need_sign_in(env):
+    appm, client, _, _ = env
+    r = client.get("/api/v1/me/summary")
+    assert r.status_code == 200
+    assert set(r.json()) == {"tasks", "waiting", "parcels", "coming", "unread", "digest"} and r.json()["digest"] is False
+    assert all(isinstance(v, int) for k, v in r.json().items() if k != "digest")
+    from fastapi.testclient import TestClient
+    assert TestClient(appm.app).get("/api/v1/me/summary").status_code in (401, 403)
