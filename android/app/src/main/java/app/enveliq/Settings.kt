@@ -272,6 +272,7 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
 
     when (page) {
         "alerts" -> Page("Notifications", back("home")) {
+            Group { DigestSetting(api) }
             Group {
                 ToggleRow("New email alerts", "A quiet note once the AI has finished reading an email. The lock screen only says \"New email\".", mailAlerts) { on ->
                     if (!on) {

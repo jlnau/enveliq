@@ -135,3 +135,11 @@ data class QuickFixed(val subject: String, val text: String, val changed: Boolea
 
 /** The personal writing-style guide (Settings, Writing style). */
 data class StyleInfo(val available: Boolean, val aiReady: Boolean, val on: Boolean, val guide: String, val mode: String, val generatedAt: Double, val samples: Int, val error: String, val max: Int, val busy: Boolean)
+
+/** One daily summary in the inbox list (the website's special item). */
+data class DigestRow(val id: String, val day: String, val createdAt: Double, val read: Boolean, val count: Int, val urgent: Int)
+
+/** One email line in a daily summary. The summary text was written by the AI. */
+data class DigestItem(val accountId: String, val messageId: String, val sender: String, val subject: String, val summary: String, val category: String, val reason: String, val urgent: Boolean)
+
+data class Digest(val id: String, val day: String, val createdAt: Double, val items: List<DigestItem>)

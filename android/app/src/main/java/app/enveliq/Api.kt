@@ -612,6 +612,36 @@ class EnveliqApi(address: String) {
 
     fun rebuildWritingStyle(): StyleInfo = styleInfo(call("POST", "/api/v1/me/writing-style/rebuild", JSONObject()))
 
+    // ---- The daily summary item in the inbox (the website's routes) ----
+    fun digests(): List<DigestRow> {
+        val arr = JSONObject(call("GET", "/api/v1/me/digests")).optJSONArray("items") ?: return emptyList()
+        return (0 until arr.length()).mapNotNull { i ->
+            val d = arr.optJSONObject(i) ?: return@mapNotNull null
+            DigestRow(d.str("id"), d.str("day"), d.optDouble("created_at", 0.0), d.optBoolean("read"), d.optInt("count"), d.optInt("urgent"))
+        }
+    }
+
+    fun digest(id: String): Digest {
+        val r = JSONObject(call("GET", "/api/v1/me/digests/" + enc(id)))
+        val arr = r.optJSONArray("items")
+        val items = (0 until (arr?.length() ?: 0)).mapNotNull { i ->
+            val x = arr?.optJSONObject(i) ?: return@mapNotNull null
+            DigestItem(x.str("account_id"), x.str("message_id"), x.str("sender"), x.str("subject"), x.str("summary"), x.str("category").ifBlank { "Other" }, x.str("reason"), x.optBoolean("urgent"))
+        }
+        return Digest(r.str("id"), r.str("day"), r.optDouble("created_at", 0.0), items)
+    }
+
+    fun readDigest(id: String) { call("POST", "/api/v1/me/digests/" + enc(id) + "/read", JSONObject()) }
+
+    fun deleteDigest(id: String) { call("DELETE", "/api/v1/me/digests/" + enc(id)) }
+
+    /** Makes today's summary now (replacing today's). True when there was something to put in it. */
+    fun makeDigestNow(): Boolean = JSONObject(call("POST", "/api/v1/me/digests/now", JSONObject())).optBoolean("made")
+
+    fun digestInboxOn(): Boolean = JSONObject(call("GET", "/api/v1/me/notifications")).optJSONObject("settings")?.optBoolean("digest_inbox", false) ?: false
+
+    fun setDigestInbox(on: Boolean) { call("PUT", "/api/v1/me/notifications/settings", JSONObject().put("digest_inbox", on)) }
+
     /** True when "Include read mail" is switched on for this person on the server (administrators can switch it off). */
     fun includeReadAvailable(): Boolean = try {
         JSONObject(call("GET", "/api/v1/me/features")).optJSONObject("effective")?.optBoolean("all_mail", false) ?: false

@@ -41,6 +41,10 @@ When the mailbox uses AI summaries, the alert is sent once the new email is read
 * It speaks about mail Enveliq fetches by itself (Administration, Automatic sync). Mail you fetch by pressing **Sync mail** is not announced, because you are already looking at it, and neither is the first read of a mailbox you have just connected.
 * Tapping the message opens Enveliq at that email when there is one, or at your inbox when there are several.
 
+## The daily summary in your inbox
+
+With **Put a daily summary in my inbox** on, new email that the AI judged to need you today still alerts at once, and everything else is gathered into one summary item shown at the top of your inbox at the daily summary time (website and Android app). The summary makes no alert of its own. See [AI summaries](AI_SUMMARIES.md#needs-you-today-and-the-daily-summary-in-your-inbox). This switch is separate from **Send new email in this summary instead**, which counts new email in the morning message; either one holds back the one-by-one alerts for mail that is not important and not urgent.
+
 ## The bell, and messages from Home Assistant and other services
 
 At the top right of the inbox, beside the news-feed icon (on a phone the bell stays in the top bar and the news feeds are in the menu), a **bell** collects two things in one drop-down (a full-screen window on a phone):

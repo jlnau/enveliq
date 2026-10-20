@@ -65,6 +65,10 @@ On a computer the three small buttons on a row show when you point at the email.
 
 Tick one email's box, then hold **Shift** and tick another one a few emails up or down, and every email between them is ticked too. Shift and untick clears the range the same way. Ticking without Shift works one email at a time. The **Select all** box next to "Recent emails" ticks every email in the list you are looking at (a dash means only some are ticked; pressing it again unticks them all), and works with Shift, single ticks and the bar below. On a phone it sits on the same line as the heading. Once two or more are ticked, a bar appears with **Reviewed**, **Archive** and **Bin** for all of them at once (one Undo covers them all). **Clear selection** starts again. Your ticks stay while Enveliq works in the background: when an AI summary finishes or the list refreshes, the emails you ticked are still ticked (only an email that has left the list loses its tick).
 
+## The daily summary item
+
+When **Put a daily summary in my inbox** is on (Settings, Alerts), one special item sits at the top of My inbox each day: a **Summary** tag, a dashed border and a dot until you open it. It is not an email from a mailbox. Opening it shows what needs you today first, then the rest by kind, with an **Open this email** link under each. **Delete this summary** removes only the summary. On a phone it opens full screen with Close and Delete fixed at the bottom. See [AI summaries](AI_SUMMARIES.md#needs-you-today-and-the-daily-summary-in-your-inbox).
+
 ## A new install starts empty
 
 On a real Enveliq server, a person with no mailbox connected sees an empty inbox. There are no sample emails or sample accounts. A short banner says the inbox is empty because no mailbox is connected yet, and the list links to the setup guide. The sample emails still appear in the hosted demo and in the no-server preview, where they are made up on purpose.

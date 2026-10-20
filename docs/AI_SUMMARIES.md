@@ -93,6 +93,20 @@ says **Summary written by AI** and **The file itself is not stored**.
 - **Old emails.** Emails summarised before this existed have no file summaries
   until they are summarised again or you press **Try again**.
 
+## Needs you today, and the daily summary in your inbox
+
+Besides the short summary, the AI also judges, for each email, whether **you should deal with it today** (or by the next working day). It looks at what the email says (a deadline, an urgent request, a question waiting for an answer, a payment, a booking, a security matter), not at who sent it, and gives a one-line reason ("Payment is due tomorrow"). Newsletters, receipts and promotions are never marked. It only suggests: it is stored as `act_today` and `today_reason` with the summary, and plain code does the rest. The AI still gets no tools and treats the email as data.
+
+Turn on **Put a daily summary in my inbox** (Settings, **Alerts**, the same page as the daily summary time; in the Android app Settings, **Notifications**). Then:
+
+- Email the AI marked **needs you today** still alerts you **at once**, even from someone who is not an important person. Important people still come through at once too.
+- The rest does not alert one by one. At your daily summary time Enveliq adds **one summary item** at the top of your Enveliq inbox (a Summary tag and a dashed border, so it cannot be mistaken for email; it is not from, or stored in, any mailbox). It opens and reads like an email: what needs you today first, then the rest grouped by kind, each with the AI's short summary and an **Open this email** link that opens the original in Enveliq. It is labelled as written by AI. Making it sends **no** push, sound or alert.
+- **Nothing is lost, hidden or marked as reviewed.** Every email stays in the inbox as before; the summary is an extra item you can delete (only the summary goes). It holds the emails that came in since the last summary and are still unread, so a day with nothing new has no summary. There is one a day, and the next day only covers newer mail. Summaries are kept for 7 days.
+- **A second look.** Mail that could wait when it arrived is looked at again every minute: when an open task for it falls due today, it alerts at once (once only), so a deadline never waits for the next summary.
+- **Make today's summary now** (same page) makes or remakes today's summary straight away, so you can see it without waiting for the morning (6 an hour).
+
+Code: `backend/mail/digest.py` (the summary and the second look), `digest_routes.py` (`/api/v1/me/digests`), `llm.py` (the two new answer fields), `mail_alerts.py` and `notify_routes.py` (urgent mail still alerts). Browser check: `scripts/check_daily_summary.mjs`.
+
 ## 1. Choose the model server
 
 Enveliq needs an address that accepts OpenAI-style chat requests

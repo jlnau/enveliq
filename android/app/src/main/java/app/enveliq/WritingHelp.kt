@@ -130,7 +130,7 @@ internal fun WritingSettingsPage(api: EnveliqApi, onBack: () -> Unit) {
 }
 
 @Composable
-private fun SwitchLine(title: String, note: String, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
+internal fun SwitchLine(title: String, note: String, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f).padding(end = 12.dp)) {
             Text(title, color = Ink, fontSize = 16.sp)
