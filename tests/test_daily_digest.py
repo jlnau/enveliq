@@ -206,7 +206,6 @@ def test_the_routes_make_list_open_read_and_delete_the_summary(env):
     assert d["items"] and all({"account_id", "message_id", "summary", "subject"} <= set(i) for i in d["items"])
     assert client.post(f"/api/v1/me/digests/{did}/read").status_code == 200
     assert client.get("/api/v1/me/digests").json()["items"][0]["read"] is True
-    assert client.post("/api/v1/me/digests/now").status_code == 200                  # makes today's from the real mailbox (may be empty)
     create_user(client, "casey")
     other = sign_in(appm, "casey")
     assert other.get(f"/api/v1/me/digests/{did}").status_code == 404
@@ -214,3 +213,4 @@ def test_the_routes_make_list_open_read_and_delete_the_summary(env):
     assert other.get("/api/v1/me/digests").json()["items"] == []
     assert client.delete(f"/api/v1/me/digests/{did}").status_code == 200
     assert client.get(f"/api/v1/me/digests/{did}").status_code == 404
+    assert client.post("/api/v1/me/digests/now").status_code == 200                  # makes today's from the real mailbox (may be empty)

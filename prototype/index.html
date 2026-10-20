@@ -433,6 +433,22 @@ body.in-found [data-status="archived"],body.in-found [data-status="trashed"]{dis
 .wh-notes{margin:0;padding-left:18px;font-size:12px;color:var(--muted);line-height:1.5}
 .wh-gap{font-size:12px;color:var(--c-ecd7a7)}
 #whCheck button,#sendWarn button,.wh .btn,.wh .primary{min-height:44px}.quick-ai{border-color:var(--c-1f5fc4);color:var(--c-d4ecff)}.quick-ai.busy{opacity:.7}
+/* The daily summary: a special item at the top of the inbox, not an email from a provider */
+.dg-strip{display:grid;gap:8px;margin:0 0 12px}
+.dg-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 14px;min-height:56px;border:1px dashed var(--c-1f5fc4);border-left:4px solid var(--c-1f5fc4);border-radius:12px;background:var(--c-0b1016);color:inherit;font:inherit;cursor:pointer}
+.dg-row .dg-tag{font-size:12px;font-weight:700;color:var(--c-d4ecff);background:var(--c-1f5fc4);border-radius:999px;padding:2px 9px;white-space:nowrap}
+.dg-row .dg-main{flex:1;min-width:0}.dg-row .dg-title{display:block;font-weight:600}.dg-row.read .dg-title{font-weight:400}
+.dg-row .dg-sub{display:block;font-size:13px;opacity:.75}
+.dg-row .dg-dot{width:9px;height:9px;border-radius:50%;background:var(--c-1f5fc4);flex:none}.dg-row.read .dg-dot{visibility:hidden}
+#digestView{z-index:61}@media(min-width:761px){#digestView{width:min(720px,94vw)}}
+@media(max-width:760px){#digestView.open{display:flex;flex-direction:column;overflow:hidden}#digestView .compose-body{flex:1 1 auto;min-height:0;overflow-y:auto}#digestView .compose-head,#digestView .compose-foot{flex:none}#digestView .compose-foot{padding-bottom:calc(12px + env(safe-area-inset-bottom))}}
+#digestView button,#digestView a.dg-open{min-height:44px}
+.dg-note{font-size:13px;opacity:.8;margin:0 0 10px}
+.dg-sec{margin:14px 0 6px;font-size:13px;font-weight:700;letter-spacing:.02em}
+.dg-item{border:1px solid var(--c-293241);border-radius:10px;padding:10px 12px;margin:0 0 8px}
+.dg-from{font-size:13px;opacity:.8}.dg-subj{font-weight:600;margin:2px 0}.dg-item p{margin:4px 0 8px;line-height:1.5}
+.dg-why{font-size:13px;color:var(--c-d4ecff)}
+a.dg-open{display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--c-343b4b);border-radius:10px;color:inherit;text-decoration:none}
 #whCheck,#sendWarn{width:min(520px,94vw);z-index:61}
 #sendWarn .compose-body p{margin:0;line-height:1.5}
 .wh-scrim{z-index:60}
@@ -1676,6 +1692,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
     </span>
     <span class="fdate" id="fDate"></span>
   </div>
+  <div id="digestStrip" class="dg-strip" hidden></div>
   <div id="list"></div>
   <section id="tasksPage" aria-label="Tasks"></section>
   <section id="shipPage" aria-label="Shipping"></section>
@@ -2122,6 +2139,11 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
     <p class="wh-gap" id="whCheckGap" hidden>There is still a gap in [square brackets]. Check it before you send.</p>
   </div>
   <div class="compose-foot"><span></span><div class="modal-actions"><button class="btn" id="whCheckNo" type="button">Go back</button><button class="primary" id="whCheckYes" type="button">Yes, send it</button></div></div>
+</div>
+<div class="compose" id="digestView" role="dialog" aria-modal="true" aria-labelledby="dgTitle">
+  <div class="compose-head"><div><h3 id="dgTitle" tabindex="-1">Your daily summary</h3><p id="dgSub"></p></div></div>
+  <div class="compose-body" id="dgBody"></div>
+  <div class="compose-foot"><button class="btn" id="dgDelete" type="button">Delete this summary</button><div class="modal-actions"><button class="primary" id="dgClose" type="button">Close</button></div></div>
 </div>
 <div class="compose" id="sendWarn" role="dialog" aria-modal="true" aria-labelledby="sendWarnTitle">
   <div class="compose-head"><div><h3 id="sendWarnTitle">Before you send</h3><p>A quick check. Nothing has been sent.</p></div></div>
@@ -4241,7 +4263,7 @@ function render(){
   $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(calmOn()?(inbox.length?"One thing at a time. Important deadlines stay visible.":"Nothing waiting. Enjoy the quiet."):inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:(document.body.classList.contains("backend")&&!realMail?"No mailbox is connected yet":"All caught up"));
   if(filter==="cleanup")$("inboxSubtitle").textContent="Quiet the mailing lists you do not need";if(filter==="junk")$("inboxSubtitle").textContent=junkData.needs_review?`${junkData.needs_review} ${junkData.needs_review===1?"email needs":"emails need"} a look`:"Checked by the AI";if(filter==="found")$("inboxSubtitle").textContent="Emails you found by searching. Each is kept for 60 days, or until you press Reviewed.";if(filter==="sent")$("inboxSubtitle").textContent="Your last 14 days of sent mail";if(filter==="drafts")$("inboxSubtitle").textContent="Emails you started and have not sent";
 
-  previewRenderOverview(inbox,needN);
+  previewRenderOverview(inbox,needN);dgPaint();
   const rows=data.filter(visible);
   const rank={high:0,normal:1,low:2};
   const eff=m=>wokeBack(m)?m.snoozeUntil/1000:(m.received||0);          // an email that woke up from a snooze sits at the top
@@ -6270,6 +6292,7 @@ async function loadRealMail(me){
   try{feat=(await secureBackendRequest("/api/v1/me/features",{method:"GET",headers:{}})).effective}catch{}
   await enFetchOpened();
   await whLoad();
+  await dgLoad();
   const wantAll=!!(feat.all_mail&&allMail);
   if(wantAll&&Date.now()-recentAt>300000){
     recentAt=Date.now();
@@ -6663,6 +6686,59 @@ async function whLoad(){
   if(!feat.write_help)return;
   try{whInfo=await secureBackendRequest("/api/v1/me/write-help",{method:"GET",headers:{}})}catch{}
 }
+// ---- The daily summary item (see docs/AI_SUMMARIES.md): one special item at the top of the inbox, once a day ----
+var digestList=[],digestOpenId="";
+async function dgLoad(){
+  digestList=[];
+  try{const r=await secureBackendRequest("/api/v1/me/digests",{method:"GET",headers:{}});digestList=Array.isArray(r.items)?r.items:[]}catch{}
+}
+function dgWhen(d){try{return new Date(d.created_at*1000).toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"})}catch{return d.day||""}}
+function dgPaint(){
+  const host=$("digestStrip");if(!host)return;
+  const show=realMail&&filter==="all"&&!String(query||"").trim()&&digestList.length>0;
+  if(!show){host.hidden=true;host.replaceChildren();host.dataset.sig="";return}
+  const sig=JSON.stringify(digestList);host.hidden=false;if(host.dataset.sig===sig)return;host.dataset.sig=sig;
+  host.replaceChildren(...digestList.map(d=>{
+    const b=whEl("button","dg-row"+(d.read?" read":""));b.type="button";b.dataset.dg=d.id;
+    const main=whEl("span","dg-main");
+    main.append(whEl("span","dg-title","Daily summary: "+dgWhen(d)),whEl("span","dg-sub",`${d.count} email${d.count===1?"":"s"}`+(d.urgent?`, ${d.urgent} that need${d.urgent===1?"s":""} you today`:"")));
+    b.append(whEl("span","dg-tag","Summary"),main,whEl("span","dg-dot"));b.setAttribute("aria-label",`Daily summary for ${dgWhen(d)}, ${d.read?"read":"not read yet"}`);
+    b.onclick=()=>dgOpen(d.id);return b}));
+}
+async function dgOpen(id){
+  let d;try{d=await secureBackendRequest("/api/v1/me/digests/"+encodeURIComponent(id),{method:"GET",headers:{}})}catch(er){toast(er.message||"That summary is not there any more.");await dgLoad();dgPaint();return}
+  digestOpenId=id;
+  $("dgSub").textContent=dgWhen(d);
+  const body=$("dgBody"),parts=[whEl("p","dg-note","Written by AI from your email summaries. Nothing was hidden or marked as reviewed: every email is still in your inbox.")];
+  const section=(title,list)=>{
+    if(!list.length)return;
+    parts.push(whEl("div","dg-sec",title));
+    for(const i of list){
+      const box=whEl("div","dg-item");
+      box.append(whEl("div","dg-from",i.sender||"Unknown sender"),whEl("div","dg-subj",i.subject||"(no subject)"));
+      if(i.reason){box.append(whEl("div","dg-why","Why today: "+i.reason))}
+      box.append(whEl("p",null,i.summary||""));
+      const a=whEl("a","dg-open","Open this email");a.href="/?open="+encodeURIComponent(i.account_id+":"+i.message_id).replace(/%3A/gi,":");
+      a.onclick=ev=>{ev.preventDefault();dgClose();if(!openFromLink(a.href,false,false)){/* a plain message was already shown */}};
+      box.append(a);parts.push(box);
+    }
+  };
+  const items=Array.isArray(d.items)?d.items:[];
+  section("Needs you today",items.filter(i=>i.urgent));
+  const by={};for(const i of items.filter(x=>!x.urgent))(by[i.category||"Other"]=by[i.category||"Other"]||[]).push(i);
+  for(const k of Object.keys(by).sort())section(k,by[k]);
+  body.replaceChildren(...parts);
+  $("digestView").classList.add("open");$("dgTitle").focus();
+  if(!d.read){try{await secureBackendRequest("/api/v1/me/digests/"+encodeURIComponent(id)+"/read",{method:"POST",body:"{}"})}catch{}await dgLoad();dgPaint()}
+}
+function dgClose(){$("digestView").classList.remove("open");digestOpenId=""}
+$("dgClose").onclick=dgClose;
+$("dgDelete").onclick=async()=>{
+  const id=digestOpenId;if(!id)return;
+  try{await secureBackendRequest("/api/v1/me/digests/"+encodeURIComponent(id),{method:"DELETE"});toast("Summary deleted. Your email is untouched.")}catch(er){toast(er.message||"That did not work.")}
+  dgClose();await dgLoad();dgPaint();
+};
+document.addEventListener("keydown",ev=>{if(ev.key==="Escape"&&$("digestView").classList.contains("open"))dgClose()});
 // Quick AI Send: the AI proofreads (spelling, grammar, punctuation) and the email goes at once. The page's own draft is never changed:
 // the corrected text is only passed to the normal send, so if anything fails the draft is exactly as it was.
 const quickOn=()=>!!(realMail&&feat.write_help&&whInfo.available&&whInfo.quick);
