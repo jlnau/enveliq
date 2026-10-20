@@ -101,16 +101,16 @@ def test_with_the_summary_off_nothing_changes():
 
 
 # ---- the summary ----
-def test_one_summary_a_day_at_the_chosen_time_with_urgent_first_and_no_alert():
+def test_one_summary_a_day_at_the_chosen_time_without_urgent_mail_and_no_alert():
     messages = [msg(1, when=at(21, 6), category="Shopping"), msg(2, when=at(21, 5), act=True, reason="Payment is due tomorrow"), msg(3, when=at(20, 20), state="reviewed")]
     book, vault, notifier = make(messages, clock=lambda: at(21, 7, 30))
     assert book.maintain("u1") is False                              # before the morning time
     book.clock = lambda: at(21, 8, 5)
     assert book.maintain("u1") is True and notifier.sent == []       # making it sends nothing
     rows = book.listing("u1")
-    assert len(rows) == 1 and rows[0]["count"] == 2 and rows[0]["urgent"] == 1 and rows[0]["read"] is False
+    assert len(rows) == 1 and rows[0]["count"] == 1 and rows[0]["urgent"] == 0 and rows[0]["read"] is False
     d = book.get("u1", rows[0]["id"])
-    assert [i["message_id"] for i in d["items"]] == ["m2", "m1"] and d["items"][0]["reason"] == "Payment is due tomorrow" and d["items"][0]["urgent"]
+    assert [i["message_id"] for i in d["items"]] == ["m1"]          # m2 was urgent: it alerted at once and is not repeated here
     assert book.maintain("u1") is False                              # not twice in one day
     assert len(book.listing("u1")) == 1
 
@@ -120,6 +120,14 @@ def test_the_summary_hides_nothing_and_marks_nothing_reviewed():
     book, vault, _ = make(messages, clock=lambda: at(21, 9))
     book.maintain("u1")
     assert [m["state"] for m in vault.messages["a1"]] == ["unread", "unread"]
+
+
+def test_mail_announced_by_the_second_look_is_not_repeated_in_the_summary():
+    book, vault, notifier = make([msg(1, when=at(20, 15)), msg(2, when=at(20, 16))], tasks=Tasks(due=[("a1", "m1", "2026-10-21")]), clock=lambda: at(21, 9))
+    assert book.reassess("u1") == 1
+    book.maintain("u1")
+    d = book.get("u1", book.listing("u1")[0]["id"])
+    assert [i["message_id"] for i in d["items"]] == ["m2"]
 
 
 def test_nothing_new_means_no_summary_and_off_means_none():

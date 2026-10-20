@@ -67,7 +67,7 @@ Tick one email's box, then hold **Shift** and tick another one a few emails up o
 
 ## The daily summary item
 
-When **Put a daily summary in my inbox** is on (Settings, Alerts), one special item sits at the top of My inbox each day: a **Summary** tag, a dashed border and a dot until you open it. It is not an email from a mailbox. Opening it shows what needs you today first, then the rest by kind, with an **Open this email** link under each. **Delete this summary** removes only the summary. On a phone it opens full screen with Close and Delete fixed at the bottom. See [AI summaries](AI_SUMMARIES.md#needs-you-today-and-the-daily-summary-in-your-inbox).
+When **Put a daily summary in my inbox** is on (Settings, Alerts), one special item sits at the top of My inbox each day: a **Summary** tag, a dashed border and a dot until you open it. It is not an email from a mailbox. Opening it shows the mail that did not alert at once (urgent mail is never repeated here), by kind, with an **Open this email** link under each. **Delete this summary** removes only the summary. On a phone it opens full screen with Close and Delete fixed at the bottom. See [AI summaries](AI_SUMMARIES.md#needs-you-today-and-the-daily-summary-in-your-inbox).
 
 ## A new install starts empty
 

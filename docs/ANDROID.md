@@ -176,7 +176,7 @@ Anything added that has a screen opens forms full screen with Close at the top a
 
 - **Writing help.** Under the message in a reply, forward or new email: **Write a reply for me** / **Help me write** / **Check my reply** with a "Suggested by AI" box (Accept, Put my version back, Copy, Try again, Close) and a check before sending AI wording. **Quick AI Send** (when switched on) sits above Send: it fixes spelling, grammar and punctuation, then sends at once; your text is not changed, so a failure leaves your draft as it was. Settings, **Writing help** has the switches, the AI instructions and **Your writing style** (see `docs/WRITING_HELP.md`).
 
-- **The daily summary.** With **Put a daily summary in my inbox** on (Settings, Notifications) a **Summary** card sits at the top of the inbox list. It opens full screen like an email, with what needs you today first, then the rest by kind, and **Open this email** under each line. **Delete this summary** removes only the summary. Making it sends no alert; mail the AI judged to need you today still alerts at once.
+- **The daily summary.** With **Put a daily summary in my inbox** on (Settings, Notifications) a **Summary** card sits at the top of the inbox list. It opens full screen like an email, with the mail that did not alert at once (urgent mail is never repeated), by kind, and **Open this email** under each line. **Delete this summary** removes only the summary. Making it sends no alert; mail the AI judged to need you today still alerts at once.
 
 ## How it is built
 

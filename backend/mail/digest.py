@@ -8,8 +8,8 @@ How it works, in plain words:
 * With **Put a daily summary in my inbox** on (Settings, Alerts), email that needs the reader today still alerts at once, even from someone
   who is not an important person. The rest does not alert one by one: it is gathered into the daily summary.
 * At the person's morning time, one summary item is added to the Enveliq inbox. It is not a provider email and it is not stored in any
-  mailbox. It looks different, opens and reads like an email, groups the summaries (what needs you today first, then by kind), and each line
-  has a link that opens the original email in Enveliq. Making it sends no push, no sound and no alert.
+  mailbox. It holds only the mail that was NOT alerted at once (never a repeat), looks different, opens and reads like an email, groups the
+  summaries by kind, and each line has a link that opens the original email in Enveliq. Making it sends no push, no sound and no alert.
 * Nothing is hidden or marked reviewed by it. Every email stays in the inbox exactly as before; the summary is an extra item that can be
   deleted. A reassessment pass looks again at mail that was not urgent when it came: when an open task for it falls due today, it is sent
   as an alert at once, so a deadline is never waiting for the next summary.
@@ -148,15 +148,17 @@ class DigestBook:
         elif any(d.get("day") == day for d in digests):
             return None
         since = max(float(raw.get("last_at") or 0), now - LONGEST_LOOK_BACK) if raw.get("last_at") and not replace_today else now - FIRST_LOOK_BACK
-        urgent, rest = [], []
+        # Mail that was meant to alert at once (the AI judged it needs the reader today, or the second look announced it) is NOT repeated
+        # here, so nobody has to wonder whether something in the summary was already dealt with.
+        alerted = raw.get("alerted") if isinstance(raw.get("alerted"), dict) else {}
+        rest = []
         for account, m in self._mail(user_id):
             when = float(m.get("received_at") or 0)
-            if when < since:
+            if when < since or m.get("act_today") is True or (account["id"] + ":" + m["id"]) in alerted:
                 continue
-            (urgent if m.get("act_today") is True else rest).append((when, account, m))
-        urgent.sort(key=lambda t: t[0], reverse=True)
+            rest.append((when, account, m))
         rest.sort(key=lambda t: t[0], reverse=True)
-        items = [self._item(a, m, True) for _w, a, m in urgent] + [self._item(a, m, False) for _w, a, m in rest]
+        items = [self._item(a, m, False) for _w, a, m in rest]
         items = items[:MAX_ITEMS]
         raw["last_at"] = now
         raw["last_day"] = day
