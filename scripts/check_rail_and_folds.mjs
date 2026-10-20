@@ -71,7 +71,14 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   if (shots) await p.screenshot({ path: path.join(shots, "customise-open.png") });
   await ctx.close();
 }
-{ // ticked-email buttons stay in view when Inbox options is closed
+{ // Calm mode works the same: the icon buttons are in the Recent emails panel and the filter bar stays hidden
+  const [ctx, p] = await open(true, false);
+  await p.evaluate(() => document.getElementById("selectAll").click()); await p.waitForTimeout(400);
+  check("calm mode, emails ticked: the icon buttons show in the Recent emails panel", await vis(p, "#previewBulk") && (await p.locator("#previewBulk [data-bulk]").count()) === 3);
+  check("calm mode, emails ticked: the filter bar stays hidden", !(await vis(p, "#bulk")));
+  await ctx.close();
+}
+{ // ticked-email buttons stay in view when Options is closed
   const [ctx, p] = await open(false, false);
   await p.evaluate(() => { const base = data.filter((m) => m.status === "inbox" && !m.kept); let id = 9000; while (data.filter((m) => m.status === "inbox" && !m.kept && !m._pending).length < 4) data.push({ ...base[0], id: ++id, subject: "Another made-up email " + id, sender: "Example Sender " + id }); render(); });
   await p.locator("[data-select]").nth(0).check(); await p.waitForTimeout(150);

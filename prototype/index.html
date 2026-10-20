@@ -1115,12 +1115,10 @@ body:not(.preview-show-filters) #previewListHeading:not([hidden])+.filters{displ
 .side-foot .calm-row{flex-wrap:wrap;white-space:normal}
 .side-foot .calm-row:after{content:"A quieter inbox, one thing at a time. Counts are hidden.";flex:0 0 100%;font-size:11px;line-height:1.5;color:#b3c5e3;padding-top:3px}
 html[data-theme="light"] .side-foot .calm-row:after{color:#556e91}
-body.calm:has(#bulk.show) .preview-list-heading+.filters{display:flex!important}
 /* The ticked-emails buttons live in the heading too, so they stay in view while Options is closed. */
 .preview-bulk{display:none;flex-direction:column;align-items:center;gap:3px;font-size:13px;flex:1;min-width:0;justify-content:center}.preview-bulk .pb-sub{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}.preview-bulk .qic{width:34px;height:28px}
 .preview-bulk.show{display:flex}
-body.preview-show-filters .preview-bulk,body.calm:has(#bulk.show):not(.selecting) .preview-bulk{display:none!important}
-@media(max-width:760px){body.calm:has(#bulk.show):not(.selecting) .preview-bulk.show{display:flex!important}body.calm:has(#bulk.show) .preview-list-heading+.filters{display:none!important}}
+body.preview-show-filters .preview-bulk{display:none!important}
 .preview-bulk .pb-actions{display:flex;gap:8px}
 .preview-list-heading .preview-bulk .action{border-radius:9px;font-weight:650}.preview-list-heading .preview-bulk .reviewed{color:var(--c-72df9f)}.preview-list-heading .preview-bulk .archive{color:var(--c-65c4ff)}.preview-list-heading .preview-bulk .trash{color:var(--c-ff7f87)}
 .preview-list-heading .preview-bulk .linkbtn{color:var(--muted);text-decoration:underline}
