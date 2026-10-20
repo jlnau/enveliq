@@ -656,6 +656,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                         searching = searching, query = query, onQuery = { query = it },
                         swipeRight = prefs.getString("swipe_right", "archive") ?: "archive",
                         swipeLeft = prefs.getString("swipe_left", "bin") ?: "bin",
+                        tagsOf = { m -> tagMap[keyOf(m)] ?: m.tags },
                         fresh = { m -> openedLoaded && view == "inbox" && !m.quiet && openedKeys[keyOf(m)] != true },
                         includeRead = includeRead, includeReadOk = includeReadOk,
                         onIncludeRead = { on -> includeRead = on; prefs.edit().putBoolean("include_read", on).apply(); load() },
@@ -730,7 +731,7 @@ private fun InboxTab(
     view: String, filters: InboxFilters, onView: (String) -> Unit,
     searching: Boolean, query: String, onQuery: (String) -> Unit,
     swipeRight: String, swipeLeft: String,
-    fresh: (Mail) -> Boolean,
+    fresh: (Mail) -> Boolean, tagsOf: (Mail) -> List<String>,
     includeRead: Boolean, includeReadOk: Boolean, onIncludeRead: (Boolean) -> Unit,
     onOpen: (Mail) -> Unit, onSwipe: (Mail, Outcome) -> Unit, onRefresh: () -> Unit,
 ) {
@@ -835,7 +836,7 @@ private fun InboxTab(
             else -> LazyColumn(Modifier.fillMaxSize(), state = listState) {
                 items(shown, key = { it.accountId + ":" + it.id }) { m ->
                     SwipeRow(
-                        mail = m, right = swipeRight, left = swipeLeft, selecting = selecting, picked = selected.contains(keyOf(m)), fresh = fresh(m),
+                        mail = m, right = swipeRight, left = swipeLeft, selecting = selecting, picked = selected.contains(keyOf(m)), fresh = fresh(m), tags = tagsOf(m),
                         onSwipe = { outcome -> onSwipe(m, outcome) },
                         onClick = { if (selecting) toggle(selected, keyOf(m)) else onOpen(m) },
                         onLongClick = { toggle(selected, keyOf(m)) },
@@ -862,7 +863,7 @@ private fun swipeOutcome(name: String): Outcome? = when (name) {
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun SwipeRow(
-    mail: Mail, right: String, left: String, selecting: Boolean, picked: Boolean, fresh: Boolean,
+    mail: Mail, right: String, left: String, selecting: Boolean, picked: Boolean, fresh: Boolean, tags: List<String>,
     onSwipe: (Outcome) -> Unit, onClick: () -> Unit, onLongClick: () -> Unit,
 ) {
     val rightOutcome = swipeOutcome(right)
@@ -947,14 +948,14 @@ private fun SwipeRow(
             }
         },
     ) {
-        MailRow(mail, picked, fresh, onClick, onLongClick)
+        MailRow(mail, picked, fresh, tags, onClick, onLongClick)
     }
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun MailRow(mail: Mail, picked: Boolean, fresh: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
+private fun MailRow(mail: Mail, picked: Boolean, fresh: Boolean, tags: List<String>, onClick: () -> Unit, onLongClick: () -> Unit) {
     // Three looks: an email you have not opened yet glows softly (a thin blue edge and a faint blue wash);
     // read mail that has no summary yet is plain and quiet; everything else is as before.
     val plain = mail.quiet && mail.ungenerated
@@ -994,6 +995,16 @@ private fun MailRow(mail: Mail, picked: Boolean, fresh: Boolean, onClick: () -> 
             Text("No summary yet", color = Muted, fontSize = 13.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, modifier = Modifier.padding(top = 3.dp))
         } else if (mail.summary.isNotBlank()) {
             Text("\u2726 " + mail.summary, color = Muted, fontSize = 14.sp, lineHeight = 20.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 3.dp))
+        }
+        // The tags on this email: small, neat chips on one line. Nothing is shown when there are none.
+        if (tags.isNotEmpty()) Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+            tags.take(3).forEach { t ->
+                Text(
+                    t, color = Blue, fontSize = 11.sp, lineHeight = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 110.dp).clip(RoundedCornerShape(6.dp)).background(Blue.copy(alpha = 0.14f)).padding(horizontal = 6.dp, vertical = 1.dp),
+                )
+            }
+            if (tags.size > 3) Text("+" + (tags.size - 3), color = Muted, fontSize = 11.sp)
         }
     }
     HorizontalDivider(color = Line)
