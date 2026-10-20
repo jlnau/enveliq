@@ -4,6 +4,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+No changes recorded yet.
+
+## v0.99 (2026-10-20)
+
 **Android: sign in with a passkey saved on the phone.** **Sign in with a passkey** now uses Android's own passkey screen, so a passkey kept in Bitwarden or Google Password Manager signs you in without opening the browser. If there is no passkey to use, or the server is not set up for it yet, it opens the browser as before (a passkey or single sign-on). To turn it on for the phone's own screen, set the new `ENVELIQ_ANDROID_CERT_SHA256` setting to the app's signing fingerprint (shown in the Android build summary) and check that `/.well-known/assetlinks.json` is reachable; the steps are in `docs/ANDROID.md`. With the setting empty nothing changes. Touches `backend/auth/passkeys.py`, `backend/app.py`, `android/` (`NativePasskey.kt`, `Api.kt`, `Screens.kt`, `build.gradle.kts`), `docs/ANDROID.md`, `docs/ENVIRONMENT.md`, `SECURITY.md`, `tests/test_android_passkeys.py`.
 
 **Android: the inbox refreshes itself.** While the app is open on the inbox the list now reloads quietly about once a minute, and again as soon as you come back to the app, so something deleted on the website disappears without pulling down. It does not refresh while you have an email open, are writing, or have emails ticked, and does nothing while the app is out of sight. Touches `android/` (`Home.kt`), `docs/ANDROID.md`.
