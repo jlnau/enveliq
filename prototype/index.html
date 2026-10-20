@@ -1097,7 +1097,7 @@ body.calm .filters{opacity:.8}
 .preview-stat.shipping .preview-stat-icon{background:#5037ab}
 html[data-theme="light"] .preview-stat{background:linear-gradient(145deg,#fff,#edf4ff);color:var(--text);border-color:var(--line)}
 html[data-theme="light"] .preview-stat-copy small{color:var(--muted)}html[data-theme="light"] .preview-stat.action{background:#fff0f3}
-.preview-list-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--preview-gradient);border:1px solid var(--preview-border);border-radius:12px;padding:13px 18px;margin:12px 0}
+.preview-list-heading{container-type:inline-size;flex-wrap:wrap;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--preview-gradient);border:1px solid var(--preview-border);border-radius:12px;padding:13px 18px;margin:12px 0}
 .preview-list-heading[hidden]{display:none}.preview-list-heading strong{font-size:18px}.preview-list-heading button{border:0;background:none;color:var(--accent)}
 body:not(.preview-show-filters) #previewListHeading:not([hidden])+.filters{display:none!important}
 @media(max-width:1150px){.preview-overview{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -1120,6 +1120,8 @@ html[data-theme="light"] .side-foot .calm-row:after{color:#556e91}
 .preview-bulk.show{display:flex}
 body.preview-show-filters .preview-bulk{display:none!important}
 .preview-bulk .pb-actions{display:flex;gap:8px}
+/* In a narrow panel (for example with the reading panel open beside the list) the buttons take their own row under the title. */
+@container (max-width:620px){.preview-bulk.show{order:3;flex:0 0 100%;padding-top:8px;border-top:1px solid var(--line)}}
 .preview-list-heading .preview-bulk .action{border-radius:9px;font-weight:650}.preview-list-heading .preview-bulk .reviewed{color:var(--c-72df9f)}.preview-list-heading .preview-bulk .archive{color:var(--c-65c4ff)}.preview-list-heading .preview-bulk .trash{color:var(--c-ff7f87)}
 .preview-list-heading .preview-bulk .linkbtn{color:var(--muted);text-decoration:underline}
 @media(max-width:760px){.preview-focus-card{grid-template-columns:35px minmax(0,1fr);gap:10px;padding:12px}.preview-focus-icon{width:34px;height:34px;font-size:18px}.preview-focus-copy strong{font-size:15px}.preview-later .trow2{width:100%;margin-right:0}}

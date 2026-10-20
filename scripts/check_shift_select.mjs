@@ -89,6 +89,7 @@ await clearSelection();
 await tick(4, true);
 check("Shift + tick with nothing ticked before acts like a plain tick", (await ticked()) === "4");
 check("the bulk bar shows when several are selected", await (async () => { await tick(6, true); return (await page.locator("#bulk.show").count()) === 1; })());
+check("in the narrow Recent emails panel the buttons have room (own row, not squeezed to nothing)", await page.evaluate(() => { const r = document.querySelector("#previewBulk").getBoundingClientRect(); return r.width > 120 && r.height > 30; }));
 
 // ---- Select all ----
 await clearSelection();
