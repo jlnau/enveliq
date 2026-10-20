@@ -85,7 +85,7 @@ If the Undo bar at the bottom is covering an email, swipe it left or right and i
 
 ## Ticked emails: where the buttons show
 
-When you tick two or more emails on a computer, **Reviewed**, **Archive** and **Bin** appear in the "Recent emails" panel, so you can still see them while **Inbox options** is closed. When Inbox options is open they sit in its bar instead, never in both places.
+When you tick two or more emails on a computer, three small icon buttons (Reviewed, Archive and Bin, the same ones that show when you point at an email) appear in the "Recent emails" panel, with how many are ticked and **Clear** under them, so you can still see them while **Options** is closed. When Inbox options is open they sit in its bar instead, never in both places.
 
 ## The side panel, and opening and closing the lists
 
@@ -115,7 +115,7 @@ The **Include read mail** button (before it was called **All emails**) opens a s
 
 **Found emails** lists the emails you found with **Search all my mail** and chose to keep. Each stays for 60 days, or until you press **Reviewed**. See [Find any email](FIND_MAIL.md).
 
-The **Recent emails** section lists your mail. **Inbox options** starts closed on computers and phones. Press it to show the mailbox filter, sorting, **Include read mail**, **Expand all**, and the other available inbox controls; press it again to hide them. On phones, **Recent emails** can also be expanded or collapsed.
+The **Recent emails** section lists your mail. **Options** starts closed on computers and phones. Press it to show the mailbox filter, sorting, **Include read mail**, **Expand all**, and the other available inbox controls; press it again to hide them. On phones, **Recent emails** can also be expanded or collapsed.
 
 The left menu leads to **My inbox**, **Needs action**, **Tasks**, **Shipping**, **Waiting for reply**, and **Attachments**. The **More** section contains other views, including Sent, Reviewed, and Archived where available. Collapsing the desktop menu keeps the icons; the compact Calm mode control remains available.
 
@@ -128,12 +128,12 @@ Web addresses in the text of an email can be clicked, but they never open by the
 ## Getting back to My inbox
 - The Sent page uses the same header as the other pages (Back button, title, then a line saying it shows your last 14 days of sent mail). The page keeps room for its scroll bar, so nothing moves sideways when the emails finish loading.
 - On every page other than My inbox (Needs action, Tasks, Shipping, Waiting for reply, Attachments, Reviewed, Archived, Sent and so on), a **Back to My inbox** button sits above the page title. The title now shows the name of the page you are on instead of "My inbox".
-- Needs action, Attachments, Reviewed and Archived show the same **Recent emails** panel with **Inbox options** as My inbox, so the options fold away in the same way everywhere.
+- Needs action, Attachments, Reviewed and Archived show the same **Recent emails** panel with **Options** as My inbox, so the options fold away in the same way everywhere.
 - On **Waiting for reply**, the **Closed** section is folded away until you open it with its arrow, so the page does not look like a long list of open items.
 - With **Open full screen**, on a computer the email sits beside the left menu and below the top bar, and **Reviewed**, **Archive** and **Bin** are normal buttons centred along the bottom (they used to be stretched across the screen and partly hidden).
 
 ## The top stays in view while you scroll
-- On a computer, the bar with the search box, Sync mail, the help button and your name stays at the top of the page when you scroll down a long list. The "Recent emails" bar with **Inbox options** (and the buttons for ticked emails) stays right under it. Only the emails move.
+- On a computer, the bar with the search box, Sync mail, the help button and your name stays at the top of the page when you scroll down a long list. The "Recent emails" bar with **Options** (and the buttons for ticked emails) stays right under it. Only the emails move.
 - The title, the four count tiles and the picture behind them scroll away as before, so you get more room for the emails.
 - The top bar is never a solid block. It stays see-through the whole time, so the picture behind it always shows. Emails, tiles and titles that scroll up to it fade out softly just below its lower edge (no hard cut-off line), so no text is ever seen through it. The Recent emails bar itself is never faded.
 - Phones are unchanged. They already have their own bar at the top of the screen.
