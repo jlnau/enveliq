@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.material3.IconButton
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -304,7 +305,14 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { requestClose() }) { Text("Close", color = Blue, fontSize = 16.sp) }
             Text(kindName(kind), color = Ink, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f).padding(start = 8.dp))
-            if (hasContent) TextButton(onClick = { saveDraftThenClose() }, enabled = !busy) { Text("Save draft", color = Blue, fontSize = 15.sp) }
+            IconButton(onClick = { askLater = true }, enabled = !busy, modifier = Modifier.semantics { contentDescription = "Send later" }) { ClockIcon(if (busy) Muted else Ink) }
+            Button(
+                onClick = { send() }, enabled = !busy, shape = RoundedCornerShape(10.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp), modifier = Modifier.height(38.dp).padding(end = 6.dp),
+            ) {
+                if (busy) CircularProgressIndicator(Modifier.size(18.dp), color = Ink, strokeWidth = 2.dp)
+                else Text("Send", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            }
         }
         Column(
             Modifier.weight(1f).onSizeChanged { viewH = it.height }.verticalScroll(scroll).padding(horizontal = 20.dp),
@@ -348,7 +356,6 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
                         TextButton(onClick = { files.removeAt(i) }) { Text("Remove", color = Red) }
                     }
                 }
-                TextButton(onClick = { picker.launch("*/*") }) { Text(if (files.isEmpty()) "Attach files" else "Attach more files", color = Blue, fontSize = 15.sp) }
             }
             if (kind == "reply" || kind == "reply_all") {
                 Text("The email you are answering is added underneath.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
@@ -359,26 +366,26 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
         val helpOn = writeInfo != null && writeInfo.on && writeInfo.aiReady && (kind == "new" || mail != null)
         val quickOn = helpOn && writeInfo != null && writeInfo.quick
         val tight = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp)
-        Row(
-            Modifier.fillMaxWidth().background(Panel).padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (helpOn) OutlinedButton(
-                onClick = { askWrite() }, enabled = !busy && !wh.busy, contentPadding = tight,
-                modifier = Modifier.height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
-            ) { Text(writeHelpLabel(wh, body, kind == "new"), color = Blue, fontSize = 13.sp, maxLines = 1) }
-            if (quickOn) OutlinedButton(
-                onClick = { quickSend() }, enabled = !busy && !quickBusy, contentPadding = tight,
-                modifier = Modifier.height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Blue),
-            ) { Text(if (quickBusy) "Checking…" else "Quick send", color = Blue, fontSize = 13.sp, maxLines = 1) }
-            OutlinedButton(
-                onClick = { askLater = true }, enabled = !busy, contentPadding = tight,
-                modifier = Modifier.height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
-            ) { Text("Later", color = Ink, fontSize = 13.sp, maxLines = 1) }
-            Button(onClick = { send() }, enabled = !busy, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), contentPadding = tight) {
-                if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = Ink, strokeWidth = 2.dp)
-                else Text("Send", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Column(Modifier.fillMaxWidth().background(Panel).padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (helpOn) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = { askWrite() }, enabled = !busy && !wh.busy, contentPadding = tight,
+                    modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
+                ) { Text(writeHelpLabel(wh, body, kind == "new"), color = Blue, fontSize = 14.sp, maxLines = 1) }
+                if (quickOn) OutlinedButton(
+                    onClick = { quickSend() }, enabled = !busy && !quickBusy, contentPadding = tight,
+                    modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Blue),
+                ) { Text(if (quickBusy) "Checking…" else "Quick AI send", color = Blue, fontSize = 14.sp, maxLines = 1) }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = { picker.launch("*/*") }, contentPadding = tight,
+                    modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
+                ) { Text(if (files.isEmpty()) "Attach files" else "Attach more", color = Ink, fontSize = 14.sp, maxLines = 1) }
+                OutlinedButton(
+                    onClick = { saveDraftThenClose() }, enabled = !busy && hasContent, contentPadding = tight,
+                    modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
+                ) { Text("Save draft", color = Ink, fontSize = 14.sp, maxLines = 1) }
             }
         }
     }

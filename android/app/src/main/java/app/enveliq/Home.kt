@@ -952,6 +952,8 @@ private fun SwipeRow(
             }
         },
     )
+    // A row put back by Undo must not come back still showing as slid away (the swipe state is saved per email, so it is reset here).
+    LaunchedEffect(Unit) { if (state.currentValue != SwipeToDismissBoxValue.Settled) state.snapTo(SwipeToDismissBoxValue.Settled) }
     // A slower, visible finish: the row slides off, the coloured bar holds for a moment, then the gap folds closed. Then the email is actioned and Undo appears.
     val outcomeNow = chosen
     LaunchedEffect(outcomeNow) {
