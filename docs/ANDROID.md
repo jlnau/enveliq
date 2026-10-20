@@ -8,13 +8,15 @@ A real Android app (not a web page in a frame), written in Kotlin with Jetpack C
 
 **From a test build.** Every time the test branch `preview/vX.YY` changes the `android/` folder, the same workflow runs. Open **Actions**, **Build Android app**, the newest green run, and download **Enveliq-android-apk** under Artifacts (a zip with the APK inside; kept for 90 days). **Run workflow** starts a build by hand.
 
-## Signing: nothing to set up
+## Signing: one permanent key
 
-Android only installs an update over an app if both carry the same signature. GitHub keeps the signing key for you (in its cache), and a small weekly job on the main branch keeps it from expiring and makes it the same for test builds and releases. You do nothing.
+Android only installs an update over an app if both carry the same signing key. The official Enveliq app is signed with one permanent release key, kept as encrypted repository secrets (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`). Every version, test builds included, is signed with it, so each one installs over the last, and the website can trust the app for passkeys. A release of the official repository is refused when those secrets are missing, so a throwaway key can never be published. The workflow summary and the run's notice show the key's SHA-256 fingerprint (public, not a secret).
 
-If the key is ever lost (for example before the first build from `main`, or after GitHub clears its cache), Android says the app conflicts with the one already installed. Uninstall Enveliq once and install the new version. The app keeps almost nothing on the phone (your sign-in), so you lose nothing but one sign-in.
+**Keep the key safe.** The key file (`enveliq-release.jks`) and its password are the app's identity. Keep both in a password manager. If they are lost nobody can update the app any more: everyone would have to uninstall it and install a new one signed with a new key.
 
-Optional, only if you later share the app with other people: add the four repository secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD` (a key you make with `keytool` and keep safe). Builds are then signed with that key instead, and the workflow summary says "your own release key". Switching keys needs one uninstall and reinstall.
+**Make the key once** (needs Java for `keytool`): `keytool -genkeypair -v -keystore enveliq-release.jks -alias enveliq -keyalg RSA -keysize 2048 -validity 10000`, then `base64 -w0 enveliq-release.jks` (on a Mac `base64 -i enveliq-release.jks`) gives the text for `ANDROID_KEYSTORE_BASE64`. The alias is `enveliq`, and the key password is the same as the keystore password if you pressed Enter at that question.
+
+**If you build your own copy** without these secrets, the build uses a temporary key (the summary says so). That is fine for trying the app, but a later build may refuse to install over it: uninstall Enveliq once and install the new one. To get a stable app of your own, make your own key as above and add the four secrets to your fork; then add its fingerprint to your server (see "Passkeys on the phone").
 
 The app's version is the release tag (for example `v0.96` gives version `0.96`); test builds are named `0.96-preview`. Each build has a higher build number than the one before, so it installs as an update.
 
@@ -54,15 +56,12 @@ When you have more than one address (a mailbox's own address and its aliases, fr
 ## Passkeys and single sign-on
 On the sign-in screen, **Sign in with a passkey** (the button under Sign in, after a thin "or" line) uses a passkey saved on the phone itself, such as one in Bitwarden or Google Password Manager, through Android's own passkey screen. Nothing opens in the browser. If there is no passkey to use, or the server has not been set up for it (see below), the button opens your server's `/app-signin` page in the phone's browser instead, where a passkey or single sign-on both work. Sign in there the usual way; press **Open the Enveliq app** and the app finishes signing in (one-time code, two minutes, once, tied to a secret only the app holds). "Keep me signed in on this phone" is read when you press the button. After single sign-on the browser shows the inbox: go back to the app and press the button again, which now finishes straight away. The app registers the link `enveliq://signin` for this. If you close the passkey screen yourself, nothing else happens.
 
-### Passkeys on the phone: one-time set-up on the server
-This is only needed for the phone's own passkey screen; without it the button simply uses the browser. Android only trusts an app for passkeys when the website says so.
+### Passkeys on the phone: nothing to set up
+For the official app this works with no setting: Enveliq already knows the official app's signing key and publishes `/.well-known/assetlinks.json` itself (the app's name and the key's public fingerprint). Passkeys you already added on the website work as they are; they belong to your site's address, not to the app.
 
-1. Find the app's signing fingerprint: open the **Build Android app** run on GitHub for the version you installed; its summary lists "Signing certificate" with a **SHA-256** line (it is public, not a secret). If you use your own key, `keytool -list -v -keystore <file>` shows it.
-2. In your Enveliq settings (Arcane, the `enveliq` project's environment), set `ENVELIQ_ANDROID_CERT_SHA256` to that value (hex, with or without colons; several can be separated by commas, for example the test build's and the release build's) and redeploy. See [Settings reference](ENVIRONMENT.md).
-3. Check `https://your-address/.well-known/assetlinks.json` in a browser: it shows the app name and the fingerprint. It must be reachable by anyone, **without** Cloudflare Access or another sign-in in front of that one path, because Google reads it to confirm the link.
-4. Passkeys you already added on the website work as they are. They are tied to your site's address, not to the app.
-
-The app's signing key must stay the same from one version to the next (it does: see "Signing"); a different key needs its fingerprint added.
+Two things to know:
+1. `https://your-address/.well-known/assetlinks.json` must be reachable by anyone, **without** Cloudflare Access or another sign-in in front of that one path, because Google reads it to confirm the link. Open it in a browser to check: it shows the app name and a fingerprint.
+2. If you build the app with your own key, set `ENVELIQ_ANDROID_CERT_SHA256` to your key's fingerprint (hex, with or without colons; several can be separated by commas) and redeploy. It is added next to the official one. See [Settings reference](ENVIRONMENT.md).
 
 ## Your devices and updates
 Settings, Security, **Your devices** lists the places you are signed in and lets you sign another one out. Names come from the app ("Enveliq app on <phone model>") or, for a browser, a short guess such as "Chrome on Windows". Sign-ins you chose to keep across a restart are listed too. The list is yours alone. About, **Check for a new version** asks your own server (which checks GitHub once a day) for the newest release and, if it is newer than the app, offers to open its download page; the app never contacts GitHub itself. Installing is Android's own step. If an administrator switched the update notice off, the app says it has no answer.

@@ -19,7 +19,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .attachments import PreviewLeaseStore
 from .auth.oidc import OIDCClient, OIDCSettings
-from .auth.passkeys import RelyingParty, android_origin, asset_links as passkey_asset_links, parse_cert_fingerprints
+from .auth.passkeys import OFFICIAL_ANDROID_CERT, RelyingParty, android_origin, asset_links as passkey_asset_links, parse_cert_fingerprints
 from .auth.routes import build_router
 from . import keyfile
 from .mail.bridge import Bridge
@@ -207,9 +207,9 @@ setup_limiter = UnlockRateLimiter(max_attempts=10, global_max_attempts=30)
 login_limiter = UnlockRateLimiter(max_attempts=10, global_max_attempts=200, max_tracked_clients=4096)
 preview_leases = PreviewLeaseStore()
 oidc_client = OIDCClient(allow_http=os.environ.get("ENVELIQ_OIDC_ALLOW_HTTP") == "1")
-# Optional: the SHA-256 fingerprint(s) of the Android app's signing key. When set, the Android app can sign in with a passkey kept on the phone
-# (docs/ANDROID.md, "Passkeys on the phone"). Left empty, nothing changes and the app opens the browser for passkeys.
-ANDROID_CERTS = parse_cert_fingerprints(os.environ.get("ENVELIQ_ANDROID_CERT_SHA256", ""))
+# The Android app can sign in with a passkey kept on the phone when this site trusts the app's signing key (docs/ANDROID.md, "Passkeys on the phone").
+# The official app's key is built in; ENVELIQ_ANDROID_CERT_SHA256 adds more (for someone who builds the app with their own key).
+ANDROID_CERTS = parse_cert_fingerprints(",".join(x for x in (OFFICIAL_ANDROID_CERT, os.environ.get("ENVELIQ_ANDROID_CERT_SHA256", "")) if x))
 relying_party = RelyingParty(rp_id=_pub.hostname, origin=PUBLIC_ORIGIN, extra_origins=tuple(android_origin(f) for f in ANDROID_CERTS))
 SSO_REDIRECT_URI = f"{PUBLIC_ORIGIN}/api/v1/auth/sso/callback"
 
@@ -956,7 +956,7 @@ for _route in ("/setup", "/unlock", "/login", "/account", "/admin", "/mailboxes"
 @app.get("/.well-known/assetlinks.json", include_in_schema=False)
 def asset_links_file():
     """Tells Android this site trusts the Enveliq app for passkeys. Public by design (anyone can read it) and holds no secret:
-    it only lists the public fingerprint of the app's signing certificate. Not found unless the fingerprint is set."""
+    it only lists the public fingerprint of the app's signing certificate."""
     if not ANDROID_CERTS:
         raise HTTPException(status_code=404, detail="Not found")
     return JSONResponse(passkey_asset_links(ANDROID_CERTS), headers={"Cache-Control": "public, max-age=3600"})

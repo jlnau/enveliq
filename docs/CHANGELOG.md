@@ -6,6 +6,12 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 No changes recorded yet.
 
+## v0.100 (2026-10-20)
+
+**Android: one permanent signing key, so updates install.** Every earlier release was signed with a different key, so Android refused to update the app ("App not installed"). The official app is now signed with one permanent release key kept as repository secrets, and every version (test builds too) installs over the last one. Publishing a release of the official repository is refused when the secrets are missing, and the build shows the key's fingerprint. Phones that have an earlier version need one uninstall and reinstall. Touches `.github/workflows/build-android.yml`, `docs/ANDROID.md`, `SECURITY.md`.
+
+**Passkeys on the phone work with no setting.** Enveliq now knows the official app's signing fingerprint and publishes `/.well-known/assetlinks.json` itself, so signing in with a passkey saved on the phone works for every install. `ENVELIQ_ANDROID_CERT_SHA256` is now only for someone who builds the app with their own key, and adds to the built-in one. Touches `backend/auth/passkeys.py`, `backend/app.py`, `docs/ANDROID.md`, `docs/ENVIRONMENT.md`, `SECURITY.md`, `tests/test_android_passkeys.py`.
+
 ## v0.99 (2026-10-20)
 
 **Android: sign in with a passkey saved on the phone.** **Sign in with a passkey** now uses Android's own passkey screen, so a passkey kept in Bitwarden or Google Password Manager signs you in without opening the browser. If there is no passkey to use, or the server is not set up for it yet, it opens the browser as before (a passkey or single sign-on). To turn it on for the phone's own screen, set the new `ENVELIQ_ANDROID_CERT_SHA256` setting to the app's signing fingerprint (shown in the Android build summary) and check that `/.well-known/assetlinks.json` is reachable; the steps are in `docs/ANDROID.md`. With the setting empty nothing changes. Touches `backend/auth/passkeys.py`, `backend/app.py`, `android/` (`NativePasskey.kt`, `Api.kt`, `Screens.kt`, `build.gradle.kts`), `docs/ANDROID.md`, `docs/ENVIRONMENT.md`, `SECURITY.md`, `tests/test_android_passkeys.py`.

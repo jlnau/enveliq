@@ -1,9 +1,10 @@
 # Builds the Enveliq Android app and attaches the installable file (an APK) to the run, under "Artifacts".
 # When you publish a GitHub Release, the same build is also attached to that release as Enveliq-<tag>.apk (with its checksum).
-# There is nothing to set up. The app is signed with a key that GitHub keeps for you (in its cache), so each new version installs
-# over the old one. A small weekly job on the main branch keeps that key alive and makes it the same for test builds and releases.
-# If the key is ever lost, Android asks you to uninstall the app once before the next version installs.
-# Optional: with the four ANDROID_ secrets set, the app is signed with your own key instead (docs/ANDROID.md).
+# The official app is signed with one permanent release key, kept in the four ANDROID_ repository secrets. Every version then
+# installs over the last one, and passkeys on the phone can trust it (docs/ANDROID.md). A release of the official repository
+# is refused when those secrets are missing, so a throwaway key can never be published.
+# Anyone building their own copy without the secrets gets a temporary key kept in GitHub's cache: fine for trying the app, but updates
+# may need an uninstall first.
 name: Build Android app
 
 on:
@@ -76,7 +77,12 @@ jobs:
             echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
             echo "SIGNING=your own release key" >> "$GITHUB_ENV"
           else
-            echo "SIGNING=the key GitHub keeps for this app" >> "$GITHUB_ENV"
+            if [ "$GITHUB_EVENT_NAME" = "release" ] && [ "$GITHUB_REPOSITORY" = "jlnau/enveliq" ]; then
+              echo "::error::The official app must be signed with the permanent release key. Add the four ANDROID_ secrets (docs/ANDROID.md, Signing) and publish again."
+              exit 1
+            fi
+            echo "::warning::No release key set: this build uses a temporary key, so it may not install over an earlier version."
+            echo "SIGNING=a temporary key (not for release)" >> "$GITHUB_ENV"
           fi
       - name: Use the saved key, so this build installs over the last one
         if: ${{ env.ANDROID_KEYSTORE_PATH == '' }}
@@ -120,6 +126,8 @@ jobs:
           APKSIGNER="$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)"
           CERTS="$("$APKSIGNER" verify --print-certs "Enveliq-${APP_VERSION}.apk")"
           echo "$CERTS" | head -3
+          FP="$(echo "$CERTS" | grep -i 'certificate SHA-256 digest' | head -1 | sed 's/.*: *//')"
+          echo "::notice title=Signing fingerprint (SHA-256)::${FP} (${SIGNING})"
           {
             echo "### Enveliq for Android ${APP_VERSION}"
             echo "Signed with ${SIGNING}. ${PUSH}."
