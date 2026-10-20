@@ -123,3 +123,15 @@ data class Sender(
 
 /** What Clean up knows right now. [undo] is the one-time Undo token after an archive (it lasts about ten minutes), [undoName] says whose email it was. */
 data class CleanUp(val senders: List<Sender>, val kept: Int, val days: Int, val now: Long, val mailboxes: Int, val problems: List<String>, val undo: String = "", val undoCount: Int = 0, val undoName: String = "", val toast: String = "")
+
+/** Writing help settings from the server (Settings, Writing help). */
+data class WriteHelpInfo(val available: Boolean, val aiReady: Boolean, val on: Boolean, val quick: Boolean, val instructions: String, val isDefault: Boolean, val default: String, val max: Int)
+
+/** Text the AI suggested. It is only ever shown in its own box; nothing is sent until the person accepts it and sends. */
+data class WriteSuggestion(val text: String, val notes: List<String>, val gaps: Boolean)
+
+/** The corrected subject and text from Quick AI Send. */
+data class QuickFixed(val subject: String, val text: String, val changed: Boolean)
+
+/** The personal writing-style guide (Settings, Writing style). */
+data class StyleInfo(val available: Boolean, val aiReady: Boolean, val on: Boolean, val guide: String, val mode: String, val generatedAt: Double, val samples: Int, val error: String, val max: Int, val busy: Boolean)

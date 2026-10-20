@@ -120,6 +120,10 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
     var askLater by remember { mutableStateOf(false) }
     var laterLabel by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
+    val writeInfo = rememberWriteHelp(api)
+    val wh = remember { WriteHelpState() }
+    var askCheck by remember { mutableStateOf(false) }          // "Send what is in your box?" after using writing help
+    var quickBusy by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
     // Files for a new email. They are held in memory only, sent, and never saved on this phone.
     val files = remember { androidx.compose.runtime.mutableStateListOf<PickedFile>() }
@@ -204,8 +208,10 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
         }
     }
 
-    fun send(laterAtMs: Long? = null) {
+    fun send(laterAtMs: Long? = null, bodyOverride: String? = null, subjectOverride: String? = null, checked: Boolean = false) {
         error = ""
+        val text = bodyOverride ?: body
+        val subj = subjectOverride ?: subject
         val toList = people(to, toTyping)
         val ccList = people(cc, ccTyping)
         val bccList = people(bcc, bccTyping)
@@ -218,7 +224,7 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             error = "Add who it is going to."
             return
         }
-        if ((kind == "reply" || kind == "reply_all") && body.isBlank()) {
+        if ((kind == "reply" || kind == "reply_all") && text.isBlank()) {
             error = "Write your reply first."
             return
         }
@@ -230,20 +236,22 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             error = "Files cannot wait for later. Send now, or take the files off."
             return
         }
+        // Words the AI suggested are only sent after a clear "yes" (Quick AI Send asks for that in advance by pressing its own button).
+        if (wh.used && !checked && bodyOverride == null && laterAtMs == null) { askCheck = true; return }
         busy = true
         val chosen = from?.takeIf { !it.isDefault }?.address        // the mailbox's own address is the default, so nothing is sent for it
         scope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
                     if (laterAtMs != null) {
-                        val id = api.scheduleSend(kind, if (kind == "new") boxId else mail!!.accountId, mail?.id, toList, ccList, bccList, subject, body, chosen, laterAtMs / 1000.0)
+                        val id = api.scheduleSend(kind, if (kind == "new") boxId else mail!!.accountId, mail?.id, toList, ccList, bccList, subj, text, chosen, laterAtMs / 1000.0)
                         return@withContext Sent(false, "", 0, id, laterLabel)
                     }
                     when (kind) {
-                        "reply" -> api.reply(mail!!, false, body, chosen, files.toList(), toList, ccList, bccList)
-                        "reply_all" -> api.reply(mail!!, true, body, chosen, files.toList(), toList, ccList, bccList)
-                        "forward" -> api.forward(mail!!, toList, ccList, bccList, body, chosen, files.toList())
-                        else -> api.sendNew(boxId, toList, ccList, bccList, subject, body, chosen, files.toList())
+                        "reply" -> api.reply(mail!!, false, text, chosen, files.toList(), toList, ccList, bccList)
+                        "reply_all" -> api.reply(mail!!, true, text, chosen, files.toList(), toList, ccList, bccList)
+                        "forward" -> api.forward(mail!!, toList, ccList, bccList, text, chosen, files.toList())
+                        else -> api.sendNew(boxId, toList, ccList, bccList, subj, text, chosen, files.toList())
                     }
                 }
                 if (draft != null) {
@@ -259,6 +267,26 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
                 error = "That did not send. Please try again."
             } finally {
                 busy = false
+            }
+        }
+    }
+
+    // Quick AI Send: a strict proofread, then the normal send. The text box is never changed, so if anything fails the draft is exactly as it was.
+    fun quickSend() {
+        error = ""
+        if (body.isBlank()) { error = if (kind == "forward") "Add a note first, or use Send." else "Write your message first."; return }
+        quickBusy = true
+        scope.launch {
+            try {
+                val fixed = withContext(Dispatchers.IO) { api.quickFix(if (kind == "new") subject else "", body) }
+                quickBusy = false
+                send(null, fixed.text, if (kind == "new") fixed.subject.ifBlank { subject } else null, true)
+            } catch (e: ApiException) {
+                error = e.message ?: "Quick AI Send did not work. Your message is still here."
+            } catch (e: Exception) {
+                error = "Quick AI Send did not work. Your message is still here."
+            } finally {
+                quickBusy = false
             }
         }
     }
@@ -292,6 +320,9 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             }
             Text(if (kind == "forward") "Your note (optional)" else "Message", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 14.dp, bottom = 6.dp))
             SpellField(body, { body = it }, singleLine = false, minLines = 8, modifier = Modifier.fillMaxWidth())
+            if (writeInfo != null && (kind == "new" || mail != null)) {
+                WriteHelpBox(api, writeInfo, mail, subject, body, kind == "new", wh) { body = it }
+            }
             run {
                 files.forEachIndexed { i, f ->
                     Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -306,6 +337,15 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             }
             if (error.isNotEmpty()) Text(error, color = Red, fontSize = 15.sp, modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
             Spacer(Modifier.height(16.dp))
+        }
+        if (writeInfo != null && writeInfo.on && writeInfo.quick && writeInfo.aiReady && (kind == "new" || mail != null)) {
+            Row(Modifier.fillMaxWidth().background(Panel).padding(start = 20.dp, end = 20.dp, top = 10.dp)) {
+                OutlinedButton(
+                    onClick = { quickSend() }, enabled = !busy && !quickBusy,
+                    modifier = Modifier.fillMaxWidth().height(48.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Blue),
+                ) { Text(if (quickBusy) "Checking…" else "Quick AI Send", color = Blue, fontSize = 16.sp) }
+            }
+            Text("Fixes spelling, grammar and punctuation, then sends at once.", color = Muted, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().background(Panel).padding(horizontal = 20.dp, vertical = 2.dp))
         }
         Row(
             Modifier.fillMaxWidth().background(Panel).padding(horizontal = 20.dp, vertical = 12.dp),
@@ -327,6 +367,25 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
                 else Text("Send", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
             }
         }
+    }
+
+    if (askCheck) {
+        val gap = hasGap(body)
+        AlertDialog(
+            onDismissRequest = { askCheck = false },
+            containerColor = Panel,
+            title = { Text("Send what is in your box?", color = Ink) },
+            text = {
+                Column {
+                    Text("You used writing help. Only what is in your box will be sent, not the AI box.", color = Muted)
+                    if (wh.backup != null) Text("This includes wording suggested by AI.", color = Muted, modifier = Modifier.padding(top = 6.dp))
+                    if (gap) Text("There are still [brackets] left to fill in.", color = Amber, modifier = Modifier.padding(top = 6.dp))
+                    Text(body.take(600), color = Ink, fontSize = 14.sp, modifier = Modifier.padding(top = 10.dp))
+                }
+            },
+            confirmButton = { TextButton(onClick = { askCheck = false; send(checked = true) }) { Text(if (gap) "Send anyway" else "Yes, send it", color = Blue) } },
+            dismissButton = { TextButton(onClick = { askCheck = false }) { Text("Go back", color = Muted) } },
+        )
     }
 
     if (askLater) {

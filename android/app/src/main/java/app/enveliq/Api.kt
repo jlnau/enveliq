@@ -571,6 +571,47 @@ class EnveliqApi(address: String) {
         call("POST", "/api/v1/me/mail-opened", JSONObject().put("account_id", mail.accountId).put("message_id", mail.id))
     }
 
+    // ---- Writing help, Quick AI Send and the writing style (the same routes the website uses) ----
+    private fun writeInfo(r: JSONObject) = WriteHelpInfo(r.optBoolean("available"), r.optBoolean("ai_ready"), r.optBoolean("on"), r.optBoolean("quick"), r.str("instructions"), r.optBoolean("is_default", true), r.str("default"), r.optInt("max", 2000))
+
+    /** The person's Writing help settings. Throws when the feature is switched off for them. */
+    fun writeHelp(): WriteHelpInfo = writeInfo(JSONObject(call("GET", "/api/v1/me/write-help")))
+
+    fun saveWriteHelp(on: Boolean, quick: Boolean, instructions: String?): WriteHelpInfo =
+        writeInfo(JSONObject(call("PUT", "/api/v1/me/write-help", JSONObject().put("on", on).put("quick", quick).also { if (instructions != null) it.put("instructions", instructions) })))
+
+    private fun suggestion(text: String): WriteSuggestion {
+        val r = JSONObject(text)
+        val n = r.optJSONArray("notes")
+        return WriteSuggestion(r.str("text"), (0 until (n?.length() ?: 0)).map { n!!.optString(it) }, r.optBoolean("gaps"))
+    }
+
+    /** Suggested wording for a reply or forward. The server reads the email itself; the page never chooses what the AI sees. */
+    fun writeForReply(mail: Mail, draft: String): WriteSuggestion =
+        suggestion(call("POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/write-help", JSONObject().put("draft", draft)))
+
+    fun writeForNew(subject: String, draft: String): WriteSuggestion =
+        suggestion(call("POST", "/api/v1/me/write-help/new", JSONObject().put("subject", subject).put("draft", draft)))
+
+    /** Quick AI Send, step one: a strict proofread. Sends nothing. The caller sends the result and keeps the person's own draft if anything fails. */
+    fun quickFix(subject: String, draft: String): QuickFixed {
+        val r = JSONObject(call("POST", "/api/v1/me/write-help/quick-fix", JSONObject().put("subject", subject).put("draft", draft)))
+        return QuickFixed(r.str("subject"), r.str("text"), r.optBoolean("changed"))
+    }
+
+    private fun styleInfo(text: String): StyleInfo {
+        val r = JSONObject(text)
+        return StyleInfo(r.optBoolean("available"), r.optBoolean("ai_ready"), r.optBoolean("on"), r.str("guide"), r.str("mode").ifBlank { "auto" }, r.optDouble("generated_at", 0.0).let { if (it.isNaN()) 0.0 else it }, r.optInt("samples"), r.str("error"), r.optInt("max", 2500), r.optBoolean("busy"))
+    }
+
+    fun writingStyle(): StyleInfo = styleInfo(call("GET", "/api/v1/me/writing-style"))
+
+    /** Only the parts that changed are sent. Editing the guide makes the server switch to manual; mode "auto" turns weekly updates back on. */
+    fun saveWritingStyle(on: Boolean? = null, guide: String? = null, mode: String? = null): StyleInfo =
+        styleInfo(call("PUT", "/api/v1/me/writing-style", JSONObject().also { if (on != null) it.put("on", on); if (guide != null) it.put("guide", guide); if (mode != null) it.put("mode", mode) }))
+
+    fun rebuildWritingStyle(): StyleInfo = styleInfo(call("POST", "/api/v1/me/writing-style/rebuild", JSONObject()))
+
     /** True when "Include read mail" is switched on for this person on the server (administrators can switch it off). */
     fun includeReadAvailable(): Boolean = try {
         JSONObject(call("GET", "/api/v1/me/features")).optJSONObject("effective")?.optBoolean("all_mail", false) ?: false
