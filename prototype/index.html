@@ -878,6 +878,11 @@ body.on-ship #waitBars{display:none!important}
 .subwhen{font-weight:600}.subitem.soon .subwhen{color:#f0c14a}.subsmall{color:var(--muted);font-size:13px}
 .subact{display:flex;gap:8px 10px;flex-wrap:wrap;align-items:center}
 #junkPage{display:none;padding-top:14px}body.on-junk #junkPage{display:block}body.on-junk .filters,body.on-junk #list,body.on-junk .sample-banner,body.on-junk #dueBars,body.on-junk #shipBars,body.on-junk #waitBars,body.on-junk #subBars,body.on-junk #tripBars,body.on-junk #bulk,body.on-junk #previewBulk{display:none!important}
+#cleanPage{display:none;padding-top:14px}body.on-clean #cleanPage{display:block}body.on-clean .filters,body.on-clean #list,body.on-clean .sample-banner,body.on-clean #dueBars,body.on-clean #shipBars,body.on-clean #waitBars,body.on-clean #subBars,body.on-clean #tripBars,body.on-clean #bulk,body.on-clean #previewBulk{display:none!important}
+.cl-stats{color:var(--muted);font-size:14px}.cl-ask{border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:10px 12px;display:grid;gap:8px;font-size:14px}
+.cl-mode{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 12px}.cl-step{max-width:560px}.cl-step .jk-acts .btn,.cl-step .jk-acts .unsub{min-height:44px}
+.cl-undo{display:flex;gap:10px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:10px 14px;margin:0 0 12px;max-width:820px}
+.cl-count{color:var(--muted);font-size:13px}
 .jk-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}.jk-head h3{margin:0;font-size:20px}.jk-head .jk-refresh{margin-left:auto}
 .jk-note{color:var(--muted);margin:0 0 14px;max-width:680px}.jk-prog{color:var(--muted);font-size:13px;margin:0 0 12px}
 .jk-card{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:grid;gap:8px;max-width:820px}
@@ -1572,6 +1577,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
     <button class="nav" data-filter="sent" id="sentNav" title="Sent" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg><span class="nav-label">Sent</span></button>
     <button class="nav" data-filter="drafts" id="draftNav" title="Drafts" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg><span class="nav-label">Drafts</span><span class="badge" id="draftBadge" hidden></span></button>
     <button class="nav" data-filter="junk" id="junkNav" title="Junk Mail" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v5c0 4.6 3.2 8.4 8 10 4.8-1.6 8-5.4 8-10V6z"/><path d="m9.5 9.5 5 5m0-5-5 5"/></svg><span class="nav-label">Junk Mail</span><span class="badge" id="junkBadge" hidden></span></button>
+    <button class="nav" data-filter="cleanup" id="cleanNav" title="Clean up" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h9M4 17h6"/><path d="m15 14 5 5m0-5-5 5"/></svg><span class="nav-label">Clean up</span></button>
     <button class="nav" data-filter="found" id="foundNav" title="Found emails" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><span>Found emails</span><span class="badge" id="foundBadge" hidden>0</span></button>
     <div class="more-nav" id="moreNav">
       <button class="nav more-toggle" id="moreToggle" type="button" aria-expanded="false" aria-controls="moreItems" title="More mailbox views"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3zM3 9h18"/><path class="more-chev" d="m9.5 13.2 2.5 2.4 2.5-2.4"/></svg><span class="nav-label">More</span><span class="more-arrow" aria-hidden="true">⌄</span></button>
@@ -1679,6 +1685,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
   <section id="subPage" aria-label="Subscriptions"></section>
   <section id="tripPage" aria-label="Trips"></section>
   <section id="junkPage" aria-label="Junk Mail"></section>
+  <section id="cleanPage" aria-label="Clean up"></section>
   <section id="waitPage" aria-label="Waiting for reply"></section>
   <section id="draftPage" aria-label="Drafts"></section>
   <section id="msgPage" aria-label="Messages"></section>
@@ -2350,7 +2357,7 @@ const emailDetails={
 for(const m of data)Object.assign(m,emailDetails[m.id]||{});
 
 let selected=new Set(),filter="all",query="",provider="compatible";
-let feat={compose:false,address_book:false,sent:false,media:false,all_mail:false,shipping:false,subscriptions:false,travel:false,waiting:false,messages:false,write_help:false,rss:false,tags:false,find_mail:false,junk_mail:false};
+let feat={compose:false,address_book:false,sent:false,media:false,all_mail:false,shipping:false,subscriptions:false,travel:false,waiting:false,messages:false,write_help:false,rss:false,tags:false,find_mail:false,junk_mail:false,clean_up:false};
 let allMail=false,recentAt=0,sq={items:[],waiting:0,writing:0},sqTimer=null,sqDoneSeen=new Set();
 try{allMail=localStorage.getItem("enveliq-all-mail")==="1"}catch{}
 let manageTabsScrollLeft=0;
@@ -2359,7 +2366,7 @@ let vaultMode=null; // "backend" | "preview"
 const previewVault={initialized:false,unlocked:false,salt:null,verifier:null};
 const expanded=new Set();
 // A refresh keeps you where you are: the page (in the address bar after #/) and which emails are open (this tab only).
-const PAGES=["found","all","action","tasks","attachments","reviewed","archived","sent","drafts","shipping","subscriptions","trips","waiting","messages","junk"];
+const PAGES=["found","all","action","tasks","attachments","reviewed","archived","sent","drafts","shipping","subscriptions","trips","waiting","messages","junk","cleanup"];
 let stateReady=false,navPopping=false;
 const rowKeyOf=id=>{const m=data.find(x=>String(x.id)===String(id));return m&&m.real?m.real.accountId+":"+m.real.messageId:null};
 function saveOpen(){
@@ -2397,14 +2404,14 @@ function applyHashNav(){
     }
     if(isOpen)closeSettings();
     const pm=/^#\/([a-z]+)$/.exec(h);let want=pm&&PAGES.includes(pm[1])?pm[1]:"all";
-    const ok={sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,messages:feat.messages,junk:feat.junk_mail}[want];
+    const ok={sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,messages:feat.messages,junk:feat.junk_mail,cleanup:feat.clean_up}[want];
     if(want!=="all"&&ok===false)want="all";
     filter=want;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===want));
     closeSnoozeMenu();readerOpen=false;if(want==="all")paneId=null;render();
     if(want==="sent")loadSent();
     if(want==="drafts")loadDrafts();
     if(want==="messages")openMsgPage();
-    if(want==="junk")openJunkPage();
+    if(want==="junk")openJunkPage();if(want==="cleanup")openCleanPage();
     window.scrollTo({top:0});
   }finally{navPopping=false}
 }
@@ -2474,13 +2481,13 @@ if("serviceWorker" in navigator){
 function restorePage(){
   const m=/^#\/(settings|admin)\/([a-z]*)$/.exec(location.hash||""),p=/^#\/([a-z]+)$/.exec(location.hash||"");
   if(p&&PAGES.includes(p[1])){
-    const want=p[1],ok={sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,messages:feat.messages,junk:feat.junk_mail}[want];
+    const want=p[1],ok={sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,messages:feat.messages,junk:feat.junk_mail,cleanup:feat.clean_up}[want];
     if(want!=="all"&&ok!==false){
       filter=want;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===want));
       if(want==="sent")loadSent();
       if(want==="drafts")loadDrafts();
       if(want==="messages")openMsgPage();
-      if(want==="junk")openJunkPage();
+      if(want==="junk")openJunkPage();if(want==="cleanup")openCleanPage();
     }
   }
   if(m&&!(m[1]==="admin"&&!currentUser.is_admin)){
@@ -3740,6 +3747,91 @@ document.addEventListener("click",e=>{
   if(t.closest("[data-junk-refresh]"))openJunkPage();
 });
 setInterval(()=>{if(junkOn()&&!document.hidden&&filter!=="junk")fetchJunk().then(subNavSync)},300000);
+
+// ---- Clean up: the mailing lists that fill the inbox, and what to do about each ----
+// The server reads only email headers (in memory) and decides who and which mailbox; this page only shows what it is sent and passes back an opaque id.
+let cleanData={senders:[],kept:0,problems:[],undo_offer:null,mailboxes:0,days:60},cleanUi={busy:false,note:"",loaded:false,step:false,skipped:new Set(),unsubbed:new Set(),ruled:new Set(),confirm:null,undo:null,done:0};
+const cleanOn=()=>realMail&&!!feat.clean_up;
+const cleanReq=(path,method="GET",body)=>secureBackendRequest("/api/v1/me/senders"+path,method==="GET"?{method,headers:{}}:{method,body:JSON.stringify(body||{})});
+async function openCleanPage(refresh){
+  if(!cleanOn()||cleanUi.busy)return;
+  if(!cleanUi.loaded)cleanUi.step=window.matchMedia("(max-width:760px)").matches;
+  cleanUi.busy=true;cleanUi.note=refresh?"Looking again…":"Looking through the last 60 days of your mail…";render();
+  try{const r=await cleanReq(refresh?"?refresh=true":"");if(r&&Array.isArray(r.senders)){cleanData=r;cleanUi.loaded=true;if(refresh)cleanUi.skipped=new Set()}}
+  catch(er){toast(er.message,6000)}
+  cleanUi.busy=false;cleanUi.note="";render();
+}
+function cleanAgo(ts){if(!ts)return "";const d=Math.floor((cleanData.now-ts)/86400);return d<=0?"today":d===1?"yesterday":d+" days ago"}
+function cleanCard(it,step){
+  const many=cleanData.mailboxes>1,ruled=cleanUi.ruled.has(it.id);
+  const stats=`${it.count} ${it.count===1?"email":"emails"} · you opened ${it.opened} · last ${esc(cleanAgo(it.last))}${many?" · "+esc(it.mailbox):""}`;
+  const un=it.unsubscribe?unsubPlain(it.unsubscribe,"Unsubscribe"):"";
+  const asked=cleanUi.unsubbed.has(it.id)?`<div class="cl-ask" role="status"><span>Did that work? If it did, you can clear out what is already in your inbox.</span><span class="jk-acts"><button class="btn" type="button" data-clean-archive="${esc(it.id)}">Yes, clear them out</button><button class="btn" type="button" data-clean-notyet="${esc(it.id)}">Not yet</button></span></div>`:"";
+  const flag=it.flagged?'<p class="jk-why">Something about this sender looks odd, so there is no Unsubscribe button. Unsubscribing from a fake tells them your address is real.</p>':"";
+  const rule=ruled?'<p class="jk-why">New email from them is now archived for you. You can change this in Settings, Mail rules.</p>':"";
+  return `<article class="jk-card cl-card${step?" cl-step":""}" data-clean-id="${esc(it.id)}"><div class="jk-top"><b>${esc(it.name)}</b><span class="jk-when">${esc(it.address)}</span></div>
+    <div class="cl-stats">${stats}</div>${flag}${rule}${asked}
+    <div class="jk-acts">${un}<button class="btn" type="button" data-clean-archive="${esc(it.id)}">Archive what's here</button>${ruled?"":`<button class="btn" type="button" data-clean-always="${esc(it.id)}">Always archive new ones</button>`}<button class="btn" type="button" data-clean-keep="${esc(it.id)}">Keep</button></div></article>`;
+}
+function cleanConfirmHtml(){
+  const c=cleanUi.confirm;if(!c)return "";const it=(cleanData.senders||[]).find(x=>x.id===c.id);if(!it)return "";
+  return `<form class="ocard cl-confirm sheetform" data-clean-confirm novalidate role="dialog" aria-modal="true" aria-labelledby="clTitle">
+    <div class="sf-top"><b id="clTitle">Archive ${esc(it.name)}'s email?</b><button class="sf-close" type="button" data-clean-cancel aria-label="Close this form">✕ Close</button></div>
+    <div class="sf-body"><p>All their email in your inbox moves to your Archive and is marked as read (${it.count} from the last ${cleanData.days} days). Nothing is deleted.</p><p class="meta">Email that has an open task stays in your inbox. You can undo this for 10 minutes.</p>${c.err?`<p class="sa-err" role="alert">${esc(c.err)}</p>`:""}</div>
+    <div class="sf-foot"><button class="obtn blue" type="submit"${c.busy?" disabled":""}>Archive ${it.count} ${it.count===1?"email":"emails"}</button><button class="olink" type="button" data-clean-cancel>Cancel</button></div></form>`;
+}
+function renderCleanPage(){
+  const box=$("cleanPage");if(!box)return;
+  const all=cleanData.senders||[],left=all.filter(x=>!cleanUi.skipped.has(x.id));
+  const head=`<div class="jk-head"><h3>Clean up</h3><button class="btn jk-refresh" type="button" data-clean-refresh${cleanUi.busy?" disabled":""}>Look again</button></div><p class="jk-note">These are the mailing lists that wrote to you in the last ${cleanData.days||60} days. Quiet the ones you do not need. Nothing is deleted.</p>`;
+  const prog=cleanUi.note?`<p class="jk-prog" role="status">${esc(cleanUi.note)}</p>`:"";
+  const bad=(cleanData.problems||[]).map(t=>`<div class="jk-bad">${esc(t)}</div>`).join("");
+  const u=cleanUi.undo||cleanData.undo_offer;
+  const undo=u&&u.token?`<div class="cl-undo" role="status"><span>${u.count?`Archived ${u.count} from ${esc(u.name||"that sender")}.`:"Archived."}</span><button class="btn" type="button" data-clean-undo>Undo</button><span class="cl-count">Up to 10 minutes.</span></div>`:"";
+  const foot=`<p class="sp-sub">Enveliq only reads who each email is from, when, and whether it has an unsubscribe link. It keeps nothing about the senders except the ones you chose to keep.${cleanData.kept?` <button class="btn" type="button" data-clean-showkept>Show the ${cleanData.kept} you kept again</button>`:""}</p>`;
+  if(!all.length){box.innerHTML=head+prog+bad+undo+cleanConfirmHtml()+(cleanUi.busy?"":`<div class="focus-card"><div class="focus-big">${cleanUi.loaded&&cleanUi.done?"All done":"Nothing to clean up"}</div><div class="focus-sub">${cleanUi.loaded&&cleanUi.done?"That is everyone on the list for now.":"Mailing lists that wrote to you more than once show up here."}</div></div>`)+foot;return}
+  const mode=`<div class="cl-mode"><button class="btn" type="button" data-clean-mode>${cleanUi.step?"See the whole list":"Step through them"}</button>${cleanUi.step?`<span class="cl-count">${left.length?`${all.length-left.length+1} of ${all.length}`:"That is everyone"}</span>`:`<span class="cl-count">${all.length} ${all.length===1?"sender":"senders"}</span>`}</div>`;
+  let list;
+  if(cleanUi.step){list=left.length?cleanCard(left[0],true)+`<div class="cl-mode"><button class="btn" type="button" data-clean-skip="${esc(left[0].id)}">Skip for now</button></div>`:'<div class="focus-card"><div class="focus-big">That is everyone</div><div class="focus-sub">Press Look again to see the list again.</div></div>'}
+  else list=all.map(x=>cleanCard(x,false)).join("");
+  box.innerHTML=head+prog+bad+undo+cleanConfirmHtml()+mode+list+foot;
+}
+async function cleanAct(path,body,doneText){
+  try{const r=await cleanReq(path,"POST",body);
+    if(r&&Array.isArray(r.senders)){cleanData=r;cleanUi.done++}
+    if(r&&r.archived!==undefined){
+      cleanUi.undo=r.undo?{token:r.undo,count:r.archived,name:(r.undo_offer||{}).name||""}:null;
+      toast(r.archived?`Archived ${r.archived}${r.more?". Press again for the rest.":"."}${r.left_for_tasks?` ${r.left_for_tasks} with a task stayed in your inbox.`:""}`:"Nothing to archive.",5000);
+    }else if(doneText)toast(doneText,5000);
+    return r;
+  }catch(er){toast(er.message,6000);if(/not on the list any more/i.test(er.message))openCleanPage(true);return null}
+}
+document.addEventListener("click",async e=>{
+  const t=e.target.closest?e.target:null;if(!t||!cleanOn())return;
+  const un=t.closest("#cleanPage a.unsub");if(un){const c=un.closest("[data-clean-id]");if(c){cleanUi.unsubbed.add(c.dataset.cleanId);setTimeout(render,50)}return}
+  if(t.closest("[data-clean-refresh]")){openCleanPage(true);return}
+  if(t.closest("[data-clean-mode]")){cleanUi.step=!cleanUi.step;render();return}
+  const skip=t.closest("[data-clean-skip]");if(skip){cleanUi.skipped.add(skip.dataset.cleanSkip);render();return}
+  const nt=t.closest("[data-clean-notyet]");if(nt){cleanUi.unsubbed.delete(nt.dataset.cleanNotyet);render();return}
+  const ar=t.closest("[data-clean-archive]");if(ar){cleanUi.confirm={id:ar.dataset.cleanArchive,busy:false,err:""};render();return}
+  if(t.closest("[data-clean-cancel]")){cleanUi.confirm=null;render();return}
+  const al=t.closest("[data-clean-always]");if(al){const id=al.dataset.cleanAlways;const r=await cleanAct(`/${encodeURIComponent(id)}/always`,{},"From now on, new email from them is archived. You can change this in Settings, Mail rules.");if(r){cleanUi.ruled.add(id);render()}return}
+  const kp=t.closest("[data-clean-keep]");if(kp){await cleanAct(`/${encodeURIComponent(kp.dataset.cleanKeep)}/keep`,{},"Kept. They will not be listed again.");render();return}
+  if(t.closest("[data-clean-showkept]")){try{const r=await secureBackendRequest("/api/v1/me/senders/keep",{method:"DELETE",headers:{}});if(r&&Array.isArray(r.senders))cleanData=r}catch(er){toast(er.message,5000)}render();return}
+  if(t.closest("[data-clean-undo]")){
+    const u=cleanUi.undo||cleanData.undo_offer;if(!u||!u.token)return;
+    try{const r=await cleanReq("/undo","POST",{token:u.token});if(r&&Array.isArray(r.senders))cleanData=r;cleanUi.undo=null;toast(`Put back ${r&&r.restored||0}.`,4000)}
+    catch(er){toast(er.message,5000);cleanUi.undo=null}
+    render();return}
+});
+document.addEventListener("submit",async e=>{
+  if(!(e.target&&e.target.matches&&e.target.matches("[data-clean-confirm]")))return;
+  e.preventDefault();const c=cleanUi.confirm;if(!c||c.busy)return;
+  c.busy=true;render();
+  const r=await cleanAct(`/${encodeURIComponent(c.id)}/archive`,{});
+  if(r){cleanUi.confirm=null;cleanUi.unsubbed.delete(c.id)}else{c.busy=false;c.err="That did not work. Try again."}
+  render();
+});
 // ---- Trips: flights, stays and hire cars, followed from the emails about them ----
 // The AI only copied what each email said. Every date, night count and grouping into trips was worked out by the server.
 let tripData={enabled:false,trips:[],calendar:true};
@@ -4115,18 +4207,18 @@ function render(){
   if(findUi.open&&String(query||"").trim().length<2)findReset();
   if(selMode&&(!selected.size||!isPhone()))selMode=false;
   document.body.classList.toggle("selecting",selMode);
-  document.body.classList.toggle("in-sent",filter==="sent");document.body.classList.toggle("in-found",filter==="found");document.body.classList.toggle("on-draft",filter==="drafts");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="sent"?"Sent":filter==="drafts"?"Drafts":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="junk"?"Junk Mail":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
+  document.body.classList.toggle("in-sent",filter==="sent");document.body.classList.toggle("in-found",filter==="found");document.body.classList.toggle("on-draft",filter==="drafts");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="sent"?"Sent":filter==="drafts"?"Drafts":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="junk"?"Junk Mail":filter==="cleanup"?"Clean up":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
   const mine=userMessages().filter(m=>!m.extra);          // the quiet "All emails" entries are never counted
   if(!realMail)syncDemoTasks();else settleTasks();
   document.body.classList.toggle("on-tasks",filter==="tasks");
   document.body.classList.toggle("on-ship",filter==="shipping");
   document.body.classList.toggle("on-sub",filter==="subscriptions");
   document.body.classList.toggle("on-trip",filter==="trips");
-  document.body.classList.toggle("on-junk",filter==="junk");
+  document.body.classList.toggle("on-junk",filter==="junk");document.body.classList.toggle("on-clean",filter==="cleanup");
   document.body.classList.toggle("on-wait",filter==="waiting");
   document.body.classList.toggle("on-msg",filter==="messages");
   saveOpen();syncHash();
-  renderToday();renderShipHome();renderSubHome();renderTripHome();renderWaitHome();renderMsgHome();if(filter==="messages")renderMsgPage();if(filter==="waiting")renderWaitPage();if(filter==="drafts")renderDraftPage();if(filter==="tasks")renderTasksPage();if(filter==="shipping")renderShipPage();if(filter==="subscriptions")renderSubPage();if(filter==="trips")renderTripPage();if(filter==="junk")renderJunkPage();subNavSync();
+  renderToday();renderShipHome();renderSubHome();renderTripHome();renderWaitHome();renderMsgHome();if(filter==="messages")renderMsgPage();if(filter==="waiting")renderWaitPage();if(filter==="drafts")renderDraftPage();if(filter==="tasks")renderTasksPage();if(filter==="shipping")renderShipPage();if(filter==="subscriptions")renderSubPage();if(filter==="trips")renderTripPage();if(filter==="junk")renderJunkPage();if(filter==="cleanup")renderCleanPage();subNavSync();
   // The number is how many are being followed; it turns blue when one needs you (an order to confirm, a reply nobody has sent).
   {const os=shipOn()?(shipData.orders||[]).filter(o=>!(o.delivered_at&&o.ack)):[];const sb=$("shipBadge");if(sb){sb.textContent=os.length;sb.hidden=!os.length;sb.classList.toggle("hot",os.some(o=>o.needs_confirm||o.unsure))}}
   {const mb=$("msgBadge");if(mb){const n=msgOn()?msgSum.unread:0;mb.textContent=n;mb.hidden=!n;mb.classList.toggle("hot",n>0)}}
@@ -4142,15 +4234,15 @@ function render(){
   const inbox=mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)),needN=inbox.filter(m=>m.action||m.priority==="high").length;
   const hr=new Date().getHours(),first=String(currentUser.name||"").trim().split(/\s+/)[0];
   const greeting=(hr<12?"Good morning":hr<18?"Good afternoon":"Good evening")+(first?`, ${first}`:"");
-  const VIEW_NAMES={action:"Needs action",need:"Needs action",high:"Important",attachments:"Attachments",tasks:"Tasks",shipping:"Shipping",waiting:"Waiting for reply",reviewed:"Reviewed",found:"Found emails",archived:"Archived",subscriptions:"Subscriptions",trips:"Trips",messages:"Messages",junk:"Junk Mail",sent:"Sent",drafts:"Drafts"};
+  const VIEW_NAMES={action:"Needs action",need:"Needs action",high:"Important",attachments:"Attachments",tasks:"Tasks",shipping:"Shipping",waiting:"Waiting for reply",reviewed:"Reviewed",found:"Found emails",archived:"Archived",subscriptions:"Subscriptions",trips:"Trips",messages:"Messages",junk:"Junk Mail",cleanup:"Clean up",sent:"Sent",drafts:"Drafts"};
   document.querySelector(".top-left h2").textContent=VIEW_NAMES[filter]||(filter==="all"&&calmOn()?"One thing at a time":filter==="all"?"My inbox":greeting);
   $("backInbox").hidden=filter==="all";
   $("previewCalmNotice").hidden=!(filter==="all"&&calmOn());
-  $("previewListHeading").hidden=["sent","drafts","tasks","shipping","waiting","subscriptions","trips","messages","junk"].includes(filter);
+  $("previewListHeading").hidden=["sent","drafts","tasks","shipping","waiting","subscriptions","trips","messages","junk","cleanup"].includes(filter);
   previewSyncMenu();
   $("todayDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"});
   $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(calmOn()?(inbox.length?"One thing at a time. Important deadlines stay visible.":"Nothing waiting. Enjoy the quiet."):inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:(document.body.classList.contains("backend")&&!realMail?"No mailbox is connected yet":"All caught up"));
-  if(filter==="junk")$("inboxSubtitle").textContent=junkData.needs_review?`${junkData.needs_review} ${junkData.needs_review===1?"email needs":"emails need"} a look`:"Checked by the AI";if(filter==="found")$("inboxSubtitle").textContent="Emails you found by searching. Each is kept for 60 days, or until you press Reviewed.";if(filter==="sent")$("inboxSubtitle").textContent="Your last 14 days of sent mail";if(filter==="drafts")$("inboxSubtitle").textContent="Emails you started and have not sent";
+  if(filter==="cleanup")$("inboxSubtitle").textContent="Quiet the mailing lists you do not need";if(filter==="junk")$("inboxSubtitle").textContent=junkData.needs_review?`${junkData.needs_review} ${junkData.needs_review===1?"email needs":"emails need"} a look`:"Checked by the AI";if(filter==="found")$("inboxSubtitle").textContent="Emails you found by searching. Each is kept for 60 days, or until you press Reviewed.";if(filter==="sent")$("inboxSubtitle").textContent="Your last 14 days of sent mail";if(filter==="drafts")$("inboxSubtitle").textContent="Emails you started and have not sent";
 
   previewRenderOverview(inbox,needN);
   const rows=data.filter(visible);
@@ -4162,7 +4254,7 @@ function render(){
   if(cmp)rows.sort(cmp);
   if(impSet.size)rows.sort((a,b)=>isImp(b)-isImp(a));          // a stable sort: important people first, the chosen order kept inside each group
   scheduleWake();
-  {const b=$("expandAll"),can=lay()==="list"&&!["tasks","sent","drafts","shipping","subscriptions","trips","waiting","messages","junk"].includes(filter)&&rows.length>0;
+  {const b=$("expandAll"),can=lay()==="list"&&!["tasks","sent","drafts","shipping","subscriptions","trips","waiting","messages","junk","cleanup"].includes(filter)&&rows.length>0;
    b.hidden=!can||selected.size>1;if(can){const all=view.rows==="open"||rows.every(m=>expanded.has(`row-${m.id}`));b.textContent=all?"Collapse all":"Expand all";b.dataset.mode=all?"collapse":"expand"}}
   const copyMailButtons=(m,mobile=false)=>{
     const id=esc(m.id);
@@ -4232,7 +4324,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
         ${act}<div class="deckdots" aria-hidden="true">${dots}</div></div>`;
     }else{
       const readingHtml=cur?`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div>${copyMailButtons(cur)}</header>${quiet(cur,"detail")}</section>`:`<section class="reading enveliq-empty" aria-label="No email selected">${enEmptyReading()}</section>`;
-      if(lay()==="right"&&!["sent","drafts","tasks","shipping","waiting","subscriptions","trips","messages","junk"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
+      if(lay()==="right"&&!["sent","drafts","tasks","shipping","waiting","subscriptions","trips","messages","junk","cleanup"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
         dockHtml=readingHtml;
         listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div></div>`;
       }else listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rows.map(m=>quiet(m,"pane")).join("")}</div>${readingHtml}</div>`;
@@ -5804,7 +5896,7 @@ document.addEventListener("click",e=>{
      if(t.matches("[data-msg-unsend]")&&msgS.cur){msgReq(`/threads/${encodeURIComponent(msgS.cur.id)}/messages/${encodeURIComponent(t.dataset.msgUnsend)}`,"DELETE").then(async()=>{await loadMsgs();render()}).catch(er=>toast(er.message,5000));return}
    }}
   if(e.target.closest("[data-back-inbox]")){paneId=null;filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();window.scrollTo({top:0});return}
-  const n=e.target.closest("[data-filter]");if(n){filter=n.dataset.filter;if(filter==="all")paneId=null;if(n.classList.contains("nav")&&query){query="";$("search").value="";document.body.classList.remove("msearch")}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="drafts")loadDrafts();if(filter==="messages")openMsgPage();if(filter==="junk")openJunkPage();return}
+  const n=e.target.closest("[data-filter]");if(n){filter=n.dataset.filter;if(filter==="all")paneId=null;if(n.classList.contains("nav")&&query){query="";$("search").value="";document.body.classList.remove("msearch")}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="drafts")loadDrafts();if(filter==="messages")openMsgPage();if(filter==="junk")openJunkPage();if(filter==="cleanup")openCleanPage();return}
   const c=e.target.closest("[data-chip]");if(c){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();return}
   const wa=e.target.closest("[data-wait]");if(wa){waitAct(wa.dataset.waitId,wa.dataset.wait);return}
   const wn=e.target.closest("[data-wait-nudge]");if(wn){waitNudge(wn.dataset.waitNudge);return}
@@ -6476,7 +6568,8 @@ function applyFeatures(){
   if(filter==="drafts"&&!on){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   $("shipNav").hidden=!(on&&feat.shipping);$("waitNav").hidden=!(on&&feat.waiting);subNavSync();
   if(filter==="waiting"&&!(on&&feat.waiting)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
-  $("junkNav").hidden=!(on&&feat.junk_mail);
+  $("junkNav").hidden=!(on&&feat.junk_mail);$("cleanNav").hidden=!(on&&feat.clean_up);
+  if(filter==="cleanup"&&!(on&&feat.clean_up)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   if(filter==="junk"&&!(on&&feat.junk_mail)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   if(filter==="trips"&&!(on&&feat.travel)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   if(filter==="subscriptions"&&!(on&&feat.subscriptions)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}

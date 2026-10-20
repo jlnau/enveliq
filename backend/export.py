@@ -26,6 +26,7 @@ PLAIN_RECORDS = {
     "drafts": "drafts:",
     "emails_to_send_later": "scheduled:",
     "rules": "rules:",
+    "clean_up_kept_senders": "senders:",
     "assistant_chats": "agent:",
 }
 # Never copied out of a record, wherever they appear.

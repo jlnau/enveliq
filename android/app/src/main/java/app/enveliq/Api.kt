@@ -576,6 +576,51 @@ class EnveliqApi(address: String) {
         JSONObject(call("GET", "/api/v1/me/features")).optJSONObject("effective")?.optBoolean("all_mail", false) ?: false
     } catch (e: Exception) { false }
 
+    /** True when Clean up is switched on for this person on the server (administrators can switch it off). */
+    fun cleanUpAvailable(): Boolean = try {
+        JSONObject(call("GET", "/api/v1/me/features")).optJSONObject("effective")?.optBoolean("clean_up", false) ?: false
+    } catch (e: Exception) { false }
+
+    private fun cleanUp(text: String, archived: Boolean = false): CleanUp {
+        val r = JSONObject(text)
+        val arr = r.optJSONArray("senders")
+        val senders = (0 until (arr?.length() ?: 0)).mapNotNull { i ->
+            val s = arr?.optJSONObject(i) ?: return@mapNotNull null
+            val u = s.optJSONObject("unsubscribe")
+            Sender(
+                s.str("id"), s.str("name").ifBlank { s.str("address") }, s.str("address"), s.optInt("count"), s.optInt("opened"), s.optLong("last"), s.str("mailbox"),
+                s.optBoolean("flagged", false), u?.str("url")?.ifBlank { null }, u?.str("mailto")?.ifBlank { null }, u?.str("subject") ?: "",
+            )
+        }
+        val problems = r.optJSONArray("problems")?.let { p -> (0 until p.length()).map { p.optString(it) } } ?: emptyList()
+        val offer = r.optJSONObject("undo_offer")
+        val token = if (archived) r.str("undo") else (offer?.str("token") ?: "")
+        return CleanUp(senders, r.optInt("kept"), r.optInt("days", 60), r.optLong("now"), r.optInt("mailboxes", 1), problems, token, if (archived) r.optInt("archived") else (offer?.optInt("count") ?: 0), offer?.str("name") ?: "")
+    }
+
+    /** The mailing lists in the last 60 days. [refresh] looks through the mailbox again instead of using the last look. */
+    fun senders(refresh: Boolean = false): CleanUp = cleanUp(call("GET", "/api/v1/me/senders" + if (refresh) "?refresh=true" else ""))
+
+    /** Moves what is in the inbox from this sender to Archive and marks it read. Nothing is deleted. */
+    fun archiveSender(id: String): CleanUp {
+        val text = call("POST", "/api/v1/me/senders/" + enc(id) + "/archive", JSONObject())
+        val r = JSONObject(text)
+        val n = r.optInt("archived")
+        val note = if (n == 0) "Nothing to archive." else "Archived $n" + (if (r.optBoolean("more")) ". Press again for the rest." else ".") +
+            (if (r.optInt("left_for_tasks") > 0) " " + r.optInt("left_for_tasks") + " with a task stayed in your inbox." else "")
+        return cleanUp(text, archived = true).copy(toast = note)
+    }
+
+    /** Makes a normal Mail rule: new email from this sender is archived. */
+    fun alwaysArchive(id: String): CleanUp = cleanUp(call("POST", "/api/v1/me/senders/" + enc(id) + "/always", JSONObject()))
+
+    fun keepSender(id: String): CleanUp = cleanUp(call("POST", "/api/v1/me/senders/" + enc(id) + "/keep", JSONObject()))
+
+    fun showKeptSenders(): CleanUp = cleanUp(call("DELETE", "/api/v1/me/senders/keep"))
+
+    /** Puts back what the last archive moved. Returns how many were put back. */
+    fun undoClean(token: String): Int = JSONObject(call("POST", "/api/v1/me/senders/undo", JSONObject().put("token", token))).optInt("restored")
+
     /** Asks for the AI summary of a quiet entry. It is sent to your AI model only now. */
     fun askSummary(mail: Mail) {
         call("POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/summary", JSONObject())

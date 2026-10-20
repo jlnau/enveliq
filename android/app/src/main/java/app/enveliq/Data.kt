@@ -114,3 +114,12 @@ data class FoundRow(val token: String, val from: String, val subject: String, va
 
 /** How a search is going: [done] when every mailbox has answered. */
 data class FindProgress(val id: String, val done: Boolean, val listed: Int, val notes: List<String>)
+
+/** A mailing list in Clean up. [unsubUrl] or [unsubMailto] is null when the sender has none, or looks like a fake. [last] is seconds since 1970. */
+data class Sender(
+    val id: String, val name: String, val address: String, val count: Int, val opened: Int, val last: Long, val mailbox: String,
+    val flagged: Boolean, val unsubUrl: String?, val unsubMailto: String?, val unsubSubject: String,
+)
+
+/** What Clean up knows right now. [undo] is the one-time Undo token after an archive (it lasts about ten minutes), [undoName] says whose email it was. */
+data class CleanUp(val senders: List<Sender>, val kept: Int, val days: Int, val now: Long, val mailboxes: Int, val problems: List<String>, val undo: String = "", val undoCount: Int = 0, val undoName: String = "", val toast: String = "")

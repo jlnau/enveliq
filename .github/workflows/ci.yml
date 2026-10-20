@@ -289,6 +289,8 @@ jobs:
         run: node scripts/check_find.mjs
       - name: Junk Mail - list, AI answers, safe viewer, Not Junk and the phone layout (simulated server)
         run: node scripts/check_junk.mjs
+      - name: Clean up page, desktop and phone (simulated server)
+        run: node scripts/check_clean_up.mjs
       - name: Google Calendar - new or existing calendar choice, picker and the phone layout (simulated server)
         run: node scripts/check_google_calendar.mjs
       - name: Push relay for the Android app - what it forwards, what it refuses, and that nothing private passes through

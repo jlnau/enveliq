@@ -465,6 +465,16 @@ The app signs in through the same server routes as the website, so every sign-in
 
 The View panel option "Show the original email" fetches the original from the mailbox for the email you opened, through the same server route, safe rebuild and strict page rules as "View original email" (scripts removed, pictures from the internet and links off until you choose). The page holds at most three originals in memory for a moment so a redraw does not fetch again; they are never written to the browser's storage or to Enveliq's vault, and are dropped when the option is turned off or another person signs in. Only the on/off choice is saved, in the person's own encrypted view settings.
 
+## Clean up
+
+**Clean up** reads the headers of the last 60 days of the person's own inbox over IMAP: who each email is from, when, whether it has an unsubscribe header and whether it was opened. No email text is read and the AI is not used. The result is held in memory for about five minutes and never written to disk.
+
+- **Stored:** only the list of senders the person chose to keep (addresses), in the encrypted vault, included in their export and removed when they are deleted.
+- **Own data only:** sender ids are opaque, come from the signed-in person's own scan, and answer "not found" (or a refusal) for anyone else. Administrators cannot see another person's list.
+- **Changes at the mail service:** only **Archive what's here**, which moves that sender's inbox email to the Archive and marks it read (at most 500 per press, never email with an open task, and the exact sender address is checked), and **Undo**, which moves it back within 10 minutes (held in memory only, lost on restart, usable once). Nothing is deleted. Important people are never listed. Each action is rate-limited and recorded in the audit log without senders or subjects.
+- **Unsubscribe:** Enveliq never opens an unsubscribe link or sends the unsubscribe email itself. A sender flagged by the scam check gets no unsubscribe address at all. **Always archive new ones** is an ordinary Mail rule.
+- The page can be switched off by an administrator or the person (the `clean_up` feature switch); while off, every route refuses.
+
 ## Junk Mail
 
 **Junk Mail** reads the Junk or Spam folder of the person's own mailboxes and asks the configured AI model about each email.

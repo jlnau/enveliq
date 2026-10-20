@@ -133,6 +133,7 @@ Which emails alert you, quiet hours and the "important people only" filter are t
 
 ## New-email alerts: what you can do from the alert
 
+- **Clean up.** Under **More**, **Clean up** lists the mailing lists in your inbox from the last 60 days, one at a time by default. Unsubscribe opens a link only after you confirm the site named (or starts an email), **Archive what's here** asks on a full-screen form, **Always archive new ones** makes a Mail rule, **Keep** hides a sender, and **Undo** lasts 10 minutes. It appears only when Clean up is on for you. See [Clean up](CLEAN_UP.md).
 - **Daily summary.** Under Settings, Notifications you can switch on **Daily summary**: one quiet note each morning, made from the website's daily summary, for example "2 tasks due · 1 parcel out for delivery". It has numbers only, no names or subjects. It needs the daily summary to be on in Settings, Notifications on the website, and it comes over the same quiet connection as the other notes, so it is not available with Google's push service. If you switch on **Send new email in this summary instead** (website, Settings, Notifications), the app no longer announces each new email, except from your important people; the inbox still lists everything.
 - **Tap the alert** and Enveliq opens on that email.
 - **Reviewed** and **Archive** buttons on the alert mark the email at your mailbox without opening the app (they show once the phone is unlocked, never on the lock screen).
