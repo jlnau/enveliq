@@ -21,6 +21,7 @@ PLAIN_RECORDS = {
     "junk_mail": "junk:",
     "waiting_for_replies": "wait:",
     "writing_help": "writehelp:",
+    "writing_style": "style:",
     "important_people": "important:",
     "signature_and_saved_replies": "saved:",
     "drafts": "drafts:",

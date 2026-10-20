@@ -17,6 +17,7 @@ from .routes import AccountId, MessageId, fail
 
 class SettingsBody(StrictModel):
     on: bool
+    quick: bool | None = None
     instructions: str | None = Field(default=None, max_length=W.INSTRUCTIONS_MAX * 2)
 
 
@@ -26,6 +27,11 @@ class DraftBody(StrictModel):
 
 class NewDraftBody(DraftBody):
     subject: str = Field(default="", max_length=400)
+
+
+class QuickBody(StrictModel):
+    subject: str = Field(default="", max_length=400)
+    draft: str = Field(default="", max_length=W.DRAFT_MAX * 2)
 
 
 def build_writehelp_router(ctx: Any) -> APIRouter:
@@ -52,9 +58,13 @@ def build_writehelp_router(ctx: Any) -> APIRouter:
             raise HTTPException(status_code=409, detail={"code": "ai_not_configured", "message": "No AI model is set up yet. An administrator can add one under Administration, AI model."})
         return user
 
+    def guide_of(user: str) -> str:
+        style = getattr(ctx, "style", None)
+        return style.guide_for(user) if style is not None else ""
+
     def answer(user: str, mode: str, draft: str, **context: str) -> dict[str, Any]:
         try:
-            result = W.run(service.summariser, book.get(user)["instructions"], mode, draft, **context)
+            result = W.run(service.summariser, book.get(user)["instructions"], mode, draft, guide=guide_of(user), **context)
         except BridgeError as err:
             raise fail(err) from None
         except Exception:
@@ -75,8 +85,8 @@ def build_writehelp_router(ctx: Any) -> APIRouter:
         user = session.principal.user_id
         if not available(user):
             raise HTTPException(status_code=403, detail="Writing help is switched off.")
-        saved = book.save(user, body.on, body.instructions)
-        vault.audit({"event": "write_help_settings", "actor_user_id": user, "on": saved["on"], "at": time.time()})
+        saved = book.save(user, body.on, body.instructions, body.quick)
+        vault.audit({"event": "write_help_settings", "actor_user_id": user, "on": saved["on"], "quick": saved["quick"], "at": time.time()})
         service.refresh_ai(vault)
         return {"available": True, "ai_ready": service.summariser.enabled, **saved}
 
@@ -102,5 +112,31 @@ def build_writehelp_router(ctx: Any) -> APIRouter:
         response.headers["Cache-Control"] = "no-store"
         user = ready(session)
         return answer(user, "new", body.draft, subject=body.subject)
+
+    @router.post("/me/write-help/quick-fix")
+    def quick_fix(body: QuickBody, response: Response, session: Session = Depends(session_dep)):
+        """Quick AI Send, step one: a strict proofread of the subject and text. It sends nothing and keeps nothing; the page sends the
+        result with the normal send route, and keeps the person's own draft if anything fails."""
+        response.headers["Cache-Control"] = "no-store"
+        user = session.principal.user_id
+        if not available(user):
+            raise HTTPException(status_code=403, detail="Writing help is switched off.")
+        if not book.get(user)["quick"]:
+            raise HTTPException(status_code=403, detail="Turn on Quick AI Send in Settings first.")
+        if not limit.allow(f"writehelp:{user}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        service.refresh_ai(vault)
+        if not service.summariser.enabled:
+            raise HTTPException(status_code=409, detail={"code": "ai_not_configured", "message": "No AI model is set up yet. An administrator can add one under Administration, AI model."})
+        try:
+            result = W.quick_fix(service.summariser, body.subject, body.draft, guide_of(user))
+        except BridgeError as err:
+            if err.code in ("quick_unsafe", "empty_draft"):
+                raise HTTPException(status_code=422, detail={"code": err.code, "message": err.message}) from None
+            raise fail(err) from None
+        except Exception:
+            raise HTTPException(status_code=502, detail={"code": "ai_unreachable", "message": "The AI server could not be reached or took too long to answer."}) from None
+        vault.audit({"event": "quick_send_checked", "actor_user_id": user, "at": time.time()})
+        return result
 
     return router

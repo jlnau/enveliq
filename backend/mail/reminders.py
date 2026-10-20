@@ -44,6 +44,7 @@ class Reminders:
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         self.subs: Any = None                           # set by the application: renewals and free trials (mail/subscriptions.py)
+        self.style_tick: Any = None                     # set by the application: the weekly writing-style guide (mail/style.py)
         self.summary: Any = None                        # set by the application: the daily summary's extra lines (mail/summary.py)
 
     # ---------- the words ----------
@@ -218,6 +219,8 @@ class Reminders:
                     break
                 try:
                     total += self.run_user(uid)
+                    if self.style_tick is not None:
+                        self.style_tick(uid)                      # once a week: a fresh writing-style guide (a background thread; see style.py)
                 except Exception:
                     log.info("reminders for one person failed")        # never anything from the task or the email
         return total
