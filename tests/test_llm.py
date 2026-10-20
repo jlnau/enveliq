@@ -133,7 +133,7 @@ def test_odd_values_are_cleaned_not_trusted():
     assert len(out["summary"]) == 600 and "\x00" not in out["summary"] and "\x1b" not in out["summary"]
     assert out["category"] == "Other" and out["priority"] == "normal" and out["action_required"] is True
     assert len(out["suggested_task"]["title"]) == 120 and out["suggested_task"]["due"] is None and out["suggested_task"]["detail"] is None
-    assert set(out) == {"summary", "category", "priority", "action_required", "suggested_task"}
+    assert set(out) == {"summary", "category", "priority", "action_required", "suggested_task", "act_today", "today_reason"}
 
 
 def test_category_and_priority_are_matched_ignoring_case():
