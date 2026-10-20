@@ -285,13 +285,13 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             }
             if (kind == "new") {
                 Text("Subject", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
-                OutlinedTextField(value = subject, onValueChange = { subject = it }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                SpellField(subject, { subject = it }, singleLine = true, modifier = Modifier.fillMaxWidth())
             } else {
                 Text(shownSubject, color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 12.dp))
                 if (kind == "forward") Text("The email you are forwarding goes underneath, with its files.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp))
             }
             Text(if (kind == "forward") "Your note (optional)" else "Message", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 14.dp, bottom = 6.dp))
-            OutlinedTextField(value = body, onValueChange = { body = it }, minLines = 8, modifier = Modifier.fillMaxWidth())
+            SpellField(body, { body = it }, singleLine = false, minLines = 8, modifier = Modifier.fillMaxWidth())
             run {
                 files.forEachIndexed { i, f ->
                     Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
