@@ -48,6 +48,7 @@ signedIn = false;
 await page.goto(`${ORIGIN}/app-signin?c=${CHALLENGE}`);
 await page.waitForURL(/\/login\?then=/);
 check("someone not signed in is sent to sign in first, and brought back", decodeURIComponent(page.url()).includes(`/app-signin?c=${CHALLENGE}`));
+check("the sign-in page says that signing in means agreeing to the terms and privacy notice, with both as links", (await page.locator("#agree").innerText()).includes("By signing in you agree") && (await page.locator("#agree a[href='/terms']").count()) === 1 && (await page.locator("#agree a[href='/privacy']").count()) === 1);
 check("no sideways scroll on a phone", await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
 
 await browser.close();

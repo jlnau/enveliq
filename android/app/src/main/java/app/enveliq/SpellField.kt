@@ -38,7 +38,6 @@ internal fun SpellField(value: String, onChange: (String) -> Unit, singleLine: B
                 val pad = (14 * ctx.resources.displayMetrics.density).toInt()
                 setPadding(pad, pad, pad, pad)
                 setText(value)
-                setSelection(text.length)
                 addTextChangedListener(object : TextWatcher {
                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -58,8 +57,9 @@ internal fun SpellField(value: String, onChange: (String) -> Unit, singleLine: B
                 et.textCursorDrawable = GradientDrawable().apply { setColor(accent); setSize((2 * et.resources.displayMetrics.density).toInt().coerceAtLeast(2), 0) }
             }
             if (et.text.toString() != value) {
+                val at = et.selectionStart.coerceIn(0, value.length)       // an outside change (a signature, a cleared box) keeps the cursor where it was
                 et.setText(value)
-                et.setSelection(et.text.length)
+                et.setSelection(at)
             }
         },
     )
@@ -94,7 +94,6 @@ internal fun CodeField(value: String, onChange: (String) -> Unit, onDone: () -> 
                 val pad = (14 * ctx.resources.displayMetrics.density).toInt()
                 setPadding(pad, pad, pad, pad)
                 setText(value)
-                setSelection(text.length)
                 addTextChangedListener(object : TextWatcher {
                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -119,8 +118,9 @@ internal fun CodeField(value: String, onChange: (String) -> Unit, onDone: () -> 
                 et.textCursorDrawable = GradientDrawable().apply { setColor(accent); setSize((2 * et.resources.displayMetrics.density).toInt().coerceAtLeast(2), 0) }
             }
             if (et.text.toString() != value) {
+                val at = et.selectionStart.coerceIn(0, value.length)       // an outside change (a signature, a cleared box) keeps the cursor where it was
                 et.setText(value)
-                et.setSelection(et.text.length)
+                et.setSelection(at)
             }
         },
     )

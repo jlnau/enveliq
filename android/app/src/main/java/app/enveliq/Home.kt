@@ -95,6 +95,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -213,6 +214,12 @@ fun EnveliqApp(activity: MainActivity) {
         }
     }
 
+    // Shown once on this phone, once you are in: what Enveliq is and is not. "I understand" is remembered here.
+    var termsSeen by remember { mutableStateOf(prefs.getBoolean("terms_ack", false)) }
+    if (!termsSeen && (stage == Stage.Home || stage == Stage.Welcome) && server.isNotEmpty()) {
+        TermsNotice(server) { prefs.edit().putBoolean("terms_ack", true).apply(); termsSeen = true }
+    }
+
     when (stage) {
         Stage.Opening -> Box(Modifier.fillMaxSize().background(Navy), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -309,6 +316,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     // Which emails you have opened in Enveliq. The ones you have not opened glow softly in the list.
     val openedKeys = remember { androidx.compose.runtime.mutableStateMapOf<String, Boolean>() }
     var openedLoaded by remember { mutableStateOf(false) }
+    var lastRefresh by remember { mutableStateOf(0L) }          // when the list was last read, for the quiet refresh
     suspend fun loadOpened() {
         try {
             val keys = withContext(Dispatchers.IO) { api.openedKeys() }
@@ -322,6 +330,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         error = ""
         scope.launch {
             loadOpened()
+            if (!includeReadOk) includeReadOk = withContext(Dispatchers.IO) { api.includeReadAvailable() }
             try {
                 val list = withContext(Dispatchers.IO) { api.inbox(view, includeRead) }
                 mails.clear()
@@ -339,6 +348,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
             } finally {
                 loading = false
                 loaded = true
+                lastRefresh = System.currentTimeMillis()
             }
         }
     }
@@ -380,6 +390,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     val selected = remember { mutableStateListOf<String>() }
     var askSnooze by remember { mutableStateOf(false) }
     var askTask by remember { mutableStateOf(false) }
+    var taskVersion by remember { mutableStateOf(0) }          // goes up when a task is added, so the open email shows it at once
     var tagPicker by remember { mutableStateOf<Pair<Mail, TagInfo>?>(null) }
     val tagMap = remember { mutableStateMapOf<String, List<String>>() }
     var composing by remember { mutableStateOf<ComposeTarget?>(null) }
@@ -391,6 +402,45 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     BackHandler(enabled = tab == Tab.Inbox && opened == null && composing == null && !drawer.isOpen && selected.isEmpty() &&
         (view != "inbox" || filters.active)) {
         view = "inbox"; filters.clear()
+    }
+    // With emails ticked, Back unticks them first instead of leaving the app.
+    BackHandler(enabled = tab == Tab.Inbox && opened == null && composing == null && !drawer.isOpen && selected.isNotEmpty()) {
+        selected.clear()
+    }
+    // The list refreshes itself, quietly, about once a minute while the app is open and looking at the inbox, and as soon as you come back to it.
+    // It never refreshes while you have an email open, are writing, or have emails ticked, so nothing moves under your finger.
+    fun refreshQuietly() {
+        if (loading || !loaded || tab != Tab.Inbox || opened != null || composing != null || selected.isNotEmpty()) return
+        lastRefresh = System.currentTimeMillis()
+        scope.launch {
+            try {
+                val list = withContext(Dispatchers.IO) { api.inbox(view, includeRead) }
+                if (opened != null || composing != null || selected.isNotEmpty()) return@launch        // you started something meanwhile
+                mails.clear()
+                mails.addAll(list)
+                if (view == "inbox") WaitingWidget.update(activity, list.count { !it.quiet })
+                if (view == "inbox") Notifier.clearGone(activity, list.map { it.id }, AlertPrefs.alerted(activity))
+            } catch (e: ApiException) {
+                if (e.code == 401) onLeave(true)
+            } catch (_: Exception) { }                  // quiet: the next try, or a pull down, shows any problem
+        }
+    }
+    var resumed by remember { mutableStateOf(true) }
+    DisposableEffect(activity) {
+        val watcher = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) resumed = true
+            else if (event == androidx.lifecycle.Lifecycle.Event.ON_PAUSE) resumed = false
+        }
+        activity.lifecycle.addObserver(watcher)
+        onDispose { activity.lifecycle.removeObserver(watcher) }
+    }
+    LaunchedEffect(resumed, tab, view, includeRead) {
+        if (!resumed) return@LaunchedEffect
+        if (System.currentTimeMillis() - lastRefresh > 20_000) refreshQuietly()
+        while (true) {
+            delay(60_000)
+            refreshQuietly()
+        }
     }
     // "Share" from another app: the text arrives in a new email, ready to address.
     val shared = activity.shareRequest
@@ -643,7 +693,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
             TagPickerScreen(m, api, info, tagMap[keyOf(m)] ?: m.tags, onClose = { tagPicker = null }, onSaved = { tagMap[keyOf(m)] = it; tagPicker = null })
         }
         if (askTask && current != null) {
-            AddTaskPopup(current, api, onClose = { askTask = false }, onDone = { msg -> askTask = false; scope.launch { snack.showSnackbar(msg) } })
+            AddTaskPopup(current, api, onClose = { askTask = false }, onDone = { msg -> askTask = false; taskVersion++; scope.launch { snack.showSnackbar(msg) } })
         }
         if (askSnooze && current != null) {
             SnoozeChoices(onPick = { until, label -> askSnooze = false; snooze(current, until, label) }, onCancel = { askSnooze = false })
@@ -683,12 +733,12 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 Row(Modifier.fillMaxSize()) {
                     Box(Modifier.weight(0.42f).fillMaxHeight()) { inboxPane() }
                     Box(Modifier.weight(0.58f).fillMaxHeight()) {
-                        if (current != null) DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) })
+                        if (current != null) DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion)
                         else Text("Choose an email to read it here.", color = Muted, fontSize = 16.sp, modifier = Modifier.padding(32.dp))
                     }
                 }
             } else if (current != null) {
-                DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) })
+                DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion)
             } else {
                 when (tab) {
                     Tab.Inbox -> inboxPane()
@@ -1011,7 +1061,7 @@ private fun MailRow(mail: Mail, picked: Boolean, fresh: Boolean, tags: List<Stri
 }
 
 @Composable
-private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit, onJunk: (Boolean) -> Unit, onAskedSummary: () -> Unit = {}) {
+private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit, onJunk: (Boolean) -> Unit, onAskedSummary: () -> Unit = {}, taskVersion: Int = 0) {
     var summaryAsked by remember(mail.id) { mutableStateOf(false) }
     var showOriginal by remember(mail.id) { mutableStateOf(false) }
     var unsubLink by remember(mail.id) { mutableStateOf<String?>(null) }
@@ -1168,7 +1218,7 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
                 shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
             ) { Text("Show original email", color = Ink, fontSize = 13.sp) }
 
-            EmailTasks(mail, api)
+            EmailTasks(mail, api, taskVersion)
 
             AttachmentsSection(mail, api)
             Spacer(Modifier.height(24.dp))

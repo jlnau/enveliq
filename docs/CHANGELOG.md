@@ -4,7 +4,17 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**Android: sign in with a passkey saved on the phone.** **Sign in with a passkey** now uses Android's own passkey screen, so a passkey kept in Bitwarden or Google Password Manager signs you in without opening the browser. If there is no passkey to use, or the server is not set up for it yet, it opens the browser as before (a passkey or single sign-on). To turn it on for the phone's own screen, set the new `ENVELIQ_ANDROID_CERT_SHA256` setting to the app's signing fingerprint (shown in the Android build summary) and check that `/.well-known/assetlinks.json` is reachable; the steps are in `docs/ANDROID.md`. With the setting empty nothing changes. Touches `backend/auth/passkeys.py`, `backend/app.py`, `android/` (`NativePasskey.kt`, `Api.kt`, `Screens.kt`, `build.gradle.kts`), `docs/ANDROID.md`, `docs/ENVIRONMENT.md`, `SECURITY.md`, `tests/test_android_passkeys.py`.
+
+**Android: the inbox refreshes itself.** While the app is open on the inbox the list now reloads quietly about once a minute, and again as soon as you come back to the app, so something deleted on the website disappears without pulling down. It does not refresh while you have an email open, are writing, or have emails ticked, and does nothing while the app is out of sight. Touches `android/` (`Home.kt`), `docs/ANDROID.md`.
+
+**Website: the sign-in page mentions the terms.** Under the password boxes it says "By signing in you agree to the terms of use and the privacy notice", with both as links, as the app does. Touches `web/static/auth.js`, `scripts/check_app_signin.mjs`, `docs/TERMS.md`.
+
+**Wording and documents checked against the setup.** (1) The administrator description of the "include read mail" option now says 60 days (it still said 14) and uses the name **Include read mail**. (2) The privacy page, `SECURITY.md` and the guides say the same thing. (3) `docs/ANDROID.md` was brought up to date. Touches `web/static/auth.js`, `backend/mail/features.py`, `docs/PRIVACY.md`, `SECURITY.md`, `docs/ANDROID.md`.
+
+**Android: small fixes.** (1) A task you add shows on the open email's task card straight away. (2) If the first check for "Include read mail" could not reach the server, it is checked again on the next refresh. (3) The two native text boxes (spell check and code box) keep the cursor where it was when the text is changed from outside, such as a signature being added. (4) With emails ticked in the list, **Back** now unticks them instead of leaving the app. The phone-width browser check now also covers the Include read mail panel. Touches `android/` (`Home.kt`, `TaskCard.kt`, `SpellField.kt`), `scripts/check_all_mail.mjs`.
+
+**Android: terms and privacy are in the app.** (1) **Settings, About** now has **Terms of use**, **Privacy** and **Security**, which open the same pages as the website from your own server. (2) The sign-in screen says "By signing in you agree to the terms of use and the privacy notice", with both as links, just above the Sign in button. (3) The first time you are in on a phone, a short **Before you start** notice says that Enveliq is provided as it is with no warranty, that AI summaries can be wrong, to keep your own backups, and that an online AI service receives the text of emails it summarises. Press **I understand** to continue (or **Read the terms**). That choice is remembered on that phone only; nothing is sent to the server. Touches `android/` (`Screens.kt`, `Settings.kt`, `Home.kt`), `docs/ANDROID.md`, `docs/TERMS.md`.
 
 ## v0.98 (2026-10-20)
 

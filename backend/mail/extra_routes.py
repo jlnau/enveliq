@@ -177,7 +177,7 @@ def build_extra_router(ctx: Any) -> APIRouter:
         vault.audit({"event": "features_saved_admin", "actor_user_id": session.principal.user_id, "flags": flags, "at": time.time()})
         return {"flags": flags, "labels": features.LABELS}
 
-    # ---------- all emails: the last 14 days of the inbox, and Generate summary ----------
+    # ---------- include read mail (all emails): the last 60 days of the inbox, and Generate summary ----------
 
     def announce(account: dict[str, Any], items: list[dict[str, Any]]) -> None:
         """Alert only after release makes an email visible, without waiting for other summaries."""

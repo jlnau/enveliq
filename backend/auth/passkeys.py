@@ -36,6 +36,8 @@ class RelyingParty:
     rp_id: str      # hostname of the public URL, e.g. "enveliq.home.example"
     origin: str     # exact origin, e.g. "https://enveliq.home.example"
     name: str = "Enveliq"
+    # Extra origins accepted when SIGNING IN (never when adding a passkey): the Enveliq Android app, which signs with its own key.
+    extra_origins: tuple[str, ...] = ()
 
 
 def registration_options(rp: RelyingParty, user: dict[str, Any]) -> tuple[dict, bytes]:
@@ -99,9 +101,43 @@ def verify_authentication(rp: RelyingParty, credential: dict, challenge: bytes, 
         credential=credential,
         expected_challenge=challenge,
         expected_rp_id=rp.rp_id,
-        expected_origin=rp.origin,
+        expected_origin=[rp.origin, *rp.extra_origins] if rp.extra_origins else rp.origin,
         credential_public_key=base64url_to_bytes(stored["public_key"]),
         credential_current_sign_count=int(stored.get("sign_count") or 0),
         require_user_verification=True,
     )
     return verified.new_sign_count
+
+
+ANDROID_PACKAGE = "app.enveliq"
+
+
+def parse_cert_fingerprints(raw: str) -> list[str]:
+    """SHA-256 fingerprints of the Android app's signing certificate, from a comma-separated setting (hex, with or without colons).
+    Anything that is not 32 bytes of hex is ignored. Returns them as upper-case, colon-separated pairs, as Android wants them."""
+    found: list[str] = []
+    for part in (raw or "").replace(";", ",").replace(" ", ",").split(","):
+        hexed = part.strip().replace(":", "")
+        if len(hexed) != 64:
+            continue
+        try:
+            data = bytes.fromhex(hexed)
+        except ValueError:
+            continue
+        pretty = ":".join(f"{b:02X}" for b in data)
+        if pretty not in found:
+            found.append(pretty)
+    return found
+
+
+def android_origin(fingerprint: str) -> str:
+    """The origin a passkey response carries when it was made inside the Android app: its signing certificate's hash."""
+    return "android:apk-key-hash:" + bytes_to_base64url(bytes.fromhex(fingerprint.replace(":", "")))
+
+
+def asset_links(fingerprints: list[str]) -> list[dict[str, Any]]:
+    """The /.well-known/assetlinks.json document: it tells Android that this site trusts the Enveliq app for passkeys."""
+    return [{
+        "relation": ["delegate_permission/common.get_login_creds"],
+        "target": {"namespace": "android_app", "package_name": ANDROID_PACKAGE, "sha256_cert_fingerprints": fingerprints},
+    }]

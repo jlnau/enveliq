@@ -52,7 +52,17 @@ When you have more than one address (a mailbox's own address and its aliases, fr
 - **Home-screen widget:** add "Enveliq" from the phone's widget list for a square that says how many emails are waiting. It shows the number only and is updated whenever the inbox loads; signing out clears it.
 
 ## Passkeys and single sign-on
-On the sign-in screen, **Sign in with a passkey or single sign-on** opens your server's `/app-signin` page in the phone's browser. Sign in there the usual way; press **Open the Enveliq app** and the app finishes signing in (one-time code, two minutes, once, tied to a secret only the app holds). "Keep me signed in on this phone" is read when you press the button. After single sign-on the browser shows the inbox: go back to the app and press the button again, which now finishes straight away. The app registers the link `enveliq://signin` for this.
+On the sign-in screen, **Sign in with a passkey** (the button under Sign in, after a thin "or" line) uses a passkey saved on the phone itself, such as one in Bitwarden or Google Password Manager, through Android's own passkey screen. Nothing opens in the browser. If there is no passkey to use, or the server has not been set up for it (see below), the button opens your server's `/app-signin` page in the phone's browser instead, where a passkey or single sign-on both work. Sign in there the usual way; press **Open the Enveliq app** and the app finishes signing in (one-time code, two minutes, once, tied to a secret only the app holds). "Keep me signed in on this phone" is read when you press the button. After single sign-on the browser shows the inbox: go back to the app and press the button again, which now finishes straight away. The app registers the link `enveliq://signin` for this. If you close the passkey screen yourself, nothing else happens.
+
+### Passkeys on the phone: one-time set-up on the server
+This is only needed for the phone's own passkey screen; without it the button simply uses the browser. Android only trusts an app for passkeys when the website says so.
+
+1. Find the app's signing fingerprint: open the **Build Android app** run on GitHub for the version you installed; its summary lists "Signing certificate" with a **SHA-256** line (it is public, not a secret). If you use your own key, `keytool -list -v -keystore <file>` shows it.
+2. In your Enveliq settings (Arcane, the `enveliq` project's environment), set `ENVELIQ_ANDROID_CERT_SHA256` to that value (hex, with or without colons; several can be separated by commas, for example the test build's and the release build's) and redeploy. See [Settings reference](ENVIRONMENT.md).
+3. Check `https://your-address/.well-known/assetlinks.json` in a browser: it shows the app name and the fingerprint. It must be reachable by anyone, **without** Cloudflare Access or another sign-in in front of that one path, because Google reads it to confirm the link.
+4. Passkeys you already added on the website work as they are. They are tied to your site's address, not to the app.
+
+The app's signing key must stay the same from one version to the next (it does: see "Signing"); a different key needs its fingerprint added.
 
 ## Your devices and updates
 Settings, Security, **Your devices** lists the places you are signed in and lets you sign another one out. Names come from the app ("Enveliq app on <phone model>") or, for a browser, a short guess such as "Chrome on Windows". Sign-ins you chose to keep across a restart are listed too. The list is yours alone. About, **Check for a new version** asks your own server (which checks GitHub once a day) for the newest release and, if it is newer than the app, offers to open its download page; the app never contacts GitHub itself. Installing is Android's own step. If an administrator switched the update notice off, the app says it has no answer.
@@ -60,14 +70,14 @@ Settings, Security, **Your devices** lists the places you are signed in and lets
 ## Tags, files, links and views
 
 - **Tags:** on an opened email, **Choose tags** opens a full screen list with a search box at the top and tick boxes. Tick or untick several, then **Save tags** applies them together. The email's current tags start ticked, so nothing is lost. **Make the tag "..."** appears when what you typed does not exist yet (only if your mail service lets tags be made). Shown only if your mail service keeps tags.
-- **Filter by tag:** in the inbox, the **Tags** control opens a full screen list of the tags on the emails you have, with how many emails each one has. Tap a tag to show only those emails. **Clear filter** (in that screen) or **Clear ✕** (next to the control) removes the filter.
+- **Filter by tag:** in the inbox, the second filter button (the tag symbol) has **Tags…**, which opens a full screen list of the tags on the emails you have, with how many emails each one has. Tap a tag to show only those emails. Choose **All** in that button to clear every filter.
 - **Files with this email:** each file's size and the AI's note (labelled). **Save to my phone** asks where to save it. The file is fetched at that moment and not kept by the app.
 - **Show the original email:** opens the email full screen as its sender made it: layout, colours, tables, pictures that came inside the email, and links. If an email has no formatted version, you see its plain text instead, and **Plain text** can always be chosen. Pictures that live on the internet are held back (they can tell the sender you opened the email) until you tap **Show pictures**. It uses the same safe copy the website shows: the server rebuilds the email from allowed parts only (no scripts, forms or frames), and the app shows it with JavaScript off, no file or storage access and no network until you allow pictures. Pinch to zoom.
 - **Links:** every link, in the formatted email or the plain text, asks first and names the site it goes to. Unusual links (plain http, look-alike characters, bare numbers) get an extra warning.
-- **Inbox, Reviewed, Archived:** the chips at the top switch views. Reviewed and Archived show what the server still keeps (a few days).
-- **More than one mailbox:** a chip for each mailbox appears and filters the list.
+- **Inbox, Reviewed, Archived:** the filter button on the thin row under the top bar switches views. Reviewed and Archived show what the server still keeps (a few days). Back from any of them (or from a needs-action, mailbox or tag filter) returns to the whole inbox first.
+- **Needs action, mailbox and tags:** the second button on that row. With more than one mailbox it also lists each mailbox.
 
-## Added in version 0.97
+## Added in versions 0.97 and 0.98
 
 - **Junk and Block sender.** On an opened email, **Send to Junk** moves it to your mailbox's own Junk or Spam folder (Undo works for a few seconds). **Block sender** does that and also makes a rule, so new email from that address goes to Junk from then on. The rule is only made after the Undo time has passed. People on your important list are never blocked. **Settings, Blocked senders** lists the blocked addresses, each with **Unblock**. It is the same rule the website uses (see [Junk mail](JUNK_MAIL.md) and [Mail rules](MAIL_RULES.md)).
 - **Take care with this one.** When Enveliq's check finds something odd about an email (for example a sender name that does not match the address), a boxed note above the summary says why in plain words.
@@ -82,7 +92,14 @@ Settings, Security, **Your devices** lists the places you are signed in and lets
 
 - **Files and their summaries.** An email's files are listed under the AI summary with the AI's note on each (labelled), or the reason a file was not read. **View** (or **Preview** for a picture) opens the same viewer as the website: PDF pages with zoom, pictures, tables and plain text, made by your server in memory. **Save to my phone** keeps a copy where you choose. Nothing is kept by Enveliq or the app.
 - **A paperclip** beside the time on any email in the list that has files.
-- **A cleaner main screen.** The top row is a menu button, the Enveliq logo, the notification bell (it opens Notes and alerts, with a red dot when something is new), search, and your picture (or initials). Tap the picture for **Your account** (opens the website's account page) and **Settings**. The menu button opens Inbox, Tasks, Drafts, More and Settings, which no longer take space at the bottom. A thin row under it says where you are, with a filter button (Inbox, Reviewed, Archived) and a second button for needs action, mailbox and tags. Pull down to refresh. The sign-in screen shows the Enveliq logo, the form on one card, and, fixed at the bottom, the Sign in button with **Sign in with a passkey** beneath it, after a thin "or" line. The two-factor code box at sign-in is marked as a one-time code, so password managers such as Bitwarden can recognise and fill it. Each email in the list shows its tags as small chips (up to three) under the summary. The "Open this link?" box names the site and shows the full address. The subject and message boxes when writing use the phone’s own text box, so the phone’s spell checker underlines mistakes and offers fixes. An email you have not opened yet in Enveliq has a soft blue edge and a bold subject; opening it clears that (the website shares the same record). With Include read mail on, read mail with no summary yet is shown plain, with "No summary yet". An envelope button next to the tag button is **Include read mail**: it opens a box that says what it does ("Adds mail you’ve already read from the last 60 days. Summaries only when you ask.") with a switch. It stays on, even after the app is closed, until you switch it off, and it is only shown when the feature is available to you. Read mail shows "Summary not generated" with a **Generate summary** button. Back from a filtered inbox clears the filters first; Back from the plain inbox leaves the app. An open email fills the screen, and its bottom bar is symbols: a tick (Reviewed), an archive box, a bin and a clock (Remind me later).
+- **A cleaner main screen.** The top row is a menu button, the Enveliq logo, the notification bell (it opens Notes and alerts, with a red dot when something is new), search, and your picture (or initials). Tap the picture for **Your account** (opens the website's account page) and **Settings**. The menu button opens Inbox, Tasks, Drafts, More and Settings, which no longer take space at the bottom. A thin row under it says where you are, with a filter button (Inbox, Reviewed, Archived), a second button for needs action, mailbox and tags, and the **Include read mail** button. Pull down to refresh. Back from a filtered inbox clears the filters first; With emails ticked, Back unticks them first; Back from the plain inbox leaves the app.
+- **Include read mail** (the envelope button on that row; called All emails on the website before 0.98) opens a box that says what it does ("Adds mail you’ve already read from the last 60 days. Summaries only when you ask.") with a switch. It stays on, even after the app is closed, until you switch it off, and it is only shown when the feature is available to you. Read mail shows plain, with "No summary yet"; open it and press **Generate summary** to have one written (that sends the email’s text to your AI model).
+- **New email stands out.** An email you have not opened yet in Enveliq has a soft blue edge and a bold subject; opening it clears that (the website shares the same record). Each email in the list shows its tags as small chips (up to three) under the summary.
+- **Writing.** The subject and message boxes use the phone’s own text box, so the phone’s spell checker underlines mistakes and offers fixes.
+- **Links.** The "Open this link?" box names the site and shows the full address.
+- **Sign-in screen.** It shows the Enveliq logo, the form on one card, and, fixed at the bottom, the Sign in button with **Sign in with a passkey** beneath it after a thin "or" line. The two-factor code box is marked as a one-time code, so password managers such as Bitwarden can recognise and fill it. The terms and privacy notice are linked just above Sign in.
+- **Terms.** **Settings, About** has Terms of use, Privacy and Security. A short "Before you start" notice (provided as it is with no warranty; summaries can be wrong; keep backups; online AI services receive email text) is shown once on each phone and remembered there.
+- **An open email** fills the screen, and its bottom bar is symbols: a tick (Reviewed), an archive box, a bin, a tag, a clock (Remind me later) and a plus (Add a task).
 - **Send later.** **Later** beside Send on a new email, reply or forward picks a time; **More, Waiting to send** lists and takes back what is waiting. Files cannot wait. See [Send later](SEND_LATER.md).
 - **Attach files to replies and forwards**, as on the website. A forward keeps the files of the original unless you untick them.
 - **Alerts for messages, notes and alerts, tasks due today and parcels to confirm.** **Settings, Notifications** has a switch for each, off until you turn it on. Direct mode only (not Google's push). The server's alert stream tells the app only *which kind* has something new, never any words, so the note says just "New message", "A task is due" and so on. They follow your quiet hours.
@@ -133,59 +150,23 @@ Which emails alert you, quiet hours and the "important people only" filter are t
 - **Undo send:** if you have an "undo send" time in Settings on the website, a bar at the bottom says "Sending in … seconds" with **Undo**.
 - **Drafts:** closing a half-written email offers to keep it. The **Drafts** tab lists them (kept for 14 days, the same drafts the website shows); tap one to carry on, or Delete it.
 - The writing screen opens full screen, with Close at the top and **Send** and **Save draft** fixed at the bottom.
-- **Pull down** on the inbox to refresh. The list keeps its place when you switch tabs.
+- **Pull down** on the inbox to refresh. The list keeps its place when you switch tabs. It also refreshes itself, quietly, about once a minute while the app is open on the inbox, and when you come back to the app, so something deleted on the website disappears by itself. It never refreshes while you have an email open, are writing, or have emails ticked, and does nothing while the app is out of sight.
 - **Ask for my fingerprint, face or PIN** (Settings, Security): Enveliq asks for it when you open it, and again after it has been out of sight for a minute. It needs a screen lock to be set up in Android first; the app never locks you out of a phone that has none. This is a convenience on top of your sign-in, not a replacement for it.
 
-## Android app to-do list
+## Still to do
 
-Done in version 0.95: https:// filled in, Show password, plainer errors, tap an alert to open the email, Reviewed/Archive buttons on the alert, alerts that clear themselves, pull to refresh, fingerprint/face/PIN lock.
+Nearly everything on the old wish list is now in the app (tags, files and summaries, links, junk and block, unsubscribe, send later, signature, contacts, tasks, the bell, shipping, trips, news, chat, light and dark, text size, the tablet layout, the widget, your devices, passkeys and single sign-on through the browser, update checks and the welcome). What is left, roughly in this order:
 
-Still to do. Everything the website does that makes sense on a phone, roughly in this order:
+- **Move an email to a folder, and views like Today and Needs attention** as on the website (needs action and mailbox filters exist already).
+- **Share to Enveliq as a task:** Share currently starts a new email.
+- **A screen-reader check, screen by screen.**
 
-**Everyday email**
-- **Email tags**: see, add and remove tags, and filter the inbox by tag.
-- The rest of the website's actions: Task, mark unread (needs a way to see reviewed email first, so it comes with folders and views), and move.
-- Attachments: their summaries, a View button (page pictures held in memory only) and Save or Share.
-- Links in an email open only after a tap and a plain "this goes to …" check.
-- Folders and views as on the website (Today, Needs attention, and your folders), and more than one mailbox.
-
-**Wishes added after the first weeks of testing**
-- **Attach files when writing** a new email, reply or forward (a photo or any file from the phone).
-- **Unsubscribe button** on an email, using the website's existing unsubscribe.
-- **Scam and sender warnings** in the original-email view, as on the website (look-alike senders, suspicious links).
-- **Junk and block:** mark an email as junk and block a sender, in the Android app **and in Enveliq itself** (the website and server, not only the app).
-- **Search all mail**, not just the inbox, as the website's search everywhere does.
-- **Alerts only for the emails that matter:** a setting to alert only for "needs action" or important people.
-- **Open the next email after archiving:** a setting users can switch on, for working through a pile without going back to the list.
-- **Send later:** pick a time for an email to go (first check what the server supports).
-- **Pick someone from the phone's contacts**, and let Enveliq handle "email this person" links from other apps.
-- **A signature** added to emails you send.
-
-**Beyond email** (each as its own screen, as on the website)
-- Tasks in full, the bell (notes and messages), shipping, calendar, news feeds and chat messages.
-
-**Alerts**
-- One switch per kind of alert, and the optional "Hide the watching note" button.
-- Alerts that clear the moment an email is reviewed elsewhere (today they clear when the app next checks; instant clearing needs the server to announce it).
-
-**Look and comfort**
-- Light and dark follow the phone's setting (today the app is dark).
-- Bigger text and screen reader support checked screen by screen.
-- A tablet and landscape layout.
-- A home-screen widget showing how many emails are waiting.
-- Share to Enveliq: send a link or a note from another app into a task.
-
-**Account and safety**
-- **Your devices** list on the website, so a lost phone can be signed out (needs the per-device token work on the server).
-- Passkeys and single sign-on.
-- "Check for an update" in About, and a "Check connection" button on the sign-in screen.
-- A calm first-run welcome that explains notifications and the lock.
-
-Anything here that adds a screen opens forms full screen with Close at the top and the buttons at the bottom, as the rest of Enveliq does on a phone.
+Anything added that has a screen opens forms full screen with Close at the top and the buttons at the bottom, as the rest of Enveliq does on a phone.
 
 ## Privacy
 
-- No email is written to the phone. It is held in memory while on the screen. The only thing kept is your sign-in (below), and the server address you typed.
+- No email is written to the phone. It is held in memory while on the screen. What is kept is your sign-in (below), the server address you typed, and your own choices: the settings, whether Include read mail is on, and that you pressed **I understand** on the first-run notice. None of these holds email text.
+- As in any app, the phone’s keyboard and spell checker may learn words you type (the subject and message boxes use the phone’s own text box so spell check works). That is the keyboard’s own setting, outside Enveliq; turn off its personalised learning if you do not want it.
 - Android backups are switched off, so nothing is copied to Google or a new phone.
 - The app only talks to the address you typed, over HTTPS, and only trusts the server's real certificate.
 - **Staying signed in.** On the sign-in screen, **Keep me signed in on this phone** (on to begin with) keeps your sign-in between runs, so the app opens straight to your inbox. What is kept is the server's sign-in cookie, encrypted with a key in the Android Keystore that never leaves the phone. Your password is never kept. How long it lasts is the same "keep me signed in" time your administrator set for the website. **Sign out** in Settings ends the session at the server and removes what was kept; if the server stops accepting it (you signed out elsewhere, or it ran out) the app asks you to sign in again. Turn the switch off to be asked every time.
