@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Push relay: it deploys itself.** A new GitHub workflow, **Deploy push relay**, puts the relay live whenever a change to `relay/` reaches `main` (after running the relay's own checks), or when started by hand, so nobody has to run `wrangler deploy` on a computer. It needs two repository secrets, `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, added once (steps in `docs/PUSH_RELAY.md`); without them it only warns. Touches `.github/workflows/deploy-relay.yml`, `docs/PUSH_RELAY.md`, `SECURITY.md`.
+
 **Push relay: a built-in rate limit.** The Google push relay now limits each visiting address to 60 requests a minute (`429` after that), so one address cannot flood it. It uses Cloudflare's own rate limiter, so no domain or Cloudflare rule is needed (the old advice to add a WAF rule does not work for a `workers.dev` address). Redeploy the Worker once with `cd relay && npx wrangler deploy`. Touches `relay/worker.js`, `relay/wrangler.toml`, `relay/test.mjs`, `docs/PUSH_RELAY.md`.
 
 ## v0.100 (2026-10-20)

@@ -39,6 +39,18 @@ The address is not written in the source code. A fork, or anyone building from s
 
 **Rate limit.** The Worker limits each visiting address to 60 requests a minute (more get `429`, "slow_down"), using Cloudflare's own rate limiter, declared in `relay/wrangler.toml` as `RATE_LIMITER`. You do not need a domain of your own or a Cloudflare rule for this, and it works on a `workers.dev` address (Cloudflare's WAF rate-limit rules do not apply to those). Deploying again with `npx wrangler deploy` turns it on. The visiting address is used only as a temporary counter key inside Cloudflare's limiter; the relay never stores it or writes it to a log. If the limiter is ever missing or fails, requests carry on and the other checks above still apply.
 
+## Deploying automatically
+
+The relay goes live by itself: the workflow **Deploy push relay** runs whenever a change to `relay/` reaches `main`, runs the relay's own checks first, then deploys. It can also be started by hand from **Actions, Deploy push relay, Run workflow**. A deploy never touches the Firebase key, which stays a secret on the Worker.
+
+One-time set-up, in the GitHub repository's **Settings, Secrets and variables, Actions**:
+
+1. In Cloudflare open **My Profile, API Tokens, Create Token**, choose the **Edit Cloudflare Workers** template, pick your account under Account Resources, remove the Zone row (it is not needed), and create the token. Copy it once.
+2. Add it as the secret `CLOUDFLARE_API_TOKEN`.
+3. Add your Cloudflare account ID (shown on the Workers & Pages page) as the secret `CLOUDFLARE_ACCOUNT_ID`.
+
+Until both secrets exist the workflow only warns that it did not deploy (a manual run fails with the same message). Only the official repository deploys; a fork does nothing. The Worker's name in `relay/wrangler.toml` (`enveliq-push`) decides which Worker is updated.
+
 ## Scale
 
 Cloudflare Workers' free plan allows 100,000 requests a day; the paid plan (about $5 a month, check current pricing) includes 10 million a month. Firebase Cloud Messaging is free with high default limits. One request is one alert.

@@ -1,0 +1,48 @@
+# Puts the push relay (the small Cloudflare Worker in relay/) live, so nobody has to deploy it by hand.
+# It runs after a change to relay/ reaches main, or when you press Run workflow. It runs the relay's own checks first.
+# One-time set-up: add two repository secrets, CLOUDFLARE_API_TOKEN (a token made from Cloudflare's "Edit Cloudflare Workers"
+# template) and CLOUDFLARE_ACCOUNT_ID. See docs/PUSH_RELAY.md. The Firebase key stays where it is (a Cloudflare secret on the Worker);
+# a deploy never touches it. Only the official repository deploys; a fork does nothing.
+name: Deploy push relay
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "relay/**"
+      - ".github/workflows/deploy-relay.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-relay
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy the push relay
+    if: ${{ github.repository == 'jlnau/enveliq' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - name: Check the relay first
+        run: node relay/test.mjs
+      - name: Deploy it
+        working-directory: relay
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            msg="The relay was not deployed: add the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (docs/PUSH_RELAY.md), then press Run workflow."
+            if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then echo "::error::$msg"; exit 1; fi
+            echo "::warning::$msg"; exit 0
+          fi
+          npx --yes wrangler@4 deploy
