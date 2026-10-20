@@ -41,10 +41,10 @@ function makeServer(opts = {}) {
     if (p === "/api/v1/me/preferences") return json(200, { keep_reviewed: true, keep_archived: true, keep_days: 7, max_days: 14, instructions: "", undo_send_seconds: 0 });
     if (p === "/api/v1/me/features") return json(200, { effective: features, admin: features, user: features });
     if (p === "/api/v1/me/write-help") return json(200, info);
-    if (p === "/api/v1/me/summary") return json(200, view());
-    if (p === "/api/v1/me/summary/seen") { calls.push(["seen"]); seen = true; return json(200, { ok: true }); }
-    if (p === "/api/v1/me/summary/complete") { calls.push(["complete"]); const n = msgs.filter((m) => m.held_for_summary && !m.gone).length; msgs.forEach((m) => { m.held_for_summary = false; }); return json(200, { returned: n }); }
-    if (p === "/api/v1/me/summary/remove") { calls.push(["remove", body().message_id]); msgs.find((m) => m.id === body().message_id).held_for_summary = false; return json(200, { ok: true }); }
+    if (p === "/api/v1/me/held-summary") return json(200, view());
+    if (p === "/api/v1/me/held-summary/seen") { calls.push(["seen"]); seen = true; return json(200, { ok: true }); }
+    if (p === "/api/v1/me/held-summary/complete") { calls.push(["complete"]); const n = msgs.filter((m) => m.held_for_summary && !m.gone).length; msgs.forEach((m) => { m.held_for_summary = false; }); return json(200, { returned: n }); }
+    if (p === "/api/v1/me/held-summary/remove") { calls.push(["remove", body().message_id]); msgs.find((m) => m.id === body().message_id).held_for_summary = false; return json(200, { ok: true }); }
     if (/\/api\/v1\/accounts\/a1\/messages\/[^/]+\/resolve$/.test(p)) { const id = p.split("/")[6]; calls.push(["resolve", id, body().outcome]); msgs.find((m) => m.id === id).gone = true; return json(200, { ok: true }); }
     if (p === "/api/v1/sync/status") return json(200, { enabled: true, minutes: 10, now: Date.now() / 1000, accounts: { a1: { ok: true, at: now } } });
     if (p === "/api/v1/me/outbox") return json(200, { now: Date.now() / 1000, items: [] });

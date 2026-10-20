@@ -280,7 +280,7 @@ def env(tmp_path):
 def test_the_routes_show_remove_and_finish_the_summary(env):
     appm, client, bridge = env
     synced(client, bridge)
-    assert client.get("/api/v1/me/summary").json() == {"enabled": False, "count": 0, "unread": False, "items": []}
+    assert client.get("/api/v1/me/held-summary").json() == {"enabled": False, "count": 0, "unread": False, "items": []}
     assert client.put("/api/v1/me/notifications/settings", json={"digest_inbox": True}).json()["settings"]["digest_inbox"] is True
     assert client.put("/api/v1/me/notifications/settings", json={"digest_inbox": "yes please"}).status_code == 422
     account = next(a for a in appm.vault.list_accounts() if a.get("auth_method") in ("proton_bridge", "imap"))
@@ -289,17 +289,17 @@ def test_the_routes_show_remove_and_finish_the_summary(env):
     for m in mails:
         appm.digestbook.write(account["id"], m["id"], held_for_summary=True, held_at=time.time())
     assert [m for m in client.get(f"/api/v1/accounts/{account['id']}/messages").json() if m.get("held_for_summary")]      # the list says which are held
-    s = client.get("/api/v1/me/summary").json()
+    s = client.get("/api/v1/me/held-summary").json()
     assert s["enabled"] and s["count"] == 2 and s["unread"] and all({"account_id", "message_id", "summary", "subject", "category"} <= set(i) for i in s["items"])
     create_user(client, "casey")
     other = sign_in(appm, "casey")
-    assert other.get("/api/v1/me/summary").json()["count"] == 0
-    assert other.post("/api/v1/me/summary/remove", json={"account_id": account["id"], "message_id": mails[0]["id"]}).status_code == 404
-    assert other.post("/api/v1/me/summary/complete").json() == {"returned": 0}
-    assert client.get("/api/v1/me/summary").json()["count"] == 2                                  # casey changed nothing
-    assert client.post("/api/v1/me/summary/seen").status_code == 200 and client.get("/api/v1/me/summary").json()["unread"] is False
-    assert client.post("/api/v1/me/summary/remove", json={"account_id": account["id"], "message_id": mails[0]["id"]}).status_code == 200
-    assert client.post("/api/v1/me/summary/remove", json={"account_id": account["id"], "message_id": mails[0]["id"]}).status_code == 404      # no longer held
-    assert client.get("/api/v1/me/summary").json()["count"] == 1
-    assert client.post("/api/v1/me/summary/complete").json() == {"returned": 1}
-    assert client.get("/api/v1/me/summary").json()["count"] == 0
+    assert other.get("/api/v1/me/held-summary").json()["count"] == 0
+    assert other.post("/api/v1/me/held-summary/remove", json={"account_id": account["id"], "message_id": mails[0]["id"]}).status_code == 404
+    assert other.post("/api/v1/me/held-summary/complete").json() == {"returned": 0}
+    assert client.get("/api/v1/me/held-summary").json()["count"] == 2                                  # casey changed nothing
+    assert client.post("/api/v1/me/held-summary/seen").status_code == 200 and client.get("/api/v1/me/held-summary").json()["unread"] is False
+    assert client.post("/api/v1/me/held-summary/remove", json={"account_id": account["id"], "message_id": mails[0]["id"]}).status_code == 200
+    assert client.post("/api/v1/me/held-summary/remove", json={"account_id": account["id"], "message_id": mails[0]["id"]}).status_code == 404      # no longer held
+    assert client.get("/api/v1/me/held-summary").json()["count"] == 1
+    assert client.post("/api/v1/me/held-summary/complete").json() == {"returned": 1}
+    assert client.get("/api/v1/me/held-summary").json()["count"] == 0

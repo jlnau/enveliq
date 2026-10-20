@@ -110,7 +110,7 @@ Turn on **Hold email for the daily summary** (Settings, **Alerts**, the same pag
 
 Held is only a flag on Enveliq's own record of the email (`held_for_summary`, `held_at`). The email in the mailbox is untouched and the summary has no copy of its own.
 
-Code: `backend/mail/digest.py` (holding, the daily alert, the second look), `digest_routes.py` (`/api/v1/me/summary`), `llm.py` (the two new answer fields), `mail_alerts.py` and `notify_routes.py` (urgent mail still alerts), `review.py` (a record kept again is not held). Browser check: `scripts/check_daily_summary.mjs`.
+Code: `backend/mail/digest.py` (holding, the daily alert, the second look), `digest_routes.py` (`/api/v1/me/held-summary`), `llm.py` (the two new answer fields), `mail_alerts.py` and `notify_routes.py` (urgent mail still alerts), `review.py` (a record kept again is not held). Browser check: `scripts/check_daily_summary.mjs`.
 
 ## 1. Choose the model server
 

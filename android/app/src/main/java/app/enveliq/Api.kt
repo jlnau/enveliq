@@ -618,7 +618,7 @@ class EnveliqApi(address: String) {
 
     // ---- The daily summary: email that can wait is held for it, out of the inbox (the website's routes) ----
     fun summary(): SummaryInfo {
-        val r = JSONObject(call("GET", "/api/v1/me/summary"))
+        val r = JSONObject(call("GET", "/api/v1/me/held-summary"))
         val arr = r.optJSONArray("items")
         val items = (0 until (arr?.length() ?: 0)).mapNotNull { i ->
             val x = arr?.optJSONObject(i) ?: return@mapNotNull null
@@ -627,14 +627,14 @@ class EnveliqApi(address: String) {
         return SummaryInfo(r.optBoolean("enabled"), r.optInt("count"), r.optInt("unread"), items)
     }
 
-    fun summarySeen() { call("POST", "/api/v1/me/summary/seen", JSONObject()) }
+    fun summarySeen() { call("POST", "/api/v1/me/held-summary/seen", JSONObject()) }
 
     /** "Done with summary": everything still in it goes back to the inbox. Returns how many. */
-    fun summaryDone(): Int = JSONObject(call("POST", "/api/v1/me/summary/complete", JSONObject())).optInt("returned")
+    fun summaryDone(): Int = JSONObject(call("POST", "/api/v1/me/held-summary/complete", JSONObject())).optInt("returned")
 
     /** Takes one email out of the summary and puts it back in the inbox. */
     fun summaryRemove(accountId: String, messageId: String) {
-        call("POST", "/api/v1/me/summary/remove", JSONObject().put("account_id", accountId).put("message_id", messageId))
+        call("POST", "/api/v1/me/held-summary/remove", JSONObject().put("account_id", accountId).put("message_id", messageId))
     }
 
     fun digestInboxOn(): Boolean = JSONObject(call("GET", "/api/v1/me/notifications")).optJSONObject("settings")?.optBoolean("digest_inbox", false) ?: false

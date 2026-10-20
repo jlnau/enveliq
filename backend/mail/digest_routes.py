@@ -25,24 +25,24 @@ def build_digest_router(ctx: Any) -> APIRouter:
     book: DigestBook = ctx.digest
     session_dep = ctx.full_session
 
-    @router.get("/me/summary")
+    @router.get("/me/held-summary")
     def summary(response: Response, session: Session = Depends(session_dep)):
         response.headers["Cache-Control"] = "no-store"
         return book.view(session.principal.user_id)
 
-    @router.post("/me/summary/seen")
+    @router.post("/me/held-summary/seen")
     def seen(response: Response, session: Session = Depends(session_dep)):
         response.headers["Cache-Control"] = "no-store"
         book.mark_seen(session.principal.user_id)
         return {"ok": True}
 
-    @router.post("/me/summary/complete")
+    @router.post("/me/held-summary/complete")
     def complete(response: Response, session: Session = Depends(session_dep)):
         """Done with the summary: whatever is still in it goes back in the inbox, unchanged."""
         response.headers["Cache-Control"] = "no-store"
         return {"returned": book.release(session.principal.user_id)}
 
-    @router.post("/me/summary/remove")
+    @router.post("/me/held-summary/remove")
     def remove(body: OneMail, response: Response, session: Session = Depends(session_dep)):
         """Take one email out of the summary: it goes back in the inbox."""
         response.headers["Cache-Control"] = "no-store"

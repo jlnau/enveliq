@@ -6700,7 +6700,7 @@ const ICON_BACK=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 function isHeld(m){return m.status==="inbox"&&!!m.held&&!!(dgState&&dgState.enabled)}
 function isAside(m){return isSnoozed(m)||isHeld(m)}
 async function dgLoad(){
-  try{const r=await secureBackendRequest("/api/v1/me/summary",{method:"GET",headers:{}});dgState={enabled:!!r.enabled,count:r.count||0,unread:!!r.unread,items:Array.isArray(r.items)?r.items:[]}}catch{dgState={enabled:false,count:0,unread:false,items:[]}}
+  try{const r=await secureBackendRequest("/api/v1/me/held-summary",{method:"GET",headers:{}});dgState={enabled:!!r.enabled,count:r.count||0,unread:!!r.unread,items:Array.isArray(r.items)?r.items:[]}}catch{dgState={enabled:false,count:0,unread:false,items:[]}}
 }
 function dgPaint(){
   const host=$("digestStrip");if(!host)return;
@@ -6727,7 +6727,7 @@ function dgItem(i){
   };
   acts.append(ic("Mark reviewed",DG_OK,act("reviewed")),ic("Archive",DG_ARCH,act("archived")),ic("Bin",DG_BIN,act("trashed")),
     ic("Take out of the summary and put back in my inbox",ICON_BACK,async()=>{
-      try{await secureBackendRequest("/api/v1/me/summary/remove",{method:"POST",body:JSON.stringify({account_id:i.account_id,message_id:i.message_id})})}catch(er){toast(er.message,6000);return}
+      try{await secureBackendRequest("/api/v1/me/held-summary/remove",{method:"POST",body:JSON.stringify({account_id:i.account_id,message_id:i.message_id})})}catch(er){toast(er.message,6000);return}
       const m=mailOf();if(m)m.held=false;await dgRefresh();render();toast("Back in your inbox");
     }));
   const a=whEl("a","dg-open","Open");a.href="/?open="+encodeURIComponent(i.account_id+":"+i.message_id).replace(/%3A/gi,":");a.title="Open this email in Enveliq";
@@ -6748,12 +6748,12 @@ async function dgOpen(){
   await dgLoad();dgPaint();
   if(!dgState.enabled||!dgState.count){toast("Nothing is waiting in your summary.");return}
   dgFill();$("digestView").classList.add("open");$("dgTitle").focus();
-  if(dgState.unread){try{await secureBackendRequest("/api/v1/me/summary/seen",{method:"POST",body:"{}"})}catch{}dgState.unread=false;dgPaint()}
+  if(dgState.unread){try{await secureBackendRequest("/api/v1/me/held-summary/seen",{method:"POST",body:"{}"})}catch{}dgState.unread=false;dgPaint()}
 }
 function dgClose(){$("digestView").classList.remove("open")}
 $("dgClose").onclick=dgClose;
 async function dgDone(){
-  try{const r=await secureBackendRequest("/api/v1/me/summary/complete",{method:"POST",body:"{}"});
+  try{const r=await secureBackendRequest("/api/v1/me/held-summary/complete",{method:"POST",body:"{}"});
     for(const m of data)if(m.held)m.held=false;
     dgClose();await dgLoad();dgPaint();render();
     toast(r.returned?`${r.returned} email${r.returned===1?"":"s"} back in your inbox`:"Summary finished");
