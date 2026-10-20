@@ -192,7 +192,7 @@ def build_notify_router(ctx: Any) -> APIRouter:
                 for m in ctx.vault.list_messages(aid):
                     rows.append((aid, str(m.get("id", "")), str(m.get("state", "")),
                                  str(m.get("folder", "")), str(m.get("mailbox", "")),
-                                 str(m.get("snoozed_until", "")), str(m.get("replied_at", "")),
+                                 str(m.get("snoozed_until", "")), str(m.get("replied_at", "")), str(m.get("held_for_summary", "")),
                                  tuple(sorted(str(t) for t in (m.get("tags") or []))),
                                  str(m.get("summary", "")), str(m.get("ai_pending", ""))))
             except (KeyError, ValueError):

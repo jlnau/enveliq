@@ -309,6 +309,10 @@ class RetainedMessageCreate(StrictModel):
     # The AI's judgement that this email needs the reader today or by the next working day (see mail/digest.py), and why in one plain line.
     act_today: bool = False
     today_reason: str | None = Field(default=None, max_length=140)
+    # Held for the daily summary: kept out of the inbox list and shown in "Held for summary" until the person handles it, takes it out, or
+    # finishes the summary (see mail/digest.py). Only Enveliq's own record changes; the real mailbox is left alone.
+    held_for_summary: bool = False
+    held_at: float | None = Field(default=None, ge=0, le=4_102_444_800)
     # When the email was sent (from its Date header), as a Unix timestamp.
     received_at: float | None = Field(default=None, ge=0, le=4_102_444_800)
     # Typed, size-bounded structures rather than free-form dicts, so raw

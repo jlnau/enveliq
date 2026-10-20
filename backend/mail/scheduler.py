@@ -45,6 +45,7 @@ class AutoSync:
         self._fails: dict[str, int] = {}
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
+        self.digest_hold: Any = None                    # set by the application: holds new email that can wait for the daily summary (mail/digest.py)
         self.mail_alerts: Any = None                    # set by the application: new-email alerts (mail/mail_alerts.py)
         self.checker: Any = None                        # set by the application: answers forwarded emails (mail/checkbox.py)
 
@@ -135,6 +136,8 @@ class AutoSync:
                 for uid, new in arrived.items():
                     if new:                                       # nothing arrived for this person: say nothing
                         self.mail_alerts.send(uid, new)
+                        if self.digest_hold is not None:
+                            self.digest_hold(uid)                 # mail that can wait goes straight to the summary, not the inbox
         return done
 
     def _known_ids(self, account: dict[str, Any]) -> set[str]:

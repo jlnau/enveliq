@@ -43,7 +43,7 @@ When the mailbox uses AI summaries, the alert is sent once the new email is read
 
 ## The daily summary in your inbox
 
-With **Put a daily summary in my inbox** on, new email that the AI judged to need you today still alerts at once, and everything else is gathered into one summary item shown at the top of your inbox at the daily summary time (website and Android app). The summary makes no alert of its own. See [AI summaries](AI_SUMMARIES.md#needs-you-today-and-the-daily-summary-in-your-inbox). This switch is separate from **Send new email in this summary instead**, which counts new email in the morning message; either one holds back the one-by-one alerts for mail that is not important and not urgent.
+With **Hold email for the daily summary** on, new email that the AI judged to need you today (and email from important people) still alerts at once and stays in the inbox. Email that can wait is held out of the inbox, listed under **Held for summary**, and gathered in a summary at the top of the inbox (website and Android app). You get **one alert a day**, at the daily summary time, that says how many emails are waiting and opens the summary. See [AI summaries](AI_SUMMARIES.md#needs-you-today-and-the-daily-summary-in-your-inbox). This switch is separate from **Send new email in this summary instead**, which counts new email in the morning message; either one holds back the one-by-one alerts for mail that is not important and not urgent.
 
 ## The bell, and messages from Home Assistant and other services
 

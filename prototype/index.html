@@ -441,14 +441,16 @@ body.in-found [data-status="archived"],body.in-found [data-status="trashed"]{dis
 .dg-row .dg-sub{display:block;font-size:13px;opacity:.75}
 .dg-row .dg-dot{width:9px;height:9px;border-radius:50%;background:var(--c-1f5fc4);flex:none}.dg-row.read .dg-dot{visibility:hidden}
 #digestView{z-index:61}@media(min-width:761px){#digestView{width:min(720px,94vw)}}
-@media(max-width:760px){#digestView.open{display:flex;flex-direction:column;overflow:hidden}#digestView .compose-body{flex:1 1 auto;min-height:0;overflow-y:auto}#digestView .compose-head,#digestView .compose-foot{flex:none}#digestView .compose-foot{padding-bottom:calc(12px + env(safe-area-inset-bottom))}}
+@media(max-width:760px){#digestView.open{display:flex;flex-direction:column;overflow:hidden}#digestView .compose-body{flex:1 1 auto;min-height:0;overflow-y:auto}#digestView .compose-head,#digestView .compose-foot{flex:none}#digestView .compose-foot{padding-bottom:calc(12px + env(safe-area-inset-bottom))}#digestView .compose-head{flex-wrap:wrap}}
 #digestView button,#digestView a.dg-open{min-height:44px}
 .dg-note{font-size:13px;opacity:.8;margin:0 0 10px}
 .dg-sec{margin:14px 0 6px;font-size:13px;font-weight:700;letter-spacing:.02em}
 .dg-item{border:1px solid var(--c-293241);border-radius:10px;padding:10px 12px;margin:0 0 8px}
 .dg-from{font-size:13px;opacity:.8}.dg-subj{font-weight:600;margin:2px 0}.dg-item p{margin:4px 0 8px;line-height:1.5}
-.dg-why{font-size:13px;color:var(--c-d4ecff)}
-a.dg-open{display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--c-343b4b);border-radius:10px;color:inherit;text-decoration:none}
+.dg-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dg-acts .dg-ic{display:inline-flex;align-items:center;justify-content:center;width:44px;min-height:44px;padding:0;border:1px solid var(--c-343b4b);border-radius:10px;background:transparent;color:inherit;cursor:pointer}
+.dg-acts .dg-ic svg{width:20px;height:20px}.dg-acts .dg-ic:hover{border-color:var(--c-1f5fc4)}.dg-acts .dg-ic[disabled]{opacity:.5}
+a.dg-open{display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--c-343b4b);border-radius:10px;color:inherit;text-decoration:none;margin-left:auto}
 #whCheck,#sendWarn{width:min(520px,94vw);z-index:61}
 #sendWarn .compose-body p{margin:0;line-height:1.5}
 .wh-scrim{z-index:60}
@@ -1576,6 +1578,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
   <nav class="side-nav" aria-label="Mailbox views">
     <div class="label">Inbox</div>
     <button class="nav active" data-filter="all" title="My inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h5l2 3h4l2-3h5"/><path d="M5.5 5h13L21 13v6H3v-6z"/></svg><span class="nav-label">My inbox</span><span class="badge" id="allBadge"></span></button>
+    <button class="nav" data-filter="held" id="heldNav" title="Held for summary" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="16" r="3.2"/><path d="M18 14.6v1.6l1 .6"/></svg><span class="nav-label">Held for summary</span><span class="badge" id="heldBadge"></span></button>
     <button class="nav" data-filter="action" title="Needs action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/></svg><span class="nav-label">Needs action</span><span class="badge" id="actionBadge"></span></button>
     <button class="nav" data-filter="tasks" title="Tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 6h10M10 12h10M10 18h10"/><path d="m3.5 6 1.3 1.3L7 5M3.5 12l1.3 1.3L7 11M3.5 18l1.3 1.3L7 17"/></svg><span class="nav-label">Tasks</span><span class="badge" id="taskBadge"></span></button>
     <button class="nav" data-filter="attachments" title="Attachments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5 12.4 19.6a5 5 0 0 1-7.1-7.1L13.6 4.2a3.4 3.4 0 0 1 4.8 4.8l-8.2 8.2a1.8 1.8 0 0 1-2.6-2.6L15 7.2"/></svg><span class="nav-label">Attachments</span><span class="badge" id="attachBadge"></span></button>
@@ -2141,9 +2144,9 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
   <div class="compose-foot"><span></span><div class="modal-actions"><button class="btn" id="whCheckNo" type="button">Go back</button><button class="primary" id="whCheckYes" type="button">Yes, send it</button></div></div>
 </div>
 <div class="compose" id="digestView" role="dialog" aria-modal="true" aria-labelledby="dgTitle">
-  <div class="compose-head"><div><h3 id="dgTitle" tabindex="-1">Your daily summary</h3><p id="dgSub"></p></div></div>
+  <div class="compose-head"><div><h3 id="dgTitle" tabindex="-1">Your daily summary</h3><p id="dgSub"></p></div><button class="primary" id="dgDoneTop" type="button">Done with summary</button></div>
   <div class="compose-body" id="dgBody"></div>
-  <div class="compose-foot"><button class="btn" id="dgDelete" type="button">Delete this summary</button><div class="modal-actions"><button class="primary" id="dgClose" type="button">Close</button></div></div>
+  <div class="compose-foot"><button class="btn" id="dgClose" type="button">Close</button><button class="primary" id="dgDone" type="button">Done with summary</button></div>
 </div>
 <div class="compose" id="sendWarn" role="dialog" aria-modal="true" aria-labelledby="sendWarnTitle">
   <div class="compose-head"><div><h3 id="sendWarnTitle">Before you send</h3><p>A quick check. Nothing has been sent.</p></div></div>
@@ -2438,6 +2441,7 @@ function applyHashNav(){
 function openFromLink(raw,fromAddress,quiet){
   let u;try{u=new URL(raw,location.href)}catch{return false}
   if(u.origin!==location.origin||u.pathname!=="/")return false;
+  if(u.searchParams.get("summary")&&realMail){setTimeout(()=>dgOpen(),0);return true}
   const want=u.searchParams.get("open");if(!want)return false;
   if(fromAddress){
     // A cold Android notification launch starts a new standalone activity.
@@ -2456,7 +2460,7 @@ function openFromLink(raw,fromAddress,quiet){
   const m=data.find(x=>x.real&&x.real.accountId===acct&&x.real.messageId===mid&&x.owner===currentUser.id);
   if(!m){if(!quiet)toast("That email is no longer in your list.",4000);return false}
   query="";$("search").value="";document.body.classList.remove("msearch");
-  filter=isSnoozed(m)?"snoozed":m.status==="inbox"?"all":m.status;
+  filter=isSnoozed(m)?"snoozed":isHeld(m)?"held":m.status==="inbox"?"all":m.status;
   document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));
   captureMailPosition();
   expanded.add(`row-${m.id}`);paneId=m.id;enMarkOpened(m.id);if(lay()==="screen")readerOpen=true;
@@ -2669,6 +2673,7 @@ function visible(m){
   if(m.owner!==currentUser.id||filter==="sent"||filter==="drafts"||filter==="tasks")return false;
   if(mailboxSel&&m.account!==mailboxSel)return false;
   if(filter==="snoozed"){if(!isSnoozed(m))return false}else if(isSnoozed(m))return false;      // a snoozed email waits out of sight until its time
+  if(filter==="held"){if(!isHeld(m))return false}else if(isHeld(m))return false;                  // email held for the daily summary waits in its own list
   if(query&&!(`${m.sender} ${m.address} ${m.subject} ${m.summary} ${m.category} ${(m.tags||[]).join(" ")}`.toLowerCase().includes(query.toLowerCase())))return false;
   if(filter==="all"&&m.status!=="inbox")return false;
   if(filter==="action"&&!(m.status==="inbox"&&m.action))return false;
@@ -2729,7 +2734,7 @@ document.addEventListener("click",e=>{
   if(!b)return;
   query="";$("search").value="";document.body.classList.remove("msearch");
   const m=b.dataset.searchOpen?data.find(x=>x.id===+b.dataset.searchOpen&&x.owner===currentUser.id):null;
-  filter=m?(isSnoozed(m)?"snoozed":m.status==="inbox"?"all":m.status):b.dataset.searchGo;
+  filter=m?(isSnoozed(m)?"snoozed":isHeld(m)?"held":m.status==="inbox"?"all":m.status):b.dataset.searchGo;
   document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));
   if(m){expanded.add(`row-${m.id}`);paneId=m.id;if(lay()==="screen")readerOpen=true}
   render();
@@ -4244,16 +4249,17 @@ function render(){
   bellPaint();
   {const ns=waitOn()?(waitData.notes||[]).filter(n=>n.state==="waiting"):[];const wb=$("waitBadge");if(wb){wb.textContent=ns.length;wb.hidden=!ns.length;wb.classList.toggle("hot",ns.some(n=>n.due))}}
   {const fl=findOn()?userMessages().filter(m=>m.found):[];const fn=$("foundNav"),fb=$("foundBadge");if(fn){fn.hidden=!fl.length&&filter!=="found";fb.textContent=fl.length;fb.hidden=!fl.length}}
+  {const hd=mine.filter(isHeld),hn=$("heldNav"),hb=$("heldBadge");if(hn){hn.hidden=!hd.length&&filter!=="held";hb.textContent=hd.length;hb.hidden=!hd.length}}
   const asleep=mine.filter(isSnoozed);{const sn=$("snoozeNav"),sb=$("snoozeBadge");sn.hidden=!asleep.length&&filter!=="snoozed";sb.textContent=asleep.length;sb.hidden=!asleep.length}
-  for(const [id,n] of [["allBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)).length],["actionBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)&&m.action).length],["attachBadge",mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)&&fileN(m)).length],["taskBadge",openTasks().length]]){const el=$(id);el.textContent=n;el.hidden=n===0}
+  for(const [id,n] of [["allBadge",mine.filter(m=>m.status==="inbox"&&!isAside(m)).length],["actionBadge",mine.filter(m=>m.status==="inbox"&&!isAside(m)&&m.action).length],["attachBadge",mine.filter(m=>m.status==="inbox"&&!isAside(m)&&fileN(m)).length],["taskBadge",openTasks().length]]){const el=$(id);el.textContent=n;el.hidden=n===0}
   $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent"&&filter!=="drafts");
   document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",filter==="all"));{const fb=$("filterBy");tagFilterOptions(fb);const pick=["action","need","high","attachments"].includes(filter)||[...fb.options].some(o=>o.value===filter)?filter:"";fb.value=pick;fb.classList.toggle("active",!!pick)}
   $("selectedCount").textContent=selected.size;$("bulk").classList.toggle("show",selected.size>1||selMode);$("previewBulk").classList.toggle("show",selected.size>1||selMode);$("previewSelCount").textContent=selected.size;
   $("userName").textContent=currentUser.name;$("userRole").textContent=currentUser.is_admin?"Administrator":"User";paintAvatar();previewSyncAccount();
-  const inbox=mine.filter(m=>m.status==="inbox"&&!isSnoozed(m)),needN=inbox.filter(m=>m.action||m.priority==="high").length;
+  const inbox=mine.filter(m=>m.status==="inbox"&&!isAside(m)),needN=inbox.filter(m=>m.action||m.priority==="high").length;
   const hr=new Date().getHours(),first=String(currentUser.name||"").trim().split(/\s+/)[0];
   const greeting=(hr<12?"Good morning":hr<18?"Good afternoon":"Good evening")+(first?`, ${first}`:"");
-  const VIEW_NAMES={action:"Needs action",need:"Needs action",high:"Important",attachments:"Attachments",tasks:"Tasks",shipping:"Shipping",waiting:"Waiting for reply",reviewed:"Reviewed",found:"Found emails",archived:"Archived",subscriptions:"Subscriptions",trips:"Trips",messages:"Messages",junk:"Junk Mail",cleanup:"Clean up",sent:"Sent",drafts:"Drafts"};
+  const VIEW_NAMES={held:"Held for summary",action:"Needs action",need:"Needs action",high:"Important",attachments:"Attachments",tasks:"Tasks",shipping:"Shipping",waiting:"Waiting for reply",reviewed:"Reviewed",found:"Found emails",archived:"Archived",subscriptions:"Subscriptions",trips:"Trips",messages:"Messages",junk:"Junk Mail",cleanup:"Clean up",sent:"Sent",drafts:"Drafts"};
   document.querySelector(".top-left h2").textContent=VIEW_NAMES[filter]||(filter==="all"&&calmOn()?"One thing at a time":filter==="all"?"My inbox":greeting);
   $("backInbox").hidden=filter==="all";
   $("previewCalmNotice").hidden=!(filter==="all"&&calmOn());
@@ -4316,7 +4322,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
   let listHtml,dockHtml="";
   const prevScroll=document.getElementById("paneList"),prevTop=prevScroll?prevScroll.scrollTop:0,prevRead=document.querySelector(".reading"),prevReadTop=prevRead?prevRead.scrollTop:0;const prevBody=document.querySelector(".reader .rbody"),prevBodyTop=prevBody?prevBody.scrollTop:0;
   lastRowIds=rows.map(m=>m.id);
-  if(!rows.length){listHtml=`<div class="empty">${query&&String(query).trim().length>=2&&filter!=="snoozed"?"Nothing in this view matches your search.":filter==="snoozed"?"Nothing is snoozed. Use Snooze on an email to set it aside until you need it.":realMail&&!data.some(m=>m.status==="inbox")?"You're all caught up. Press <strong>Sync mail</strong> to look for new unread email.":document.body.classList.contains("backend")&&!realMail?`Your mail will appear here once a mailbox is connected. <a href="/welcome">Set up your mailbox</a>`:`Nothing in this view for ${esc(currentUser.name)}.`}</div>`}
+  if(!rows.length){listHtml=`<div class="empty">${query&&String(query).trim().length>=2&&filter!=="snoozed"?"Nothing in this view matches your search.":filter==="snoozed"?"Nothing is snoozed. Use Snooze on an email to set it aside until you need it.":filter==="held"?"Nothing is held for your summary. Email that can wait appears here as it arrives.":realMail&&!data.some(m=>m.status==="inbox")?"You're all caught up. Press <strong>Sync mail</strong> to look for new unread email.":document.body.classList.contains("backend")&&!realMail?`Your mail will appear here once a mailbox is connected. <a href="/welcome">Set up your mailbox</a>`:`Nothing in this view for ${esc(currentUser.name)}.`}</div>`}
   else if(lay()==="list"){listHtml=`<div class="quiet-list">${rows.map(m=>quiet(m)).join("")}</div>`}
   else{
     let idx=rows.findIndex(m=>m.id===paneId);
@@ -6312,7 +6318,7 @@ async function loadRealMail(me){
         subject:r.subject,time:realTime(r.received_at),date:r.received_at?new Date(r.received_at*1000).toLocaleString():"",received:r.received_at||0,
         summary:r.summary,priority:r.priority||"normal",category:r.category||"Email",action:!!r.action_required,status:r.state==="reviewed"||r.state==="archived"?r.state:"inbox",kept:r.state==="reviewed"||r.state==="archived",keptUntil:r.resolved_at?new Date((r.resolved_at+realPrefs.keep_days*86400)*1000).toLocaleDateString(undefined,{day:"numeric",month:"short"}):"",
         task:r.suggested_task&&r.suggested_task.title?{title:r.suggested_task.title,due:r.suggested_task.due||"",detail:r.suggested_task.detail||""}:null,attachments:(r.attachment_summaries||[]).map(a=>({name:a.filename,mime:a.mime_type||"",size:fmtBytes(a.size_bytes),bytes:a.size_bytes||0,pages:a.pages||0,index:a.index,state:a.state==="reading"?"working":a.state||"done",summary:a.summary||"",parts:(a.parts||[]).map(p=>({title:p.title||"",text:p.text})),note:a.note||"",reason:a.reason||"",real:true})),tags:Array.isArray(r.tags)?r.tags.map(String):[],hasFiles:!!r.has_attachments,fileCount:Number.isInteger(r.attachment_count)?r.attachment_count:null,
-        replyTo:ctx.reply_to||null,replyCc:ctx.cc||[],replyAlsoTo:ctx.also_to||[],deliveredTo:ctx.delivered_to||null,viaAlias:ctx.via_alias||null,unsub:r.unsubscribe||null,scam:r.scam_warning||null,real:{accountId:a.id,messageId:r.id},extra:!!r.from_all_mail,found:r.found_until?r.found_until*1000:0,ungen:String(r.summary||"").startsWith("Not summarised yet"),snoozeUntil:r.snoozed_until?r.snoozed_until*1000:0,replied:!!r.replied_at,repliedAt:r.replied_at?realTime(r.replied_at):""});
+        replyTo:ctx.reply_to||null,replyCc:ctx.cc||[],replyAlsoTo:ctx.also_to||[],deliveredTo:ctx.delivered_to||null,viaAlias:ctx.via_alias||null,unsub:r.unsubscribe||null,scam:r.scam_warning||null,real:{accountId:a.id,messageId:r.id},extra:!!r.from_all_mail,found:r.found_until?r.found_until*1000:0,ungen:String(r.summary||"").startsWith("Not summarised yet"),snoozeUntil:r.snoozed_until?r.snoozed_until*1000:0,held:!!r.held_for_summary,replied:!!r.replied_at,repliedAt:r.replied_at?realTime(r.replied_at):""});
     }
   }
   items.sort((x,y)=>y.received-x.received);
@@ -6686,58 +6692,74 @@ async function whLoad(){
   if(!feat.write_help)return;
   try{whInfo=await secureBackendRequest("/api/v1/me/write-help",{method:"GET",headers:{}})}catch{}
 }
-// ---- The daily summary item (see docs/AI_SUMMARIES.md): one special item at the top of the inbox, once a day ----
-var digestList=[],digestOpenId="";
+// ---- The daily summary (see docs/AI_SUMMARIES.md): email that can wait is held out of the inbox and gathered here ----
+// The summary is simply the list of held email, so it is always up to date. Reviewed, Archive and Bin are the normal actions.
+var dgState={enabled:false,count:0,unread:false,items:[]};
+const DG_OK=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,DG_ARCH=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg>`,DG_BIN=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>`;
+const ICON_BACK=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7 4 12l5 5"/><path d="M4 12h11a5 5 0 0 1 5 5v1"/></svg>`;
+function isHeld(m){return m.status==="inbox"&&!!m.held&&!!(dgState&&dgState.enabled)}
+function isAside(m){return isSnoozed(m)||isHeld(m)}
 async function dgLoad(){
-  digestList=[];
-  try{const r=await secureBackendRequest("/api/v1/me/digests",{method:"GET",headers:{}});digestList=Array.isArray(r.items)?r.items:[]}catch{}
+  try{const r=await secureBackendRequest("/api/v1/me/summary",{method:"GET",headers:{}});dgState={enabled:!!r.enabled,count:r.count||0,unread:!!r.unread,items:Array.isArray(r.items)?r.items:[]}}catch{dgState={enabled:false,count:0,unread:false,items:[]}}
 }
-function dgWhen(d){try{return new Date(d.created_at*1000).toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"})}catch{return d.day||""}}
 function dgPaint(){
   const host=$("digestStrip");if(!host)return;
-  const show=realMail&&filter==="all"&&!String(query||"").trim()&&digestList.length>0;
+  const show=realMail&&dgState.enabled&&(filter==="all"||filter==="held")&&!String(query||"").trim()&&dgState.count>0;
   if(!show){host.hidden=true;host.replaceChildren();host.dataset.sig="";return}
-  const sig=JSON.stringify(digestList);host.hidden=false;if(host.dataset.sig===sig)return;host.dataset.sig=sig;
-  host.replaceChildren(...digestList.map(d=>{
-    const b=whEl("button","dg-row"+(d.read?" read":""));b.type="button";b.dataset.dg=d.id;
-    const main=whEl("span","dg-main");
-    main.append(whEl("span","dg-title","Daily summary: "+dgWhen(d)),whEl("span","dg-sub",`${d.count} email${d.count===1?"":"s"}`+(d.urgent?`, ${d.urgent} that need${d.urgent===1?"s":""} you today`:"")));
-    b.append(whEl("span","dg-tag","Summary"),main,whEl("span","dg-dot"));b.setAttribute("aria-label",`Daily summary for ${dgWhen(d)}, ${d.read?"read":"not read yet"}`);
-    b.onclick=()=>dgOpen(d.id);return b}));
+  const sig=JSON.stringify([dgState.count,dgState.unread]);host.hidden=false;if(host.dataset.sig===sig)return;host.dataset.sig=sig;
+  const b=whEl("button","dg-row"+(dgState.unread?"":" read"));b.type="button";
+  const main=whEl("span","dg-main");
+  main.append(whEl("span","dg-title","Your daily summary"),whEl("span","dg-sub",`${dgState.count} email${dgState.count===1?"":"s"} waiting. Open it when you like.`));
+  b.append(whEl("span","dg-tag","Summary"),main,whEl("span","dg-dot"));b.setAttribute("aria-label",`Daily summary, ${dgState.count} email${dgState.count===1?"":"s"} waiting`);
+  b.onclick=()=>dgOpen();host.replaceChildren(b);
 }
-async function dgOpen(id){
-  let d;try{d=await secureBackendRequest("/api/v1/me/digests/"+encodeURIComponent(id),{method:"GET",headers:{}})}catch(er){toast(er.message||"That summary is not there any more.");await dgLoad();dgPaint();return}
-  digestOpenId=id;
-  $("dgSub").textContent=dgWhen(d);
-  const body=$("dgBody"),parts=[whEl("p","dg-note","Written by AI from your email summaries. Nothing was hidden or marked as reviewed: every email is still in your inbox.")];
-  const section=(title,list)=>{
-    if(!list.length)return;
-    parts.push(whEl("div","dg-sec",title));
-    for(const i of list){
-      const box=whEl("div","dg-item");
-      box.append(whEl("div","dg-from",i.sender||"Unknown sender"),whEl("div","dg-subj",i.subject||"(no subject)"));
-      if(i.reason){box.append(whEl("div","dg-why","Why today: "+i.reason))}
-      box.append(whEl("p",null,i.summary||""));
-      const a=whEl("a","dg-open","Open this email");a.href="/?open="+encodeURIComponent(i.account_id+":"+i.message_id).replace(/%3A/gi,":");
-      a.onclick=ev=>{ev.preventDefault();dgClose();if(!openFromLink(a.href,false,false)){/* a plain message was already shown */}};
-      box.append(a);parts.push(box);
-    }
+function dgItem(i){
+  const box=whEl("div","dg-item");
+  box.append(whEl("div","dg-from",i.sender||"Unknown sender"),whEl("div","dg-subj",i.subject||"(no subject)"),whEl("p",null,i.summary||""));
+  const acts=whEl("div","dg-acts");
+  const ic=(label,svg,fn)=>{const b=whEl("button","dg-ic");b.type="button";b.title=label;b.setAttribute("aria-label",label);b.innerHTML=svg;b.onclick=async()=>{acts.querySelectorAll("button").forEach(x=>x.disabled=true);try{await fn()}finally{acts.querySelectorAll("button").forEach(x=>x.disabled=false)}};return b};
+  const mailOf=()=>data.find(x=>x.real&&x.real.accountId===i.account_id&&x.real.messageId===i.message_id);
+  const act=status=>async()=>{
+    const m=mailOf();
+    if(m){const ok=await resolveRealOne(m,status,document.createElement("button"),true);if(!ok)return}
+    else{try{await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(i.account_id)}/messages/${encodeURIComponent(i.message_id)}/resolve`,{method:"POST",body:JSON.stringify({outcome:resolveOutcome(status)})})}catch(er){toast(er.message,6000);return}}
+    await dgRefresh();render();
   };
-  const items=Array.isArray(d.items)?d.items:[];
-  section("Needs you today",items.filter(i=>i.urgent));
-  const by={};for(const i of items.filter(x=>!x.urgent))(by[i.category||"Other"]=by[i.category||"Other"]||[]).push(i);
-  for(const k of Object.keys(by).sort())section(k,by[k]);
-  body.replaceChildren(...parts);
-  $("digestView").classList.add("open");$("dgTitle").focus();
-  if(!d.read){try{await secureBackendRequest("/api/v1/me/digests/"+encodeURIComponent(id)+"/read",{method:"POST",body:"{}"})}catch{}await dgLoad();dgPaint()}
+  acts.append(ic("Mark reviewed",DG_OK,act("reviewed")),ic("Archive",DG_ARCH,act("archived")),ic("Bin",DG_BIN,act("trashed")),
+    ic("Take out of the summary and put back in my inbox",ICON_BACK,async()=>{
+      try{await secureBackendRequest("/api/v1/me/summary/remove",{method:"POST",body:JSON.stringify({account_id:i.account_id,message_id:i.message_id})})}catch(er){toast(er.message,6000);return}
+      const m=mailOf();if(m)m.held=false;await dgRefresh();render();toast("Back in your inbox");
+    }));
+  const a=whEl("a","dg-open","Open");a.href="/?open="+encodeURIComponent(i.account_id+":"+i.message_id).replace(/%3A/gi,":");a.title="Open this email in Enveliq";
+  a.onclick=ev=>{ev.preventDefault();dgClose();openFromLink(a.href,false,false)};
+  acts.append(a);box.append(acts);return box;
 }
-function dgClose(){$("digestView").classList.remove("open");digestOpenId=""}
+function dgFill(){
+  const body=$("dgBody"),items=dgState.items;
+  $("dgSub").textContent=`${items.length} email${items.length===1?"":"s"} waiting`;
+  const parts=[whEl("p","dg-note","Summaries written by AI. These emails are held out of your inbox until you deal with them. Anything you leave here goes back to your inbox when you press Done with summary, or after 7 days.")];
+  if(!items.length)parts.push(whEl("p",null,"Nothing is waiting. You are all caught up."));
+  const by={};for(const i of items)(by[i.category||"Other"]=by[i.category||"Other"]||[]).push(i);
+  for(const k of Object.keys(by).sort()){parts.push(whEl("div","dg-sec",k));for(const i of by[k])parts.push(dgItem(i))}
+  body.replaceChildren(...parts);
+}
+async function dgRefresh(){await dgLoad();dgPaint();if($("digestView").classList.contains("open")){if(!dgState.count){dgClose();toast("Summary finished")}else dgFill()}}
+async function dgOpen(){
+  await dgLoad();dgPaint();
+  if(!dgState.enabled||!dgState.count){toast("Nothing is waiting in your summary.");return}
+  dgFill();$("digestView").classList.add("open");$("dgTitle").focus();
+  if(dgState.unread){try{await secureBackendRequest("/api/v1/me/summary/seen",{method:"POST",body:"{}"})}catch{}dgState.unread=false;dgPaint()}
+}
+function dgClose(){$("digestView").classList.remove("open")}
 $("dgClose").onclick=dgClose;
-$("dgDelete").onclick=async()=>{
-  const id=digestOpenId;if(!id)return;
-  try{await secureBackendRequest("/api/v1/me/digests/"+encodeURIComponent(id),{method:"DELETE"});toast("Summary deleted. Your email is untouched.")}catch(er){toast(er.message||"That did not work.")}
-  dgClose();await dgLoad();dgPaint();
-};
+async function dgDone(){
+  try{const r=await secureBackendRequest("/api/v1/me/summary/complete",{method:"POST",body:"{}"});
+    for(const m of data)if(m.held)m.held=false;
+    dgClose();await dgLoad();dgPaint();render();
+    toast(r.returned?`${r.returned} email${r.returned===1?"":"s"} back in your inbox`:"Summary finished");
+  }catch(er){toast(er.message||"That did not work.",6000)}
+}
+$("dgDone").onclick=dgDone;$("dgDoneTop").onclick=dgDone;
 document.addEventListener("keydown",ev=>{if(ev.key==="Escape"&&$("digestView").classList.contains("open"))dgClose()});
 // Quick AI Send: the AI proofreads (spelling, grammar, punctuation) and the email goes at once. The page's own draft is never changed:
 // the corrected text is only passed to the normal send, so if anything fails the draft is exactly as it was.

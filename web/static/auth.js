@@ -1535,8 +1535,7 @@ async function remindersPage(me) {
     box("rs_morning", s.morning_on, "A daily summary", "One morning message: tasks due, parcels out for delivery, replies you are waiting for."),
     field("Send it at", input("rs_morning_time", { type: "time", value: s.morning_time })),
     box("rs_digest", s.digest_mail, "Send new email in this summary instead", "New email is counted in the summary, not announced one by one. Important people still come through."),
-    box("rs_inbox", s.digest_inbox, "Put a daily summary in my inbox", "The AI picks out email that needs you today, and that still tells you at once. Everything else is gathered into one summary at the time above and shown as a special item at the top of your Enveliq inbox. The summary itself makes no sound or alert, and nothing is hidden or marked as reviewed."),
-    s.digest_inbox ? h("div", { class: "hint" }, h("button", { class: "btn", type: "button", id: "rs_inbox_now", text: "Make today's summary now" }), " ", h("span", { id: "rs_inbox_msg", role: "status" })) : null,
+    box("rs_inbox", s.digest_inbox, "Hold email for the daily summary", "The AI picks out email that needs you today, and that still alerts you at once, as does anyone you marked important. All other new email is held out of your inbox and gathered in one summary at the top of your inbox and in Held for summary on the left. Once a day, at the time above, one alert says how many are waiting. Nothing is lost: when you press Done with summary, or after 7 days, whatever you left goes back to your inbox."),
     box("rs_due", s.due_on, "When something is due", "Sent once, when a task is due or when a new task for today appears."),
     box("rs_mail", s.mail_on, "When new email arrives", "One short message each time Enveliq finds new email for you. The email itself is never sent."),
     more("Repeats, quiet hours and privacy",
@@ -1555,16 +1554,6 @@ async function remindersPage(me) {
       repeat_hours: Number(g("rs_hours").value) || 2, repeat_max: Math.max(0, Number(g("rs_max").value) || 0), quiet_on: g("rs_quiet").checked, quiet_from: g("rs_from").value || "21:00", quiet_to: g("rs_to").value || "07:00", show_titles: g("rs_titles").checked, mail_on: g("rs_mail").checked, mail_details: g("rs_maildetails").checked, digest_mail: g("rs_digest").checked, digest_inbox: g("rs_inbox").checked } });
     toast("Saved");
   });
-  const nowBtn = form.querySelector("#rs_inbox_now");
-  if (nowBtn) nowBtn.onclick = async () => {
-    const msg = form.querySelector("#rs_inbox_msg");
-    nowBtn.disabled = true;
-    try {
-      const r = await api("/me/digests/now", { method: "POST", body: {} });
-      msg.textContent = r.made ? "Done. It is at the top of your inbox." : "Nothing new to put in a summary yet.";
-    } catch (e) { msg.textContent = e.message || "That did not work."; }
-    nowBtn.disabled = false;
-  };
   const mine = ov.channels.filter(c => c.allowed);
   const live = mine.filter(c => c.id === "browser" || c.id === "android" ? c.enabled && c.devices.length : c.enabled && c.configured);
   const reach = live.length

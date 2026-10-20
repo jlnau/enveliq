@@ -674,11 +674,12 @@ _click = "" if _pub.hostname in ("localhost", "127.0.0.1", "::1") else PUBLIC_OR
 reminders = Reminders(vault, taskbook, notifier, _click)
 _mailalerts = MailAlerts(notifier, _click, taskbook.timezone_of, important=importantbook)
 auto_sync.mail_alerts = _mailalerts
-digestbook = DigestBook(vault, notifier, taskbook, _mailalerts)
+digestbook = DigestBook(vault, notifier, taskbook, _mailalerts, importantbook, _click)
 reminders.subs = subbook
 dailysummary = DailySummary(vault, shipbook, waitbook, subbook, taskbook.held)
 reminders.summary = dailysummary
 reminders.digest_tick = digestbook.tick
+auto_sync.digest_hold = lambda uid: digestbook.hold_pass(uid) if digestbook.enabled(uid) else 0
 reminders.style_tick = lambda uid: (mail_service.refresh_ai(vault), stylebook.maintain(uid, mail_service.summariser))
 sync = Sync(vault, taskbook, notifier, PUBLIC_ORIGIN)
 backups = BackupManager(vault, DATA_DIR / "backups")

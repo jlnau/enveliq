@@ -227,8 +227,11 @@ class EnveliqApi(address: String) {
             for (j in 0 until messages.length()) {
                 val r = messages.getJSONObject(j)
                 val state = r.str("state")
+                val held = r.optBoolean("held_for_summary", false)
                 if (view == "inbox") {
-                    if (state == "reviewed" || state == "archived") continue
+                    if (state == "reviewed" || state == "archived" || held) continue      // held for the summary: not in the inbox
+                } else if (view == "held") {
+                    if (!held || state == "reviewed" || state == "archived") continue
                 } else if (state != view) {
                     continue
                 }
@@ -290,6 +293,7 @@ class EnveliqApi(address: String) {
                         replyTo = r.optJSONObject("reply_context")?.str("reply_to") ?: "",
                         replyCc = r.optJSONObject("reply_context")?.optJSONArray("cc").strings(),
                         quiet = quiet,
+                        held = held,
                         ungenerated = quiet && r.str("summary").startsWith("Not summarised yet"),
                         replyAlsoTo = r.optJSONObject("reply_context")?.optJSONArray("also_to").strings(),
                     )
@@ -612,31 +616,26 @@ class EnveliqApi(address: String) {
 
     fun rebuildWritingStyle(): StyleInfo = styleInfo(call("POST", "/api/v1/me/writing-style/rebuild", JSONObject()))
 
-    // ---- The daily summary item in the inbox (the website's routes) ----
-    fun digests(): List<DigestRow> {
-        val arr = JSONObject(call("GET", "/api/v1/me/digests")).optJSONArray("items") ?: return emptyList()
-        return (0 until arr.length()).mapNotNull { i ->
-            val d = arr.optJSONObject(i) ?: return@mapNotNull null
-            DigestRow(d.str("id"), d.str("day"), d.optDouble("created_at", 0.0), d.optBoolean("read"), d.optInt("count"), d.optInt("urgent"))
-        }
-    }
-
-    fun digest(id: String): Digest {
-        val r = JSONObject(call("GET", "/api/v1/me/digests/" + enc(id)))
+    // ---- The daily summary: email that can wait is held for it, out of the inbox (the website's routes) ----
+    fun summary(): SummaryInfo {
+        val r = JSONObject(call("GET", "/api/v1/me/summary"))
         val arr = r.optJSONArray("items")
         val items = (0 until (arr?.length() ?: 0)).mapNotNull { i ->
             val x = arr?.optJSONObject(i) ?: return@mapNotNull null
-            DigestItem(x.str("account_id"), x.str("message_id"), x.str("sender"), x.str("subject"), x.str("summary"), x.str("category").ifBlank { "Other" }, x.str("reason"), x.optBoolean("urgent"))
+            DigestItem(x.str("account_id"), x.str("message_id"), x.str("sender"), x.str("subject"), x.str("summary"), x.str("category").ifBlank { "Other" }, x.optDouble("held_at", 0.0))
         }
-        return Digest(r.str("id"), r.str("day"), r.optDouble("created_at", 0.0), items)
+        return SummaryInfo(r.optBoolean("enabled"), r.optInt("count"), r.optInt("unread"), items)
     }
 
-    fun readDigest(id: String) { call("POST", "/api/v1/me/digests/" + enc(id) + "/read", JSONObject()) }
+    fun summarySeen() { call("POST", "/api/v1/me/summary/seen", JSONObject()) }
 
-    fun deleteDigest(id: String) { call("DELETE", "/api/v1/me/digests/" + enc(id)) }
+    /** "Done with summary": everything still in it goes back to the inbox. Returns how many. */
+    fun summaryDone(): Int = JSONObject(call("POST", "/api/v1/me/summary/complete", JSONObject())).optInt("returned")
 
-    /** Makes today's summary now (replacing today's). True when there was something to put in it. */
-    fun makeDigestNow(): Boolean = JSONObject(call("POST", "/api/v1/me/digests/now", JSONObject())).optBoolean("made")
+    /** Takes one email out of the summary and puts it back in the inbox. */
+    fun summaryRemove(accountId: String, messageId: String) {
+        call("POST", "/api/v1/me/summary/remove", JSONObject().put("account_id", accountId).put("message_id", messageId))
+    }
 
     fun digestInboxOn(): Boolean = JSONObject(call("GET", "/api/v1/me/notifications")).optJSONObject("settings")?.optBoolean("digest_inbox", false) ?: false
 
@@ -892,10 +891,12 @@ class EnveliqApi(address: String) {
         call("DELETE", "/api/v1/me/rules/" + enc(id))
     }
 
-    fun resolve(mail: Mail, outcome: Outcome) {
+    fun resolve(mail: Mail, outcome: Outcome) = resolveIds(mail.accountId, mail.id, outcome)
+
+    fun resolveIds(accountId: String, messageId: String, outcome: Outcome) {
         call(
             "POST",
-            "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/resolve",
+            "/api/v1/accounts/" + enc(accountId) + "/messages/" + enc(messageId) + "/resolve",
             JSONObject().put("outcome", outcome.api),
         )
     }
