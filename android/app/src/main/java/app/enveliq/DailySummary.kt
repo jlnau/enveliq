@@ -27,7 +27,11 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Icon
-import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,9 +72,15 @@ internal fun DigestCard(info: SummaryInfo, onClick: () -> Unit) {
     }
 }
 
+/** A small square icon button; its name is spoken, and shown by pressing and holding. */
 @Composable
-private fun RowScope.SummaryIcon(label: String, tint: Color, container: Color, onClick: () -> Unit, icon: @Composable () -> Unit) =
-    BarIcon(label, tint, container, onClick, icon)
+private fun SummaryIcon(label: String, container: Color, onClick: () -> Unit, icon: @Composable () -> Unit) {
+    Box(
+        Modifier.size(42.dp).clip(RoundedCornerShape(10.dp)).background(container)
+            .clickable(onClickLabel = label, onClick = onClick).semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) { icon() }
+}
 
 /** The full-screen summary. [onOpenMail] opens the original email in Enveliq (the screen closes first). [onChanged] tells the inbox to reload. */
 @Composable
@@ -80,6 +90,7 @@ internal fun DigestScreen(api: EnveliqApi, onBack: () -> Unit, onOpenMail: (Stri
     var loaded by remember { mutableStateOf(false) }
     var err by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
+    var about by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         try {
             val info = withContext(Dispatchers.IO) { api.summary() }
@@ -112,32 +123,32 @@ internal fun DigestScreen(api: EnveliqApi, onBack: () -> Unit, onOpenMail: (Stri
         }
     }
     BackHandler(onBack = onBack)
-    Column(Modifier.fillMaxSize().background(Navy)) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onBack) { Text("‹ Close", color = Blue, fontSize = 16.sp) }
-            Text("Your daily summary", color = Ink, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-            Button(onClick = { finish() }, enabled = !busy, shape = RoundedCornerShape(12.dp)) { Text("Done with summary", fontSize = 14.sp) }
+    Column(Modifier.fillMaxSize().background(Navy).systemBarsPadding()) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Close", tint = Blue) }
+            Text("Daily summary", color = Ink, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, modifier = Modifier.weight(1f))
+            TextButton(onClick = { about = true }) { Text("What is this?", color = Muted, fontSize = 13.sp) }
+            Button(onClick = { finish() }, enabled = !busy, shape = RoundedCornerShape(10.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp), modifier = Modifier.height(38.dp).padding(end = 6.dp)) { Text("Done", fontSize = 14.sp) }
         }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
             if (!loaded) {
                 Text(err.ifEmpty { "Loading…" }, color = if (err.isEmpty()) Muted else Red, fontSize = 15.sp, modifier = Modifier.padding(top = 12.dp))
             } else {
-                Text("Written by AI from your email summaries. These emails are not in your inbox while they are here. Anything you leave in the summary goes back to your inbox when you press Done with summary, or after 7 days.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(bottom = 8.dp))
                 if (err.isNotEmpty()) Text(err, color = Red, fontSize = 14.sp, modifier = Modifier.padding(bottom = 6.dp))
                 val groups = items.groupBy { it.category }.toSortedMap()
                 groups.forEach { (title, list) ->
                     Text(title, color = Ink, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp, bottom = 6.dp))
                     list.forEach { i ->
                         Card(Modifier.padding(bottom = 8.dp)) {
-                            Text(i.sender.ifBlank { "Unknown sender" }, color = Muted, fontSize = 13.sp)
-                            Text(i.subject.ifBlank { "(no subject)" }, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                            Text(i.summary, color = Ink, fontSize = 15.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 4.dp))
-                            TextButton(onClick = { onOpenMail(i.accountId, i.messageId) }) { Text("Open this email", color = Blue, fontSize = 15.sp) }
-                            Row(Modifier.fillMaxWidth().padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                SummaryIcon("Reviewed", Green, Color(0xFF16382B), { act(i) { api.resolveIds(i.accountId, i.messageId, Outcome.Reviewed) } }) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
-                                SummaryIcon("Archive", Color(0xFF8DB8FF), Color(0xFF173056), { act(i) { api.resolveIds(i.accountId, i.messageId, Outcome.Archived) } }) { ArchiveIcon(Color(0xFF8DB8FF)) }
-                                SummaryIcon("Bin", Red, Color(0xFF3A1D22), { act(i) { api.resolveIds(i.accountId, i.messageId, Outcome.Binned) } }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Red) }
-                                SummaryIcon("Take out of the summary and put back in my inbox", Ink, PanelHigh, { act(i) { api.summaryRemove(i.accountId, i.messageId) } }) { Icon(Icons.Filled.ArrowBack, contentDescription = null, tint = Ink) }
+                            Text(i.sender.ifBlank { "Unknown sender" }, color = Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(i.subject.ifBlank { "(no subject)" }, color = Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(i.summary, color = Ink, fontSize = 14.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 2.dp))
+                            Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                TextButton(onClick = { onOpenMail(i.accountId, i.messageId) }, modifier = Modifier.weight(1f)) { Text("Open", color = Blue, fontSize = 14.sp, modifier = Modifier.fillMaxWidth()) }
+                                SummaryIcon("Reviewed", Color(0xFF16382B), { act(i) { api.resolveIds(i.accountId, i.messageId, Outcome.Reviewed) } }) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
+                                SummaryIcon("Archive", Color(0xFF173056), { act(i) { api.resolveIds(i.accountId, i.messageId, Outcome.Archived) } }) { ArchiveIcon(Color(0xFF8DB8FF)) }
+                                SummaryIcon("Bin", Color(0xFF3A1D22), { act(i) { api.resolveIds(i.accountId, i.messageId, Outcome.Binned) } }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Red) }
+                                SummaryIcon("Take out of the summary and put back in my inbox", PanelHigh, { act(i) { api.summaryRemove(i.accountId, i.messageId) } }) { Icon(Icons.Filled.ArrowBack, contentDescription = null, tint = Ink) }
                             }
                         }
                     }
@@ -145,10 +156,17 @@ internal fun DigestScreen(api: EnveliqApi, onBack: () -> Unit, onOpenMail: (Stri
                 Box(Modifier.size(16.dp))
             }
         }
-        Row(Modifier.fillMaxWidth().background(Panel).padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = onBack, modifier = Modifier.height(52.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line)) { Text("Close", color = Ink) }
-            Button(onClick = { finish() }, enabled = !busy, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp)) { Text("Done with summary", fontSize = 17.sp, fontWeight = FontWeight.SemiBold) }
+        Row(Modifier.fillMaxWidth().background(Panel).padding(horizontal = 16.dp, vertical = 8.dp)) {
+            Button(onClick = { finish() }, enabled = !busy, modifier = Modifier.fillMaxWidth().height(46.dp), shape = RoundedCornerShape(12.dp)) { Text("Done with summary", fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
         }
+    }
+    if (about) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { about = false }, containerColor = Panel,
+            title = { Text("Your daily summary", color = Ink) },
+            text = { Text("Written by AI from your email summaries. Email that can wait is held here instead of your inbox. Mark each one Reviewed, Archive or Bin, or use the back arrow to put it in your inbox. Done with summary sends anything left back to your inbox, and so does waiting 7 days. Urgent email never waits here.", color = Muted, fontSize = 14.sp) },
+            confirmButton = { TextButton(onClick = { about = false }) { Text("OK", color = Blue) } },
+        )
     }
 }
 

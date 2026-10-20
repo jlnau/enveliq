@@ -14,6 +14,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -291,25 +294,35 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
         }
     }
 
+    val scroll = rememberScrollState()
+    var viewH by remember { mutableStateOf(0) }
+    var bodyTop by remember { mutableStateOf(0) }
+    var bodyFocused by remember { mutableStateOf(false) }
+    LaunchedEffect(bodyFocused, viewH) { if (bodyFocused) scroll.animateScrollTo(bodyTop) }      // tapped the message: bring it up above the keyboard
+    val askWrite = rememberWriteAsk(api, mail, subject, body, kind == "new", wh)
     Column(Modifier.fillMaxSize().background(Navy).systemBarsPadding().imePadding()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { requestClose() }) { Text("Close", color = Blue, fontSize = 16.sp) }
             Text(kindName(kind), color = Ink, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f).padding(start = 8.dp))
+            if (hasContent) TextButton(onClick = { saveDraftThenClose() }, enabled = !busy) { Text("Save draft", color = Blue, fontSize = 15.sp) }
         }
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
+        Column(
+            Modifier.weight(1f).onSizeChanged { viewH = it.height }.verticalScroll(scroll).padding(horizontal = 20.dp),
+        ) {
             if (options.size > 1) FromPicker(options, from) { from = it }
             AddressField("To", to, { to = it }, toTyping, { toTyping = it }, api)
             if (kind == "reply") Text("Starts with the sender. Add or take off anyone.", color = Muted, fontSize = 13.sp)
             if (kind == "reply_all") Text("Starts with the sender, the other people on the email and everyone on Cc. Take off anyone you like.", color = Muted, fontSize = 13.sp)
-            TextButton(onClick = {
-                try { contactPicker.launch(android.content.Intent(android.content.Intent.ACTION_PICK, android.provider.ContactsContract.CommonDataKinds.Email.CONTENT_URI)) }
-                catch (e: Exception) { error = "This phone has no contacts app to pick from." }
-            }) { Text("Pick from phone contacts", color = Blue, fontSize = 15.sp) }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                TextButton(onClick = {
+                    try { contactPicker.launch(android.content.Intent(android.content.Intent.ACTION_PICK, android.provider.ContactsContract.CommonDataKinds.Email.CONTENT_URI)) }
+                    catch (e: Exception) { error = "This phone has no contacts app to pick from." }
+                }) { Text("Contacts", color = Blue, fontSize = 14.sp) }
+                if (!showCc) TextButton(onClick = { showCc = true }) { Text("Cc or Bcc", color = Blue, fontSize = 14.sp) }
+            }
             if (showCc) {
                 AddressField("Cc", cc, { cc = it }, ccTyping, { ccTyping = it }, api)
                 AddressField("Bcc", bcc, { bcc = it }, bccTyping, { bccTyping = it }, api)
-            } else {
-                TextButton(onClick = { showCc = true }) { Text("Add Cc or Bcc", color = Blue, fontSize = 15.sp) }
             }
             if (kind == "new") {
                 Text("Subject", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
@@ -319,7 +332,12 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
                 if (kind == "forward") Text("The email you are forwarding goes underneath, with its files.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp))
             }
             Text(if (kind == "forward") "Your note (optional)" else "Message", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 14.dp, bottom = 6.dp))
-            SpellField(body, { body = it }, singleLine = false, minLines = 8, modifier = Modifier.fillMaxWidth())
+            // The box is as tall as the space above the keyboard, and when you tap it the page scrolls so it sits at the top of that space.
+            val boxH = with(androidx.compose.ui.platform.LocalDensity.current) { (viewH.toDp() - 40.dp).coerceAtLeast(140.dp) }
+            SpellField(
+                body, { body = it }, singleLine = false, minLines = 3, onFocus = { bodyFocused = it },
+                modifier = Modifier.fillMaxWidth().height(boxH).onGloballyPositioned { bodyTop = it.positionInParent().y.toInt() },
+            )
             if (writeInfo != null && (kind == "new" || mail != null)) {
                 WriteHelpBox(api, writeInfo, mail, subject, body, kind == "new", wh) { body = it }
             }
@@ -338,33 +356,29 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             if (error.isNotEmpty()) Text(error, color = Red, fontSize = 15.sp, modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
             Spacer(Modifier.height(16.dp))
         }
-        if (writeInfo != null && writeInfo.on && writeInfo.quick && writeInfo.aiReady && (kind == "new" || mail != null)) {
-            Row(Modifier.fillMaxWidth().background(Panel).padding(start = 20.dp, end = 20.dp, top = 10.dp)) {
-                OutlinedButton(
-                    onClick = { quickSend() }, enabled = !busy && !quickBusy,
-                    modifier = Modifier.fillMaxWidth().height(48.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Blue),
-                ) { Text(if (quickBusy) "Checking…" else "Quick AI Send", color = Blue, fontSize = 16.sp) }
-            }
-            Text("Fixes spelling, grammar and punctuation, then sends at once.", color = Muted, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().background(Panel).padding(horizontal = 20.dp, vertical = 2.dp))
-        }
+        val helpOn = writeInfo != null && writeInfo.on && writeInfo.aiReady && (kind == "new" || mail != null)
+        val quickOn = helpOn && writeInfo != null && writeInfo.quick
+        val tight = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp)
         Row(
-            Modifier.fillMaxWidth().background(Panel).padding(horizontal = 20.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            Modifier.fillMaxWidth().background(Panel).padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (hasContent) {
-                OutlinedButton(
-                    onClick = { saveDraftThenClose() }, enabled = !busy,
-                    modifier = Modifier.height(52.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
-                ) { Text("Save draft", color = Ink) }
-            }
+            if (helpOn) OutlinedButton(
+                onClick = { askWrite() }, enabled = !busy && !wh.busy, contentPadding = tight,
+                modifier = Modifier.height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
+            ) { Text(writeHelpLabel(wh, body, kind == "new"), color = Blue, fontSize = 13.sp, maxLines = 1) }
+            if (quickOn) OutlinedButton(
+                onClick = { quickSend() }, enabled = !busy && !quickBusy, contentPadding = tight,
+                modifier = Modifier.height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Blue),
+            ) { Text(if (quickBusy) "Checking…" else "Quick send", color = Blue, fontSize = 13.sp, maxLines = 1) }
             OutlinedButton(
-                onClick = { askLater = true }, enabled = !busy,
-                modifier = Modifier.height(52.dp), shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line),
-            ) { Text("Later", color = Ink) }
-            Button(onClick = { send() }, enabled = !busy, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp)) {
-                if (busy) CircularProgressIndicator(Modifier.size(22.dp), color = Ink, strokeWidth = 2.dp)
-                else Text("Send", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                onClick = { askLater = true }, enabled = !busy, contentPadding = tight,
+                modifier = Modifier.height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
+            ) { Text("Later", color = Ink, fontSize = 13.sp, maxLines = 1) }
+            Button(onClick = { send() }, enabled = !busy, modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), contentPadding = tight) {
+                if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = Ink, strokeWidth = 2.dp)
+                else Text("Send", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             }
         }
     }

@@ -17,6 +17,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,20 +51,17 @@ internal fun rememberWriteHelp(api: EnveliqApi, reload: Int = 0): WriteHelpInfo?
     return info
 }
 
-/** The button and the "Suggested by AI" box under the message. [text] is the person's own box; [accept] puts wording into it. */
+/** Starts the AI's help for what is in the box. Used by the button in the bottom row of the composer. */
 @Composable
-internal fun WriteHelpBox(
-    api: EnveliqApi, info: WriteHelpInfo, mail: Mail?, subject: String, text: String, isNew: Boolean,
-    state: WriteHelpState, accept: (String) -> Unit,
-) {
+internal fun rememberWriteAsk(api: EnveliqApi, mail: Mail?, subject: String, text: String, isNew: Boolean, state: WriteHelpState): () -> Unit {
     val scope = rememberCoroutineScope()
-    val clipboard = LocalClipboardManager.current
-    fun ask() {
+    val latest = rememberUpdatedState(Triple(subject, text, mail))
+    return {
         state.busy = true; state.error = ""
-        val draft = text
+        val (subj, draft, m) = latest.value
         scope.launch {
             try {
-                val r = withContext(Dispatchers.IO) { if (isNew || mail == null) api.writeForNew(subject, draft) else api.writeForReply(mail, draft) }
+                val r = withContext(Dispatchers.IO) { if (isNew || m == null) api.writeForNew(subj, draft) else api.writeForReply(m, draft) }
                 state.suggestion = r; state.used = true
             } catch (e: ApiException) {
                 state.error = e.message ?: "Writing help did not work."
@@ -72,18 +70,22 @@ internal fun WriteHelpBox(
             } finally { state.busy = false }
         }
     }
-    Column(Modifier.fillMaxWidth().padding(top = 10.dp)) {
-        if (!info.on) {
-            Text("Want help writing? You can turn on Writing help in Settings, under Writing help.", color = Muted, fontSize = 13.sp)
-            return@Column
-        }
-        val label = if (state.busy) "Thinking…" else if (text.isBlank()) (if (isNew) "Help me write" else "Write a reply for me") else (if (isNew) "Check my email" else "Check my reply")
-        OutlinedButton(onClick = { ask() }, enabled = !state.busy && info.aiReady, shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line)) { Text(label, color = Blue) }
-        Text(
-            if (info.aiReady) "The AI reads what you wrote (and the email you are answering) and suggests text. You choose what to use."
-            else "No AI model is set up yet, so writing help cannot work. An administrator can add one.",
-            color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp),
-        )
+}
+
+/** The short label for the writing-help button. */
+internal fun writeHelpLabel(state: WriteHelpState, text: String, isNew: Boolean): String =
+    if (state.busy) "Thinking…" else if (text.isBlank()) (if (isNew) "Help me write" else "Write reply") else "Check it"
+
+/** The button and the "Suggested by AI" box under the message. [text] is the person's own box; [accept] puts wording into it. */
+@Composable
+internal fun WriteHelpBox(
+    api: EnveliqApi, info: WriteHelpInfo, mail: Mail?, subject: String, text: String, isNew: Boolean,
+    state: WriteHelpState, accept: (String) -> Unit,
+) {
+    val clipboard = LocalClipboardManager.current
+    val ask = rememberWriteAsk(api, mail, subject, text, isNew, state)
+    Column(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+        if (!info.on) return@Column
         if (state.error.isNotEmpty()) Text(state.error, color = Red, fontSize = 14.sp, modifier = Modifier.padding(top = 6.dp))
         val s = state.suggestion
         if (s != null) {

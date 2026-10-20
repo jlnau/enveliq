@@ -21,8 +21,9 @@ import androidx.compose.ui.viewinterop.AndroidView
  * It looks like the other boxes in the app (a thin outline, the app's colours).
  */
 @Composable
-internal fun SpellField(value: String, onChange: (String) -> Unit, singleLine: Boolean, modifier: Modifier = Modifier, minLines: Int = 1) {
+internal fun SpellField(value: String, onChange: (String) -> Unit, singleLine: Boolean, modifier: Modifier = Modifier, minLines: Int = 1, onFocus: ((Boolean) -> Unit)? = null) {
     val latest by rememberUpdatedState(onChange)
+    val focusLatest by rememberUpdatedState(onFocus)
     val ink = Ink.toArgb()
     val muted = Muted.toArgb()
     val line = Line.toArgb()
@@ -38,6 +39,7 @@ internal fun SpellField(value: String, onChange: (String) -> Unit, singleLine: B
                 val pad = (14 * ctx.resources.displayMetrics.density).toInt()
                 setPadding(pad, pad, pad, pad)
                 setText(value)
+                setOnFocusChangeListener { _, has -> focusLatest?.invoke(has) }
                 addTextChangedListener(object : TextWatcher {
                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
