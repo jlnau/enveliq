@@ -21,7 +21,7 @@ from .outbound import OutboundError
 RECORD_PREFIX = "notify:"
 SETTINGS_DEFAULT = {"morning_on": True, "morning_time": "08:00", "due_on": True, "repeat_hours": 2, "repeat_max": 2,
                     "quiet_on": True, "quiet_from": "21:00", "quiet_to": "07:00", "show_titles": True,
-                    "mail_on": False, "mail_details": False, "mail_filter": "all", "mail_muted_accounts": [], "digest_mail": False}
+                    "mail_on": False, "mail_details": False, "mail_filter": "all", "mail_muted_accounts": [], "digest_mail": False, "digest_inbox": False}
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _TIME = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
@@ -298,7 +298,7 @@ class Notifier:
     def settings(self, user_id: str) -> dict[str, Any]:
         raw = self._load(user_id)["settings"]
         out = dict(SETTINGS_DEFAULT)
-        for k in ("morning_on", "due_on", "quiet_on", "show_titles", "mail_on", "mail_details", "digest_mail"):
+        for k in ("morning_on", "due_on", "quiet_on", "show_titles", "mail_on", "mail_details", "digest_mail", "digest_inbox"):
             if isinstance(raw.get(k), bool):
                 out[k] = raw[k]
         for k in ("morning_time", "quiet_from", "quiet_to"):

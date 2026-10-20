@@ -57,6 +57,10 @@ FIXED_PROMPT = (
     f"category (one of: {', '.join(CATEGORIES)}), "
     "priority (low, normal or high), "
     "action_required (true or false), "
+    "act_today (true only when the reader should deal with this email today or by the next working day, judged from what it says: "
+    "a deadline, an urgent request, a question waiting for an answer, a payment, a booking or a security matter; "
+    "false for newsletters, promotions, receipts, notifications and anything that can wait), "
+    "today_reason (null when act_today is false; otherwise one short plain line, under 100 characters, saying why, for example 'Payment is due tomorrow'), "
     "task (null, or an object with title: a short instruction, due: a date or time phrase taken from the email or null, "
     "detail: one sentence), "
     "shipment (null, unless the email is about an online order or a parcel delivery; then an object with "
@@ -231,8 +235,10 @@ def parse_reply(content: Any) -> dict[str, Any]:
         title = _text(raw_task.get("title"), 120)
         if title:
             task = {"title": title, "due": _text(raw_task.get("due"), 64) or None, "detail": _text(raw_task.get("detail"), 400) or None}
+    act_today = _flag(data.get("act_today"))
     out = {"summary": summary, "category": category, "priority": priority,
-           "action_required": _flag(data.get("action_required")), "suggested_task": task}
+           "action_required": _flag(data.get("action_required")), "suggested_task": task,
+           "act_today": act_today, "today_reason": (_text(data.get("today_reason"), 140) or None) if act_today else None}
     ship = _shipment(data.get("shipment"))
     if ship:
         out["shipment"] = ship

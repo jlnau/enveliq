@@ -50,6 +50,7 @@ class SettingsBody(StrictModel):
     mail_on: bool | None = None
     mail_details: bool | None = None
     digest_mail: bool | None = None
+    digest_inbox: bool | None = None
     mail_filter: Literal["all", "important", "action"] | None = None
     mail_muted_accounts: list[str] | None = Field(default=None, max_length=100)
 
@@ -145,15 +146,15 @@ def digest_filter(ctx: Any, user_id: str, fresh: list[tuple[str, str]]) -> list[
     """When the person chose "new email in the daily summary instead", the phone is not told about each new email, except from important people."""
     try:
         st = ctx.notifier.settings(user_id)
-        if not (st.get("digest_mail") and st.get("morning_on", True)):
+        if not ((st.get("digest_mail") and st.get("morning_on", True)) or st.get("digest_inbox")):
             return fresh
         keep: list[tuple[str, str]] = []
         for account_id, message_id in fresh:
             try:
-                address = ctx.vault.get_message(account_id, message_id).get("sender_address")
+                message = ctx.vault.get_message(account_id, message_id)
             except Exception:
                 continue
-            if ctx.important.contains(user_id, address):
+            if ctx.important.contains(user_id, message.get("sender_address")) or message.get("act_today") is True:      # urgent mail still comes at once
                 keep.append((account_id, message_id))
         return keep
     except Exception:

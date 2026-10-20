@@ -22,6 +22,7 @@ PLAIN_RECORDS = {
     "waiting_for_replies": "wait:",
     "writing_help": "writehelp:",
     "writing_style": "style:",
+    "daily_summaries": "digest:",
     "important_people": "important:",
     "signature_and_saved_replies": "saved:",
     "drafts": "drafts:",

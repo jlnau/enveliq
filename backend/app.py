@@ -60,6 +60,8 @@ from .mail.writehelp import WriteHelpBook
 from .mail.writehelp_routes import build_writehelp_router
 from .mail.style import StyleBook
 from .mail.style_routes import build_style_router
+from .mail.digest import DigestBook
+from .mail.digest_routes import build_digest_router
 from .mail.shipping_routes import build_shipping_router
 from .mail.waiting import WaitBook
 from .mail.waiting_routes import build_waiting_router
@@ -528,6 +530,7 @@ def delete_user_data(user_id: str) -> None:
     inboundbook.forget_user(user_id)
     writehelpbook.forget_user(user_id)
     stylebook.forget_user(user_id)
+    digestbook.forget_user(user_id)
     importantbook.forget_user(user_id)
     savedbook.forget_user(user_id)
     draftbook.forget_user(user_id)
@@ -669,10 +672,13 @@ senderbook = SenderBook(vault, mail_service, rulebook, importantbook, taskbook.h
 notifier = Notifier(vault)
 _click = "" if _pub.hostname in ("localhost", "127.0.0.1", "::1") else PUBLIC_ORIGIN
 reminders = Reminders(vault, taskbook, notifier, _click)
-auto_sync.mail_alerts = MailAlerts(notifier, _click, taskbook.timezone_of, important=importantbook)
+_mailalerts = MailAlerts(notifier, _click, taskbook.timezone_of, important=importantbook)
+auto_sync.mail_alerts = _mailalerts
+digestbook = DigestBook(vault, notifier, taskbook, _mailalerts)
 reminders.subs = subbook
 dailysummary = DailySummary(vault, shipbook, waitbook, subbook, taskbook.held)
 reminders.summary = dailysummary
+reminders.digest_tick = digestbook.tick
 reminders.style_tick = lambda uid: (mail_service.refresh_ai(vault), stylebook.maintain(uid, mail_service.summariser))
 sync = Sync(vault, taskbook, notifier, PUBLIC_ORIGIN)
 backups = BackupManager(vault, DATA_DIR / "backups")
@@ -708,7 +714,7 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, senders=senderbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, scheduled=scheduledbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, style=stylebook, waiting=waitbook, summary=dailysummary, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, senders=senderbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, scheduled=scheduledbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, style=stylebook, digest=digestbook, waiting=waitbook, summary=dailysummary, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))
@@ -772,6 +778,7 @@ app.include_router(build_messages_router(mail_ctx))
 app.include_router(build_inbound_router(mail_ctx))
 app.include_router(build_writehelp_router(mail_ctx))
 app.include_router(build_style_router(mail_ctx))
+app.include_router(build_digest_router(mail_ctx))
 app.include_router(build_notify_router(mail_ctx))
 app.include_router(build_agent_router(mail_ctx))
 for _r in build_sync_router(mail_ctx):

@@ -306,6 +306,9 @@ class RetainedMessageCreate(StrictModel):
     category: str | None = Field(default=None, max_length=128)
     priority: Literal["low", "normal", "high"] = "normal"
     action_required: bool = False
+    # The AI's judgement that this email needs the reader today or by the next working day (see mail/digest.py), and why in one plain line.
+    act_today: bool = False
+    today_reason: str | None = Field(default=None, max_length=140)
     # When the email was sent (from its Date header), as a Unix timestamp.
     received_at: float | None = Field(default=None, ge=0, le=4_102_444_800)
     # Typed, size-bounded structures rather than free-form dicts, so raw
