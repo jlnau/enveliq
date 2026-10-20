@@ -53,6 +53,15 @@ await page.waitForSelector("article.mail");
 const boxes = () => page.locator("input[data-select]");
 const ticked = async () => (await boxes().evaluateAll((els) => els.map((e, i) => (e.checked ? i + 1 : 0)).filter(Boolean))).join(",");
 const tick = (n, shift = false) => boxes().nth(n - 1).click({ modifiers: shift ? ["Shift"] : [] });
+const clearSelection = async () => {
+  try { await page.locator("#previewBulkClear:visible, #clear:visible").first().click({ timeout: 8000 }); }
+  catch (e) {
+    const info = await page.evaluate(() => { const d = (id) => { const el = document.getElementById(id); if (!el) return id + ":missing"; const r = el.getBoundingClientRect(), c = getComputedStyle(el); return `${id}:${c.display}/${c.visibility}/${Math.round(r.width)}x${Math.round(r.height)}/${el.className}`; };
+      return [d("previewBulk"), d("previewListHeading"), d("bulk"), "body=" + document.body.className, "selected=" + document.querySelectorAll("input[data-select]:checked").length, "vw=" + innerWidth].join(" | "); });
+    console.log("::error::Clear not found. " + info);
+    throw e;
+  }
+};
 const subjects = await page.locator("article.mail .subject").allInnerTexts();
 check("the inbox shows the seven emails", subjects.length === 7);
 
@@ -63,7 +72,7 @@ check("Shift + tick further down selects every email between, both ends included
 await tick(7, true);
 check("Shift + tick again carries on from the one ticked last", (await ticked()) === "2,3,4,5,6,7");
 
-await page.locator("#previewBulkClear:visible, #clear:visible").first().click();
+await clearSelection();
 check("Clear selection empties it", (await ticked()) === "");
 await tick(6);
 await tick(3, true);
@@ -76,13 +85,13 @@ check("unticking one email unticks only it", (await ticked()) === "1,3,5,6");
 await tick(6, true);
 check("Shift + untick clears the emails between, not just the ends", (await ticked()) === "1,3");
 
-await page.locator("#previewBulkClear:visible, #clear:visible").first().click();
+await clearSelection();
 await tick(4, true);
 check("Shift + tick with nothing ticked before acts like a plain tick", (await ticked()) === "4");
 check("the bulk bar shows when several are selected", await (async () => { await tick(6, true); return (await page.locator("#bulk.show").count()) === 1; })());
 
 // ---- Select all ----
-await page.locator("#previewBulkClear:visible, #clear:visible").first().click();
+await clearSelection();
 const all = page.locator("#selectAll");
 check("a Select all control sits above the list", await all.isVisible() && (await page.locator("#selectAllWrap").innerText()).includes("Select all"));
 check("it starts unticked", !(await all.isChecked()));
@@ -99,7 +108,7 @@ await tick(3);
 check("unticking one email takes the tick off Select all", !(await all.isChecked()) && (await ticked()) === "1,2,4,5,6,7");
 await tick(7, true);
 check("Shift unticking a run still works after Select all", (await ticked()) === "1,2");
-await page.locator("#previewBulkClear:visible, #clear:visible").first().click();
+await clearSelection();
 check("Clear empties a Select all", (await ticked()) === "" && !(await all.isChecked()));
 // An AI summary finishing reloads the list in the background. The emails you ticked stay ticked.
 await tick(2); await tick(3, true);
