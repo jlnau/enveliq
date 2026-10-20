@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Android: neater address lines.** In a new email, reply or forward, **To**, **Subject** and **From** now sit on one line each with their label, a small person button in each address box picks from the phone's contacts (typing still searches your address list), and a drop-down arrow in the To box shows or hides Cc and Bcc. Touches `Compose.kt`, `docs/ANDROID.md`.
+
 **Android: Undo after a swipe.** An email brought back by Undo after swiping it away now comes back as a normal row instead of staying stuck showing Archive or Bin.
 
 **Android: tidier summary and new-email page.** The summary screen is compact (the explanation is behind **What is this?**, small icon buttons, status bar no longer overlaps the title). The new-email, reply and forward pages keep **Send** (small) and a clock for Send later fixed at the top, with Help me write, Quick AI send, Attach files and Save draft in two tidy rows at the bottom and less text; the message box now fits above the keyboard and scrolls up when tapped so you can see what you type. Touches `DailySummary.kt`, `Compose.kt`, `WritingHelp.kt`, `SpellField.kt`, `docs/ANDROID.md`.

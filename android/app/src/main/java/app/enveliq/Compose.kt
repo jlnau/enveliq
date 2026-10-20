@@ -15,6 +15,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.draw.rotate
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -140,13 +146,21 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             files.add(f)
         }
     }
+    var pickFor by remember { mutableStateOf("to") }
     // "Pick a person" from the phone's contacts. Android hands over only the one address chosen, so no contacts permission is needed.
     val contactPicker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { res ->
         val uri = res.data?.data ?: return@rememberLauncherForActivityResult
         val address = try {
             context.contentResolver.query(uri, arrayOf(android.provider.ContactsContract.CommonDataKinds.Email.ADDRESS), null, null, null)?.use { if (it.moveToFirst()) it.getString(0) else null }
         } catch (e: Exception) { null }
-        if (address.isNullOrBlank()) error = "Could not read that contact's address." else to = if (to.isBlank()) address else to.trimEnd(',', ' ') + ", " + address
+        fun add(old: String) = if (old.isBlank()) address.orEmpty() else old.trimEnd(',', ' ') + ", " + address
+        if (address.isNullOrBlank()) error = "Could not read that contact's address."
+        else when (pickFor) { "cc" -> cc = add(cc); "bcc" -> bcc = add(bcc); else -> to = add(to) }
+    }
+    fun pickPhone(field: String) {
+        pickFor = field
+        try { contactPicker.launch(android.content.Intent(android.content.Intent.ACTION_PICK, android.provider.ContactsContract.CommonDataKinds.Email.CONTENT_URI)) }
+        catch (e: Exception) { error = "This phone has no contacts app to pick from." }
     }
 
     val original = mail?.subject.orEmpty().ifBlank { "(no subject)" }
@@ -318,23 +332,18 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             Modifier.weight(1f).onSizeChanged { viewH = it.height }.verticalScroll(scroll).padding(horizontal = 20.dp),
         ) {
             if (options.size > 1) FromPicker(options, from) { from = it }
-            AddressField("To", to, { to = it }, toTyping, { toTyping = it }, api)
-            if (kind == "reply") Text("Starts with the sender. Add or take off anyone.", color = Muted, fontSize = 13.sp)
-            if (kind == "reply_all") Text("Starts with the sender, the other people on the email and everyone on Cc. Take off anyone you like.", color = Muted, fontSize = 13.sp)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                TextButton(onClick = {
-                    try { contactPicker.launch(android.content.Intent(android.content.Intent.ACTION_PICK, android.provider.ContactsContract.CommonDataKinds.Email.CONTENT_URI)) }
-                    catch (e: Exception) { error = "This phone has no contacts app to pick from." }
-                }) { Text("Contacts", color = Blue, fontSize = 14.sp) }
-                if (!showCc) TextButton(onClick = { showCc = true }) { Text("Cc or Bcc", color = Blue, fontSize = 14.sp) }
-            }
+            AddressField("To", to, { to = it }, toTyping, { toTyping = it }, api, onPhone = { pickPhone("to") }, expanded = showCc, onExpand = { showCc = !showCc })
             if (showCc) {
-                AddressField("Cc", cc, { cc = it }, ccTyping, { ccTyping = it }, api)
-                AddressField("Bcc", bcc, { bcc = it }, bccTyping, { bccTyping = it }, api)
+                AddressField("Cc", cc, { cc = it }, ccTyping, { ccTyping = it }, api, onPhone = { pickPhone("cc") })
+                AddressField("Bcc", bcc, { bcc = it }, bccTyping, { bccTyping = it }, api, onPhone = { pickPhone("bcc") })
             }
+            if (kind == "reply") Text("Starts with the sender. Add or take off anyone.", color = Muted, fontSize = 12.sp)
+            if (kind == "reply_all") Text("Starts with the sender, the other people on the email and everyone on Cc. Take off anyone you like.", color = Muted, fontSize = 12.sp)
             if (kind == "new") {
-                Text("Subject", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
-                SpellField(subject, { subject = it }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Subject", color = Muted, fontSize = 14.sp, modifier = Modifier.width(52.dp))
+                    SpellField(subject, { subject = it }, singleLine = true, modifier = Modifier.weight(1f))
+                }
             } else {
                 Text(shownSubject, color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 12.dp))
                 if (kind == "forward") Text("The email you are forwarding goes underneath, with its files.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp))
@@ -463,14 +472,11 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
 @Composable
 private fun FromPicker(options: List<FromOption>, selected: FromOption?, onPick: (FromOption) -> Unit) {
     var open by remember { mutableStateOf(false) }
-    Box(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+    Box(Modifier.fillMaxWidth().padding(top = 4.dp)) {
         Surface(color = Panel, shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line), modifier = Modifier.fillMaxWidth().clickable { open = true }) {
-            Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("From", color = Muted, fontSize = 14.sp)
-                Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
-                    Text(selected?.address ?: "", color = Ink, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    if (selected != null && selected.label != selected.address) Text(selected.label, color = Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
+            Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("From", color = Muted, fontSize = 14.sp, modifier = Modifier.width(40.dp))
+                Text(selected?.address ?: "", color = Ink, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(horizontal = 8.dp))
                 Text("▾", color = Muted, fontSize = 16.sp)
             }
         }
@@ -496,7 +502,10 @@ private fun FromPicker(options: List<FromOption>, selected: FromOption?, onPick:
  */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun AddressField(label: String, value: String, onChange: (String) -> Unit, typing: String, onTyping: (String) -> Unit, api: EnveliqApi) {
+private fun AddressField(
+    label: String, value: String, onChange: (String) -> Unit, typing: String, onTyping: (String) -> Unit, api: EnveliqApi,
+    onPhone: () -> Unit, expanded: Boolean = false, onExpand: (() -> Unit)? = null,
+) {
     var found by remember { mutableStateOf<List<Contact>>(emptyList()) }
     val items = addresses(value)
     fun add(text: String) {
@@ -516,7 +525,9 @@ private fun AddressField(label: String, value: String, onChange: (String) -> Uni
             // The address list may be switched off; typing an address still works.
         }
     }
-    Text(label, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
+    Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.Top) {
+    Text(label, color = Muted, fontSize = 14.sp, modifier = Modifier.width(40.dp).padding(top = 16.dp))
+    Column(Modifier.weight(1f)) {
     if (items.isNotEmpty()) {
         androidx.compose.foundation.layout.FlowRow(
             horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -540,7 +551,15 @@ private fun AddressField(label: String, value: String, onChange: (String) -> Uni
         value = typing,
         onValueChange = { v -> if (v.endsWith(",") || v.endsWith(";") || v.endsWith(" ") || v.endsWith("\n")) add(v) else onTyping(v) },
         singleLine = true,
-        placeholder = { Text(if (items.isEmpty()) "Type a name or an address" else "Add another person") },
+        placeholder = { Text(if (items.isEmpty()) "Name or address" else "Add another", fontSize = 15.sp) },
+        trailingIcon = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onPhone, modifier = Modifier.semantics { contentDescription = "Pick from phone contacts" }) { Icon(Icons.Filled.Person, contentDescription = null, tint = Muted) }
+                if (onExpand != null) IconButton(onClick = onExpand, modifier = Modifier.semantics { contentDescription = if (expanded) "Hide Cc and Bcc" else "Show Cc and Bcc" }) {
+                    Icon(Icons.Filled.ArrowDropDown, contentDescription = null, tint = Muted, modifier = Modifier.rotate(if (expanded) 180f else 0f))
+                }
+            }
+        },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = androidx.compose.ui.text.input.ImeAction.Next),
         keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { add(typing) }),
         modifier = Modifier.fillMaxWidth().onFocusChanged { if (!it.isFocused && typing.isNotBlank()) add(typing) },
@@ -549,6 +568,8 @@ private fun AddressField(label: String, value: String, onChange: (String) -> Uni
         TextButton(onClick = { add(c.address) }) {
             Text((if (c.name.isNotBlank()) c.name + "  " else "") + c.address, color = Blue, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
+    }
+    }
     }
 }
 
