@@ -240,7 +240,7 @@ async function open(server, { seen = true } = {}) {
   const barIn = await page.evaluate(() => { const b = document.getElementById("bulk"); return b.classList.contains("show") && !!b.closest(".filters") && getComputedStyle(b).display !== "none"; });
   const listTop2 = await page.locator("#list").evaluate((e) => Math.round(e.getBoundingClientRect().top));
   check("selecting two emails shows the bar between Filter and Sort without moving the list", barIn && listTop === listTop2 && (await page.locator("#bulk [data-bulk]").count()) === 3);
-  await page.click("#clear");
+  await page.locator("#previewBulkClear:visible, #clear:visible").first().click();
   check("Clear removes the bar", !(await page.locator("#bulk.show").count()));
   check("every Reviewed, Archive and Bin waits five seconds", (await page.evaluate(() => window.__undoMs)) === 5000);
   {

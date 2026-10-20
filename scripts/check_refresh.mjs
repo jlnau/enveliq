@@ -113,7 +113,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.locator("article.mail .check").nth(0).check();
   await page.locator("article.mail .check").nth(1).check();
   check("the link steps aside while two or more emails are selected, and returns after", await page.locator("#expandAll").isHidden());
-  await page.click("#clear");
+  await page.locator("#previewBulkClear:visible, #clear:visible").first().click();
   await page.waitForFunction(() => !document.getElementById("expandAll").hidden);
   check("clearing the selection brings it back", await page.locator("#expandAll").isVisible());
 
