@@ -388,8 +388,8 @@ def test_private_mode_keeps_the_service_name_out(due):
     client.put("/api/v1/me/notifications/settings", json={"show_titles": False})
     _subscription(appm, uid, datetime(2026, 10, 9, 6, 0, tzinfo=SYD).timestamp())
     at(8, 1)
-    private = [n for n in sent if "subscription" in n["body"]]
-    assert len(private) == 1 and private[0]["title"] == "Enveliq" and "Streamly" not in private[0]["body"] and "Open Enveliq" in private[0]["body"]
+    assert len(sent) == 1 and sent[0]["title"] == "Enveliq"                                     # one summary, the subscription counted in it
+    assert "Streamly" not in sent[0]["body"] and "2 things" in sent[0]["body"] and "Open Enveliq" in sent[0]["body"]
 
 
 def test_a_cancelled_subscription_is_not_announced(due):
