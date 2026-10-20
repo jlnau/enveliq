@@ -49,6 +49,7 @@ import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -278,6 +279,23 @@ fun SignInScreen(initialAddress: String, notice: String, linkCode: String?, onLi
             Modifier.fillMaxWidth().background(Navy).border(width = 1.dp, color = Line, shape = androidx.compose.ui.graphics.RectangleShape)
                 .padding(horizontal = 20.dp, vertical = 12.dp),
         ) {
+            if (!needsCode) {
+                val open = { path: String ->
+                    try { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(EnveliqApi.normalise(address) + path))) } catch (_: Exception) { }
+                }
+                val link = androidx.compose.ui.text.TextLinkStyles(androidx.compose.ui.text.SpanStyle(color = Blue, textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline))
+                Text(
+                    androidx.compose.ui.text.buildAnnotatedString {
+                        append("By signing in you agree to the ")
+                        withLink(androidx.compose.ui.text.LinkAnnotation.Clickable("terms", link) { open("/terms") }) { append("terms of use") }
+                        append(" and the ")
+                        withLink(androidx.compose.ui.text.LinkAnnotation.Clickable("privacy", link) { open("/privacy") }) { append("privacy notice") }
+                        append(".")
+                    },
+                    color = Muted, fontSize = 12.sp, lineHeight = 16.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                )
+            }
             Button(
                 onClick = { go() },
                 enabled = !busy && (if (needsCode) code.isNotBlank() else addressReady && username.isNotBlank() && password.isNotBlank()),
@@ -372,4 +390,36 @@ private fun WelcomeCard(symbol: String, title: String, text: String) {
             }
         }
     }
+}
+
+/**
+ * Shown once on this phone, before the inbox: the few things worth knowing before you use Enveliq. Pressing "I understand" is remembered
+ * on this phone. The full terms are one tap away.
+ */
+@Composable
+fun TermsNotice(server: String, onAccept: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = {},
+        properties = androidx.compose.ui.window.DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
+        containerColor = Panel,
+        title = { Text("Before you start", color = Ink, fontWeight = FontWeight.SemiBold) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                for (line in listOf(
+                    "Enveliq is free software, run by someone you know on their own server. It is provided as it is, with no warranty, and its author is not liable for loss or damage from using it.",
+                    "The AI summaries can be wrong. Open the original email when it matters.",
+                    "Keep your own backups. Enveliq does not keep copies of your email.",
+                    "If the AI summaries use an online AI service, the text of those emails is sent to that company.",
+                )) Text("\u2022  " + line, color = Ink, fontSize = 15.sp, lineHeight = 22.sp, modifier = Modifier.padding(bottom = 8.dp))
+                Text("You can read the full terms any time in Settings, About.", color = Muted, fontSize = 14.sp, lineHeight = 20.sp)
+            }
+        },
+        confirmButton = { TextButton(onClick = onAccept) { Text("I understand", color = Blue, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) } },
+        dismissButton = {
+            TextButton(onClick = {
+                try { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(EnveliqApi.normalise(server) + "/terms"))) } catch (_: Exception) { }
+            }) { Text("Read the terms", color = Muted) }
+        },
+    )
 }

@@ -4,7 +4,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**Android: terms and privacy are in the app.** (1) **Settings, About** now has **Terms of use**, **Privacy** and **Security**, which open the same pages as the website from your own server. (2) The sign-in screen says "By signing in you agree to the terms of use and the privacy notice", with both as links, just above the Sign in button. (3) The first time you are in on a phone, a short **Before you start** notice says that Enveliq is provided as it is with no warranty, that AI summaries can be wrong, to keep your own backups, and that an online AI service receives the text of emails it summarises. Press **I understand** to continue (or **Read the terms**). That choice is remembered on that phone only; nothing is sent to the server. Touches `android/` (`Screens.kt`, `Settings.kt`, `Home.kt`), `docs/ANDROID.md`, `docs/TERMS.md`.
 
 ## v0.98 (2026-10-20)
 

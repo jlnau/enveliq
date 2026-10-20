@@ -602,6 +602,13 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                     try { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(APP_DOWNLOAD_PAGE))) } catch (e: Exception) { upNote = "No app on this phone could open the page." }
                 }
             }
+            Group {
+                for ((title, path) in listOf("Terms of use" to "/terms", "Privacy" to "/privacy", "Security" to "/security")) {
+                    NavRow("", tintTool, title, note = if (path == "/terms") "Plain-language terms, including that Enveliq is provided as it is, with no warranty." else "") {
+                        try { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(EnveliqApi.normalise(server) + path))) } catch (e: Exception) { upNote = "No app on this phone could open the page." }
+                    }
+                }
+            }
             Footnote("Email is held in memory while it is on the screen and is never saved on this phone. Backups are switched off.")
             Footnote("The only thing kept is your sign-in, encrypted on this phone, if you chose to stay signed in. The app only talks to the server you typed, over HTTPS.")
         }

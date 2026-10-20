@@ -1,6 +1,6 @@
 # Terms of use
 
-Plain-language terms for Enveliq, free and open-source software written in Australia. The same text is shown in the app at `/terms`. This is a general summary, not legal advice.
+Plain-language terms for Enveliq, free and open-source software written in Australia. The same text is shown in the app at `/terms`. The Android app links to it from the sign-in screen and from Settings, About, and shows a short "Before you start" notice once on each phone. This is a general summary, not legal advice.
 
 ## What Enveliq is
 

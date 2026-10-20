@@ -213,6 +213,12 @@ fun EnveliqApp(activity: MainActivity) {
         }
     }
 
+    // Shown once on this phone, once you are in: what Enveliq is and is not. "I understand" is remembered here.
+    var termsSeen by remember { mutableStateOf(prefs.getBoolean("terms_ack", false)) }
+    if (!termsSeen && (stage == Stage.Home || stage == Stage.Welcome) && server.isNotEmpty()) {
+        TermsNotice(server) { prefs.edit().putBoolean("terms_ack", true).apply(); termsSeen = true }
+    }
+
     when (stage) {
         Stage.Opening -> Box(Modifier.fillMaxSize().background(Navy), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
