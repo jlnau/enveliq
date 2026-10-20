@@ -111,6 +111,10 @@ def verify_authentication(rp: RelyingParty, credential: dict, challenge: bytes, 
 
 ANDROID_PACKAGE = "app.enveliq"
 
+# The SHA-256 fingerprint of the key that signs the official Enveliq app (public, not a secret). Everyone who installs the official app
+# gets passkeys on the phone with no setting. People who build the app with their own key add its fingerprint with ENVELIQ_ANDROID_CERT_SHA256.
+OFFICIAL_ANDROID_CERT = ""
+
 
 def parse_cert_fingerprints(raw: str) -> list[str]:
     """SHA-256 fingerprints of the Android app's signing certificate, from a comma-separated setting (hex, with or without colons).

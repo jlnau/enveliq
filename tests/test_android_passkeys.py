@@ -24,20 +24,39 @@ def test_android_origin_is_the_hash_of_the_certificate():
     assert passkeys.android_origin(FP) == expected
 
 
-def test_link_file_is_not_found_until_the_fingerprint_is_set(tmp_path):
+def test_link_file_is_not_found_when_no_fingerprint_is_known(tmp_path, monkeypatch):
+    from backend.auth import passkeys
+    monkeypatch.setattr(passkeys, "OFFICIAL_ANDROID_CERT", "")
     m = load_app(tmp_path)
     c = TestClient(m.app, raise_server_exceptions=False)
     assert c.get("/.well-known/assetlinks.json").status_code == 404
     assert m.relying_party.extra_origins == ()
 
 
-def test_link_file_names_the_app_and_its_fingerprint(tmp_path):
-    m = load_app(tmp_path, ENVELIQ_ANDROID_CERT_SHA256=FP_RAW)
+def test_the_official_apps_key_is_built_in_and_works_with_no_setting(tmp_path, monkeypatch):
+    from backend.auth import passkeys
+    monkeypatch.setattr(passkeys, "OFFICIAL_ANDROID_CERT", FP)
+    m = load_app(tmp_path)
     c = TestClient(m.app, raise_server_exceptions=False)
     r = c.get("/.well-known/assetlinks.json")
     assert r.status_code == 200
-    doc = r.json()
+    assert r.json()[0]["target"]["sha256_cert_fingerprints"] == [FP]
+    assert m.relying_party.extra_origins == (passkeys.android_origin(FP),)
+
+
+def test_the_built_in_fingerprint_is_a_real_one():
+    from backend.auth import passkeys
+    assert len(passkeys.parse_cert_fingerprints(passkeys.OFFICIAL_ANDROID_CERT)) == 1
+
+
+def test_the_setting_adds_another_key_next_to_the_built_in_one(tmp_path, monkeypatch):
+    from backend.auth import passkeys
+    other = ":".join(["11"] * 32)
+    monkeypatch.setattr(passkeys, "OFFICIAL_ANDROID_CERT", FP)
+    m = load_app(tmp_path, ENVELIQ_ANDROID_CERT_SHA256=other)
+    c = TestClient(m.app, raise_server_exceptions=False)
+    doc = c.get("/.well-known/assetlinks.json").json()
+    assert doc[0]["target"]["sha256_cert_fingerprints"] == [FP, other]
     assert doc[0]["relation"] == ["delegate_permission/common.get_login_creds"]
     assert doc[0]["target"]["package_name"] == "app.enveliq"
-    assert doc[0]["target"]["sha256_cert_fingerprints"] == [FP]
-    assert len(m.relying_party.extra_origins) == 1 and m.relying_party.extra_origins[0].startswith("android:apk-key-hash:")
+    assert len(m.relying_party.extra_origins) == 2 and all(o.startswith("android:apk-key-hash:") for o in m.relying_party.extra_origins)
