@@ -432,7 +432,7 @@ body.in-found [data-status="archived"],body.in-found [data-status="trashed"]{dis
 .wh-text{white-space:pre-wrap;user-select:text;font:inherit;line-height:1.55;margin:0;background:var(--c-0b1016);border:1px solid var(--c-293241);border-radius:9px;padding:10px;max-height:240px;overflow:auto}
 .wh-notes{margin:0;padding-left:18px;font-size:12px;color:var(--muted);line-height:1.5}
 .wh-gap{font-size:12px;color:var(--c-ecd7a7)}
-#whCheck button,#sendWarn button,.wh .btn,.wh .primary{min-height:44px}
+#whCheck button,#sendWarn button,.wh .btn,.wh .primary{min-height:44px}.quick-ai{border-color:var(--c-1f5fc4);color:var(--c-d4ecff)}.quick-ai.busy{opacity:.7}
 #whCheck,#sendWarn{width:min(520px,94vw);z-index:61}
 #sendWarn .compose-body p{margin:0;line-height:1.5}
 .wh-scrim{z-index:60}
@@ -2102,7 +2102,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
   </form>
   <div class="compose-foot">
     <small>Prototype: nothing is sent. You always press Send yourself; the AI never sends mail.</small>
-    <div class="modal-actions"><button class="btn" id="composeCancel">Cancel</button><button class="btn" id="composeLater" type="button">Send later</button><button class="primary" id="composeSend">Send reply</button></div>
+    <div class="modal-actions"><button class="btn" id="composeCancel">Cancel</button><button class="btn" id="composeLater" type="button">Send later</button><button class="btn quick-ai" id="composeQuick" type="button" hidden title="Fixes spelling, grammar and punctuation, then sends at once. Nothing else is changed.">Quick AI Send</button><button class="primary" id="composeSend">Send reply</button></div>
   </div>
 </div>
 
@@ -2149,7 +2149,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
   <div class="compose-foot">
     <span class="nm-attach"><button class="btn" id="nmAttach" type="button">Attach</button><input type="file" id="nmFile" multiple hidden></span>
     <small id="nmHint"></small>
-    <div class="modal-actions"><button class="btn" id="nmCancel" type="button">Cancel</button><button class="btn" id="nmLater" type="button">Send later</button><button class="primary" id="nmSend" type="button">Send</button></div>
+    <div class="modal-actions"><button class="btn" id="nmCancel" type="button">Cancel</button><button class="btn" id="nmLater" type="button">Send later</button><button class="btn quick-ai" id="nmQuick" type="button" hidden title="Fixes spelling, grammar and punctuation, then sends at once. Nothing else is changed.">Quick AI Send</button><button class="primary" id="nmSend" type="button">Send</button></div>
   </div>
 </div>
 <div class="picbox" id="picBox" role="dialog" aria-modal="true" aria-labelledby="picName" hidden>
@@ -4574,13 +4574,13 @@ async function quoteInline(){
 function closeComposer(){
   $("compose").classList.remove("open");$("composeScrim").classList.remove("show");composing=null;
 }
-let sendingReply=false,whPassed=false;
+let sendingReply=false,whPassed=false,quickOverride=null,quickBusy=false;
 function sendReply(){
   if(!composing)return;
   const {m,plan,mode}=composing;
   const f=cmFields();
   if(!f.to.commit()||!f.cc.commit()||!f.bcc.commit())return;
-  const text=$("composeText").value.trim();
+  const text=quickOverride?quickOverride.text:$("composeText").value.trim();
   if(mode!=="forward"&&isBare(text)){toast("Write your reply first");$("composeText").focus();return}
   const from=$("composeFrom").value;
   if(!plan.identities.includes(from)){toast("Choose one of your sending addresses");return}
@@ -6657,12 +6657,31 @@ function chipField(box,onChange){
 }
 
 // ---- Writing help: the AI suggests, the person decides. What is in their own box is what gets sent. ----
-let whInfo={available:false,on:false,ai_ready:false};
+let whInfo={available:false,on:false,quick:false,ai_ready:false};
 async function whLoad(){
-  whInfo={available:false,on:false,ai_ready:false};
+  whInfo={available:false,on:false,quick:false,ai_ready:false};
   if(!feat.write_help)return;
   try{whInfo=await secureBackendRequest("/api/v1/me/write-help",{method:"GET",headers:{}})}catch{}
 }
+// Quick AI Send: the AI proofreads (spelling, grammar, punctuation) and the email goes at once. The page's own draft is never changed:
+// the corrected text is only passed to the normal send, so if anything fails the draft is exactly as it was.
+const quickOn=()=>!!(realMail&&feat.write_help&&whInfo.available&&whInfo.quick);
+async function quickAI(kind){
+  if(!quickOn()||quickBusy)return;
+  const isNew=kind==="new";
+  if(isNew?nm.busy:(!composing||sendingReply))return;
+  const subject=isNew?$("nmSubject").value.trim():"",draft=isNew?$("nmText").value:$("composeText").value.trim();
+  if(isBare(draft)){toast("Write your message first");return}
+  const btn=$(isNew?"nmQuick":"composeQuick"),label=btn.textContent;
+  quickBusy=true;btn.disabled=true;btn.textContent="Checking…";btn.classList.add("busy");
+  try{
+    const r=await secureBackendRequest("/api/v1/me/write-help/quick-fix",{method:"POST",body:JSON.stringify({subject,draft})});
+    quickOverride={subject:r.subject||subject,text:r.text};whPassed=true;nmWarned=true;
+    try{if(isNew)await sendNew();else sendReply()}finally{quickOverride=null;whPassed=false;nmWarned=false}
+  }catch(er){toast(er.message,6500)}
+  finally{quickBusy=false;btn.disabled=false;btn.textContent=label;btn.classList.remove("busy")}
+}
+$("composeQuick").onclick=()=>quickAI("reply");$("nmQuick").onclick=()=>quickAI("new");
 const WH={
   reply:{host:"composeWh",box:"composeText",empty:"Write a reply for me",text:"Check my reply",
     ok:()=>!!(composing&&composing.m&&composing.m.real)},
@@ -6680,6 +6699,7 @@ function whBtn(label,cls,fn){const b=whEl("button",cls,label);b.type="button";b.
 function whRender(kind){
   const c=WH[kind],host=$(c.host),st=whState[kind]||(whState[kind]={sug:null,notes:[],accepted:false,backup:null,busy:false,used:false,err:""});
   const show=!!(feat.write_help&&whInfo.available&&c.ok());
+  {const qb=$(kind==="reply"?"composeQuick":"nmQuick");if(qb)qb.hidden=!(quickOn()&&c.ok()&&whInfo.ai_ready)}
   host.hidden=!show;if(!show){host.replaceChildren();return}
   if(!whInfo.on){
     host.replaceChildren(whEl("div","wh-hint","Want help writing? You can turn on Writing help in Settings, under AI instructions."));
@@ -7013,7 +7033,7 @@ async function sendNew(){
   if(!f.to.commit()||!f.cc.commit()||!f.bcc.commit())return;
   const to=f.to.items.map(addrText),cc=f.cc.items.map(addrText),bcc=f.bcc.items.map(addrText);
   if(!to.length&&!cc.length&&!bcc.length){toast("Add at least one person to send this to");f.to.input.focus();return}
-  const subject=$("nmSubject").value.trim(),body=$("nmText").value;
+  const subject=quickOverride?quickOverride.subject:$("nmSubject").value.trim(),body=quickOverride?quickOverride.text:$("nmText").value;
   if(!subject&&isBare(body)&&!nm.files.length){toast("Add a subject or a message first");return}
   const [aid,from]=$("nmFrom").value.split("|");
   if(!nmWarned){

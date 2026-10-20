@@ -1936,7 +1936,8 @@ async function aiInstructionsPage(me) {
     toast("Saved. New summaries will follow these instructions.");
   });
   const help = await writingHelpSection();
-  show(...chrome(me, "instructions", h("h1", { text: "AI instructions" }), h("section", { class: "section" }, form), ...(help ? [help] : [])));
+  const styled = await writingStyleSection();
+  show(...chrome(me, "instructions", h("h1", { text: "AI instructions" }), h("section", { class: "section" }, form), ...(help ? [help] : []), ...(styled ? [styled] : [])));
 }
 // Writing help: off until the person turns it on; the box starts with a plain, generic set of instructions they can change.
 async function writingHelpSection() {
@@ -1945,22 +1946,74 @@ async function writingHelpSection() {
   if (!w.available) return null;
   const on = h("input", { type: "checkbox", id: "wh_on" });
   on.checked = !!w.on;
+  const quick = h("input", { type: "checkbox", id: "wh_quick" });
+  quick.checked = !!w.quick;
   const box = h("textarea", { id: "wh_instr", rows: 8, maxlength: w.max }, w.instructions);
   const form = h("form", {},
     h("p", { class: "lead", text: "Writing help adds a button to the reply box and the New email box. It can write a reply for you, or check what you wrote. The suggestion appears in a separate box: you choose what to use, and nothing is sent until you press Send." }),
     h("label", { class: "check", for: "wh_on" }, on, h("span", {}, h("strong", { text: "Turn on writing help" }),
       h("div", { class: "hint", text: "When you use it, the email you are answering and what you have written are sent to your AI model. Nothing is kept afterwards. If your AI model is a cloud service, that text leaves your computer." }))),
+    h("label", { class: "check", for: "wh_quick" }, quick, h("span", {}, h("strong", { text: "Turn on Quick AI Send" }),
+      h("div", { class: "hint", text: "Adds a Quick AI Send button next to Send. It fixes spelling, grammar and punctuation, then sends at once. It never adds or changes what you meant. If anything goes wrong, nothing is sent and your draft stays as it is." }))),
     w.ai_ready ? null : h("p", { class: "hint", text: "No AI model is set up yet. An administrator can add one under Administration, AI model." }),
     guideNote("WRITING_HELP.md", "", "More about writing help"),
     field("Your writing instructions", box, "This starts with plain, friendly wording. Keep it, type over it, or add to it. It changes the style only, not what the AI is allowed to do."),
     h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" }), " ",
       h("button", { class: "btn", type: "button", text: "Use the standard instructions", onclick: () => { box.value = w.default; } })));
   onSubmit(form, async () => {
-    const r = await api("/me/write-help", { method: "PUT", body: { on: on.checked, instructions: box.value } });
+    const r = await api("/me/write-help", { method: "PUT", body: { on: on.checked, quick: quick.checked, instructions: box.value } });
     w = r; box.value = r.instructions;
-    toast(r.on ? "Saved. Writing help is on." : "Saved. Writing help is off.");
+    toast(r.on || r.quick ? "Saved." : "Saved. Writing help is off.");
   });
   return h("section", { class: "section" }, h("h2", { text: "Writing help" }), form);
+}
+// My writing style: a guide the AI makes from the person's own recent sent emails, which they can read and edit. Used by Writing help and Quick AI Send.
+async function writingStyleSection() {
+  let st;
+  try { st = await api("/me/writing-style"); } catch { return null; }
+  if (!st.available) return null;
+  const on = h("input", { type: "checkbox", id: "ws_on" });
+  on.checked = !!st.on;
+  const guide = h("textarea", { id: "ws_guide", rows: 10, maxlength: st.max, placeholder: "Nothing here yet. Turn this on and press Make it now, or write your own." }, st.guide || "");
+  const auto = h("input", { type: "checkbox", id: "ws_auto" });
+  auto.checked = st.mode === "auto";
+  const note = h("p", { class: "hint", id: "ws_note" });
+  const when = a => new Date(a * 1000).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const paint = r => {
+    st = r;
+    on.checked = !!r.on; auto.checked = r.mode === "auto";
+    if (document.activeElement !== guide) guide.value = r.guide || "";
+    note.textContent = r.busy ? "Learning from your recent emails… this can take a minute."
+      : r.error ? r.error
+      : r.generated_at ? `Last made on ${when(r.generated_at)}, from ${r.samples} of your recent emails. ${r.mode === "auto" ? "It will be made again once a week." : "You have edited it, so it will not change unless you turn automatic updates back on."}`
+      : "Not made yet.";
+  };
+  paint(st);
+  const form = h("form", {},
+    h("p", { class: "lead", text: "Enveliq can learn how you write from the 20 emails you sent most recently, and write you a short guide. Writing help and Quick AI Send use the guide so they sound like you." }),
+    h("label", { class: "check", for: "ws_on" }, on, h("span", {}, h("strong", { text: "Learn my writing style" }),
+      h("div", { class: "hint", text: "Only your own words are used: quoted replies, signatures, forwarded emails and attachments are left out first. The words are sent to your AI model, and a few are kept here, separate from your normal email." }))),
+    h("label", { class: "check", for: "ws_auto" }, auto, h("span", {}, h("strong", { text: "Update it automatically each week" }),
+      h("div", { class: "hint", text: "Switches off by itself when you edit the guide below. Switch it back on to let the AI write a new one." }))),
+    note,
+    field("My writing style", guide, "You can change this. The AI reads it as a description of how you write, never as facts."),
+    h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" }), " ",
+      h("button", { class: "btn", type: "button", id: "ws_now", text: "Make it now", onclick: async () => {
+        try { paint(await api("/me/writing-style/rebuild", { method: "POST", body: {} })); toast("Learning from your recent emails."); poll(0); } catch (e) { toast(e.message); }
+      } })));
+  async function poll(n) {
+    if (n > 40) return;
+    await new Promise(r => setTimeout(r, 3000));
+    try { const r = await api("/me/writing-style"); paint(r); if (r.busy) poll(n + 1); } catch { /* the page was left */ }
+  }
+  onSubmit(form, async () => {
+    const body = { on: on.checked };
+    if (guide.value.trim() !== (st.guide || "").trim()) body.guide = guide.value;
+    if (auto.checked !== (st.mode === "auto")) body.mode = auto.checked ? "auto" : "manual";       // editing the guide makes the server switch to manual by itself
+    paint(await api("/me/writing-style", { method: "PUT", body }));
+    toast("Saved.");
+  });
+  return h("section", { class: "section" }, h("h2", { text: "My writing style" }), guideNote("WRITING_HELP.md", "", "More about writing style"), form);
 }
 // ---------- mailboxes (Proton Bridge and app-password services) ----------
 const BRIDGE_ERRORS = { ok: "Working" };

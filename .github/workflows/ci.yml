@@ -279,6 +279,8 @@ jobs:
         run: node scripts/check_messages.mjs
       - name: Writing help in the reply and New email boxes (simulated server)
         run: node scripts/check_writehelp.mjs
+      - name: Quick AI Send beside Send (simulated server)
+        run: node scripts/check_quick_send.mjs
       - name: Links from the app to the step-by-step guides
         run: node scripts/check_guide_links.mjs
       - name: Waiting for reply page and Home card (simulated server)
