@@ -115,6 +115,42 @@ fun SignInScreen(initialAddress: String, notice: String, linkCode: String?, onLi
         }
     }
 
+    // A passkey kept on this phone, through Android's own passkey screen. If that cannot be used, the browser opens instead.
+    fun passkeyHere() {
+        if (busy) return
+        busy = true
+        error = ""
+        scope.launch {
+            var useBrowser = false
+            try {
+                val client = EnveliqApi(address)
+                val options = withContext(Dispatchers.IO) { client.passkeyOptions() }
+                when (val r = NativePasskey.get(context, options)) {
+                    is NativePasskey.Result.Got -> {
+                        try {
+                            withContext(Dispatchers.IO) { client.passkeySignIn(r.json, keep) }
+                            api = client
+                            onDone(client, address.trim(), keep)
+                        } catch (e: ApiException) {
+                            useBrowser = true       // the server did not accept it here: the browser still can
+                        }
+                    }
+                    NativePasskey.Result.Cancelled -> {}
+                    NativePasskey.Result.Unavailable -> useBrowser = true
+                }
+            } catch (e: ApiException) {
+                error = e.message ?: "That did not work."
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                error = "Something went wrong. Please try again."
+            } finally {
+                busy = false
+            }
+            if (useBrowser) openBrowser()
+        }
+    }
+
     // The browser handed a one-time code back: swap it (with the secret kept here) for a session.
     LaunchedEffect(linkCode) {
         val code = linkCode ?: return@LaunchedEffect
@@ -313,7 +349,7 @@ fun SignInScreen(initialAddress: String, notice: String, linkCode: String?, onLi
                     Box(Modifier.weight(1f).height(1.dp).background(Line))
                 }
                 OutlinedButton(
-                    onClick = { openBrowser() },
+                    onClick = { passkeyHere() },
                     enabled = !busy && addressReady,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp),
                     shape = RoundedCornerShape(16.dp),
@@ -326,7 +362,7 @@ fun SignInScreen(initialAddress: String, notice: String, linkCode: String?, onLi
                     Text("Sign in with a passkey", fontSize = 16.sp, fontWeight = FontWeight.Medium)
                 }
                 Text(
-                    "Opens your browser to sign in there (a passkey or single sign-on), then brings you back here.",
+                    "Uses a passkey saved on this phone. If there is none, your browser opens instead (a passkey or single sign-on), then brings you back here.",
                     color = Muted, fontSize = 12.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 6.dp).fillMaxWidth(),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )

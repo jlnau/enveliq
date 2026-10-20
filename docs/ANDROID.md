@@ -52,7 +52,17 @@ When you have more than one address (a mailbox's own address and its aliases, fr
 - **Home-screen widget:** add "Enveliq" from the phone's widget list for a square that says how many emails are waiting. It shows the number only and is updated whenever the inbox loads; signing out clears it.
 
 ## Passkeys and single sign-on
-On the sign-in screen, **Sign in with a passkey** (the button under Sign in, after a thin "or" line) opens your server's `/app-signin` page in the phone's browser. Sign in there the usual way; press **Open the Enveliq app** and the app finishes signing in (one-time code, two minutes, once, tied to a secret only the app holds). "Keep me signed in on this phone" is read when you press the button. After single sign-on the browser shows the inbox: go back to the app and press the button again, which now finishes straight away. The app registers the link `enveliq://signin` for this.
+On the sign-in screen, **Sign in with a passkey** (the button under Sign in, after a thin "or" line) uses a passkey saved on the phone itself, such as one in Bitwarden or Google Password Manager, through Android's own passkey screen. Nothing opens in the browser. If there is no passkey to use, or the server has not been set up for it (see below), the button opens your server's `/app-signin` page in the phone's browser instead, where a passkey or single sign-on both work. Sign in there the usual way; press **Open the Enveliq app** and the app finishes signing in (one-time code, two minutes, once, tied to a secret only the app holds). "Keep me signed in on this phone" is read when you press the button. After single sign-on the browser shows the inbox: go back to the app and press the button again, which now finishes straight away. The app registers the link `enveliq://signin` for this. If you close the passkey screen yourself, nothing else happens.
+
+### Passkeys on the phone: one-time set-up on the server
+This is only needed for the phone's own passkey screen; without it the button simply uses the browser. Android only trusts an app for passkeys when the website says so.
+
+1. Find the app's signing fingerprint: open the **Build Android app** run on GitHub for the version you installed; its summary lists "Signing certificate" with a **SHA-256** line (it is public, not a secret). If you use your own key, `keytool -list -v -keystore <file>` shows it.
+2. In your Enveliq settings (Arcane, the `enveliq` project's environment), set `ENVELIQ_ANDROID_CERT_SHA256` to that value (hex, with or without colons; several can be separated by commas, for example the test build's and the release build's) and redeploy. See [Settings reference](ENVIRONMENT.md).
+3. Check `https://your-address/.well-known/assetlinks.json` in a browser: it shows the app name and the fingerprint. It must be reachable by anyone, **without** Cloudflare Access or another sign-in in front of that one path, because Google reads it to confirm the link.
+4. Passkeys you already added on the website work as they are. They are tied to your site's address, not to the app.
+
+The app's signing key must stay the same from one version to the next (it does: see "Signing"); a different key needs its fingerprint added.
 
 ## Your devices and updates
 Settings, Security, **Your devices** lists the places you are signed in and lets you sign another one out. Names come from the app ("Enveliq app on <phone model>") or, for a browser, a short guess such as "Chrome on Windows". Sign-ins you chose to keep across a restart are listed too. The list is yours alone. About, **Check for a new version** asks your own server (which checks GitHub once a day) for the newest release and, if it is newer than the app, offers to open its download page; the app never contacts GitHub itself. Installing is Android's own step. If an administrator switched the update notice off, the app says it has no answer.
@@ -140,15 +150,13 @@ Which emails alert you, quiet hours and the "important people only" filter are t
 - **Undo send:** if you have an "undo send" time in Settings on the website, a bar at the bottom says "Sending in … seconds" with **Undo**.
 - **Drafts:** closing a half-written email offers to keep it. The **Drafts** tab lists them (kept for 14 days, the same drafts the website shows); tap one to carry on, or Delete it.
 - The writing screen opens full screen, with Close at the top and **Send** and **Save draft** fixed at the bottom.
-- **Pull down** on the inbox to refresh. The list keeps its place when you switch tabs.
+- **Pull down** on the inbox to refresh. The list keeps its place when you switch tabs. It also refreshes itself, quietly, about once a minute while the app is open on the inbox, and when you come back to the app, so something deleted on the website disappears by itself. It never refreshes while you have an email open, are writing, or have emails ticked, and does nothing while the app is out of sight.
 - **Ask for my fingerprint, face or PIN** (Settings, Security): Enveliq asks for it when you open it, and again after it has been out of sight for a minute. It needs a screen lock to be set up in Android first; the app never locks you out of a phone that has none. This is a convenience on top of your sign-in, not a replacement for it.
 
 ## Still to do
 
 Nearly everything on the old wish list is now in the app (tags, files and summaries, links, junk and block, unsubscribe, send later, signature, contacts, tasks, the bell, shipping, trips, news, chat, light and dark, text size, the tablet layout, the widget, your devices, passkeys and single sign-on through the browser, update checks and the welcome). What is left, roughly in this order:
 
-- **The inbox refreshing itself.** The list reloads when you pull down, change view, or tap an alert. It does not yet reload when you come back to the app or while it is open, so something deleted on the website stays until you pull down. (Discussed, not decided.)
-- **Native passkeys.** A passkey sign-in currently goes through the phone's browser. Using the phone's own passkey app (for example Bitwarden) directly needs a small server change as well. (Discussed, not decided.)
 - **Move an email to a folder, and views like Today and Needs attention** as on the website (needs action and mailbox filters exist already).
 - **Share to Enveliq as a task:** Share currently starts a new email.
 - **A screen-reader check, screen by screen.**

@@ -158,6 +158,13 @@ class EnveliqApi(address: String) {
         return finish(JSONObject(call("POST", "/api/v1/auth/app-link/exchange", body)))
     }
 
+    /** Signing in with a passkey kept on this phone, step 1: the server's challenge, in the form the phone's passkey service reads. */
+    fun passkeyOptions(): String = call("POST", "/api/v1/auth/passkeys/options", JSONObject().put("purpose", "login"))
+
+    /** Step 2: hands the phone's signed answer to the server, which checks it and starts the session. */
+    fun passkeySignIn(credentialJson: String, keep: Boolean): SignIn =
+        finish(JSONObject(call("POST", "/api/v1/auth/passkeys/verify", JSONObject().put("credential", JSONObject(credentialJson)).put("remember", keep))))
+
     fun code(code: String): SignIn = finish(JSONObject(call("POST", "/api/v1/auth/mfa", JSONObject().put("code", code.trim()))))
 
     /** The server's own sign-in cookies for this address, to be kept (encrypted) when the person asked to stay signed in. */

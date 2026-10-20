@@ -69,6 +69,7 @@ All of these can be set in the app instead (Administration, AI model). If you se
 | Setting | What it does | Default |
 | --- | --- | --- |
 | `ENVELIQ_OIDC_ALLOW_HTTP` | `1` allows a single sign-on provider that uses `http://`. Not recommended. | `0` |
+| `ENVELIQ_ANDROID_CERT_SHA256` | Optional. The SHA-256 fingerprint of the Android app's signing key (several can be listed, separated by commas). When set, the Android app can sign in with a passkey saved on the phone, and Enveliq publishes `/.well-known/assetlinks.json`. See [Android](ANDROID.md), "Passkeys on the phone". | empty (the app opens the browser for passkeys) |
 | `ENVELIQ_NOTIFY_ALLOWED_HOSTS` | Services on your own network that reminders, calendars and to-do lists may call (host names, addresses or networks, separated by commas). Anything else on a private network is refused. | empty |
 | `ENVELIQ_VAPID_SUBJECT` | The contact address sent with browser push notifications. | made up for you |
 | `ENVELIQ_REPORT_ALLOWED_HOSTS` | If set, reports (for Grafana and others) may only be sent to these hosts. | empty |

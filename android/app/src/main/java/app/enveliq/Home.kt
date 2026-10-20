@@ -315,6 +315,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     // Which emails you have opened in Enveliq. The ones you have not opened glow softly in the list.
     val openedKeys = remember { androidx.compose.runtime.mutableStateMapOf<String, Boolean>() }
     var openedLoaded by remember { mutableStateOf(false) }
+    var lastRefresh by remember { mutableStateOf(0L) }          // when the list was last read, for the quiet refresh
     suspend fun loadOpened() {
         try {
             val keys = withContext(Dispatchers.IO) { api.openedKeys() }
@@ -346,6 +347,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
             } finally {
                 loading = false
                 loaded = true
+                lastRefresh = System.currentTimeMillis()
             }
         }
     }
@@ -403,6 +405,41 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     // With emails ticked, Back unticks them first instead of leaving the app.
     BackHandler(enabled = tab == Tab.Inbox && opened == null && composing == null && !drawer.isOpen && selected.isNotEmpty()) {
         selected.clear()
+    }
+    // The list refreshes itself, quietly, about once a minute while the app is open and looking at the inbox, and as soon as you come back to it.
+    // It never refreshes while you have an email open, are writing, or have emails ticked, so nothing moves under your finger.
+    fun refreshQuietly() {
+        if (loading || !loaded || tab != Tab.Inbox || opened != null || composing != null || selected.isNotEmpty()) return
+        lastRefresh = System.currentTimeMillis()
+        scope.launch {
+            try {
+                val list = withContext(Dispatchers.IO) { api.inbox(view, includeRead) }
+                if (opened != null || composing != null || selected.isNotEmpty()) return@launch        // you started something meanwhile
+                mails.clear()
+                mails.addAll(list)
+                if (view == "inbox") WaitingWidget.update(activity, list.count { !it.quiet })
+                if (view == "inbox") Notifier.clearGone(activity, list.map { it.id }, AlertPrefs.alerted(activity))
+            } catch (e: ApiException) {
+                if (e.code == 401) onLeave(true)
+            } catch (_: Exception) { }                  // quiet: the next try, or a pull down, shows any problem
+        }
+    }
+    var resumed by remember { mutableStateOf(true) }
+    DisposableEffect(activity) {
+        val watcher = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) resumed = true
+            else if (event == androidx.lifecycle.Lifecycle.Event.ON_PAUSE) resumed = false
+        }
+        activity.lifecycle.addObserver(watcher)
+        onDispose { activity.lifecycle.removeObserver(watcher) }
+    }
+    LaunchedEffect(resumed, tab, view, includeRead) {
+        if (!resumed) return@LaunchedEffect
+        if (System.currentTimeMillis() - lastRefresh > 20_000) refreshQuietly()
+        while (true) {
+            delay(60_000)
+            refreshQuietly()
+        }
     }
     // "Share" from another app: the text arrives in a new email, ready to address.
     val shared = activity.shareRequest

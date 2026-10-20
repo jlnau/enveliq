@@ -289,6 +289,7 @@ function loginPage(status, params) {
     field("Password", input("password", { type: "password", autocomplete: "current-password", required: true })),
     // Only offered when an administrator has allowed it (and Enveliq keeps itself unlocked). It applies to every way of signing in below.
     status.sign_in.remember ? chkBox("remember", false, "Keep me signed in on this device", "Only on a computer or phone that is yours.") : null,
+    h("p", { class: "hint", id: "agree" }, "By signing in you agree to the ", h("a", { href: "/terms", text: "terms of use" }), " and the ", h("a", { href: "/privacy", text: "privacy notice" }), "."),
     h("button", { class: "btn primary full", type: "submit", text: "Sign in" }));
   const wantsRemember = () => !!(passwordForm.querySelector("#remember") || {}).checked;
   onSubmit(passwordForm, async () => {
