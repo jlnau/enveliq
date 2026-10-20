@@ -268,47 +268,50 @@ fun SignInScreen(initialAddress: String, notice: String, linkCode: String?, onLi
                 }
             }
 
-            if (!needsCode) {
-                // Another way in: a passkey or single sign-on, in the phone's browser.
-                Row(Modifier.fillMaxWidth().padding(vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.weight(1f).height(1.dp).background(Line))
-                    Text("or", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 12.dp))
-                    Box(Modifier.weight(1f).height(1.dp).background(Line))
-                }
-                OutlinedButton(
-                    onClick = { openBrowser() },
-                    enabled = !busy && addressReady,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, Blue.copy(alpha = if (!busy && addressReady) 0.55f else 0.2f)),
-                    colors = ButtonDefaults.outlinedButtonColors(containerColor = Blue.copy(alpha = 0.08f), contentColor = Ink, disabledContentColor = Muted),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-                ) {
-                    KeyIcon(if (!busy && addressReady) Blue else Muted)
-                    Spacer(Modifier.size(10.dp))
-                    Text("Sign in with a passkey or single sign-on", fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                }
-                Text("Opens your browser to sign in there, then brings you back here.", color = Muted, fontSize = 13.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 8.dp, start = 4.dp))
-            }
             Text(
                 "The app only talks to your own server, over a secure connection, and never keeps your password.",
                 color = Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 22.dp, bottom = 16.dp, start = 4.dp),
             )
         }
-        Row(
-            Modifier.fillMaxWidth().background(Navy).border(width = 1.dp, color = Line, shape = androidx.compose.ui.graphics.RectangleShape).padding(horizontal = 20.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        // Fixed at the bottom: Sign in is for the details above; the passkey button below it is a different way in.
+        Column(
+            Modifier.fillMaxWidth().background(Navy).border(width = 1.dp, color = Line, shape = androidx.compose.ui.graphics.RectangleShape)
+                .padding(horizontal = 20.dp, vertical = 12.dp),
         ) {
             Button(
                 onClick = { go() },
                 enabled = !busy && (if (needsCode) code.isNotBlank() else addressReady && username.isNotBlank() && password.isNotBlank()),
-                modifier = Modifier.weight(1f).height(54.dp),
+                modifier = Modifier.fillMaxWidth().height(54.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Blue, contentColor = Color.White, disabledContainerColor = PanelHigh, disabledContentColor = Muted),
             ) {
                 if (busy) CircularProgressIndicator(Modifier.size(22.dp), color = Ink, strokeWidth = 2.dp)
                 else Text(if (needsCode) "Confirm" else "Sign in", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+            }
+            if (!needsCode) {
+                Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.weight(1f).height(1.dp).background(Line))
+                    Text("or", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 12.dp))
+                    Box(Modifier.weight(1f).height(1.dp).background(Line))
+                }
+                OutlinedButton(
+                    onClick = { openBrowser() },
+                    enabled = !busy && addressReady,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, Blue.copy(alpha = if (!busy && addressReady) 0.55f else 0.2f)),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = Blue.copy(alpha = 0.08f), contentColor = Ink, disabledContentColor = Muted),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                ) {
+                    KeyIcon(if (!busy && addressReady) Blue else Muted)
+                    Spacer(Modifier.size(10.dp))
+                    Text("Sign in with a passkey", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                }
+                Text(
+                    "Opens your browser to sign in there (a passkey or single sign-on), then brings you back here.",
+                    color = Muted, fontSize = 12.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 6.dp).fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
             }
         }
     }
