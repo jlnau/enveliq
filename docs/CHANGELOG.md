@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Android: the "Open this link?" box shows the whole link.** It used to say only which site the link goes to. It now also shows the full address exactly as it is in the email (wrapped, scrollable if very long, and you can select it), so you can see exactly what you are about to open. Touches `android/` (`Organise.kt`), `docs/ANDROID.md`.
+
 **Android: spell check when writing an email.** The subject and message boxes now use the phone’s own text box, so misspelled words are underlined and a tap offers the fix, like in your other apps (it follows the phone’s spell-checker setting). Auto-correct and the keyboard’s suggestions work as normal. The boxes look the same as before. Touches `android/` (`SpellField.kt`, `Compose.kt`), `docs/ANDROID.md`.
 
 **Android: new email glows softly, and read mail without a summary looks plain.** In the inbox, an email you have not yet opened in Enveliq has a thin blue edge and a faint blue wash (a quieter version of the website’s blue glow) and a bold subject. Opening it records that, here and on the website, so the glow goes away on both. With **Include read mail** on, read mail that has no summary yet is shown plainly (greyer, with "No summary yet" instead of a summary) so it is easy to tell from the emails that need you. Touches `android/` (`Home.kt`, `Api.kt`), `docs/ANDROID.md`.
