@@ -443,9 +443,9 @@ For security concerns, use the [private vulnerability reporting form](https://gi
 
 For general questions and bugs, use [GitHub Issues](https://github.com/jlnau/enveliq/issues).
 
-## All emails inbox window
+## Include read mail (All emails) inbox window
 
-The optional All emails view retrieves inbox message headers from the last 60 days without a count cap. Enveliq keeps only the existing encrypted metadata and placeholder summary records in the vault. Original message bodies and attachments are not retained. This does not expand access beyond the signed in mailbox owner. The larger window can increase mailbox provider requests, encrypted metadata storage and loading time.
+The optional Include read mail view (called All emails before 0.98) retrieves inbox message headers from the last 60 days without a count cap. Enveliq keeps only the existing encrypted metadata and placeholder summary records in the vault. Original message bodies and attachments are not retained. This does not expand access beyond the signed in mailbox owner. The larger window can increase mailbox provider requests, encrypted metadata storage and loading time.
 
 ## Google Calendar: using an existing calendar
 

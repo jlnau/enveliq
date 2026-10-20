@@ -4,6 +4,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Wording and documents checked against the setup.** (1) The administrator description of the "include read mail" option now says 60 days (it still said 14) and uses the name **Include read mail**. (2) The privacy page, `SECURITY.md` and the guides say the same thing. (3) `docs/ANDROID.md` was brought up to date. Touches `web/static/auth.js`, `backend/mail/features.py`, `docs/PRIVACY.md`, `SECURITY.md`, `docs/ANDROID.md`.
+
+**Android: small fixes.** (1) A task you add shows on the open email's task card straight away. (2) If the first check for "Include read mail" could not reach the server, it is checked again on the next refresh. (3) The two native text boxes (spell check and code box) keep the cursor where it was when the text is changed from outside, such as a signature being added. Touches `android/` (`Home.kt`, `TaskCard.kt`, `SpellField.kt`).
+
 **Android: terms and privacy are in the app.** (1) **Settings, About** now has **Terms of use**, **Privacy** and **Security**, which open the same pages as the website from your own server. (2) The sign-in screen says "By signing in you agree to the terms of use and the privacy notice", with both as links, just above the Sign in button. (3) The first time you are in on a phone, a short **Before you start** notice says that Enveliq is provided as it is with no warranty, that AI summaries can be wrong, to keep your own backups, and that an online AI service receives the text of emails it summarises. Press **I understand** to continue (or **Read the terms**). That choice is remembered on that phone only; nothing is sent to the server. Touches `android/` (`Screens.kt`, `Settings.kt`, `Home.kt`), `docs/ANDROID.md`, `docs/TERMS.md`.
 
 ## v0.98 (2026-10-20)

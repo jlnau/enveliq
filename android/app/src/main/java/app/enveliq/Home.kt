@@ -328,6 +328,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         error = ""
         scope.launch {
             loadOpened()
+            if (!includeReadOk) includeReadOk = withContext(Dispatchers.IO) { api.includeReadAvailable() }
             try {
                 val list = withContext(Dispatchers.IO) { api.inbox(view, includeRead) }
                 mails.clear()
@@ -386,6 +387,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     val selected = remember { mutableStateListOf<String>() }
     var askSnooze by remember { mutableStateOf(false) }
     var askTask by remember { mutableStateOf(false) }
+    var taskVersion by remember { mutableStateOf(0) }          // goes up when a task is added, so the open email shows it at once
     var tagPicker by remember { mutableStateOf<Pair<Mail, TagInfo>?>(null) }
     val tagMap = remember { mutableStateMapOf<String, List<String>>() }
     var composing by remember { mutableStateOf<ComposeTarget?>(null) }
@@ -649,7 +651,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
             TagPickerScreen(m, api, info, tagMap[keyOf(m)] ?: m.tags, onClose = { tagPicker = null }, onSaved = { tagMap[keyOf(m)] = it; tagPicker = null })
         }
         if (askTask && current != null) {
-            AddTaskPopup(current, api, onClose = { askTask = false }, onDone = { msg -> askTask = false; scope.launch { snack.showSnackbar(msg) } })
+            AddTaskPopup(current, api, onClose = { askTask = false }, onDone = { msg -> askTask = false; taskVersion++; scope.launch { snack.showSnackbar(msg) } })
         }
         if (askSnooze && current != null) {
             SnoozeChoices(onPick = { until, label -> askSnooze = false; snooze(current, until, label) }, onCancel = { askSnooze = false })
@@ -689,12 +691,12 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 Row(Modifier.fillMaxSize()) {
                     Box(Modifier.weight(0.42f).fillMaxHeight()) { inboxPane() }
                     Box(Modifier.weight(0.58f).fillMaxHeight()) {
-                        if (current != null) DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) })
+                        if (current != null) DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion)
                         else Text("Choose an email to read it here.", color = Muted, fontSize = 16.sp, modifier = Modifier.padding(32.dp))
                     }
                 }
             } else if (current != null) {
-                DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) })
+                DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion)
             } else {
                 when (tab) {
                     Tab.Inbox -> inboxPane()
@@ -1017,7 +1019,7 @@ private fun MailRow(mail: Mail, picked: Boolean, fresh: Boolean, tags: List<Stri
 }
 
 @Composable
-private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit, onJunk: (Boolean) -> Unit, onAskedSummary: () -> Unit = {}) {
+private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit, onJunk: (Boolean) -> Unit, onAskedSummary: () -> Unit = {}, taskVersion: Int = 0) {
     var summaryAsked by remember(mail.id) { mutableStateOf(false) }
     var showOriginal by remember(mail.id) { mutableStateOf(false) }
     var unsubLink by remember(mail.id) { mutableStateOf<String?>(null) }
@@ -1174,7 +1176,7 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
                 shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
             ) { Text("Show original email", color = Ink, fontSize = 13.sp) }
 
-            EmailTasks(mail, api)
+            EmailTasks(mail, api, taskVersion)
 
             AttachmentsSection(mail, api)
             Spacer(Modifier.height(24.dp))

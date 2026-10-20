@@ -63,14 +63,14 @@ internal fun taskWhen(t: MyTask): String {
  * with Move and Remove. If the list of tasks cannot be loaded, the task the AI found is still shown, without the menu.
  */
 @Composable
-internal fun EmailTasks(mail: Mail, api: EnveliqApi) {
+internal fun EmailTasks(mail: Mail, api: EnveliqApi, version: Int = 0) {
     var reload by remember(mail.id) { mutableStateOf(0) }
     var tasks by remember(mail.id) { mutableStateOf<List<MyTask>?>(null) }
     var moving by remember(mail.id) { mutableStateOf<MyTask?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(mail.id, reload) {
+    LaunchedEffect(mail.id, reload, version) {
         tasks = try {
             withContext(Dispatchers.IO) { api.myTasks() }.filter { it.accountId == mail.accountId && it.messageId == mail.id }
         } catch (_: Exception) { tasks }

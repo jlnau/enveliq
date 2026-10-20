@@ -15,7 +15,7 @@ LABELS = {
     "address_book": "Address book",
     "sent": "Sent (last 14 days)",
     "media": "Pictures and attachment previews",
-    "all_mail": "All emails (last 14 days)",
+    "all_mail": "Include read mail (last 60 days)",
     "shipping": "Shipping (follow online orders)",
     "subscriptions": "Subscriptions (renewals and free trials)",
     "travel": "Trips (flights, stays and hire cars)",

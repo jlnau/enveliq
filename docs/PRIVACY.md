@@ -36,4 +36,4 @@ Disconnecting a mailbox deletes the data kept for it. An administrator can remov
 ## Australian law
 
 The author is an individual in Australia and does not collect personal information through Enveliq. The Privacy Act 1988 (Cth) applies mainly to larger organisations and some others; if you run Enveliq for a business or organisation, check whether it applies to you. If it does, you, as operator, are the one holding the information.
-- If the All emails switch is on, the sender, subject and date of your last 14 days of mail are kept, encrypted, for up to 14 days (and deleted if the feature is switched off). An email is only summarised when you press Generate summary, which sends that email's text to your AI model.
+- If Include read mail (before, All emails) is on, the sender, subject and date of the mail you have already read from the last 60 days are kept, encrypted, for up to 60 days (and deleted if the feature is switched off). An email is only summarised when you press Generate summary, which sends that email's text to your AI model.
