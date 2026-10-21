@@ -11,8 +11,12 @@ import secrets
 import threading
 from typing import Any
 
+from . import outhtml
+
 RECORD_PREFIX = "saved:"
 MAX_SIGNATURE = 1000
+MAX_SIGNATURE_HTML = 6000
+MAX_SIGNATURES = 40
 MAX_REPLIES = 30
 MAX_TITLE = 60
 MAX_TEXT = 3000
@@ -36,21 +40,56 @@ class SavedWriting:
     def _load(self, user_id: str) -> dict[str, Any]:
         raw = self.vault.get_global(RECORD_PREFIX + user_id) or {}
         replies = [r for r in (raw.get("replies") or []) if isinstance(r, dict) and r.get("id")]
-        return {"signature": str(raw.get("signature") or ""), "replies": replies}
+        sigs = {str(a): v for a, v in (raw.get("signatures") or {}).items() if isinstance(v, dict) and v.get("html")}
+        return {"signature": str(raw.get("signature") or ""), "signature_html": str(raw.get("signature_html") or ""), "signatures": sigs, "replies": replies}
 
     def _save(self, user_id: str, state: dict[str, Any]) -> None:
         self.vault.set_global(RECORD_PREFIX + user_id, state)
 
     def view(self, user_id: str) -> dict[str, Any]:
         s = self._load(user_id)
-        return {"signature": s["signature"],
+        return {"signature": s["signature"], "signature_html": s["signature_html"],
+                "signatures": [{"address": a, "html": v["html"], "text": v.get("text", "")} for a, v in sorted(s["signatures"].items())],
                 "replies": [{"id": r["id"], "title": r.get("title", ""), "text": r.get("text", "")} for r in s["replies"]],
-                "limits": {"signature": MAX_SIGNATURE, "replies": MAX_REPLIES, "title": MAX_TITLE, "text": MAX_TEXT}}
+                "limits": {"signature": MAX_SIGNATURE, "signatures": MAX_SIGNATURES, "replies": MAX_REPLIES, "title": MAX_TITLE, "text": MAX_TEXT}}
 
-    def set_signature(self, user_id: str, text: str) -> dict[str, Any]:
+    @staticmethod
+    def _format(html: str) -> tuple[str, str]:
+        """A signature written with formatting, rebuilt from the allowed list (no pictures), and its plain-text copy."""
+        try:
+            cleaned = outhtml.clean_html(str(html or "")[:MAX_SIGNATURE_HTML * 3], {}) if html else ""
+        except outhtml.OutHtmlError:
+            raise SavedError("That signature is too long.") from None
+        text = clean_text(outhtml.to_text(cleaned), MAX_SIGNATURE) if cleaned else ""
+        if not text:
+            return "", ""
+        if len(cleaned) > MAX_SIGNATURE_HTML:
+            raise SavedError("That signature is too long.")
+        return cleaned, text
+
+    def set_signature(self, user_id: str, text: str, html: str | None = None) -> dict[str, Any]:
+        """The default signature. With [html] it keeps the formatting (bold, italic, links); the plain text is made from it."""
         with _LOCK:
             s = self._load(user_id)
-            s["signature"] = clean_text(text, MAX_SIGNATURE)
+            if html is not None:
+                s["signature_html"], s["signature"] = self._format(html)
+            else:
+                s["signature"], s["signature_html"] = clean_text(text, MAX_SIGNATURE), ""
+            self._save(user_id, s)
+        return self.view(user_id)
+
+    def set_address_signature(self, user_id: str, address: str, html: str) -> dict[str, Any]:
+        """The signature used when writing from one sending address. Empty removes it (the default is used again)."""
+        key = str(address or "").strip().lower()
+        with _LOCK:
+            s = self._load(user_id)
+            cleaned, text = self._format(html)
+            if cleaned:
+                if key not in s["signatures"] and len(s["signatures"]) >= MAX_SIGNATURES:
+                    raise SavedError(f"You can keep up to {MAX_SIGNATURES} signatures. Remove one first.")
+                s["signatures"][key] = {"html": cleaned, "text": text}
+            else:
+                s["signatures"].pop(key, None)
             self._save(user_id, s)
         return self.view(user_id)
 

@@ -111,19 +111,22 @@ const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll
 {
   const server = makeServer();
   const { page, context, errors } = await open(server);
-  await page.evaluate(() => openSettings("settings","mailalerts"));
-  await page.waitForSelector('#mailAlertAccounts input[data-mail-alert-account]');
-  check("email alerts are in the existing personal Settings",await page.locator('[data-settings-tab~="mailalerts"].active').count()===1);
-  check("all new emails is the default mode", await page.locator('input[name="mailAlertMode"][value="all"]').isChecked());
-  await page.locator('input[name="mailAlertMode"][value="action"]').check();
-  await page.waitForFunction(() => document.getElementById("mailAlertStatus").textContent === "Saved");
-  check("action-only mode is saved to the notification endpoint",server.notificationChanges.some(x=>x.mail_filter==="action"));
-  await page.locator('#mailAlertAccounts input[data-mail-alert-account]').uncheck();
-  await page.waitForFunction(() => document.getElementById("mailAlertStatus").textContent === "Saved");
-  check("disabling notifications for one mailbox does not disable the channel",server.notificationChanges.some(x=>Array.isArray(x.mail_muted_accounts)&&x.mail_muted_accounts.includes("a1")));
-  await page.evaluate(() => loadMailAlertPrefs());
-  await page.waitForTimeout(150);
-  check("saved filter and mailbox mute restore in Settings",await page.locator('input[name="mailAlertMode"][value="action"]').isChecked()&&!(await page.locator('#mailAlertAccounts input[data-mail-alert-account]').isChecked()));
+  await page.evaluate(() => { openSettings("settings", "alerts"); openPanel("mailalerts", { tab: "alerts" }); });
+  const host = page.locator('[data-settings-panel="mailalerts"] .embed-host');
+  await host.locator(".li.pick").first().waitFor();
+  const pressed = () => host.evaluate((h) => [...h.shadowRoot.querySelectorAll(".li.pick[aria-pressed=true]")].map((x) => x.textContent.trim()).join("|"));
+  check("email alerts are in the existing personal Settings", (await page.locator('[data-settings-tab~="mailalerts"]').count()) === 1);
+  check("all new emails is the default mode", /^All new emails/.test(await pressed()));
+  await host.locator(".li.pick", { hasText: "Needs action only" }).click();
+  await page.waitForTimeout(250);
+  check("action-only mode is saved to the notification endpoint", server.notificationChanges.some((x) => x.mail_filter === "action"));
+  const mailboxSwitch = host.locator(".li", { hasText: "me@example" }).locator("input[type=checkbox]").first();
+  await mailboxSwitch.uncheck({ force: true });
+  await page.waitForTimeout(250);
+  check("disabling notifications for one mailbox does not disable the channel", server.notificationChanges.some((x) => Array.isArray(x.mail_muted_accounts) && x.mail_muted_accounts.includes("a1")));
+  await page.evaluate(() => openPanel("mailalerts", { tab: "alerts" }));
+  await page.waitForTimeout(400);
+  check("saved filter and mailbox mute restore in Settings", /^Needs action only/.test(await pressed()) && !(await mailboxSwitch.isChecked()));
   check("no script errors in email alert preferences",errors.length===0);
   await page.close();await context.close();
 }
@@ -229,6 +232,7 @@ const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll
   await page.click("#userPill");
   await page.click("#settingsBtn");
   await page.click('[data-settings-tab~="reminders"]');
+  await page.evaluate(() => openPanel("reminders", { tab: "alerts" }));
   await page.waitForTimeout(800);
   const text = await page.evaluate(() => { return [...document.querySelectorAll("#settings *")].map((e) => e.shadowRoot ? e.shadowRoot.textContent : "").join(" "); });
   check("Settings > Notifications offers the new-email switch, off to begin with", /When new email arrives/.test(text));
@@ -236,14 +240,14 @@ const openSubjects = (page) => page.evaluate(() => [...document.querySelectorAll
   const state = await page.evaluate(() => {
     const roots = [...document.querySelectorAll("#settings *")].filter((e) => e.shadowRoot).map((e) => e.shadowRoot);
     const q = (id) => { for (const r of roots) { const el = r.querySelector("#" + id); if (el) return el; } return null; };
-    return { mail: q("rs_mail") && q("rs_mail").checked, details: q("rs_maildetails") && q("rs_maildetails").checked };
+    return { mail: q("rs_mail_on") && q("rs_mail_on").checked, details: q("rs_mail_details") && q("rs_mail_details").checked };
   });
   check("both start switched off", state.mail === false && state.details === false);
   await shot(page, "reminders-settings");
   check("the tab is called Alerts", /Alerts/.test(await page.locator("[data-settings-tab~=reminders]").innerText()));
   await page.evaluate(() => {
     const roots = [...document.querySelectorAll("#settings *")].filter((e) => e.shadowRoot).map((e) => e.shadowRoot);
-    for (const r of roots) { const el = r.querySelector("#rs_mail"); if (el) { el.click(); } }
+    for (const r of roots) { const el = r.querySelector("#rs_mail_on"); if (el) { el.click(); } }
   });
   await page.waitForTimeout(1200);
   check("saving sends the new settings", server.saved.length === 1 && server.saved[0].mail_on === true && server.saved[0].mail_details === false);

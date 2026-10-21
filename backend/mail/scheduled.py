@@ -24,7 +24,7 @@ RECORD_PREFIX = "scheduled:"
 KINDS = ("new", "reply", "reply_all", "forward")
 MAX_ITEMS = 20
 MIN_AHEAD = 30                    # seconds: closer than this is just "send now"
-MAX_AHEAD = 30 * 86400
+MAX_AHEAD = 366 * 86400
 KEEP_FAILED = 7 * 86400
 MAX_BODY = 100_000
 MAX_HTML = 300_000                # formatted text kept with a waiting email (pictures are not kept)
@@ -84,7 +84,7 @@ class ScheduledMail:
         if send_at < now + MIN_AHEAD:
             raise ScheduleError("Choose a time a little way ahead, or just send it now.")
         if send_at > now + MAX_AHEAD:
-            raise ScheduleError("An email can wait up to 30 days.")
+            raise ScheduleError("An email can wait up to a year.")
         body = _CTRL.sub("", str(data.get("body") or "").replace("\r\n", "\n").replace("\r", "\n"))[:MAX_BODY]
         html = str(data.get("html") or "")[:MAX_HTML] or None
         item = {"id": "s" + secrets.token_hex(8), "kind": kind, "account_id": _line(data.get("account_id"), 64),

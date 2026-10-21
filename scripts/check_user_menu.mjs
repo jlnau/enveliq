@@ -99,7 +99,8 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   await page.click("#settingsBtn");
   await page.waitForSelector("#settings.open");
   await page.click('[data-settings-tab~="profile"]');
-  await host(page, "profile").locator("text=Everything on this page is optional").waitFor({ timeout: 15000 });
+  await page.evaluate(() => openPanel("profile", { tab: "account" }));
+  await host(page, "profile").locator("text=Everything on this page is optional").waitFor({ state: "attached", timeout: 15000 });
   check("Settings opens on Account, which holds the Profile page", (await page.locator("#settingsHeading").innerText()).trim() === "Account" && (await page.locator('[data-settings-tab~="profile"].active').count()) === 1);
   const groups = (await page.locator("#settingsNav .settings-group").allTextContents()).map((t) => t.trim());
   check("the one menu has a Settings group and an Administration group below a line", groups.join("|") === "Settings|Administration" && (await page.locator("#settingsNav .settings-sep").count()) === 1);
@@ -112,6 +113,7 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   await page.press("#search", "Escape");
   check("Escape clears the settings search", (await page.inputValue("#search")) === "" && (await page.locator("#settingsResults").isHidden()));
   await page.click('[data-settings-tab~="profile"]');
+  await page.evaluate(() => openPanel("profile", { tab: "account" }));
   const pf = host(page, "profile");
   check("the people-list switch starts on", (await host(page, "profile").locator("#pf_people").isChecked()));
   check("name, email and about start empty (name shows the username as a hint)", (await pf.locator("#pf_email").inputValue()) === "" && (await pf.locator("#pf_about").inputValue()) === "" && (await pf.locator("#pf_name").inputValue()) === "");
@@ -129,10 +131,11 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   check("the picture replaces the initials beside the name", (await page.locator("#avatar img").getAttribute("src")).includes("/api/v1/users/u1/avatar"));
   check("the picture loads (the page allows it)", await page.evaluate(() => { const i = document.querySelector("#avatar img"); return new Promise((ok) => (i.complete ? ok(i.naturalWidth > 0) : (i.onload = () => ok(true), i.onerror = () => ok(false)))); }));
   await shot(page, "profile");
-  await pf.getByRole("button", { name: "Remove", exact: true }).click();
+  await pf.getByRole("button", { name: /^Picture/ }).first().click();
+  await pf.getByRole("button", { name: "Remove picture", exact: true }).click();
   await page.waitForFunction(() => !document.querySelector("#avatar img") && document.getElementById("avatar").textContent.length > 0);
   check("removing the picture brings the initials back", true);
-  await page.click("#closeSettings");
+  await page.evaluate(() => closeSettings());
   check("closing Settings brings back Search inbox", (await page.locator("#search").getAttribute("placeholder")) === "Search inbox");
 
   // Administration (below the line in the same menu)
@@ -140,7 +143,8 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   await page.click("#settingsBtn");
   await page.waitForSelector("#settings.open");
   await page.click('[data-settings-tab~="sso"]');
-  const ss = host(page, "sso");
+  const ss = host(page, "users");
+  await ss.getByRole("button", { name: /^Sign-in rules/ }).click();
   await ss.locator("summary:has-text('Password requirements')").waitFor({ timeout: 15000 });
   check("password requirements are folded away until wanted", !(await ss.locator("details:has(summary:has-text('Password requirements'))").evaluate((d) => d.open)));
   await ss.locator("summary:has-text('Password requirements')").click();
@@ -156,12 +160,15 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   const pol = server.calls.filter((c) => c[0] === "policy").pop();
   check("saving sends the password rules", !!pol && pol[1].pw_min_length === 14 && pol[1].pw_min_digits === 2 && pol[1].pw_min_upper === 1 && pol[1].pw_min_symbols === 1 && pol[1].pw_forbid_username === true);
   await page.click('[data-settings-tab~="users"]');
+  await page.evaluate(() => openPanel("users", { tab: "users", top: true }));
   const us = host(page, "users");
-  await us.locator("summary:has-text('Add a person')").waitFor({ timeout: 15000 });
-  check("Add a person is folded away and shows the password rules", (await us.locator("text=At least 12 characters").count()) >= 0);
-  await page.click('[data-settings-tab~="security"]');
+  await us.getByRole("button", { name: "Add a person" }).waitFor({ timeout: 15000 });
+  check("Add a person is a row that opens its own page", (await us.locator("button.li", { hasText: "Add a person" }).count()) === 1);
+  await page.evaluate(() => { document.querySelector('[data-settings-tab~="adminbackup"]').click(); openPanel("security", { tab: "adminbackup" }); });
+  const sec = page.locator('[data-settings-panel="security"] .embed-host');
+  await sec.getByRole("button", { name: /How your mail is handled/ }).waitFor({ timeout: 15000 });
   await shot(page, "security");
-  check("Security & privacy shows how mail is handled in a fold", (await page.locator('[data-settings-panel="security"] details.fold').count()) === 3);
+  check("Security & privacy shows how mail is handled, what is promised and Lock", (await sec.getByRole("button", { name: /How your mail is handled|What Enveliq promises|Lock Enveliq/ }).count()) === 3);
   check("no script errors", errors.length === 0);
   check("no blocked content", csp.length === 0);
 }
@@ -176,7 +183,7 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   check("a normal user does not see Administration anywhere in Settings", (await page.locator("#settingsNav .settings-sep").count()) === 0 && !(await page.locator("#settingsNav").innerText()).includes("Administration"));
   await page.fill("#search", "grafana");
   check("and the search does not offer them administrator pages", (await page.locator("#settingsResults").innerText()).includes("Nothing found"));
-  await page.click("#closeSettings");
+  await page.evaluate(() => closeSettings());
   await page.click("#userPill");
   check("they still see Settings, and there is no Profile settings item", (await page.locator("#settingsBtn").isVisible()) && (await page.locator("#profileBtn").count()) === 0);
   check("no script errors (user)", errors.length === 0);

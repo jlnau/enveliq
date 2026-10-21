@@ -92,18 +92,20 @@ async function open(width, height) {
   return { page, context, errors };
 }
 const inHost = (page, sel) => page.locator(`#settings .embed-host >> ${sel}`);
+// Rules & calendar > Calendar & to-do > Google Calendar
+const goGoogle = async (page) => { await inHost(page, ".li:has-text('Calendar & to-do')").first().click(); await inHost(page, ".li:has-text('Google Calendar')").first().click(); };
 
 {
   const { page, context, errors } = await open(1200, 900);
-  await inHost(page, "summary:has-text('Google Calendar (instant)')").click();
-  check("Google Calendar offers two choices, a new calendar or one I already have", (await inHost(page, "input[name=gmode]").count()) === 2 && (await inHost(page, "#gm_new").isChecked()));
+  await goGoogle(page);
+  check("Google Calendar offers two choices, a new calendar or one I already have", (await inHost(page, ".li.pick:visible").count()) === 2 && (await inHost(page, ".li.pick:visible").first().getAttribute("aria-pressed")) === "true");
   check("the wider permission is explained before choosing", (await inHost(page, "text=can see and change events on all your Google calendars").count()) === 1);
-  await inHost(page, "#gm_existing").check();
-  await inHost(page, "button:has-text('Connect Google Calendar')").click();
+  await inHost(page, ".li.pick:visible", ).nth(1).click();
+  await inHost(page, "button:has-text('Connect Google Calendar'):visible").click();
   await page.waitForTimeout(300);
   check("choosing 'Use a calendar I already have' starts the connection in that mode", calls.some((c) => c[0] === "start" && c[1] === "existing"));
-  await inHost(page, "#gm_new").check();
-  await inHost(page, "button:has-text('Connect Google Calendar')").click();
+  await inHost(page, ".li.pick:visible").first().click();
+  await inHost(page, "button:has-text('Connect Google Calendar'):visible").click();
   await page.waitForTimeout(300);
   check("choosing a new calendar starts it in the narrow mode", calls.some((c) => c[0] === "start" && c[1] === "new"));
   await shot(page, "google-choice");
@@ -113,10 +115,11 @@ const inHost = (page, sel) => page.locator(`#settings .embed-host >> ${sel}`);
   await page.waitForTimeout(500);
   await page.evaluate(() => document.querySelector('#settingsNav [data-settings-tab~="rules"]').click());
   await page.waitForTimeout(1800);
+  await goGoogle(page);
   await inHost(page, "select#gm_pick").waitFor();
   await page.waitForFunction(() => { const h = [...document.querySelectorAll(".embed-host")].find((x) => x.shadowRoot && x.shadowRoot.querySelector("#gm_pick")); return h && h.shadowRoot.querySelector("#gm_pick").options.length === 2; });
   check("the person's calendars are listed to pick from", (await inHost(page, "select#gm_pick option").allInnerTexts()).join("|") === "Family (main calendar)|Work");
-  check("the Connect and mode choices are hidden until a calendar is picked", (await inHost(page, "input[name=gmode]").count()) === 0);
+  check("the Connect and mode choices are hidden until a calendar is picked", (await inHost(page, ".li.pick:visible").count()) === 0);
   await shot(page, "google-pick");
   await inHost(page, "select#gm_pick").selectOption("family@example.com");
   await inHost(page, "button:has-text('Use this calendar')").click();
@@ -131,10 +134,10 @@ const inHost = (page, sel) => page.locator(`#settings .embed-host >> ${sel}`);
 {
   state.google = { ...state.google, connected: false, enabled: false, mode: "new", needs_pick: false };
   const { page, context } = await open(390, 800);
-  await inHost(page, "summary:has-text('Google Calendar (instant)')").click();
+  await goGoogle(page);
   await shot(page, "google-choice-phone");
   const sideways = await page.evaluate(() => { const p = document.querySelector("#settings"); return p.scrollWidth > p.clientWidth + 2; });
-  const tall = await inHost(page, "button:has-text('Connect Google Calendar')").evaluate((b) => b.getBoundingClientRect().height);
+  const tall = await inHost(page, "button:has-text('Connect Google Calendar'):visible").evaluate((b) => b.getBoundingClientRect().height);
   check("phone: nothing sideways and the Connect button is easy to press", !sideways && tall >= 36);
   await context.close();
 }

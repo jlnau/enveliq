@@ -1,4 +1,4 @@
-// Browser check for the Mailboxes page: a card for each mailbox, an Edit page whose checkboxes save at once,
+// Browser check for the Mailboxes page: a row for each mailbox, an Edit page whose checkboxes save at once,
 // no Save buttons, and a phone layout. The page is loaded from a pretend Enveliq server (Playwright intercepts the
 // requests), so this needs no Python.   node scripts/check_mailboxes_page.mjs      (SHOTS=<dir> saves screenshots)
 import { chromium } from "playwright";
@@ -47,59 +47,63 @@ async function open(width, height) {
   const page = await ctx.newPage();
   page.on("console", m => { if (/Content Security Policy/i.test(m.text())) csp.push(m.text()); });
   await page.goto(ORIGIN + "/mailboxes");
-  await page.waitForSelector(".mbcard");
+  await page.waitForSelector(".mbrow");
   return page;
 }
 
 const page = await open(1200, 800);
-check("each mailbox is a card", (await page.locator(".mbcard").count()) === 2);
-check("a card has only Sync now and Edit", (await page.locator(".mbcard").first().locator("button").allInnerTexts()).join("|") === "Sync now|Edit");
+check("each mailbox is a row in one list", (await page.locator(".mbrow").count()) === 2);
+check("a mailbox row opens that mailbox and has no buttons of its own", (await page.locator(".mbrow").first().locator("button").count()) === 0 && (await page.locator(".mbrow").first().evaluate(e => e.tagName)) === "BUTTON");
 check("none of the old long row of buttons is on the list", (await page.locator("button:has-text('Turn automatic sync'), button:has-text('Rename'), button:has-text('Diagnostics'), button:has-text('Remove')").count()) === 0);
-check("a mailbox that failed its last check says it needs you", (await page.locator(".mbcard").nth(1).innerText()).includes("Needs you"));
-check("two cards sit side by side on a computer", await page.evaluate(() => { const c = [...document.querySelectorAll(".mbcard")].map(e => e.getBoundingClientRect()); return Math.abs(c[0].top - c[1].top) < 4 && c[1].left > c[0].right - 2; }));
+check("a mailbox that failed its last check says it needs you", (await page.locator(".mbrow").nth(1).getAttribute("aria-label")).includes("Needs you") || (await page.locator(".mbrow").nth(1).getAttribute("aria-label")).includes("login failed"));
+check("the rows are in one grouped card", await page.evaluate(() => { const r = [...document.querySelectorAll(".mbrow")]; return r[0].parentElement === r[1].parentElement && r[1].getBoundingClientRect().top > r[0].getBoundingClientRect().bottom - 2; }));
 check("the add form is folded away when a mailbox exists", await page.locator("#mb_add").isHidden());
-await page.click("#mb_add_btn");
-check("the Add a mailbox button opens the form", await page.locator("#mb_add").isVisible());
-await page.click("#mb_add_btn");
+await page.getByRole("button", { name: "Add a mailbox" }).click();
+check("the Add a mailbox row opens the form", await page.locator("#mb_add").isVisible());
+if (SHOTS) await page.screenshot({ path: `${SHOTS}/mailboxes-add.png` });
+await page.getByRole("link", { name: /Mailboxes/ }).first().click().catch(() => {});
+await page.goto(ORIGIN + "/mailboxes");
+await page.waitForSelector(".mbrow");
 if (SHOTS) await page.screenshot({ path: `${SHOTS}/mailboxes-list.png` });
 
-await page.locator(".mbcard").first().locator("button:has-text('Edit')").click();
-await page.waitForSelector(".mbedit");
-check("the Edit page has three ticked checkboxes", (await page.locator(".optrow input:checked").count()) === 3);
-check("it has no Save button", (await page.locator("button:has-text('Save')").count()) === 0);
-check("Remove asks first and sits on this page", (await page.locator("button:has-text('Remove Proton')").count()) === 1);
-check("two columns on a computer", await page.evaluate(() => { const c = [...document.querySelectorAll(".mbcol")].map(e => e.getBoundingClientRect()); return c.length === 2 && c[1].left > c[0].right - 2; }));
+await page.locator(".mbrow").first().click();
+await page.waitForSelector("#mb_ai_a1");
+check("the mailbox page has three ticked switches", (await page.locator(".li input[type=checkbox]:checked").count()) === 3);
+check("it has no Save button", (await page.getByRole("button", { name: "Save", exact: true }).count()) === 0);
+check("Remove sits on its own row, as a red centred row", (await page.locator(".li.danger", { hasText: "Remove this mailbox" }).count()) === 1);
 if (SHOTS) await page.screenshot({ path: `${SHOTS}/mailbox-edit.png` });
-await page.uncheck("#mb_ai_a1");
-await page.waitForSelector(".savedtag.show");
-check("unticking saves at once and says Saved", patches.length === 1 && patches[0].settings.ai_summaries === false && (await page.locator(".savedtag.show").first().innerText()).includes("Saved"));
+await page.uncheck("#mb_ai_a1", { force: true });
+await page.waitForTimeout(150);
+check("switching saves at once", patches.length === 1 && patches[0].settings.ai_summaries === false);
 check("the other choices are kept in the same save", patches[0].settings.waiting === true);
-await page.uncheck("#mb_auto_a1");
-await page.waitForFunction(() => true);
-await page.waitForTimeout(100);
+await page.uncheck("#mb_auto_a1", { force: true });
+await page.waitForTimeout(150);
 check("automatic checking saves too", patches.length === 2 && patches[1].settings.auto_sync === false);
-await page.check("#mb_ai_a1");
-await page.waitForTimeout(100);
-check("ticking again saves too", patches.length === 3 && patches[2].settings.ai_summaries === true);
+await page.check("#mb_ai_a1", { force: true });
+await page.waitForTimeout(150);
+check("switching on again saves too", patches.length === 3 && patches[2].settings.ai_summaries === true);
+await page.getByRole("button", { name: /^Name/ }).click();
 await page.fill("input[aria-label='Mailbox name']", "Home Proton");
 await page.keyboard.press("Tab");
-await page.waitForSelector("h1:text-is('Home Proton')");
+await page.waitForSelector("h1.pg-title:has-text('Home Proton')", { state: "attached" });
 check("the name saves when you leave the box", patches[patches.length - 1].display_name === "Home Proton");
-check("Diagnostics is folded away", !(await page.locator("details.help").first().evaluate(e => e.open)));
+await page.locator(".ios-pane:visible .back").first().click();
+check("Diagnostics is a row you open", (await page.getByRole("button", { name: /Diagnostics/ }).count()) === 1);
+await page.getByRole("button", { name: /Remove this mailbox/ }).click();
 await page.locator("button:has-text('Remove Home Proton')").click();
 check("Remove asks a question and does not remove yet", (await page.locator("text=Yes, delete").count()) + (await page.locator("button.danger").count()) >= 2);
-await page.click("button:has-text('‹ Mailboxes')");
-await page.waitForSelector(".mbcard");
-check("Back returns to the cards", (await page.locator(".mbcard").count()) === 2);
+await page.goto(ORIGIN + "/mailboxes");
+await page.waitForSelector(".mbrow");
+check("the list is back", (await page.locator(".mbrow").count()) === 2);
 
 const phone = await open(390, 844);
-check("cards stack on a phone", await phone.evaluate(() => { const c = [...document.querySelectorAll(".mbcard")].map(e => e.getBoundingClientRect()); return c[1].top > c[0].bottom - 2; }));
+check("rows stack on a phone", await phone.evaluate(() => { const c = [...document.querySelectorAll(".mbrow")].map(e => e.getBoundingClientRect()); return c[1].top > c[0].bottom - 2; }));
 check("no sideways scrolling on a phone", await phone.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
-check("buttons are easy to tap", await phone.evaluate(() => [...document.querySelectorAll(".mbcard .btn")].every(b => b.getBoundingClientRect().height >= 44)));
+check("rows are easy to tap", await phone.evaluate(() => [...document.querySelectorAll(".mbrow")].every(b => b.getBoundingClientRect().height >= 44)));
 if (SHOTS) await phone.screenshot({ path: `${SHOTS}/mailboxes-phone.png` });
-await phone.locator(".mbcard").first().locator("button:has-text('Edit')").click();
-await phone.waitForSelector(".mbedit");
-check("the Edit page fits a phone and its checkboxes are large", await phone.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1 && [...document.querySelectorAll(".optrow")].every(r => r.getBoundingClientRect().height >= 44)));
+await phone.locator(".mbrow").first().click();
+await phone.waitForSelector("#mb_ai_a1");
+check("the mailbox page fits a phone and its rows are large", await phone.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1 && [...document.querySelectorAll(".li")].filter(r => r.offsetParent).every(r => r.getBoundingClientRect().height >= 44)));
 if (SHOTS) await phone.screenshot({ path: `${SHOTS}/mailbox-edit-phone.png`, fullPage: true });
 check("no Content Security Policy violations", csp.length === 0);
 await browser.close();

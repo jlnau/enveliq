@@ -86,9 +86,15 @@ for (const [width, height] of [[1200, 900], [390, 780]]) {
   const box = await menu.boundingBox();
   check(tag + "the menu stays on the screen", box && box.x >= 0 && box.y >= 0 && box.x + box.width <= width);
   await shot(page, "send-later-" + width);
-  await menu.locator("[data-later-pick]", { hasText: "Tomorrow" }).click();
+  check(tag + "the menu also has Pick date and time", (await menu.locator("#laterWhen").getAttribute("type")) === "datetime-local");
+  await menu.locator("#laterWhen").fill("2026-10-13T09:00");
+  await menu.locator("[data-later-date]").click();
+  await page.waitForTimeout(200);
+  check(tag + "a time in the past is refused and nothing is sent", posted.length === 0 && (await menu.isVisible()));
+  await menu.locator("#laterWhen").fill("2026-11-03T16:45");
+  await menu.locator("[data-later-date]").click();
   await page.waitForTimeout(300);
-  check(tag + "Tomorrow sends 8 am tomorrow, Melbourne time, with the person's words and no files", posted.length === 1 && posted[0].kind === "new" && posted[0].send_at === Math.floor(new Date("2026-10-15T08:00:00+11:00").getTime() / 1000) && posted[0].to[0].includes("dana@example.invalid") && posted[0].body.includes("Some words") && !posted[0].files);
+  check(tag + "a picked date and time is used exactly, Melbourne time, with the person's words and no files", posted.length === 1 && posted[0].kind === "new" && posted[0].send_at === Math.floor(new Date("2026-11-03T16:45:00+11:00").getTime() / 1000) && posted[0].to[0].includes("dana@example.invalid") && posted[0].body.includes("Some words") && !posted[0].files);
   check(tag + "the writing window closes", !(await page.locator("#newMail.open").count()));
   await page.evaluate(() => document.querySelector('.nav[data-filter="sent"]').click());
   await page.waitForSelector("#sentWaiting button");

@@ -45,7 +45,7 @@ function makeServer(initial) {
     if (p === "/api/v1/accounts/a1/send") { calls.push(["send", JSON.parse(req.postData())]); return json(200, { sent: true, from: "me@example.invalid" }); }
     if (/\/api\/v1\/accounts\/a1\/messages\/m1\/reply$/.test(p)) { calls.push(["reply", JSON.parse(req.postData())]); return json(200, { sent: true, from: "me@example.invalid" }); }
     if (p === "/api/v1/me/saved" && m === "GET") return json(200, view());
-    if (p === "/api/v1/me/saved/signature" && m === "PUT") { signature = JSON.parse(req.postData()).text.trim(); calls.push(["sig", signature]); return json(200, view()); }
+    if (p === "/api/v1/me/saved/signature" && m === "PUT") { signature = (JSON.parse(req.postData()).html || "").replace(/<br>/g, "\n").replace(/<[^>]+>/g, "").trim(); calls.push(["sig", signature]); return json(200, view()); }
     if (p === "/api/v1/me/saved/replies" && m === "POST") {
       const b = JSON.parse(req.postData()); calls.push(["add", b]);
       if (!b.title.trim() || !b.text.trim()) return json(422, { detail: "Give the reply a short name and some text." });
@@ -135,31 +135,36 @@ const SIG = "Thanks,\nMorgan";
   await page.waitForTimeout(300);
   check("Settings has a Signature & saved replies page", (await page.locator('#settingsNav [data-settings-tab~="saved"]').innerText()).includes("People & writing"));
   await page.evaluate(() => document.querySelector('#settingsNav [data-settings-tab~="saved"]').click());
+  await page.evaluate(() => openPanel("saved", { tab: "people" }));
   const host = page.locator('[data-settings-panel="saved"] .embed-host');
-  await host.locator("#sv_sig").waitFor({ timeout: 8000 });
+  await host.locator("[aria-label=\"Your signature\"]").waitFor({ timeout: 8000 });
   const text = () => host.evaluate((h) => h.shadowRoot.textContent);
-  check("it shows the signature and the saved reply", (await host.locator("#sv_sig").inputValue()) === SIG && /Running late/.test(await text()));
+  check("it shows the signature and the saved reply", (await host.locator("[aria-label=\"Your signature\"]").innerText()).trim() === SIG && /Running late/.test(await text()));
   await shot(page, "saved-settings");
-  await host.locator("#sv_sig").fill("Best wishes,\nMorgan");
-  await host.locator("#sv_sig").press("Tab");
+  await host.locator("[aria-label=\"Your signature\"]").evaluate((el) => { el.innerHTML = "Best wishes,<br>Morgan"; });
+  await host.locator("[aria-label=\"Your signature\"]").focus();
+  await host.locator("[aria-label=\"Your signature\"]").evaluate((el) => el.blur());
   await page.waitForTimeout(400);
   check("saving the signature sends it", server.calls.some((c) => c[0] === "sig" && c[1] === "Best wishes,\nMorgan"));
+  const pressBtn = (name) => host.getByRole("button", { name, exact: true }).click();
+  await host.getByRole("button", { name: "Add a saved reply" }).first().click();
   await host.locator("#sv_title").fill("");
-  await host.locator("button", { hasText: "Save reply" }).click();
+  await pressBtn("Save reply");
   await page.waitForTimeout(300);
   check("a reply with no name or text is refused in plain words", /short name and some text/.test(await host.locator("#toast").innerText()));
   await host.locator("#sv_title").fill("Thank you");
   await host.locator("#sv_text").fill("Thank you, that is very kind.");
-  await host.locator("button", { hasText: "Save reply" }).click();
+  await pressBtn("Save reply");
   await page.waitForFunction(() => document.querySelector('[data-settings-panel="saved"] .embed-host').shadowRoot.textContent.includes("Thank you, that is very kind."));
   check("a new saved reply appears in the list", server.calls.some((c) => c[0] === "add" && c[1].title === "Thank you"));
-  await host.locator("button", { hasText: "Edit" }).first().click();
-  check("Edit fills the form and the button says Update", (await host.locator("#sv_title").inputValue()) === "Running late" && (await host.locator("button", { hasText: "Update reply" }).count()) === 1);
+  await host.locator(".li", { hasText: "Running late" }).first().click();
+  check("Edit fills the form and the button says Update", (await host.locator("#sv_title").inputValue()) === "Running late" && (await host.getByRole("button", { name: "Update reply", exact: true }).count()) === 1);
   await host.locator("#sv_text").fill("I am running late.");
-  await host.locator("button", { hasText: "Update reply" }).click();
+  await pressBtn("Update reply");
   await page.waitForFunction(() => document.querySelector('[data-settings-panel="saved"] .embed-host').shadowRoot.textContent.includes("I am running late."));
   check("updating changes the reply", server.calls.some((c) => c[0] === "edit" && c[2].text === "I am running late."));
-  await host.locator('button[aria-label="Remove Thank you"]').click();
+  await host.locator(".li", { hasText: "Thank you" }).first().click();
+  await pressBtn("Remove this reply");
   await page.waitForFunction(() => !document.querySelector('[data-settings-panel="saved"] .embed-host').shadowRoot.textContent.includes("that is very kind"));
   check("removing a saved reply takes it off the list", server.calls.some((c) => c[0] === "remove"));
   check("no script errors", errors.length === 0);

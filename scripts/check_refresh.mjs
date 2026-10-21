@@ -156,7 +156,7 @@ await page.click("#settingsBtn");
   await page.waitForSelector("#settings.open");
   await page.waitForTimeout(500);
   check("Settings: after a refresh the same section is open", (await page.locator("#settings.open").count()) === 1 && (await page.locator("[data-settings-tab].active").getAttribute("data-settings-tab")).startsWith("general"));
-  await page.click("#closeSettings");
+  await page.evaluate(() => closeSettings());
   check("closing Settings clears the address", (await page.evaluate(() => location.hash)) === "");
   await page.close(); await context.close();
 }

@@ -19,6 +19,8 @@ PLAIN_RECORDS = {
     "subscriptions": "subs:",
     "trips": "trips:",
     "junk_mail": "junk:",
+    "muted_conversations": "muted:",
+    "away_reply": "away:",
     "waiting_for_replies": "wait:",
     "writing_help": "writehelp:",
     "writing_style": "style:",

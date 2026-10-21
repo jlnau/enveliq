@@ -4,7 +4,29 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**Settings and Administration redesigned as simple lists.** Every page in Settings and Administration now looks the same: a short list of rows grouped in soft cards, with a grey note on the right and an arrow on rows that open something. Pressing a row opens that page full width, with a blue back link and a big title; a small ? beside the title (or beside a row) holds the long explanations. Switches are real on/off switches, choices are drop-downs on the row, and the buttons that finish a form (Save, Add) sit together at the bottom of the page, fixed in place on a phone. It works in dark and light, on a computer and on a phone. Nothing was removed: every old option is still there, one row deeper. Old cards, tables, columns and "Show" boxes are gone. Two things changed with it: the stand-alone Administration address (`/admin`) now opens People & sign-in, and results of Sync now and Check connection show on the mailbox's Connection page. The Android app is not touched. Touches `web/static/auth.js`, `web/static/auth.css`, `prototype/index.html`, `docs/SETTINGS.md`, `scripts/check_settings_list.mjs` (new, in CI) and the older `scripts/check_*.mjs` checks that looked for the old layout.
+
+**Daily summary fixes.** The box keeps its top bar and bottom bar in place and only the middle scrolls (computer and phone). Each email shows the day and time it arrived. The button that takes an email out of the summary is now a small down-arrow button, the same size as the others, titled "Send back to the inbox" (it was a reply arrow). Clicking outside the box closes it. Touches `prototype/index.html`, `backend/mail/digest.py`, `scripts/check_daily_summary.mjs`.
+
+**Print email and Save as PDF keep your email open.** They print a hidden copy of the email instead of opening it over the one you are reading. Touches `prototype/index.html`, `scripts/check_more_menu.mjs`.
+
+**Phone Back button while writing.** With a new email, reply or forward open on a phone, Back asks whether to keep it as a draft, and Back again saves it as a draft. With nothing written, Back just closes it. Touches `prototype/index.html`, `scripts/check_more_menu.mjs`.
+
+**Pick any date and time (web and Android).** Snooze and Send later now have **Pick date and time**, for any day and time from a minute to a year ahead, in your own time zone (Send later used to stop at 30 days). A time that has passed is refused in plain words. Presets and cancelling work as before. Touches `prototype/index.html`, `backend/mail/scheduled.py`, `android/`, `docs/SNOOZE.md`, `docs/SEND_LATER.md`, `scripts/check_snooze.mjs`, `scripts/check_send_later.mjs`.
+
+**Mute conversation.** In an email's new three-dot menu (and in Android's), **Mute conversation** archives the email and files later replies in Archive without an alert; nothing is deleted. **Settings, Muted conversations** lists them with **Unmute** (web and Android). Works the same for Proton, IMAP and Microsoft mailboxes. Touches `backend/mail/muted.py`, `backend/mail/muted_routes.py`, `backend/mail/service.py`, `backend/app.py`, `backend/export.py`, `prototype/index.html`, `web/static/auth.js`, `android/`, `tests/test_mute_away_signatures.py`, `scripts/check_more_menu.mjs`, `docs/MUTE.md`, `SECURITY.md`.
+
+**Signatures with formatting, and one for each address.** The signature can have bold, italic, links and line breaks. Each sending address can have its own signature, which replaces the old one when you change From in a new email, reply or forward; your existing signature is the default and keeps working. Android uses the per-address signature as plain text. Touches `backend/mail/saved_writing.py`, `backend/mail/saved_writing_routes.py`, `backend/mail/outhtml.py`, `prototype/index.html`, `web/static/auth.js`, `web/static/auth.css`, `android/`, `docs/SAVED_REPLIES.md`, `scripts/check_saved_writing.mjs`.
+
+**Mark unread on the website.** A Reviewed email has a **Mark unread** button (and a menu item) that restores the unread mark in your mailbox and returns it to the inbox. Android already had it. Touches `prototype/index.html`, `docs/INBOX.md`.
+
+**Block sender** already existed (the website's row, Android's menu, and Settings, Mail rules / Blocked senders); it now lives in the three-dot menu. Touches `prototype/index.html`.
+
+**Away reply.** An optional automatic answer between two dates, set in Settings, Rules & calendar. It is the one place Enveliq sends without you pressing Send, so it is off until switched on, answers each person once, skips lists, newsletters, automatic and no-reply mail, marks itself automatic, quotes nothing and sends at most 20 an hour. Touches `backend/mail/awayreply.py`, `backend/mail/away_routes.py`, `backend/mail/parse.py`, `backend/mail/service.py`, `backend/app.py`, `backend/export.py`, `web/static/auth.js`, `tests/test_mute_away_signatures.py`, `docs/AWAY_REPLY.md`, `SECURITY.md`.
+
+**Conversation View.** Customise has a **Conversation View** switch (off by default) that groups emails of one conversation under the newest, with Show/Hide. Reviewed, Archive and Bin still act on one email. Touches `prototype/index.html`, `backend/mail/notify_routes.py`, `docs/INBOX.md`, `scripts/check_more_menu.mjs`.
+
+**A tidier action row.** The email's action row ends with a three-dot button at the far right (computer and phone). Important person, Always archive these, Send to Junk, Block sender, Mute conversation, Mark unread, **Print email** and **Save as PDF** are in it, and are no longer separate buttons. Print and Save as PDF open the email on its own and your browser's print window. Touches `prototype/index.html`, `scripts/check_more_menu.mjs`, `scripts/check_rules.mjs`, `scripts/check_important_people.mjs`, `docs/INBOX.md`.
 
 ## v0.101 (2026-10-21)
 

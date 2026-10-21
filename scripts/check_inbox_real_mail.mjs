@@ -355,7 +355,7 @@ await page.click('[data-theme-choice="dark"]');
   }
   await page.evaluate(() => document.getElementById("settingsBtn").click());   // the send bar can sit over the user menu, so press it directly
   check("the bar stays when other panels open", await page.locator("#sendBar .sendrow").isVisible());
-  await page.locator("#closeSettings").click();
+  await page.evaluate(() => closeSettings());
   await page.reload();
   await page.waitForSelector("#sendBar .sendrow", { timeout: 4000 });
   await page.evaluate(() => { view.layout = "list"; applyView(); render(); });

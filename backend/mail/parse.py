@@ -23,6 +23,7 @@ _MAX_TEXT = 200_000
 
 HEADER_FIELDS = (
     "FROM REPLY-TO TO CC DELIVERED-TO X-ORIGINAL-TO SUBJECT DATE MESSAGE-ID REFERENCES CONTENT-TYPE X-ENVELIQ-REMINDER LIST-UNSUBSCRIBE AUTHENTICATION-RESULTS"
+    " AUTO-SUBMITTED PRECEDENCE LIST-ID X-AUTO-RESPONSE-SUPPRESS X-AUTOREPLY X-AUTORESPONDER"
 )
 
 # Domains used by alias / relay services. A reply to one of these goes to the
@@ -141,6 +142,16 @@ def file_count(msg: Message) -> int:
     return n
 
 
+def is_automated(msg: Any) -> bool:
+    """Mail a program sent: a list, a newsletter, an automatic reply, or a message that asks not to be answered automatically."""
+    auto = clean(msg.get("Auto-Submitted"), 80).lower()
+    if auto and auto != "no":
+        return True
+    if clean(msg.get("Precedence"), 40).lower() in ("bulk", "junk", "list", "auto_reply"):
+        return True
+    return any(msg.get(h) for h in ("List-Id", "List-Unsubscribe", "X-Auto-Response-Suppress", "X-Autoreply", "X-Autorespond"))
+
+
 def summarise_headers(raw: bytes, identities: list[str]) -> dict[str, Any] | None:
     """What Enveliq keeps about an incoming email: who, what subject, and what
     a reply will need. Returns None when there is nobody to reply to *and*
@@ -206,6 +217,7 @@ def summarise_headers(raw: bytes, identities: list[str]) -> dict[str, Any] | Non
         "message_id": message_id,
         "received_at": _received_at(msg),
         "reminder_mark": clean(msg.get("X-Enveliq-Reminder"), 80) or None,
+        "automated": is_automated(msg),
         "unsubscribe": unsub.from_header(msg),
         "scam_warning": scamcheck.from_headers(msg),
         "has_attachments": likely_has_files(msg),

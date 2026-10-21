@@ -440,6 +440,19 @@ class EnveliqApi(address: String) {
     /** The signature the person saved on the website, or empty. */
     fun signature(): String = JSONObject(call("GET", "/api/v1/me/saved")).str("signature")
 
+    /** The signature for one sending address (plain text; formatting set on the website is not shown here), else the main one. */
+    fun signatureFor(address: String?): String {
+        val saved = JSONObject(call("GET", "/api/v1/me/saved"))
+        val arr = saved.optJSONArray("signatures")
+        if (address != null && arr != null) {
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                if (o.str("address").equals(address, ignoreCase = true) && o.str("text").isNotBlank()) return o.str("text")
+            }
+        }
+        return saved.str("signature")
+    }
+
     /** Takes back an email that is still waiting out its "undo send" time. */
     fun cancelSend(outboxId: String) {
         call("DELETE", "/api/v1/me/outbox/" + enc(outboxId))
@@ -886,6 +899,23 @@ class EnveliqApi(address: String) {
             val r = arr.optJSONObject(i) ?: return@mapNotNull null
             Rule(r.str("id"), r.str("sender"), r.str("subject"), r.str("action"))
         }
+    }
+
+    /** Mutes the conversation this email belongs to: it is archived now, and later replies go to Archive without an alert. */
+    fun mute(mail: Mail) {
+        call("POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/mute")
+    }
+
+    fun mutedConversations(): List<MutedConversation> {
+        val arr = JSONObject(call("GET", "/api/v1/me/muted")).optJSONArray("items") ?: return emptyList()
+        return (0 until arr.length()).mapNotNull { i ->
+            val r = arr.optJSONObject(i) ?: return@mapNotNull null
+            MutedConversation(r.str("id"), r.str("subject"), r.optInt("count", 0))
+        }
+    }
+
+    fun unmute(id: String) {
+        call("DELETE", "/api/v1/me/muted/" + enc(id))
     }
 
     fun deleteRule(id: String) {

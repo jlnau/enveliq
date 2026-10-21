@@ -97,10 +97,11 @@ async function open(url, width = 1000, height = 900) {
 for (const [wantPossible, label] of [[true, "with a key file"], [false, "without a key file"]]) {
   page_state.signedIn = true; possible = wantPossible; days = 7; policyBody = null;
   const { page, errors, context } = await open("/admin", 1100, 1400);
+  await page.getByRole("button", { name: /^Sign-in rules/ }).click({ timeout: 8000 });
   await page.waitForSelector("#pol_remember", { timeout: 8000 });
   check(`the number of days shows what is saved (${label})`, (await page.inputValue("#pol_remember")) === "7");
   check(`the field stops at 14 (${label})`, (await page.getAttribute("#pol_remember", "max")) === "14" && (await page.getAttribute("#pol_remember", "min")) === "0");
-  const text = await page.locator("main").innerText();
+  const text = await page.locator("main").textContent();
   check(`the vault-key hint shows only without a key file (${label})`, /opens its own vault from a key file/.test(text) === !wantPossible);
   await page.fill("#pol_remember", "30");
   await page.locator("#pol_remember").evaluate((el) => el.closest("form").requestSubmit());

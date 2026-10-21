@@ -108,6 +108,9 @@ data class Section<T>(val enabled: Boolean, val items: List<T>)
 /** A rule: email from [sender] (and, when set, with [subject] words) gets [action] ("archived", "reviewed" or "junked"). */
 data class Rule(val id: String, val sender: String, val subject: String, val action: String)
 
+/** A conversation the person muted: later replies go to Archive without an alert. */
+data class MutedConversation(val id: String, val subject: String, val count: Int)
+
 /** Where the newest Android app is published. */
 const val APP_DOWNLOAD_PAGE = "https://github.com/jlnau/enveliq/releases/latest"
 

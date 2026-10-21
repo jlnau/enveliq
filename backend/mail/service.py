@@ -27,6 +27,7 @@ MAIL_METHODS = ("proton_bridge", "imap")   # account types that sync
 from . import scamcheck
 from . import subscriptions as subscriptions_mod
 from . import outhtml
+from .muted import thread_ids
 from .parse import _addresses, clean, forward_files, forward_quote, forward_quote_parts, parse_headers, reply_quote_parts, received_at_of, render_original, reply_quote, sending_identities, summarise_headers
 
 log = logging.getLogger("enveliq.mail")
@@ -315,7 +316,8 @@ class MailService:
                         ai_pending=hold,
                     )
                     new_id = vault.create_message(account_id, body.model_dump(mode="python"))
-                    arrived.append({"id": new_id, "sender_address": info["sender_address"], "subject": info["subject"]})
+                    arrived.append({"id": new_id, "sender_address": info["sender_address"], "subject": info["subject"], "automated": info["automated"],
+                                    "ids": thread_ids(info["reply_context"])})
                     people.append((info["sender_display"], info["sender_address"]))
                     if info["message_id"]:
                         known_ids.add(info["message_id"])
@@ -720,7 +722,7 @@ class MailService:
                 with self.bridge.session(target) as s:
                     s.select_folder(s.folder_for("sent"), True)
                     uids = s.recent_uids(self.WAIT_DAYS, 100)
-                    for uid, raw in s.header_blocks(uids, "TO CC SUBJECT DATE MESSAGE-ID IN-REPLY-TO X-ENVELIQ-REMINDER"):
+                    for uid, raw in s.header_blocks(uids, "TO CC SUBJECT DATE MESSAGE-ID IN-REPLY-TO X-ENVELIQ-REMINDER AUTO-SUBMITTED"):
                         msg = parse_headers(raw)
                         mid = clean(msg.get("Message-ID"), 320)
                         if not mid:
@@ -733,6 +735,9 @@ class MailService:
                             continue
                         if marks.ours(vault, mid, clean(msg.get("X-Enveliq-Reminder"), 200)):
                             pending.append({"mark": mark, "skip": True})                # Enveliq's own reminder emails
+                            continue
+                        if clean(msg.get("Auto-Submitted"), 40).lower() not in ("", "no"):
+                            pending.append({"mark": mark, "skip": True})                # an automatic reply (such as an away reply): nobody is expected to answer it
                             continue
                         to = _addresses(msg, "To")[:20] + _addresses(msg, "Cc")[:20]
                         others = [(n, a) for n, a in to if a.lower() not in mine]
@@ -942,7 +947,7 @@ class MailService:
                     to: list[str] | None = None, cc: list[str] | None = None, bcc: list[str] | None = None,
                     kind: str = "reply", add_original: bool = True, files: list[dict[str, str]] | None = None,
                     subject: str | None = None, html: str | None = None,
-                    images: list[dict[str, str]] | None = None) -> tuple[EmailMessage, str, list[str]]:
+                    images: list[dict[str, str]] | None = None, auto: bool = False) -> tuple[EmailMessage, str, list[str]]:
         """A reply. Unless the person already put the original into their own message (add_original False), the whole
         original email is fetched from the mailbox now and quoted under their words. It is never kept."""
         ctx = message.get("reply_context")
@@ -968,6 +973,10 @@ class MailService:
         msg["Subject"] = own or (subject if re.match(r"(?i)^re:", subject) else f"Re: {subject}")      # the person may have edited the subject
         msg["Date"] = format_datetime(datetime.now(timezone.utc))
         msg["Message-ID"] = make_msgid(domain=chosen.rsplit("@", 1)[1])
+        if auto:                                                                  # an away reply: says it is automatic so nothing answers it
+            msg["Auto-Submitted"] = "auto-replied"
+            msg["X-Auto-Response-Suppress"] = "All"
+            msg["Precedence"] = "bulk"
         original_id = ctx.get("message_id")
         if original_id and _ANGLE_ID.match(original_id):
             msg["In-Reply-To"] = original_id

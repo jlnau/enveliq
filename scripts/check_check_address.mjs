@@ -64,6 +64,7 @@ async function open(width, height) {
   await page.evaluate(() => { openSettings("admin"); });
   await page.waitForTimeout(300);
   await page.evaluate(() => { document.querySelector('#settingsNav [data-settings-tab~="admincheck"]').click(); });
+  await page.evaluate(() => openPanel("admincheck", { tab: "sync" }));
   await page.waitForSelector('[data-settings-panel="admincheck"] .embed-host', { state: "attached" });
   await page.locator('[data-settings-panel="admincheck"] .embed-host').locator("#ck_account").waitFor({ timeout: 8000 });
   const host = page.locator('[data-settings-panel="admincheck"] .embed-host');

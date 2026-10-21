@@ -561,6 +561,23 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         }
     }
 
+    // Mute: this email is archived and later replies in the conversation go to Archive without an alert. Unmute is under Settings.
+    fun mute(mail: Mail) {
+        val at = mails.indexOf(mail).coerceAtLeast(0)
+        mails.remove(mail)
+        Notifier.clearOne(activity, mail.id)
+        opened = null
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) { api.mute(mail) }
+                snack.showSnackbar("Muted. New replies go to Archive and will not alert you. Unmute it in Settings, Muted conversations.")
+            } catch (e: Exception) {
+                mails.add(at.coerceAtMost(mails.size), mail)
+                snack.showSnackbar((e as? ApiException)?.message ?: "That did not work. The email is back in your list.")
+            }
+        }
+    }
+
     // Snooze: the email leaves the list until the time you pick, then comes back. Undo brings it back at once.
     fun snooze(mail: Mail, until: Long, label: String) {
         val at = mails.indexOf(mail).coerceAtLeast(0)
@@ -749,12 +766,12 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 Row(Modifier.fillMaxSize()) {
                     Box(Modifier.weight(0.42f).fillMaxHeight()) { inboxPane() }
                     Box(Modifier.weight(0.58f).fillMaxHeight()) {
-                        if (current != null) DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion)
+                        if (current != null) DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion, onMute = { mute(current) })
                         else Text("Choose an email to read it here.", color = Muted, fontSize = 16.sp, modifier = Modifier.padding(32.dp))
                     }
                 }
             } else if (current != null) {
-                DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion)
+                DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion, onMute = { mute(current) })
             } else {
                 when (tab) {
                     Tab.Inbox -> inboxPane()
@@ -1080,7 +1097,7 @@ private fun MailRow(mail: Mail, picked: Boolean, fresh: Boolean, tags: List<Stri
 }
 
 @Composable
-private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit, onJunk: (Boolean) -> Unit, onAskedSummary: () -> Unit = {}, taskVersion: Int = 0) {
+private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit, onJunk: (Boolean) -> Unit, onAskedSummary: () -> Unit = {}, taskVersion: Int = 0, onMute: () -> Unit = {}) {
     var summaryAsked by remember(mail.id) { mutableStateOf(false) }
     var showOriginal by remember(mail.id) { mutableStateOf(false) }
     var unsubLink by remember(mail.id) { mutableStateOf<String?>(null) }
@@ -1217,6 +1234,7 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
                         )
                         DropdownMenuItem(text = { Text("Send to Junk", color = Ink) }, onClick = { moreMenu = false; onJunk(false) })
                         if (mail.address.isNotBlank()) DropdownMenuItem(text = { Text("Block sender", color = Ink) }, onClick = { moreMenu = false; askBlock = true })
+                        DropdownMenuItem(text = { Text("Mute conversation", color = Ink) }, onClick = { moreMenu = false; onMute() })
                         if (mail.unsubUrl != null || mail.unsubMailto != null) DropdownMenuItem(text = { Text("Unsubscribe from this sender", color = Ink) }, onClick = {
                             moreMenu = false
                             if (mail.unsubUrl != null) unsubLink = mail.unsubUrl
@@ -1309,6 +1327,8 @@ private fun SnoozeChoices(onPick: (Long, String) -> Unit, onCancel: () -> Unit) 
                     val toMonday = ((Calendar.MONDAY - c.get(Calendar.DAY_OF_WEEK) + 7) % 7).let { if (it == 0) 7 else it }
                     onPick(at(toMonday, 8), "on Monday morning")
                 }) { Text("Next Monday morning", color = Blue, fontSize = 16.sp) }
+                val context = androidx.compose.ui.platform.LocalContext.current
+                TextButton(onClick = { pickDateAndTime(context) { ms, words -> onPick(ms, words) } }) { Text("Pick date and time…", color = Blue, fontSize = 16.sp) }
             }
         },
         confirmButton = {},

@@ -61,6 +61,8 @@ const NAV = [
     ["docs/IMPORTANT_PEOPLE.md", "Important people"],
     ["docs/SAVED_REPLIES.md", "Signature and saved replies"],
     ["docs/MAIL_RULES.md", "Mail rules"],
+    ["docs/MUTE.md", "Mute a conversation"],
+    ["docs/AWAY_REPLY.md", "Away reply"],
     ["docs/JUNK_MAIL.md", "Junk mail and blocking"],
     ["docs/WRITING_HELP.md", "Writing help"],
     ["docs/SCAM_WARNING.md", "The Be careful flag"],

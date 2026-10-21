@@ -1,14 +1,18 @@
 # Send later
 
-Write an email now and have Enveliq send it at a time you choose. In **New email**, **Reply** and **Forward**, press **Later** beside Send, then pick a time (this evening, tomorrow morning, Monday morning, or your own date and time). The message is not sent now.
+Write an email now and have Enveliq send it at a time you choose. In **New email**, **Reply** and **Forward**, press **Later** beside Send, then pick a time (later today, tomorrow, this weekend, next week, or **Pick date and time** for any day and time you like, up to a year ahead, in your own time zone). The message is not sent now.
 
 ## Where it waits
 
 Waiting emails are listed under **Sent, Waiting to send** on the website, and **More, Waiting to send** in the Android app. Each shows who it is for, the subject and when it will go. **Take it back** removes it at once and puts your words back so you can change them.
 
+## Pick date and time
+
+Besides the ready-made times, **Pick date and time** lets you choose any day and time from one minute ahead to a year ahead. The website shows your browser's own date and time box; Android shows the phone's own day picker and then its time picker. Both use your own time zone. A time that has already passed is refused in plain words, and nothing is sent.
+
 ## Rules
 
-- The time must be at least 30 seconds ahead and at most 30 days away. You can have up to 20 waiting at once.
+- The time must be at least 30 seconds ahead and at most a year away. You can have up to 20 waiting at once.
 - It goes out from the mailbox you chose, at the time you chose, even if you are signed out or the page is closed. A reply waiting to go still marks the email as replied when it is sent.
 - The usual send checks run when you schedule it (addresses, size), and again when it is sent.
 - **Files cannot wait.** Enveliq never keeps attachments, so an email with files cannot be scheduled. Send it now, or schedule the words and attach nothing.

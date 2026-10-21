@@ -12,11 +12,11 @@ Open an email in your list and press **Snooze**. Choose when it should come back
 - **Tomorrow**: 8 am tomorrow.
 - **This weekend**: Saturday at 8 am (offered on weekdays).
 - **Next week**: Monday at 8 am.
-- **Pick a date**: 8 am on the day you choose, from tomorrow up to a year away.
+- **Pick date and time**: any day and time you choose, from a minute ahead up to a year away. On Android the phone's own day and time pickers open. A time that has already passed is refused.
 
 Each choice shows the day and time it means, in your own time zone, before you press it.
 
-![The inbox with a Snooze menu open under an email. The choices are Later today, Tomorrow, This weekend and Next week, each with its day and time, and a Pick a date box underneath.](images/snooze.png)
+![The inbox with a Snooze menu open under an email. The choices are Later today, Tomorrow, This weekend and Next week, each with its day and time, and a Pick date and time box underneath.](images/snooze.png)
 
 ## Where it goes
 
