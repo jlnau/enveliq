@@ -26,6 +26,7 @@ class DraftBody(StrictModel):
     bcc: list[str] = Field(default_factory=list, max_length=MAX_PEOPLE)
     subject: str = Field(default="", max_length=900)
     body: str = Field(default="", max_length=MAX_BODY)
+    html: str | None = Field(default=None, max_length=300_000)       # the formatted version of `body` (pictures are not kept in drafts)
 
 
 def build_drafts_router(ctx: Any) -> APIRouter:

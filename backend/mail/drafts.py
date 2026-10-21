@@ -17,6 +17,7 @@ RECORD_PREFIX = "drafts:"
 KEEP_SECONDS = 14 * 86400
 MAX_DRAFTS = 50
 MAX_BODY = 100_000
+MAX_HTML = 300_000                # the formatted version of the body (pictures are not kept in drafts)
 MAX_PEOPLE = 50
 KINDS = ("new", "reply", "reply_all", "forward")
 _LOCK = threading.Lock()
@@ -50,7 +51,7 @@ class Drafts:
         self.vault.set_global(RECORD_PREFIX + user_id, {"items": items})
 
     def _public(self, d: dict[str, Any]) -> dict[str, Any]:
-        return {**{k: d.get(k) for k in ("id", "kind", "account_id", "message_id", "from_address", "to", "cc", "bcc", "subject", "body", "created", "updated")},
+        return {**{k: d.get(k) for k in ("id", "kind", "account_id", "message_id", "from_address", "to", "cc", "bcc", "subject", "body", "html", "created", "updated")},
                 "expires": float(d.get("updated", 0)) + KEEP_SECONDS}
 
     def listing(self, user_id: str) -> list[dict[str, Any]]:
@@ -70,6 +71,7 @@ class Drafts:
         to, cc, bcc = _people(data.get("to")), _people(data.get("cc")), _people(data.get("bcc"))
         subject = _line(data.get("subject"), 900)
         body = _CTRL.sub("", str(data.get("body") or "").replace("\r\n", "\n").replace("\r", "\n"))[:MAX_BODY]
+        html = str(data.get("html") or "")[:MAX_HTML] or None
         if not (to or cc or bcc or subject or body.strip()):
             raise DraftError("There is nothing to save yet.")
         now = self.clock()
@@ -83,7 +85,7 @@ class Drafts:
             fresh = {"id": old["id"] if old else "d" + secrets.token_hex(8), "kind": kind,
                      "account_id": _line(data.get("account_id"), 64) or None, "message_id": _line(data.get("message_id"), 64) or None,
                      "from_address": _line(data.get("from_address"), 320) or None, "to": to, "cc": cc, "bcc": bcc,
-                     "subject": subject, "body": body, "created": old["created"] if old else now, "updated": now}
+                     "subject": subject, "body": body, "html": html, "created": old["created"] if old else now, "updated": now}
             self._save(user_id, [d for d in items if d["id"] != fresh["id"]] + [fresh])
         return self._public(fresh)
 

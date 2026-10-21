@@ -27,6 +27,7 @@ MIN_AHEAD = 30                    # seconds: closer than this is just "send now"
 MAX_AHEAD = 30 * 86400
 KEEP_FAILED = 7 * 86400
 MAX_BODY = 100_000
+MAX_HTML = 300_000                # formatted text kept with a waiting email (pictures are not kept)
 MAX_PEOPLE = 50
 _LOCK = threading.Lock()
 _CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
@@ -85,10 +86,11 @@ class ScheduledMail:
         if send_at > now + MAX_AHEAD:
             raise ScheduleError("An email can wait up to 30 days.")
         body = _CTRL.sub("", str(data.get("body") or "").replace("\r\n", "\n").replace("\r", "\n"))[:MAX_BODY]
+        html = str(data.get("html") or "")[:MAX_HTML] or None
         item = {"id": "s" + secrets.token_hex(8), "kind": kind, "account_id": _line(data.get("account_id"), 64),
                 "message_id": _line(data.get("message_id"), 64) or None, "from_address": _line(data.get("from_address"), 320) or None,
                 "to": _people(data.get("to")), "cc": _people(data.get("cc")), "bcc": _people(data.get("bcc")),
-                "subject": _line(data.get("subject"), 900), "body": body, "send_at": send_at, "created": now, "state": "pending"}
+                "subject": _line(data.get("subject"), 900), "body": body, "html": html, "send_at": send_at, "created": now, "state": "pending"}
         with _LOCK:
             items = self._load(user_id)
             if sum(1 for d in items if d.get("state") == "pending") >= MAX_ITEMS:
@@ -105,7 +107,7 @@ class ScheduledMail:
                 return None
             self._save(user_id, [d for d in items if d["id"] != item_id])
         return {**self.public(found), "body": found.get("body", ""), "to_list": found.get("to") or [], "cc_list": found.get("cc") or [],
-                "bcc_list": found.get("bcc") or [], "from_address": found.get("from_address")}
+                "bcc_list": found.get("bcc") or [], "from_address": found.get("from_address"), "html": found.get("html")}
 
     def forget_user(self, user_id: str) -> None:
         self.vault.set_global(RECORD_PREFIX + user_id, {})
@@ -180,14 +182,14 @@ class ScheduledSender:
                 raise BridgeError("not_found", "That mailbox is not yours.")
             kind = item["kind"]
             if kind == "new":
-                built = self.service.build_new(account, item["to"], item["cc"], item["bcc"], item["subject"], item["body"], item.get("from_address"), [])
+                built = self.service.build_new(account, item["to"], item["cc"], item["bcc"], item["subject"], item["body"], item.get("from_address"), [], item.get("html"))
             else:
                 message = self.vault.get_message(item["account_id"], item["message_id"])
                 if kind == "forward":
-                    built = self.service.build_forward(account, message, item["body"], item.get("from_address"), item["to"], item["cc"], item["bcc"], None, None, item.get("subject") or None)
+                    built = self.service.build_forward(account, message, item["body"], item.get("from_address"), item["to"], item["cc"], item["bcc"], None, None, item.get("subject") or None, item.get("html"))
                 else:
                     built = self.service.build_reply(account, message, item["body"], item.get("from_address"), item["to"] or None,
-                                                     item["cc"] or None, item["bcc"] or None, kind, True, None, item.get("subject") or None)
+                                                     item["cc"] or None, item["bcc"] or None, kind, True, None, item.get("subject") or None, item.get("html"))
             self.service.bridge.send(self.service.target(account), built[0], built[1], built[2])
         except BridgeError as err:
             error = err.message or err.code

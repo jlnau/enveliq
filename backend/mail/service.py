@@ -26,7 +26,8 @@ AI_CONFIG_RECORD = "ai_config"
 MAIL_METHODS = ("proton_bridge", "imap")   # account types that sync
 from . import scamcheck
 from . import subscriptions as subscriptions_mod
-from .parse import _addresses, clean, forward_files, forward_quote, parse_headers, received_at_of, render_original, reply_quote, sending_identities, summarise_headers
+from . import outhtml
+from .parse import _addresses, clean, forward_files, forward_quote, forward_quote_parts, parse_headers, reply_quote_parts, received_at_of, render_original, reply_quote, sending_identities, summarise_headers
 
 log = logging.getLogger("enveliq.mail")
 PLACEHOLDER_SUMMARY = "Not summarised yet."
@@ -859,8 +860,28 @@ class MailService:
             name = clean(str(f.get("name") or "attachment").replace("\\", "/").split("/")[-1], 200) or "attachment"
             msg.add_attachment(data, maintype=main, subtype=sub, filename=name)
 
+    def set_content(self, msg: EmailMessage, text: str, html: str | None = None, images: list[dict[str, str]] | None = None, tail_html: str = "") -> None:
+        """The message's words. With formatted text (html) it goes as plain text plus the formatted version, and pictures added to the
+        message travel inside it. The formatted text is rebuilt from allowed parts first (see outhtml); [tail_html] is the quoted
+        original, already safe."""
+        msg.set_content(text)
+        if not outhtml.has_content(html, images):
+            return
+        try:
+            pics = outhtml.check_images(list(images or []))
+            cids = {name: make_msgid(domain="enveliq.invalid")[1:-1] for name, _, _ in pics}
+            safe = outhtml.clean_html(html or "", cids)
+        except outhtml.OutHtmlError as err:
+            raise BridgeError("too_large", str(err)) from None
+        msg.add_alternative('<html><body><div dir="auto" style="font-family:sans-serif;font-size:14px">' + safe + "</div>" + tail_html + "</body></html>", subtype="html")
+        part = msg.get_body(preferencelist=("html",))
+        for name, ctype, data in pics:
+            main, _, sub = ctype.partition("/")
+            part.add_related(data, maintype=main, subtype=sub, cid=f"<{cids[name]}>", disposition="inline")
+
     def build_new(self, account: dict[str, Any], to: list[str], cc: list[str], bcc: list[str], subject: str, body: str,
-                  from_address: str | None, files: list[dict[str, str]]) -> tuple[EmailMessage, str, list[str]]:
+                  from_address: str | None, files: list[dict[str, str]], html: str | None = None,
+                  images: list[dict[str, str]] | None = None) -> tuple[EmailMessage, str, list[str]]:
         identities = {i.lower(): i for i in sending_identities(account)}
         mailbox = str(account.get("email_address") or "")
         chosen = identities.get((from_address or mailbox).lower())
@@ -880,7 +901,7 @@ class MailService:
         msg["Subject"] = clean(subject, 900) or "(no subject)"
         msg["Date"] = format_datetime(datetime.now(timezone.utc))
         msg["Message-ID"] = make_msgid(domain=chosen.rsplit("@", 1)[1])
-        msg.set_content(body.replace("\r\n", "\n"))
+        self.set_content(msg, body.replace("\r\n", "\n"), html, images)
         self.attach_files(msg, files)
         recipients = [a.addr_spec for a in to_a + cc_a + bcc_a]
         return msg, chosen, recipients
@@ -920,7 +941,8 @@ class MailService:
     def build_reply(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None,
                     to: list[str] | None = None, cc: list[str] | None = None, bcc: list[str] | None = None,
                     kind: str = "reply", add_original: bool = True, files: list[dict[str, str]] | None = None,
-                    subject: str | None = None) -> tuple[EmailMessage, str, list[str]]:
+                    subject: str | None = None, html: str | None = None,
+                    images: list[dict[str, str]] | None = None) -> tuple[EmailMessage, str, list[str]]:
         """A reply. Unless the person already put the original into their own message (add_original False), the whole
         original email is fetched from the mailbox now and quoted under their words. It is never kept."""
         ctx = message.get("reply_context")
@@ -952,22 +974,25 @@ class MailService:
             refs = [r for r in ctx.get("references", []) if _ANGLE_ID.match(r)][-49:] + [original_id]
             msg["References"] = " ".join(refs)
         text = body.replace("\r\n", "\n").rstrip()
+        tail = ""
         if add_original:
             try:
-                quoted = reply_quote(self.original_raw(account, message))
+                head, quoted_text = reply_quote_parts(self.original_raw(account, message))
             except BridgeError as err:
                 if err.code == "not_found":
                     raise BridgeError("not_found", "Enveliq could not find the original email to quote, so nothing was sent. Sync and try again.") from None
                 raise
-            text = text + "\n\n" + quoted
-        msg.set_content(text)
+            text = text + "\n\n" + head + "\n" + "\n".join(("> " + line) if line else ">" for line in quoted_text.split("\n"))
+            tail = outhtml.quote_block_html(head, quoted_text)
+        self.set_content(msg, text, html, images, tail)
         if files:
             self.attach_files(msg, files)
         return msg, chosen, [a.addr_spec for a in to_a + cc_a + bcc_a]
 
     def build_forward(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None,
                       to: list[str], cc: list[str], bcc: list[str], keep_files: list[int] | None,
-                      extra_files: list[dict[str, str]] | None = None, subject: str | None = None) -> tuple[EmailMessage, str, list[str]]:
+                      extra_files: list[dict[str, str]] | None = None, subject: str | None = None, html: str | None = None,
+                      images: list[dict[str, str]] | None = None) -> tuple[EmailMessage, str, list[str]]:
         """Forward an email: the original is fetched from the mailbox now, quoted under the person's note, and never kept.
         keep_files are the numbers of the original's files to send along (None sends all of them)."""
         ctx = message.get("reply_context") or {}
@@ -975,7 +1000,7 @@ class MailService:
         to_a, cc_a, bcc_a = self._people(to, cc, bcc)
         raw = self.original_raw(account, message)
         original = parse_headers(raw)
-        quoted = forward_quote(raw)
+        quote_head, quote_text = forward_quote_parts(raw)
         msg = EmailMessage(policy=SMTP_POLICY)
         msg["From"] = chosen
         if to_a:
@@ -988,7 +1013,7 @@ class MailService:
         msg["Date"] = format_datetime(datetime.now(timezone.utc))
         msg["Message-ID"] = make_msgid(domain=chosen.rsplit("@", 1)[1])
         note = body.replace("\r\n", "\n").rstrip()
-        msg.set_content((note + "\n\n" if note else "") + quoted)
+        self.set_content(msg, (note + "\n\n" if note else "") + quote_head + "\n" + quote_text, html, images, outhtml.forward_block_html(quote_head, quote_text))
         files = forward_files(raw, keep_files)
         if len(files) > self.MAX_FILES:
             raise BridgeError("too_large", f"Attach at most {self.MAX_FILES} files.")

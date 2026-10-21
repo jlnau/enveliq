@@ -41,6 +41,8 @@ class Item:
     draft: dict[str, Any] | None = None   # a new email's recipients and subject, handed back on undo
     on_sent: Callable[[], None] | None = None
     kind: str = "reply"                # reply, reply_all or forward (a new email has a draft instead)
+    html: str | None = None            # the formatted version of the person's words and its pictures, handed back on undo
+    images: list[dict[str, str]] | None = None
     id: str = field(default_factory=lambda: uuid.uuid4().hex)
     state: str = "pending"            # pending, sending, sent, failed
     error: str | None = None
@@ -61,14 +63,15 @@ class Outbox:
     # ---------- queue ----------
 
     def enqueue(self, user_id: str, account_id: str, message_id: str | None, built: tuple[EmailMessage, str, list[str]], body: str, delay: float,
-                draft: dict[str, Any] | None = None, on_sent: Callable[[], None] | None = None, kind: str = "reply") -> Item:
+                draft: dict[str, Any] | None = None, on_sent: Callable[[], None] | None = None, kind: str = "reply",
+                html: str | None = None, images: list[dict[str, str]] | None = None) -> Item:
         delay = max(1.0, min(float(delay), float(MAX_DELAY)))
         with self._lock:
             self._forget_old()
             if sum(1 for i in self._items.values() if i.user_id == user_id and i.state in ("pending", "sending")) >= MAX_PENDING:
                 raise BridgeError("busy", "Too many replies are waiting to send. Wait a moment.")
             msg, chosen, recipients = built
-            item = Item(user_id, account_id, message_id, msg, chosen, recipients, body, self.clock() + delay, draft=draft, on_sent=on_sent, kind=kind)
+            item = Item(user_id, account_id, message_id, msg, chosen, recipients, body, self.clock() + delay, draft=draft, on_sent=on_sent, kind=kind, html=html, images=images)
             self._items[item.id] = item
         self.start()
         return item

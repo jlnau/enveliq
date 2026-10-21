@@ -29,6 +29,7 @@ class ScheduleBody(StrictModel):
     bcc: list[str] = Field(default_factory=list, max_length=MAX_PEOPLE)
     subject: str = Field(default="", max_length=900)
     body: str = Field(default="", max_length=MAX_BODY)
+    html: str | None = Field(default=None, max_length=1_500_000)      # the formatted version of `body` (no pictures: they cannot wait)
     send_at: float                                                    # a Unix time in seconds
 
 
@@ -60,7 +61,7 @@ def build_scheduled_router(ctx: Any) -> APIRouter:
         try:
             # Check now what can be checked, so a mistake is found while the person is still here.
             if body.kind == "new":
-                service.build_new(account, body.to, body.cc, body.bcc, body.subject, body.body, body.from_address, [])
+                service.build_new(account, body.to, body.cc, body.bcc, body.subject, body.body, body.from_address, [], body.html)
             else:
                 if not body.message_id:
                     raise HTTPException(status_code=422, detail="Say which email this answers.")
@@ -72,7 +73,7 @@ def build_scheduled_router(ctx: Any) -> APIRouter:
                     service._people(body.to, body.cc, body.bcc)
                     service._pick_from(account, body.from_address, (message.get("reply_context") or {}).get("delivered_to"))
                 else:
-                    service.build_reply(account, message, body.body, body.from_address, body.to or None, body.cc or None, body.bcc or None, body.kind, False, None, body.subject or None)
+                    service.build_reply(account, message, body.body, body.from_address, body.to or None, body.cc or None, body.bcc or None, body.kind, False, None, body.subject or None, body.html)
             return book.add(user, body.model_dump())
         except BridgeError as err:
             raise fail(err) from None

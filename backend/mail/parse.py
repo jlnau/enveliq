@@ -368,6 +368,12 @@ def render_original(raw: bytes) -> dict[str, Any]:
 
 def forward_quote(raw: bytes) -> str:
     """The "Forwarded message" block put under a forwarded note: who, when, subject, then the text of the original."""
+    head, text = forward_quote_parts(raw)
+    return head + "\n" + text
+
+
+def forward_quote_parts(raw: bytes) -> tuple[str, str]:
+    """The same block in two pieces: the header lines (who, when, subject) and the text of the original."""
     msg = parse_headers(raw)
     sender = (_addresses(msg, "From") or [("", "")])[0]
 
@@ -384,19 +390,25 @@ def forward_quote(raw: bytes) -> str:
         head += f"Date: {date}\n"
     head += f"Subject: {clean(msg.get('Subject'), 998) or '(no subject)'}\n"
     head += line("To", _addresses(msg, "To")) + line("Cc", _addresses(msg, "Cc"))
-    return head + "\n" + shown["text"]
+    return head, shown["text"]
 
 
 def reply_quote(raw: bytes) -> str:
     """What a reply carries under the person's words: "On <date>, <name> <address> wrote:" and the whole text of the
     original, each line starting with "> ". Fetched when the reply is sent and never kept."""
+    head, text = reply_quote_parts(raw)
+    return head + "\n" + "\n".join(("> " + line) if line else ">" for line in text.split("\n"))
+
+
+def reply_quote_parts(raw: bytes) -> tuple[str, str]:
+    """The line saying who wrote the original and when, and the original's text without the "> " marks."""
     msg = parse_headers(raw)
     sender = (_addresses(msg, "From") or [("", "")])[0]
     who = (f"{sender[0]} <{sender[1]}>" if sender[0] else sender[1]) or "the sender"
     date = clean(msg.get("Date"), 100)
     head = f"On {date}, {who} wrote:" if date else f"{who} wrote:"
     text = render_original(raw)["text"].replace("\r\n", "\n").strip("\n")
-    return head + "\n" + "\n".join(("> " + line) if line else ">" for line in text.split("\n"))
+    return head, text
 
 
 def forward_files(raw: bytes, keep: list[int] | None) -> list[tuple[bytes, str, str]]:
