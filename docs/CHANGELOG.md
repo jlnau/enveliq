@@ -4,6 +4,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+No changes recorded yet.
+
+## v0.101 (2026-10-21)
+
 **Web: links in the writing box.** The link button now asks for the text to show and the address. Pressing a link in the box shows where it goes, with Change and Remove.
 
 **Web: resize pictures, and fixed top and bottom bars in the writing window.** Press a picture in the writing box and drag a corner to make it bigger or smaller; its shape stays the same and it is sent at that size. In New email, Reply and Forward the title bar and the bottom buttons now stay in place on a computer too, and only the middle scrolls.
