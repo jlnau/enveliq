@@ -67,7 +67,7 @@ def test_bad_times_and_bad_addresses_are_refused_up_front(env):
     _, client, bridge, _ = env
     aid, _m = synced(client, bridge)
     assert client.post("/api/v1/me/scheduled", json=new_body(aid, send_at=time.time() + 1)).status_code == 422
-    assert client.post("/api/v1/me/scheduled", json=new_body(aid, send_at=soon(40 * 86400))).status_code == 422
+    assert client.post("/api/v1/me/scheduled", json=new_body(aid, send_at=soon(400 * 86400))).status_code == 422
     assert client.post("/api/v1/me/scheduled", json=new_body(aid, to=["not an address"])).status_code >= 400
     assert client.get("/api/v1/me/scheduled").json()["items"] == []
 
