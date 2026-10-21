@@ -69,6 +69,7 @@ class MailViewBody(StrictModel):
     action_feedback: bool = True
     show_original: bool = False
     conversations: bool = False
+    style: str = Field(default="classic", pattern=r"^(classic|rail)$")
 
 
 class MailContextBody(StrictModel):

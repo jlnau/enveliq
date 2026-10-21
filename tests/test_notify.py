@@ -483,6 +483,14 @@ def test_mail_view_preferences_stored_per_user_in_vault(env):
     assert client.put("/api/v1/me/mail-view", json=shown).status_code == 200
     assert client.get("/api/v1/me/mail-view").json()["view"]["show_original"] is True
     assert client.put("/api/v1/me/mail-view", json={**chosen, "show_original": "yes please"}).status_code == 422
+    # The email style is "classic" to begin with, can be set to the side rail, and nothing else is accepted.
+    assert client.get("/api/v1/me/mail-view").json()["view"].get("style", "classic") == "classic"
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "style": "rail"}).status_code == 200
+    assert client.get("/api/v1/me/mail-view").json()["view"]["style"] == "rail"
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "style": "neon"}).status_code == 422
+    # An older browser that does not know about the style must not reset it.
+    assert client.put("/api/v1/me/mail-view", json=chosen).status_code == 200
+    assert client.get("/api/v1/me/mail-view").json()["view"]["style"] == "rail"
 
 
 def test_mail_context_is_private_and_validated(env):

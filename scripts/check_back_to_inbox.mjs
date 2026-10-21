@@ -60,7 +60,7 @@ await p.evaluate(() => { const l = document.getElementById("sentList"); l.innerH
 await p.waitForTimeout(200);
 const after = await p.evaluate(() => ({ t: document.querySelector(".top-left h2").getBoundingClientRect().left, b: document.querySelector("#backInbox").getBoundingClientRect().left, n: document.querySelector(".sent-note").getBoundingClientRect().left, long: document.documentElement.scrollHeight > innerHeight }));
 check("Sent: nothing moves sideways when the emails load and the page becomes long enough to scroll", after.long && Math.abs(after.t - before.t) < 0.5 && Math.abs(after.b - before.b) < 0.5 && Math.abs(after.n - before.n) < 0.5);
-check("Sent: the line under the title says what the page is, like the other pages, not the inbox summary", /last 14 days of sent mail/.test(await p.locator("#inboxSubtitle").innerText()) && !/need you/.test(await p.locator("#inboxSubtitle").innerText()));
+check("Sent: the line under the title says what the page is, like the other pages, not the inbox summary", /last 4 months of sent mail/.test(await p.locator("#inboxSubtitle").innerText()) && !/need you/.test(await p.locator("#inboxSubtitle").innerText()));
 if (shots) await p.screenshot({ path: path.join(shots, "back-sent.png") });
 await p.click("#backInbox"); await p.waitForTimeout(300);
 check("Sent: Back to My inbox goes home and lights up My inbox in the menu", (await p.locator(".top-left h2").innerText()) === "My inbox" && !(await vis("#sentView")) && (await p.locator('.nav[data-filter="all"].active').count()) === 1);

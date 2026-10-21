@@ -153,6 +153,16 @@ def test_the_summary_is_the_held_list_newest_first_and_knows_when_it_is_unseen()
     assert book.view("u1")["unread"] is True
 
 
+def test_each_item_says_how_many_files_the_email_has():
+    book, vault, _ = make([msg(1, when=at(21, 6))])
+    book.hold_pass("u1")
+    vault.messages["a1"] += [msg(2, when=at(21, 8), attachment_count=3, has_attachments=True), msg(3, when=at(21, 8, 10), has_attachments=True), msg(4, when=at(21, 8, 20))]
+    book.clock_box["t"] = at(21, 8, 40)
+    book.hold_pass("u1")
+    counts = {i["message_id"]: i["attachments"] for i in book.view("u1")["items"]}
+    assert counts == {"m2": 3, "m3": 1, "m4": 0}
+
+
 def test_handling_an_email_anywhere_takes_it_out_of_the_summary():
     book, vault, _ = make([msg(1, when=at(21, 6))])
     book.hold_pass("u1")

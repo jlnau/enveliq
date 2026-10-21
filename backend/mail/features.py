@@ -13,7 +13,7 @@ KEYS = ("compose", "address_book", "sent", "media", "all_mail", "shipping", "sub
 LABELS = {
     "compose": "New email",
     "address_book": "Address book",
-    "sent": "Sent (last 14 days)",
+    "sent": "Sent (last 4 months)",
     "media": "Pictures and attachment previews",
     "all_mail": "Include read mail (last 60 days)",
     "shipping": "Shipping (follow online orders)",

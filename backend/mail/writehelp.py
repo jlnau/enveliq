@@ -198,9 +198,12 @@ def quick_fix(summariser: Any, subject: str, draft: str, guide: str = "") -> dic
     guide = clean(guide, STYLE_MAX)
     if guide:
         system += "\n\nHow this person usually writes (only so that you keep their voice; never add anything because of it):\n" + guide
-    turn = ("[SUBJECT: data]\n" + subject + "\n[END OF SUBJECT]\n\n[EMAIL TEXT: data]\n" + draft + "\n[END OF EMAIL TEXT]")
+    # The turn has the same shape as the answer, so the AI cannot mistake a label for the subject.
+    turn = "SUBJECT:\n" + subject + "\nBODY:\n" + draft
     answer = summariser.chat(system, [{"role": "user", "content": turn}], max_tokens=1500, timeout=TIMEOUT)
     fixed_subject, fixed_body = parse_quick(answer)
-    if not quick_ok(draft, fixed_body) or (subject and not quick_ok(subject, fixed_subject)) or (not subject and fixed_subject):
+    if not quick_ok(draft, fixed_body):
         raise BridgeError("quick_unsafe", "Quick AI Send could not check this safely, so nothing was sent. Your draft is unchanged.")
-    return {"subject": fixed_subject if subject else "", "text": fixed_body, "changed": fixed_body != draft or (bool(subject) and fixed_subject != subject)}
+    if not subject or not quick_ok(subject, fixed_subject):
+        fixed_subject = subject  # a subject the AI changed too much is kept exactly as written
+    return {"subject": fixed_subject, "text": fixed_body, "changed": fixed_body != draft or (bool(subject) and fixed_subject != subject)}

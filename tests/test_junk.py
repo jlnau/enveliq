@@ -209,3 +209,26 @@ def test_an_email_with_broken_characters_does_not_stop_the_list(env):
     account(client, bridge)
     got = client.post("/api/v1/junk/refresh")
     assert got.status_code == 200 and got.json()["total"] == 3 and got.json()["problems"] == []
+
+
+def test_mail_moved_out_of_junk_by_hand_is_picked_up_while_unread(env):
+    """The same move done in the mail app itself (not through Enveliq): the email gets a new place in the Inbox and, if still unread, appears."""
+    appm, client, bridge, _ = env
+    aid = account(client, bridge)
+    assert client.post(f"/api/v1/accounts/{aid}/sync", json={}).status_code == 200
+    before = {m["subject"] for m in appm.vault.list_messages(aid)}
+    assert "Your invoice" not in before
+    bridge.messages[902]["folder"] = "INBOX"
+    assert client.post(f"/api/v1/accounts/{aid}/sync", json={}).status_code == 200
+    assert "Your invoice" in [m["subject"] for m in appm.vault.list_messages(aid)]
+
+
+def test_mail_moved_out_of_junk_by_hand_after_reading_is_only_in_include_read_mail(env):
+    """Read mail is not part of the unread inbox by design; it is listed by Include read mail."""
+    appm, client, bridge, _ = env
+    aid = account(client, bridge)
+    assert client.post(f"/api/v1/accounts/{aid}/sync", json={}).status_code == 200
+    bridge.messages[902]["flags"].add("\\Seen")
+    bridge.messages[902]["folder"] = "INBOX"
+    assert client.post(f"/api/v1/accounts/{aid}/sync", json={}).status_code == 200
+    assert "Your invoice" not in [m["subject"] for m in appm.vault.list_messages(aid)]

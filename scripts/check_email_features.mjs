@@ -1,5 +1,5 @@
 // Browser check for the optional email features on the Inbox page: New email with
-// address-book suggestions, Sent (last 14 days), and pictures / attachments on demand.
+// address-book suggestions, Sent (last 4 months), and pictures / attachments on demand.
 // The page is loaded from a pretend Enveliq server (Playwright intercepts requests).
 //
 // Usage (needs Playwright and a Chromium build):
@@ -129,9 +129,9 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   // Sent
   await page.click("#sentNav");
   await page.waitForSelector(".srow");
-  check("Sent hides the inbox list and shows the notes (last 14 days under the title, Nothing is saved in the note)", (await page.locator("#sentView").isVisible()) && !(await page.locator("#list").isVisible()) && (await page.locator("#inboxSubtitle").innerText()).includes("last 14 days") && (await page.locator(".sent-note").first().innerText()).includes("Nothing is saved"));
+  check("Sent hides the inbox list and shows the notes (last 4 months under the title, Nothing is saved in the note)", (await page.locator("#sentView").isVisible()) && !(await page.locator("#list").isVisible()) && (await page.locator("#inboxSubtitle").innerText()).includes("last 4 months") && (await page.locator(".sent-note").first().innerText()).includes("Nothing is saved"));
   check("rows show who it went to and the subject", (await page.locator(".swho").allInnerTexts()).join("|") === "Cara Harris +1|alex.chen@example.invalid" && (await page.locator(".ssub").first().innerText()) === "Dinner on Saturday");
-  check("the tiny footer says it is limited to the last 14 days", (await page.locator("#sentFoot").innerText()) === "Limited to the last 14 days." && (await page.locator("#sentFoot").isVisible()));
+  check("the tiny footer says it is limited to the last 4 months", (await page.locator("#sentFoot").innerText()) === "Limited to the last 4 months." && (await page.locator("#sentFoot").isVisible()));
   await page.locator(".shead").first().click();
   check("opening a row shows From, To and View original", (await page.locator(".sbody").first().innerText()).includes("From me@example.invalid to cara@example.invalid, sam@example.invalid"));
   await shot(page, "sent");

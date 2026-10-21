@@ -6,6 +6,15 @@ The small things that make the inbox calm to use.
 
 The Tag, Task, Reply and other email actions have a fine oval outline so they are easier to recognise as buttons. The outline is drawn inside each existing button, without changing its size or spacing. The same design works in light and dark mode.
 
+## Email style: Classic or Side rail
+
+**Customise, Email style** has two choices. **Classic** is how an opened email has always looked, and it stays the default. **Side rail** is an alternative:
+
+- **On a computer** (the reading panel beside the list, or under it): a narrow bar runs down the left of the email with Reply, Forward, Snooze, Task and Tags at the top, and Reviewed, Archive and Bin at the bottom, each with a small label. If the email has a task, it sits as a flat bar across the top. Under the heading you see the email address, the sender and the time, then the tags and the four Copy buttons. The AI summary comes first, then any attachments. The From, Received, Category and Attachments box is not repeated, because that information is already in the heading line. If **Show the original email** is on, it appears under the attachments.
+- **On a phone:** there is no side bar. A small X at the top closes the email, the task sits as a bar under it, and the heading has a Reply button and the three-dot menu on its right. The email address is a button: tap it to open Copy sender address, Copy subject and the other copy choices. Reviewed, Archive, Bin, Snooze and Tags are square icon buttons fixed along the bottom. The original email is not shown inline on a phone.
+
+The choice is saved with your other View choices, and **Reset to default** puts it back to Classic. Side rail applies to the reading panel and to the full-screen email on a phone; the list rows, the Cards layout and the daily summary look the same either way. Every button does the same thing as its Classic twin. The browser check is `scripts/check_email_style.mjs`.
+
 ## The three-dot menu on an email
 
 The action row under an email ends, at the far right on a computer and on a phone, with a **three-dot button**. It opens a menu with Reply, Reply all, Forward and Snooze (these stay in the row too), and also: **Important person**, **Always archive these**, **Send to Junk**, **Block sender** (it sends this email to Junk and makes sure new email from them goes there too; undo it in Settings, Mail rules), **Mute conversation** (see [Mute](MUTE.md)), **Print email** and **Save as PDF**. On a phone the same menu slides up from the bottom. Escape closes it and the arrow keys move through it. The same three-dot button is in the open original email. The Android app already had these actions behind its three dots; it now has **Mute conversation** there too.
@@ -18,7 +27,7 @@ A Reviewed email (the ones kept for a few days) has a **Mark unread** button, an
 
 ## Conversation View
 
-**Customise, Conversations, Conversation View** (off by default) groups emails of the same conversation, among the emails in the list you are looking at, under the newest one. A line such as "3 emails in this conversation" shows the others when you press **Show**. Grouping uses the emails' own reply markers, and nothing about reviewing changes: each email keeps its own buttons, and Reviewed, Archive and Bin still act on that one email. Select all, keyboard moves and the counts work as before, and the Focus deck always shows one email at a time. The choice is saved for your own account and applies on all your devices.
+**Customise, Conversations, Conversation View** (off by default) groups emails of the same conversation, among the emails in the list you are looking at, under the newest one. A line such as "3 emails in this conversation" shows the others when you press **Show**. Grouping uses the emails' own reply markers, and nothing about reviewing changes: each email keeps its own buttons, and Reviewed, Archive and Bin still act on that one email. Select all, keyboard moves and the counts work as before, and the Focus deck always shows one email at a time. The choice is saved for your own account and applies on all your devices. **Hide** always hides the others, even when one of them is the open email.
 
 ## Back while writing, on a phone
 
@@ -87,7 +96,7 @@ In a reply or forward window, the **Subject** box can be edited; what you type i
 
 ## The daily summary and Held for summary
 
-When **Hold email for the daily summary** is on (Settings, Alerts), email that can wait is **not in My inbox**. It is listed under **Held for summary** in the left menu, and one special row at the top of My inbox (a **Summary** tag, a dashed border, and a dot until you open it) says how many emails are waiting. Urgent mail and mail from important people stay in the inbox. Opening the summary shows the held emails by kind, with an **Open this email** link under each and four icon-only buttons (hover to see the name): **Reviewed**, **Archive**, **Bin** and **Take out of the summary** (puts it back in the inbox). **Done with summary**, at the top and the bottom, puts anything still in it back in the inbox. After 7 days untouched, held email returns to the inbox by itself. On a phone the summary opens full screen with the title and Done at the top and Close and Done fixed at the bottom. See [AI summaries](AI_SUMMARIES.md#needs-you-today-and-the-daily-summary-in-your-inbox).
+When **Hold email for the daily summary** is on (Settings, Alerts), email that can wait is **not in My inbox**. It is listed under **Held for summary** in the left menu, and one special row at the top of My inbox (a **Summary** tag, a dashed border, and a dot until you open it) says how many emails are waiting. Urgent mail and mail from important people stay in the inbox. Opening the summary shows the held emails by kind, with the day and time it arrived at the far right, a paperclip when it has files, four coloured icon-only buttons (hover to see the name): **Reviewed**, **Archive**, **Bin** and an up arrow, **Send back to the inbox**, and the buttons **Show full email**, **Show attachment(s)** (only with files; several ask which one) and **Open**. **Done with summary**, at the top and the bottom, puts anything still in it back in the inbox. After 7 days untouched, held email returns to the inbox by itself. On a phone the summary opens full screen with the title and Done at the top and Close and Done fixed at the bottom. See [AI summaries](AI_SUMMARIES.md#needs-you-today-and-the-daily-summary-in-your-inbox).
 
 ## A new install starts empty
 
@@ -117,7 +126,7 @@ When you tick two or more emails on a computer, three small icon buttons (Review
 - Narrowing the side panel never changes the user button in the top right: it keeps your picture, name and role. Your picture is also kept between refreshes, so it no longer blinks out while it reloads.
 - The **Coming up** panel has an arrow on its right that is always there. It points up when the panel is open and down when it is closed. In Calm mode the **Later** box has the same arrow and starts open. (On a phone these panels already had their own arrow.)
 
-- The account menu (your picture, top right) has a **Customise** button. It closes the menu and opens the panel on the right that changes how the inbox looks.
+- The account menu (your picture, top right) has a **Customise** button. It closes the menu and opens the panel on the right that changes how the inbox looks. The panel closes when you press its little arrow or click anywhere outside it.
 
 `scripts/check_rail_and_folds.mjs` checks all of this.
 
@@ -150,7 +159,7 @@ The window that shows an original email, an attachment, a picture or a PDF now g
 Web addresses in the text of an email can be clicked, but they never open by themselves: you are first asked where it goes (see "Where does this link go?" in the Be careful guide).
 
 ## Getting back to My inbox
-- The Sent page uses the same header as the other pages (Back button, title, then a line saying it shows your last 14 days of sent mail). The page keeps room for its scroll bar, so nothing moves sideways when the emails finish loading.
+- The Sent page uses the same header as the other pages (Back button, title, then a line saying it shows your last 4 months of sent mail). The page keeps room for its scroll bar, so nothing moves sideways when the emails finish loading.
 - On every page other than My inbox (Needs action, Tasks, Shipping, Waiting for reply, Attachments, Reviewed, Archived, Sent and so on), a **Back to My inbox** button sits above the page title. The title now shows the name of the page you are on instead of "My inbox".
 - Needs action, Attachments, Reviewed and Archived show the same **Recent emails** panel with **Options** as My inbox, so the options fold away in the same way everywhere.
 - On **Waiting for reply**, the **Closed** section is folded away until you open it with its arrow, so the page does not look like a long list of open items.

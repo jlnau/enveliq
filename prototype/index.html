@@ -493,17 +493,24 @@ body:has(#cmTray:not([hidden])) .toast{bottom:62px;z-index:46}
 .dg-row .dg-sub{display:block;font-size:13px;opacity:.75}
 .dg-row .dg-dot{width:9px;height:9px;border-radius:50%;background:var(--c-1f5fc4);flex:none}.dg-row.read .dg-dot{visibility:hidden}
 .dg-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60}.dg-scrim.show{display:block}
-#digestView.open{display:flex;flex-direction:column;overflow:hidden}#digestView .compose-body{flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start}#digestView .compose-head,#digestView .compose-foot{flex:none}.dg-when{font-size:12px;opacity:.7;margin-left:8px;white-space:nowrap}#digestView{z-index:61}@media(min-width:761px){#digestView{width:min(720px,94vw)}}
+#digestView.open{display:flex;flex-direction:column;overflow:hidden}#digestView .compose-body{flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start}#digestView .compose-head,#digestView .compose-foot{flex:none}.dg-when{font-size:12px;opacity:.7;margin-left:auto;padding-left:12px;white-space:nowrap;flex:none}#digestView{z-index:61}@media(min-width:761px){#digestView{width:min(720px,94vw)}}
 @media(max-width:760px){#digestView.open{display:flex;flex-direction:column;overflow:hidden}#digestView .compose-body{flex:1 1 auto;min-height:0;overflow-y:auto}#digestView .compose-head,#digestView .compose-foot{flex:none}#digestView .compose-foot{padding-bottom:calc(12px + env(safe-area-inset-bottom))}#digestView .compose-head{flex-wrap:wrap}}
 #digestView button,#digestView a.dg-open{min-height:44px}
 .dg-note{font-size:13px;opacity:.8;margin:0 0 10px}
 .dg-sec{margin:14px 0 6px;font-size:13px;font-weight:700;letter-spacing:.02em}
 .dg-item{border:1px solid var(--c-293241);border-radius:10px;padding:10px 12px;margin:0 0 8px}
-.dg-from{font-size:13px;opacity:.8}.dg-subj{font-weight:600;margin:2px 0}.dg-item p{margin:4px 0 8px;line-height:1.5}
+.dg-from{display:flex;align-items:baseline;justify-content:space-between;gap:16px;font-size:13px;opacity:.8}.dg-from .dg-who{min-width:0;overflow:hidden;text-overflow:ellipsis}.dg-subj{font-weight:600;margin:2px 0}.dg-clip{display:inline-flex;vertical-align:-2px;margin-left:6px;opacity:.75}.dg-item p{margin:4px 0 8px;line-height:1.5}
 .dg-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .dg-acts .dg-ic{display:inline-flex;align-items:center;justify-content:center;width:44px;min-height:44px;padding:0;border:1px solid var(--c-343b4b);border-radius:10px;background:transparent;color:inherit;cursor:pointer}
 .dg-acts .dg-ic svg{width:20px;height:20px}.dg-acts .dg-ic:hover{border-color:var(--c-1f5fc4)}.dg-acts .dg-ic[disabled]{opacity:.5}
-a.dg-open{display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--c-343b4b);border-radius:10px;color:inherit;text-decoration:none;margin-left:auto}
+.dg-acts .dg-ic.ok{background:var(--c-122219);border-color:var(--c-315644)}.dg-acts .dg-ic.arch{background:var(--c-0c1626);border-color:var(--c-1f3f75)}.dg-acts .dg-ic.bin{background:var(--c-2d1a20);border-color:var(--c-58343b)}.dg-acts .dg-ic.up{border-color:var(--c-1f5fc4);color:var(--c-d4ecff)}
+.dg-more{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.dg-acts .dg-txt,a.dg-open{display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--c-343b4b);border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:14px;text-decoration:none;cursor:pointer}
+.dg-txt .dg-ico{display:none}.dg-txt .dg-ico svg{width:20px;height:20px;display:block}
+@media(max-width:760px){.dg-acts .dg-txt{width:44px;padding:0;justify-content:center}.dg-txt .dg-ico{display:inline-flex}.dg-txt .dg-lbl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}
+.dg-acts .dg-txt:hover,a.dg-open:hover{border-color:var(--c-1f5fc4)}.dg-acts .dg-txt[disabled]{opacity:.5}
+#dgAtt{width:min(480px,94vw);z-index:62}#dgAtt .compose-body{display:grid;gap:8px}#dgAtt .dg-pick{display:flex;justify-content:space-between;gap:12px;align-items:center;width:100%;min-height:44px;padding:8px 12px;border:1px solid var(--c-343b4b);border-radius:10px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}#dgAtt .dg-pick:hover{border-color:var(--c-1f5fc4)}#dgAtt .dg-pick small{opacity:.7;white-space:nowrap}#dgAtt .dg-pick b{min-width:0;overflow-wrap:anywhere}
+#dgAtt button{min-height:44px}
 #whCheck,#sendWarn{width:min(520px,94vw);z-index:61}
 #sendWarn .compose-body p{margin:0;line-height:1.5}
 .wh-scrim{z-index:60}
@@ -1600,6 +1607,46 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 .mail-copy-menu{margin-top:7px;font-size:12px}
 .mail-copy-menu summary{cursor:pointer;width:max-content;opacity:.8}
 .mail-copy-options{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.vhint{color:var(--faint);font-size:12px;margin:8px 0 0;line-height:1.45}
+/* Email style: Side rail (chosen in Customise). A bar of buttons down the left, the task along the top, the summary first. */
+.reading.rail{display:block;overflow:auto}
+.rl{display:flex;align-items:stretch;min-height:100%}
+.rl-rail{width:76px;flex:none;border-right:1px solid var(--c-232a36);padding:14px 4px;display:flex;flex-direction:column;gap:6px;box-sizing:border-box}
+.rl-gap{flex:1;min-height:12px}
+.rl-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:100%;min-height:62px;padding:8px 4px;border-radius:12px;border:1px solid transparent;background:transparent;color:var(--text);font-size:11px;font-weight:500;cursor:pointer;line-height:1.2;text-align:center}
+.rl-btn svg{width:22px;height:22px;flex:none}
+.rl-btn:hover{background:var(--panel2)}
+.rl-rail .action.reviewed{background:var(--c-122219);border-color:var(--c-315644)}
+.rl-rail .action.archive{background:var(--c-0c1626);border-color:var(--c-1f3f75)}
+.rl-rail .action.trash{background:var(--c-2d1a20);border-color:var(--c-58343b)}
+.rl-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.rl-task{background:var(--c-261f12);border-bottom:1px solid var(--c-5a4720);padding:2px 14px 12px}
+.rl-task .taskline{margin-top:10px;border-top:0;padding-top:0}
+.rl-body{padding:14px 14px 22px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.rl-head{display:flex;flex-direction:column;gap:6px}
+.rl-titlerow{display:flex;align-items:flex-start;gap:8px}
+.rl-titlerow h3{flex:1;min-width:0;margin:0;font-size:19px;line-height:1.3;letter-spacing:-.01em;overflow-wrap:anywhere}
+.rl-tools{display:flex;align-items:center;gap:6px;flex:none}
+.rl-tools .subtle{margin-left:0}
+.rl-sub{color:var(--muted);font-size:13px;line-height:1.4;overflow-wrap:anywhere}
+.rl-sub .mail-copy-menu{display:inline-block;margin:0}.rl-sub .mail-copy-menu summary{display:inline;color:var(--blue);text-decoration:underline dotted;text-underline-offset:3px;opacity:1}
+.rl-sub{position:relative}.rl-sub .mail-copy-menu{position:static}
+.rl-sub .mail-copy-options{position:absolute;left:0;top:calc(100% + 4px);z-index:5;width:min(260px,100%);flex-direction:column;align-items:stretch;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);box-shadow:var(--shadow);gap:0;margin:0}
+.rl-sub .mail-copy-options .mail-copy-action{font-size:14px!important;padding:11px 12px!important;opacity:1;text-align:left;min-height:44px;margin:0}
+.rl-head .tagchips,.rl-head .tags{margin:0}
+.rl-copy .mail-copy-controls{margin-top:0}
+.rl-body .qsummary:has(.qsummary-copy){margin:0}
+@media(max-width:760px){
+  .reader.rail .rtop{height:48px;padding:0 10px;border-bottom:0}
+  .reader.rail .rbody{padding:0 0 18px;max-width:none}
+  .rl-phone .rl-main{width:100%}
+  .rl-phone .rl-titlerow h3{font-size:15px;font-weight:600}
+  .rl-phone .rl-body{padding:14px}
+  .rl-bar{justify-content:center;gap:10px}
+  .rl-bar .action,.rl-bar .rl-sq{flex:none;width:52px;height:52px;min-height:52px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:14px}
+  .rl-bar .rl-sq{border:1px solid var(--c-343b4b);background:var(--panel2);color:var(--text)}
+  .rl-bar svg{width:22px;height:22px}
+}
 @media(max-width:700px){.mail-copy-controls{display:none}}
 
 /* Quiet visual separation for completed email summaries in every reading layout. */
@@ -1766,7 +1813,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
     <div id="sentStatus" class="sent-status" role="status" aria-live="polite"></div>
     <div id="sentWaiting" class="sent-list" hidden></div>
     <div id="sentList" class="sent-list"></div>
-    <p id="sentFoot" class="sent-foot" hidden>Limited to the last 14 days.</p>
+    <p id="sentFoot" class="sent-foot" hidden>Limited to the last 4 months.</p>
   </section>
   <div id="peek" class="peek" role="tooltip" hidden><div class="peek-in" id="peekIn"></div></div>
 </section>
@@ -1810,6 +1857,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
     </div></div>
   <div class="vsec"><div class="vlabel">Row spacing</div><div class="seg" role="radiogroup" aria-label="Row spacing"><button type="button" role="radio" data-view="density" data-val="compact">Compact</button><button type="button" role="radio" data-view="density" data-val="standard">Standard</button><button type="button" role="radio" data-view="density" data-val="roomy">Roomy</button></div></div>
   <div class="vsec"><div class="vlabel">Width</div><div class="seg" role="radiogroup" aria-label="Width"><button type="button" role="radio" data-view="width" data-val="centered">Centred</button><button type="button" role="radio" data-view="width" data-val="full">Full width</button></div></div>
+  <div class="vsec"><div class="vlabel">Email style</div><div class="seg" role="radiogroup" aria-label="Email style"><button type="button" role="radio" data-view="style" data-val="classic">Classic</button><button type="button" role="radio" data-view="style" data-val="rail">Side rail</button></div><p class="vhint">How an opened email looks. Side rail puts the buttons in a bar down the left and the task along the top. On a phone, the buttons sit along the bottom.</p></div>
   <div class="vsec"><div class="vlabel">Classic list options</div>
     <label class="vcheck" id="vOpenL"><input type="checkbox" id="vOpen"><span><b>Show every email open</b><small>No collapsed rows</small></span></label>
     <label class="vcheck" id="vPeekL"><input type="checkbox" id="vPeek"><span><b>Preview on hover</b><small>Rest on a subject to peek at the summary</small></span></label></div>
@@ -2122,6 +2170,11 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
   <div class="compose-body" id="dgBody"></div>
   <div class="compose-foot"><button class="btn" id="dgClose" type="button">Close</button><button class="primary" id="dgDone" type="button">Done with summary</button></div>
 </div>
+<div class="compose" id="dgAtt" role="dialog" aria-modal="true" aria-labelledby="dgAttTitle">
+  <div class="compose-head"><div><h3 id="dgAttTitle">Which attachment?</h3><p>Pick the one you want to open.</p></div></div>
+  <div class="compose-body" id="dgAttList"></div>
+  <div class="compose-foot"><span></span><button class="btn" id="dgAttClose" type="button">Close</button></div>
+</div>
 <div class="compose" id="sendWarn" role="dialog" aria-modal="true" aria-labelledby="sendWarnTitle">
   <div class="compose-head"><div><h3 id="sendWarnTitle">Before you send</h3><p>A quick check. Nothing has been sent.</p></div></div>
   <div class="compose-body" id="sendWarnList"></div>
@@ -2362,6 +2415,7 @@ let secureBackendToken=null;
 let vaultMode=null; // "backend" | "preview"
 const previewVault={initialized:false,unlocked:false,salt:null,verifier:null};
 const expanded=new Set();
+const convHidden=new Map(); // conversation key -> the open email when the person pressed Hide, so Hide works even while one of its emails is open
 // A refresh keeps you where you are: the page (in the address bar after #/) and which emails are open (this tab only).
 const PAGES=["found","all","action","tasks","attachments","reviewed","archived","sent","drafts","shipping","subscriptions","trips","waiting","messages","junk","cleanup"];
 let stateReady=false,navPopping=false;
@@ -2528,8 +2582,8 @@ const clipWords=m=>{const n=fileN(m),sure=m.attachments.length||m.fileCount!=nul
 function userMessages(){return data.filter(m=>m.owner===currentUser.id&&!m._pending)}
 let sortMode="newest",mailboxSel="";
 // ---- View options (saved in this browser) ----
-const VIEW_DEFAULT={layout:"right",density:"standard",width:"centered",rows:"collapsed",peek:true,action_feedback:true,show_original:false,conversations:false};
-const VIEW_ALLOWED={layout:["list","right","bottom","screen","deck"],density:["compact","standard","roomy"],width:["centered","full"],rows:["collapsed","open"]};
+const VIEW_DEFAULT={layout:"right",density:"standard",width:"centered",rows:"collapsed",peek:true,action_feedback:true,show_original:false,conversations:false,style:"classic"};
+const VIEW_ALLOWED={layout:["list","right","bottom","screen","deck"],density:["compact","standard","roomy"],width:["centered","full"],rows:["collapsed","open"],style:["classic","rail"]};
 function loadView(){
   const v={...VIEW_DEFAULT};
   try{const raw=JSON.parse(localStorage.getItem("enveliq-view")||"null");
@@ -2639,7 +2693,7 @@ function applyView(){
   paneId=null;lastReadId=null;
   const c=document.body.classList;
   for(const l of VIEW_ALLOWED.layout)c.toggle("layout-"+l,lay()===l);
-  c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");
+  c.toggle("style-rail",view.style==="rail");c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");
   document.querySelectorAll("#viewPanel [data-view]").forEach(b=>{const on=view[b.dataset.view]===b.dataset.val;b.classList.toggle("on",on);b.setAttribute("aria-checked",String(on))});
   const classic=view.layout==="list";
   $("vOpen").checked=view.rows==="open";$("vPeek").checked=view.peek;$("vActionFeedback").checked=view.action_feedback!==false;$("vOrig").checked=!!view.show_original;$("vConv").checked=!!view.conversations;
@@ -4257,7 +4311,7 @@ function render(){
   previewSyncMenu();
   $("todayDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"});
   $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(calmOn()?(inbox.length?"One thing at a time. Important deadlines stay visible.":"Nothing waiting. Enjoy the quiet."):inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:(document.body.classList.contains("backend")&&!realMail?"No mailbox is connected yet":"All caught up"));
-  if(filter==="cleanup")$("inboxSubtitle").textContent="Quiet the mailing lists you do not need";if(filter==="junk")$("inboxSubtitle").textContent=junkData.needs_review?`${junkData.needs_review} ${junkData.needs_review===1?"email needs":"emails need"} a look`:"Checked by the AI";if(filter==="found")$("inboxSubtitle").textContent="Emails you found by searching. Each is kept for 60 days, or until you press Reviewed.";if(filter==="sent")$("inboxSubtitle").textContent="Your last 14 days of sent mail";if(filter==="drafts")$("inboxSubtitle").textContent="Emails you started and have not sent";
+  if(filter==="cleanup")$("inboxSubtitle").textContent="Quiet the mailing lists you do not need";if(filter==="junk")$("inboxSubtitle").textContent=junkData.needs_review?`${junkData.needs_review} ${junkData.needs_review===1?"email needs":"emails need"} a look`:"Checked by the AI";if(filter==="found")$("inboxSubtitle").textContent="Emails you found by searching. Each is kept for 60 days, or until you press Reviewed.";if(filter==="sent")$("inboxSubtitle").textContent="Your last 4 months of sent mail";if(filter==="drafts")$("inboxSubtitle").textContent="Emails you started and have not sent";
 
   previewRenderOverview(inbox,needN);dgPaint();
   const rows=data.filter(visible);
@@ -4298,6 +4352,20 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
       :`<div class="qdetail split${OR?" has-orig":""}"><div class="qmainc">${scamHtml(m.scam)}${tagChips(m)}${m.ungen&&m.real?genBlock(m):`<div class="qsummary"><span class="qsummary-head"><span class="qsummary-label">✦ AI summary</span><button type="button" class="linkbtn view-email summary-original-link" data-open-email="${esc(m.id)}">View original email</button></span><span class="qsummary-copy">${esc(m.summary)}</span></div>`}${attachmentsBlock(m)}${taskHtml}${OR?"":`<div class="qfill"></div>`}<div class="qfoot"><span class="qleft">${replyBtn}${unsubHtml(m.unsub,!!m.scam)}</span>${moreBtn(m)}</div>${OR?origBox(m):""}</div>
         <aside class="qside" aria-label="Email details"><div class="qkv"><span>From</span><span class="addr">${esc(m.address)}</span></div>${multiBox()&&m.real?`<div class="qkv"><span>Mailbox</span><span>${boxChip(m)}</span></div>`:""}<div class="qkv"><span>Received</span><span>${esc(m.time)}</span></div>${m.replied?`<div class="qkv replied-kv"><span>Replied</span><span>${esc(m.repliedAt||"Just now")}</span></div>`:""}<div class="qkv"><span>Category</span><span>${esc(category)}</span></div><div class="qkv"><span>Attachments</span><span>${esc(attCount)}</span></div>
         <div class="qbtns"><button class="action reviewed" data-id="${esc(m.id)}" data-status="reviewed">${ICON_OK}Reviewed</button><div class="two"><button class="action archive" data-id="${esc(m.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(m.id)}" data-status="trashed">${ICON_BIN}Bin</button></div></div></aside></div>`;
+    if(mode==="rail"){          // the "Side rail" email style: buttons in a bar down the left (along the bottom on a phone), the task along the top
+      if(m.kept)return detail;
+      const id=esc(m.id),ph=isPhone();
+      const rb=(attr,icon,label,extra="")=>`<button type="button" class="rl-btn" ${attr}="${id}" ${extra} aria-label="${label}" title="${label}">${icon}<span>${label}</span></button>`;
+      const tools=(m.replyTo?rb("data-reply",ICON_REPLY,"Reply"):"")+(m.replyTo&&m.replyCc&&m.replyCc.length?rb("data-reply-all",ICON_REPLY,"Reply all"):"")+(m.real&&realMail?rb("data-forward",ICON_FWD,"Forward"):"")
+        +(isSnoozed(m)?rb("data-unsnooze",ICON_SNOOZE,"Wake now"):rb("data-snooze",ICON_SNOOZE,"Snooze",'aria-haspopup="menu"'))+rb("data-task-add",ICON_RTASK,"Task",'aria-haspopup="dialog"')+(tagsOn(m)?rb("data-tag-open",ICON_RTAG,"Tags",'aria-haspopup="dialog"'):"");
+      const act=(cls,st,icon,label)=>`<button type="button" class="action ${cls} rl-btn" data-id="${id}" data-status="${st}" aria-label="${label}" title="${label}">${icon}<span>${label}</span></button>`;
+      const acts=act("reviewed","reviewed",ICON_OK,"Reviewed")+act("archive","archived",ICON_ARCH,"Archive")+act("trash","trashed",ICON_BIN,"Bin");
+      const copyInner=copyMailButtons(m).replace(/^<span[^>]*>|<\/span>$/g,"");
+      const addr=ph?`<details class="mail-copy-menu rl-addr"><summary aria-label="Copy options for ${esc(m.address)}">${esc(m.address)}</summary><div class="mail-copy-options">${copyInner}</div></details>`:`<span class="rl-addr">${esc(m.address)}</span>`;
+      const summary=m.ungen&&m.real?genBlock(m):`<div class="qsummary"><span class="qsummary-head"><span class="qsummary-label">✦ AI summary</span><button type="button" class="linkbtn view-email summary-original-link" data-open-email="${esc(m.id)}">View original email</button></span><span class="qsummary-copy">${esc(m.summary)}</span></div>`;
+      const head=`<header class="rl-head"><div class="rl-titlerow"><h3>${esc(m.subject)}</h3><div class="rl-tools">${ph&&m.replyTo?`<button type="button" class="subtle rl-icon" data-reply="${id}" aria-label="Reply" title="Reply">${ICON_REPLY}</button>`:""}${moreBtn(m)}</div></div><div class="rl-sub">${addr}<span class="rl-dot"> · </span><span>${esc(m.sender)}</span><span class="rl-dot"> · </span><span>${esc(m.time)}</span></div>${tagChips(m)}${ph?"":`<div class="rl-copy">${copyMailButtons(m)}</div>`}</header>`;
+      return `<div class="rl${ph?" rl-phone":""}">${ph?"":`<nav class="rl-rail" aria-label="Email actions">${tools}<span class="rl-gap"></span>${acts}</nav>`}<div class="rl-main">${taskHtml?`<div class="rl-task">${taskHtml}</div>`:""}<div class="rl-body">${head}${scamHtml(m.scam)}${summary}${attachmentsBlock(m)}${unsubHtml(m.unsub,!!m.scam)}${OR&&!ph?origBox(m):""}</div></div></div>`;
+    }
     if(mode==="detail")return detail;
     const tog=mode==="pane"?`<button class="qtoggle" data-pick="${esc(m.id)}" aria-label="Show this email">Show email</button>`:view.rows==="open"?"":`<button class="qtoggle" data-expand="row-${esc(m.id)}" aria-expanded="${esc(open)}" aria-label="${open?"Hide":"Show"} the full email summary and actions">${open?"Hide":"Show"} details</button>`;
     return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(m._pending?"leaving to-"+m._pending:"")} ${esc(mode==="pane"&&lay()!=="screen"&&m.id===paneId?"current":"")} ${!enOpened(m)?"enveliq-new":""}"${leaveStyle(m)}><div class="qrow">
@@ -4320,7 +4388,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
     for(const g of groups.values()){
       const lead=g[0],rest=g.slice(1);shown.push(lead.id);
       if(!rest.length){out.push([lead,quiet(lead,mode)]);continue}
-      const key="conv-"+lead.id,open=expanded.has(key)||rest.some(x=>x.id===paneId);
+      const key="conv-"+lead.id,open=expanded.has(key)||(convHidden.get(key)!==paneId&&rest.some(x=>x.id===paneId));
       if(open)rest.forEach(x=>shown.push(x.id));
       out.push([lead,quiet(lead,mode)+`<div class="conv-bar"><button type="button" class="linkbtn" data-conv="${esc(key)}" aria-expanded="${open}">${g.length} emails in this conversation · ${open?"Hide":"Show"}</button></div>`+(open?`<div class="conv-kids">${rest.map(x=>quiet(x,mode)).join("")}</div>`:"")]);
     }
@@ -4343,7 +4411,11 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
       if(readerOpen){
         const prev=rows[idx-1],next=rows[idx+1];
         const act=cur.kept?"":`<div class="ract"><button class="action reviewed" data-id="${esc(cur.id)}" data-status="reviewed">${ICON_OK}Reviewed</button><button class="action archive" data-id="${esc(cur.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(cur.id)}" data-status="trashed">${ICON_BIN}Bin</button></div>`;
-        listHtml+=`<div class="reader" role="dialog" aria-modal="true" aria-label="${esc(cur.subject)}"><div class="rtop">${isPhone()?`<button class="rbtn rclose" type="button" data-reader-close aria-label="Close this email">✕ Close</button>`:`<button class="rbtn" type="button" data-reader-close aria-label="Back to the list">‹</button><b>${idx+1} of ${rows.length}</b><span class="sp"></span><button class="rbtn" type="button" ${prev?`data-pick="${esc(prev.id)}"`:"disabled"} aria-label="Previous email">↑</button><button class="rbtn" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">↓</button>`}</div><div class="rbody"><div class="rfrom"><span class="dcav" aria-hidden="true">${esc(String(cur.sender||"?").trim().charAt(0).toUpperCase())}</span><div><div class="dcfrom">${esc(cur.sender)}</div><div class="dcsub">${esc(cur.address)} · ${esc(cur.time)}</div>${copyMailButtons(cur,true)}</div></div><h3>${esc(cur.subject)}</h3>${quiet(cur,"detail")}</div>${act}</div>`;
+        if(view.style==="rail"&&isPhone()&&!cur.kept){          // Side rail on a phone: a small X at the top, the buttons as square icons along the bottom
+          const id=esc(cur.id),sq=(cls,attrs,icon,label)=>`<button type="button" class="${cls}" ${attrs} aria-label="${label}" title="${label}">${icon}</button>`;
+          const bar=`<div class="ract rl-bar">${sq("action reviewed",`data-id="${id}" data-status="reviewed"`,ICON_OK,"Reviewed")}${sq("action archive",`data-id="${id}" data-status="archived"`,ICON_ARCH,"Archive")}${sq("action trash",`data-id="${id}" data-status="trashed"`,ICON_BIN,"Bin")}${isSnoozed(cur)?sq("rl-sq",`data-unsnooze="${id}"`,ICON_SNOOZE,"Wake now"):sq("rl-sq",`data-snooze="${id}" aria-haspopup="menu"`,ICON_SNOOZE,"Snooze")}${tagsOn(cur)?sq("rl-sq",`data-tag-open="${id}" aria-haspopup="dialog"`,ICON_RTAG,"Tags"):""}</div>`;
+          listHtml+=`<div class="reader rail" role="dialog" aria-modal="true" aria-label="${esc(cur.subject)}"><div class="rtop"><button class="rbtn rclose" type="button" data-reader-close aria-label="Close this email">✕</button></div><div class="rbody">${quiet(cur,"rail")}</div>${bar}</div>`;
+        }else listHtml+=`<div class="reader" role="dialog" aria-modal="true" aria-label="${esc(cur.subject)}"><div class="rtop">${isPhone()?`<button class="rbtn rclose" type="button" data-reader-close aria-label="Close this email">✕ Close</button>`:`<button class="rbtn" type="button" data-reader-close aria-label="Back to the list">‹</button><b>${idx+1} of ${rows.length}</b><span class="sp"></span><button class="rbtn" type="button" ${prev?`data-pick="${esc(prev.id)}"`:"disabled"} aria-label="Previous email">↑</button><button class="rbtn" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">↓</button>`}</div><div class="rbody"><div class="rfrom"><span class="dcav" aria-hidden="true">${esc(String(cur.sender||"?").trim().charAt(0).toUpperCase())}</span><div><div class="dcfrom">${esc(cur.sender)}</div><div class="dcsub">${esc(cur.address)} · ${esc(cur.time)}</div>${copyMailButtons(cur,true)}</div></div><h3>${esc(cur.subject)}</h3>${quiet(cur,"detail")}</div>${act}</div>`;
       }
     }else if(lay()==="deck"){
       const enter=lastDeckShown!==cur.id?` enter-${deckDir}`:"";lastDeckShown=cur.id;
@@ -4356,7 +4428,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
         <button class="decknav next" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">›</button></div>
         ${act}<div class="deckdots" aria-hidden="true">${dots}</div></div>`;
     }else{
-      const readingHtml=cur?`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div>${copyMailButtons(cur)}</header>${quiet(cur,"detail")}</section>`:`<section class="reading enveliq-empty" aria-label="No email selected">${enEmptyReading()}</section>`;
+      const readingHtml=cur?(view.style==="rail"?`<section class="reading rail" aria-label="Selected email">${quiet(cur,"rail")}</section>`:`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div>${copyMailButtons(cur)}</header>${quiet(cur,"detail")}</section>`):`<section class="reading enveliq-empty" aria-label="No email selected">${enEmptyReading()}</section>`;
       if(lay()==="right"&&!["sent","drafts","tasks","shipping","waiting","subscriptions","trips","messages","junk","cleanup"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
         dockHtml=readingHtml;
         listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rowsHtml(rows,"pane")}</div></div>`;
@@ -4488,6 +4560,7 @@ function accountFor(m){
 const ICON_MORE=`<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>`;
 // The three-dot menu at the far right of an email's action row. Reply, Forward and Snooze stay in the row too; Important person, Always archive,
 // Send to Junk, Block sender, Mute, Mark unread, Print and Save as PDF live only here. Items keep their usual data-* names so the same handlers run.
+const ICON_RTASK=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>`,ICON_RTAG=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="8" cy="8" r="1.2"/></svg>`;
 const moreBtn=m=>`<button type="button" class="subtle qmore" data-more="${esc(m.id)}" aria-haspopup="menu" aria-expanded="false" aria-label="More actions" title="More actions">${ICON_MORE}</button>`;
 function menuItemsFor(m,viewer){
   const id=esc(m.id),out=[],item=(attr,label)=>out.push(`<button type="button" role="menuitem" ${attr}="${id}">${label}</button>`),sep=()=>{if(out.length&&out[out.length-1]!=="<hr>")out.push("<hr>")};
@@ -6234,7 +6307,7 @@ document.addEventListener("click",e=>{
   const ctl=e.target.closest("[data-mute],[data-unread],[data-print],[data-pdf]");
   if(ctl){const k=ctl.hasAttribute("data-mute")?"mute":ctl.hasAttribute("data-unread")?"unread":ctl.hasAttribute("data-print")?"print":"pdf",m=data.find(x=>x.id===Number(ctl.dataset[k])&&x.owner===currentUser.id);
     closeMoreMenu();if(m){if(k==="mute")muteConversation(m);else if(k==="unread")markUnreadWeb(m);else{if(k==="pdf")toast("In the print window, choose Save as PDF as the printer.",5000);printEmail(m)}}return}
-  const cv=e.target.closest("[data-conv]");if(cv){const k=cv.dataset.conv;if(expanded.has(k))expanded.delete(k);else expanded.add(k);render();return}
+  const cv=e.target.closest("[data-conv]");if(cv){const k=cv.dataset.conv,wasOpen=cv.getAttribute("aria-expanded")==="true";if(wasOpen){expanded.delete(k);convHidden.set(k,paneId)}else{expanded.add(k);convHidden.delete(k)}render();return}
   const jb=e.target.closest("[data-junk-this],[data-block-sender]");if(jb){const m=data.find(x=>x.id===Number(jb.dataset.junkThis||jb.dataset.blockSender)&&x.owner===currentUser.id);if(m)junkThis(m,jb,jb.hasAttribute("data-block-sender"));return}
   const ruleBtn=e.target.closest("[data-rule]");if(ruleBtn){const m=data.find(x=>x.id===Number(ruleBtn.dataset.rule)&&x.owner===currentUser.id);if(m)addRuleFor(m,ruleBtn);return}
   const impBtn=e.target.closest("[data-important]");if(impBtn){const m=data.find(x=>x.id===Number(impBtn.dataset.important)&&x.owner===currentUser.id);if(m)setImportant(m,!isImp(m));return}
@@ -7048,7 +7121,9 @@ async function whLoad(){
 // The summary is simply the list of held email, so it is always up to date. Reviewed, Archive and Bin are the normal actions.
 var dgState={enabled:false,count:0,unread:false,items:[]};
 const DG_OK=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,DG_ARCH=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg>`,DG_BIN=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>`;
-const ICON_BACK=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v13"/><path d="m6 12 6 6 6-6"/><path d="M5 21h14"/></svg>`;
+const DG_MAIL=`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6.5L20.5 7"/></svg>`;
+const DG_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5l-7.6 7.6a5 5 0 0 1-7-7l8-8a3.4 3.4 0 0 1 4.8 4.8l-8 8a1.8 1.8 0 0 1-2.5-2.5L14 7.2"/></svg>`;
+const ICON_BACK=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V7"/><path d="m6 12 6-6 6 6"/><path d="M5 3h14"/></svg>`;
 function isHeld(m){return m.status==="inbox"&&!!m.held&&!!(dgState&&dgState.enabled)}
 function isAside(m){return isSnoozed(m)||isHeld(m)}
 async function dgLoad(){
@@ -7068,8 +7143,10 @@ function dgPaint(){
 function dgItem(i){
   const box=whEl("div","dg-item");
   const when=i.received_at?new Date(i.received_at*1000).toLocaleString([],{weekday:"short",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"}):"";
-  const from=whEl("div","dg-from",i.sender||"Unknown sender");if(when)from.append(whEl("span","dg-when",when));
-  box.append(from,whEl("div","dg-subj",i.subject||"(no subject)"),whEl("p",null,i.summary||""));
+  const from=whEl("div","dg-from");from.append(whEl("span","dg-who",i.sender||"Unknown sender"));if(when)from.append(whEl("span","dg-when",when));
+  const subj=whEl("div","dg-subj",i.subject||"(no subject)");
+  if(i.attachments>0){const c=whEl("span","dg-clip");c.innerHTML=DG_CLIP;c.title=i.attachments===1?"Has an attachment":`Has ${i.attachments} attachments`;c.setAttribute("role","img");c.setAttribute("aria-label",c.title);subj.append(c)}
+  box.append(from,subj,whEl("p",null,i.summary||""));
   const acts=whEl("div","dg-acts");
   const ic=(label,svg,fn)=>{const b=whEl("button","dg-ic");b.type="button";b.title=label;b.setAttribute("aria-label",label);b.innerHTML=svg;b.onclick=async()=>{acts.querySelectorAll("button").forEach(x=>x.disabled=true);try{await fn()}finally{acts.querySelectorAll("button").forEach(x=>x.disabled=false)}};return b};
   const mailOf=()=>data.find(x=>x.real&&x.real.accountId===i.account_id&&x.real.messageId===i.message_id);
@@ -7079,15 +7156,57 @@ function dgItem(i){
     else{try{await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(i.account_id)}/messages/${encodeURIComponent(i.message_id)}/resolve`,{method:"POST",body:JSON.stringify({outcome:resolveOutcome(status)})})}catch(er){toast(er.message,6000);return}}
     await dgRefresh();render();
   };
-  acts.append(ic("Mark reviewed",DG_OK,act("reviewed")),ic("Archive",DG_ARCH,act("archived")),ic("Bin",DG_BIN,act("trashed")),
-    ic("Send back to the inbox",ICON_BACK,async()=>{
+  const tint=(b,c)=>{b.classList.add(c);return b};
+  acts.append(tint(ic("Mark reviewed",DG_OK,act("reviewed")),"ok"),tint(ic("Archive",DG_ARCH,act("archived")),"arch"),tint(ic("Bin",DG_BIN,act("trashed")),"bin"),
+    tint(ic("Send back to the inbox",ICON_BACK,async()=>{
       try{await secureBackendRequest("/api/v1/me/held-summary/remove",{method:"POST",body:JSON.stringify({account_id:i.account_id,message_id:i.message_id})})}catch(er){toast(er.message,6000);return}
       const m=mailOf();if(m)m.held=false;await dgRefresh();render();toast("Back in your inbox");
-    }));
+    }),"up"));
+  const more=whEl("div","dg-more");
+  const txt=(label,icon,fn)=>{const b=whEl("button","dg-txt");b.type="button";b.title=label;b.setAttribute("aria-label",label);const ic=whEl("span","dg-ico");ic.innerHTML=icon;b.append(ic,whEl("span","dg-lbl",label));b.onclick=async()=>{b.disabled=true;try{await fn()}finally{b.disabled=false}};return b};
+  more.append(txt("Show full email",DG_MAIL,()=>dgFull(i,mailOf())));
+  if(i.attachments>0)more.append(txt(i.attachments===1?"Show attachment":"Show attachments",DG_CLIP,()=>dgFiles(i)));
   const a=whEl("a","dg-open","Open");a.href="/?open="+encodeURIComponent(i.account_id+":"+i.message_id).replace(/%3A/gi,":");a.title="Open this email in Enveliq";
   a.onclick=ev=>{ev.preventDefault();dgClose();openFromLink(a.href,false,false)};
-  acts.append(a);box.append(acts);return box;
+  more.append(a);acts.append(more);box.append(acts);return box;
 }
+// Show full email: the original, fetched from the mailbox now (not stored), in the same viewer as everywhere else.
+async function dgFull(i,m){
+  const base=`/api/v1/accounts/${encodeURIComponent(i.account_id)}/messages/${encodeURIComponent(i.message_id)}`;
+  if(m){dgClose();openRealEmail(m);return}
+  toast("Fetching the email from your mailbox…");
+  try{
+    const o=await secureBackendRequest(base+"/original",{method:"GET",headers:{}});
+    dgClose();
+    presentOriginal(o,{title:i.subject||"(no subject)",context:i.sender||"",attach:base+"/attachments",htmlUrl:base+"/original/html",fallbackDate:""});
+  }catch(er){toast(er.message,6000)}
+}
+// Show attachment(s): one file opens at once, several ask which one.
+const dgPick={base:"",list:[]};
+function dgOpenFile(a){
+  dgAttHide();dgClose();
+  const pics=dgPick.list.filter(x=>x.previewable);
+  if(a.previewable)openPic(dgPick.base,pics,Math.max(0,pics.indexOf(a)));
+  else if(a.viewable)openDoc(dgPick.base,a);
+  else saveAttachment(dgPick.base,a);
+}
+function dgAttHide(){$("dgAtt").classList.remove("open")}
+async function dgFiles(i){
+  if(!feat.media){toast("Attachment previews are switched off. An administrator can turn them on under Administration, Features.",6000);return}
+  const base=`/api/v1/accounts/${encodeURIComponent(i.account_id)}/messages/${encodeURIComponent(i.message_id)}`;
+  let o;try{o=await secureBackendRequest(base+"/original",{method:"GET",headers:{}})}catch(er){toast(er.message,6000);return}
+  const list=(o.attachments||[]).filter(a=>!a.inline);
+  if(!list.length){toast("No attachments could be found on that email.");return}
+  dgPick.base=base+"/attachments";dgPick.list=o.attachments||[];
+  if(list.length===1){dgOpenFile(list[0]);return}
+  $("dgAttList").replaceChildren(...list.map(a=>{
+    const b=whEl("button","dg-pick");b.type="button";
+    b.append(whEl("b",null,a.filename||"attachment"),whEl("small",null,kb(a.size_bytes)));
+    b.onclick=()=>dgOpenFile(a);return b;
+  }));
+  $("dgAtt").classList.add("open");$("dgAttTitle").focus?.();
+}
+$("dgAttClose").onclick=dgAttHide;
 function dgFill(){
   const body=$("dgBody"),items=dgState.items;
   $("dgSub").textContent=`${items.length} email${items.length===1?"":"s"} waiting`;
@@ -7104,7 +7223,7 @@ async function dgOpen(){
   dgFill();$("digestView").classList.add("open");$("dgScrim").classList.add("show");$("dgTitle").focus();
   if(dgState.unread){try{await secureBackendRequest("/api/v1/me/held-summary/seen",{method:"POST",body:"{}"})}catch{}dgState.unread=false;dgPaint()}
 }
-function dgClose(){$("digestView").classList.remove("open");$("dgScrim").classList.remove("show")}
+function dgClose(){$("digestView").classList.remove("open");$("dgScrim").classList.remove("show");dgAttHide()}
 $("dgScrim").onclick=()=>dgClose();
 $("dgClose").onclick=dgClose;
 async function dgDone(){
@@ -7665,7 +7784,7 @@ async function loadWaiting(){
     }));
   }catch{box.hidden=true}
 }
-// ---- Sent: the last 14 days, read from the mailbox when opened, never stored ----
+// ---- Sent: the last 4 months, read from the mailbox when opened, never stored ----
 let sentAcct="";
 async function loadSent(){
   if(!accounts.length)return;
@@ -7681,9 +7800,9 @@ async function loadSent(){
   try{
     const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/sent`,{method:"GET",headers:{}});
     if(aid!==sentAcct||filter!=="sent")return;
-    status.textContent=r.items.length?"":"Nothing sent in the last 14 days.";
+    status.textContent=r.items.length?"":"Nothing sent in the last 4 months.";
     list.replaceChildren(...r.items.map(it=>sentRow(it,r,aid)));
-    foot.textContent=r.more?"Showing the newest 100. Limited to the last 14 days.":"Limited to the last 14 days.";foot.hidden=false;
+    foot.textContent=r.more?"Showing the newest 300. Limited to the last 4 months.":"Limited to the last 4 months.";foot.hidden=false;
   }catch(er){
     status.textContent="";
     const msg=document.createElement("div");msg.className="sent-note";msg.textContent=er.message+" ";
@@ -8442,6 +8561,13 @@ document.addEventListener("visibilitychange",()=>{if(document.hidden&&isPhone())
 // ---- View panel wiring ----
 function setViewPanel(open){document.body.classList.toggle("vopen",open);$("viewTab").setAttribute("aria-expanded",String(open))}
 $("viewTab").onclick=()=>setViewPanel(!document.body.classList.contains("vopen"));
+// A click anywhere outside the panel closes it (the little arrow and the menu item that open it are left to do their own job).
+document.addEventListener("click",e=>{
+  if(!document.body.classList.contains("vopen"))return;
+  const t=e.target;if(!t||!t.closest||!t.isConnected)return;
+  if(t.closest("#viewPanel,#viewTab,#customiseBtn"))return;
+  setViewPanel(false);
+},true);
 $("viewPanel").addEventListener("click",e=>{
   const b=e.target.closest("[data-view]");if(!b)return;
   view[b.dataset.view]=b.dataset.val;saveView();applyView();render();

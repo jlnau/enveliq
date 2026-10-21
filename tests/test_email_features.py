@@ -1,4 +1,4 @@
-"""Optional features: switches (admin and per person), New email, address book, Sent (14 days, read-only), attachments."""
+"""Optional features: switches (admin and per person), New email, address book, Sent (4 months, read-only), attachments."""
 from __future__ import annotations
 
 import base64
@@ -193,17 +193,18 @@ def add_sent(bridge):
     bridge.folders.append(("\\HasNoChildren \\Sent", "Sent"))
     bridge.add(501, sent_mail("Recent one", "dana@example.invalid", 1, "s1"), folder="Sent")
     bridge.add(502, sent_mail("Two weeks ago", "eve@example.invalid", 13, "s2"), folder="Sent")
-    bridge.add(503, sent_mail("Too old", "frank@example.invalid", 20, "s3"), folder="Sent")
+    bridge.add(503, sent_mail("Three months ago", "frank@example.invalid", 90, "s3"), folder="Sent")
+    bridge.add(504, sent_mail("Too old", "gina@example.invalid", 150, "s4"), folder="Sent")
 
 
-def test_sent_shows_only_the_last_14_days_newest_first(env):
+def test_sent_shows_only_the_last_4_months_newest_first(env):
     _, client, bridge, _ = env
     aid, _ = synced(client, bridge)
     add_sent(bridge)
     r = client.get(f"/api/v1/accounts/{aid}/sent")
     assert r.status_code == 200, r.text
     body = r.json()
-    assert [i["subject"] for i in body["items"]] == ["Recent one", "Two weeks ago"] and body["days"] == 14
+    assert [i["subject"] for i in body["items"]] == ["Recent one", "Two weeks ago", "Three months ago"] and body["days"] == 120
     assert r.headers["cache-control"] == "no-store"
 
 

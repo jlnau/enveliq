@@ -1749,7 +1749,7 @@ async function adminPage(me, only) {
 const FEATURE_HINTS = {
   compose: "Write a new email from Enveliq, using your own mailbox. Nothing is sent until the person presses Send.",
   address_book: "Remember names and email addresses (never email text) so they can be suggested when writing. Stored encrypted, one private book per person.",
-  sent: "A read-only list of the last 14 days of sent mail, read from the mailbox when opened and never stored.",
+  sent: "A read-only list of the last 4 months of sent mail, read from the mailbox when opened and never stored.",
   media: "Show pictures that are part of an email, preview picture attachments and save attachments, fetched only when asked for and never stored.",
   junk_mail: "Adds a Junk Mail folder to the left menu. Enveliq reads the sender, subject and date of recent mail in each mailbox's Junk or Spam folder, and the AI says whether each one is junk or needs a look, with a short summary. The email stays in the mailbox. You can view an email with links, pictures from the internet and anything that runs switched off, and press Not junk to move it back to the Inbox at your mail service. Only the AI's short answer is stored, encrypted.",
   clean_up: "Adds a Clean up page that lists the mailing lists filling the inbox (last 60 days). For each one a person can unsubscribe, archive what is already there, archive new email from it, or keep it. Only email headers are read, in memory, and nothing is ever deleted.",

@@ -23,6 +23,7 @@ const html = fs.readFileSync(target, "utf8");
 const ORIGIN = "http://enveliq.test";
 
 let failed = false;
+const panelOpen = async (page) => { if (!(await page.evaluate(() => document.body.classList.contains("vopen")))) { await page.click("#viewTab"); await page.waitForTimeout(250); } };   // clicking outside closes the panel, as it should
 const check = (label, good) => { console.log((good ? "✓ " : "✗ ") + label); if (!good) { failed = true; console.log("::error::" + label); } };
 for (const ev of ["uncaughtException", "unhandledRejection"]) process.on(ev, (e) => { console.log("::error::" + String((e && e.message) || e).split("\n").slice(0, 3).join(" | ") + " @ " + String((e && e.stack) || "").split("\n").filter((l) => /check_inbox/.test(l)).slice(0, 2).join(" ")); process.exit(1); });
 
@@ -530,27 +531,27 @@ await page.click('[data-theme-choice="dark"]');
   await page.evaluate(() => document.getElementById("toast").classList.remove("show"));
   const rowH = async () => (await page.locator("article.mail .qrow").first().boundingBox()).height;
   const h0 = await rowH();
-  await page.click('#viewPanel [data-view=density][data-val=compact]');
+  await panelOpen(page); await page.click('#viewPanel [data-view=density][data-val=compact]');
   const hC = await rowH();
-  await page.click('#viewPanel [data-view=density][data-val=roomy]');
+  await panelOpen(page); await page.click('#viewPanel [data-view=density][data-val=roomy]');
   const hR = await rowH();
   check("compact rows are tighter and roomy rows looser than standard, live", hC < h0 && hR > h0);
-  await page.click('#viewPanel [data-view=density][data-val=standard]');
+  await panelOpen(page); await page.click('#viewPanel [data-view=density][data-val=standard]');
   const w0 = (await page.locator(".content").boundingBox()).width;
   await page.setViewportSize({ width: 1700, height: 900 });
   const w1 = (await page.locator(".content").boundingBox()).width;
-  await page.click('#viewPanel [data-view=width][data-val=full]');
+  await panelOpen(page); await page.click('#viewPanel [data-view=width][data-val=full]');
   check("full width widens the page, header included", (await page.locator(".content").boundingBox()).width > w1 + 30 && (await page.locator(".top-inner").boundingBox()).width > 1200);
   check("the Today card sits inside the page column, so it follows the width setting", await page.evaluate(() => !!document.querySelector(".content #dueBars")));
-  await page.click('#viewPanel [data-view=width][data-val=centered]');
+  await panelOpen(page); await page.click('#viewPanel [data-view=width][data-val=centered]');
   await page.setViewportSize({ width: 1200, height: 900 });
-  await page.check("#vOpen");
+  await panelOpen(page); await page.check("#vOpen");
   check("'show every email open' opens all rows with no collapse", (await page.locator("article.mail.open").count()) === (await page.locator("article.mail").count()) && (await page.locator("article.mail .qrow .qic").count()) === 0);
   await page.locator("article.mail .qmain").first().click();
   check("…and clicking a row does not collapse it", (await page.locator("article.mail.open").count()) === (await page.locator("article.mail").count()));
-  await page.uncheck("#vOpen");
+  await panelOpen(page); await page.uncheck("#vOpen");
   // reading pane on the right
-  await page.click('#viewPanel [data-view=layout][data-val=right]');
+  await panelOpen(page); await page.click('#viewPanel [data-view=layout][data-val=right]');
   const rowsN = await page.locator(".panelist article.mail").count();
   check("reading pane on the right: no email initially selected, no expanding rows", (await page.locator("#readDock .reading").count()) === 1 && (await page.locator("#readDock .enveliq-empty-actions .enveliq-empty-action").count()) === 4 && (await page.locator(".panelist article.mail.current").count()) === 0 && (await page.locator("article.mail.open").count()) === 0 && rowsN >= 2);
   const lb = await page.locator(".panelist").boundingBox(), rb = await page.locator(".reading").boundingBox();
@@ -567,11 +568,11 @@ await page.click('[data-theme-choice="dark"]');
   await page.waitForTimeout(1500);
   check("Reviewed in the reading pane works and clears the selection", server.calls.slice(callsBefore).some((c) => c[0] === "resolve" && c[2].outcome === "reviewed") && (await page.locator(".reading .rhead h3").count()) === 0 && (await page.locator(".panelist article.mail.current").count()) === 0);
   // reading pane below
-  await page.click('#viewPanel [data-view=layout][data-val=bottom]');
+  await panelOpen(page); await page.click('#viewPanel [data-view=layout][data-val=bottom]');
   const pb = await page.locator(".panelist").boundingBox(), rb2 = await page.locator(".reading").boundingBox();
   check("reading pane below: list above, email under it, list is a scrolling box", rb2.y >= pb.y + pb.height - 2 && (await page.locator(".panelist").evaluate((e) => getComputedStyle(e).overflowY)) === "auto");
   // focus deck
-  await page.click('#viewPanel [data-view=layout][data-val=deck]');
+  await panelOpen(page); await page.click('#viewPanel [data-view=layout][data-val=deck]');
   await page.waitForSelector(".deckcard");
   const cnt0 = (await page.locator(".deckcount").innerText()).trim();
   check("focus deck shows one email as a card with a count", /^\d+ of \d+$/.test(cnt0) && (await page.locator("article.mail").count()) === 0);
