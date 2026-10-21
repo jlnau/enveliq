@@ -6,6 +6,15 @@ The small things that make the inbox calm to use.
 
 The Tag, Task, Reply and other email actions have a fine oval outline so they are easier to recognise as buttons. The outline is drawn inside each existing button, without changing its size or spacing. The same design works in light and dark mode.
 
+## Email style: Classic or Side rail
+
+**Customise, Email style** has two choices. **Classic** is how an opened email has always looked, and it stays the default. **Side rail** is an alternative:
+
+- **On a computer** (the reading panel beside the list, or under it): a narrow bar runs down the left of the email with Reply, Forward, Snooze, Task and Tags at the top, and Reviewed, Archive and Bin at the bottom, each with a small label. If the email has a task, it sits as a flat bar across the top. Under the heading you see the email address, the sender and the time, then the tags and the four Copy buttons. The AI summary comes first, then any attachments. The From, Received, Category and Attachments box is not repeated, because that information is already in the heading line. If **Show the original email** is on, it appears under the attachments.
+- **On a phone:** there is no side bar. A small X at the top closes the email, the task sits as a bar under it, and the heading has a Reply button and the three-dot menu on its right. The email address is a button: tap it to open Copy sender address, Copy subject and the other copy choices. Reviewed, Archive, Bin, Snooze and Tags are square icon buttons fixed along the bottom. The original email is not shown inline on a phone.
+
+The choice is saved with your other View choices, and **Reset to default** puts it back to Classic. Side rail applies to the reading panel and to the full-screen email on a phone; the list rows, the Cards layout and the daily summary look the same either way. Every button does the same thing as its Classic twin. The browser check is `scripts/check_email_style.mjs`.
+
 ## The three-dot menu on an email
 
 The action row under an email ends, at the far right on a computer and on a phone, with a **three-dot button**. It opens a menu with Reply, Reply all, Forward and Snooze (these stay in the row too), and also: **Important person**, **Always archive these**, **Send to Junk**, **Block sender** (it sends this email to Junk and makes sure new email from them goes there too; undo it in Settings, Mail rules), **Mute conversation** (see [Mute](MUTE.md)), **Print email** and **Save as PDF**. On a phone the same menu slides up from the bottom. Escape closes it and the arrow keys move through it. The same three-dot button is in the open original email. The Android app already had these actions behind its three dots; it now has **Mute conversation** there too.
