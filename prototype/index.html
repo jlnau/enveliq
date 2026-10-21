@@ -416,6 +416,42 @@ body.in-found [data-status="archived"],body.in-found [data-status="trashed"]{dis
 .compose-body input,.compose-body select,.compose-body textarea{width:100%;background:var(--c-0f131a);border:1px solid var(--c-303746);color:var(--text);padding:9px 10px;border-radius:9px;font:inherit}
 .compose-body input[readonly]{color:var(--c-bfe3ff);background:var(--c-0c1626);border-color:var(--c-1f3f75)}
 .compose-body textarea{min-height:170px;resize:vertical;line-height:1.5}
+.splitbtn{position:relative;display:inline-flex}
+.splitbtn .split-main{border-radius:9px 0 0 9px}
+.splitbtn .split-caret{border-radius:0 9px 9px 0;padding:9px 8px;border-left:1px solid rgba(255,255,255,.4);display:inline-flex;align-items:center}
+.split-menu{position:absolute;right:0;bottom:calc(100% + 6px);min-width:190px;background:var(--c-11161f);border:1px solid var(--c-343b4b);border-radius:10px;box-shadow:var(--shadow);padding:4px;z-index:60;display:grid}
+.split-menu[hidden]{display:none}
+.split-item{background:transparent;border:0;color:var(--text);text-align:left;padding:10px 12px;border-radius:7px;font:inherit;cursor:pointer}
+.split-item:hover,.split-item:focus-visible{background:var(--c-1b2230,rgba(255,255,255,.08))}.split-item[hidden]{display:none}
+@media(max-width:760px){.splitbtn .split-main,.splitbtn .split-caret{min-height:44px}.split-item{min-height:44px}}
+body:has(#cmTray:not([hidden])) .toast{bottom:62px;z-index:46}
+@media(max-width:760px){body:has(#cmTray:not([hidden])) .toast{bottom:68px}}
+.cm-btns{display:inline-flex;align-items:center;gap:2px;flex:none}
+.cm-tray{position:fixed;right:16px;bottom:0;z-index:45;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;max-width:calc(100vw - 32px)}.cm-tray[hidden]{display:none}
+.cm-chip{display:flex;align-items:center;background:var(--c-11161f);border:1px solid var(--c-343b4b);border-bottom:0;border-radius:10px 10px 0 0;box-shadow:var(--shadow);width:230px}
+.cm-chip-open{flex:1;min-width:0;background:transparent;border:0;color:var(--text);padding:0 6px 0 12px;text-align:left;font:inherit;font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;min-height:40px}
+.cm-chip-x{background:transparent;border:0;color:var(--muted);padding:0 12px;min-height:40px;cursor:pointer;font-size:16px;white-space:nowrap}
+.cm-chip-x.armed{color:var(--c-ecd7a7);font-size:12px}
+@media(max-width:760px){.cm-tray{left:0;right:0;max-width:none;gap:6px;padding:0 8px}.cm-chip{flex:1 1 140px;width:auto;min-width:0}.cm-chip-open,.cm-chip-x{min-height:48px}}
+.rte{border:1px solid var(--c-303746);border-radius:9px;background:var(--c-0f131a);position:relative}
+.rte:focus-within{border-color:var(--c-5b8def,#5b8def)}
+.rte-bar{display:flex;flex-wrap:wrap;align-items:center;gap:2px;padding:4px 6px;border-bottom:1px solid var(--c-303746);position:sticky;top:0;z-index:2;background:var(--c-0f131a);border-radius:9px 9px 0 0}
+.rte-b{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:7px;background:transparent;color:var(--text);font:inherit;font-size:14px;cursor:pointer;padding:0}
+.rte-b:hover{background:var(--c-1b2230,rgba(255,255,255,.08))}.rte-b[aria-pressed="true"]{background:var(--c-26334d,rgba(91,141,239,.28))}.rte-b:disabled{opacity:.4}
+.rte-b svg{width:20px;height:20px;fill:currentColor}.rte-b small{font-size:9px;vertical-align:sub}
+.rte-a{font-weight:700;border-bottom:3px solid #d93025;line-height:1}
+.rte-sep{width:1px;height:20px;background:var(--c-303746);margin:0 4px}
+.rte-pop{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px;border-bottom:1px solid var(--c-303746);background:var(--c-10141b)}.rte-pop[hidden]{display:none}
+.rte-pop.link input{flex:1 1 200px;min-width:0}
+.rte-sw{width:26px;height:26px;border-radius:50%;border:2px solid var(--c-303746);cursor:pointer;padding:0}
+.rte-msg{flex-basis:100%;color:var(--c-ecd7a7)}
+.compose-body .rte-body{min-height:170px;padding:9px 10px;line-height:1.5;outline:0;white-space:pre-wrap;overflow-wrap:anywhere;border:0;background:transparent;border-radius:0 0 9px 9px;width:auto;display:block}
+.rte-body.rte-empty::before{content:attr(data-ph);color:var(--faint);pointer-events:none}
+.rte-body img{max-width:100%;height:auto;border-radius:4px;cursor:default}
+.rte-body blockquote{margin:6px 0;padding-left:12px;border-left:2px solid var(--c-4a5368,#4a5368);color:var(--muted)}
+.rte-body ul,.rte-body ol{margin:4px 0;padding-left:26px}
+.rte-body a{color:var(--c-8ab4f8,#8ab4f8);text-decoration:underline}
+@media(max-width:760px){.rte-b{width:40px;height:40px}.compose-body .rte-body{min-height:200px}}
 .compose-hint{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.45}
 .compose-hint.alias{color:var(--c-b9d6f5)}.compose-hint.warn{color:var(--c-ecd7a7)}
 .compose details summary{cursor:pointer;color:var(--muted);font-size:12px}
@@ -2101,7 +2137,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
 <div class="compose" id="compose" role="dialog" aria-modal="true" aria-labelledby="composeTitle">
   <div class="compose-head">
     <div><h3 id="composeTitle">Reply</h3><p id="composeContext"></p></div>
-    <button class="attachment-modal-close" id="composeClose" aria-label="Close"><span aria-hidden="true">×</span><span class="cw">Close</span></button>
+    <span class="cm-btns"><button class="attachment-modal-close cm-min" id="composeMin" type="button" aria-label="Minimise" title="Minimise: keep this email at the bottom of the screen"><span aria-hidden="true">–</span></button><button class="attachment-modal-close" id="composeClose" aria-label="Close"><span aria-hidden="true">×</span><span class="cw">Close</span></button></span>
   </div>
   <form class="compose-body" id="composeForm">
     <div><label for="composeFrom">From</label><select id="composeFrom"></select><div class="compose-hint" id="composeFromHint"></div></div>
@@ -2112,7 +2148,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
     <div class="compose-hint" id="cmAuto" hidden></div>
     <div><label for="composeSubject">Subject</label><input id="composeSubject"></div>
     <div class="saved-row" id="composeSavedRow" hidden><label for="composeSaved">Saved reply</label><select id="composeSaved"></select></div>
-    <div><label for="composeText">Message</label><textarea id="composeText" placeholder="Write your reply"></textarea></div>
+    <div><label id="composeTextL">Message</label><div id="composeText" class="rte-body"></div></div>
     <div class="wh" id="composeWh" hidden></div>
     <div id="cmAttRow" hidden><label>Files you are adding</label><div class="nm-files" id="cmAtt"></div></div>
     <div><button class="btn" type="button" id="cmAttach">Attach files</button><input type="file" id="cmFile" multiple hidden></div>
@@ -2122,7 +2158,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
   </form>
   <div class="compose-foot">
     <small>Prototype: nothing is sent. You always press Send yourself; the AI never sends mail.</small>
-    <div class="modal-actions"><button class="btn" id="composeCancel">Cancel</button><button class="btn" id="composeLater" type="button">Send later</button><button class="btn quick-ai" id="composeQuick" type="button" hidden title="Fixes spelling, grammar and punctuation, then sends at once. Nothing else is changed.">Quick AI Send</button><button class="primary" id="composeSend">Send reply</button></div>
+    <div class="modal-actions"><button class="btn" id="composeCancel">Cancel</button><span class="splitbtn" id="composeSplit"><button class="primary split-main" id="composeSend">Send reply</button><button class="primary split-caret" id="composeMore" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="composeMenu" aria-label="More ways to send" title="More ways to send"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 10l5 5 5-5z" fill="currentColor"/></svg></button><div class="split-menu" id="composeMenu" role="menu" hidden><button class="split-item" id="composeLater" type="button" role="menuitem">Send later</button><button class="split-item quick-ai" id="composeQuick" type="button" role="menuitem" hidden title="Fixes spelling, grammar and punctuation, then sends at once. Nothing else is changed.">Quick AI Send</button></div></span></div>
   </div>
 </div>
 
@@ -2154,10 +2190,11 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
   <div class="compose-foot"><span></span><div class="modal-actions"><button class="primary" id="sendWarnNo" type="button">Go back</button><button class="btn" id="sendWarnYes" type="button">Send anyway</button></div></div>
 </div>
 <div class="compose-scrim" id="nmScrim"></div>
+<div class="cm-tray" id="cmTray" role="region" aria-label="Emails you are writing" hidden></div>
 <div class="compose" id="newMail" role="dialog" aria-modal="true" aria-labelledby="nmTitle">
   <div class="compose-head">
     <div><h3 id="nmTitle">New email</h3><p>From your mailbox. Nothing is sent until you press Send.</p></div>
-    <button class="attachment-modal-close" id="nmClose" type="button" aria-label="Close"><span aria-hidden="true">×</span><span class="cw">Close</span></button>
+    <span class="cm-btns"><button class="attachment-modal-close cm-min" id="nmMin" type="button" aria-label="Minimise" title="Minimise: keep this email at the bottom of the screen"><span aria-hidden="true">–</span></button><button class="attachment-modal-close" id="nmClose" type="button" aria-label="Close"><span aria-hidden="true">×</span><span class="cw">Close</span></button></span>
   </div>
   <form class="compose-body" id="nmForm" autocomplete="off">
     <div><label for="nmFrom">From</label><select id="nmFrom"></select></div>
@@ -2166,7 +2203,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
     <div id="nmBccRow" hidden><label>Bcc</label><div class="chips" id="nmBcc" data-label="Bcc"></div></div>
     <div><label for="nmSubject">Subject</label><input id="nmSubject" maxlength="900"></div>
     <div class="saved-row" id="nmSavedRow" hidden><label for="nmSaved">Saved reply</label><select id="nmSaved"></select></div>
-    <div><label for="nmText">Message</label><textarea id="nmText" maxlength="100000"></textarea></div>
+    <div><label id="nmTextL">Message</label><div id="nmText" class="rte-body"></div></div>
     <div class="wh" id="nmWh" hidden></div>
     <div class="nm-files" id="nmFiles"></div>
     <div class="compose-hint" id="nmAuto" hidden></div>
@@ -2174,7 +2211,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
   <div class="compose-foot">
     <span class="nm-attach"><button class="btn" id="nmAttach" type="button">Attach</button><input type="file" id="nmFile" multiple hidden></span>
     <small id="nmHint"></small>
-    <div class="modal-actions"><button class="btn" id="nmCancel" type="button">Cancel</button><button class="btn" id="nmLater" type="button">Send later</button><button class="btn quick-ai" id="nmQuick" type="button" hidden title="Fixes spelling, grammar and punctuation, then sends at once. Nothing else is changed.">Quick AI Send</button><button class="primary" id="nmSend" type="button">Send</button></div>
+    <div class="modal-actions"><button class="btn" id="nmCancel" type="button">Cancel</button><span class="splitbtn" id="nmSplit"><button class="primary split-main" id="nmSend" type="button">Send</button><button class="primary split-caret" id="nmMore" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="nmMenu" aria-label="More ways to send" title="More ways to send"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 10l5 5 5-5z" fill="currentColor"/></svg></button><div class="split-menu" id="nmMenu" role="menu" hidden><button class="split-item" id="nmLater" type="button" role="menuitem">Send later</button><button class="split-item quick-ai" id="nmQuick" type="button" role="menuitem" hidden title="Fixes spelling, grammar and punctuation, then sends at once. Nothing else is changed.">Quick AI Send</button></div></span></div>
   </div>
 </div>
 <div class="picbox" id="picBox" role="dialog" aria-modal="true" aria-labelledby="picName" hidden>
@@ -4033,6 +4070,7 @@ function paintSaved(selId,rowId){
 }
 function insertSaved(sel,ta){
   const r=saved.replies.find(x=>x.id===sel.value);sel.value="";if(!r)return;
+  if(ta.rteInsert){ta.rteInsert(r.text);ta.dispatchEvent(new Event("input",{bubbles:true}));return}
   const s=typeof ta.selectionStart==="number"?ta.selectionStart:ta.value.length,e=typeof ta.selectionEnd==="number"?ta.selectionEnd:s;
   const before=ta.value.slice(0,s),after=ta.value.slice(e);
   ta.value=before+r.text+after;const pos=(before+r.text).length;
@@ -4532,6 +4570,264 @@ function paintCmFiles(){
     sp.append(b,z,x);return sp;
   }));
 }
+// ---- The writing box: bold, italic, colours, lists, links and pictures. It makes simple formatted text; the server rebuilds it from a short list of allowed parts before it is sent. ----
+const RTE_TAGS=new Set("A B BLOCKQUOTE BR CODE DIV EM H1 H2 H3 HR I IMG LI OL P PRE S SPAN STRIKE STRONG SUB SUP U UL DEL".split(" "));
+const RTE_DROP=new Set("SCRIPT STYLE NOSCRIPT TEMPLATE IFRAME FRAME OBJECT EMBED APPLET SVG MATH CANVAS AUDIO VIDEO SELECT TEXTAREA BUTTON FORM INPUT LINK META HEAD TITLE".split(" "));
+const RTE_VOID=new Set(["BR","HR","IMG"]);
+const RTE_COLORS=[["Black","#000000"],["Red","#d93025"],["Orange","#e8710a"],["Green","#188038"],["Blue","#1a73e8"],["Purple","#9334e6"],["Pink","#d01884"],["Grey","#5f6368"]];
+const RTE_PIC=/^data:image\/(png|jpeg|gif|webp);base64,/i;
+const RTE_MAX_PICS=12,RTE_MAX_PIC_BYTES=6000000,RTE_MAX_TOTAL=12000000;
+function rteStyle(st){
+  const out=[],c=st.color;
+  if(c&&/^(#[0-9a-f]{3,8}|rgba?\([\d\s,.]+\)|[a-z]{3,25})$/i.test(c))out.push("color:"+c);
+  if(st.fontWeight==="bold"||+st.fontWeight>=600)out.push("font-weight:bold");
+  if(st.fontStyle==="italic")out.push("font-style:italic");
+  const td=st.textDecorationLine||st.textDecoration||"",u=/underline/.test(td),l=/line-through/.test(td);
+  if(u||l)out.push("text-decoration:"+(u&&l?"underline line-through":u?"underline":"line-through"));
+  if(/^(left|right|center)$/.test(st.textAlign))out.push("text-align:"+st.textAlign);
+  const ml=parseFloat(st.marginLeft);
+  if(ml>0&&ml<=400&&/px$/.test(st.marginLeft))out.push("margin-left:"+Math.round(ml)+"px");
+  return out.join(";");
+}
+// Rebuilds [src] (already parsed, never run) from allowed parts only. With images:true, pictures that are data: images stay.
+function rteSan(src,opts){
+  const out=document.createDocumentFragment();
+  const walk=(n,into,depth)=>{
+    for(const c of n.childNodes){
+      if(c.nodeType===3){into.append(document.createTextNode(c.data));continue}
+      if(c.nodeType!==1)continue;
+      const t=c.tagName.toUpperCase();
+      if(RTE_DROP.has(t))continue;
+      if(!RTE_TAGS.has(t)||depth>60){walk(c,into,depth+1);continue}
+      if(t==="IMG"){
+        const s=c.getAttribute("src")||"";
+        if(opts.images&&RTE_PIC.test(s)){const i=document.createElement("img");i.setAttribute("src",s);i.setAttribute("alt",(c.getAttribute("alt")||"Picture").slice(0,200));into.append(i)}
+        continue;
+      }
+      const e=document.createElement(t.toLowerCase());
+      if(t==="A"){const h=(c.getAttribute("href")||"").trim();if(/^(https?:\/\/|mailto:)[^\s"'<>]+$/i.test(h))e.setAttribute("href",h)}
+      const st=rteStyle(c.style);if(st)e.setAttribute("style",st);
+      if(!RTE_VOID.has(t))walk(c,e,depth+1);
+      into.append(e);
+    }
+  };
+  walk(src,out,0);return out;
+}
+// The words of the box as plain text: lines, "- " for bullets, "> " for quotes, a link's address after its words.
+function rteText(root){
+  let out="";
+  const nl=()=>{if(out&&!out.endsWith("\n"))out+="\n"};
+  const kids=(n,ctx)=>{for(const c of n.childNodes)walk(c,ctx)};
+  const walk=(n,ctx)=>{
+    if(n.nodeType===3){out+=n.data.replace(/ /g," ");return}
+    if(n.nodeType!==1)return;
+    const t=n.tagName.toUpperCase();
+    if(t==="BR"){out+="\n";return}
+    if(t==="IMG"||RTE_DROP.has(t))return;
+    if(t==="BLOCKQUOTE"){
+      nl();const keep=out;out="";kids(n,ctx);
+      const inner=out.replace(/\n+$/,"");out=keep+inner.split("\n").map(l=>l?"> "+l:">").join("\n")+"\n";return;
+    }
+    if(t==="UL"||t==="OL"){nl();let i=0;for(const li of n.children){if(li.tagName==="LI"){i++;nl();out+=t==="OL"?i+". ":"- ";kids(li,ctx);nl()}else walk(li,ctx)}return}
+    if(t==="A"){
+      const start=out.length;kids(n,ctx);
+      const h=n.getAttribute("href")||"",label=out.slice(start).trim();
+      if(/^https?:/i.test(h)&&label&&label.replace(/\/$/,"")!==h.replace(/\/$/,"")&&label!==h.replace(/^https?:\/\//i,"").replace(/\/$/,""))out+=" ("+h+")";
+      return;
+    }
+    if(/^(DIV|P|H[1-6]|LI|PRE|HR)$/.test(t)){nl();kids(n,ctx);nl();return}
+    kids(n,ctx);
+  };
+  for(const c of root.childNodes)walk(c,null);
+  return out.replace(/\n+$/,"");
+}
+function rteReadFile(f){return new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result));r.onerror=()=>no(new Error("read"));r.readAsDataURL(f)})}
+// A picture made small enough to send: wide photos are scaled down, others kept as they are.
+async function rtePicture(f){
+  if(!/^image\/(png|jpeg|gif|webp)$/.test(f.type))throw new Error("Pictures can be PNG, JPEG, GIF or WebP.");
+  if(f.size>25*1024*1024)throw new Error("That picture is too big. Choose a smaller one.");
+  const orig=await rteReadFile(f);
+  if(f.type==="image/gif"){if(f.size>RTE_MAX_PIC_BYTES)throw new Error("That picture is too big. Choose a smaller one.");return orig}
+  const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error("That picture could not be opened."));i.src=orig});
+  const W=img.naturalWidth,H=img.naturalHeight,max=1280;
+  if(W<=max&&f.size<=600*1024)return orig;
+  const k=Math.min(1,max/Math.max(W,H)),c=document.createElement("canvas");c.width=Math.max(1,Math.round(W*k));c.height=Math.max(1,Math.round(H*k));
+  const g=c.getContext("2d");g.fillStyle="#ffffff";g.fillRect(0,0,c.width,c.height);g.drawImage(img,0,0,c.width,c.height);
+  return c.toDataURL("image/jpeg",0.85);
+}
+const RTE_ICONS={
+  ul:'<svg viewBox="0 0 24 24"><path d="M4 6h2v2H4zM8 6h12v2H8zM4 11h2v2H4zM8 11h12v2H8zM4 16h2v2H4zM8 16h12v2H8z"/></svg>',
+  ol:'<svg viewBox="0 0 24 24"><path d="M9 6h11v2H9zM9 11h11v2H9zM9 16h11v2H9z"/><text x="2" y="9" font-size="6.5">1</text><text x="2" y="14" font-size="6.5">2</text><text x="2" y="19" font-size="6.5">3</text></svg>',
+  indent:'<svg viewBox="0 0 24 24"><path d="M3 5h18v2H3zM11 9h10v2H11zM11 13h10v2H11zM3 17h18v2H3zM3 9l4 3-4 3z"/></svg>',
+  outdent:'<svg viewBox="0 0 24 24"><path d="M3 5h18v2H3zM11 9h10v2H11zM11 13h10v2H11zM3 17h18v2H3zM7 9l-4 3 4 3z"/></svg>',
+  quote:'<svg viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/></svg>',
+  link:'<svg viewBox="0 0 24 24"><path d="M3.9 12a3.1 3.1 0 013.1-3.1h4V7H7a5 5 0 000 10h4v-1.9H7A3.1 3.1 0 013.9 12zM8 13h8v-2H8zm9-6h-4v1.9h4a3.1 3.1 0 010 6.2h-4V17h4a5 5 0 000-10z"/></svg>',
+  photo:'<svg viewBox="0 0 24 24"><path d="M21 19V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2zM8.5 13.5l2.5 3 3.5-4.5 4.5 6H5z"/></svg>'
+};
+// Turns [ed] (a div with contenteditable) into the writing box. It keeps the small set of properties the page used on a plain text box
+// (value, placeholder, readOnly, focus, setSelectionRange), so the rest of the page does not need to know the difference.
+function rich(ed,tag){
+  ed.contentEditable="true";ed.setAttribute("role","textbox");ed.setAttribute("aria-multiline","true");ed.setAttribute("aria-label","Message");ed.spellcheck=true;
+  const wrap=document.createElement("div");wrap.className="rte";
+  const bar=document.createElement("div");bar.className="rte-bar";bar.setAttribute("role","toolbar");bar.setAttribute("aria-label","Formatting");
+  const pop=document.createElement("div");pop.className="rte-pop";pop.hidden=true;
+  const file=document.createElement("input");file.type="file";file.accept="image/png,image/jpeg,image/gif,image/webp";file.multiple=true;file.hidden=true;file.id=ed.id+"Pic";
+  ed.replaceWith(wrap);wrap.append(bar,pop,ed,file);
+  const sel=()=>getSelection();
+  let saved=null;
+  const inside=r=>r&&ed.contains(r.commonAncestorContainer);
+  const keep=()=>{const s=sel();if(s.rangeCount&&inside(s.getRangeAt(0)))saved=s.getRangeAt(0).cloneRange()};
+  const back=()=>{ed.focus();if(saved){const s=sel();s.removeAllRanges();s.addRange(saved)}};
+  const cmd=(c,v)=>{ed.focus();try{document.execCommand(c,false,v)}catch{}paint()};
+  const btns=[];
+  const add=(id,label,html,run,cls)=>{
+    const b=document.createElement("button");b.type="button";b.className="rte-b"+(cls?" "+cls:"");b.title=label;b.setAttribute("aria-label",label);b.dataset.rte=id;b.innerHTML=html;
+    b.addEventListener("mousedown",e=>e.preventDefault());           // keeps the cursor in the text
+    b.addEventListener("click",()=>{if(ed.contentEditable==="true")run(b)});
+    bar.append(b);btns.push(b);return b;
+  };
+  const sep=()=>{const s=document.createElement("span");s.className="rte-sep";bar.append(s)};
+  add("bold","Bold (Ctrl+B)","<b>B</b>",()=>cmd("bold"));
+  add("italic","Italic (Ctrl+I)","<i>I</i>",()=>cmd("italic"));
+  add("underline","Underline (Ctrl+U)","<u>U</u>",()=>cmd("underline"));
+  add("strike","Strikethrough","<s>S</s>",()=>cmd("strikeThrough"));
+  const colorBtn=add("color","Text colour",'<span class="rte-a">A</span>',()=>{keep();showColors()});
+  sep();
+  add("ul","Bullet list",RTE_ICONS.ul,()=>cmd("insertUnorderedList"));
+  add("ol","Numbered list",RTE_ICONS.ol,()=>cmd("insertOrderedList"));
+  add("outdent","Less indent",RTE_ICONS.outdent,()=>cmd("outdent"));
+  add("indent","More indent",RTE_ICONS.indent,()=>cmd("indent"));
+  add("quote","Quote",RTE_ICONS.quote,()=>{
+    const s=sel();let n=s.rangeCount?s.anchorNode:null;while(n&&n!==ed&&!(n.nodeType===1&&n.tagName==="BLOCKQUOTE"))n=n.parentNode;
+    cmd("formatBlock",n&&n!==ed?"div":"blockquote");
+  });
+  sep();
+  add("link","Add a link (Ctrl+K)",RTE_ICONS.link,()=>{keep();showLink()});
+  add("photo","Add a picture",RTE_ICONS.photo,()=>{keep();file.click()});
+  sep();
+  add("clear","Clear formatting","T<small>x</small>",()=>cmd("removeFormat"));
+  const paint=()=>{
+    const s=sel(),on=s.rangeCount&&inside(s.getRangeAt(0));
+    for(const b of btns){
+      const q={bold:"bold",italic:"italic",underline:"underline",strike:"strikeThrough",ul:"insertUnorderedList",ol:"insertOrderedList"}[b.dataset.rte];
+      let v=false;if(q&&on){try{v=document.queryCommandState(q)}catch{}}
+      b.setAttribute("aria-pressed",q?String(v):"false");
+    }
+    empty();
+  };
+  const empty=()=>{ed.classList.toggle("rte-empty",!ed.textContent.replace(/ /g,"").trim()&&!ed.querySelector("img"))};
+  document.addEventListener("selectionchange",()=>{if(document.activeElement===ed)paint()});
+  const hidePop=()=>{pop.hidden=true;pop.replaceChildren()};
+  const showColors=()=>{
+    pop.replaceChildren();pop.className="rte-pop colors";
+    for(const [name,hex] of RTE_COLORS){
+      const b=document.createElement("button");b.type="button";b.className="rte-sw";b.style.background=hex;b.title=name;b.setAttribute("aria-label",name);
+      b.addEventListener("mousedown",e=>e.preventDefault());
+      b.addEventListener("click",()=>{back();try{document.execCommand("styleWithCSS",false,true);document.execCommand("foreColor",false,hex)}catch{}try{document.execCommand("styleWithCSS",false,false)}catch{}hidePop();paint()});
+      pop.append(b);
+    }
+    pop.hidden=false;
+  };
+  const showLink=()=>{
+    pop.replaceChildren();pop.className="rte-pop link";
+    const inp=document.createElement("input");inp.type="text";inp.placeholder="Web address, like example.com";inp.setAttribute("aria-label","Web address");inp.autocomplete="off";
+    const ok=document.createElement("button");ok.type="button";ok.className="primary";ok.textContent="Add link";
+    const no=document.createElement("button");no.type="button";no.className="btn";no.textContent="Cancel";
+    const msg=document.createElement("small");msg.className="rte-msg";
+    const go=()=>{
+      let u=inp.value.trim();
+      if(u&&!/^[a-z][a-z0-9+.-]*:/i.test(u))u=/^[^\s@\/]+@[^\s@\/]+$/.test(u)?"mailto:"+u:"https://"+u;
+      if(!/^(https?:\/\/|mailto:)[^\s"'<>]{3,}$/i.test(u)){msg.textContent="Enter a web address, like example.com";inp.focus();return}
+      back();
+      const r=sel().rangeCount?sel().getRangeAt(0):null;
+      if(r&&!r.collapsed)document.execCommand("createLink",false,u);
+      else{const t=u.replace(/^mailto:/i,"");document.execCommand("insertHTML",false,`<a href="${esc(u)}">${esc(t)}</a>&nbsp;`)}
+      hidePop();paint();
+    };
+    ok.addEventListener("click",go);no.addEventListener("click",()=>{hidePop();back()});
+    inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();go()}else if(e.key==="Escape"){e.preventDefault();e.stopPropagation();hidePop();back()}});
+    pop.append(inp,ok,no,msg);pop.hidden=false;inp.focus();
+  };
+  const count=()=>ed.querySelectorAll("img").length;
+  const bytes=()=>[...ed.querySelectorAll("img")].reduce((n,i)=>n+Math.floor(((i.getAttribute("src")||"").length)*0.75),0);
+  async function addPics(list){
+    const files=[...list].filter(f=>/^image\//.test(f.type));
+    for(const f of files){
+      if(count()>=RTE_MAX_PICS){toast("A message can hold at most "+RTE_MAX_PICS+" pictures");break}
+      try{
+        const url=await rtePicture(f),size=Math.floor((url.length-url.indexOf(",")-1)*0.75);
+        if(size>RTE_MAX_PIC_BYTES||bytes()+size>RTE_MAX_TOTAL){toast("The pictures in this message are too big. Remove one or use a smaller picture.",6000);break}
+        back();
+        document.execCommand("insertHTML",false,`<img src="${url}" alt="Picture">`);
+      }catch(er){toast(er.message||"That picture could not be added")}
+    }
+    paint();ed.dispatchEvent(new Event("input",{bubbles:true}));
+  }
+  file.addEventListener("change",()=>{const l=[...file.files];file.value="";addPics(l)});
+  ed.addEventListener("paste",e=>{
+    const cd=e.clipboardData;if(!cd)return;
+    const pics=[...cd.files].filter(f=>/^image\//.test(f.type));
+    if(pics.length){e.preventDefault();keep();addPics(pics);return}
+    const h=cd.getData("text/html");
+    if(h){
+      e.preventDefault();
+      const box=document.createElement("div");box.append(rteSan(new DOMParser().parseFromString(h,"text/html").body,{images:false}));
+      document.execCommand("insertHTML",false,box.innerHTML);
+    }else{const t=cd.getData("text/plain");if(t){e.preventDefault();document.execCommand("insertText",false,t)}}
+  });
+  ed.addEventListener("dragover",e=>{if(e.dataTransfer&&[...e.dataTransfer.types].includes("Files"))e.preventDefault()});
+  ed.addEventListener("drop",e=>{
+    const pics=e.dataTransfer?[...e.dataTransfer.files].filter(f=>/^image\//.test(f.type)):[];
+    if(pics.length){e.preventDefault();keep();addPics(pics)}
+  });
+  ed.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.altKey&&e.key.toLowerCase()==="k"){e.preventDefault();keep();showLink()}});
+  ed.addEventListener("input",empty);
+  ed.addEventListener("blur",()=>keep());
+  // The same few properties a text box has.
+  const setPlain=v=>{
+    const lines=String(v==null?"":v).replace(/\r\n/g,"\n").split("\n"),nodes=[];
+    lines.forEach((l,i)=>{if(i)nodes.push(document.createElement("br"));if(l)nodes.push(document.createTextNode(l))});
+    ed.replaceChildren(...nodes);empty();
+  };
+  Object.defineProperty(ed,"value",{get:()=>rteText(ed),set:setPlain,configurable:true});
+  Object.defineProperty(ed,"placeholder",{get:()=>ed.dataset.ph||"",set:v=>{ed.dataset.ph=v||""},configurable:true});
+  Object.defineProperty(ed,"readOnly",{get:()=>ed.contentEditable!=="true",set:v=>{ed.contentEditable=v?"false":"true";for(const b of btns)b.disabled=!!v},configurable:true});
+  ed.setSelectionRange=()=>{const r=document.createRange();r.setStart(ed,0);r.collapse(true);const s=sel();s.removeAllRanges();s.addRange(r)};
+  // Formatted text in and out.
+  ed.rteLoad=(html,images,plain)=>{
+    if(!html){setPlain(plain);return}
+    const map=new Map((images||[]).map(i=>[i.cid,`data:${i.type};base64,${i.data}`]));
+    const doc=new DOMParser().parseFromString("<body>"+html+"</body>","text/html");
+    for(const i of doc.querySelectorAll("img")){const m=/^cid:(.+)$/.exec(i.getAttribute("src")||"");if(m&&map.has(m[1]))i.setAttribute("src",map.get(m[1]))}
+    ed.replaceChildren(rteSan(doc.body,{images:true}));empty();
+  };
+  ed.rteInsert=t=>{back();document.execCommand("insertText",false,t)};
+  ed.rteAppend=t=>{
+    while(ed.lastChild&&(ed.lastChild.nodeName==="BR"||(ed.lastChild.nodeType===3&&!ed.lastChild.data.trim())))ed.lastChild.remove();
+    String(t).replace(/\r\n/g,"\n").split("\n").forEach((l,i)=>{if(i)ed.append(document.createElement("br"));if(l)ed.append(document.createTextNode(l))});empty();
+  };
+  // What goes out: clean HTML, with each picture named by a short id and its content listed on its own.
+  ed.rteOut=()=>{
+    const box=document.createElement("div");box.append(rteSan(ed,{images:true}));
+    const images=[],ids=new Map();
+    for(const img of box.querySelectorAll("img")){
+      const s=img.getAttribute("src"),m=/^data:(image\/(?:png|jpeg|gif|webp));base64,(.*)$/i.exec(s);
+      if(!m){img.remove();continue}
+      let cid=ids.get(s);if(!cid){cid="pic"+(ids.size+1);ids.set(s,cid);images.push({cid,type:m[1].toLowerCase(),data:m[2]})}
+      img.setAttribute("src","cid:"+cid);img.setAttribute("style","max-width:100%;height:auto");
+    }
+    for(const q of box.querySelectorAll("blockquote"))if(!/margin-left/.test(q.getAttribute("style")||""))q.setAttribute("style","margin-left:0;padding-left:12px;border-left:2px solid #cccccc;color:#555555");
+    return {html:box.innerHTML,images};
+  };
+  // For a saved draft or a waiting email: the same without pictures.
+  ed.rteKeep=()=>{const box=document.createElement("div");box.append(rteSan(ed,{images:false}));return box.innerHTML};
+  ed.rtePictures=count;
+  ed.rteSig=()=>ed.innerHTML.replace(/src="data:[^"]*"/g,m=>'src="'+m.length+'"');
+  empty();
+  return ed;
+}
+
+rich($("composeText"));rich($("nmText"));
 // mode: "reply", "reply_all" or "forward". pre (after Undo): the people it was going to.
 function openComposer(id,mode,pre){
   mode=mode||"reply";
@@ -4542,6 +4838,8 @@ function openComposer(id,mode,pre){
   if(mode==="forward"&&!(m.real&&realMail))mode="reply";
   composing={m,plan,mode,draftId:(pre&&pre.draftId)||null};
   const f=cmFields();f.to.clear();f.cc.clear();f.bcc.clear();cm.files=[];cm.removed=0;cmExtra.length=0;paintCmExtra();paintCmFiles();
+  if(pre&&pre.cmFiles){cm.files=pre.cmFiles;cm.removed=pre.cmRemoved||0;paintCmFiles()}
+  if(pre&&pre.extra&&pre.extra.length){cmExtra.push(...pre.extra);paintCmExtra()}
   const word=mode==="forward"?"Forward":mode==="reply_all"?"Reply all to":"Reply to";
   $("composeTitle").textContent=mode==="forward"?`Forward: ${m.subject}`:`${word} ${m.sender}`;
   $("composeContext").textContent=`${m.subject} · ${plan.acct?.name||m.account}`;
@@ -4559,8 +4857,10 @@ function openComposer(id,mode,pre){
   else{f.to.set([plan.to,...(mode==="reply_all"?m.replyAlsoTo||[]:[])]);if(mode==="reply_all")f.cc.set(m.replyCc)}
   $("cmCcRow").hidden=!f.cc.items.length;$("cmBccRow").hidden=!f.bcc.items.length;
   $("composeSubject").value=mode==="forward"?(/^fwd?:/i.test(m.subject)?m.subject:`Fwd: ${m.subject}`):(/^re:/i.test(m.subject)?m.subject:`Re: ${m.subject}`);
+  if(pre&&pre.subject!=null&&pre.subject!=="")$("composeSubject").value=pre.subject;
   $("composeText").value=withSig("");whReset("reply");paintSaved("composeSaved","composeSavedRow");
   if(pre&&pre.body!=null)$("composeText").value=pre.body;
+  if(pre&&pre.html)$("composeText").rteLoad(pre.html,pre.images,pre.body);
   if(pre&&pre.from&&plan.identities.includes(pre.from))$("composeFrom").value=pre.from;
   $("composeText").placeholder=mode==="forward"?"Add a note (optional)":"Write your reply";
   $("composeSend").textContent=mode==="forward"?"Send forward":"Send reply";
@@ -4575,7 +4875,7 @@ function openComposer(id,mode,pre){
     setTimeout(()=>f.to.input.focus(),0);
     const mine=composing;
     secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/original`,{method:"GET",headers:{}})
-      .then(o=>{if(composing!==mine)return;cm.files=(o.attachments||[]).filter(a=>!a.inline).map(a=>({index:a.index,name:a.filename,size:a.size_bytes||0}));paintCmFiles()})
+      .then(o=>{if(composing!==mine||(pre&&pre.cmFiles))return;cm.files=(o.attachments||[]).filter(a=>!a.inline).map(a=>({index:a.index,name:a.filename,size:a.size_bytes||0}));paintCmFiles()})
       .catch(()=>{});
   }else setTimeout(()=>{const t=$("composeText");t.focus();t.setSelectionRange(0,0)},0);
 }
@@ -4594,7 +4894,7 @@ async function quoteInline(){
   try{
     const o=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/original`,{method:"GET",headers:{}});
     if(composing!==mine)return;
-    t.value=t.value.replace(/\s+$/,"")+"\n\n"+quoteBlock(o);
+    t.rteAppend("\n\n"+quoteBlock(o));
     $("cmQuoteHint").textContent="The original is now in your message. Change or cut it as you like. It will not be added a second time.";
     t.focus();t.setSelectionRange(0,0);t.scrollTop=0;
   }catch(e){if(composing===mine){btn.disabled=false;toast("Could not get the original email. Try again.")}}
@@ -4609,7 +4909,7 @@ function sendReply(){
   const f=cmFields();
   if(!f.to.commit()||!f.cc.commit()||!f.bcc.commit())return;
   const text=quickOverride?quickOverride.text:$("composeText").value.trim();
-  if(mode!=="forward"&&isBare(text)){toast("Write your reply first");$("composeText").focus();return}
+  if(mode!=="forward"&&isBare(text)&&!$("composeText").rtePictures()){toast("Write your reply first");$("composeText").focus();return}
   const from=$("composeFrom").value;
   if(!plan.identities.includes(from)){toast("Choose one of your sending addresses");return}
   const people=cmPeople();
@@ -4635,9 +4935,10 @@ function sendReply(){
     const ownSubject=$("composeSubject").value.trim();
     const subjectChange=ownSubject&&ownSubject!==usualSubject?{subject:ownSubject}:{};
     const plainDefault=!inlineQuote&&mode==="reply"&&!Object.keys(subjectChange).length&&!ccList.length&&!bccList.length&&toList.length===1&&toList[0]===plan.to;
+    const fmt=sendFmt($("composeText"));
     const req=mode==="forward"
-      ?secureBackendRequest(base+"/forward",{method:"POST",body:JSON.stringify({body:text,from_address:from,to:toList,cc:ccList,bcc:bccList,keep_files:cm.files.map(x=>x.index),files:cmExtra.map(x=>({name:x.name,type:x.type,data:x.data})),...subjectChange})})
-      :secureBackendRequest(base+"/reply",{method:"POST",body:JSON.stringify(plainDefault&&!cmExtra.length?{body:text,from_address:from}:{body:text,from_address:from,kind:mode,to:toList,cc:ccList,bcc:bccList,add_original:!inlineQuote,files:cmExtra.map(x=>({name:x.name,type:x.type,data:x.data})),...subjectChange})});
+      ?secureBackendRequest(base+"/forward",{method:"POST",body:JSON.stringify({body:text,from_address:from,to:toList,cc:ccList,bcc:bccList,keep_files:cm.files.map(x=>x.index),files:cmExtra.map(x=>({name:x.name,type:x.type,data:x.data})),...subjectChange,...fmt})})
+      :secureBackendRequest(base+"/reply",{method:"POST",body:JSON.stringify(plainDefault&&!cmExtra.length?{body:text,from_address:from,...fmt}:{body:text,from_address:from,kind:mode,to:toList,cc:ccList,bcc:bccList,add_original:!inlineQuote,files:cmExtra.map(x=>({name:x.name,type:x.type,data:x.data})),...subjectChange,...fmt})});
     const tgt=composing;
     req.then(async r=>{
         await settleAuto();const did=tgt.draftId;
@@ -6558,11 +6859,11 @@ async function undoSend(it){
     const m=realMsgOf(it);
     if(it.kind==="new"){
       if(!$("newMail").classList.contains("open")){
-        openNewMail({account_id:r.account_id,from:r.from,to:(r.draft||{}).to,cc:(r.draft||{}).cc,bcc:(r.draft||{}).bcc,subject:(r.draft||{}).subject,body:r.body,files:r.files});
+        openNewMail({account_id:r.account_id,from:r.from,to:(r.draft||{}).to,cc:(r.draft||{}).cc,bcc:(r.draft||{}).bcc,subject:(r.draft||{}).subject,body:r.body,html:r.html,images:r.images,files:r.files});
         toast(`Email cancelled. Nothing was sent. Your text${(r.files||[]).length?" and attachments are":" is"} back in the box.`,5000);
       }else toast("Email cancelled. Nothing was sent.",3500);
     }
-    else if(m&&!composing){openComposer(m.id,r.kind||"reply",r.to_list&&r.to_list.length?{to:r.to_list,cc:r.cc_list,bcc:r.bcc_list}:null);$("composeText").value=r.body||"";if(r.from&&[...$("composeFrom").options].some(o=>o.value===r.from))$("composeFrom").value=r.from;toast("Reply cancelled. Nothing was sent. Your text is back in the box.",4000)}
+    else if(m&&!composing){openComposer(m.id,r.kind||"reply",r.to_list&&r.to_list.length?{to:r.to_list,cc:r.cc_list,bcc:r.bcc_list}:null);$("composeText").rteLoad(r.html,r.images,r.body||"");if(r.from&&[...$("composeFrom").options].some(o=>o.value===r.from))$("composeFrom").value=r.from;toast("Reply cancelled. Nothing was sent. Your text is back in the box.",4000)}
     else toast("Reply cancelled. Nothing was sent.",3500);
   }catch(er){toast(er.message||"Too late: that reply has already gone",4500);pollOutbox()}
 }
@@ -6774,11 +7075,13 @@ async function quickAI(kind){
   if(isNew?nm.busy:(!composing||sendingReply))return;
   const subject=isNew?$("nmSubject").value.trim():"",draft=isNew?$("nmText").value:$("composeText").value.trim();
   if(isBare(draft)){toast("Write your message first");return}
-  const btn=$(isNew?"nmQuick":"composeQuick"),label=btn.textContent;
+  closeSplit();
+  const btn=$(isNew?"nmSend":"composeSend"),label=btn.textContent;
   quickBusy=true;btn.disabled=true;btn.textContent="Checking…";btn.classList.add("busy");
   try{
     const r=await secureBackendRequest("/api/v1/me/write-help/quick-fix",{method:"POST",body:JSON.stringify({subject,draft})});
     quickOverride={subject:r.subject||subject,text:r.text};whPassed=true;nmWarned=true;
+    btn.disabled=false;btn.textContent=label;btn.classList.remove("busy");
     try{if(isNew)await sendNew();else sendReply()}finally{quickOverride=null;whPassed=false;nmWarned=false}
   }catch(er){toast(er.message,6500)}
   finally{quickBusy=false;btn.disabled=false;btn.textContent=label;btn.classList.remove("busy")}
@@ -6932,11 +7235,11 @@ function renderDraftPage(){
 }
 function openDraft(id){
   const d=draftData.items.find(x=>x.id===id);if(!d)return;
-  const asNew=()=>openNewMail({account_id:d.account_id,to:d.to,cc:d.cc,bcc:d.bcc,subject:d.subject,body:d.body,from:d.from_address,draftId:d.id});
+  const asNew=()=>openNewMail({account_id:d.account_id,to:d.to,cc:d.cc,bcc:d.bcc,subject:d.subject,body:d.body,html:d.html,from:d.from_address,draftId:d.id});
   if(d.kind==="new"){asNew();return}
   const m=data.find(x=>x.real&&x.real.accountId===d.account_id&&x.real.messageId===d.message_id&&x.owner===currentUser.id);
   if(!m){toast("The email this answers is not in your list any more, so it opens as a new email.",5000);asNew();return}
-  openComposer(m.id,d.kind,{to:d.to,cc:d.cc,bcc:d.bcc,body:d.body,from:d.from_address,draftId:d.id});
+  openComposer(m.id,d.kind,{to:d.to,cc:d.cc,bcc:d.bcc,subject:d.subject,body:d.body,html:d.html,from:d.from_address,draftId:d.id});
 }
 let dkResolve=null;
 function draftAsk(what,hasDraft){
@@ -6962,23 +7265,27 @@ async function savedAsDraft(id,body){
   catch(er){toast(er.message||"Could not save the draft",6000);return false}
 }
 const bareOrText=t=>isBare(t)?"":String(t).trim();
+// The formatted text kept with a draft or a waiting email (pictures are not kept). Left out when there is no real writing or it is too long.
+const draftHtml=ed=>{if(isBare(ed.value))return "";const h=ed.rteKeep();return h.length>290000?"":h};
+// What a send carries: the formatted text and its pictures. Quick AI Send sends the corrected plain text instead.
+const sendFmt=ed=>{if(quickOverride)return {};const o=ed.rteOut();return isBare(ed.value)&&!o.images.length?{}:{html:o.html,images:o.images}};
 function composeSnap(){
   if(!composing)return "";
   const f=cmFields();
-  return JSON.stringify([composing.mode,f.to.items.map(p=>p.address),f.cc.items.map(p=>p.address),f.bcc.items.map(p=>p.address),bareOrText($("composeText").value),cm.removed]);
+  return JSON.stringify([composing.mode,f.to.items.map(p=>p.address),f.cc.items.map(p=>p.address),f.bcc.items.map(p=>p.address),bareOrText($("composeText").value),$("composeText").rteSig(),cm.removed]);
 }
 const peopleOf=f=>[...f.items.map(addrText),...(addrOk(f.input.value.trim())?[f.input.value.trim()]:[])];     // an address typed but not yet turned into a chip counts too
 function composePayload(){
   const {m,mode}=composing,f=cmFields();
-  return {kind:mode,account_id:m.real.accountId,message_id:m.real.messageId,from_address:$("composeFrom").value,to:peopleOf(f.to),cc:peopleOf(f.cc),bcc:peopleOf(f.bcc),subject:$("composeSubject").value,body:bareOrText($("composeText").value)};
+  return {kind:mode,account_id:m.real.accountId,message_id:m.real.messageId,from_address:$("composeFrom").value,to:peopleOf(f.to),cc:peopleOf(f.cc),bcc:peopleOf(f.bcc),subject:$("composeSubject").value,body:bareOrText($("composeText").value),html:draftHtml($("composeText"))};
 }
 function composeWorth(){
   const f=cmFields(),mode=composing.mode;
-  return !isBare($("composeText").value)||(mode==="forward"&&f.to.items.length>0)||(mode==="reply"&&(f.cc.items.length>0||f.bcc.items.length>0));
+  return !isBare($("composeText").value)||$("composeText").rtePictures()>0||(mode==="forward"&&f.to.items.length>0)||(mode==="reply"&&(f.cc.items.length>0||f.bcc.items.length>0));
 }
 function nmPayload(){
   const f=nmFields(),[aid,from]=$("nmFrom").value.split("|");
-  return {kind:"new",account_id:aid,from_address:from,to:peopleOf(f.to),cc:peopleOf(f.cc),bcc:peopleOf(f.bcc),subject:$("nmSubject").value.trim(),body:bareOrText($("nmText").value)};
+  return {kind:"new",account_id:aid,from_address:from,to:peopleOf(f.to),cc:peopleOf(f.cc),bcc:peopleOf(f.bcc),subject:$("nmSubject").value.trim(),body:bareOrText($("nmText").value),html:draftHtml($("nmText"))};
 }
 // While an email is being written it is saved to Drafts by itself every few seconds, and once more if the page is closed,
 // so closing the browser or losing power does not lose the words.
@@ -7019,7 +7326,7 @@ async function requestCloseComposer(){
 }
 function nmSnap(){
   const f=nmFields();
-  return JSON.stringify([$("nmFrom").value,f.to.items.map(p=>p.address),f.cc.items.map(p=>p.address),f.bcc.items.map(p=>p.address),$("nmSubject").value.trim(),bareOrText($("nmText").value),nm.files.length]);
+  return JSON.stringify([$("nmFrom").value,f.to.items.map(p=>p.address),f.cc.items.map(p=>p.address),f.bcc.items.map(p=>p.address),$("nmSubject").value.trim(),bareOrText($("nmText").value),$("nmText").rteSig(),nm.files.length]);
 }
 async function requestCloseNewMail(){
   if(!$("newMail").classList.contains("open"))return;
@@ -7033,6 +7340,67 @@ async function requestCloseNewMail(){
   }else if(nm.draftId)deleteDraftQuiet(nm.draftId);
   closeNewMail();
 }
+// ---- Minimise: an email being written can wait at the bottom of the screen. Several can wait at once; press one to carry on. ----
+let trayItems=[],trayNo=0;
+function traySnap(){
+  if(composing&&$("compose").classList.contains("open")){
+    const f=cmFields();f.to.commit(true);f.cc.commit(true);f.bcc.commit(true);
+    const {m,mode}=composing,ed=$("composeText"),o=ed.rteOut();
+    return {kind:"reply",mode,mid:m.id,accountId:m.real&&m.real.accountId,label:$("composeSubject").value.trim()||m.subject||"Reply",
+      pre:{to:peopleOf(f.to),cc:peopleOf(f.cc),bcc:peopleOf(f.bcc),subject:$("composeSubject").value,body:ed.value,html:o.html,images:o.images,from:$("composeFrom").value,
+        cmFiles:cm.files.slice(),cmRemoved:cm.removed,extra:cmExtra.slice()}};
+  }
+  if($("newMail").classList.contains("open")){
+    const f=nmFields();f.to.commit(true);f.cc.commit(true);f.bcc.commit(true);
+    const ed=$("nmText"),o=ed.rteOut(),[aid,from]=$("nmFrom").value.split("|");
+    return {kind:"new",label:$("nmSubject").value.trim()||"New email",
+      pre:{account_id:aid,from,to:peopleOf(f.to),cc:peopleOf(f.cc),bcc:peopleOf(f.bcc),subject:$("nmSubject").value,body:ed.value,html:o.html,images:o.images,files:nm.files.slice()}};
+  }
+  return null;
+}
+async function trayMinimise(){
+  if(trayItems.length>=6){toast("Send or close one of the emails at the bottom first");return false}
+  if(sendingReply||nm.busy)return false;
+  const snap=traySnap();if(!snap)return false;
+  if(realMail){await settleAuto();await autosaveDrafts(false);await settleAuto()}
+  const isReply=snap.kind==="reply";
+  snap.pre.draftId=(isReply?composing&&composing.draftId:nm.draftId)||null;
+  snap.id=++trayNo;
+  if(isReply)closeComposer();else closeNewMail();
+  trayItems.push(snap);paintTray();
+  return true;
+}
+function paintTray(){
+  const t=$("cmTray");t.hidden=!trayItems.length;
+  t.replaceChildren(...trayItems.map(it=>{
+    const box=whEl("div","cm-chip"),open=whEl("button","cm-chip-open",it.label),x=whEl("button","cm-chip-x","×");
+    open.type="button";open.title="Open: "+it.label;open.onclick=()=>trayOpen(it.id);
+    x.type="button";x.setAttribute("aria-label","Discard "+it.label);
+    x.onclick=()=>{
+      if(x.dataset.armed){trayDiscard(it.id);return}
+      x.dataset.armed="1";x.textContent="Discard?";x.classList.add("armed");
+      setTimeout(()=>{if(x.isConnected){delete x.dataset.armed;x.textContent="×";x.classList.remove("armed")}},4000);
+    };
+    box.append(open,x);return box;
+  }));
+}
+function trayDiscard(id){
+  const it=trayItems.find(x=>x.id===id);if(!it)return;
+  trayItems=trayItems.filter(x=>x.id!==id);paintTray();
+  if(it.pre.draftId)deleteDraftQuiet(it.pre.draftId);
+  toast("Discarded",2500);
+}
+async function trayOpen(id){
+  const it=trayItems.find(x=>x.id===id);if(!it)return;
+  if(($("compose").classList.contains("open")||$("newMail").classList.contains("open"))&&!(await trayMinimise()))return;
+  trayItems=trayItems.filter(x=>x.id!==id);paintTray();
+  const m=it.kind==="reply"?data.find(x=>x.id===it.mid&&x.owner===currentUser.id):null;
+  if(it.kind==="reply"&&m){openComposer(it.mid,it.mode,it.pre);if(composing)composing.base="restored";return}
+  if(it.kind==="reply")toast("The email this answers is not in your list any more, so it opens as a new email.",5000);
+  openNewMail({...it.pre,account_id:it.accountId||it.pre.account_id,files:it.pre.extra||it.pre.files});
+  nm.base="restored";
+}
+$("composeMin").onclick=trayMinimise;$("nmMin").onclick=trayMinimise;
 $("draftPage").addEventListener("click",e=>{
   const o=e.target.closest("[data-draft-open]");if(o){openDraft(o.dataset.draftOpen);return}
   const x=e.target.closest("[data-draft-del]");if(x){
@@ -7044,7 +7412,7 @@ $("draftPage").addEventListener("click",e=>{
 // ---- New email ----
 const nm={files:[],busy:false,armed:false,fields:null};
 function nmFields(){if(!nm.fields)nm.fields={to:chipField($("nmTo")),cc:chipField($("nmCc")),bcc:chipField($("nmBcc"))};return nm.fields}
-const nmDirty=()=>{const f=nmFields();return !!(!isBare($("nmText").value)||$("nmSubject").value.trim()||f.to.items.length||f.cc.items.length||f.bcc.items.length||f.to.input.value||nm.files.length)};
+const nmDirty=()=>{const f=nmFields();return !!(!isBare($("nmText").value)||$("nmText").rtePictures()>0||$("nmSubject").value.trim()||f.to.items.length||f.cc.items.length||f.bcc.items.length||f.to.input.value||nm.files.length)};
 function paintNmFiles(){
   $("nmFiles").replaceChildren(...nm.files.map((f,i)=>{
     const s=document.createElement("span");s.className="nm-file";
@@ -7067,7 +7435,7 @@ function openNewMail(pre){
   if(want&&opts.some(o=>o.value===want))$("nmFrom").value=want;
   f.to.set(pre&&pre.to);f.cc.set(pre&&pre.cc);f.bcc.set(pre&&pre.bcc);
   $("nmCcRow").hidden=!(pre&&pre.cc&&pre.cc.length);$("nmBccRow").hidden=!(pre&&pre.bcc&&pre.bcc.length);
-  $("nmSubject").value=(pre&&pre.subject)||"";$("nmText").value=(pre&&pre.body)?pre.body:withSig("");whReset("new");paintSaved("nmSaved","nmSavedRow");
+  $("nmSubject").value=(pre&&pre.subject)||"";$("nmText").value=(pre&&pre.body)?pre.body:withSig("");if(pre&&pre.html)$("nmText").rteLoad(pre.html,pre.images,pre.body);whReset("new");paintSaved("nmSaved","nmSavedRow");
   nm.base=nmSnap();nm.saved=null;{const n=$("nmAuto");n.hidden=true;n.textContent=""}
   const n=realPrefs.undo_send_seconds||0;
   $("nmHint").textContent=n>0?`Held for ${n} ${n===1?"second":"seconds"} so you can undo`:"Sent as soon as you press Send";
@@ -7136,7 +7504,7 @@ async function sendNew(){
   const to=f.to.items.map(addrText),cc=f.cc.items.map(addrText),bcc=f.bcc.items.map(addrText);
   if(!to.length&&!cc.length&&!bcc.length){toast("Add at least one person to send this to");f.to.input.focus();return}
   const subject=quickOverride?quickOverride.subject:$("nmSubject").value.trim(),body=quickOverride?quickOverride.text:$("nmText").value;
-  if(!subject&&isBare(body)&&!nm.files.length){toast("Add a subject or a message first");return}
+  if(!subject&&isBare(body)&&!nm.files.length&&!$("nmText").rtePictures()){toast("Add a subject or a message first");return}
   const [aid,from]=$("nmFrom").value.split("|");
   if(!nmWarned){
     const warn=sendWarnings(subject,body,nm.files.length);
@@ -7149,7 +7517,7 @@ async function sendNew(){
   nmWarned=false;
   nm.busy=true;const btn=$("nmSend"),label=btn.textContent;btn.disabled=true;btn.textContent="Sending…";btn.classList.add("busy");
   try{
-    const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/send`,{method:"POST",body:JSON.stringify({to,cc,bcc,subject,body,from_address:from,files:nm.files.map(x=>({name:x.name,type:x.type,data:x.data}))})});
+    const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/send`,{method:"POST",body:JSON.stringify({to,cc,bcc,subject,body,from_address:from,files:nm.files.map(x=>({name:x.name,type:x.type,data:x.data})),...sendFmt($("nmText"))})});
     await settleAuto();const did=nm.draftId;
     // A new compose can open as soon as this one closes. Clear the send
     // guard before making the close visible so its first Send is never lost.
@@ -7178,7 +7546,7 @@ function openLaterMenu(btn,run){
 document.addEventListener("click",e=>{
   const pick=e.target.closest&&e.target.closest("[data-later-pick]");
   if(pick){const menu=$("laterMenu"),o=menu._opts&&menu._opts[+pick.dataset.laterPick],run=laterRun;closeLaterMenu();if(o&&run)run(+o[1]);return}
-  if($("laterMenu")&&!$("laterMenu").hidden&&!(e.target.closest&&e.target.closest("#nmLater,#composeLater,#laterMenu")))closeLaterMenu();
+  if($("laterMenu")&&!$("laterMenu").hidden&&!(e.target.closest&&e.target.closest("#nmMore,#composeMore,#nmSplit,#composeSplit,#laterMenu")))closeLaterMenu();
 });
 async function postLater(payload,ms){
   const r=await secureBackendRequest("/api/v1/me/scheduled",{method:"POST",body:JSON.stringify({...payload,send_at:ms/1000})});
@@ -7192,10 +7560,11 @@ async function laterNew(ms){
   const to=f.to.items.map(addrText),cc=f.cc.items.map(addrText),bcc=f.bcc.items.map(addrText);
   if(!to.length&&!cc.length&&!bcc.length){toast("Add at least one person to send this to");f.to.input.focus();return}
   if(nm.files.length){toast("Files cannot wait for later. Send now, or take the files off.",6000);return}
+  if($("nmText").rtePictures()){toast("Pictures cannot wait for later. Send now, or take the pictures out.",6000);return}
   const subject=$("nmSubject").value.trim(),body=$("nmText").value,[aid,from]=$("nmFrom").value.split("|");
   nm.busy=true;
   try{
-    await postLater({kind:"new",account_id:aid,to,cc,bcc,subject,body,from_address:from},ms);
+    await postLater({kind:"new",account_id:aid,to,cc,bcc,subject,body,from_address:from,html:draftHtml($("nmText"))},ms);
     await settleAuto();const did=nm.draftId;nm.busy=false;closeNewMail(true);if(did)deleteDraftQuiet(did);
   }catch(er){toast(er.message,6000)}finally{nm.busy=false}
 }
@@ -7211,9 +7580,10 @@ async function laterReply(ms){
   if(!plan.identities.includes(from)){toast("Choose one of your sending addresses");return}
   if(!cmPeople().length){toast("Add at least one person to send this to");f.to.input.focus();return}
   if(cmExtra.length){toast("Files you add cannot wait for later. Send now, or take them off.",6000);return}
+  if($("composeText").rtePictures()){toast("Pictures cannot wait for later. Send now, or take the pictures out.",6000);return}
   const toList=f.to.items.map(p=>p.address),ccList=f.cc.items.map(p=>p.address),bccList=f.bcc.items.map(p=>p.address);
   try{
-    await postLater({kind:mode,account_id:m.real.accountId,message_id:m.real.messageId,from_address:from,to:toList,cc:ccList,bcc:bccList,body:text},ms);
+    await postLater({kind:mode,account_id:m.real.accountId,message_id:m.real.messageId,from_address:from,to:toList,cc:ccList,bcc:bccList,body:text,html:draftHtml($("composeText"))},ms);
     await settleAuto();const did=composing&&composing.draftId;closeComposer();if(did)deleteDraftQuiet(did);
   }catch(er){toast(er.message,6000)}
 }
@@ -7635,8 +8005,15 @@ $("newMailBtn").onclick=()=>openNewMail();
 $("nmClose").onclick=requestCloseNewMail;$("nmCancel").onclick=requestCloseNewMail;
 $("nmSend").onclick=sendNew;$("nmForm").addEventListener("submit",e=>{e.preventDefault()});
 $("nmAttach").onclick=()=>$("nmFile").click();
-$("nmLater").onclick=e=>openLaterMenu(e.currentTarget,laterNew);
-$("composeLater").onclick=e=>openLaterMenu(e.currentTarget,laterReply);
+$("nmLater").onclick=()=>{closeSplit();openLaterMenu($("nmSplit"),laterNew)};
+$("composeLater").onclick=()=>{closeSplit();openLaterMenu($("composeSplit"),laterReply)};
+// The small arrow next to Send opens "Send later" and "Quick AI Send".
+function closeSplit(){for(const k of ["compose","nm"]){$(k+"Menu").hidden=true;$(k+"More").setAttribute("aria-expanded","false")}}
+for(const k of ["compose","nm"]){
+  $(k+"More").onclick=e=>{e.stopPropagation();const m=$(k+"Menu"),open=m.hidden;closeSplit();closeLaterMenu();if(open){m.hidden=false;$(k+"More").setAttribute("aria-expanded","true");const f=m.querySelector(".split-item:not([hidden])");if(f)f.focus()}};
+  $(k+"Menu").addEventListener("keydown",e=>{if(e.key==="Escape"){e.stopPropagation();e.preventDefault();closeSplit();$(k+"More").focus()}});
+}
+document.addEventListener("click",e=>{if(!(e.target.closest&&e.target.closest(".splitbtn")))closeSplit()});
 $("nmCcBtn").onclick=()=>{$("nmCcRow").hidden=false;nmFields().cc.input.focus()};
 $("nmBccBtn").onclick=()=>{$("nmBccRow").hidden=false;nmFields().bcc.input.focus()};
 $("cmCcBtn").onclick=()=>{$("cmCcRow").hidden=false;cmFields().cc.input.focus()};

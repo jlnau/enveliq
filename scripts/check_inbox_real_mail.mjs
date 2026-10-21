@@ -314,7 +314,7 @@ await page.click('[data-theme-choice="dark"]');
   await page.click("#composeSend");
   await page.waitForFunction(() => document.getElementById("toast").textContent.includes("Reply sent from alias@example.invalid"));
   const reply = server.calls.find((c) => c[0] === "reply");
-  check("reply request carries only the text and chosen sender", reply && reply[2].body === "Thanks." && reply[2].from_address === "alias@example.invalid" && Object.keys(reply[2]).length === 2);
+  check("reply request carries only the text, its formatted copy and the chosen sender", reply && reply[2].body === "Thanks." && reply[2].from_address === "alias@example.invalid" && String(reply[2].html).includes("Thanks.") && Array.isArray(reply[2].images) && Object.keys(reply[2]).sort().join() === "body,from_address,html,images");
 
   check("a replied email says Replied under its time, in the list row", (await newsRow.locator(".qrow .time .replied").innerText()).includes("Replied"));
   await newsRow.locator(".qrow").first().click().catch(() => {});
@@ -362,7 +362,7 @@ await page.click('[data-theme-choice="dark"]');
   check("the bar comes back after a refresh", await page.locator("#sendBar .sendrow").isVisible());
   await page.locator("#sendBar button").click();
   await page.waitForSelector("#compose.open");
-  check("Undo cancels it and puts the text back in the reply box", (await page.inputValue("#composeText")) === "Hold this" && server.calls.some((c) => c[0] === "cancel") && (await page.locator("#sendBar .sendrow").count()) === 0);
+  check("Undo cancels it and puts the text back in the reply box", (await page.evaluate(() => document.getElementById("composeText").value)) === "Hold this" && server.calls.some((c) => c[0] === "cancel") && (await page.locator("#sendBar .sendrow").count()) === 0);
   await page.click("#composeSend");
   await page.waitForSelector("#sendBar .sendrow");
   await page.waitForFunction(() => document.getElementById("toast").textContent.includes("Reply sent from"), null, { timeout: 9000 });

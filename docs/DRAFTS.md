@@ -17,5 +17,7 @@
 - `GET /api/v1/me/drafts`, `POST /api/v1/me/drafts`, `PUT /api/v1/me/drafts/{id}`, `DELETE /api/v1/me/drafts/{id}`. At most 50 drafts, 100,000 characters each, 50 people per list. Line breaks and control characters are removed from the subject and addresses. Drafts older than 14 days are removed from the record the next time the list is read or a draft is saved, which happens each time the page opens.
 - Drafts are part of **Export my data** and are removed when a person is removed.
 
+A draft keeps the formatting of the words (bold, lists, links, colours) but not pictures or files. Minimising a writing window to the bottom of the screen saves it to Drafts in the same way.
+
 ## Where the code is
 `backend/mail/drafts.py`, `backend/mail/drafts_routes.py`, `backend/app.py`, `backend/export.py`, `prototype/index.html` (the Drafts page and the question). Tests: `tests/test_drafts.py`, `scripts/check_drafts.mjs`.

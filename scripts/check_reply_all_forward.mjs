@@ -110,7 +110,7 @@ check("a reply says the original is added under it when sent, and offers to put 
 await page.fill("#composeText", "Thanks for this.");
 await page.click("#cmQuoteIn");
 await page.waitForFunction(() => document.getElementById("composeText").value.includes("> Hello"));
-const inline = await page.inputValue("#composeText");
+const inline = await page.evaluate(() => document.getElementById("composeText").value);
 check("the button puts 'On <date>, <name> <address> wrote:' and the quoted text under the message", inline.startsWith("Thanks for this.") && inline.includes("wrote:\n> Hello") && inline.includes("Alice <alice@example.invalid>"));
 await page.fill("#composeText", inline.replace("> Hello", "> Hello (cut down)"));
 await shot("reply_inline");

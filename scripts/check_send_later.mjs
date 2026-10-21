@@ -72,12 +72,13 @@ for (const [width, height] of [[1200, 900], [390, 780]]) {
   await page.clock.pauseAt(NOW);
   const tag = width + "px wide: ";
   await page.evaluate(() => openNewMail());
-  check(tag + "the writing window has a Send later button next to Send", await page.locator("#nmLater").isVisible());
+  check(tag + "the writing window has Send later in the menu next to Send", await page.locator("#nmMore").isVisible() && (await page.locator("#nmLater").count()) === 1);
   check(tag + "a reply window can attach files and has Send later", (await page.locator("#cmAttach").count()) === 1 && (await page.locator("#composeLater").count()) === 1);
   await page.locator("#nmTo input").fill("dana@example.invalid");
   await page.locator("#nmTo input").press("Enter");
   await page.locator("#nmSubject").fill("Later on");
   await page.locator("#nmText").fill("Some words to send later.");
+  await page.locator("#nmMore").click();
   await page.locator("#nmLater").click();
   const menu = page.locator("#laterMenu");
   const labels = (await menu.locator("[data-later-pick] span").allInnerTexts()).join("|");
@@ -95,7 +96,7 @@ for (const [width, height] of [[1200, 900], [390, 780]]) {
   check(tag + "the email is listed as waiting, with its time and a way to take it back", /Waiting to send: Later on/.test(note) && /Take it back/.test(note));
   await page.locator("#sentWaiting button").click();
   await page.waitForTimeout(300);
-  check(tag + "taking it back asks the server and puts the words back in a writing window", deleted === "s0123456789abcdef" && (await page.locator("#nmText").inputValue()).includes("Some words"));
+  check(tag + "taking it back asks the server and puts the words back in a writing window", deleted === "s0123456789abcdef" && (await page.evaluate(() => document.getElementById("nmText").value)).includes("Some words"));
   check(tag + "no sideways scroll", await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   check(tag + "no page errors", errors.length === 0);
   await context.close();

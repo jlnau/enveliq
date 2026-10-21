@@ -77,8 +77,9 @@ async function openReply(page) {
   const { page, errors, context } = await open(server);
   await openReply(page);
   await page.waitForFunction(() => !document.getElementById("composeQuick").hidden);
-  check("Quick AI Send sits beside Send", (await page.locator("#composeQuick").innerText()).includes("Quick AI"));
+  check("Quick AI Send is in the menu beside Send", (await page.locator("#composeQuick").innerText()).includes("Quick AI"));
   await page.fill("#composeText", "yes tuesday ok");
+  await page.click("#composeMore");
   await page.click("#composeQuick");
   await page.waitForFunction(() => !document.getElementById("compose").classList.contains("open"));
   check("the draft goes to the AI check, then the corrected text is sent with no extra question", server.calls.some((c) => c[0] === "quick" && c[1] === "yes tuesday ok") && server.calls.find((c) => c[0] === "reply")?.[1] === "Hi Dana,\n\nYes, Tuesday works." && (await page.locator("#whCheck.open").count()) === 0);
@@ -91,10 +92,11 @@ async function openReply(page) {
   await openReply(page);
   await page.waitForFunction(() => !document.getElementById("composeQuick").hidden);
   await page.fill("#composeText", "yes tuesday ok");
+  await page.click("#composeMore");
   await page.click("#composeQuick");
   await page.waitForFunction(() => !document.getElementById("composeQuick").disabled);
   await page.waitForTimeout(200);
-  check("when the AI fails nothing is sent and the draft is untouched", !server.calls.some((c) => c[0] === "reply") && (await page.inputValue("#composeText")) === "yes tuesday ok" && await page.locator("#compose.open").count() === 1);
+  check("when the AI fails nothing is sent and the draft is untouched", !server.calls.some((c) => c[0] === "reply") && (await page.evaluate(() => document.getElementById("composeText").value)) === "yes tuesday ok" && await page.locator("#compose.open").count() === 1);
   await context.close();
 }
 {
@@ -120,6 +122,7 @@ async function openReply(page) {
   await page.evaluate(() => { lay = () => view.layout; render(); });
   await openReply(page);
   await page.waitForFunction(() => !document.getElementById("composeQuick").hidden);
+  await page.click("#composeMore");
   const h = await page.evaluate(() => Math.round(document.getElementById("composeQuick").getBoundingClientRect().height));
   check("phone: the button is at least 44px tall and nothing sticks out", h >= 44 && await page.evaluate(() => document.getElementById("compose").scrollWidth <= document.getElementById("compose").clientWidth + 1));
   await shot(page, "quicksend-phone");

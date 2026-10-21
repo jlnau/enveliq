@@ -146,6 +146,8 @@ jobs:
         run: node scripts/check_devices_page.mjs
       - name: Send later (simulated server)
         run: node scripts/check_send_later.mjs
+      - name: Writing box, Send arrow and minimise (simulated server)
+        run: node scripts/check_formatted_email.mjs
       - name: Snooze (simulated server)
         run: node scripts/check_snooze.mjs
       - name: Search everywhere (simulated server)
