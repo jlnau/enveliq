@@ -69,6 +69,14 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   check("pressing Customise closes the menu", !(await p.evaluate(() => document.querySelector("#userMenu").classList.contains("open"))));
   check("and opens the panel on the right", await p.evaluate(() => document.body.classList.contains("vopen") && document.querySelector("#viewTab").getAttribute("aria-expanded") === "true"));
   if (shots) await p.screenshot({ path: path.join(shots, "customise-open.png") });
+  await p.click("#viewPanel [data-view]"); await p.waitForTimeout(250);
+  check("pressing a choice inside the panel keeps it open", await p.evaluate(() => document.body.classList.contains("vopen")));
+  await p.mouse.click(300, 400); await p.waitForTimeout(400);
+  check("clicking outside the panel closes it", await p.evaluate(() => !document.body.classList.contains("vopen") && document.querySelector("#viewTab").getAttribute("aria-expanded") === "false"));
+  await p.click("#viewTab"); await p.waitForTimeout(300);
+  check("the little arrow still opens it", await p.evaluate(() => document.body.classList.contains("vopen")));
+  await p.click("#viewTab"); await p.waitForTimeout(300);
+  check("and still closes it", await p.evaluate(() => !document.body.classList.contains("vopen")));
   await ctx.close();
 }
 { // Calm mode works the same: the icon buttons are in the Recent emails panel and the filter bar stays hidden

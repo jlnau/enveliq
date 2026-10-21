@@ -160,10 +160,10 @@ const subjects = (page) => page.evaluate(() => [...document.querySelectorAll("ar
   await shop.locator(".dg-txt", { hasText: "Show attachment" }).click();
   await page.waitForFunction(() => !document.getElementById("docBox").hidden);
   check("one attachment opens straight away in the viewer, with no list", server.calls.some((c) => c[0] === "view" && c[1] === "0") && !(await page.locator("#dgAtt").evaluate((e) => e.classList.contains("open"))) && (await page.locator("#docName").innerText()).includes("Receipt"));
-  await page.click("#docBox [aria-label='Close'], #docClose").catch(() => {});
   await page.evaluate(() => { document.getElementById("docBox").hidden = true; });
-  await page.click(".dg-row").catch(() => {});
-  if (!(await page.locator("#digestView.open").count())) { await page.waitForSelector(".dg-row"); await page.click(".dg-row"); await page.waitForSelector("#digestView.open"); }
+  await page.waitForSelector(".dg-row");
+  await page.click(".dg-row");
+  await page.waitForSelector("#digestView.open");
   await page.locator("#dgBody .dg-item", { hasText: "newsletter" }).locator(".dg-txt", { hasText: "Show attachments" }).click();
   await page.waitForSelector("#dgAtt.open");
   const picks = await page.locator("#dgAtt .dg-pick").allInnerTexts();
@@ -200,6 +200,7 @@ const subjects = (page) => page.evaluate(() => [...document.querySelectorAll("ar
   check("phone: it opens full screen with Done and Close reachable and the icon buttons big enough", await page.evaluate(() => { const r = document.getElementById("digestView").getBoundingClientRect(); const c = document.getElementById("dgDone").getBoundingClientRect(); const ic = document.querySelector(".dg-ic").getBoundingClientRect(); return r.width >= innerWidth - 1 && r.height >= innerHeight - 1 && c.bottom <= innerHeight && c.height >= 44 && ic.width >= 44 && ic.height >= 44; }));
   await page.evaluate(() => { for (let i = 0; i < 40; i++) { const d = document.createElement("div"); d.className = "dg-item"; d.textContent = "More mail ".repeat(20); document.getElementById("dgBody").append(d); } });
   check("phone: with a long summary only the middle scrolls, and the buttons stay at the bottom", await page.evaluate(() => { const b = document.getElementById("dgBody"), c = document.getElementById("dgDone").getBoundingClientRect(), x = document.getElementById("dgClose").getBoundingClientRect(); return b.scrollHeight > b.clientHeight && c.bottom <= innerHeight && x.bottom <= innerHeight; }));
+  check("phone: Show full email and Show attachment(s) are icon-only buttons that still have names", await page.evaluate(() => [...document.querySelectorAll("#dgBody .dg-txt")].every((b) => { const r = b.getBoundingClientRect(), l = b.querySelector(".dg-lbl").getBoundingClientRect(); return r.width <= 48 && r.height >= 44 && b.querySelector(".dg-ico svg") && l.width <= 2 && b.title && b.getAttribute("aria-label") === b.title; })));
   check("phone: the new buttons fit inside the box and are tall enough to tap", await page.evaluate(() => { const box = document.getElementById("dgBody").getBoundingClientRect(); return [...document.querySelectorAll("#dgBody .dg-txt, #dgBody a.dg-open")].every((b) => { const r = b.getBoundingClientRect(); return r.height >= 44 && r.right <= box.right + 1 && r.left >= box.left - 1; }); }));
   await shot(page, "daily-summary-phone");
   await context.close();
