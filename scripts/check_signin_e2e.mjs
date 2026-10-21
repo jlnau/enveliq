@@ -43,7 +43,7 @@ await (async () => {
   await p.waitForSelector('.sample-banner .sb-real:visible');
   step('blank inbox loads after enrolment without sample mail: ' + await p.title());
 
-  await p.goto(BASE + '/account'); await p.fill('#pk_name', 'Virtual laptop key'); await p.click('text=Add a passkey');
+  await p.goto(BASE + '/account'); await p.waitForLoadState('networkidle'); await p.getByRole('button', { name: /^Passkeys/ }).click(); await p.waitForSelector('#pk_name', { state: 'visible' }); await p.fill('#pk_name', 'Virtual laptop key'); await p.click('text=Add a passkey');
   await p.waitForSelector('text=Virtual laptop key'); step('passkey registered through the browser');
   await p.screenshot({ path: `${process.env.ENVELIQ_E2E_SHOTS || '.'}/e2e-account.png`, fullPage: true });
 
@@ -86,10 +86,10 @@ await (async () => {
   await p.fill('#code', '123456'); await p.click('text=Verify'); await p.waitForSelector('.form-error'); step('wrong code refused: ' + await p.textContent('.form-error'));
   await p.fill('#code', totp(secret, 1)); await p.click('text=Verify'); await p.waitForURL(BASE + '/'); step('password + authenticator code sign-in works');
 
-  await p.goto(BASE + '/admin'); await p.waitForSelector('text=Add a person');
+  await p.goto(BASE + '/admin'); await p.waitForLoadState('networkidle'); await p.getByRole('button', { name: 'Add a person' }).click();
   await p.fill('#nu_username', 'cara'); await p.fill('#nu_name', 'Cara'); await p.fill('#nu_password', 'Temporary pw 2026 e2e');
-  await p.click('text=Add user'); await p.waitForSelector('td >> text=cara'); step('admin added user cara');
-  await p.click('summary:has-text("Set up single sign-on")');
+  await p.click('text=Add user'); await p.waitForSelector('.li:has-text("Cara")', { state: 'attached' }); step('admin added user cara');
+  await p.getByRole('button', { name: /^Single sign-on/ }).click();
   await p.fill('#sso_issuer', 'https://auth.example.com/application/o/enveliq/'); await p.fill('#sso_client_id', 'enveliq');
   await p.screenshot({ path: `${process.env.ENVELIQ_E2E_SHOTS || '.'}/e2e-admin.png`, fullPage: true });
 

@@ -53,6 +53,7 @@ async function open(width, height, tab, wait) {
   await page.evaluate((t) => { openSettings(t === "general" ? "settings" : "admin"); }, tab);
   await page.waitForTimeout(300);
   await page.evaluate((t) => { document.querySelector(`#settingsNav [data-settings-tab~="${t}"]`).click(); }, tab);
+  await page.evaluate((t) => openPanel(t, { tab: t }), tab);
   const panel = `[data-settings-panel="${tab}"] .embed-host`;
   await page.waitForSelector(panel, { state: "attached" });
   const host = page.locator(panel);

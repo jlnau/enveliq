@@ -1,5 +1,5 @@
 // Browser check for the look of every Settings and Administration page: each page opens without errors, saves by itself
-// (no plain "Save" button), keeps long explanations folded away, and fits a phone. The server is pretended.
+// (no plain "Save" button; the Save row inside a drill-in pane is allowed), keeps long explanations folded away, and fits a phone. The server is pretended.
 //
 // Usage (needs Playwright and a Chromium build):
 //   node scripts/check_settings_look.mjs        (SHOTS=<dir> also saves a picture of every page)
@@ -92,7 +92,7 @@ for (const [mode, tab, width, height] of TABS.flatMap((t) => [[...t, 1200, 900],
     let saveButtons = 0, sideways = false;
     for (const h of hosts) {
       const r = h.shadowRoot; if (!r) continue;
-      saveButtons += [...r.querySelectorAll("button:not([data-save-only])")].filter((b) => b.textContent.trim() === "Save").length;
+      saveButtons += [...r.querySelectorAll("button:not([data-save-only]):not(.li)")].filter((b) => b.textContent.trim() === "Save").length;
     }
     const panel = document.querySelector("#settings");
     sideways = panel.scrollWidth > panel.clientWidth + 2;

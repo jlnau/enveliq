@@ -37,6 +37,7 @@ const browser = await chromium.launch();
 const page = await (await browser.newContext({ viewport: { width: 390, height: 780 } })).newPage();
 await page.route("**/*", handler);
 await page.goto(`${ORIGIN}/account`);
+await page.getByRole("button", { name: /Signed-in devices/ }).click();
 await page.waitForSelector("#devices .item");
 const text = await page.locator("#devices").innerText();
 check("the section lists both devices", text.includes("This computer") && text.includes("Pixel phone"));

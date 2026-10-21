@@ -66,6 +66,8 @@ async function open(width, height, tab, wait) {
   await page.evaluate((t) => { openSettings(t === "general" ? "settings" : "admin"); }, tab);
   await page.waitForTimeout(300);
   await page.evaluate((t) => { document.querySelector(`#settingsNav [data-settings-tab~="${t}"]`).click(); }, tab);
+  if (tab !== "general") await page.evaluate((t) => openPanel(t, { tab: t }), tab);
+  else await page.locator(`[data-settings-panel="general"] .embed-host`).getByRole("button", { name: /^Your data/ }).click();
   const panel = `[data-settings-panel="${tab}"] .embed-host`;
   await page.waitForSelector(panel, { state: "attached" });
   const host = page.locator(panel);

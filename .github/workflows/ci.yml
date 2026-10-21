@@ -277,6 +277,8 @@ jobs:
         run: node scripts/check_daily_summary.mjs
       - name: Look of every Settings and Administration page (simulated server)
         run: node scripts/check_settings_look.mjs
+      - name: Every Settings and Administration page as a drill-in list, dark and light, desktop and phone (simulated server)
+        run: node scripts/check_settings_list.mjs
       - name: User menu, Profile settings and tidied Settings (simulated server)
         run: node scripts/check_user_menu.mjs
       - name: Messages page, sidebar count and Home card (simulated server)

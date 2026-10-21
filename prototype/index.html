@@ -160,6 +160,7 @@ html[data-theme="light"] .settings>.settings-nav{background:linear-gradient(170d
 .settings>.settings-nav button[data-settings-tab]:hover{background:rgba(120,160,255,.08);color:var(--text)}
 .settings>.settings-nav button[data-settings-tab].active{background:var(--c-0c1c38);color:var(--text)}
 .settings-main{pointer-events:auto;position:fixed;left:242px;right:0;top:var(--tb-h,72px);bottom:0;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--c-11161f);border-top:1px solid var(--line)}
+html[data-theme="light"] .settings-main{background:#f2f2f7}
 .settings-results{overflow:auto;padding:20px 26px;flex:1}.settings-results[hidden]{display:none}
 .sres-list{display:grid;gap:4px;max-width:780px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px}
 .sres{display:flex;gap:14px;align-items:center;width:100%;text-align:left;border:0;background:transparent;color:var(--text);padding:11px 12px;border-radius:10px}
@@ -167,11 +168,11 @@ html[data-theme="light"] .settings>.settings-nav{background:linear-gradient(170d
 .sres b{display:block;font-size:14px}.sres small{display:block;color:var(--muted);font-size:12.5px;margin-top:1px}.sres .where{margin-left:auto;color:var(--c-7cc8ff);font-size:12.5px;white-space:nowrap}
 .sres-none{color:var(--muted);padding:6px 2px}
 .settings-back{display:none}
-.settings-head{display:flex;justify-content:space-between;align-items:center;padding:16px 26px;border-bottom:1px solid var(--line)}
-.settings-head h3{margin:0;font-size:18px}.close{border:0;background:transparent;color:var(--muted);font-size:20px}
-.settings-scroll{overflow:auto;padding:20px 26px;flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,350px),1fr));gap:16px;align-items:start;align-content:start}
+.settings-head{display:none}
+.settings-head h3,#settingsRoleBadge{display:none}.close{border:0;background:transparent;color:var(--muted);font-size:20px}
+.settings-scroll{overflow:auto;padding:34px 48px 40px;flex:1;display:block}
 .settings-scroll>section{min-width:0}.settings-scroll>section[hidden]{display:none}
-.settings-scroll>section[data-settings-panel="accounts"],.settings-scroll>section[data-settings-panel="general"],.settings-scroll>section[data-settings-panel="shortcuts"],.settings-scroll>section[data-settings-panel="setup"]{grid-column:1/-1}
+
 .settings-scroll{--panel:#121722;--panel2:#181f2c;--line:#262f3f}
 html[data-theme="light"] .settings-scroll{--panel:#ffffff;--panel2:#edf0f6;--line:#d8dde8}
 .settings-scroll .section-card{margin-bottom:0;border-radius:14px}
@@ -669,7 +670,7 @@ body.real-mail .sample-banner{display:none}
   .settings>.settings-nav button[data-settings-tab]{min-height:52px;border:1px solid var(--line);background:var(--panel);margin:6px 0;font-size:15px}
   .settings>.settings-nav button[data-settings-tab]::after{content:"\203A";margin-left:auto;color:var(--faint);font-size:20px}
   .settings-group{padding:14px 4px 2px}
-  .settings-head{padding:8px 10px;gap:6px;justify-content:flex-start}
+  .settings-head{display:flex;padding:8px 10px;gap:6px;justify-content:flex-start}
   .settings-head .close{display:none}
   .settings-back{display:inline-flex;align-items:center;min-height:44px;padding:0 10px;border:0;background:transparent;color:var(--c-7cc8ff);font:inherit;font-size:15px}
   .settings-head h3{font-size:17px}
@@ -1927,61 +1928,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
         </div>
       </section>
 
-      <section data-settings-panel="security" hidden>
-        <div class="role-demo preview-only">Administrator only. This panel talks to the secure backend when it is running.</div>
-        <div class="section-card">
-          <h4>Encrypted vault</h4>
-          <p>The backend stores sensitive account data, OAuth tokens, LLM keys, summaries and retained task data as authenticated ciphertext. The master key is never written to disk.</p>
-          <div class="kpi-grid">
-            <div class="kpi"><strong id="vaultInitState">Checking…</strong><small>Vault</small></div>
-            <div class="kpi"><strong id="vaultLockState">Checking…</strong><small>Runtime state</small></div>
-            <div class="kpi"><strong>AES-256-GCM</strong><small>Data encryption</small></div>
-            <div class="kpi"><strong>Argon2id</strong><small>Passphrase KDF</small></div>
-          </div>
-          <div class="note good" id="vaultBackendNote">Checking secure backend…</div>
-        </div>
-
-        <details class="fold backend-only"><summary><strong>How your mail is handled</strong><small>Attachments, previews and how long things are kept.</small></summary>
-          <div class="fold-body">
-            <div class="storage-policy">
-              <div class="kpi"><strong>Never</strong><small>Raw attachment disk storage</small></div>
-              <div class="kpi"><strong>25 MB</strong><small>Maximum source file</small></div>
-              <div class="kpi"><strong>5 min</strong><small>RAM preview lease</small></div>
-              <div class="kpi"><strong>64 MB</strong><small>Global preview RAM cap</small></div>
-            </div>
-            <div class="note">Attachments are fetched from the source mailbox into an isolated worker that keeps them in memory only, then the raw bytes are destroyed. A safe preview is made in memory when someone clicks an attachment.</div>
-            <div class="note good">PDF pages are shown as safe pictures made in the isolated worker; images are decoded and re-encoded; plain text is escaped. Office files show their text. HTML, SVG, programs and archives are never shown directly.</div>
-            <div class="note">Attachment filenames, type, size and the AI summary are encrypted with the review item and are removed when the item is Reviewed, Archived, Binned or expires (see Reviewed &amp; archived). The original attachment stays only in the person's own mail account.</div>
-            <div class="note good">Email text is always treated as untrusted: it cannot give the AI tools or new permissions. Only structured results are kept, not raw model responses. Administrators manage the system, not other people's private mail.</div>
-          </div>
-        </details>
-        <details class="fold"><summary><strong>Lock or unlock Enveliq</strong><small>Normally nothing to do here. Use this to lock everyone out, or to unlock after a restart.</small></summary>
-          <div class="fold-body">
-          <p>The passphrase is sent only to the local secure backend over the same trusted application boundary, is never written to storage and is not retained by this page after the request.</p>
-          <div class="field-grid">
-            <div class="field full"><label>Vault passphrase</label><input id="vaultPassphrase" type="password" autocomplete="new-password" placeholder="Long unique passphrase"></div>
-          </div>
-          <div class="connect-actions">
-            <button class="btn" id="vaultSetupBtn">Initialize vault</button>
-            <button class="primary" id="vaultUnlockBtn">Unlock</button>
-            <button class="danger-btn" id="vaultLockBtn">Lock now</button>
-          </div>
-          <div class="help">For the first release, a backend restart requires an administrator to unlock the vault. A future TPM/HSM or external vault option can provide unattended secure unlock.</div>
-
-          </div>
-        </details>
-        <details class="fold"><summary><strong>What Enveliq promises never to do</strong><small>The rules it keeps about your mail and your secrets.</small></summary>
-          <div class="fold-body">
-          <div class="toggle-row"><div><strong>No raw email body persistence</strong><small>Only structured retained results are allowed into persistent storage.</small></div><input type="checkbox" checked disabled></div>
-          <div class="toggle-row"><div><strong>No raw attachment persistence</strong><small>Original attachment bytes are processed and previewed only in RAM. Safe preview derivatives expire automatically and are never written to application storage.</small></div><input type="checkbox" checked disabled></div>
-          <div class="toggle-row"><div><strong>No provider secrets returned to browser</strong><small>Passwords, refresh tokens and API keys are write-only from the UI.</small></div><input type="checkbox" checked disabled></div>
-          <div class="toggle-row"><div><strong>Mailbox owner separate from administrator role</strong><small>Admin rights do not automatically grant access to another user's private mailbox.</small></div><input type="checkbox" checked disabled></div>
-          <div class="toggle-row"><div><strong>Email content treated as hostile input</strong><small>The LLM receives no HA tools, shell, filesystem, arbitrary network or secret access.</small></div><input type="checkbox" checked disabled></div>
-          <div class="toggle-row"><div><strong>Secrets and message content excluded from logs</strong><small>Request bodies are not logged and application logging includes redaction.</small></div><input type="checkbox" checked disabled></div>
-
-          </div>
-        </details>
-      </section>
+      <section data-settings-panel="security" hidden></section>
 
       <section data-settings-panel="signin" hidden>
         <div class="note good backend-only">Manage your password, authenticator app, passkeys and recovery codes on <a href="/account">My security</a>. Using Android? <a href="https://enveliq.app/docs/android/" target="_blank" rel="noopener noreferrer">Get the Enveliq app</a>.</div>
@@ -2041,44 +1988,14 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
         </div>
       </section>
 
+      <section data-settings-panel="landing" hidden></section>
       <section data-settings-panel="profile" hidden></section>
       <section data-settings-panel="setup" hidden></section>
       <section data-settings-panel="sync" hidden></section>
       <section data-settings-panel="general" hidden></section>
-      <section data-settings-panel="shortcuts" hidden>
-        <div class="section-card">
-          <h4>Keyboard shortcuts</h4>
-          <p>Optional desktop keyboard commands for navigating your inbox. They never run while you type in a field or use a dialog.</p>
-          <label class="toggle-row" for="keyboardShortcutsOn"><span><strong>Enable keyboard shortcuts</strong><small>Turn these commands off at any time.</small></span><input id="keyboardShortcutsOn" type="checkbox" checked></label>
-          <details class="shortcut-fold"><summary>Show shortcuts</summary>
-            <div class="shortcut-rows" aria-label="Available shortcuts">
-              <div><span>Search</span><kbd>/</kbd></div>
-              <div><span>Next message</span><kbd>J</kbd></div>
-              <div><span>Previous message</span><kbd>K</kbd></div>
-              <div><span>Reply to selected message</span><kbd>R</kbd></div>
-              <div><span>Archive selected message</span><kbd>E</kbd></div>
-              <div><span>Open this help page</span><kbd>?</kbd></div>
-            </div>
-            <p>Keyboard commands only work while you are in the desktop inbox. The question mark in the top header still opens the help website.</p>
-          </details>
-        </div>
-      </section>
+      <section data-settings-panel="shortcuts" hidden></section>
       <section data-settings-panel="reminders" hidden></section>
-      <section data-settings-panel="mailalerts" hidden>
-        <div class="section-card">
-          <h4>Email notifications</h4>
-          <p>Choose which new emails send notifications using your existing channels. Quiet hours still apply.</p>
-          <div class="toggle-row"><div><strong>Notify me about new emails</strong><small>Use your enabled notification channels.</small></div><input id="mailAlertEnabled" type="checkbox"></div>
-          <h4>Notify me about</h4>
-          <label class="toggle-row"><span><strong>All new emails</strong><small>Every new email in a mailbox with notifications enabled.</small></span><input type="radio" name="mailAlertMode" value="all"></label>
-          <label class="toggle-row"><span><strong>Important people only</strong><small>People you have added to Important people.</small></span><input type="radio" name="mailAlertMode" value="important"></label>
-          <label class="toggle-row"><span><strong>Needs action only</strong><small>Emails identified as requiring your attention.</small></span><input type="radio" name="mailAlertMode" value="action"></label>
-          <h4>Connected mailboxes</h4>
-          <p>Switch notifications off for a mailbox without disconnecting it or hiding its mail.</p>
-          <div id="mailAlertAccounts"></div>
-          <p id="mailAlertStatus" role="status" aria-live="polite"></p>
-        </div>
-      </section>
+      <section data-settings-panel="mailalerts" hidden></section>
       <section data-settings-panel="calendar" hidden></section>
       <section data-settings-panel="aiinstr" hidden></section>
       <section data-settings-panel="adminaiinstr" hidden></section>
@@ -5969,10 +5886,10 @@ function buildSettingsNav(mode){
   $("settingsHeading").textContent=first[2];
   $("settingsRoleBadge").innerHTML=currentUser&&currentUser.is_admin?'<span class="admin-badge">Administrator</span>':'';
   const firstHeld=(first[1]+" "+(first[3]||"")).trim().split(" ");
-  document.querySelectorAll("[data-settings-panel]").forEach(x=>x.hidden=settingsSkipFirst||!firstHeld.includes(x.dataset.settingsPanel));
+  if(be)setPanels([]);else document.querySelectorAll("[data-settings-panel]").forEach(x=>x.hidden=settingsSkipFirst||!firstHeld.includes(x.dataset.settingsPanel));
   $("cancelSettings").textContent=be?"Close":"Cancel";$("saveSettings").hidden=be;
   if(settingsSkipFirst)return;
-  if(be)firstHeld.forEach(id=>{if(EMBED_IDS.includes(id))openEmbed(id)});
+  if(be)showTab(first[1],firstHeld);
   else if(first[1]==="accounts")renderAccounts();
 }
 // ---- Searching Settings: the search box in the top bar changes to "Search settings" while Settings is open ----
@@ -6046,7 +5963,24 @@ function settingsOpenTab(id){
 // ---- The real pages, shown inside the pop-ups ----
 // auth.css and the page scripts are loaded once, as one module so their names cannot clash with this page's.
 // Each page lives in its own shadow root, so its styles stay inside it.
-const EMBED_IDS=["profile","accounts","signin","setup","general","aiinstr","users","sso","llm","sync","adminaiinstr","adminkeep","admincheck","adminbackup","adminupdates","adminreport","adminms","adminfeatures","adminagent","adminreminders","reminders","calendar","addressbook","important","saved","rules","muted","away"];
+const EMBED_IDS=["landing","shortcuts","mailalerts","security","profile","accounts","signin","setup","general","aiinstr","users","sso","llm","sync","adminaiinstr","adminkeep","admincheck","adminbackup","adminupdates","adminreport","adminms","adminfeatures","adminagent","adminreminders","reminders","calendar","addressbook","important","saved","rules","muted","away"];
+// Pages in Settings and Administration that open as a list of pages: pressing the name in the left panel shows the list.
+const LANDING_TABS=["account","people","rules","alerts","sync","llm","adminbackup"];
+let curTab="";
+function setPanels(ids){document.querySelectorAll("[data-settings-panel]").forEach(x=>x.hidden=!ids.includes(x.dataset.settingsPanel))}
+function tabTitle(id){const b=[...document.querySelectorAll("#settingsNav [data-settings-tab]")].find(x=>x.dataset.settingsTab.split(" ")[0]===id);return b?b.textContent:""}
+function showTab(id,held){
+  curTab=id;
+  if(LANDING_TABS.includes(id))openLanding(id);else openPanel(held[0],{tab:id,top:true,title:tabTitle(id)});
+}
+function openLanding(tab){curTab=tab;setPanels(["landing"]);return openEmbed("landing",{tab,title:tabTitle(tab)})}
+// Open one page. From a list it gets a blue back link to that list; `top` opens it without one.
+function openPanel(id,o={}){
+  const tab=o.tab||curTab;
+  setPanels([id]);
+  const parent=o.parent||(LANDING_TABS.includes(tab)&&!o.top?{title:tabTitle(tab),back:()=>openLanding(tab)}:null);
+  return openEmbed(id,{parent,title:o.title,drill:o.drill,tab});
+}
 let embedLoad=null,embedCss="";
 function loadEmbedAssets(){
   if(embedLoad)return embedLoad;
@@ -6074,13 +6008,13 @@ function prepareEmbedPanels(){
 let embedChain=Promise.resolve();
 let embedBusy=0,embedWant=null;
 function applyEmbedWant(){if(embedWant&&window.EnveliqEmbed){window.EnveliqEmbed.setMount(embedWant._mount,embedWant._toast)}}
-function openEmbed(id){
+function openEmbed(id,ctx){
   embedBusy++;
-  const run=embedChain.then(()=>openEmbedNow(id));
+  const run=embedChain.then(()=>openEmbedNow(id,ctx||{}));
   embedChain=run.catch(()=>{}).then(()=>{embedBusy--;if(!embedBusy)applyEmbedWant()});
   return run;
 }
-async function openEmbedNow(id){
+async function openEmbedNow(id,ctx){
   const host=document.querySelector(`[data-settings-panel="${id}"] .embed-host`);
   if(!host)return;
   try{
@@ -6098,9 +6032,11 @@ async function openEmbedNow(id){
     embedTheme();
     const E=window.EnveliqEmbed;E.setMount(host._mount,host._toast);
     host._mount.replaceChildren();
+    // Where this page sits: the page above it (for the blue back link), its own title, the fold to open, and how to reach another page.
+    Object.assign(host._mount,{_parent:ctx.parent||null,_title:ctx.title||"",_drill:ctx.drill||null,_nav:openPanel});
     const me=await E.api("/me"),P=new URLSearchParams();
-    const pages={profile:()=>E.profilePage(me),accounts:()=>E.mailboxesPage(me),signin:()=>E.accountPage(me,P),setup:()=>E.welcomePage(me,P),
-      general:()=>E.generalPage(me),aiinstr:()=>E.aiInstructionsPage(me),adminaiinstr:()=>E.adminPage(me,"instr"),adminkeep:()=>E.adminPage(me,"keep"),admincheck:()=>E.adminPage(me,"check"),adminbackup:()=>E.adminPage(me,"backup"),adminupdates:()=>E.adminPage(me,"updates"),adminreport:()=>E.adminPage(me,"reporting"),adminms:()=>E.adminPage(me,"microsoft"),adminfeatures:()=>E.adminPage(me,"features"),adminagent:()=>E.adminPage(me,"agent"),adminreminders:()=>E.adminPage(me,"reminders"),reminders:()=>E.remindersPage(me),calendar:()=>E.syncPage(me),addressbook:()=>E.addressBookPage(me),important:()=>E.importantPage(me),saved:()=>E.savedPage(me),rules:()=>E.rulesPage(me),muted:()=>E.mutedPage(me),away:()=>E.awayPage(me),users:()=>E.adminPage(me,"users"),sso:()=>E.adminPage(me,"signin"),llm:()=>E.adminPage(me,"ai"),sync:()=>E.adminPage(me,"sync")};
+    const pages={landing:()=>E.landingPage(ctx.tab,me,{addressBook:!!feat.address_book,open:(panel,o)=>openPanel(panel,{tab:ctx.tab,...o})}),profile:()=>E.profilePage(me),mailalerts:()=>E.mailAlertsPage(me),security:()=>E.vaultSecurityPage(me),accounts:()=>E.mailboxesPage(me),signin:()=>E.accountPage(me,P),setup:()=>E.welcomePage(me,P),
+      general:()=>E.generalPage(me),shortcuts:()=>E.shortcutsPage(me),aiinstr:()=>E.aiInstructionsPage(me),adminaiinstr:()=>E.adminPage(me,"instr"),adminkeep:()=>E.adminPage(me,"keep"),admincheck:()=>E.adminPage(me,"check"),adminbackup:()=>E.adminPage(me,"backup"),adminupdates:()=>E.adminPage(me,"updates"),adminreport:()=>E.adminPage(me,"reporting"),adminms:()=>E.adminPage(me,"microsoft"),adminfeatures:()=>E.adminPage(me,"features"),adminagent:()=>E.adminPage(me,"agent"),adminreminders:()=>E.adminPage(me,"reminders"),reminders:()=>E.remindersPage(me),calendar:()=>E.syncPage(me),addressbook:()=>E.addressBookPage(me),important:()=>E.importantPage(me),saved:()=>E.savedPage(me),rules:()=>E.rulesPage(me),muted:()=>E.mutedPage(me),away:()=>E.awayPage(me),users:()=>E.adminPage(me,"users"),sso:()=>E.adminPage(me,"signin"),llm:()=>E.adminPage(me,"ai"),sync:()=>E.adminPage(me,"sync")};
     await pages[id]();
   }catch(er){host.textContent=er.message}
 }
@@ -6178,83 +6114,6 @@ async function previewDerive(passphrase,salt){
   return Array.from(new Uint8Array(bits)).map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 
-async function refreshSecurityStatus(){
-  const note=document.getElementById("vaultBackendNote");
-  if(!note)return;
-  const mode=await detectVaultMode();
-  if(mode==="backend"){
-    try{
-      const st=await secureBackendRequest("/api/v1/status",{method:"GET",headers:{}});
-      let sys={};try{sys=await secureBackendRequest("/api/v1/system",{method:"GET",headers:{}})||{}}catch{}
-      $("vaultInitState").textContent=st.initialized?"Initialized":"Not initialized";
-      $("vaultLockState").textContent=st.unlocked?"Unlocked":"Locked";
-      note.className="note good";
-      note.textContent=`Enveliq ${sys.version?"v"+sys.version+" · ":""}Secure backend connected · ${sys.cipher||"AES-256-GCM"} · ${sys.kdf||"Argon2id"} · ${sys.idle_lock_seconds?`idle lock ${Math.round(sys.idle_lock_seconds/60)} min`:'unlocks itself from a key file, no idle lock'} · raw body persistence disabled`;
-    }catch(err){
-      $("vaultInitState").textContent="Unknown";$("vaultLockState").textContent="Backend error";
-      note.className="note warn";note.textContent=`The secure backend stopped responding: ${err.message}`;
-    }
-    return;
-  }
-  $("vaultInitState").textContent=previewVault.initialized?"Initialized":"Not initialized";
-  $("vaultLockState").textContent=previewVault.unlocked?"Unlocked":(previewVault.initialized?"Locked":"—");
-  note.className="note warn";
-  note.textContent="Preview mode. No secure backend is running behind this page, so the vault is simulated here and resets when the page reloads. Your passphrase is checked inside this page and is never sent anywhere. The real backend uses Argon2id and AES-256-GCM.";
-}
-
-async function setupVault(){
-  const input=$("vaultPassphrase");
-  const passphrase=input?.value||"";
-  if(passphrase.length<12){toast("Use a passphrase of at least 12 characters");return}
-  try{
-    if(await detectVaultMode()==="backend"){
-      toast("Enveliq is already set up");return;
-    }else{
-      if(previewVault.initialized){toast("Vault is already initialized. Unlock it instead.");return}
-      previewVault.salt=crypto.getRandomValues(new Uint8Array(16));
-      previewVault.verifier=await previewDerive(passphrase,previewVault.salt);
-      previewVault.initialized=true;previewVault.unlocked=true;
-    }
-    input.value="";
-    toast("Vault initialized and unlocked");
-    await refreshSecurityStatus();
-  }catch(err){toast(err.message)}
-}
-
-async function unlockVault(){
-  const input=$("vaultPassphrase");
-  const passphrase=input?.value||"";
-  if(!passphrase){toast("Enter the vault passphrase");return}
-  try{
-    if(await detectVaultMode()==="backend"){
-      location.href="/unlock";return;
-    }else{
-      if(!previewVault.initialized){toast("Initialize the vault first");return}
-      const attempt=await previewDerive(passphrase,previewVault.salt);
-      if(attempt!==previewVault.verifier){input.value="";toast("Wrong passphrase. Try again.");return}
-      previewVault.unlocked=true;
-    }
-    input.value="";
-    toast("Vault unlocked");
-    await refreshSecurityStatus();
-  }catch(err){toast(err.message)}
-}
-
-async function lockVault(){
-  try{
-    if(await detectVaultMode()==="backend"){
-      await secureBackendRequest("/api/v1/lock",{method:"POST",body:"{}"});
-      location.href="/unlock";return;
-    }else{
-      if(!previewVault.unlocked){toast("Vault is already locked");return}
-      previewVault.unlocked=false;
-    }
-    const input=$("vaultPassphrase");if(input)input.value="";
-    toast("Vault locked");
-    await refreshSecurityStatus();
-  }catch(err){toast(err.message)}
-}
-
 // The round picture beside the username: a small photo if they added one, otherwise initials.
 function paintAvatar(){
   const el=$("avatar"),want=currentUser.avatar||"";
@@ -6295,55 +6154,9 @@ function openSettings(mode,tab){
   $("settings").classList.toggle("menu-view",phone&&!tab);
   settingsSearchRun("");
   if(tab){const b=document.querySelector(`[data-settings-tab~="${tab}"]`);if(b)b.click()}
+  if(tab==="shortcuts"&&isBackend())openPanel("shortcuts",{tab:"general",title:"Keyboard shortcuts",parent:{title:"General",back:()=>openPanel("general",{tab:"general",top:true})}});
   syncHash();
 }
-let mailAlertPrefs={mail_on:false,mail_filter:"all",mail_muted_accounts:[]},mailAlertWrite=Promise.resolve();
-async function loadMailAlertPrefs(){
-  if(!isBackend())return;
-  const status=$("mailAlertStatus");status.textContent="Loading…";
-  try{
-    const [notices,accountList]=await Promise.all([
-      secureBackendRequest("/api/v1/me/notifications",{method:"GET"}),
-      secureBackendRequest("/api/v1/accounts",{method:"GET"})
-    ]);
-    mailAlertPrefs={...mailAlertPrefs,...notices.settings};
-    $("mailAlertEnabled").checked=!!mailAlertPrefs.mail_on;
-    document.querySelectorAll('input[name="mailAlertMode"]').forEach(r=>{r.checked=r.value===mailAlertPrefs.mail_filter});
-    $("mailAlertAccounts").replaceChildren();
-    for(const account of accountList){
-      const row=document.createElement("label");row.className="toggle-row";
-      const description=document.createElement("span"),title=document.createElement("strong"),small=document.createElement("small");
-      title.textContent=account.display_name||account.email_address||"Mailbox";
-      small.textContent=account.email_address||"";
-      description.append(title,small);
-      const toggle=document.createElement("input");toggle.type="checkbox";
-      toggle.dataset.mailAlertAccount=account.id;
-      toggle.checked=!mailAlertPrefs.mail_muted_accounts.includes(account.id);
-      row.append(description,toggle);$("mailAlertAccounts").append(row);
-    }
-    status.textContent="";
-  }catch(e){status.textContent="Could not load email notification preferences.";toast(e.message||"Could not load notification settings",5000,"error")}
-}
-function saveMailAlertPrefs(changes){
-  const next={...mailAlertPrefs,...changes};mailAlertPrefs=next;
-  const status=$("mailAlertStatus");status.textContent="Saving…";
-  mailAlertWrite=mailAlertWrite.catch(()=>{}).then(async()=>{
-    try{
-      await secureBackendRequest("/api/v1/me/notifications/settings",{method:"PUT",body:JSON.stringify(changes)});
-      status.textContent="Saved";
-    }catch(e){status.textContent="Could not save changes";toast(e.message||"Could not save notification settings",5000,"error");await loadMailAlertPrefs()}
-  });
-}
-document.addEventListener("change",e=>{
-  if(e.target.id==="mailAlertEnabled")saveMailAlertPrefs({mail_on:e.target.checked});
-  if(e.target.name==="mailAlertMode")saveMailAlertPrefs({mail_filter:e.target.value});
-  if(e.target.dataset&&e.target.dataset.mailAlertAccount){
-    const id=e.target.dataset.mailAlertAccount;
-    const muted=new Set(mailAlertPrefs.mail_muted_accounts);
-    e.target.checked?muted.delete(id):muted.add(id);
-    saveMailAlertPrefs({mail_muted_accounts:[...muted]});
-  }
-});
 function closeSettings(){settingsSearchRun("");$("settings").classList.remove("open","menu-view");$("scrim").classList.remove("show");{const a=document.querySelector(".app");a.classList.remove("settings-open");if(settingsWasCollapsed)a.classList.add("collapsed");settingsWasCollapsed=false}placeSettingsNav();$("search").value=settingsSavedSearch;settingsSavedSearch="";$("search").placeholder="Search inbox";$("search").setAttribute("aria-label","Search inbox");syncHash();if(realMail&&window.__me&&!$("syncBtn").disabled)loadRealMail(window.__me).then(render).catch(()=>{})}
 function switchUser(key){
   currentUser=users[key];origClear();selected.clear();filter="all";query="";$("search").value="";
@@ -6642,12 +6455,10 @@ document.addEventListener("click",e=>{
     if(inSettingsScreen()){$("settings").classList.remove("menu-view");settingsSearchClear()}
     const wasActive=tab.classList.contains("active");
     document.querySelectorAll("[data-settings-tab]").forEach(x=>x.classList.toggle("active",x===tab));try{tab.scrollIntoView({inline:"center",block:"nearest"})}catch(_){}
-    document.querySelectorAll("[data-settings-panel]").forEach(x=>x.hidden=!held.includes(x.dataset.settingsPanel));
+    if(!isBackend())document.querySelectorAll("[data-settings-panel]").forEach(x=>x.hidden=!held.includes(x.dataset.settingsPanel));
     $("settingsHeading").textContent=tab.textContent;syncHash();
-    if(held.includes("security"))setTimeout(refreshSecurityStatus,0);
-    // Pressing the tab you are already on does not redraw pages that are already open (it would close any fold you had open).
-    if(isBackend())held.forEach(h=>{if(!EMBED_IDS.includes(h))return;const host=document.querySelector(`[data-settings-panel="${h}"] .embed-host`);if(wasActive&&host&&host._mount&&host._mount.children.length)return;openEmbed(h)});
-    if(held.includes("mailalerts"))loadMailAlertPrefs();
+    // A page that opens on its own keeps what you were doing if you press its tab again; a page that opens a list of pages goes back to the list.
+    if(isBackend()){const only=held[0],host=document.querySelector(`[data-settings-panel="${only}"] .embed-host`);if(!(wasActive&&!LANDING_TABS.includes(id)&&host&&host._mount&&host._mount.children.length&&!host.closest("[hidden]")))showTab(id,held)}
     return;
   }
 });
@@ -8427,9 +8238,6 @@ $("composeClose").onclick=requestCloseComposer;$("composeCancel").onclick=reques
 $("cmQuoteIn").onclick=quoteInline;$("composeSend").onclick=sendReply;$("composeForm").addEventListener("submit",e=>{e.preventDefault();sendReply()});
 document.addEventListener("click",e=>{if(e.target.closest("[data-preview-only]")){e.preventDefault();toast(document.body.classList.contains("backend")?"Use the account pages for this":"Preview only: this works on your Enveliq server")}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("docBox").hidden)closeDoc();else if(!$("picBox").hidden)closePic();else if($("newMail").classList.contains("open"))requestCloseNewMail();else if($("compose").classList.contains("open"))requestCloseComposer();else if($("attachmentModal").classList.contains("open"))closeAttachmentViewer()}});
-const setupBtn=document.getElementById("vaultSetupBtn");if(setupBtn)setupBtn.onclick=setupVault;
-const unlockBtn=document.getElementById("vaultUnlockBtn");if(unlockBtn)unlockBtn.onclick=unlockVault;
-const lockBtn=document.getElementById("vaultLockBtn");if(lockBtn)lockBtn.onclick=lockVault;
 
 // ---- Phone: top bar, slide-out menu, search, swipe actions and Undo ----
 const SW_ICON={ok:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',arch:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg>',bin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>'};
@@ -8663,16 +8471,6 @@ function keyboardShortcutsKey(){
 function keyboardShortcutsEnabled(){
   try{return localStorage.getItem(keyboardShortcutsKey())!=="0"}catch{return true}
 }
-function syncShortcutPreference(){
-  const input=document.getElementById("keyboardShortcutsOn");
-  if(input)input.checked=keyboardShortcutsEnabled();
-}
-document.getElementById("keyboardShortcutsOn").addEventListener("change",e=>{
-  try{localStorage.setItem(keyboardShortcutsKey(),e.target.checked?"1":"0")}catch{}
-});
-document.addEventListener("click",e=>{
-  if(e.target.closest('[data-settings-tab~="shortcuts"]'))syncShortcutPreference();
-});
 document.addEventListener("keydown",e=>{
   if(e.defaultPrevented||e.isComposing||e.repeat||e.ctrlKey||e.altKey||e.metaKey||!keyboardShortcutsEnabled())return;
   if(window.matchMedia("(max-width:760px)").matches)return;
@@ -8683,7 +8481,7 @@ document.addEventListener("keydown",e=>{
   const key=e.key.toLowerCase();
   if(!["/","j","k","r","e","?"].includes(key))return;
   if(key==="/"){e.preventDefault();const search=document.getElementById("search");search.focus();search.select();return}
-  if(key==="?"){e.preventDefault();openSettings("settings","shortcuts");syncShortcutPreference();return}
+  if(key==="?"){e.preventDefault();openSettings("settings","shortcuts");return}
   if(!["all","action","reviewed","archived"].includes(filter))return;
   if(key==="j"||key==="k"){
     if(!lastRowIds.length)return;

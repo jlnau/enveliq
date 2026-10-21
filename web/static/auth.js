@@ -21,6 +21,73 @@ function watchPolish(root) {
   let queued = false;
   new MutationObserver(() => { if (queued) return; queued = true; queueMicrotask(() => { queued = false; polish(root); }); }).observe(root, { childList: true, subtree: true });
 }
+// On the list pages, anything a page still draws the older way (a label above a box, a tick box, a button) is turned into the same
+// kind of row as everything else, and neighbouring rows are put in one card. This keeps every page alike without drawing each by hand.
+function markAct(pane) {
+  const last = [...pane.children].filter(c => c.classList && c.classList.contains("grp-wrap")).pop();
+  if (last && last.querySelector(".li") && [...last.querySelectorAll(".li")].every(r => r.classList.contains("center"))) last.classList.add("act");
+}
+const SHORT_NOTE = 45;
+function noteFor(el) {
+  const text = el.textContent.trim();
+  if (!text) return null;
+  return text.length < SHORT_NOTE && !el.querySelector("a") ? h("small", { text }) : qmark(...[...el.childNodes]);
+}
+function rowify(root) {
+  for (const ios of root.querySelectorAll(".ios")) {
+    // a label above a box: one row, the label on the left and the box on the right (a big text box gets the label above it)
+    for (const lab of ios.querySelectorAll("label[for]:not(.li):not(.check):not(.optrow):not(.gopt):not(.lbl)")) {
+      const box = lab.parentElement;
+      if (!box || box.closest(".li, .qpop, .sig-box, .ab-tools, .ios-pane > .back") || box.dataset.rowed) continue;
+      const ctl = [...box.children].find(c => c !== lab && /^(INPUT|SELECT|TEXTAREA)$/.test(c.tagName) && c.type !== "hidden" && c.type !== "checkbox" && c.type !== "radio" && c.type !== "file");
+      if (!ctl || (lab.getAttribute("for") && lab.getAttribute("for") !== ctl.id)) continue;
+      const hint = [...box.children].find(c => c.classList && c.classList.contains("hint"));
+      const big = ctl.tagName === "TEXTAREA";
+      const rowEl = h(big ? "div" : "label", { class: "li " + (big ? "fieldrow" : "fld"), "data-rowed": "1" });
+      const name = h("b", {}, ...lab.childNodes);
+      const extra = hint ? noteFor(hint) : null;
+      const isSmall = !!extra && extra.tagName === "SMALL";
+      if (big) rowEl.append(...[h("label", { class: "lbl", for: ctl.id }, ...name.childNodes, extra && !isSmall ? extra : null), ctl, isSmall ? extra : null].filter(Boolean));
+      else rowEl.append(h("span", { class: "lb" }, name, extra), ctl);
+      if (box.hidden) rowEl.hidden = true;
+      box.replaceWith(rowEl);
+    }
+    // a tick box or a round choice with its title and note
+    for (const lab of ios.querySelectorAll("label.check")) {
+      const inp = lab.querySelector("input");
+      if (!inp || lab.closest(".li, .qpop")) continue;
+      const strong = lab.querySelector("strong, b"), hint = lab.querySelector(".hint, small");
+      const radio = inp.type === "radio";
+      const name = h("b", { text: (strong || lab).textContent.trim() });
+      const extra = hint ? noteFor(hint) : null;
+      const rowEl = h("label", { class: radio ? "li pick" : "li", for: lab.getAttribute("for") || inp.id || null, "data-rowed": "1" },
+        h("span", { class: "lb" }, name, extra && extra.tagName !== "SMALL" ? extra : null, extra && extra.tagName === "SMALL" ? extra : null));
+      if (radio) rowEl.append(inp, icon("m5 12 5 5 9-10", 18, "tick"));
+      else { inp.classList.add("swi"); inp.setAttribute("role", "switch"); rowEl.append(inp, h("span", { class: "sw", "aria-hidden": "true" })); }
+      lab.replaceWith(rowEl);
+    }
+    // buttons become rows
+    for (const b of ios.querySelectorAll("button.btn, button.danger-btn")) {
+      if (b.closest(".li, td, th, .ab-row, .chan, .sig-bar, .sig-link, .qpop, .back, [data-keep]") || b.classList.contains("pillbtn") || b.dataset.rowed) continue;
+      const danger = b.classList.contains("danger") || b.classList.contains("danger-btn");
+      b.dataset.rowed = "1";
+      b.className = "li " + (danger ? "danger" : "center");
+      const holder = b.parentElement;
+      if (holder && holder.classList.contains("row") && ![...holder.children].some(c => !(c.matches("button") || c.matches("span:empty")))) holder.replaceWith(...holder.children);
+    }
+    // neighbouring rows share one card
+    const parents = new Set([...ios.querySelectorAll(".li, .rp-out")].map(e => e.parentElement).filter(Boolean));
+    for (const parent of parents) {
+      if (parent.classList.contains("grp") || parent.classList.contains("rp-out") || parent.closest(".qpop")) continue;
+      let run = [];
+      const flush = () => { if (!run.length) return; const g = h("div", { class: "grp-wrap" }, h("div", { class: "grp" })); run[0].before(g); g.firstChild.append(...run); run = []; };
+      for (const c of [...parent.children]) { if (c.classList.contains("li") || c.classList.contains("rp-out")) run.push(c); else flush(); }
+      flush();
+    }
+    for (const pane of ios.querySelectorAll(".ios-pane")) markAct(pane);
+    for (const t of ios.querySelectorAll("h3:not(.pg-title)")) t.replaceWith(h("div", { class: "lt", text: t.textContent }));
+  }
+}
 function polish(root) {
   for (const form of root.querySelectorAll("form:not([data-auto])")) {
     const buttons = [...form.querySelectorAll("button[type=submit]")];
@@ -33,8 +100,10 @@ function polish(root) {
     const run = () => { clearTimeout(timer); timer = setTimeout(() => { if (form.isConnected && form.checkValidity()) form.requestSubmit(); }, 500); };
     form.addEventListener("change", run);
   }
-  for (const el of root.querySelectorAll(".hint:not([data-fold]), p.lead:not([data-fold])")) {
+  rowify(root);
+  for (const el of root.querySelectorAll(".hint:not([data-fold]), p.lead:not([data-fold]), .gsub:not([data-fold])")) {
     el.dataset.fold = "1";
+    if (el.closest(".ios")) { tuck(el); continue; }
     if (el.children.length || el.closest(".alert, details.help, .savedtag, [role=status], .page > .lead") || el.parentElement === root) continue;
     const text = el.textContent.trim();
     if (text.length < 150) continue;
@@ -46,6 +115,31 @@ function polish(root) {
     fold.firstChild.nextSibling.firstChild.dataset.fold = "1";
     if (first) { el.textContent = first; el.after(fold); } else el.replaceWith(fold);
   }
+}
+
+// On the list pages, a sentence that explains something does not sit on the page. It moves behind a small "?" beside the label it
+// explains. Short notes ("Last sent 5 minutes ago") are facts, not explanations, so they stay where they are.
+function tuck(el) {
+  if (el.id || el.closest(".qpop, .alert, [role=status], .savedtag, [data-keep]")) return;
+  const text = el.textContent.trim();
+  if (!text || (text.length < 45 && !el.querySelector("a"))) return;
+  const parent = el.parentElement;
+  let target = null;
+  if (parent) {
+    const labels = [...parent.querySelectorAll(":scope > label")].filter(l => !l.classList.contains("check") && !l.classList.contains("optrow") && !l.classList.contains("gopt"));
+    target = labels[labels.length - 1] || null;
+    if (!target) target = [...parent.querySelectorAll(":scope > strong, :scope > b")].pop() || null;
+    if (!target && parent.previousElementSibling && /^(STRONG|B|LABEL)$/.test(parent.previousElementSibling.tagName)) target = parent.previousElementSibling;
+  }
+  // With nothing beside it to explain, the note joins the "?" beside the page title.
+  const heading = !target && el.closest(".ios-pane, .ios-list") && el.closest(".ios-pane, .ios-list").querySelector(":scope > h1.pg-title");
+  if (heading) {
+    const have = heading.querySelector(".qpop");
+    if (have) have.append(h("p", {}, ...[...el.childNodes])); else heading.append(qmark(h("p", {}, ...[...el.childNodes])));
+    el.remove(); return;
+  }
+  const q = qmark(...[...el.childNodes]);
+  if (target) { target.append(q); el.remove(); } else el.replaceWith(q);
 }
 
 // ---------- tiny DOM helpers ----------
@@ -100,6 +194,221 @@ function passwordRulesText(r) {
   return "At least " + (parts.length ? parts.join(", ") + " and " : "") + last + (r.pw_forbid_username ? ", and not your username" : "") + ".";
 }
 function show(...nodes) { app.replaceChildren(...nodes); if (window.ENVELIQ_EMBED) return; const f = app.querySelector("input:not([type=hidden]),button.primary"); if (f) f.focus(); }
+
+// ---------- the one list look for Settings and Administration ----------
+// Every page is a calm, single column of grouped rows, like the Settings app on a phone. A row shows a value, holds a switch or a
+// drop-down, or opens one level further in, with a blue back link above the title. Explanations never sit on the page: they sit
+// behind a small "?" next to the thing they explain.
+const CHEV = "m9 5 7 7-7 7", BACK = "m15 5-7 7 7 7";
+const chev = () => icon(CHEV, 14, "ch");
+// A small "?" that shows its words on hover, focus or tap. Anything can go inside: text, a link, a short list.
+function qmark(...content) {
+  const pop = h("div", { class: "qpop", role: "tooltip" }, ...content);
+  const btn = h("button", { class: "qm", type: "button", "aria-label": "More about this", "aria-expanded": "false", text: "?" });
+  const wrap = h("span", { class: "qwrap" }, btn, pop);
+  btn.addEventListener("click", e => {
+    e.preventDefault(); e.stopPropagation();
+    const open = !wrap.classList.contains("open");
+    closeQmarks(wrap.getRootNode());
+    wrap.classList.toggle("open", open); btn.setAttribute("aria-expanded", String(open));
+    if (open) { wrap.classList.remove("flip"); const r = pop.getBoundingClientRect(), edge = (wrap.getRootNode().host || document.documentElement).getBoundingClientRect().right; if (r.right > Math.min(edge, innerWidth) - 8) wrap.classList.add("flip"); }
+  });
+  return wrap;
+}
+function closeQmarks(root) { for (const w of (root || document).querySelectorAll(".qwrap.open")) { w.classList.remove("open"); const b = w.firstChild; if (b) b.setAttribute("aria-expanded", "false"); } }
+// One row. `go` makes it open something; `value` is the grey words on the right; `right` is anything else on the right.
+function row({ title, sub, value, ic, color, go, right, help, danger, center, id, lead } = {}) {
+  const el = h(go ? "button" : "div", { class: "li" + (go ? " go" : "") + (danger ? " danger" : "") + (center ? " center" : ""), type: go ? "button" : null, id: id || null, onclick: go || null });
+  if (lead) el.append(lead);
+  if (ic) el.append(h("span", { class: "ic", "data-c": color || "blue" }, icon(ic, 17)));
+  el.append(h("span", { class: "lb" }, h("b", { text: title }), help ? qmark(...[].concat(help)) : null, sub ? h("small", { text: sub }) : null));
+  if (value instanceof Node) el.append(value);
+  else if (value !== undefined && value !== null && value !== "") el.append(h("span", { class: "v", text: value }));
+  if (right) el.append(...[].concat(right));
+  if (go && !center && !danger) el.append(chev());
+  return el;
+}
+// A row with an on/off switch. `onchange(checked)` runs when it is flipped.
+function swRow(title, checked, onchange, { sub, help, id } = {}) {
+  const box = h("input", { type: "checkbox", class: "swi", role: "switch", id: id || null, checked: !!checked });
+  if (onchange) box.addEventListener("change", () => onchange(box.checked, box));
+  return h("label", { class: "li" }, h("span", { class: "lb" }, h("b", { text: title }), help ? qmark(...[].concat(help)) : null, sub ? h("small", { text: sub }) : null), box, h("span", { class: "sw", "aria-hidden": "true" }));
+}
+// A row with a drop-down. `options` is [[value, words], ...].
+function selRow(title, options, current, onchange, { sub, help, id } = {}) {
+  const list = options.slice();
+  if (!list.some(o => String(o[0]) === String(current))) list.push([current, String(current)]);
+  const sel = h("select", { class: "dd", id: id || null, name: id || null, "aria-label": title }, list.map(([v, t]) => h("option", { value: String(v), text: t, selected: String(v) === String(current) })));
+  if (onchange) sel.addEventListener("change", () => onchange(sel.value, sel));
+  return h("div", { class: "li" }, h("span", { class: "lb" }, h("b", { text: title }), help ? qmark(...[].concat(help)) : null, sub ? h("small", { text: sub }) : null), sel);
+}
+// A small group title and the card of rows under it.
+function grp(label, ...rows) {
+  const kids = rows.flat(Infinity).filter(Boolean);
+  if (!kids.length) return null;
+  return h("div", { class: "grp-wrap" }, label ? h("div", { class: "lt" }, typeof label === "string" ? label : label) : null, h("div", { class: "grp" }, ...kids));
+}
+const backLink = (text, onclick) => h("button", { class: "back", type: "button", onclick }, icon(BACK, 16), text);
+// The page title, with its "?" when there is something to explain.
+const pageTitle = (text, help) => h("h1", { class: "pg-title" }, h("span", { text }), help ? qmark(...[].concat(help)) : null);
+
+// Smaller pieces for lists of things (people, rules, replies) and the forms that add to them.
+const fieldRow = (label, el, sub) => h("label", { class: "li fld" }, h("span", { class: "lb" }, h("b", { text: label }), sub ? h("small", { text: sub }) : null), el);
+const noteRow = text => h("div", { class: "li empty" }, h("span", { class: "lb" }, h("small", { text })));
+const xBtn = (label, onclick) => h("button", { class: "xbtn", type: "button", "aria-label": label, title: label, onclick }, icon("M6 6l12 12M18 6 6 18", 14));
+const pillBtn = (text, onclick, label) => h("button", { class: "pillbtn", type: "button", text, "aria-label": label || text, onclick });
+const faceOf = (text, i = 0) => h("span", { class: "av", "data-i": String(i % 4), "aria-hidden": "true", text });
+function itemRow({ title, sub, lead, value, buttons, go }) {
+  const el = h(go ? "button" : "div", { class: "li" + (go ? " go" : ""), type: go ? "button" : null, onclick: go || null });
+  if (lead) el.append(lead);
+  el.append(h("span", { class: "lb" }, h("b", { text: title }), sub ? h("small", { text: sub }) : null));
+  if (value) el.append(h("span", { class: "v", text: value }));
+  if (buttons) el.append(...[].concat(buttons).filter(Boolean));
+  if (go) el.append(chev());
+  return el;
+}
+// Draw a list page again, keeping (or closing) the pane that is open.
+const redraw = (title, build, opts, drill = null) => { app._drill = drill; show(listPage(title, build, opts)); };
+
+// A whole page made of lists. `build(open)` gives the groups: { label, help, items }, or a plain node. An item is a ready-made row,
+// or { title, value, sub, ic, color, content, help } which becomes a row that opens `content` one level further in.
+// The page remembers which one is open, so a redraw (after saving, say) keeps your place.
+function listPage(title, build, { help, sub, back } = {}) {
+  const mount = app, root = h("div", { class: "ios" }), list = h("div", { class: "ios-list" }), panes = new Map();
+  const open = key => {
+    mount._drill = key;
+    for (const [k, pane] of panes) pane.hidden = k !== key;
+    list.hidden = key !== null && key !== undefined;
+    const top = root.getRootNode().host; if (top && top.scrollIntoView) top.scrollIntoView({ block: "start" });
+  };
+  root._open = open;
+  const up = back ? { title: back.title, back: back.go } : mount._parent;
+  if (up) list.append(backLink(up.title, up.back));
+  list.append(pageTitle(title, help));
+  if (sub) list.append(h("div", { class: "pg-sub", text: sub }));
+  for (const g of [].concat(build(open)).filter(Boolean)) {
+    if (g instanceof Node) { list.append(g); continue; }
+    const rows = g.items.filter(Boolean).map(it => {
+      if (it instanceof Node) return it;
+      const key = it.key || it.title;
+      if (it.content) {
+        let help = it.help;
+        for (const n of [].concat(it.content).filter(Boolean)) if (n.matches && n.matches("section.section")) { const lead = takeLead(n); if (lead && !help) help = lead; }
+        const pane = h("div", { class: "ios-pane", hidden: true }, backLink(title, () => open(null)), pageTitle(it.paneTitle || it.title, help), ...[].concat(it.content).filter(Boolean));
+        panes.set(key, pane);
+      }
+      return row({ title: it.title, value: it.value, sub: it.sub, ic: it.ic, color: it.color, lead: it.lead, center: it.center, danger: it.danger, go: it.go || (() => open(key)) });
+    });
+    const card = grp(g.help ? [].concat(g.label, qmark(...[].concat(g.help))) : g.label, rows);
+    if (card) list.append(card);
+  }
+  // The buttons that finish a form sit together at the bottom of the pane. On a phone they stay in reach there.
+  for (const pane of panes.values()) markAct(pane);
+  root.append(list, ...panes.values());
+  if (mount._drill && panes.has(mount._drill)) open(mount._drill); else mount._drill = null;
+  return root;
+}
+// Lift a section's title and lead sentence out of it (the page shows the title; the lead sentence goes behind a "?").
+function takeLead(n) { const l = n.querySelector(":scope > p.lead, :scope > p.gsub"), kids = l ? [...l.childNodes] : null; if (l) l.remove(); n.querySelector(":scope > h2")?.remove(); return kids; }
+// What the older page code drew (a title, a lead sentence, notices, sections) as one list page. A section with a title
+// becomes a row that opens it; sections can name their group, their icon and a short grey value.
+function embedPage(content) {
+  const nodes = content.flat(Infinity).filter(n => n instanceof Node);
+  const pre = nodes.find(n => n.classList && n.classList.contains("ios"));
+  if (pre) return pre;
+  const titleEl = nodes.find(n => n.tagName === "H1");
+  const title = (titleEl && titleEl.textContent.trim()) || app._title || "";
+  const lead = nodes.find(n => n.matches && n.matches("p.lead, p.gsub"));
+  const secName = s => s.dataset.title || (s.querySelector(":scope > h2") ? [...s.querySelector(":scope > h2").childNodes].filter(c => c.nodeType === 3).map(c => c.textContent).join("").trim() : "");
+  const secs = nodes.filter(n => n.matches && n.matches("section.section"));
+  const asRows = secs.filter(s => secName(s) && !s.dataset.inline).length >= 2;
+  const take = takeLead;
+  return listPage(title, () => {
+    const out = []; let cur = null;
+    for (const n of nodes) {
+      if (n === titleEl || n === lead) continue;
+      const isSec = n.matches && n.matches("section.section"), name = isSec ? secName(n) : "";
+      if (isSec && name && asRows && !n.dataset.inline) {
+        const g = n.dataset.group || "";
+        if (!cur || cur.label !== g) { cur = { label: g, items: [] }; out.push(cur); }
+        const help = take(n);
+        cur.items.push({ title: name, value: n.dataset.summary, ic: n.dataset.icon ? LI[n.dataset.icon] : null, color: n.dataset.color, content: n, help });
+      } else if (isSec) {
+        cur = null;
+        const help = name ? take(n) : null;
+        out.push(h("div", { class: "grp-wrap" }, name && name !== title ? h("div", { class: "lt" }, name, help ? qmark(...help) : null) : null, n));
+      } else { cur = null; out.push(n); }
+    }
+    return out;
+  }, { help: lead ? [...lead.childNodes] : null });
+}
+
+// ---------- the list of pages under each name in the left panel ----------
+const LI = {
+  lock: "M7 11V8a5 5 0 0 1 10 0v3M5 11h14v9H5zM12 15v2", device: "M4 5h16v11H4zM9 20h6M12 16v4", user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4.4 3.6-7 8-7s8 2.6 8 7",
+  image: "M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M9 9h.01", book: "M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11", star: "M12 3l2.5 5.5 6 .7-4.4 4.1 1.2 5.9L12 16.3 6.7 19.2l1.2-5.9L3.5 9.2l6-.7z",
+  pen: "M4 20h4l10-10-4-4L4 16z", spark: "M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM18 16l.8 2.2L21 19l-2.2.8L18 22l-.8-2.2L15 19l2.2-.8z",
+  filter: "M4 6h16M7 12h10M10 18h4", mute: "M11 5 6 9H3v6h3l5 4zM16 9l5 6M21 9l-5 6", moon: "M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z", cal: "M4 6h16v14H4zM4 10h16M8 3v4M16 3v4",
+  bell: "M6 17V11a6 6 0 1 1 12 0v6l2 2H4zM10 21h4", mail: "M3 5h18v14H3zM3 7l9 6 9-6", refresh: "M20 11a8 8 0 0 0-14-4M4 13a8 8 0 0 0 14 4M6 3v4h4M18 21v-4h-4",
+  box: "M12 3 4 7v10l8 4 8-4V7zM4 7l8 4 8-4M12 11v10", forward: "M14 5l6 6-6 6M20 11H8a4 4 0 0 0-4 4v3", ms: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
+  chat: "M4 5h16v11H9l-5 4z", down: "M12 4v11m-4-4 4 4 4-4M5 20h14", shield: "M12 3 4 6v6c0 4.5 3.2 7.8 8 9 4.8-1.2 8-4.5 8-9V6z", warn: "M12 8v5m0 3.5v.01M10.3 4.2 3 17a2 2 0 0 0 1.7 3h14.6a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z",
+  key: "M8 15a4 4 0 1 1 3.9-5H21v3h-3v3h-3v-3h-3.1A4 4 0 0 1 8 15z", grid: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z", keyboard: "M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M7 14h10", clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2",
+  tray: "M4 13l3-8h10l3 8v6H4zM4 13h5a3 3 0 0 0 6 0h5",
+};
+function landingGroups(tab, me, o) {
+  const R = (id, title, value, ic, color, drill) => ({ id, title, value, ic, color, drill });
+  const L = {
+    account: { title: "Account", groups: [
+      { label: "Sign-in", rows: [R("signin", "Sign-in & security", "Password, two-factor, passkeys", "lock", "blue"), R("signin", "Signed-in devices", "", "device", "green", "Your devices")] },
+      { label: "Your picture", rows: [R("profile", "Change picture", "", null, null, "Picture")] }] },
+    people: { title: "People & writing", groups: [{ label: "", rows: [
+      o.addressBook ? R("addressbook", "Address book", "The people you write to", "book", "blue") : null,
+      R("important", "Important people", "Put chosen senders first", "star", "amber"),
+      R("saved", "Signature & saved replies", "Words you use often", "pen", "green"),
+      R("aiinstr", "Your AI instructions", "How you like summaries", "spark", "purple")] }] },
+    rules: { title: "Rules & calendar", groups: [{ label: "", rows: [
+      R("rules", "Mail rules", "Archive or mark reviewed", "filter", "blue"),
+      R("muted", "Muted conversations", "See and unmute", "mute", "grey"),
+      R("away", "Away reply", "An answer while you are away", "moon", "purple"),
+      R("calendar", "Calendar & to-do", "Send tasks to a calendar", "cal", "green")] }] },
+    alerts: { title: "Alerts", groups: [{ label: "", rows: [
+      R("reminders", "Notifications", "Where reminders go", "bell", "amber"),
+      R("mailalerts", "Email alerts", "Which new emails send an alert", "mail", "blue")] }] },
+    sync: { title: "Mail", groups: [{ label: "", rows: [
+      R("sync", "Automatic sync", "How often to check", "refresh", "blue"),
+      R("adminkeep", "Reviewed and Archived", "How long mail stays", "tray", "green"),
+      R("admincheck", "Forward to check", "A one-line answer on a suspicious email", "forward", "amber"),
+      R("adminms", "Microsoft sign-in", "Outlook, Hotmail, Microsoft 365", "ms", "purple")] }] },
+    llm: { title: "AI", groups: [{ label: "", rows: [
+      R("llm", "AI model", "The AI that writes summaries", "spark", "purple"),
+      R("adminaiinstr", "Extra summary instructions", "Style or language for everyone", "pen", "blue"),
+      R("adminagent", "Agent chat", "An assistant for people's own mail", "chat", "green")] }] },
+    adminbackup: { title: "System", groups: [{ label: "", rows: [
+      R("adminbackup", "Backup and restore", "A locked copy of everything", "down", "blue"),
+      R("adminupdates", "Updates", "Tell administrators about new versions", "refresh", "green"),
+      R("adminreport", "Reporting", "Send numbers to Grafana and others", "warn", "amber"),
+      R("security", "Security and privacy", "The vault and what Enveliq promises", "shield", "purple")] }] },
+  };
+  return L[tab] || null;
+}
+async function landingPage(tab, me, o = {}) {
+  const spec = landingGroups(tab, me, o);
+  if (!spec) return;
+  const open = (id, extra) => o.open && o.open(id, extra);
+  const kids = [pageTitle(spec.title)];
+  if (tab === "account") {
+    kids.push(h("div", { class: "grp-wrap" }, h("div", { class: "grp" },
+      h("button", { class: "li go me", type: "button", onclick: () => open("profile", { title: "Profile" }) }, avatarNode(me, "big"),
+        h("span", { class: "lb" }, h("b", { text: me.display_name || me.username }), h("small", { text: me.email || me.username })), chev()))));
+  }
+  const made = new Map();
+  for (const g of spec.groups) kids.push(grp(g.label, g.rows.filter(Boolean).map(r => { const el = row({ title: r.title, value: r.value, ic: r.ic ? LI[r.ic] : null, color: r.color, go: () => open(r.id, { title: r.title, drill: r.drill }) }); made.set(r.title, el); return el; })));
+  show(h("div", { class: "ios" }, ...kids));
+  if (tab === "account") api("/auth/devices").then(out => {
+    const n = (out.items || []).length, el = made.get("Signed-in devices");
+    if (el && n) el.insertBefore(h("span", { class: "v", text: n === 1 ? "1 device" : n + " devices" }), el.lastChild);
+  }).catch(() => {});
+}
 
 async function api(path, { method = "GET", body } = {}) {
   const opts = { method, credentials: "same-origin", headers: {} };
@@ -198,7 +507,7 @@ async function route() {
   let me;
   try { me = await api("/me"); } catch (err) { return location.replace(path === "/app-signin" ? "/login?then=" + encodeURIComponent(path + location.search) : "/login"); }
   if (path === "/app-signin") return me.session.state === "full" ? appSigninPage(me, params) : location.replace("/account");
-  if (path === "/admin") return me.role === "admin" && me.session.state === "full" ? adminPage(me) : location.replace("/account");
+  if (path === "/admin") return me.role === "admin" && me.session.state === "full" ? adminPage(me, "users") : location.replace("/account");
   if (path === "/mailboxes") return me.session.state === "full" ? mailboxesPage(me) : location.replace("/account");
   if (path === "/welcome") return me.session.state === "full" ? welcomePage(me, params) : location.replace("/account");
   return accountPage(me, params);
@@ -327,10 +636,11 @@ const TRUST_BADGES = [
   ["M4 5h16v6H4zM4 13h16v6H4zM8 8h.01M8 16h.01", ["Runs on", "your server"]],
   ["M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6", ["No emails", "stored"]],
 ];
-function icon(path) {
+function icon(path, size = 20, cls = "") {
   const NS = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(NS, "svg");
-  for (const [k, v] of Object.entries({ width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": 1.9, "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" })) svg.setAttribute(k, v);
+  if (cls) svg.setAttribute("class", cls);
+  for (const [k, v] of Object.entries({ width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": 1.9, "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" })) svg.setAttribute(k, v);
   const p = document.createElementNS(NS, "path"); p.setAttribute("d", path); svg.append(p);
   return svg;
 }
@@ -466,12 +776,12 @@ function mfaStep(methods) {
 
 // ---------- signed-in chrome ----------
 function chrome(me, current, ...content) {
-  if (window.ENVELIQ_EMBED) return [h("div", { class: "page embed-cols" }, content)];
+  if (window.ENVELIQ_EMBED) return [embedPage(content)];
   // Settings and Administration live in the pop-ups on the inbox page; these pages are only reached directly.
   const links = [h("a", { href: "/", text: "Inbox" })];
   links.push(h("a", { href: "#", text: "Sign out", onclick: async e => { e.preventDefault(); await api("/auth/logout", { method: "POST" }); location.replace("/login"); } }));
   return [h("header", { class: "top" }, h("a", { class: "brand", href: "/" }, h("img", { src: "/brand/enveliq-icon-128.webp", alt: "" }), "Enveliq"), h("nav", { "aria-label": "Account" }, links)),
-    h("div", { class: "page" }, content)];
+    h("div", { class: "page" }, embedPage(content))];
 }
 function recoveryCodesPanel(codes) {
   return h("div", { class: "alert good" },
@@ -568,38 +878,35 @@ async function profilePage(me) {
       toast("Picture saved"); tell(u); redraw();
     } catch (er) { toast(er.message); }
   });
-  const picture = h("div", { class: "avatar-edit" }, avatarNode(me),
-    h("div", {}, h("strong", { text: "Picture" }), h("div", { class: "hint", text: "Optional. A small round picture shown next to your name. It is shrunk on your device before it is saved." }),
-      h("div", { class: "row" },
-        h("button", { class: "btn small", type: "button", text: me.avatar_v ? "Change picture" : "Add a picture", onclick: () => file.click() }),
-        me.avatar_v ? h("button", { class: "btn small", type: "button", text: "Remove white background", onclick: async e => { try { e.target.disabled=true; const image=await removeLegacyAvatarWhite(me); const u=await api("/me/avatar", { method:"PUT", body:{ image } }); toast("White background removed");tell(u);redraw(); } catch (er) { toast(er.message);e.target.disabled=false; } } }) : null,
-        me.avatar_v ? h("button", { class: "btn small", type: "button", text: "Remove", onclick: async () => { try { const u = await api("/me/avatar", { method: "DELETE" }); toast("Picture removed"); tell(u); redraw(); } catch (er) { toast(er.message); } } }) : null)),
-    file);
-  const saved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
-  const form = h("div", {},
-    h("div", { class: "grid2" },
-      field("Your name", input("pf_name", { value: me.display_name && me.display_name !== me.username ? me.display_name : "", maxlength: 128, autocomplete: "name", placeholder: me.username }), "How you appear in Enveliq. Leave it empty to use your username."),
-      field("Email address", input("pf_email", { type: "email", value: me.email || "", maxlength: 254, autocomplete: "email", placeholder: "Optional" }), "Not used to sign in. Nobody else can see it.")),
-    field("About you", h("textarea", { id: "pf_about", rows: "3", maxlength: "500", placeholder: "Optional. A line other people in your Enveliq will see." , text: me.about || "" }), "Only people using this same Enveliq can see this."),
-    h("label", { class: "check", for: "pf_people" }, h("input", { id: "pf_people", type: "checkbox", checked: me.show_in_people !== false }),
-      h("span", {}, h("strong", { text: "Show me in the people list" }), h("div", { class: "hint", text: "Other people can pick you from the list when they start a message. Turn this off if you would rather not appear. You can still reply to anyone who writes to you." }))),
-    h("p", { class: "hint" }, "Your choices save as you make them. ", saved));
+  const pickRows = [
+    row({ title: me.avatar_v ? "Change picture" : "Add a picture", center: true, go: () => file.click() }),
+    me.avatar_v ? row({ title: "Remove white background", center: true, go: async () => { try { const image = await removeLegacyAvatarWhite(me); const u = await api("/me/avatar", { method: "PUT", body: { image } }); toast("White background removed"); tell(u); redraw(); } catch (er) { toast(er.message); } } }) : null,
+    me.avatar_v ? row({ title: "Remove picture", danger: true, go: async () => { try { const u = await api("/me/avatar", { method: "DELETE" }); toast("Picture removed"); tell(u); redraw(); } catch (er) { toast(er.message); } } }) : null,
+  ];
+  const picturePane = [h("div", { class: "bigface" }, avatarNode(me, "big")), grp("", pickRows), h("p", { class: "pg-note", text: "Optional. A small round picture shown next to your name. It is shrunk on your device before it is saved." }), file];
+  const nameIn = input("pf_name", { value: me.display_name && me.display_name !== me.username ? me.display_name : "", maxlength: 128, autocomplete: "name", placeholder: me.username });
+  const emailIn = input("pf_email", { type: "email", value: me.email || "", maxlength: 254, autocomplete: "email", placeholder: "Optional" });
+  const aboutIn = h("textarea", { id: "pf_about", rows: "3", maxlength: "500", placeholder: "A line other people in your Enveliq will see.", text: me.about || "" });
+  const peopleRow = swRow("Show me in the people list", me.show_in_people !== false, null, { id: "pf_people", help: "Other people can pick you from the list when they start a message. Turn this off if you would rather not appear. You can still reply to anyone who writes to you." });
+  const fields = h("div", {},
+    grp("", fieldRow("Your name", nameIn, "How you appear. Empty uses your username."), fieldRow("Email address", emailIn, "Not used to sign in. Nobody else can see it.")),
+    grp(["About you", qmark("Only people using this same Enveliq can see this.")], h("div", { class: "li fieldrow" }, aboutIn)),
+    grp("", peopleRow));
   let pending = null;
-  form.addEventListener("change", () => {
+  fields.addEventListener("change", () => {
     clearTimeout(pending);
     pending = setTimeout(async () => {
       try {
-        const u = await api("/me/profile", { method: "PATCH", body: { display_name: form.querySelector("#pf_name").value.trim(), email: form.querySelector("#pf_email").value.trim(), about: form.querySelector("#pf_about").value.trim(), show_in_people: form.querySelector("#pf_people").checked } });
-        saved.textContent = "Saved ✓"; saved.classList.add("show"); clearTimeout(saved._t); saved._t = setTimeout(() => saved.classList.remove("show"), 1800); tell(u);
+        const u = await api("/me/profile", { method: "PATCH", body: { display_name: nameIn.value.trim(), email: emailIn.value.trim(), about: aboutIn.value.trim(), show_in_people: boxOf(peopleRow).checked } });
+        toast("Saved"); tell(u);
       } catch (er) { toast(er.message); }
     }, 300);
   });
-  show(h("h1", { text: "Profile" }),
-    h("p", { class: "lead", text: "You only need a username and password to use Enveliq. Everything on this page is optional." }),
-    h("section", { class: "section" }, picture),
-    h("section", { class: "section" }, form),
-    h("section", { class: "section" }, h("h2", { text: "Sign-in" }),
-      h("div", { class: "item" }, h("div", {}, h("strong", { text: me.username }), h("div", { class: "meta", text: "Your username. To change your password or add two-factor sign-in, open Sign-in & security." })))));
+  show(listPage("Profile", () => [
+    { label: "", items: [{ title: "Picture", key: "Picture", lead: avatarNode(me, "big"), value: me.avatar_v ? "Added" : "None", content: picturePane }] },
+    fields,
+    { label: "Sign-in", help: "To change your password or add two-factor sign-in, open Sign-in & security.", items: [row({ title: "Username", value: me.username })] },
+  ], { help: "You only need a username and password to use Enveliq. Everything on this page is optional. Your choices save as you make them." }));
 }
 async function accountPage(me, params) {
   const enroll = me.session.state === "enroll";
@@ -640,14 +947,19 @@ async function accountPage(me, params) {
   // Passkeys
   const pkSection = h("section", { class: "section" }, h("h2", { text: "Passkeys" }),
     h("p", { class: "lead", text: "Sign in with your phone, computer or security key using its fingerprint, face or PIN. Passkeys can't be phished." }));
-  for (const pk of sec.passkeys) {
-    pkSection.append(h("div", { class: "item" }, h("div", {}, h("strong", { text: pk.name || "Passkey" }), h("div", { class: "meta", text: `Added ${new Date(pk.created_at * 1000).toLocaleDateString()}${pk.last_used_at ? ` · last used ${new Date(pk.last_used_at * 1000).toLocaleDateString()}` : ""}` })),
-      enroll ? null : h("div", { class: "row" },
-        h("button", { class: "btn small", type: "button", text: "Rename", onclick: async () => { const name = await askName(pk.name); if (!name) return; try { await api(`/auth/passkeys/${encodeURIComponent(pk.id)}`, { method: "PATCH", body: { name } }); refresh(); } catch (er) { toast(er.message); } } }),
-        h("button", { class: "btn small danger", type: "button", text: "Remove", onclick: async () => { try { await api(`/auth/passkeys/${encodeURIComponent(pk.id)}`, { method: "DELETE" }); toast("Passkey removed"); refresh(); } catch (er) { toast(er.message); } } }))));
-  }
+  const pkRows = h("div", { class: "grp-wrap" });
+  if (sec.passkeys.length) pkRows.append(grp("Your passkeys", sec.passkeys.map(pk => {
+    const el = itemRow({ title: pk.name || "Passkey", sub: `Added ${new Date(pk.created_at * 1000).toLocaleDateString()}${pk.last_used_at ? `, last used ${new Date(pk.last_used_at * 1000).toLocaleDateString()}` : ""}`,
+      buttons: enroll ? null : [
+        pillBtn("Rename", () => renamePasskey(el, pk), `Rename ${pk.name || "passkey"}`),
+        xBtn(`Remove ${pk.name || "passkey"}`, async () => { try { await api(`/auth/passkeys/${encodeURIComponent(pk.id)}`, { method: "DELETE" }); toast("Passkey removed"); refresh(); } catch (er) { toast(er.message); } })] });
+    el.classList.add("item");
+    return el;
+  })));
+  pkSection.append(pkRows);
   if (passkeysSupported()) {
-    const addForm = h("form", { class: "row" }, input("pk_name", { placeholder: "Name, e.g. Pixel phone", maxlength: 64 }), h("button", { class: enroll ? "btn primary" : "btn", type: "submit", text: "Add a passkey" }));
+    const addForm = h("form", {}, grp(sec.passkeys.length ? "Add another" : "", fieldRow("Name", input("pk_name", { placeholder: "e.g. Pixel phone", maxlength: 64, autocomplete: "off" }))),
+      grp("", h("button", { class: "li center" + (enroll ? " primary" : ""), type: "submit" }, h("span", { class: "lb" }, h("b", { text: "Add a passkey" })))));
     onSubmit(addForm, async () => {
       const out = await passkeyCreate(addForm.querySelector("#pk_name").value.trim() || "Passkey");
       toast("Passkey added");
@@ -663,7 +975,7 @@ async function accountPage(me, params) {
     slot.querySelector("#continue").focus();
   }
   const sections = [h("h1", { text: enroll ? "Set up two-factor sign-in" : "Sign-in & security" }), ...notices, slot];
-  const protect = [totpSection, pkSection]; let ssoSec = null;   // shown after the password, which is what most people look for first
+  const protect = [totpSection, pkSection]; let ssoSec = null, pwSection = null, devValue = h("span", { class: "v" });   // shown after the password, which is what most people look for first
 
   if (!enroll) {
     // Recovery codes
@@ -681,7 +993,7 @@ async function accountPage(me, params) {
         field("New password", input("new_pw", { type: "password", autocomplete: "new-password", required: true }), passwordRulesText(me.policy || {}) + " Signs out your other sessions.")),
         h("div", {}, h("button", { class: "btn", type: "submit", text: "Change password" })));
       onSubmit(pw, async () => { await api("/auth/password", { method: "POST", body: { current_password: pw.querySelector("#cur_pw").value, new_password: pw.querySelector("#new_pw").value } }); pw.reset(); toast("Password changed"); });
-      sections.push(h("section", { class: "section" }, h("h2", { text: "Password" }), pw));
+      pwSection = h("section", { class: "section" }, h("h2", { text: "Change password" }), pw);
     }
 
     // Your devices: where you are signed in, with a button to sign any other one out.
@@ -692,6 +1004,7 @@ async function accountPage(me, params) {
     const loadDevices = async () => {
       try {
         const out = await api("/auth/devices");
+        devValue.textContent = (out.items || []).length ? ((out.items || []).length === 1 ? "1 device" : (out.items || []).length + " devices") : "";
         devSlot.replaceChildren(...(out.items || []).map(d => h("div", { class: "item" },
           h("div", {}, h("strong", { text: (d.label || "A device") + (d.current ? " (this one)" : "") }),
             h("div", { class: "meta", text: d.signed_in_at ? `Signed in ${new Date(d.signed_in_at * 1000).toLocaleDateString()}` : "" })),
@@ -716,17 +1029,42 @@ async function accountPage(me, params) {
       ssoSec = s;
     }
   }
-  sections.push(...protect, ...(ssoSec ? [ssoSec] : []));
-  show(...chrome(me, "account", ...sections));
+  if (enroll) {
+    for (const n of protect) n.dataset.inline = "1";
+    sections.push(...protect);
+    return show(...chrome(me, "account", ...sections));
+  }
+  // Password, extra protection, and where you are signed in, as one list. Each row opens its own page.
+  const twoFactor = sec.totp_enabled || sec.passkeys.length > 0, [authSec, keySec, codeSec, devSec] = protect;
+  const page = listPage("Sign-in & security", open => {
+    new MutationObserver(() => { if (slot.childNodes.length) open(null); }).observe(slot, { childList: true });
+    const pk = sec.passkeys.length;
+    return [
+      ...notices,
+      slot,
+      pwSection ? { label: "Password", items: [{ title: "Change password", help: takeLead(pwSection), content: pwSection }] } : null,
+      { label: "Extra protection", items: [
+        swRow("Two-factor sign-in", twoFactor, (_, box) => { box.checked = twoFactor; open("Authenticator app"); }),
+        { title: "Authenticator app", value: sec.totp_enabled ? "On" : "Set up", help: takeLead(authSec), content: authSec },
+        { title: "Passkeys", value: pk ? (pk === 1 ? "1 passkey" : pk + " passkeys") : "None", help: takeLead(keySec), content: keySec },
+        { title: "Recovery codes", value: sec.recovery_codes_left ? sec.recovery_codes_left + " left" : "", help: takeLead(codeSec), content: codeSec }] },
+      { label: "Where you are signed in", items: [{ title: "Signed-in devices", key: "Your devices", value: devValue, help: takeLead(devSec), content: devSec }] },
+      ssoSec ? { label: "Single sign-on", items: [{ title: "Single sign-on", help: takeLead(ssoSec), content: ssoSec }] } : null,
+    ];
+  }, { help: "How you sign in, and what keeps your account safe. Two-factor sign-in asks for a second step, such as a code from an app or a passkey." });
+  show(...chrome(me, "account", page));
 }
 
-function askName(current) {
-  return new Promise(resolve => {
-    const form = h("form", { class: "row" }, input("rename", { value: current || "", maxlength: 64, required: true }), h("button", { class: "btn small primary", type: "submit", text: "Save" }), h("button", { class: "btn small", type: "button", text: "Cancel", onclick: () => { form.remove(); resolve(null); } }));
-    form.addEventListener("submit", e => { e.preventDefault(); form.remove(); resolve(form.querySelector("#rename").value.trim()); });
-    app.querySelector(".page").prepend(h("section", { class: "section" }, h("h2", { text: "Rename passkey" }), form));
-    form.querySelector("input").focus();
-  });
+// Rename a passkey in place: its row becomes a name box with Save and Cancel.
+function renamePasskey(rowEl, pk) {
+  const box = input("rename", { value: pk.name || "", maxlength: 64, required: true, autocomplete: "off", "aria-label": "New name" });
+  const save = async () => {
+    const name = box.value.trim(); if (!name) { toast("Type a name first"); return; }
+    try { await api(`/auth/passkeys/${encodeURIComponent(pk.id)}`, { method: "PATCH", body: { name } }); refresh(); } catch (er) { toast(er.message); }
+  };
+  const edit = h("label", { class: "li fld" }, h("span", { class: "lb" }, h("b", { text: "Name" })), box, pillBtn("Save", save), pillBtn("Cancel", () => edit.replaceWith(rowEl)));
+  box.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); save(); } if (e.key === "Escape") edit.replaceWith(rowEl); });
+  rowEl.replaceWith(edit); box.focus();
 }
 async function refresh() { const me = await api("/me"); accountPage(me, new URLSearchParams()); }
 
@@ -896,8 +1234,7 @@ function reportingSection(rp, redraw) {
       chk("rp_cat_act", c.categories.activity, "Report activity", "Syncs, AI summaries and timings, and Reviewed, Archived and Binned counts."),
       chk("rp_cat_sec", c.categories.security, "Report security events", "Sign-ins, two-factor and passkey changes, user and role changes, vault locked or unlocked, and changes to AI, sign-in and reporting settings."),
       c.label_mode === "id" && rp.mailboxes.length ? h("div", {}, h("h3", { text: "Which label is which mailbox" }),
-        h("div", { class: "table-wrap" }, h("table", { class: "table" }, h("thead", {}, h("tr", {}, ["Label in reports", "Mailbox"].map(t => h("th", { text: t })))),
-          h("tbody", {}, rp.mailboxes.map(m => h("tr", {}, h("td", {}, mono(m.label)), h("td", { text: m.name }))))))) : null)),
+        ...rp.mailboxes.map(m => row({ title: m.name, value: m.label }))) : null)),
 
     rp.allowed_hosts_set ? alertBox("info", "The server's administrator limits where reports may be sent (ENVELIQ_REPORT_ALLOWED_HOSTS).") : null,
     h("div", { class: "row" }, h("button", { class: "btn primary", type: "submit", text: "Save reporting settings" })));
@@ -1016,7 +1353,7 @@ async function adminPage(me, only) {
     field("Temporary password", input("nu_password", { type: "password", autocomplete: "new-password", required: true }), passwordRulesText(policy) + " They can change it under My security."),
     field("Role", h("select", { id: "nu_role" }, h("option", { value: "user", text: "User" }), h("option", { value: "admin", text: "Administrator" })))),
     h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Add user" })));
-  onSubmit(newUser, async () => { await api("/admin/users", { method: "POST", body: { username: newUser.querySelector("#nu_username").value.trim(), display_name: newUser.querySelector("#nu_name").value.trim() || null, password: newUser.querySelector("#nu_password").value, role: newUser.querySelector("#nu_role").value } }); toast("User added"); adminPage(me, only); });
+  onSubmit(newUser, async () => { await api("/admin/users", { method: "POST", body: { username: newUser.querySelector("#nu_username").value.trim(), display_name: newUser.querySelector("#nu_name").value.trim() || null, password: newUser.querySelector("#nu_password").value, role: newUser.querySelector("#nu_role").value } }); toast("User added"); app._drill = null; adminPage(me, only); });
 
   // Policy
   const sel = (id, value, options) => h("select", { id }, options.map(([v, t]) => h("option", { value: v, text: t, selected: v === value })));
@@ -1325,6 +1662,86 @@ async function adminPage(me, only) {
           guideNote("SSO.md", "", "Single sign-on guide for Authentik, Authelia, Keycloak and others"),
           h("p", { class: "hint", text: "Create an OAuth2/OpenID application in your provider (confidential client, authorization code flow with PKCE), then fill in the details below." }), ssoForm))],
   };
+  if (only === "features" && fe) {
+    const groups = [["Writing", ["compose", "write_help", "address_book", "messages"]], ["Reading mail", ["sent", "find_mail", "all_mail", "media", "junk_mail", "tags", "rss"]],
+      ["Keeping track", ["shipping", "subscriptions", "travel", "waiting"]], ["Tidying", ["clean_up"]]];
+    const named = new Set(groups.flatMap(g => g[1]));
+    const rest = Object.keys(fe.labels).filter(k => !named.has(k));
+    if (rest.length) groups.push(["More", rest]);
+    const name = k => fe.labels[k].replace(/\s*\(.*\)\s*$/, "");
+    const rows = {};
+    const box = h("div", {});
+    for (const k of Object.keys(fe.labels)) rows[k] = swRow(name(k), fe.flags[k], async (on, el) => {
+      const body = {};
+      for (const key of Object.keys(fe.labels)) body[key] = boxOf(rows[key]).checked;
+      try { await api("/admin/features", { method: "PUT", body }); toast("Saved"); } catch (er) { el.checked = !on; toast(er.message); }
+    }, { id: "fe_" + k, help: FEATURE_HINTS[k] });
+    return show(listPage("Features", () => groups.map(([label, keys]) => ({ label, items: keys.filter(k => rows[k]).map(k => rows[k]) })),
+      { help: "Everything beyond reading and sorting mail is optional. Switch off what you don't want anyone on this server to use. People can also switch features off for themselves, but they cannot switch on anything you have turned off. Your choices save as you make them." }));
+  }
+  if (only === "reminders" && (rmN || gcfg)) {
+    const switches = {}, hosts = h("textarea", { id: "rn_hosts", rows: 4, spellcheck: "false", placeholder: "192.168.1.0/24\nhomeassistant.local" }, rmN ? (rmN.local_hosts || []).join("\n") : "");
+    const saveN = async (quiet) => {
+      const channels = {}; for (const k of Object.keys(rmN.labels)) channels[k] = boxOf(switches[k]).checked;
+      const local_hosts = hosts.value.split(/[\n,]+/).map(x => x.trim()).filter(Boolean);
+      try { await api("/admin/notifications", { method: "PUT", body: { channels, local_hosts } }); toast("Saved"); } catch (er) { toast(er.message); }
+    };
+    if (rmN) for (const k of Object.keys(rmN.labels)) { switches[k] = swRow(rmN.labels[k], rmN.channels[k], () => saveN(), { id: "rn_" + k }); }
+    const gOn = gcfg ? swRow("Allow Google Calendar", gcfg.enabled, null, { id: "gc_on" }) : null;
+    const gId = gcfg ? input("gc_id", { value: gcfg.client_id, spellcheck: "false", placeholder: "1234-abc.apps.googleusercontent.com" }) : null;
+    const gSecret = gcfg ? input("gc_secret", { type: "password", autocomplete: "off", placeholder: gcfg.client_secret_set ? "Saved. Leave blank to keep it." : "" }) : null;
+    const gRedirect = gcfg ? input("gc_redirect", { value: gcfg.redirect_uri, readonly: true }) : null;
+    const saveG = async () => {
+      const body = { enabled: boxOf(gOn).checked, client_id: gId.value.trim() };
+      if (gSecret.value) body.client_secret = gSecret.value;
+      try { await api("/admin/google", { method: "PUT", body }); toast("Saved"); adminPage(me, only); } catch (er) { toast(er.message); }
+    };
+    const link = (href, text) => h("a", { href, target: "_blank", rel: "noopener noreferrer", text });
+    return show(listPage("Notifications", () => [
+      rmN ? { label: "Where reminders can go", help: "Choose which reminder channels people on this server may use. Services on your own network (a ntfy, Gotify or Home Assistant at a 192.168… address) are blocked until you list them here, so a typed address can never be used to probe your network.", items: Object.keys(rmN.labels).map(k => switches[k]) } : null,
+      rmN ? { label: "", items: [{ title: "Addresses on your own network", value: (rmN.local_hosts || []).length ? String(rmN.local_hosts.length) : "None", key: "hosts",
+        help: "One per line: a host name, an IP address or a network such as 192.168.1.0/24. " + (rmN.from_environment && rmN.from_environment.length ? "Also allowed by the server settings: " + rmN.from_environment.join(", ") + "." : ""),
+        content: [grp("", h("div", { class: "li fieldrow" }, hosts)), grp("", row({ title: "Save", center: true, go: () => saveN() }))] }] } : null,
+      gcfg ? { label: "Calendar", items: [{ title: "Google Calendar", value: gcfg.enabled ? "On" : "Off", key: "google", ic: LI.cal, color: "red",
+        help: [h("span", { text: "Lets people connect their own Google Calendar so tasks are added and deleted instantly. Google needs you to register Enveliq once (free, about 10 minutes). Do these in order:" }),
+          h("ol", { class: "howto" },
+            h("li", {}, "Copy the Redirect address below."),
+            h("li", {}, "Make a project: ", link("https://console.cloud.google.com/projectcreate", "console.cloud.google.com/projectcreate")),
+            h("li", {}, "Switch on the calendar: ", link("https://console.cloud.google.com/apis/library/calendar-json.googleapis.com", "Enable the Google Calendar API")),
+            h("li", {}, "Consent screen: ", link("https://console.cloud.google.com/auth/overview", "Google Auth Platform"), ". Left menu: Audience (External, add everyone under Test users), Branding (home page and privacy policy = your Enveliq address), Audience again (Publish app), then Data access (add the scope https://www.googleapis.com/auth/calendar.app.created)."),
+            h("li", {}, "Clients, Create client, Web application. Paste the Redirect address. Copy the Client ID and Client secret."),
+            h("li", {}, "Paste them here, tick Allow Google Calendar and Save.")),
+          guide("CALENDAR.md", "Every click, and fixes for common errors")],
+        content: [grp("", gOn), grp("", fieldRow("Redirect address", gRedirect, "Paste this into Google Cloud"), row({ title: "Copy the redirect address", center: true, go: async () => { try { await navigator.clipboard.writeText(gRedirect.value); toast("Copied"); } catch { gRedirect.select(); } } })),
+          grp("", fieldRow("Client ID", gId), fieldRow("Client secret", gSecret)), grp("", row({ title: "Save Google Calendar", center: true, go: saveG }))] }] } : null,
+    ], { help: "Reminders and the calendar connection that people on this server can use." }));
+  }
+  if (only === "users") {
+    const mfaWord = { admins: "Two-factor for administrators", everyone: "Two-factor on for everyone", off: "Two-factor optional" }[policy.require_mfa] || "";
+    const personPane = (u) => {
+      if (u.id === me.id) return [grp("", row({ title: "Role", value: u.role === "admin" ? "Administrator" : "User" }), row({ title: "Sign-in", value: u.source === "oidc" ? "Single sign-on" : "Local" })), h("p", { class: "pg-note", text: "This is you. Change your own sign-in under Account." })];
+      let armed = false;
+      const del = row({ title: "Delete this person", danger: true, go: () => {
+        if (!armed) { armed = true; del.querySelector("b").textContent = `Press again to delete ${u.username} and all their mailboxes`; setTimeout(() => { armed = false; del.querySelector("b").textContent = "Delete this person"; }, 6000); return; }
+        adminAct(`/admin/users/${u.id}`, "DELETE");
+      } });
+      const mfa = u.security.totp_enabled || u.security.passkeys.length;
+      return [grp("", row({ title: "Role", value: u.role === "admin" ? "Administrator" : "User" }), row({ title: "Sign-in", value: u.source === "oidc" ? "Single sign-on" : "Local" }), row({ title: "Two-factor", value: mfa ? "On" : "Off" }), u.disabled ? row({ title: "Status", value: "Disabled" }) : null),
+        grp("", row({ title: u.role === "admin" ? "Make an ordinary user" : "Make an administrator", center: true, go: () => adminAct(`/admin/users/${u.id}`, "PATCH", { role: u.role === "admin" ? "user" : "admin" }) }),
+          row({ title: u.disabled ? "Let them sign in again" : "Stop them signing in", center: true, go: () => adminAct(`/admin/users/${u.id}`, "PATCH", { disabled: !u.disabled }) }),
+          row({ title: "Reset their two-factor", center: true, go: () => adminAct(`/admin/users/${u.id}/reset-mfa`, "POST", {}) })),
+        grp("", del)];
+    };
+    return show(listPage("People & sign-in", () => [
+      { label: "How people sign in", items: [
+        { title: "Sign-in rules", value: mfaWord, ic: LI.lock, color: "blue", key: "rules", content: [pol] },
+        { title: "Single sign-on", value: sso.enabled ? "On" : "Off", ic: LI.key, color: "purple", key: "sso", help: "Optional. Let people sign in through your own sign-in provider (Authentik, Authelia, Keycloak…) instead of a separate password.",
+          content: [guideNote("SSO.md", "", "Single sign-on guide for Authentik, Authelia, Keycloak and others"), h("p", { class: "hint", text: "Create an OAuth2/OpenID application in your provider (confidential client, authorization code flow with PKCE), then fill in the details below." }), ssoForm] }] },
+      { label: "People", items: list.map((u, i) => ({ title: u.display_name || u.username, sub: (u.role === "admin" ? "Administrator" : "Member") + (u.disabled ? " · Disabled" : "") + (u.id === me.id ? " · You" : ""),
+        lead: faceOf(initials(u.display_name || u.username), i), key: "u" + u.id, content: personPane(u) })) },
+      { label: "", items: [{ title: "Add a person", center: true, key: "add", content: [h("p", { class: "hint", text: "They sign in with the username and temporary password you choose here, then set their own." }), newUser, guideNote("install/after-install.md#step-7-add-the-rest-of-your-household", "", "Adding the people in your home")] }] },
+    ], { help: "Everyone who can sign in to this Enveliq. Administrators manage settings; they cannot read other people's mail." }));
+  }
   if (only) return show(...chrome(me, "admin", ...[].concat(parts[only]).filter(Boolean)));
   show(...chrome(me, "admin", h("h1", { text: "Administration" }), parts.users, parts.ai, parts.instr, parts.keep, parts.features, parts.agent, parts.reminders, parts.check, parts.sync, parts.microsoft, parts.backup, parts.updates, parts.reporting, ...parts.signin));
 }
@@ -1388,40 +1805,45 @@ async function fastSearchSection() {
 async function generalPage(me) {
   const p = await api("/me/preferences");
   const fx = await api("/me/features").catch(() => null);
+  const fast = fx && fx.effective.find_mail ? await api("/find/fast").catch(() => null) : null;
   // Everything here saves as soon as it is changed, so there is no Save button.
-  const saved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
-  const tick = (id, checked, title) => h("label", { class: "gopt", for: id }, h("input", { id, type: "checkbox", checked }), h("span", { text: title }));
-  const pick = (id, options, current, unit = "") => {
-    const list = options.slice();
-    if (!list.some(o => o[0] === current)) list.push([current, current + unit]);
-    return h("select", { id, name: id }, list.sort((x, y) => x[0] - y[0]).map(([v, t]) => h("option", { value: String(v), text: t, selected: v === current })));
+  const current = {};
+  const save = async (patch, undo) => {
+    Object.assign(current, patch);
+    try {
+      await api("/me/preferences", { method: "PUT", body: { keep_reviewed: current.keep_reviewed ?? p.keep_reviewed, keep_archived: current.keep_archived ?? p.keep_archived, keep_days: Number(current.keep_days ?? p.keep_days), instructions: p.instructions, undo_send_seconds: Number(current.undo_send_seconds ?? p.undo_send_seconds ?? 0) } });
+      toast("Saved");
+    } catch (er) { if (undo) undo(); toast(er.message); }
   };
-  const lab = (id, text, el) => h("div", {}, h("label", { class: "glab", for: id, text }), el);
-  const card = (title, sub, ...kids) => h("section", { class: "section gcard" }, h("h2", {}, title, title === "Sending replies" ? saved : null), sub ? h("p", { class: "gsub", text: sub }) : null, ...kids);
-  const undoSel = pick("undo_secs", [[0, "Off"], [5, "5 seconds"], [10, "10 seconds"], [15, "15 seconds"], [20, "20 seconds"], [30, "30 seconds"], [60, "60 seconds"]], p.undo_send_seconds || 0, " seconds");
-  const daysSel = pick("keep_days", [7, 14, 30, 60, 90, 180, 365].filter(d => d <= p.max_days).map(d => [d, d + " days"]), p.keep_days, " days");
-  const sendSec = card("Sending replies", "A short pause lets you change your mind. Pick Off to send straight away.", lab("undo_secs", "Undo send window", undoSel));
-  const keepSec = card("Reviewed and Archived", `Keep a list so you can look again. Your administrator allows up to ${p.max_days} days.`,
-    tick("keep_reviewed", p.keep_reviewed, "Keep a Reviewed list"), tick("keep_archived", p.keep_archived, "Keep an Archived list"), lab("keep_days", "Keep them for", daysSel));
-  const q = id => sendSec.querySelector(id) || keepSec.querySelector(id);
-  let saving = null;
-  const savePrefs = () => {
-    clearTimeout(saving);
-    saving = setTimeout(async () => {
-      try {
-        await api("/me/preferences", { method: "PUT", body: { keep_reviewed: q("#keep_reviewed").checked, keep_archived: q("#keep_archived").checked, keep_days: Number(q("#keep_days").value), instructions: p.instructions, undo_send_seconds: Number(q("#undo_secs").value) } });
-        saved.textContent = "Saved ✓"; saved.classList.add("show"); clearTimeout(saved._t); saved._t = setTimeout(() => saved.classList.remove("show"), 1800);
-      } catch (er) { toast(er.message); }
-    }, 350);
-  };
-  sendSec.addEventListener("change", savePrefs); keepSec.addEventListener("change", savePrefs);
+  const undoOptions = [[0, "Off"], [5, "5 seconds"], [10, "10 seconds"], [15, "15 seconds"], [20, "20 seconds"], [30, "30 seconds"], [60, "60 seconds"]];
+  const dayOptions = [7, 14, 30, 60, 90, 180, 365].filter(d => d <= p.max_days).map(d => [d, d + " days"]);
+  const fastOn = fast ? fast.mailboxes.some(m => m.enabled) : false;
   const featSection = fx ? featuresSection(me, fx) : null;
   const fastSection = fx && fx.effective.find_mail ? await fastSearchSection().catch(() => null) : null;
-  if (fastSection) fastSection.classList.add("gcard");
-  const exportSection = card("Your data", "A copy of your summaries, notes and settings. It never holds passwords or keys, or anyone else's mail.",
-    h("div", {}, h("a", { class: "btn", href: `${API}/me/export`, download: "", text: "Export my data" })));
-  const cols = [h("div", { class: "gcol" }, sendSec, keepSec), h("div", { class: "gcol wide" }, featSection, fastSection, exportSection)];
-  show(...chrome(me, "general", window.ENVELIQ_EMBED ? null : h("h1", { text: "General" }), h("div", { class: "gcols" }, ...cols)));
+  const goShortcuts = app._nav ? () => app._nav("shortcuts", { tab: "general", title: "Keyboard shortcuts", parent: { title: "General", back: () => app._nav("general", { tab: "general", top: true }) } }) : null;
+  const exportBox = h("section", { class: "section" }, h("div", {}, h("a", { class: "btn", href: `${API}/me/export`, download: "", text: "Export my data" })));
+  show(...chrome(me, "general", listPage("General", () => [
+    { label: "Sending", items: [selRow("Undo send", undoOptions, p.undo_send_seconds || 0, v => save({ undo_send_seconds: v }), { id: "undo_secs", help: "A short pause lets you change your mind after you press Send. Pick Off to send straight away." })] },
+    { label: "Tidying up", items: [
+      swRow("Keep a Reviewed list", p.keep_reviewed, (c, box) => save({ keep_reviewed: c }, () => { box.checked = !c; }), { id: "keep_reviewed" }),
+      swRow("Keep an Archived list", p.keep_archived, (c, box) => save({ keep_archived: c }, () => { box.checked = !c; }), { id: "keep_archived" }),
+      selRow("Keep them for", dayOptions, p.keep_days, v => save({ keep_days: v }), { id: "keep_days", help: `A list lets you look again at what you finished. Your administrator allows up to ${p.max_days} days.` })] },
+    { label: "More", items: [
+      featSection ? { title: "Features", value: fx ? `${Object.keys(fx.labels).filter(k => fx.admin[k] && fx.user[k]).length} on` : "", content: featSection.node, help: featSection.help } : null,
+      fastSection ? { title: "Fast search", value: fastOn ? "On" : "Off", content: fastSection, help: "Makes searching all your old mail instant. It is off unless you turn it on." } : null,
+      { title: "Your data", content: exportBox, help: "A copy of your summaries, notes and settings. It never holds passwords or keys, or anyone else's mail." },
+      goShortcuts ? { title: "Keyboard shortcuts", go: goShortcuts } : null] },
+  ], { help: "Everyday choices. Each one saves as you change it." })));
+}
+// Keyboard shortcuts for the inbox on a computer. The choice is kept in this browser.
+async function shortcutsPage(me) {
+  const key = "enveliq-shortcuts-" + String(me && me.id != null ? me.id : "preview");
+  let on = true; try { on = localStorage.getItem(key) !== "0"; } catch (e) { /* default: on */ }
+  const kbd = (name, k) => h("div", { class: "li" }, h("span", { class: "lb" }, h("b", { text: name })), h("kbd", { text: k }));
+  show(...chrome(me, "general", listPage("Keyboard shortcuts", () => [
+    { label: "", items: [swRow("Enable keyboard shortcuts", on, c => { try { localStorage.setItem(key, c ? "1" : "0"); } catch (e) { /* not saved */ } toast("Saved"); }, { id: "keyboardShortcutsOn", help: "Optional desktop keyboard commands for moving around your inbox. They never run while you type in a field or use a dialog." })] },
+    { label: "Shortcuts", items: [kbd("Search", "/"), kbd("Next message", "J"), kbd("Previous message", "K"), kbd("Reply to the selected message", "R"), kbd("Archive the selected message", "E"), kbd("Open this page", "?")] },
+  ], { help: "Keyboard commands only work while you are in the inbox on a computer. The question mark in the top bar still opens the help website." })));
 }
 // ---------- reminders (everyone) ----------
 function ago(ts) {
@@ -1460,245 +1882,226 @@ async function turnOnPush() {
   const j = sub.toJSON();
   await api("/me/notifications/browser", { method: "POST", body: { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, label: deviceLabel() } });
 }
-function browserCard(ch, redraw) {
-  const status = ch.last_error ? h("span", { class: "pill off", text: "Last send failed" }) : ch.enabled && ch.devices.length ? h("span", { class: "pill on", text: `${ch.devices.length} ${ch.devices.length === 1 ? "device" : "devices"}` }) : h("span", { class: "pill", text: "Off" });
-  const list = ch.devices.map(d => h("div", { class: "row" }, h("span", { text: d.label }),
-    h("button", { class: "btn small", type: "button", text: "Test", onclick: async e => {
+// Each place a notification can go is one page: its words, the boxes to fill in, and Save / Remove.
+const chanHelp = (ch, steps) => [h("span", { text: ch.blurb }), guideList(steps || ch.steps)];
+function deviceRows(ch, kind, redo, noun) {
+  return ch.devices.map(d => itemRow({ title: d.label, buttons: [
+    pillBtn("Test", async e => {
       const button = e.currentTarget; button.disabled = true;
-      try { await api(`/me/notifications/browser/${d.id}/test`, { method: "POST", body: {} }); toast(`Test sent to ${d.label}.`); }
+      try { await api(`/me/notifications/${kind}/${d.id}/test`, { method: "POST", body: {} }); toast(`Test sent to ${d.label}.`); }
       catch (err) { toast(`Test failed for ${d.label}: ${err.message}`); }
       finally { button.disabled = false; }
-    } }),
-    h("button", { class: "btn small", type: "button", text: "Remove", onclick: async () => { try { await api(`/me/notifications/browser/${d.id}`, { method: "DELETE" }); toast("Removed"); redraw(); } catch (err) { toast(err.message); } } })));
-  const body = h("div", { class: "chan-form" }, h("p", { class: "hint", text: ch.blurb }), h("ol", { class: "howto" }, ch.steps.map(t => h("li", { text: t }))),
-    ...list, ch.last_error ? alertBox("bad", `The last send failed: ${ch.last_error}`) : null,
-    h("div", { class: "row" },
-      h("button", { class: "btn primary", type: "button", text: "Turn on for this device", onclick: async () => { try { await turnOnPush(); toast("Turned on for this device"); redraw(); } catch (err) { toast(err.message); } } }),
-      null));
-  return h("details", { class: "chan", open: !!(ch.devices.length || ch.last_error) }, h("summary", {}, h("strong", { text: ch.label }), " ", status), body);
+    }, `Send a test to ${d.label}`),
+    xBtn(`Remove ${d.label}`, async () => { try { await api(`/me/notifications/${kind}/${d.id}`, { method: "DELETE" }); toast("Removed"); redo(kind); } catch (err) { toast(err.message); } })] }));
+}
+function browserPane(ch, redo) {
+  const n = ch.devices.length;
+  return { value: ch.last_error ? "Needs you" : ch.enabled && n ? `${n} ${n === 1 ? "device" : "devices"}` : "Off", help: chanHelp(ch), content: [
+    n ? grp("This browser and others", deviceRows(ch, "browser", redo)) : null,
+    ch.last_error ? alertBox("bad", `The last send failed: ${ch.last_error}`) : null,
+    grp("", row({ title: "Turn on for this device", center: true, go: async () => { try { await turnOnPush(); toast("Turned on for this device"); redo("browser"); } catch (err) { toast(err.message); } } }))] };
 }
 // The Enveliq Android app signs itself up from inside the app; here a person only sees their phones and can test or remove them.
-function androidCard(ch, redraw) {
-  const status = ch.last_error ? h("span", { class: "pill off", text: "Last send failed" }) : ch.enabled && ch.devices.length ? h("span", { class: "pill on", text: `${ch.devices.length} ${ch.devices.length === 1 ? "phone" : "phones"}` }) : h("span", { class: "pill", text: "Off" });
-  const list = ch.devices.map(d => h("div", { class: "row" }, h("span", { text: d.label }),
-    h("button", { class: "btn small", type: "button", text: "Test", onclick: async e => {
-      const button = e.currentTarget; button.disabled = true;
-      try { await api(`/me/notifications/android/${d.id}/test`, { method: "POST", body: {} }); toast(`Test sent to ${d.label}.`); }
-      catch (err) { toast(`Test failed for ${d.label}: ${err.message}`); }
-      finally { button.disabled = false; }
-    } }),
-    h("button", { class: "btn small", type: "button", text: "Remove", onclick: async () => { try { await api(`/me/notifications/android/${d.id}`, { method: "DELETE" }); toast("Removed"); redraw(); } catch (err) { toast(err.message); } } })));
-  const body = h("div", { class: "chan-form" }, h("p", { class: "hint", text: ch.blurb }),
-    ch.available || ch.devices.length ? h("ol", { class: "howto" }, ch.steps.slice(0, 3).map(t => h("li", { text: t }))) : alertBox("info", "Your administrator has not set this up yet."),
-    ...list, ch.last_error ? alertBox("bad", `The last send failed: ${ch.last_error}`) : null,
-    h("p", { class: "hint" }, h("a", { href: "https://enveliq.app/docs/android/", target: "_blank", rel: "noopener noreferrer", text: "Get the Android app" }), " (how to download and install it)."));
-  return h("details", { class: "chan", open: !!(ch.devices.length || ch.last_error) }, h("summary", {}, h("strong", { text: ch.label }), " ", status), body);
-}
-function channelCard(ch, redraw) {
-  if (ch.id === "browser") return browserCard(ch, redraw);
-  if (ch.id === "android") return androidCard(ch, redraw);
-  const id = ch.id;
-  const status = ch.last_error ? h("span", { class: "pill off", text: "Last send failed" }) : ch.enabled && ch.last_ok ? h("span", { class: "pill on", text: "Working" }) : ch.enabled ? h("span", { class: "pill on", text: "On" }) : h("span", { class: "pill", text: "Off" });
-  const form = h("form", { class: "chan-form" },
-    h("p", { class: "hint", text: ch.blurb }),
-    h("ol", { class: "howto" }, ch.steps.map(s => h("li", { text: s }))),
-    ...ch.fields.map(fl => field(fl.label, input(`ch_${id}_${fl.key}`, { type: fl.secret ? "password" : "text", autocomplete: "off", spellcheck: "false", maxlength: 600, value: fl.secret ? "" : (fl.value || fl.default || ""),
-      placeholder: fl.secret && fl.set ? "Saved. Leave blank to keep it." : fl.placeholder }), fl.help)),
-    h("label", { class: "check", for: `ch_${id}_on` }, h("input", { id: `ch_${id}_on`, type: "checkbox", checked: ch.enabled || !ch.configured }), h("span", {}, h("strong", { text: "Send my notifications here" }))),
+function androidPane(ch, redo) {
+  const n = ch.devices.length;
+  return { value: ch.last_error ? "Needs you" : ch.enabled && n ? `${n} ${n === 1 ? "phone" : "phones"}` : "Off", help: chanHelp(ch, ch.available || n ? ch.steps.slice(0, 3) : []), content: [
+    ch.available || n ? null : alertBox("info", "Your administrator has not set this up yet."),
+    n ? grp("Your phones", deviceRows(ch, "android", redo)) : null,
     ch.last_error ? alertBox("bad", `The last send failed: ${ch.last_error}`) : null,
-    ch.last_ok && !ch.last_error ? h("div", { class: "hint", text: `Last sent ${ago(ch.last_ok)}.` }) : null,
-    h("div", { class: "row" },
-      h("button", { class: "btn primary", type: "submit", text: "Save and send a test" }),
-      h("button", { class: "btn", type: "button", "data-save-only": id, text: "Save" }),
-      ch.configured ? h("button", { class: "btn small", type: "button", "data-remove": id, text: "Remove" }) : null));
-  const values = () => { const v = {}; for (const fl of ch.fields) v[fl.key] = form.querySelector(`#ch_${id}_${fl.key}`).value.trim(); return v; };
-  const save = async () => { await api(`/me/notifications/channels/${id}`, { method: "PUT", body: { enabled: form.querySelector(`#ch_${id}_on`).checked, values: values() } }); };
-  onSubmit(form, async () => {
-    await save();
-    try { await api(`/me/notifications/channels/${id}/test`, { method: "POST", body: {} }); toast(`Saved. A test was sent to ${ch.label}.`); }
-    catch (err) { toast(`Saved, but the test failed: ${err.message}`); }
-    redraw();
-  });
-  form.querySelector("[data-save-only]").addEventListener("click", async () => { try { await save(); toast("Saved"); redraw(); } catch (err) { toast(err.message); } });
-  const rm = form.querySelector("[data-remove]");
-  if (rm) rm.addEventListener("click", async () => { try { await api(`/me/notifications/channels/${id}`, { method: "DELETE" }); toast(`${ch.label} removed`); redraw(); } catch (err) { toast(err.message); } });
-  const open = !!(ch.configured || ch.last_error);
-  return h("details", { class: "chan", open }, h("summary", {}, h("strong", { text: ch.label }), " ", status), form);
+    grp("", h("a", { class: "li go", href: "https://enveliq.app/docs/android/", target: "_blank", rel: "noopener noreferrer" }, h("span", { class: "lb" }, h("b", { text: "Get the Android app" }), h("small", { text: "How to download and install it" })), chev()))] };
+}
+function channelPane(ch, redo) {
+  if (ch.id === "browser") return browserPane(ch, redo);
+  if (ch.id === "android") return androidPane(ch, redo);
+  const id = ch.id;
+  const fe = ch.fields.map(fl => ({ fl, el: input(`ch_${id}_${fl.key}`, { type: fl.secret ? "password" : "text", autocomplete: "off", spellcheck: "false", maxlength: 600, value: fl.secret ? "" : (fl.value || fl.default || ""),
+    placeholder: fl.secret && fl.set ? "Saved. Leave blank to keep it." : (fl.placeholder || "") }) }));
+  const onRow = swRow("Send my notifications here", ch.enabled || !ch.configured, null, { id: `ch_${id}_on` });
+  const save = async () => { const v = {}; for (const { fl, el } of fe) v[fl.key] = el.value.trim(); await api(`/me/notifications/channels/${id}`, { method: "PUT", body: { enabled: boxOf(onRow).checked, values: v } }); };
+  return { value: ch.last_error ? "Needs you" : ch.enabled && ch.last_ok ? "Working" : ch.enabled ? "On" : "Off", help: chanHelp(ch), content: [
+    grp("", ...fe.map(({ fl, el }) => fieldRow(fl.label, el, fl.help)), onRow),
+    ch.last_error ? alertBox("bad", `The last send failed: ${ch.last_error}`) : null,
+    ch.last_ok && !ch.last_error ? h("p", { class: "pg-note", text: `Last sent ${ago(ch.last_ok)}.` }) : null,
+    grp("", row({ title: "Save and send a test", center: true, go: async () => {
+      try { await save(); } catch (err) { toast(err.message); return; }
+      try { await api(`/me/notifications/channels/${id}/test`, { method: "POST", body: {} }); toast(`Saved. A test was sent to ${ch.label}.`); }
+      catch (err) { toast(`Saved, but the test failed: ${err.message}`); }
+      redo(id);
+    } }), row({ title: "Save", center: true, go: async () => { try { await save(); toast("Saved"); redo(id); } catch (err) { toast(err.message); } } }),
+    ch.configured ? row({ title: "Remove", danger: true, go: async () => { try { await api(`/me/notifications/channels/${id}`, { method: "DELETE" }); toast(`${ch.label} removed`); redo(); } catch (err) { toast(err.message); } } }) : null)] };
 }
 async function remindersPage(me) {
   const ov = await api("/me/notifications");
   const s = ov.settings;
-  const redraw = () => remindersPage(me);
-  const box = (id, checked, title, hint) => h("label", { class: "check", for: id }, h("input", { id, type: "checkbox", checked }), h("span", {}, h("strong", { text: title }), hint ? h("div", { class: "hint", text: hint }) : null));
-  const form = h("form", {},
-    h("p", { class: "hint", text: "Choose what you would like to hear about. Each one goes to the places you turned on above." }),
-    box("rs_morning", s.morning_on, "A daily summary", "One morning message: tasks due, parcels out for delivery, replies you are waiting for."),
-    field("Send it at", input("rs_morning_time", { type: "time", value: s.morning_time })),
-    box("rs_digest", s.digest_mail, "Send new email in this summary instead", "New email is counted in the summary, not announced one by one. Important people still come through."),
-    box("rs_inbox", s.digest_inbox, "Hold email for the daily summary", "The AI picks out email that needs you today, and that still alerts you at once, as does anyone you marked important. All other new email is held out of your inbox and gathered in one summary at the top of your inbox and in Held for summary on the left. Once a day, at the time above, one alert says how many are waiting. Nothing is lost: when you press Done with summary, or after 7 days, whatever you left goes back to your inbox."),
-    box("rs_due", s.due_on, "When something is due", "Sent once, when a task is due or when a new task for today appears."),
-    box("rs_mail", s.mail_on, "When new email arrives", "One short message each time Enveliq finds new email for you. The email itself is never sent."),
-    more("Repeats, quiet hours and privacy",
-      h("div", { class: "grid2" },
-        field("Nudge again after (hours)", input("rs_hours", { type: "number", min: "1", max: "12", value: String(s.repeat_hours) }), "If a task is still open, Enveliq nudges you again after this long."),
-        field("Nudge at most (times)", input("rs_max", { type: "number", min: "0", max: "5", value: String(s.repeat_max) }), "0 means one reminder and no nudges.")),
-      box("rs_quiet", s.quiet_on, "Quiet hours", "Nothing is sent during these hours. What was held is sent when they end."),
-      h("div", { class: "grid2" }, field("From", input("rs_from", { type: "time", value: s.quiet_from })), field("Until", input("rs_to", { type: "time", value: s.quiet_to }))),
-      box("rs_titles", s.show_titles, "Show task titles", "Switch this off for private mode: messages only say that something is due, so nothing about your mail appears on a lock screen or in a chat service."),
-      box("rs_maildetails", s.mail_details, "Show who a new email is from and its subject", "Off by default: the message only says how many emails arrived. Switch this on to see the sender's name and the subject on your lock screen or in a chat service.")),
-    h("p", { class: "hint", text: `Times are in your time zone (${ov.tz}).` }),
-    h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" })));
-  onSubmit(form, async () => {
-    const g = id => form.querySelector("#" + id);
-    await api("/me/notifications/settings", { method: "PUT", body: { morning_on: g("rs_morning").checked, morning_time: g("rs_morning_time").value || "08:00", due_on: g("rs_due").checked,
-      repeat_hours: Number(g("rs_hours").value) || 2, repeat_max: Math.max(0, Number(g("rs_max").value) || 0), quiet_on: g("rs_quiet").checked, quiet_from: g("rs_from").value || "21:00", quiet_to: g("rs_to").value || "07:00", show_titles: g("rs_titles").checked, mail_on: g("rs_mail").checked, mail_details: g("rs_maildetails").checked, digest_mail: g("rs_digest").checked, digest_inbox: g("rs_inbox").checked } });
-    toast("Saved");
-  });
+  const redo = drill => { app._drill = drill || null; return remindersPage(me); };
+  // Everything here saves by itself the moment it is changed.
+  const ctl = {};
+  const sw = (key, title, help) => { const r = swRow(title, s[key], null, { id: "rs_" + key, help }); ctl[key] = boxOf(r); return r; };
+  const num = (key, min, max) => { ctl[key] = input("rs_" + key, { type: "number", min: String(min), max: String(max), value: String(s[key]) }); return ctl[key]; };
+  const time = key => { ctl[key] = input("rs_" + key, { type: "time", value: s[key] }); return ctl[key]; };
+  const save = async () => {
+    try {
+      await api("/me/notifications/settings", { method: "PUT", body: { morning_on: ctl.morning_on.checked, morning_time: ctl.morning_time.value || "08:00", due_on: ctl.due_on.checked,
+        repeat_hours: Number(ctl.repeat_hours.value) || 2, repeat_max: Math.max(0, Number(ctl.repeat_max.value) || 0), quiet_on: ctl.quiet_on.checked, quiet_from: ctl.quiet_from.value || "21:00", quiet_to: ctl.quiet_to.value || "07:00",
+        show_titles: ctl.show_titles.checked, mail_on: ctl.mail_on.checked, mail_details: ctl.mail_details.checked, digest_mail: ctl.digest_mail.checked, digest_inbox: ctl.digest_inbox.checked } });
+      toast("Saved");
+    } catch (err) { toast(err.message); }
+  };
+  const aboutRows = [
+    sw("morning_on", "A daily summary", "One morning message: tasks due, parcels out for delivery, replies you are waiting for."),
+    fieldRow("Send it at", time("morning_time")),
+    sw("digest_mail", "Send new email in this summary instead", "New email is counted in the summary, not announced one by one. Important people still come through."),
+    sw("digest_inbox", "Hold email for the daily summary", "The AI picks out email that needs you today, and that still alerts you at once, as does anyone you marked important. All other new email is held out of your inbox and gathered in one summary at the top of your inbox and in Held for summary on the left. Once a day, at the time above, one alert says how many are waiting. Nothing is lost: when you press Done with summary, or after 7 days, whatever you left goes back to your inbox."),
+    sw("due_on", "When something is due", "Sent once, when a task is due or when a new task for today appears."),
+    sw("mail_on", "When new email arrives", "One short message each time Enveliq finds new email for you. The email itself is never sent."),
+  ];
+  const moreContent = [
+    grp("Repeats", fieldRow("Nudge again after (hours)", num("repeat_hours", 1, 12), "If a task is still open"), fieldRow("Nudge at most (times)", num("repeat_max", 0, 5), "0 means one reminder and no nudges")),
+    grp("Quiet hours", sw("quiet_on", "Quiet hours", "Nothing is sent during these hours. What was held is sent when they end."), fieldRow("From", time("quiet_from")), fieldRow("Until", time("quiet_to"))),
+    grp("Privacy", sw("show_titles", "Show task titles", "Switch this off for private mode: messages only say that something is due, so nothing about your mail appears on a lock screen or in a chat service."),
+      sw("mail_details", "Show who a new email is from and its subject", "Off by default: the message only says how many emails arrived. Switch this on to see the sender's name and the subject on your lock screen or in a chat service.")),
+    h("p", { class: "pg-note", text: `Times are in your time zone (${ov.tz}).` }),
+  ];
+  for (const el of Object.values(ctl)) el.addEventListener("change", save);
   const mine = ov.channels.filter(c => c.allowed);
+  const panes = mine.map(c => ({ c, p: channelPane(c, redo) }));
   const live = mine.filter(c => c.id === "browser" || c.id === "android" ? c.enabled && c.devices.length : c.enabled && c.configured);
-  const reach = live.length
-    ? alertBox("info", `Notifications reach you in Enveliq and on: ${live.map(c => c.label).join(", ")}.`)
-    : alertBox("info", "Right now notifications only appear inside Enveliq. To get them on your phone, turn on a place in step 1.");
-  show(...chrome(me, "reminders", h("h1", { text: "Notifications" }),
-    h("p", { class: "lead", text: "Your tasks always appear in Enveliq under Today. If you also want a nudge on your phone or in a chat app, do two things: pick where it should go, then pick what you want to hear about. Enveliq never sends the email itself." }),
-    reach,
-    guideNote("NOTIFICATIONS.md", "Step by step for each place:", "Open the notifications guide"),
-    h("section", { class: "section" }, h("h2", { text: "1. Where should notifications go?" }),
-      h("p", { class: "hint", text: "Open one, follow its short steps and press Save and send a test. On a phone, choose This device." }),
-      h("div", { class: "chan" }, h("strong", { text: "In Enveliq" }), " ", h("span", { class: "pill on", text: "Always on" }), h("div", { class: "hint", text: "Today and the Tasks page. Nothing to set up." })),
-      ...mine.map(c => channelCard(c, redraw)),
-      mine.length < ov.channels.length ? h("p", { class: "hint", text: "Some places are hidden because your administrator switched them off." }) : null),
-    h("section", { class: "section" }, h("h2", { text: "2. What should I tell you about?" }), form)));
+  const reach = live.length ? `Notifications reach you in Enveliq and on: ${live.map(c => c.label).join(", ")}.` : "Right now notifications only appear inside Enveliq. To get them on your phone, turn on a place under Where should notifications go.";
+  show(listPage("Notifications", () => [
+    h("p", { class: "pg-note", text: reach }),
+    { label: "Where should notifications go?", help: "Open one, follow its short steps and press Save and send a test. On a phone, choose This device.", items: [
+      row({ title: "In Enveliq", value: "Always on", sub: "Today and the Tasks page" }),
+      ...panes.map(({ c, p }) => ({ title: c.label, value: p.value, key: c.id, content: p.content, help: p.help })),
+      mine.length < ov.channels.length ? noteRow("Some places are hidden because your administrator switched them off.") : null] },
+    { label: "What should I tell you about?", help: "Each one goes to the places you turned on above.", items: [...aboutRows, { title: "Repeats, quiet hours and privacy", key: "more", content: moreContent }] },
+  ], { help: [h("span", { text: "Your tasks always appear in Enveliq under Today. If you also want a nudge on your phone or in a chat app, do two things: pick where it should go, then pick what you want to hear about. Enveliq never sends the email itself. " }), guide("NOTIFICATIONS.md", "Open the notifications guide")] }));
 }
 // ---------- calendar and To-do lists (everyone) ----------
 function guideList(lines) { return h("ol", { class: "howto" }, lines.map(s => h("li", { text: s }))); }
-function mirrorCard(kind, title, blurb, steps, fields, st, redraw) {
-  const form = h("form", { class: "chan-form" },
-    h("p", { class: "hint", text: blurb }), guideList(steps),
-    ...fields.map(f => field(f.label, input(`sy_${kind}_${f.key}`, { type: f.secret ? "password" : "text", autocomplete: "off", spellcheck: "false", maxlength: 600,
-      value: f.secret ? "" : (st[f.key] || ""), placeholder: f.secret && st[f.key + "_set"] ? "Saved. Leave blank to keep it." : f.placeholder }), f.help)),
-    h("label", { class: "check", for: `sy_${kind}_on` }, h("input", { id: `sy_${kind}_on`, type: "checkbox", checked: st.enabled || !st.configured }), h("span", {}, h("strong", { text: "Keep it in step with my tasks" }))),
-    st.last_error ? alertBox("bad", `The last sync failed: ${st.last_error}`) : null,
-    st.last_ok && !st.last_error ? h("div", { class: "hint", text: `Last synced ${ago(st.last_ok)}. ${st.count} ${st.count === 1 ? "item" : "items"} showing.` }) : null,
-    h("div", { class: "row" }, h("button", { class: "btn primary", type: "submit", text: "Save and test" }), h("button", { class: "btn", type: "button", "data-save-only": kind, text: "Save" }),
-      st.configured ? h("button", { class: "btn small", type: "button", "data-remove": kind, text: "Stop and remove what Enveliq added" }) : null));
-  const body = () => { const b = { enabled: form.querySelector(`#sy_${kind}_on`).checked }; for (const f of fields) b[f.body] = form.querySelector(`#sy_${kind}_${f.key}`).value.trim(); return b; };
+// A little on/off word for the right of a row.
+const stateWord = (on, failed) => failed ? "Needs you" : on ? "On" : "Off";
+// A "connect to a service" page: its words, the boxes to fill in, and Save / Stop. Used for the instant calendar and the Home Assistant list.
+function mirrorPane(kind, blurb, steps, fields, st, redo) {
+  const fe = fields.map(f => ({ f, el: input(`sy_${kind}_${f.key}`, { type: f.secret ? "password" : "text", autocomplete: "off", spellcheck: "false", maxlength: 600,
+    value: f.secret ? "" : (st[f.key] || ""), placeholder: f.secret && st[f.key + "_set"] ? "Saved. Leave blank to keep it." : (f.placeholder || "") }) }));
+  const onRow = swRow("Keep it in step with my tasks", st.enabled || !st.configured, null, { id: `sy_${kind}_on` });
+  const body = () => { const b = { enabled: boxOf(onRow).checked }; for (const { f, el } of fe) b[f.body] = el.value.trim(); return b; };
   const save = () => api(`/me/sync/${kind}`, { method: "PUT", body: body() });
-  onSubmit(form, async () => {
-    await save();
-    try { const t = await api(`/me/sync/${kind}/test`, { method: "POST", body: {} }); toast(t.message); await api("/me/sync/now", { method: "POST", body: {} }); }
-    catch (err) { toast(`Saved, but: ${err.message}`); }
-    redraw();
-  });
-  form.querySelector("[data-save-only]").addEventListener("click", async () => { try { await save(); toast("Saved"); redraw(); } catch (err) { toast(err.message); } });
-  const rm = form.querySelector("[data-remove]");
-  if (rm) rm.addEventListener("click", async () => { try { await api(`/me/sync/${kind}`, { method: "DELETE" }); toast("Removed"); redraw(); } catch (err) { toast(err.message); } });
-  const status = st.last_error ? h("span", { class: "pill off", text: "Last sync failed" }) : st.enabled && st.last_ok ? h("span", { class: "pill on", text: "Working" }) : st.enabled ? h("span", { class: "pill on", text: "On" }) : h("span", { class: "pill", text: "Off" });
-  return h("details", { class: "chan", open: !!(st.configured || st.last_error) }, h("summary", {}, h("strong", { text: title }), " ", status), form);
+  const content = [
+    grp("", ...fe.map(({ f, el }) => fieldRow(f.label, el)), onRow),
+    st.last_error ? alertBox("bad", `The last sync failed: ${st.last_error}`) : null,
+    st.last_ok && !st.last_error ? h("p", { class: "pg-note", text: `Last synced ${ago(st.last_ok)}. ${st.count} ${st.count === 1 ? "item" : "items"} showing.` }) : null,
+    grp("", row({ title: "Save and test", center: true, go: async () => {
+      try { await save(); } catch (err) { toast(err.message); return; }
+      try { const t = await api(`/me/sync/${kind}/test`, { method: "POST", body: {} }); toast(t.message); await api("/me/sync/now", { method: "POST", body: {} }); }
+      catch (err) { toast(`Saved, but: ${err.message}`); }
+      redo(kind);
+    } }), row({ title: "Save", center: true, go: async () => { try { await save(); toast("Saved"); redo(kind); } catch (err) { toast(err.message); } } }),
+    st.configured ? row({ title: "Stop and remove what Enveliq added", danger: true, go: async () => { try { await api(`/me/sync/${kind}`, { method: "DELETE" }); toast("Removed"); redo(kind); } catch (err) { toast(err.message); } } }) : null),
+  ];
+  return { content, value: stateWord(st.enabled, st.last_error), help: [h("span", { text: blurb }), guideList(steps)] };
 }
 async function syncPage(me, fresh, wantPick) {
   const ov = await api("/me/sync");
-  const redraw = (url, pick) => syncPage(me, url, pick);
+  const redo = (drill, url, pick) => { app._drill = drill || null; return syncPage(me, url, pick); };
   const feed = ov.feed;
   const copy = async (el) => { try { await navigator.clipboard.writeText(el.value); toast("Copied"); } catch { el.select(); } };
-  let feedBox;
+  const feedPane = [];
   if (fresh) {
     const box = input("sy_feed_url", { value: fresh, readonly: true, spellcheck: "false" });
-    feedBox = h("div", { class: "chan-form" },
-      alertBox("good", "Your private link is ready. Copy it now: for your safety Enveliq shows it only once. Anyone who has it can see the dates and titles of your tasks, so treat it like a password."),
-      field("Your calendar link", box), h("div", { class: "row" }, h("button", { class: "btn primary", type: "button", text: "Copy link", onclick: () => copy(box) })));
+    feedPane.push(alertBox("good", "Your private link is ready. Copy it now: for your safety Enveliq shows it only once. Anyone who has it can see the dates and titles of your tasks, so treat it like a password."),
+      grp("", fieldRow("Link", box), row({ title: "Copy link", center: true, go: () => copy(box) })));
   } else {
-    feedBox = h("div", { class: "chan-form" },
-      feed.on ? h("p", { class: "hint", text: "Your link is on. It cannot be shown again; make a new one if you lost it (the old one then stops working)." }) : null,
-      h("div", { class: "row" },
-        h("button", { class: "btn primary", type: "button", text: feed.on ? "Make a new link" : "Create my calendar link", onclick: async () => { try { const r = await api("/me/sync/feed", { method: "POST", body: {} }); redraw(r.url); } catch (err) { toast(err.message); } } }),
-        feed.on ? h("button", { class: "btn small", type: "button", text: "Turn the link off", onclick: async () => { try { await api("/me/sync/feed", { method: "DELETE" }); toast("The link no longer works"); redraw(); } catch (err) { toast(err.message); } } }) : null));
+    feedPane.push(feed.on ? h("p", { class: "pg-note", text: "Your link is on. It cannot be shown again; make a new one if you lost it (the old one then stops working)." }) : null,
+      grp("", row({ title: feed.on ? "Make a new link" : "Create my calendar link", center: true, go: async () => { try { const r = await api("/me/sync/feed", { method: "POST", body: {} }); redo("feed", r.url); } catch (err) { toast(err.message); } } }),
+        feed.on ? row({ title: "Turn the link off", danger: true, go: async () => { try { await api("/me/sync/feed", { method: "DELETE" }); toast("The link no longer works"); redo(); } catch (err) { toast(err.message); } } }) : null));
   }
-  const feedCard = h("details", { class: "chan", open: true }, h("summary", {}, h("strong", { text: "Calendar link (Google, Apple, Outlook, Thunderbird…)" }), " ", feed.on || fresh ? h("span", { class: "pill on", text: "On" }) : h("span", { class: "pill", text: "Off" })),
-    h("div", { class: "chan-form" },
-      h("p", { class: "hint", text: "Each open task appears as an all-day event on its due date. When a task is done, removed, or its email is dealt with, it disappears from the link. Calendar apps only look for changes now and then, so it can take a while to vanish." }),
-      !ov.internet_ready ? alertBox("info", `Enveliq's address (${ov.origin}) is not a public https address. Apple Calendar or Thunderbird on your own network can still use the link, but Google and Outlook fetch it from the internet and will not reach it. For those, use the instant calendar below, or give Enveliq a public https address (docs/ACCESS.md).`) : null,
-      guideList(["Press Create my calendar link and copy it.",
-        "Google Calendar: on a computer open calendar.google.com, Other calendars (+), From URL, paste, Add calendar. Google refreshes these about once a day, so a finished task can stay for hours.",
-        "Apple Calendar: File, New Calendar Subscription, paste. Set Auto-refresh to Every hour.",
-        "Outlook: Add calendar, Subscribe from web, paste. Outlook refreshes about every three hours.",
-        "Thunderbird: New Calendar, On the Network, paste the link, Format iCalendar (ICS)."])),
-    feedBox);
+  const feedHelp = [h("span", { text: "Each open task appears as an all-day event on its due date. When a task is done, removed, or its email is dealt with, it disappears from the link. Calendar apps only look for changes now and then, so it can take a while to vanish." }),
+    !ov.internet_ready ? h("p", { text: `Enveliq's address (${ov.origin}) is not a public https address. Apple Calendar or Thunderbird on your own network can still use the link, but Google and Outlook fetch it from the internet and will not reach it. For those, use the instant calendar, or give Enveliq a public https address (docs/ACCESS.md).` }) : null,
+    guideList(["Press Create my calendar link and copy it.",
+      "Google Calendar: on a computer open calendar.google.com, Other calendars (+), From URL, paste, Add calendar. Google refreshes these about once a day, so a finished task can stay for hours.",
+      "Apple Calendar: File, New Calendar Subscription, paste. Set Auto-refresh to Every hour.",
+      "Outlook: Add calendar, Subscribe from web, paste. Outlook refreshes about every three hours.",
+      "Thunderbird: New Calendar, On the Network, paste the link, Format iCalendar (ICS)."])];
   const gg = ov.google;
-  const gstatus = gg.last_error ? h("span", { class: "pill off", text: "Last sync failed" }) : gg.connected && gg.enabled ? h("span", { class: "pill on", text: gg.last_ok ? "Working" : "On" }) : h("span", { class: "pill", text: gg.connected ? "Paused" : "Off" });
-  const radio = (value, title, hint) => h("label", { class: "check", for: "gm_" + value }, h("input", { id: "gm_" + value, type: "radio", name: "gmode", value, checked: (gg.connected ? gg.mode : "new") === value }),
-    h("span", {}, h("strong", { text: title }), h("div", { class: "hint", text: hint })));
-  const modeBox = h("div", { class: "chan-form" },
-    radio("new", "Make a new calendar called “Enveliq tasks”", "Enveliq can only see and change that one calendar, nothing else in your Google account."),
-    radio("existing", "Use a calendar I already have", "Google will ask for wider permission: Enveliq can see and change events on all your Google calendars, and list them so you can choose one. It only ever adds, moves and removes its own events, in the calendar you choose."));
-  const chosenMode = () => { const c = modeBox.querySelector("input[name=gmode]:checked"); return c ? c.value : "new"; };
-  const pickSelect = h("select", { id: "gm_pick", "aria-label": "Your calendars" }, h("option", { value: "", text: "Loading your calendars…" }));
-  const pickBox = h("div", { class: "chan-form" }, field("Which calendar should Enveliq use?", pickSelect),
-    h("div", { class: "hint", text: "Only calendars you can add events to are shown. Enveliq will not change any event it did not make." }),
-    h("div", { class: "row" }, h("button", { class: "btn primary", type: "button", text: "Use this calendar", onclick: async () => {
+  let gmode = gg.connected ? gg.mode : "new";
+  const modes = [["new", "Make a new calendar called “Enveliq tasks”", "Enveliq can only see and change that one calendar, nothing else in your Google account."],
+    ["existing", "Use a calendar I already have", "Google will ask for wider permission: Enveliq can see and change events on all your Google calendars, and list them so you can choose one. It only ever adds, moves and removes its own events, in the calendar you choose."]];
+  const tick = icon("m5 12 5 5 9-10", 18, "tick");
+  const modeRows = modes.map(([v, t, sub]) => {
+    const b = h("button", { class: "li pick", type: "button", "aria-pressed": String(gmode === v) }, h("span", { class: "lb" }, h("b", { text: t }), h("small", { text: sub })), tick.cloneNode(true));
+    b.addEventListener("click", () => { gmode = v; for (const o of modeRows) o.setAttribute("aria-pressed", String(o === b)); });
+    return b;
+  });
+  const pickSelect = h("select", { id: "gm_pick", class: "dd", "aria-label": "Your calendars" }, h("option", { value: "", text: "Loading your calendars…" }));
+  const pickBox = [grp("Which calendar should Enveliq use?", fieldRow("Calendar", pickSelect)),
+    h("p", { class: "pg-note", text: "Only calendars you can add events to are shown. Enveliq will not change any event it did not make." }),
+    grp("", row({ title: "Use this calendar", center: true, go: async () => {
       if (!pickSelect.value) { toast("Choose a calendar first."); return; }
-      try { await api("/me/sync/google/calendar", { method: "PUT", body: { calendar_id: pickSelect.value } }); toast("Saved"); redraw(); } catch (err) { toast(err.message); } } })));
+      try { await api("/me/sync/google/calendar", { method: "PUT", body: { calendar_id: pickSelect.value } }); toast("Saved"); redo("google"); } catch (err) { toast(err.message); }
+    } }))];
   if (gg.available && gg.connected && gg.mode === "existing" && (gg.needs_pick || wantPick)) {
     api("/me/sync/google/calendars").then(r => { pickSelect.replaceChildren(...(r.calendars || []).map(c => h("option", { value: c.id, text: c.name + (c.primary ? " (main calendar)" : "") }))); if (!pickSelect.options.length) pickSelect.append(h("option", { value: "", text: "No calendar found" })); })
       .catch(err => { pickSelect.replaceChildren(h("option", { value: "", text: "Could not load your calendars" })); toast(err.message); });
   }
-  const gbody = h("div", { class: "chan-form" },
-    h("p", { class: "hint", text: gg.connected && gg.mode === "existing"
-      ? (gg.needs_pick ? "Google Calendar is connected. Choose which of your calendars Enveliq should use." : `Enveliq adds, moves and removes its own events in your calendar “${gg.calendar_name || "Calendar"}”, so a finished task leaves it within a minute. It never changes your other events and never deletes the calendar.`)
-      : "Enveliq adds, moves and deletes the events itself, so a finished task leaves the calendar within a minute. Choose below whether it makes a new calendar or uses one you already have." }),
-    gg.available && gg.needs_pick ? pickBox : null,
-    !gg.available ? alertBox("info", "An administrator needs to set this up once first: Administration, Reminders, Google Calendar (there is a step-by-step guide below). Until then, use the calendar link above.") : null,
+  const gnote = gg.connected && gg.mode === "existing"
+    ? (gg.needs_pick ? "Google Calendar is connected. Choose which of your calendars Enveliq should use." : `Enveliq adds, moves and removes its own events in your calendar “${gg.calendar_name || "Calendar"}”, so a finished task leaves it within a minute. It never changes your other events and never deletes the calendar.`)
+    : "Enveliq adds, moves and deletes the events itself, so a finished task leaves the calendar within a minute. Choose below whether it makes a new calendar or uses one you already have.";
+  const googlePane = [
+    h("p", { class: "pg-note", text: gnote }),
+    !gg.available ? alertBox("info", "An administrator needs to set this up once first: Administration, Notifications, Google Calendar. Until then, use the calendar link.") : null,
     !gg.available ? guideNote("CALENDAR.md", "", "Open the Google Calendar guide") : null,
     gg.last_error ? alertBox("bad", `The last sync failed: ${gg.last_error}`) : null,
-    gg.connected && gg.last_ok && !gg.last_error ? h("div", { class: "hint", text: `Last synced ${ago(gg.last_ok)}. ${gg.count} ${gg.count === 1 ? "event" : "events"} showing.` }) : null,
-    gg.available && !gg.needs_pick ? modeBox : null,
-    gg.available && gg.connected && gg.mode === "existing" && !gg.needs_pick ? h("div", { class: "row" }, h("button", { class: "btn small", type: "button", text: "Choose a different calendar", onclick: () => redraw(undefined, true) })) : null,
+    gg.connected && gg.last_ok && !gg.last_error ? h("p", { class: "pg-note", text: `Last synced ${ago(gg.last_ok)}. ${gg.count} ${gg.count === 1 ? "event" : "events"} showing.` }) : null,
+    gg.available && gg.needs_pick ? pickBox : null,
+    gg.available && !gg.needs_pick ? grp("Which calendar", modeRows) : null,
     gg.available && gg.connected && gg.mode === "existing" && !gg.needs_pick && wantPick ? pickBox : null,
-    h("div", { class: "row" },
-      gg.available && !gg.needs_pick ? h("button", { class: "btn primary", type: "button", text: gg.connected ? "Connect again" : "Connect Google Calendar", onclick: async () => { try { const r = await api("/me/sync/google/start", { method: "POST", body: { mode: chosenMode() } }); location.assign(r.url); } catch (err) { toast(err.message); } } }) : null,
-      gg.connected && !gg.needs_pick ? h("button", { class: "btn", type: "button", text: gg.enabled ? "Pause" : "Resume", onclick: async () => { try { await api("/me/sync/google", { method: "PUT", body: { enabled: !gg.enabled } }); redraw(); } catch (err) { toast(err.message); } } }) : null,
-      gg.connected ? h("button", { class: "btn small", type: "button", text: gg.mode === "existing" ? "Disconnect and remove Enveliq's events" : "Disconnect and delete the calendar", onclick: async () => { try { await api("/me/sync/google", { method: "DELETE" }); toast("Disconnected"); redraw(); } catch (err) { toast(err.message); } } }) : null));
-  const google = h("details", { class: "chan", open: !!(gg.connected || gg.last_error) }, h("summary", {}, h("strong", { text: "Google Calendar (instant)" }), " ", gstatus), gbody);
-  const caldav = mirrorCard("caldav", "Instant calendar (CalDAV: Nextcloud, Radicale, Baikal, Fastmail…)",
-    "Enveliq writes the events itself and deletes them the moment a task ends, usually within a minute. For Google Calendar use the card above.",
+    gg.available && !gg.needs_pick ? grp("", row({ title: gg.connected ? "Connect again" : "Connect Google Calendar", center: true, go: async () => { try { const r = await api("/me/sync/google/start", { method: "POST", body: { mode: gmode } }); location.assign(r.url); } catch (err) { toast(err.message); } } }),
+      gg.connected ? row({ title: gg.enabled ? "Pause" : "Resume", center: true, go: async () => { try { await api("/me/sync/google", { method: "PUT", body: { enabled: !gg.enabled } }); redo("google"); } catch (err) { toast(err.message); } } }) : null,
+      gg.connected && gg.mode === "existing" ? row({ title: "Choose a different calendar", center: true, go: () => redo("google", undefined, true) }) : null,
+      gg.connected ? row({ title: gg.mode === "existing" ? "Disconnect and remove Enveliq's events" : "Disconnect and delete the calendar", danger: true, go: async () => { try { await api("/me/sync/google", { method: "DELETE" }); toast("Disconnected"); redo(); } catch (err) { toast(err.message); } } }) : null) : null,
+  ];
+  const caldav = mirrorPane("caldav", "Enveliq writes the events itself and deletes them the moment a task ends, usually within a minute. For Google Calendar use Google Calendar above.",
     ["Use a calendar of its own for Enveliq, so nothing else is touched. Enveliq only ever adds and removes its own events.",
       "Nextcloud: Calendar app, the three dots beside the calendar, Copy private link. Radicale and Baikal show the calendar address in their web pages.",
       "Make an app password for Enveliq if your service offers it (Fastmail, Nextcloud: Settings, Security).",
-      "Fill in the three boxes and press Save and test. On your home network, an administrator must allow the address first (Administration, Reminders)."],
+      "Fill in the three boxes and press Save and test. On your home network, an administrator must allow the address first (Administration, Notifications)."],
     [{ key: "url", body: "url", label: "Calendar address", placeholder: "https://cloud.example.com/remote.php/dav/calendars/sam/enveliq/" },
-      { key: "user", body: "user", label: "User name" }, { key: "password", body: "password", label: "Password or app password", secret: true }], ov.caldav, () => redraw());
-  const todo = mirrorCard("todo", "Home Assistant To-do list",
-    "Each task is added to your list with its due date. Tick it off in Enveliq or in Home Assistant, whichever is closer: it is ticked in both. If you delete an item in Home Assistant, Enveliq leaves it deleted.",
+      { key: "user", body: "user", label: "User name" }, { key: "password", body: "password", label: "Password or app password", secret: true }], ov.caldav, redo);
+  const todo = mirrorPane("todo", "Each task is added to your list with its due date. Tick it off in Enveliq or in Home Assistant, whichever is closer: it is ticked in both. If you delete an item in Home Assistant, Enveliq leaves it deleted.",
     ["In Home Assistant make a To-do list (Settings, Devices & services, Add integration, Local To-do) and note its name, like todo.family.",
       "Open your profile (bottom left), Security, Long-lived access tokens, Create token, and copy it.",
-      "Fill in the three boxes and press Save and test. An administrator must allow a home-network address first (Administration, Reminders)."],
+      "Fill in the three boxes and press Save and test. An administrator must allow a home-network address first (Administration, Notifications)."],
     [{ key: "url", body: "url", label: "Home Assistant address", placeholder: "http://homeassistant.local:8123" },
-      { key: "token", body: "token", label: "Long-lived access token", secret: true }, { key: "entity", body: "entity", label: "List name", placeholder: "todo.family" }], ov.todo, () => redraw());
-  const titles = h("label", { class: "check", for: "sy_titles" }, h("input", { id: "sy_titles", type: "checkbox", checked: ov.titles, onchange: async e => { try { await api("/me/sync/titles", { method: "PUT", body: { titles: e.target.checked } }); toast("Saved"); } catch (err) { toast(err.message); } } }),
-    h("span", {}, h("strong", { text: "Show task titles" }), h("div", { class: "hint", text: "Switch this off if others can see your calendar or list. Items then just say “Enveliq task”." })));
-  show(...chrome(me, "calendar", h("h1", { text: "Calendar & to-do" }),
-    h("p", { class: "lead", text: "Send your tasks to a calendar or a Home Assistant To-do list. They follow the task: moved when you move it, and removed or ticked off when the task is done, replaced, or its email is dealt with." }),
-    guideNote("CALENDAR.md", "Step by step for Google Calendar, Apple Calendar, Thunderbird, Nextcloud and Home Assistant:", "Open the calendar guide"),
-    h("section", { class: "section" }, titles), h("section", { class: "section" }, feedCard, google, caldav, todo)));
+      { key: "token", body: "token", label: "Long-lived access token", secret: true }, { key: "entity", body: "entity", label: "List name", placeholder: "todo.family" }], ov.todo, redo);
+  const titles = swRow("Show task titles", ov.titles, async (on, box) => { try { await api("/me/sync/titles", { method: "PUT", body: { titles: on } }); toast("Saved"); } catch (err) { box.checked = !on; toast(err.message); } },
+    { id: "sy_titles", help: "Switch this off if others can see your calendar or list. Items then just say “Enveliq task”." });
+  const gword = gg.last_error ? "Needs you" : gg.connected && gg.enabled ? "On" : gg.connected ? "Paused" : "Off";
+  show(listPage("Calendar & to-do", () => [
+    { label: "", items: [titles] },
+    { label: "Where your tasks go", items: [
+      { title: "Calendar link", value: stateWord(feed.on || fresh), key: "feed", content: feedPane, help: feedHelp, ic: LI.cal, color: "blue" },
+      { title: "Google Calendar", value: gword, key: "google", content: googlePane, ic: LI.cal, color: "red" },
+      { title: "Instant calendar (CalDAV)", value: caldav.value, key: "caldav", content: caldav.content, help: caldav.help, ic: LI.refresh, color: "green" },
+      { title: "Home Assistant To-do list", value: todo.value, key: "todo", content: todo.content, help: todo.help, ic: LI.tray, color: "purple" }] },
+  ], { help: [h("span", { text: "Send your tasks to a calendar or a Home Assistant To-do list. They follow the task: moved when you move it, and removed or ticked off when the task is done, replaced, or its email is dealt with. " }), guide("CALENDAR.md", "Open the calendar guide")] }));
 }
 function featuresSection(me, fx) {
-  const rows = Object.keys(fx.labels).map(k => {
+  const keys = Object.keys(fx.labels), name = k => fx.labels[k].replace(/\s*\(.*\)\s*$/, "");
+  const rows = keys.map(k => {
     const allowed = fx.admin[k];
-    return h("label", { class: "gopt", for: "uf_" + k, title: allowed ? "" : "Turned off by your administrator." }, h("input", { id: "uf_" + k, type: "checkbox", checked: allowed && fx.user[k], disabled: !allowed }),
-      h("span", { text: fx.labels[k].replace(/\s*\(.*\)\s*$/, "") }));
+    const r = swRow(name(k), allowed && fx.user[k], null, { id: "uf_" + k, help: allowed ? FEATURE_HINTS[k] : "Turned off by your administrator." });
+    if (!allowed) { r.querySelector("input").disabled = true; r.title = "Turned off by your administrator."; }
+    return r;
   });
-  const explain = more("What each one does", ...Object.keys(fx.labels).map(k => h("p", { class: "hint" }, h("strong", { text: fx.labels[k].replace(/\s*\(.*\)\s*$/, "") + ". " }), fx.admin[k] ? FEATURE_HINTS[k] : "Turned off by your administrator.")));
-  const saved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
-  const form = h("div", {},
-    h("p", { class: "gsub" }, "Show or hide parts of Enveliq. Saves as you tick. ", saved),
-    h("div", { class: "gfeat" }, ...rows), explain);
-  form.addEventListener("change", async e => {
-    const box = e.target, body = {};
-    for (const k of Object.keys(fx.labels)) if (fx.admin[k]) body[k] = form.querySelector("#uf_" + k).checked;
-    try { await api("/me/features", { method: "PUT", body }); saved.textContent = "Saved ✓"; saved.classList.add("show"); clearTimeout(saved._t); saved._t = setTimeout(() => saved.classList.remove("show"), 1800); }
-    catch (er) { box.checked = !box.checked; toast(er.message); }
+  const box = h("div", { class: "grp" }, ...rows);
+  box.addEventListener("change", async e => {
+    const el = e.target, body = {};
+    for (const k of keys) if (fx.admin[k]) body[k] = box.querySelector("#uf_" + k).checked;
+    try { await api("/me/features", { method: "PUT", body }); toast("Saved"); }
+    catch (er) { el.checked = !el.checked; toast(er.message); }
   });
-  return h("section", { class: "section gcard" }, h("h2", { text: "Features" }), form);
+  return { node: h("div", { class: "grp-wrap" }, box), help: "Show or hide parts of Enveliq. Each one saves as you switch it." };
 }
 
 // ---------- address book ----------
@@ -1734,36 +2137,36 @@ function downloadText(name, type, text) {
 }
 async function addressBookPage(me) {
   const fx = await api("/me/features");
-  const wrap = h("div", {});
+  const title = "Address book";
+  const help = "People you have written to or heard from, so they can be suggested when you start typing an address. Only names and email addresses are kept, never email text. They are stored encrypted on your server and only you can see them.";
   if (!fx.effective.address_book) {
-    show(...chrome(me, "addressbook", h("h1", { text: "Address book" }), h("section", { class: "section" }, alertBox("info", fx.admin.address_book ? "You have switched the address book off. You can switch it on again under General settings." : "Your administrator has switched the address book off."))));
+    show(listPage(title, () => [alertBox("info", fx.admin.address_book ? "You have switched the address book off. You can switch it on again under General settings." : "Your administrator has switched the address book off.")], { help }));
     return;
   }
   let query = "", shown = 0, total = 0;
-  const autoBox = h("input", { id: "ab_auto", type: "checkbox", checked: fx.user.address_book_auto });
-  autoBox.addEventListener("change", async () => {
-    try { await api("/me/features", { method: "PUT", body: { address_book_auto: autoBox.checked } }); toast(autoBox.checked ? "Enveliq will remember people" : "Enveliq will stop adding people"); }
-    catch (er) { autoBox.checked = !autoBox.checked; toast(er.message); }
-  });
-  const list = h("div", { class: "ab-list" }), count = h("p", { class: "hint" });
+  const autoRow = swRow("Remember people automatically", fx.user.address_book_auto, async (on, box) => {
+    try { await api("/me/features", { method: "PUT", body: { address_book_auto: on } }); toast(on ? "Enveliq will remember people" : "Enveliq will stop adding people"); }
+    catch (er) { box.checked = !on; toast(er.message); }
+  }, { id: "ab_auto", help: "Adds the sender of mail Enveliq reads, and anyone you send to. Switch off to keep only the contacts you import." });
   const search = h("input", { id: "ab_search", type: "search", placeholder: "Search people", "aria-label": "Search people", autocomplete: "off" });
+  const listLabel = h("div", { class: "lt" }), listGrp = h("div", { class: "grp" });
   async function load() {
     try {
       const r = query ? await api(`/me/contacts?q=${encodeURIComponent(query)}`) : await api("/me/contacts?limit=200");
       const items = r.items; total = query ? items.length : r.total; shown = items.length;
-      list.replaceChildren(...(items.length ? items.map(p => h("div", { class: "ab-row" },
-        h("span", { class: "ab-avatar", text: initials(personName(p.name, p.address)) }),
-        h("span", { class: "ab-who" }, h("strong", { text: personName(p.name, p.address) }), h("small", { text: p.address })),
-        h("span", { class: "ab-meta", text: p.count ? `${p.count} ${p.count === 1 ? "time" : "times"}` : "Imported" }),
-        h("button", { class: "ab-x", type: "button", "aria-label": `Remove ${p.address}`, text: "×", onclick: async () => { try { await api("/me/contacts/remove", { method: "POST", body: { address: p.address } }); toast("Removed"); load(); } catch (er) { toast(er.message); } } }))) : [h("p", { class: "hint ab-empty", text: query ? "Nobody matches that." : "Nobody here yet. People you read mail from or write to will appear as Enveliq sees them." })]));
-      count.textContent = query ? `${shown} found` : `Showing ${shown} of ${total}`;
-    } catch (er) { list.replaceChildren(alertBox("bad", er.message)); }
+      listGrp.replaceChildren(...(items.length ? items.map((p, i) => itemRow({
+        lead: faceOf(initials(personName(p.name, p.address)), i), title: personName(p.name, p.address), sub: p.name ? p.address : "", value: p.count ? `${p.count} ${p.count === 1 ? "time" : "times"}` : "Imported",
+        buttons: xBtn(`Remove ${p.address}`, async () => { try { await api("/me/contacts/remove", { method: "POST", body: { address: p.address } }); toast("Removed"); load(); } catch (er) { toast(er.message); } }) }))
+        : [noteRow(query ? "Nobody matches that." : "Nobody here yet. People you read mail from or write to will appear as Enveliq sees them.")]));
+      listLabel.textContent = items.length ? (query ? `${shown} found` : `Showing ${shown} of ${total}`) : "";
+    } catch (er) { listGrp.replaceChildren(alertBox("bad", er.message)); }
   }
   let timer = null;
   search.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(() => { query = search.value.trim(); load(); }, 200); });
 
-  const dialog = h("dialog", { class: "trust-dialog", "aria-labelledby": "imp-title" });
-  dialog.addEventListener("click", e => { if (e.target === dialog) dialog.close(); });
+  // Importing: pick a file, see what is in it, then press Import. Nothing is added before that.
+  const importPane = h("div", {});
+  let root = null;
   const file = h("input", { id: "ab_file", type: "file", accept: ".vcf,text/vcard,text/x-vcard", class: "visually-hidden" });
   async function showFound(fileName, size, text) {
     const parsed = parseVcard(text);
@@ -1773,79 +2176,74 @@ async function addressBookPage(me) {
     const have = new Set(mine.items.map(x => x.address));
     const fresh = [...seen.keys()].filter(a => !have.has(a)).length;
     const skipped = seen.size - fresh, invalid = parsed.people.length - seen.size - 0;
-    const ok = (t) => h("p", { class: "ab-found" }, h("span", { class: "ab-tick", text: "✓" }), t);
-    dialog.replaceChildren(
-      h("div", { class: "trust-head" }, h("h2", { id: "imp-title", text: "Import contacts" }), h("button", { class: "trust-close", type: "button", "aria-label": "Close", text: "×", onclick: () => dialog.close() })),
-      h("p", { class: "lead", text: "Nothing is added until you press Import." }),
-      h("div", { class: "ab-file" }, h("strong", { text: fileName }), h("small", { text: `${Math.max(1, Math.round(size / 1024))} KB` })),
-      ok(`${parsed.cards} ${parsed.cards === 1 ? "contact" : "contacts"} in the file`),
-      ok(`${fresh} new ${fresh === 1 ? "person" : "people"} to add`),
-      h("p", { class: "hint", text: `${skipped} already in your address book will be skipped${parsed.noEmail ? `, ${parsed.noEmail} had no email address` : ""}${invalid > 0 ? `, ${invalid} repeated or invalid addresses ignored` : ""}.` }),
-      h("div", { class: "row" },
-        h("button", { class: "btn", type: "button", text: "Cancel", onclick: () => dialog.close() }),
-        h("button", { class: "btn primary", type: "button", text: fresh ? `Import ${fresh} ${fresh === 1 ? "person" : "people"}` : "Nothing to import", disabled: !fresh, onclick: async e => {
-          e.target.disabled = true;
-          try { const r = await api("/me/contacts/import", { method: "POST", body: { people: [...seen.values()].slice(0, 5000) } }); dialog.close(); toast(`Added ${r.added} ${r.added === 1 ? "person" : "people"}`); load(); }
-          catch (er) { toast(er.message); e.target.disabled = false; }
-        } })));
+    importPane.replaceChildren(
+      grp("", row({ title: fileName, value: `${Math.max(1, Math.round(size / 1024))} KB` }),
+        row({ title: "Contacts in the file", value: String(parsed.cards) }),
+        row({ title: "New people to add", value: String(fresh) })),
+      h("p", { class: "pg-note", text: `Nothing is added until you press Import. ${skipped} already in your address book will be skipped${parsed.noEmail ? `, ${parsed.noEmail} had no email address` : ""}${invalid > 0 ? `, ${invalid} repeated or invalid addresses ignored` : ""}.` }),
+      grp("", row({ title: fresh ? `Import ${fresh} ${fresh === 1 ? "person" : "people"}` : "Nothing to import", center: true, go: fresh ? async () => {
+        try { const r = await api("/me/contacts/import", { method: "POST", body: { people: [...seen.values()].slice(0, 5000) } }); toast(`Added ${r.added} ${r.added === 1 ? "person" : "people"}`); root._open(null); load(); }
+        catch (er) { toast(er.message); }
+      } : null })));
+    root._open("import");
   }
   file.addEventListener("change", () => {
     const f = file.files && file.files[0]; file.value = "";
     if (!f) return;
     if (f.size > 8 * 1024 * 1024) { toast("That file is too big. Export fewer contacts."); return; }
     const r = new FileReader();
-    r.onload = async () => { try { await showFound(f.name, f.size, String(r.result)); dialog.showModal(); } catch (er) { toast(er.message); } };
+    r.onload = async () => { try { await showFound(f.name, f.size, String(r.result)); } catch (er) { toast(er.message); } };
     r.onerror = () => toast("Could not read that file");
     r.readAsText(f);
   });
-  const exportBtn = h("button", { class: "btn", type: "button", text: "Export", onclick: async () => {
+  const exportAll = async () => {
     try {
       const r = await api("/me/contacts/export");
       if (!r.items.length) { toast("Your address book is empty"); return; }
       downloadText("enveliq-address-book.vcf", "text/vcard", r.items.map(p => `BEGIN:VCARD\r\nVERSION:3.0\r\nFN:${vcardEscape(personName(p.name, p.address))}\r\nEMAIL:${vcardEscape(p.address)}\r\nEND:VCARD\r\n`).join(""));
     } catch (er) { toast(er.message); }
-  } });
-  const wipe = h("button", { class: "btn danger", type: "button", text: "Delete my whole address book", onclick: e => confirmThen(e.target, "Delete everyone from your address book?", async () => {
-    try { await api("/me/contacts", { method: "DELETE" }); toast("Address book deleted"); addressBookPage(me); } catch (er) { toast(er.message); }
-  }) });
-  wrap.append(
-    h("p", { class: "lead", text: "People you have written to or heard from, so they can be suggested when you start typing an address. Only names and email addresses are kept, never email text. They are stored encrypted on your server and only you can see them." }),
-    h("label", { class: "check", for: "ab_auto" }, autoBox, h("span", {}, h("strong", { text: "Remember people automatically" }), h("div", { class: "hint", text: "Adds the sender of mail Enveliq reads, and anyone you send to. Switch off to keep only the contacts you import." }))),
-    h("div", { class: "ab-tools" }, search, h("button", { class: "btn", type: "button", text: "Import vCard", onclick: () => file.click() }), exportBtn),
-    file, list, count, h("div", {}, wipe), dialog);
-  show(...chrome(me, "addressbook", h("h1", { text: "Address book" }), h("section", { class: "section" }, wrap)));
+  };
+  const wipePane = [h("p", { class: "pg-note", text: "This removes everyone from your address book. It does not touch your email." }),
+    grp("", row({ title: "Yes, delete everyone", danger: true, go: async () => {
+      try { await api("/me/contacts", { method: "DELETE" }); toast("Address book deleted"); app._drill = null; addressBookPage(me); } catch (er) { toast(er.message); }
+    } }), row({ title: "Cancel", center: true, go: () => root._open(null) }))];
+  root = listPage(title, () => [
+    { label: "", items: [autoRow] },
+    h("div", { class: "grp-wrap" }, h("div", { class: "grp" }, h("div", { class: "li fieldrow" }, search))),
+    h("div", { class: "grp-wrap" }, listLabel, listGrp),
+    { label: "", items: [
+      { title: "Import vCard", ic: null, key: "import", content: importPane, go: () => file.click() },
+      row({ title: "Export my address book", go: exportAll }),
+      { title: "Delete my whole address book", danger: true, key: "wipe", content: wipePane }] },
+    file,
+  ], { help });
+  show(root);
   load();
 }
 
 // ---------- important people: a short list of people whose mail is always shown first ----------
 async function importantPage(me) {
-  const wrap = h("div", {});
-  const list = h("div", { class: "ab-list" }), note = h("p", { class: "hint" });
+  let items = [];
+  const title = "Important people";
+  const help = "Email from these people is shown at the top of your inbox, with a small \u201cImportant\u201d label, so family, the school or your doctor are never buried. Only their names and addresses are kept here, never email text. Nobody else can see this list.";
+  try { items = (await api("/me/important")).items; } catch (er) { show(listPage(title, () => [alertBox("bad", er.message)], { help })); return; }
   const addr = h("input", { id: "imp_addr", type: "email", placeholder: "name@example.com", "aria-label": "Their email address", autocomplete: "off", maxlength: 320 });
-  const nm = h("input", { id: "imp_name", type: "text", placeholder: "Their name (optional)", "aria-label": "Their name", autocomplete: "off", maxlength: 120 });
-  function paint(items) {
-    list.replaceChildren(...(items.length ? items.map(p => h("div", { class: "ab-row" },
-      h("span", { class: "ab-avatar", text: initials(personName(p.name, p.address)) }),
-      h("span", { class: "ab-who" }, h("strong", { text: personName(p.name, p.address) }), h("small", { text: p.address })),
-      h("button", { class: "ab-x", type: "button", "aria-label": `Remove ${p.address}`, text: "\u00d7", onclick: async () => {
-        try { const r = await api("/me/important/remove", { method: "POST", body: { address: p.address } }); paint(r.items); toast("Removed"); } catch (er) { toast(er.message); }
-      } }))) : [h("p", { class: "hint", text: "Nobody yet. Add someone below, or open an email in your inbox and press Important person." })]));
-    note.textContent = items.length ? `${items.length} ${items.length === 1 ? "person" : "people"}` : "";
-  }
+  const nm = h("input", { id: "imp_name", type: "text", placeholder: "Optional", "aria-label": "Their name", autocomplete: "off", maxlength: 120 });
   async function add() {
     const a = addr.value.trim();
     if (!a) { toast("Type an email address first"); addr.focus(); return; }
-    try { const r = await api("/me/important", { method: "POST", body: { address: a, name: nm.value.trim() } }); addr.value = ""; nm.value = ""; paint(r.items); toast("Added"); }
+    try { const r = await api("/me/important", { method: "POST", body: { address: a, name: nm.value.trim() } }); addr.value = ""; nm.value = ""; items = r.items; draw(); toast("Added"); }
     catch (er) { toast(er.message); }
   }
-  addr.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
-  nm.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
-  wrap.append(
-    h("p", { class: "lead", text: "Email from these people is shown at the top of your inbox, with a small \u201cImportant\u201d label, so family, the school or your doctor are never buried. Only their names and addresses are kept here, never email text. Nobody else can see this list." }),
-    list, note,
-    h("div", { class: "ab-tools" }, addr, nm, h("button", { class: "btn primary", type: "button", text: "Add", onclick: add })));
-  try { const r = await api("/me/important"); paint(r.items); } catch (er) { list.replaceChildren(alertBox("bad", er.message)); }
-  show(...chrome(me, "important", h("h1", { text: "Important people" }), h("section", { class: "section" }, wrap)));
+  for (const el of [addr, nm]) el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
+  const draw = drill => redraw(title, () => [
+    { label: items.length ? `${items.length} ${items.length === 1 ? "person" : "people"}` : "", items: items.length ? items.map((p, i) => itemRow({
+      lead: faceOf(initials(personName(p.name, p.address)), i), title: personName(p.name, p.address), sub: p.name ? p.address : "",
+      buttons: xBtn(`Remove ${p.address}`, async () => { try { const r = await api("/me/important/remove", { method: "POST", body: { address: p.address } }); items = r.items; draw(); toast("Removed"); } catch (er) { toast(er.message); } }) }))
+      : [noteRow("Nobody yet. Add someone, or open an email in your inbox and press Important person.")] },
+    { label: "", items: [{ title: "Add a person", center: true, key: "add", content: [grp("", fieldRow("Email", addr), fieldRow("Name", nm)), grp("", row({ title: "Add", center: true, go: add }))] }] },
+  ], { help }, drill);
+  draw();
 }
 
 // ---------- signature and saved replies: the person's own text, to reuse when they write ----------
@@ -1907,102 +2305,79 @@ function sigBox(label) {
 async function savedPage(me) {
   let state = { signature: "", signature_html: "", signatures: [], addresses: [], replies: [], limits: { signature: 1000, replies: 30, title: 60, text: 3000 } };
   let editing = null;
+  const title = "Signature & saved replies";
   const def = sigBox("Your signature");
   const sigSaved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
   const flash = (el) => { el.textContent = "Saved ✓"; el.classList.add("show"); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("show"), 1800); };
-  const list = h("div", { class: "ab-list" });
-  const addrBox = h("div", { class: "ab-list" });
-  const title = h("input", { id: "sv_title", type: "text", placeholder: "A short name, for example “Running late”", "aria-label": "Name of the saved reply", autocomplete: "off" });
-  const text = h("textarea", { id: "sv_text", rows: "4", placeholder: "The words to insert", "aria-label": "Text of the saved reply" });
-  const save = h("button", { class: "btn primary", type: "button", text: "Save reply" });
-  const cancel = h("button", { class: "btn", type: "button", text: "Cancel", hidden: true });
-  // One box for each sending address. The default signature is used for any address that has none of its own.
-  const addrBoxes = new Map();
-  function paintAddresses() {
-    const all = [...new Set([...(state.addresses || []), ...state.signatures.map((s) => s.address)])].sort();
-    addrBox.replaceChildren(...(all.length > 1 || state.signatures.length ? all.map((a) => {
-      const own = state.signatures.find((s) => s.address === a);
-      const ed = sigBox(`Signature for ${a}`); ed.set(own ? own.html : "", "");
-      const tag = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
-      addrBoxes.set(a, ed);
-      const put = async () => {
-        const html = ed.html();
-        if (html === (own ? own.html : "")) return;
-        try { const keepAddr = state.addresses; state = await api(`/me/saved/signatures?address=${encodeURIComponent(a)}`, { method: "PUT", body: { html } }); state.addresses = keepAddr; flash(tag); } catch (er) { toast(er.message); }
-      };
-      ed.box.addEventListener("blur", put);
-      return h("div", { class: "sv-addr" }, h("label", {}, h("strong", { text: a }), " ", tag),
-        ed.el,
-        h("div", { class: "hint", text: own ? "Used when you write from this address." : "Empty: your main signature is used for this address." }));
-    }) : [h("p", { class: "hint", text: "You have one sending address, so the signature above is used for it. Add another mailbox or sending address to give each its own." })]));
-  }
-  function paint() {
-    state.signatures = state.signatures || []; state.addresses = state.addresses || [];
-    def.set(state.signature_html, state.signature);
-    title.maxLength = state.limits.title; text.maxLength = state.limits.text;
-    list.replaceChildren(...(state.replies.length ? state.replies.map(r => h("div", { class: "ab-row" },
-      h("span", { class: "ab-who" }, h("strong", { text: r.title }), h("small", { text: r.text.length > 120 ? r.text.slice(0, 120) + "…" : r.text })),
-      h("button", { class: "btn small", type: "button", text: "Edit", onclick: () => { editing = r.id; title.value = r.title; text.value = r.text; save.textContent = "Update reply"; cancel.hidden = false; title.focus(); } }),
-      h("button", { class: "ab-x", type: "button", "aria-label": `Remove ${r.title}`, text: "×", onclick: async () => {
-        try { const keepAddr = state.addresses; state = await api(`/me/saved/replies/${r.id}`, { method: "DELETE" }); state.addresses = keepAddr; if (editing === r.id) reset(); paint(); toast("Removed"); } catch (er) { toast(er.message); }
-      } }))) : [h("p", { class: "hint", text: "No saved replies yet. Add one below." })]));
-    paintAddresses();
-  }
-  function reset() { editing = null; title.value = ""; text.value = ""; save.textContent = "Save reply"; cancel.hidden = true; }
-  cancel.addEventListener("click", reset);
+  const rname = h("input", { id: "sv_title", type: "text", placeholder: "For example “Running late”", "aria-label": "Name of the saved reply", autocomplete: "off" });
+  const text = h("textarea", { id: "sv_text", rows: "5", placeholder: "The words to insert", "aria-label": "Text of the saved reply" });
+  const keepAddr = () => state.addresses;
+  try { state = await api("/me/saved"); } catch (er) { show(listPage(title, () => [alertBox("bad", er.message)])); return; }
+  state.signatures = state.signatures || []; state.addresses = state.addresses || [];
+  def.set(state.signature_html, state.signature);
+  let lastDefault = def.html();
   // The main signature saves by itself when you click away from it.
-  let lastDefault = "";
   def.box.addEventListener("blur", async () => {
     const html = def.html();
     if (html === lastDefault) return;
-    try { const keepAddr = state.addresses; state = await api("/me/saved/signature", { method: "PUT", body: { text: "", html } }); state.addresses = keepAddr; lastDefault = def.html(); flash(sigSaved); } catch (er) { toast(er.message); }
+    try { const k = keepAddr(); state = await api("/me/saved/signature", { method: "PUT", body: { text: "", html } }); state.addresses = k; lastDefault = def.html(); flash(sigSaved); } catch (er) { toast(er.message); }
   });
-  save.addEventListener("click", async () => {
+  // One box for each sending address. The main signature is used for any address that has none of its own.
+  const addressRows = () => {
+    const sigs = state.signatures || [];
+    const all = [...new Set([...(state.addresses || []), ...sigs.map((s) => s.address)])].sort();
+    return all.map((a) => {
+      const own = sigs.find((s) => s.address === a);
+      const ed = sigBox(`Signature for ${a}`); ed.set(own ? own.html : "", "");
+      const tag = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
+      ed.box.addEventListener("blur", async () => {
+        const html = ed.html();
+        if (html === (own ? own.html : "")) return;
+        try { const k = keepAddr(); state = await api(`/me/saved/signatures?address=${encodeURIComponent(a)}`, { method: "PUT", body: { html } }); state.addresses = k; flash(tag); } catch (er) { toast(er.message); }
+      });
+      return h("div", { class: "li fieldrow" }, h("label", { class: "lbl" }, a, tag), ed.el, h("small", { class: "pg-note", text: own ? "Used when you write from this address." : "Empty: your main signature is used for this address." }));
+    });
+  };
+  const reset = () => { editing = null; rname.value = ""; text.value = ""; };
+  const saveReply = async () => {
     try {
-      const keepAddr = state.addresses;
-      state = editing ? await api(`/me/saved/replies/${editing}`, { method: "PUT", body: { title: title.value, text: text.value } })
-        : await api("/me/saved/replies", { method: "POST", body: { title: title.value, text: text.value } });
-      state.addresses = keepAddr; reset(); paint(); toast("Saved");
+      const k = keepAddr();
+      state = editing ? await api(`/me/saved/replies/${editing}`, { method: "PUT", body: { title: rname.value, text: text.value } })
+        : await api("/me/saved/replies", { method: "POST", body: { title: rname.value, text: text.value } });
+      state.addresses = k; reset(); draw(); toast("Saved");
     } catch (er) { toast(er.message); }
-  });
-  try { state = await api("/me/saved"); } catch (er) { show(...chrome(me, "saved", h("h1", { text: "Signature & saved replies" }), alertBox("bad", er.message))); return; }
-  paint(); lastDefault = def.html();
-  const wrap = h("div", {},
-    h("div", { class: "sv-block" },
-      h("h2", {}, "Your signature ", sigSaved),
-      h("p", { class: "lead", text: "Put at the bottom of every new email and reply when you open the box. It can have bold, italic and links. You can change or delete it in the message box before you send. Leave this empty for no signature." }),
-      def.el),
-    h("div", { class: "sv-block" },
-      h("h2", { text: "A different signature for each address" }),
-      h("p", { class: "lead", text: "When you choose a different From address in the message box, its signature is put in. An address with no signature of its own uses the one above." }),
-      addrBox),
-    h("div", { class: "sv-block" },
-      h("h2", { text: "Saved replies" }),
-      h("p", { class: "lead", text: "Short pieces of text you use often. In the message box, choose one from “Saved reply” and it is put in where your cursor is. Only you can see them." }),
-      list, title, text, h("div", { class: "row" }, save, cancel)));
-  show(...chrome(me, "saved", h("h1", { text: "Signature & saved replies" }), h("section", { class: "section" }, wrap)));
+  };
+  const removeReply = async () => {
+    try { const k = keepAddr(); state = await api(`/me/saved/replies/${editing}`, { method: "DELETE" }); state.addresses = k; reset(); draw(); toast("Removed"); } catch (er) { toast(er.message); }
+  };
+  const draw = drill => {
+    rname.maxLength = state.limits.title; text.maxLength = state.limits.text;
+    const addrs = addressRows();
+    const replyPane = [grp("", fieldRow("Name", rname)), grp("", h("div", { class: "li fieldrow" }, text)), grp("", row({ title: editing ? "Update reply" : "Save reply", center: true, go: saveReply })),
+      editing ? grp("", row({ title: "Remove this reply", danger: true, go: removeReply })) : null];
+    redraw(title, () => [
+      { label: ["Your signature", sigSaved], help: "Put at the bottom of every new email and reply when you open the box. It can have bold, italic and links. You can change or delete it in the message box before you send. Leave this empty for no signature.", items: [h("div", { class: "li fieldrow" }, def.el)] },
+      addrs.length > 1 || (state.signatures || []).length ? { label: "", items: [{ title: "A signature for each address", value: `${addrs.length} addresses`, key: "addr", help: "When you choose a different From address in the message box, its signature is put in. An address with no signature of its own uses the main one.", content: [grp("", ...addrs)] }] } : null,
+      { label: "Saved replies", help: "Short pieces of text you use often. In the message box, choose one from “Saved reply” and it is put in where your cursor is. Only you can see them.", items: [
+        ...state.replies.map(r => itemRow({ title: r.title, sub: r.text.length > 90 ? r.text.slice(0, 90) + "…" : r.text, go: () => { editing = r.id; rname.value = r.title; text.value = r.text; draw("reply"); } })),
+        { title: "Add a saved reply", paneTitle: editing ? "Edit saved reply" : "Add a saved reply", center: true, key: "reply", content: replyPane, go: () => { reset(); draw("reply"); } }] },
+    ], {}, drill);
+  };
+  draw();
 }
 
 // ---------- muted conversations: the list, and Unmute ----------
 async function mutedPage(me) {
   let state = { items: [], max: 300 };
-  const list = h("div", { class: "ab-list" });
+  const title = "Muted conversations";
+  const help = "New replies in a muted conversation go straight to Archive in your mailbox. They do not come to your inbox and they do not send an alert. Nothing is deleted. Unmute it to hear about replies again.";
   const when = (t) => t ? new Date(t * 1000).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "";
-  function paint() {
-    list.replaceChildren(...(state.items.length ? state.items.map((it) => h("div", { class: "ab-row" },
-      h("span", { class: "ab-who" }, h("strong", { text: it.subject }),
-        h("small", { text: `Muted ${when(it.muted_at)}. ${it.count ? `${it.count} later ${it.count === 1 ? "reply was" : "replies were"} put in Archive.` : "No later replies yet."}` })),
-      h("button", { class: "btn small", type: "button", text: "Unmute", "aria-label": `Unmute ${it.subject}`, onclick: async () => {
-        try { state = await api(`/me/muted/${it.id}`, { method: "DELETE" }); paint(); toast("Unmuted. New replies come to your inbox again."); } catch (er) { toast(er.message); }
-      } }))) : [h("p", { class: "hint", text: "Nothing is muted. Open an email, press the three dots, then Mute conversation." })]));
-  }
-  try { state = await api("/me/muted"); } catch (er) { show(...chrome(me, "muted", h("h1", { text: "Muted conversations" }), alertBox("bad", er.message))); return; }
-  paint();
-  const wrap = h("div", { class: "sv-block" },
-    h("h2", { text: "Muted conversations" }),
-    h("p", { class: "lead", text: "New replies in a muted conversation go straight to Archive in your mailbox. They do not come to your inbox and they do not send an alert. Nothing is deleted. Unmute it to hear about replies again." }),
-    list);
-  show(...chrome(me, "muted", h("h1", { text: "Muted conversations" }), h("section", { class: "section" }, wrap)));
+  try { state = await api("/me/muted"); } catch (er) { show(listPage(title, () => [alertBox("bad", er.message)], { help })); return; }
+  const draw = () => redraw(title, () => [{ label: "", items: state.items.length ? state.items.map(it => itemRow({
+    title: it.subject, sub: `Muted ${when(it.muted_at)}. ${it.count ? `${it.count} later ${it.count === 1 ? "reply was" : "replies were"} put in Archive.` : "No later replies yet."}`,
+    buttons: pillBtn("Unmute", async () => { try { state = await api(`/me/muted/${it.id}`, { method: "DELETE" }); draw(); toast("Unmuted. New replies come to your inbox again."); } catch (er) { toast(er.message); } }, `Unmute ${it.subject}`) }))
+    : [noteRow("Nothing is muted. Open an email, press the three dots, then Mute conversation.")] }], { help });
+  draw();
 }
 
 // ---------- away reply: an automatic answer while you are away ----------
@@ -2013,7 +2388,7 @@ async function awayPage(me) {
   const end = h("input", { id: "aw_end", type: "date", "aria-label": "Last day" });
   const body = h("textarea", { id: "aw_body", rows: "6", "aria-label": "Message for people who write to you", placeholder: "Hello, I am away until the 20th and will answer when I am back." });
   const status = h("p", { class: "hint", role: "status", "aria-live": "polite" });
-  const save = h("button", { class: "btn primary", type: "button", text: "Save" });
+  const save = h("button", { class: "btn primary", type: "button", text: "Save", hidden: true });
   function paint() {
     on.checked = state.enabled; start.value = state.start; end.value = state.end; body.value = state.body; body.maxLength = state.limits.body;
     if (state.today) start.min = state.today;
@@ -2027,145 +2402,143 @@ async function awayPage(me) {
   });
   try { state = await api("/me/away"); } catch (er) { show(...chrome(me, "away", h("h1", { text: "Away reply" }), alertBox("bad", er.message))); return; }
   paint();
-  const wrap = h("div", { class: "sv-block" },
-    h("h2", { text: "Away reply" }),
-    h("p", { class: "lead", text: "While this is on, Enveliq answers new email for you with the words below, even though you did not press Send. It is off until you turn it on." }),
-    h("label", { class: "check", for: "aw_on" }, on, h("span", {}, h("strong", { text: "Send an away reply between these dates" }))),
-    h("div", { class: "row" }, h("div", {}, h("label", { for: "aw_start", text: "First day" }), start), h("div", {}, h("label", { for: "aw_end", text: "Last day" }), end)),
-    h("label", { for: "aw_body", text: "Your message" }), body,
-    status,
-    h("div", { class: "row" }, save),
-    more("How it stays careful",
-      h("ul", { class: "hint" },
-        h("li", { text: "Each person gets one reply, however many emails they send." }),
-        h("li", { text: "Newsletters, mailing lists, automatic mail and “no reply” addresses never get one." }),
-        h("li", { text: "Only mail sent to you gets one, not mail where you were hidden on the list." }),
-        h("li", { text: "The reply is marked as automatic, says only what you wrote here, and does not quote their email." }),
-        h("li", { text: "At most 20 replies go out in an hour. Your mailbox is only changed by sending the reply; nothing is deleted." }),
-        h("li", { text: "It is plain text, and it goes out from the address the email was sent to." }))));
-  show(...chrome(me, "away", h("h1", { text: "Away reply" }), h("section", { class: "section" }, wrap)));
+  // A date shows as a small button such as "Mon 2 Nov". It opens the browser's own date picker.
+  const dateRow = (label, el) => {
+    const fmt = () => { const d = el.value && new Date(el.value + "T12:00:00"); return d && !isNaN(d) ? d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) : "Choose a day"; };
+    const pill = h("button", { class: "pillbtn", type: "button", text: fmt(), "aria-label": `${label}: ${fmt()}`, onclick: () => { try { el.showPicker(); } catch (e) { el.focus(); } } });
+    el.classList.add("visually-hidden"); el.tabIndex = -1;
+    el.addEventListener("change", () => { pill.textContent = fmt(); pill.setAttribute("aria-label", `${label}: ${fmt()}`); });
+    return h("div", { class: "li" }, h("span", { class: "lb" }, h("b", { text: label })), pill, el);
+  };
+  const saveRow = row({ title: "Save", center: true, go: () => save.click() });
+  show(...chrome(me, "away", listPage("Away reply", () => [
+    { label: "", items: [h("label", { class: "li", for: "aw_on" }, h("span", { class: "lb" }, h("b", { text: "Send an away reply" })), on, h("span", { class: "sw", "aria-hidden": "true" }))] },
+    { label: "When", items: [dateRow("Starts", start), dateRow("Ends", end)] },
+    { label: "Message", items: [h("div", { class: "li fieldrow" }, body)] },
+    h("div", { class: "grp-wrap" }, status),
+    { label: "", items: [saveRow] },
+  ], { help: ["While this is on, Enveliq answers new email for you with the words below, even though you did not press Send. It is off until you turn it on.",
+    h("ul", { class: "hint" },
+      h("li", { text: "Each person gets one reply, however many emails they send." }),
+      h("li", { text: "Newsletters, mailing lists, automatic mail and “no reply” addresses never get one." }),
+      h("li", { text: "Only mail sent to you gets one, not mail where you were hidden on the list." }),
+      h("li", { text: "The reply is marked as automatic, says only what you wrote here, and does not quote their email." }),
+      h("li", { text: "At most 20 replies go out in an hour. Nothing in your mailbox is deleted." }),
+      h("li", { text: "It is plain text, and it goes out from the address the email was sent to." }))] })));
 }
 
 // ---------- mail rules: "archive (or mark reviewed) new mail from this sender" ----------
 async function rulesPage(me) {
   let state = { rules: [], actions: { archived: "Archive it", reviewed: "Mark it reviewed", junked: "Send it to Junk" }, max: 50 };
-  const list = h("div", { class: "ab-list" });
-  const sender = h("input", { id: "ru_sender", type: "text", placeholder: "name@example.com, or @example.com for a whole website", "aria-label": "Mail from", autocomplete: "off", maxlength: 320 });
-  const words = h("input", { id: "ru_subject", type: "text", placeholder: "Only if the subject has these words (optional)", "aria-label": "Subject contains", autocomplete: "off", maxlength: 80 });
-  const action = h("select", { id: "ru_action", "aria-label": "What to do" });
+  const title = "Mail rules";
+  const help = "Enveliq can tidy new email for you. Choose who it is from and what to do with it. A rule acts only on new email as it arrives, never on what is already in your inbox, and never on email from your important people. No rule can delete email. Archived email is kept in Enveliq for a few days, as usual, and stays in your mailbox\u2019s Archive folder.";
+  const sender = h("input", { id: "ru_sender", type: "text", class: "wide", placeholder: "name@example.com or @example.com", "aria-label": "Mail from", autocomplete: "off", maxlength: 320 });
+  const words = h("input", { id: "ru_subject", type: "text", placeholder: "Optional", "aria-label": "Subject contains", autocomplete: "off", maxlength: 80 });
+  const action = h("select", { id: "ru_action", class: "dd", "aria-label": "What to do" });
   const who = r => r.sender.startsWith("@") ? `everyone at ${r.sender.slice(1)}` : r.sender;
-  function paint() {
-    action.replaceChildren(...Object.entries(state.actions).map(([k, v]) => h("option", { value: k, text: v })));
-    list.replaceChildren(...(state.rules.length ? state.rules.map(r => h("div", { class: "ab-row" },
-      h("span", { class: "ab-who" }, h("strong", { text: `${state.actions[r.action] || r.action}` }), h("small", { text: `New mail from ${who(r)}${r.subject ? ` with \u201c${r.subject}\u201d in the subject` : ""}` })),
-      h("button", { class: "ab-x", type: "button", "aria-label": `Remove the rule for ${who(r)}`, text: "\u00d7", onclick: async () => {
-        try { state = await api(`/me/rules/${r.id}`, { method: "DELETE" }); paint(); toast("Rule removed"); } catch (er) { toast(er.message); }
-      } }))) : [h("p", { class: "hint", text: "No rules yet. Add one below, or open an email in your inbox and press Always archive these or Block sender." })]));
-  }
+  try { state = await api("/me/rules"); } catch (er) { show(listPage(title, () => [alertBox("bad", er.message)], { help })); return; }
   async function add() {
     if (!sender.value.trim()) { toast("Type who the email is from first"); sender.focus(); return; }
-    try { state = await api("/me/rules", { method: "POST", body: { sender: sender.value, subject: words.value, action: action.value } }); sender.value = ""; words.value = ""; paint(); toast("Rule added"); }
+    try { state = await api("/me/rules", { method: "POST", body: { sender: sender.value, subject: words.value, action: action.value } }); sender.value = ""; words.value = ""; draw(); toast("Rule added"); }
     catch (er) { toast(er.message); }
   }
-  sender.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
-  words.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
-  try { state = await api("/me/rules"); } catch (er) { show(...chrome(me, "rules", h("h1", { text: "Mail rules" }), alertBox("bad", er.message))); return; }
-  paint();
-  const wrap = h("div", {},
-    h("p", { class: "lead", text: "Enveliq can tidy new email for you. Choose who it is from and what to do with it. A rule acts only on new email as it arrives, never on what is already in your inbox, and never on email from your important people. No rule can delete email. Archived email is kept in Enveliq for a few days, as usual, and stays in your mailbox\u2019s Archive folder." }),
-    list,
-    h("div", { class: "sv-block" }, sender, words, action, h("div", { class: "row" }, h("button", { class: "btn primary", type: "button", text: "Add rule", onclick: add }))));
-  show(...chrome(me, "rules", h("h1", { text: "Mail rules" }), h("section", { class: "section" }, wrap)));
+  for (const el of [sender, words]) el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
+  const draw = drill => {
+    action.replaceChildren(...Object.entries(state.actions).map(([k, v]) => h("option", { value: k, text: v })));
+    redraw(title, () => [
+      { label: state.rules.length ? "Your rules" : "", items: state.rules.length ? state.rules.map(r => itemRow({
+        title: state.actions[r.action] || r.action, sub: `New mail from ${who(r)}${r.subject ? ` with \u201c${r.subject}\u201d in the subject` : ""}`,
+        buttons: xBtn(`Remove the rule for ${who(r)}`, async () => { try { state = await api(`/me/rules/${r.id}`, { method: "DELETE" }); draw(); toast("Rule removed"); } catch (er) { toast(er.message); } }) }))
+        : [noteRow("No rules yet. Add one, or open an email and press Always archive these or Block sender.")] },
+      { label: "", items: [{ title: "Add a rule", center: true, key: "add", content: [
+        grp("When new mail is from", fieldRow("From", sender, "An address, or @example.com for a whole website"), fieldRow("Subject has", words)),
+        grp("Then", fieldRow("Do this", action)),
+        grp("", row({ title: "Add rule", center: true, go: add }))] }] },
+    ], { help }, drill);
+  };
+  draw();
 }
 async function aiInstructionsPage(me) {
   const p = await api("/me/preferences");
-  const form = h("form", {},
-    field("Your instructions for summaries", h("textarea", { id: "my_instr", rows: 6, maxlength: 1000, placeholder: "For example: Put any amount of money and due date first. Keep it to one sentence. Ignore newsletters." }, p.instructions),
-      "These are added to any instructions your administrator has set, and only affect summaries of your own mail. They change the style and what to emphasise, not what the AI is allowed to do. Summaries already written are not changed."),
-    h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" })));
-  onSubmit(form, async () => {
-    await api("/me/preferences", { method: "PUT", body: { keep_reviewed: p.keep_reviewed, keep_archived: p.keep_archived, keep_days: p.keep_days, instructions: form.querySelector("#my_instr").value } });
-    toast("Saved. New summaries will follow these instructions.");
-  });
-  const help = await writingHelpSection();
-  const styled = await writingStyleSection();
-  show(...chrome(me, "instructions", h("h1", { text: "AI instructions" }), h("section", { class: "section" }, form), ...(help ? [help] : []), ...(styled ? [styled] : [])));
+  const instr = h("textarea", { id: "my_instr", rows: 6, maxlength: 1000, placeholder: "For example: Put any amount of money and due date first. Keep it to one sentence. Ignore newsletters." }, p.instructions);
+  let mineText = p.instructions || "";
+  const saveMine = async () => {
+    try {
+      await api("/me/preferences", { method: "PUT", body: { keep_reviewed: p.keep_reviewed, keep_archived: p.keep_archived, keep_days: p.keep_days, instructions: instr.value } });
+      mineText = instr.value; toast("Saved. New summaries will follow these instructions."); draw();
+    } catch (er) { toast(er.message); }
+  };
+  const wh = await writingHelpPane(), ws = await writingStylePane();
+  const draw = () => redraw("Your AI instructions", () => [
+    { label: "Summaries", items: [{ title: "Summary instructions", value: mineText.trim() ? "Set" : "None", key: "mine",
+      help: "These are added to any instructions your administrator has set, and only affect summaries of your own mail. They change the style and what to emphasise, not what the AI is allowed to do. Summaries already written are not changed.",
+      content: [grp("", h("div", { class: "li fieldrow" }, instr)), grp("", row({ title: "Save", center: true, go: saveMine }))] }] },
+    wh || ws ? { label: "Writing", items: [
+      wh ? { title: "Writing help", value: wh.value(), key: "wh", content: wh.pane, help: wh.help } : null,
+      ws ? { title: "My writing style", value: ws.value(), key: "ws", content: ws.pane, help: ws.help } : null] } : null,
+  ], {}, app._drill);
+  if (wh) wh.onChange = draw; if (ws) ws.onChange = draw;
+  draw();
 }
+const boxOf = lbl => lbl.querySelector("input");
 // Writing help: off until the person turns it on; the box starts with a plain, generic set of instructions they can change.
-async function writingHelpSection() {
+async function writingHelpPane() {
   let w;
   try { w = await api("/me/write-help"); } catch { return null; }
   if (!w.available) return null;
-  const on = h("input", { type: "checkbox", id: "wh_on" });
-  on.checked = !!w.on;
-  const quick = h("input", { type: "checkbox", id: "wh_quick" });
-  quick.checked = !!w.quick;
+  const onRow = swRow("Turn on writing help", w.on, null, { id: "wh_on", help: "When you use it, the email you are answering and what you have written are sent to your AI model. Nothing is kept afterwards. If your AI model is a cloud service, that text leaves your computer." });
+  const quickRow = swRow("Turn on Quick AI Send", w.quick, null, { id: "wh_quick", help: "Adds a Quick AI Send button next to Send. It fixes spelling, grammar and punctuation, then sends at once. It never adds or changes what you meant. If anything goes wrong, nothing is sent and your draft stays as it is." });
   const box = h("textarea", { id: "wh_instr", rows: 8, maxlength: w.max }, w.instructions);
-  const form = h("form", {},
-    h("p", { class: "lead", text: "Writing help adds a button to the reply box and the New email box. It can write a reply for you, or check what you wrote. The suggestion appears in a separate box: you choose what to use, and nothing is sent until you press Send." }),
-    h("label", { class: "check", for: "wh_on" }, on, h("span", {}, h("strong", { text: "Turn on writing help" }),
-      h("div", { class: "hint", text: "When you use it, the email you are answering and what you have written are sent to your AI model. Nothing is kept afterwards. If your AI model is a cloud service, that text leaves your computer." }))),
-    h("label", { class: "check", for: "wh_quick" }, quick, h("span", {}, h("strong", { text: "Turn on Quick AI Send" }),
-      h("div", { class: "hint", text: "Adds a Quick AI Send button next to Send. It fixes spelling, grammar and punctuation, then sends at once. It never adds or changes what you meant. If anything goes wrong, nothing is sent and your draft stays as it is." }))),
-    w.ai_ready ? null : h("p", { class: "hint", text: "No AI model is set up yet. An administrator can add one under Administration, AI model." }),
-    guideNote("WRITING_HELP.md", "", "More about writing help"),
-    field("Your writing instructions", box, "This starts with plain, friendly wording. Keep it, type over it, or add to it. It changes the style only, not what the AI is allowed to do."),
-    h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" }), " ",
-      h("button", { class: "btn", type: "button", text: "Use the standard instructions", onclick: () => { box.value = w.default; } })));
-  onSubmit(form, async () => {
-    const r = await api("/me/write-help", { method: "PUT", body: { on: on.checked, quick: quick.checked, instructions: box.value } });
-    w = r; box.value = r.instructions;
-    toast(r.on || r.quick ? "Saved." : "Saved. Writing help is off.");
-  });
-  return h("section", { class: "section" }, h("h2", { text: "Writing help" }), form);
+  const out = { value: () => (w.on || w.quick ? "On" : "Off"), help: [h("span", { text: "Writing help adds a button to the reply box and the New email box. It can write a reply for you, or check what you wrote. The suggestion appears in a separate box: you choose what to use, and nothing is sent until you press Send. " }), guide("WRITING_HELP.md", "More about writing help")] };
+  out.pane = [
+    grp("", onRow, quickRow),
+    w.ai_ready ? null : h("p", { class: "pg-note", text: "No AI model is set up yet. An administrator can add one under Administration, AI model." }),
+    grp(["Your writing instructions", qmark("This starts with plain, friendly wording. Keep it, type over it, or add to it. It changes the style only, not what the AI is allowed to do.")], h("div", { class: "li fieldrow" }, box)),
+    grp("", row({ title: "Save", center: true, go: async () => {
+      try { const r = await api("/me/write-help", { method: "PUT", body: { on: boxOf(onRow).checked, quick: boxOf(quickRow).checked, instructions: box.value } }); w = r; box.value = r.instructions; toast(r.on || r.quick ? "Saved." : "Saved. Writing help is off."); out.onChange && out.onChange(); } catch (er) { toast(er.message); }
+    } }), row({ title: "Use the standard instructions", center: true, go: () => { box.value = w.default; } })),
+  ];
+  return out;
 }
 // My writing style: a guide the AI makes from the person's own recent sent emails, which they can read and edit. Used by Writing help and Quick AI Send.
-async function writingStyleSection() {
+async function writingStylePane() {
   let st;
   try { st = await api("/me/writing-style"); } catch { return null; }
   if (!st.available) return null;
-  const on = h("input", { type: "checkbox", id: "ws_on" });
-  on.checked = !!st.on;
-  const guide = h("textarea", { id: "ws_guide", rows: 10, maxlength: st.max, placeholder: "Nothing here yet. Turn this on and press Make it now, or write your own." }, st.guide || "");
-  const auto = h("input", { type: "checkbox", id: "ws_auto" });
-  auto.checked = st.mode === "auto";
-  const note = h("p", { class: "hint", id: "ws_note" });
+  const onRow = swRow("Learn my writing style", st.on, null, { id: "ws_on", help: "Only your own words are used: quoted replies, signatures, forwarded emails and attachments are left out first. The words are sent to your AI model, and a few are kept here, separate from your normal email." });
+  const autoRow = swRow("Update it automatically each week", st.mode === "auto", null, { id: "ws_auto", help: "Switches off by itself when you edit the guide below. Switch it back on to let the AI write a new one." });
+  const guideBox = h("textarea", { id: "ws_guide", rows: 10, maxlength: st.max, placeholder: "Nothing here yet. Turn this on and press Make it now, or write your own." }, st.guide || "");
+  const note = h("p", { class: "pg-note", id: "ws_note" });
   const when = a => new Date(a * 1000).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
   const paint = r => {
     st = r;
-    on.checked = !!r.on; auto.checked = r.mode === "auto";
-    if (document.activeElement !== guide) guide.value = r.guide || "";
+    boxOf(onRow).checked = !!r.on; boxOf(autoRow).checked = r.mode === "auto";
+    if (document.activeElement !== guideBox) guideBox.value = r.guide || "";
     note.textContent = r.busy ? "Learning from your recent emails… this can take a minute."
       : r.error ? r.error
       : r.generated_at ? `Last made on ${when(r.generated_at)}, from ${r.samples} of your recent emails. ${r.mode === "auto" ? "It will be made again once a week." : "You have edited it, so it will not change unless you turn automatic updates back on."}`
       : "Not made yet.";
   };
   paint(st);
-  const form = h("form", {},
-    h("p", { class: "lead", text: "Enveliq can learn how you write from the 20 emails you sent most recently, and write you a short guide. Writing help and Quick AI Send use the guide so they sound like you." }),
-    h("label", { class: "check", for: "ws_on" }, on, h("span", {}, h("strong", { text: "Learn my writing style" }),
-      h("div", { class: "hint", text: "Only your own words are used: quoted replies, signatures, forwarded emails and attachments are left out first. The words are sent to your AI model, and a few are kept here, separate from your normal email." }))),
-    h("label", { class: "check", for: "ws_auto" }, auto, h("span", {}, h("strong", { text: "Update it automatically each week" }),
-      h("div", { class: "hint", text: "Switches off by itself when you edit the guide below. Switch it back on to let the AI write a new one." }))),
-    note,
-    field("My writing style", guide, "You can change this. The AI reads it as a description of how you write, never as facts."),
-    h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" }), " ",
-      h("button", { class: "btn", type: "button", id: "ws_now", text: "Make it now", onclick: async () => {
-        try { paint(await api("/me/writing-style/rebuild", { method: "POST", body: {} })); toast("Learning from your recent emails."); poll(0); } catch (e) { toast(e.message); }
-      } })));
   async function poll(n) {
     if (n > 40) return;
     await new Promise(r => setTimeout(r, 3000));
     try { const r = await api("/me/writing-style"); paint(r); if (r.busy) poll(n + 1); } catch { /* the page was left */ }
   }
-  onSubmit(form, async () => {
-    const body = { on: on.checked };
-    if (guide.value.trim() !== (st.guide || "").trim()) body.guide = guide.value;
-    if (auto.checked !== (st.mode === "auto")) body.mode = auto.checked ? "auto" : "manual";       // editing the guide makes the server switch to manual by itself
-    paint(await api("/me/writing-style", { method: "PUT", body }));
-    toast("Saved.");
-  });
-  return h("section", { class: "section" }, h("h2", { text: "My writing style" }), guideNote("WRITING_HELP.md", "", "More about writing style"), form);
+  const out = { value: () => (st.on ? "On" : "Off"), help: [h("span", { text: "Enveliq can learn how you write from the 20 emails you sent most recently, and write you a short guide. Writing help and Quick AI Send use the guide so they sound like you. " }), guide("WRITING_HELP.md", "More about writing style")] };
+  out.pane = [
+    grp("", onRow, autoRow), note,
+    grp(["My writing style", qmark("You can change this. The AI reads it as a description of how you write, never as facts.")], h("div", { class: "li fieldrow" }, guideBox)),
+    grp("", row({ title: "Save", center: true, go: async () => {
+      const body = { on: boxOf(onRow).checked };
+      if (guideBox.value.trim() !== (st.guide || "").trim()) body.guide = guideBox.value;
+      if (boxOf(autoRow).checked !== (st.mode === "auto")) body.mode = boxOf(autoRow).checked ? "auto" : "manual";
+      try { paint(await api("/me/writing-style", { method: "PUT", body })); toast("Saved."); out.onChange && out.onChange(); } catch (er) { toast(er.message); }
+    } }), row({ title: "Make it now", id: "ws_now", center: true, go: async () => {
+      try { paint(await api("/me/writing-style/rebuild", { method: "POST", body: {} })); toast("Learning from your recent emails."); poll(0); } catch (e) { toast(e.message); }
+    } })),
+  ];
+  return out;
 }
 // ---------- mailboxes (Proton Bridge and app-password services) ----------
 const BRIDGE_ERRORS = { ok: "Working" };
@@ -2196,29 +2569,36 @@ async function mailboxesPage(me, diagId, editId) {
     const a = accounts.find(x => x.id === editId);
     if (a) return mailboxEditPage(me, a, { auto, ai });
   }
-  const addPanel = await mailboxAddPanel(me, { ai, askAi: true, onAdded: async () => { mailboxesPage(me); } });
-  const addSection = h("section", { class: "section", id: "mb_add", hidden: !!accounts.length }, h("h2", { text: "Add a mailbox" }),
-    h("p", { class: "lead" }, "Enveliq reads only the headers of unread mail, shows the original on request, and never stores message bodies. The ", h("a", { href: "/welcome", text: "Setup guide" }), " explains every field."),
+  const addPanel = await mailboxAddPanel(me, { ai, askAi: true, onAdded: async () => { app._drill = null; mailboxesPage(me); } });
+  const addSection = h("section", { class: "section", id: "mb_add" },
     h("p", { class: "hint guide-note" }, "Step by step on the Enveliq website: ", guide("install/after-install.md#step-4-connect-your-email", "Connecting your email"), " · ", guide("EMAIL_SERVICES.md", "Gmail, iCloud, Yahoo and others"), " · ", guide("MICROSOFT.md", "Outlook and Microsoft 365"), " · ", guide("PROTON_BRIDGE.md", "Proton Mail")), addPanel);
-  const addButton = h("button", { class: "btn primary", type: "button", id: "mb_add_btn", text: "+ Add a mailbox", onclick: () => { addSection.hidden = !addSection.hidden; if (!addSection.hidden) addSection.scrollIntoView({ block: "start" }); } });
-
-  const cards = accounts.map(a => {
-    const status = h("div", { class: "hint" });
-    const st = mailboxState(a, auto);
-    const sync = h("button", { class: "btn small", type: "button", text: "Sync now", onclick: e => syncNow(a, ai, e.target, status) });
-    return h("div", { class: "mbcard", "data-mailbox": a.id },
-      h("div", { class: "mbwho" }, mailboxLogo(a),
-        h("div", {}, h("strong", { text: a.display_name }), h("div", { class: "meta", text: a.email_address }))),
-      h("div", { class: "mbstate" }, h("span", { class: st.bad ? "mbdot amber" : "mbdot" }), st.text),
-      status,
-      h("div", { class: "mbacts" }, isMail(a) ? sync : null, h("button", { class: "btn small", type: "button", "aria-label": `Edit ${a.display_name}`, text: "Edit", onclick: () => mailboxesPage(me, null, a.id) })));
+  const help = ["Enveliq reads only the headers of unread mail, shows the original on request, and never stores message bodies. The ", h("a", { href: "/welcome", text: "Setup guide" }), " explains every field."];
+  if (!accounts.length) {
+    // Nothing to list yet: go straight to the way to add one.
+    return show(...chrome(me, "mailboxes", listPage("Add a mailbox", () => [h("div", { class: "grp-wrap" }, addSection)], { help })));
+  }
+  const rows = accounts.map(a => {
+    const st = mailboxState(a, auto), last = auto.accounts && auto.accounts[a.id];
+    const dot = h("span", { class: st.bad ? "mbdot amber" : "mbdot", title: st.text });
+    return h("button", { class: "li go mbrow", type: "button", "data-mailbox": a.id, "aria-label": `${a.display_name}, ${st.text}`, onclick: () => mailboxesPage(me, null, a.id) }, mailboxLogo(a),
+      h("span", { class: "lb" }, h("b", { text: a.display_name }), h("small", { text: a.email_address })), dot,
+      last && last.at ? h("span", { class: "v", text: agoText(last.at) }) : null, chev());
   });
-
-  show(...chrome(me, "mailboxes",
-    h("div", { class: "mbhead" }, h("div", {}, h("h1", { text: "Your mailboxes" }), h("p", { class: "lead", text: accounts.length ? "The email accounts Enveliq checks for you." : "No mailboxes yet. Add one to begin. Gmail, iCloud, Yahoo, Fastmail, Proton Mail and any IMAP service work." })), addButton),
-    accounts.length ? h("div", { class: "mbgrid" }, cards) : null,
-    accounts.length ? h("p", { class: "hint", text: "Checking for new mail, AI summaries and Waiting for reply are on for every new mailbox. Press Edit to change them for one mailbox." }) : null,
-    addSection));
+  const status = h("div", { class: "grp-wrap" });
+  const syncAll = row({ title: "Check all mailboxes now", center: true, go: async e => {
+    const btn = e.currentTarget; btn.disabled = true; status.replaceChildren();
+    for (const a of accounts.filter(isMail)) {
+      const one = h("div", { class: "hint" }), proxy = { disabled: false, textContent: "" };
+      status.append(one); await syncNow(a, ai, proxy, one);
+    }
+    btn.disabled = false;
+  } });
+  show(...chrome(me, "mailboxes", listPage("Mailboxes", open => [
+    { label: "Your mailboxes", items: rows },
+    { label: "", items: [{ title: "Add a mailbox", center: true, content: addSection }] },
+    accounts.some(isMail) ? { label: "All mailboxes", items: [syncAll] } : null,
+    status,
+  ], { help })));
 }
 async function syncNow(a, ai, button, status) {
   button.disabled = true; const label = button.textContent;
@@ -2239,68 +2619,67 @@ async function syncNow(a, ai, button, status) {
   } catch (er) { status.replaceChildren(alertBox("bad", er.message)); }
   finally { button.disabled = false; button.textContent = label; }
 }
-// The page for one mailbox. Ticking a box or choosing a colour saves at once; nothing here needs a Save button.
+// The page for one mailbox. Switching something or choosing a colour saves at once; nothing here needs a Save button.
 function mailboxEditPage(me, a, { auto, ai }) {
-  const status = h("div", { class: "hint" });
+  const status = h("div", { class: "grp-wrap" });
   const st = mailboxState(a, auto);
-  const savedTag = () => h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
-  const flash = tag => { tag.textContent = "Saved ✓"; tag.classList.add("show"); clearTimeout(tag._t); tag._t = setTimeout(() => tag.classList.remove("show"), 1800); };
-  const save = async (patch, tag, undo) => {
+  const note = text => { status.replaceChildren(alertBox("bad", text)); toast(text); };
+  const save = async (patch, undo) => {
     try {
       const settings = { ...(a.settings || {}), ...patch };
       await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings } });
-      a.settings = settings; flash(tag);
-    } catch (er) { if (undo) undo(); status.replaceChildren(alertBox("bad", `Could not save: ${er.message}`)); }
+      a.settings = settings; toast("Saved");
+    } catch (er) { if (undo) undo(); note(`Could not save: ${er.message}`); }
   };
-  const tick = (id, title, hint, on, key, tag, extra) => h("label", { class: "optrow", for: id },
-    h("input", { id, type: "checkbox", checked: on, onchange: e => { const box = e.target; save({ [key]: box.checked }, tag, () => { box.checked = !box.checked; }); if (extra) extra(box.checked); } }),
-    h("span", {}, h("strong", { text: title }), h("span", { class: "hint", text: hint })));
-  const tagA = savedTag(), tagB = savedTag();
   const autoOn = !(a.settings && a.settings.auto_sync === false);
-  const rows = [
-    auto.enabled && isMail(a) ? tick(`mb_auto_${a.id}`, "Check for new mail automatically", `Enveliq looks every ${auto.minutes} minutes. Turn off to check only when you press Sync now.`, autoOn, "auto_sync", tagA) : null,
-    ai.configured ? tick(`mb_ai_${a.id}`, "Write AI summaries", "Each email gets a short summary, marked as written by AI. The email text goes to your AI model and is not kept.", !!(a.settings && a.settings.ai_summaries), "ai_summaries", tagA) : null,
-    ai.configured && isMail(a) ? tick(`mb_wait_${a.id}`, "Follow sent mail for replies", "Shows Waiting for reply. Each new email you send is shown to your AI model once, to decide whether you expect an answer. Older sent mail is not read, and only a short note is kept.", !!(a.settings && a.settings.waiting), "waiting", tagA) : null,
+  const sw = (id, title, hint, on, key) => swRow(title, on, (checked, box) => save({ [key]: checked }, () => { box.checked = !checked; }), { id, help: hint });
+  const doing = [
+    auto.enabled && isMail(a) ? sw(`mb_auto_${a.id}`, "Check for new mail automatically", `Enveliq looks every ${auto.minutes} minutes. Turn off to check only when you press Sync now.`, autoOn, "auto_sync") : null,
+    ai.configured ? sw(`mb_ai_${a.id}`, "Write AI summaries", "Each email gets a short summary, marked as written by AI. The email text goes to your AI model and is not kept.", !!(a.settings && a.settings.ai_summaries), "ai_summaries") : null,
+    ai.configured && isMail(a) ? sw(`mb_wait_${a.id}`, "Follow sent mail for replies", "Shows Waiting for reply. Each new email you send is shown to your AI model once, to decide whether you expect an answer. Older sent mail is not read, and only a short note is kept.", !!(a.settings && a.settings.waiting), "waiting") : null,
   ].filter(Boolean);
   const nameBox = h("input", { id: `rn_${a.id}`, type: "text", maxlength: 128, value: a.display_name, "aria-label": "Mailbox name", autocomplete: "off", onchange: async e => {
     const name = e.target.value.trim();
-    if (!name) { e.target.value = a.display_name; status.replaceChildren(alertBox("bad", "Type a name for this mailbox.")); return; }
+    if (!name) { e.target.value = a.display_name; note("Type a name for this mailbox."); return; }
     if (name === a.display_name) return;
-    try { await api(`/accounts/${a.id}`, { method: "PATCH", body: { display_name: name } }); a.display_name = name; flash(tagB); title.textContent = name; remove.textContent = `Remove ${name}`; logo.textContent = name.charAt(0).toUpperCase(); }
-    catch (er) { e.target.value = a.display_name; status.replaceChildren(alertBox("bad", er.message)); }
+    try { await api(`/accounts/${a.id}`, { method: "PATCH", body: { display_name: name } }); a.display_name = name; toast("Saved"); mailboxesPage(me, null, a.id); }
+    catch (er) { e.target.value = a.display_name; note(er.message); }
   } });
-  const colorSel = h("select", { id: `col_${a.id}`, "aria-label": `Label colour for ${a.display_name}`, onchange: async e => {
-    const color = e.target.value;
-    try { await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), color } } }); a.settings = { ...(a.settings || {}), color }; flash(tagB); logo.style.background = mailboxHex(a); toast(color ? `Label colour set to ${color}` : "Label colour is automatic"); }
-    catch (er) { status.replaceChildren(alertBox("bad", er.message)); }
-  } }, MAILBOX_COLOR_CHOICES.map(([v, t]) => h("option", { value: v, text: t, selected: ((a.settings && a.settings.color) || "") === v })));
-  const logo = mailboxLogo(a);
-  const title = h("h1", { text: a.display_name });
-  const checkBtn = h("button", { class: "btn small", type: "button", text: "Check connection", onclick: async e => {
+  // The colour, as a row of dots. "Automatic" is the empty ring.
+  const dots = h("span", { class: "dots", role: "group", "aria-label": "Label colour" }, MAILBOX_COLOR_CHOICES.map(([v, t]) => {
+    const b = h("button", { class: "dotc" + (v === "" ? " auto" : ""), type: "button", title: t, "aria-label": t, "aria-pressed": String(((a.settings && a.settings.color) || "") === v), onclick: async () => {
+      try { await api(`/accounts/${a.id}`, { method: "PATCH", body: { settings: { ...(a.settings || {}), color: v } } }); a.settings = { ...(a.settings || {}), color: v }; toast(v ? `Label colour: ${t}` : "Label colour is automatic"); dots.querySelectorAll(".dotc").forEach(x => x.setAttribute("aria-pressed", String(x === b))); }
+      catch (er) { note(er.message); }
+    } });
+    if (v) b.style.background = MAILBOX_HEX[v];
+    return b;
+  }));
+  // What Sync now and Check connection say is shown right under them, inside the Connection page.
+  const connStatus = h("div", { class: "grp-wrap", "aria-live": "polite" });
+  const checkBtn = h("button", { class: "btn", type: "button", text: "Check connection", onclick: async e => {
     e.target.disabled = true;
     try {
       const r = await api(`/accounts/${a.id}/bridge/check`, { method: "POST", body: {} });
-      status.replaceChildren(...["imap", "smtp"].map(k => alertBox(r[k] === "ok" ? "good" : "bad", `${k.toUpperCase()}: ${r[k] === "ok" ? "working" : (r[k + "_message"] || r[k])}`)));
-    } catch (er) { status.replaceChildren(alertBox("bad", er.message)); } finally { e.target.disabled = false; }
+      connStatus.replaceChildren(...["imap", "smtp"].map(k => alertBox(r[k] === "ok" ? "good" : "bad", `${k.toUpperCase()}: ${r[k] === "ok" ? "working" : (r[k + "_message"] || r[k])}`)));
+    } catch (er) { connStatus.replaceChildren(alertBox("bad", er.message)); } finally { e.target.disabled = false; }
   } });
-  const syncBtn = h("button", { class: "btn small primary", type: "button", text: "Sync now", onclick: e => syncNow(a, ai, e.target, status) });
-  const remove = h("button", { class: "btn danger", type: "button", text: `Remove ${a.display_name}`, onclick: e => confirmThen(e.target, `Remove ${a.display_name} and its saved summaries? Your mail stays with your email service.`, async () => {
-    try { await api(`/accounts/${a.id}`, { method: "DELETE" }); toast("Mailbox removed"); mailboxesPage(me); } catch (er) { toast(er.message); }
+  const syncBtn = h("button", { class: "btn primary", type: "button", text: "Sync now", onclick: e => syncNow(a, ai, e.target, connStatus) });
+  const remove = h("button", { class: "btn danger full", type: "button", text: `Remove ${a.display_name}`, onclick: e => confirmThen(e.target, `Remove ${a.display_name} and its saved summaries? Your mail stays with your email service.`, async () => {
+    try { await api(`/accounts/${a.id}`, { method: "DELETE" }); toast("Mailbox removed"); app._drill = null; mailboxesPage(me); } catch (er) { toast(er.message); }
   }) });
   const detail = a.auth_method === "proton_bridge" ? `Proton Bridge at ${a.server}:${a.port}` : a.auth_method === "imap" ? `${a.provider} (app password)` : a.provider || "Connected";
-  show(...chrome(me, "mailboxes",
-    h("button", { class: "linkback", type: "button", text: "‹ Mailboxes", onclick: () => mailboxesPage(me) }),
-    h("div", { class: "mbtitle" }, logo, h("div", {}, title, h("div", { class: "meta", text: a.email_address })), h("span", { class: st.bad ? "mbchip amber" : "mbchip", text: st.bad ? "Needs you" : "Working" }),
-      isMail(a) ? h("div", { class: "mbacts" }, syncBtn, checkBtn) : null),
+  const diag = isMail(a) ? { title: "Diagnostics", value: "Show", content: h("section", { class: "section" }, h("p", { class: "hint", text: "Shows what Enveliq holds for this mailbox, for finding out why something looks wrong." }), h("div", {}, h("button", { class: "btn", type: "button", text: "Open diagnostics", onclick: () => mailboxesPage(me, a.id) }))) } : null;
+  show(...chrome(me, "mailboxes", listPage(a.display_name, open => [
     status,
-    h("div", { class: "mbedit" },
-      h("div", { class: "mbcol" },
-        rows.length ? h("section", { class: "section" }, h("h2", {}, "Checking and summaries ", tagA), h("p", { class: "lead", text: "Your choices save as you make them." }), ...rows) : null,
-        h("section", { class: "section" }, h("h2", {}, "Look ", tagB), h("p", { class: "lead", text: "The name and colour you see in your lists." }), nameBox, h("label", { class: "color-pick", for: `col_${a.id}` }, "Label colour ", colorSel))),
-      h("div", { class: "mbcol" },
-        h("section", { class: "section" }, h("h2", { text: "Connection" }), h("p", { class: "lead", text: detail }), st.bad ? alertBox("bad", st.text) : h("p", { class: "hint", text: st.text }),
-          isMail(a) ? more("Diagnostics", h("p", { class: "hint", text: "Shows what Enveliq holds for this mailbox, for finding out why something looks wrong." }), h("button", { class: "btn small", type: "button", text: "Open diagnostics", onclick: () => mailboxesPage(me, a.id) })) : null),
-        h("section", { class: "section mbremove" }, h("h2", { text: "Remove this mailbox" }), h("p", { class: "lead", text: "Enveliq stops checking it and forgets its saved summaries. Your email itself is not touched." }), remove)))));
+    doing.length ? { label: "What Enveliq does", items: doing } : null,
+    { label: "Look", items: [
+      { title: "Name", value: a.display_name, content: h("section", { class: "section" }, h("div", {}, nameBox)) },
+      row({ title: "Colour", right: dots })] },
+    { label: "Connection", items: [
+      { title: "Connection", value: st.bad ? "Needs you" : "Working", content: h("section", { class: "section" }, h("p", { class: "hint", text: detail }), st.bad ? alertBox("bad", st.text) : h("p", { class: "hint", text: st.text }), isMail(a) ? h("div", { class: "row" }, syncBtn, checkBtn) : null, connStatus) },
+      diag] },
+    { label: "", items: [{ title: "Remove this mailbox", danger: true, content: h("section", { class: "section" }, h("p", { class: "hint", text: "Enveliq stops checking it and forgets its saved summaries. Your email itself is not touched." }), remove) }] },
+  ], { sub: a.email_address, back: { title: "Mailboxes", go: () => { app._drill = null; mailboxesPage(me); } } })));
 }
 // What Enveliq holds for one mailbox, with the same actions as the inbox. For finding out why something looks wrong.
 async function diagnosticsPage(me, account, back) {
@@ -2311,10 +2690,8 @@ async function diagnosticsPage(me, account, back) {
     items.replaceChildren(...(msgs.length ? msgs.map(m => messageRow(account, m, refresh, status)) : [h("p", { class: "hint", text: "Nothing waiting. Press Sync now on the Mailboxes page to fetch unread mail." })]));
   };
   refresh().catch(er => items.replaceChildren(alertBox("bad", er.message)));
-  show(...chrome(me, "mailboxes",
-    h("div", { class: "row" }, h("button", { class: "btn small", type: "button", text: "← Back to mailboxes", onclick: back })),
-    h("h1", { text: `Diagnostics: ${account.display_name}` }),
-    h("section", { class: "section" }, h("p", { class: "lead", text: `${account.email_address}. These are the unread emails Enveliq holds for this mailbox right now. Your inbox shows the same list.` }), status, items)));
+  show(...chrome(me, "mailboxes", listPage("Diagnostics", () => [h("div", { class: "grp-wrap" }, h("section", { class: "section" }, status, items))],
+    { sub: account.email_address, help: "These are the unread emails Enveliq holds for this mailbox right now. Your inbox shows the same list.", back: { title: account.display_name, go: back } })));
 }
 function messageRow(account, m, refresh, status) {
   const panel = h("div", { class: "panel-open" });
@@ -2363,4 +2740,66 @@ if (!window.ENVELIQ_EMBED) {
   if (!["/login", "/setup", "/unlock", "/terms", "/privacy", "/security", "/welcome", "/app-signin"].includes(location.pathname) && !new URLSearchParams(location.search).has("enroll")) sendWatcher();
 }
 
-if (window.ENVELIQ_EMBED) window.EnveliqEmbed = { setMount, api, profilePage, mailboxesPage, accountPage, welcomePage, adminPage, generalPage, aiInstructionsPage, addressBookPage, importantPage, savedPage, mutedPage, awayPage, rulesPage, remindersPage, syncPage };
+
+// ---------- Email alerts: which new emails send a message ----------
+async function mailAlertsPage(me) {
+  const [ov, accounts] = await Promise.all([api("/me/notifications"), api("/accounts")]);
+  const s = { mail_on: false, mail_filter: "all", mail_muted_accounts: [], ...ov.settings };
+  const save = async changes => {
+    Object.assign(s, changes);
+    try { await api("/me/notifications/settings", { method: "PUT", body: changes }); toast("Saved"); }
+    catch (e) { toast(e.message || "Could not save that"); }
+  };
+  const modes = [["all", "All new emails", "Every new email in a mailbox with alerts on."], ["important", "Important people only", "People you added to Important people."], ["action", "Needs action only", "Emails that look like they need you."]];
+  const tick = icon("m5 12 5 5 9-10", 18, "tick");
+  const modeRows = modes.map(([v, t, sub]) => {
+    const b = h("button", { class: "li pick", type: "button", "aria-pressed": String(s.mail_filter === v) }, h("span", { class: "lb" }, h("b", { text: t }), h("small", { text: sub })), tick.cloneNode(true));
+    b.addEventListener("click", () => { for (const o of modeRows) o.setAttribute("aria-pressed", String(o === b)); save({ mail_filter: v }); });
+    return b;
+  });
+  const out = [
+    grp("", swRow("Tell me about new emails", s.mail_on, on => save({ mail_on: on }), { help: "Uses the places you turned on under Notifications. Quiet hours still apply." })),
+    grp("Which emails", modeRows),
+  ];
+  if (accounts.length) out.push(grp("Mailboxes", accounts.map(a => swRow(a.display_name || a.email_address || "Mailbox", !s.mail_muted_accounts.includes(a.id), on => {
+    const muted = new Set(s.mail_muted_accounts); on ? muted.delete(a.id) : muted.add(a.id);
+    save({ mail_muted_accounts: [...muted] });
+  }, { sub: a.email_address }))));
+  show(listPage("Email alerts", () => out, { help: "Choose which new emails send an alert. Switch a mailbox off to stop its alerts without disconnecting it or hiding its mail." }));
+}
+
+// ---------- Security and privacy ----------
+async function vaultSecurityPage(me) {
+  let st = {}, sys = {};
+  try { st = await api("/status"); } catch {}
+  try { sys = (await api("/system")) || {}; } catch {}
+  const promise = (t, sub) => h("div", { class: "li" }, icon("m5 12 5 5 9-10", 18, "tick on"), h("span", { class: "lb" }, h("b", { text: t }), h("small", { text: sub })));
+  const note = t => h("p", { class: "pg-note", text: t });
+  const lockBtn = h("button", { class: "li center danger", type: "button", onclick: async () => {
+    try { await api("/lock", { method: "POST", body: {} }); location.href = "/unlock"; } catch (e) { toast(e.message || "Could not lock Enveliq"); }
+  } }, h("span", { class: "lb" }, h("b", { text: "Lock Enveliq now" })));
+  show(listPage("Security and privacy", () => [
+    { label: "The vault", help: "Everything Enveliq keeps is encrypted. The key is never written to disk.", items: [
+      row({ title: "Vault", value: st.unlocked ? "Unlocked" : st.initialized ? "Locked" : "Not set up" }),
+      row({ title: "Data encryption", value: sys.cipher || "AES-256-GCM" }),
+      row({ title: "Passphrase protection", value: sys.kdf || "Argon2id" })] },
+    { label: "Learn more", items: [
+      { title: "How your mail is handled", ic: LI.mail, color: "blue", content: [
+        note("Attachments are opened in a sealed worker that keeps them in memory only, then throws the bytes away. Nothing is written to disk."),
+        note("PDF pages become safe pictures. Images are re-drawn. Text is escaped. Web pages, programs and archives are never shown directly."),
+        note("A name, type, size and AI summary stay with the review item and go when it is Reviewed, Archived, Binned or expires. The original stays only in your own mail account."),
+        note("Email text is treated as untrusted. It cannot give the AI tools or permissions, and only structured results are kept.")] },
+      { title: "What Enveliq promises", ic: LI.shield, color: "purple", content: h("div", { class: "grp" },
+        promise("No raw email bodies kept", "Only structured results are saved."),
+        promise("No raw attachments kept", "They are handled in memory and previews expire."),
+        promise("Secrets never come back to the page", "Passwords, tokens and keys can only be written."),
+        promise("Administrators do not read your mail", "Running Enveliq is separate from opening a mailbox."),
+        promise("Email is treated as hostile text", "The AI gets no tools, files, network or secrets."),
+        promise("Logs hold no secrets or message text", "Request bodies are never logged.")) }] },
+    { label: "", items: [{ title: "Lock Enveliq", ic: LI.lock, color: "red", content: [
+      note("Normally there is nothing to do here. Locking signs everyone out until an administrator unlocks Enveliq again."),
+      h("div", { class: "grp" }, lockBtn)] }] },
+  ], { sub: sys.version ? "Enveliq version " + sys.version : null }));
+}
+
+if (window.ENVELIQ_EMBED) window.EnveliqEmbed = { setMount, api, profilePage, mailboxesPage, accountPage, welcomePage, adminPage, generalPage, aiInstructionsPage, addressBookPage, landingPage, shortcutsPage, importantPage, savedPage, mutedPage, awayPage, rulesPage, remindersPage, syncPage, mailAlertsPage, vaultSecurityPage };
