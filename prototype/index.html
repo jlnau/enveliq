@@ -493,17 +493,22 @@ body:has(#cmTray:not([hidden])) .toast{bottom:62px;z-index:46}
 .dg-row .dg-sub{display:block;font-size:13px;opacity:.75}
 .dg-row .dg-dot{width:9px;height:9px;border-radius:50%;background:var(--c-1f5fc4);flex:none}.dg-row.read .dg-dot{visibility:hidden}
 .dg-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60}.dg-scrim.show{display:block}
-#digestView.open{display:flex;flex-direction:column;overflow:hidden}#digestView .compose-body{flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start}#digestView .compose-head,#digestView .compose-foot{flex:none}.dg-when{font-size:12px;opacity:.7;margin-left:8px;white-space:nowrap}#digestView{z-index:61}@media(min-width:761px){#digestView{width:min(720px,94vw)}}
+#digestView.open{display:flex;flex-direction:column;overflow:hidden}#digestView .compose-body{flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start}#digestView .compose-head,#digestView .compose-foot{flex:none}.dg-when{font-size:12px;opacity:.7;margin-left:auto;padding-left:12px;white-space:nowrap;flex:none}#digestView{z-index:61}@media(min-width:761px){#digestView{width:min(720px,94vw)}}
 @media(max-width:760px){#digestView.open{display:flex;flex-direction:column;overflow:hidden}#digestView .compose-body{flex:1 1 auto;min-height:0;overflow-y:auto}#digestView .compose-head,#digestView .compose-foot{flex:none}#digestView .compose-foot{padding-bottom:calc(12px + env(safe-area-inset-bottom))}#digestView .compose-head{flex-wrap:wrap}}
 #digestView button,#digestView a.dg-open{min-height:44px}
 .dg-note{font-size:13px;opacity:.8;margin:0 0 10px}
 .dg-sec{margin:14px 0 6px;font-size:13px;font-weight:700;letter-spacing:.02em}
 .dg-item{border:1px solid var(--c-293241);border-radius:10px;padding:10px 12px;margin:0 0 8px}
-.dg-from{font-size:13px;opacity:.8}.dg-subj{font-weight:600;margin:2px 0}.dg-item p{margin:4px 0 8px;line-height:1.5}
+.dg-from{display:flex;align-items:baseline;justify-content:space-between;gap:16px;font-size:13px;opacity:.8}.dg-from .dg-who{min-width:0;overflow:hidden;text-overflow:ellipsis}.dg-subj{font-weight:600;margin:2px 0}.dg-clip{display:inline-flex;vertical-align:-2px;margin-left:6px;opacity:.75}.dg-item p{margin:4px 0 8px;line-height:1.5}
 .dg-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .dg-acts .dg-ic{display:inline-flex;align-items:center;justify-content:center;width:44px;min-height:44px;padding:0;border:1px solid var(--c-343b4b);border-radius:10px;background:transparent;color:inherit;cursor:pointer}
 .dg-acts .dg-ic svg{width:20px;height:20px}.dg-acts .dg-ic:hover{border-color:var(--c-1f5fc4)}.dg-acts .dg-ic[disabled]{opacity:.5}
-a.dg-open{display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--c-343b4b);border-radius:10px;color:inherit;text-decoration:none;margin-left:auto}
+.dg-acts .dg-ic.ok{background:var(--c-122219);border-color:var(--c-315644)}.dg-acts .dg-ic.arch{background:var(--c-0c1626);border-color:var(--c-1f3f75)}.dg-acts .dg-ic.bin{background:var(--c-2d1a20);border-color:var(--c-58343b)}.dg-acts .dg-ic.up{border-color:var(--c-1f5fc4);color:var(--c-d4ecff)}
+.dg-more{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.dg-acts .dg-txt,a.dg-open{display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--c-343b4b);border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:14px;text-decoration:none;cursor:pointer}
+.dg-acts .dg-txt:hover,a.dg-open:hover{border-color:var(--c-1f5fc4)}.dg-acts .dg-txt[disabled]{opacity:.5}
+#dgAtt{width:min(480px,94vw);z-index:62}#dgAtt .compose-body{display:grid;gap:8px}#dgAtt .dg-pick{display:flex;justify-content:space-between;gap:12px;align-items:center;width:100%;min-height:44px;padding:8px 12px;border:1px solid var(--c-343b4b);border-radius:10px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}#dgAtt .dg-pick:hover{border-color:var(--c-1f5fc4)}#dgAtt .dg-pick small{opacity:.7;white-space:nowrap}#dgAtt .dg-pick b{min-width:0;overflow-wrap:anywhere}
+#dgAtt button{min-height:44px}
 #whCheck,#sendWarn{width:min(520px,94vw);z-index:61}
 #sendWarn .compose-body p{margin:0;line-height:1.5}
 .wh-scrim{z-index:60}
@@ -2121,6 +2126,11 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
   <div class="compose-head"><div><h3 id="dgTitle" tabindex="-1">Your daily summary</h3><p id="dgSub"></p></div><button class="primary" id="dgDoneTop" type="button">Done with summary</button></div>
   <div class="compose-body" id="dgBody"></div>
   <div class="compose-foot"><button class="btn" id="dgClose" type="button">Close</button><button class="primary" id="dgDone" type="button">Done with summary</button></div>
+</div>
+<div class="compose" id="dgAtt" role="dialog" aria-modal="true" aria-labelledby="dgAttTitle">
+  <div class="compose-head"><div><h3 id="dgAttTitle">Which attachment?</h3><p>Pick the one you want to open.</p></div></div>
+  <div class="compose-body" id="dgAttList"></div>
+  <div class="compose-foot"><span></span><button class="btn" id="dgAttClose" type="button">Close</button></div>
 </div>
 <div class="compose" id="sendWarn" role="dialog" aria-modal="true" aria-labelledby="sendWarnTitle">
   <div class="compose-head"><div><h3 id="sendWarnTitle">Before you send</h3><p>A quick check. Nothing has been sent.</p></div></div>
@@ -7048,7 +7058,8 @@ async function whLoad(){
 // The summary is simply the list of held email, so it is always up to date. Reviewed, Archive and Bin are the normal actions.
 var dgState={enabled:false,count:0,unread:false,items:[]};
 const DG_OK=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,DG_ARCH=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg>`,DG_BIN=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>`;
-const ICON_BACK=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v13"/><path d="m6 12 6 6 6-6"/><path d="M5 21h14"/></svg>`;
+const DG_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5l-7.6 7.6a5 5 0 0 1-7-7l8-8a3.4 3.4 0 0 1 4.8 4.8l-8 8a1.8 1.8 0 0 1-2.5-2.5L14 7.2"/></svg>`;
+const ICON_BACK=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V7"/><path d="m6 12 6-6 6 6"/><path d="M5 3h14"/></svg>`;
 function isHeld(m){return m.status==="inbox"&&!!m.held&&!!(dgState&&dgState.enabled)}
 function isAside(m){return isSnoozed(m)||isHeld(m)}
 async function dgLoad(){
@@ -7068,8 +7079,10 @@ function dgPaint(){
 function dgItem(i){
   const box=whEl("div","dg-item");
   const when=i.received_at?new Date(i.received_at*1000).toLocaleString([],{weekday:"short",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"}):"";
-  const from=whEl("div","dg-from",i.sender||"Unknown sender");if(when)from.append(whEl("span","dg-when",when));
-  box.append(from,whEl("div","dg-subj",i.subject||"(no subject)"),whEl("p",null,i.summary||""));
+  const from=whEl("div","dg-from");from.append(whEl("span","dg-who",i.sender||"Unknown sender"));if(when)from.append(whEl("span","dg-when",when));
+  const subj=whEl("div","dg-subj",i.subject||"(no subject)");
+  if(i.attachments>0){const c=whEl("span","dg-clip");c.innerHTML=DG_CLIP;c.title=i.attachments===1?"Has an attachment":`Has ${i.attachments} attachments`;c.setAttribute("role","img");c.setAttribute("aria-label",c.title);subj.append(c)}
+  box.append(from,subj,whEl("p",null,i.summary||""));
   const acts=whEl("div","dg-acts");
   const ic=(label,svg,fn)=>{const b=whEl("button","dg-ic");b.type="button";b.title=label;b.setAttribute("aria-label",label);b.innerHTML=svg;b.onclick=async()=>{acts.querySelectorAll("button").forEach(x=>x.disabled=true);try{await fn()}finally{acts.querySelectorAll("button").forEach(x=>x.disabled=false)}};return b};
   const mailOf=()=>data.find(x=>x.real&&x.real.accountId===i.account_id&&x.real.messageId===i.message_id);
@@ -7079,15 +7092,57 @@ function dgItem(i){
     else{try{await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(i.account_id)}/messages/${encodeURIComponent(i.message_id)}/resolve`,{method:"POST",body:JSON.stringify({outcome:resolveOutcome(status)})})}catch(er){toast(er.message,6000);return}}
     await dgRefresh();render();
   };
-  acts.append(ic("Mark reviewed",DG_OK,act("reviewed")),ic("Archive",DG_ARCH,act("archived")),ic("Bin",DG_BIN,act("trashed")),
-    ic("Send back to the inbox",ICON_BACK,async()=>{
+  const tint=(b,c)=>{b.classList.add(c);return b};
+  acts.append(tint(ic("Mark reviewed",DG_OK,act("reviewed")),"ok"),tint(ic("Archive",DG_ARCH,act("archived")),"arch"),tint(ic("Bin",DG_BIN,act("trashed")),"bin"),
+    tint(ic("Send back to the inbox",ICON_BACK,async()=>{
       try{await secureBackendRequest("/api/v1/me/held-summary/remove",{method:"POST",body:JSON.stringify({account_id:i.account_id,message_id:i.message_id})})}catch(er){toast(er.message,6000);return}
       const m=mailOf();if(m)m.held=false;await dgRefresh();render();toast("Back in your inbox");
-    }));
+    }),"up"));
+  const more=whEl("div","dg-more");
+  const txt=(label,fn)=>{const b=whEl("button","dg-txt",label);b.type="button";b.onclick=async()=>{b.disabled=true;try{await fn()}finally{b.disabled=false}};return b};
+  more.append(txt("Show full email",()=>dgFull(i,mailOf())));
+  if(i.attachments>0)more.append(txt(i.attachments===1?"Show attachment":"Show attachments",()=>dgFiles(i)));
   const a=whEl("a","dg-open","Open");a.href="/?open="+encodeURIComponent(i.account_id+":"+i.message_id).replace(/%3A/gi,":");a.title="Open this email in Enveliq";
   a.onclick=ev=>{ev.preventDefault();dgClose();openFromLink(a.href,false,false)};
-  acts.append(a);box.append(acts);return box;
+  more.append(a);acts.append(more);box.append(acts);return box;
 }
+// Show full email: the original, fetched from the mailbox now (not stored), in the same viewer as everywhere else.
+async function dgFull(i,m){
+  const base=`/api/v1/accounts/${encodeURIComponent(i.account_id)}/messages/${encodeURIComponent(i.message_id)}`;
+  if(m){dgClose();openRealEmail(m);return}
+  toast("Fetching the email from your mailbox…");
+  try{
+    const o=await secureBackendRequest(base+"/original",{method:"GET",headers:{}});
+    dgClose();
+    presentOriginal(o,{title:i.subject||"(no subject)",context:i.sender||"",attach:base+"/attachments",htmlUrl:base+"/original/html",fallbackDate:""});
+  }catch(er){toast(er.message,6000)}
+}
+// Show attachment(s): one file opens at once, several ask which one.
+const dgPick={base:"",list:[]};
+function dgOpenFile(a){
+  dgAttHide();dgClose();
+  const pics=dgPick.list.filter(x=>x.previewable);
+  if(a.previewable)openPic(dgPick.base,pics,Math.max(0,pics.indexOf(a)));
+  else if(a.viewable)openDoc(dgPick.base,a);
+  else saveAttachment(dgPick.base,a);
+}
+function dgAttHide(){$("dgAtt").classList.remove("open")}
+async function dgFiles(i){
+  if(!feat.media){toast("Attachment previews are switched off. An administrator can turn them on under Administration, Features.",6000);return}
+  const base=`/api/v1/accounts/${encodeURIComponent(i.account_id)}/messages/${encodeURIComponent(i.message_id)}`;
+  let o;try{o=await secureBackendRequest(base+"/original",{method:"GET",headers:{}})}catch(er){toast(er.message,6000);return}
+  const list=(o.attachments||[]).filter(a=>!a.inline);
+  if(!list.length){toast("No attachments could be found on that email.");return}
+  dgPick.base=base+"/attachments";dgPick.list=o.attachments||[];
+  if(list.length===1){dgOpenFile(list[0]);return}
+  $("dgAttList").replaceChildren(...list.map(a=>{
+    const b=whEl("button","dg-pick");b.type="button";
+    b.append(whEl("b",null,a.filename||"attachment"),whEl("small",null,kb(a.size_bytes)));
+    b.onclick=()=>dgOpenFile(a);return b;
+  }));
+  $("dgAtt").classList.add("open");$("dgAttTitle").focus?.();
+}
+$("dgAttClose").onclick=dgAttHide;
 function dgFill(){
   const body=$("dgBody"),items=dgState.items;
   $("dgSub").textContent=`${items.length} email${items.length===1?"":"s"} waiting`;
@@ -7104,7 +7159,7 @@ async function dgOpen(){
   dgFill();$("digestView").classList.add("open");$("dgScrim").classList.add("show");$("dgTitle").focus();
   if(dgState.unread){try{await secureBackendRequest("/api/v1/me/held-summary/seen",{method:"POST",body:"{}"})}catch{}dgState.unread=false;dgPaint()}
 }
-function dgClose(){$("digestView").classList.remove("open");$("dgScrim").classList.remove("show")}
+function dgClose(){$("digestView").classList.remove("open");$("dgScrim").classList.remove("show");dgAttHide()}
 $("dgScrim").onclick=()=>dgClose();
 $("dgClose").onclick=dgClose;
 async function dgDone(){

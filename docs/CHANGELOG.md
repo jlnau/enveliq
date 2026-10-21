@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Daily summary: clearer rows and a way to read the whole email.** In the daily summary box, the button that sends an email back to the inbox is now an up arrow, the same as the Android app. Reviewed, Archive and Bin and the up arrow now have colours, like the same buttons elsewhere. Each email has **Show full email**, which opens the original, and, when it has files, a paperclip and **Show attachment** (or **Show attachments**): one file opens at once, and several show a short list to pick from. The day and time sit at the far right of the row, away from the sender's name. Touches `prototype/index.html`, `backend/mail/digest.py` (each item now says how many files the email has), `docs/AI_SUMMARIES.md`, `docs/INBOX.md`, `tests/test_daily_digest.py`, `scripts/check_daily_summary.mjs`.
+
 No changes recorded yet.
 
 ## v0.102 (2026-10-21)
