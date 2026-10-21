@@ -125,6 +125,7 @@ const subjects = (page) => page.evaluate(() => [...document.querySelectorAll("ar
   await page.waitForSelector("#digestView.open");
   await page.click("#dgDone");
   await page.waitForFunction(() => !document.getElementById("digestView").classList.contains("open"));
+  await page.waitForFunction(() => document.body.innerText.includes("Sale"));
   const after = (await subjects(page)).join("\n");
   check("Done with summary puts everything still in it back in the inbox, and it is at the top as well as the bottom", server.calls.some((c) => c[0] === "complete") && after.includes("newsletter") && after.includes("Sale") && (await page.locator(".dg-row").count()) === 0);
   await context.close();

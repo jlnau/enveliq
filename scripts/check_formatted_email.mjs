@@ -149,9 +149,11 @@ for (const [width, height] of [[1200, 900], [390, 800]]) {
   await page.locator("#cmTray .cm-chip-x").first().click(); await page.locator("#cmTray .cm-chip-x").first().click();
   await page.evaluate(() => openComposer(data.find((m) => m.real).id, "reply"));
   await page.waitForSelector("#compose.open");
+  await page.waitForTimeout(300);                 // the window puts the cursor in the box a moment after it opens
   await page.locator("#composeText").fill("Thanks");
   await page.locator("#composeText").press("Control+A");
   await page.locator('#compose [data-rte="italic"]').click();
+  await page.waitForFunction(() => /<(i|em)>/.test(document.getElementById("composeText").innerHTML));
   await page.locator("#composeSend").click();
   await page.waitForFunction(() => !document.getElementById("compose").classList.contains("open"));
   check(tag + "a reply carries its formatted copy", replies.length === 1 && /<(i|em)>Thanks<\/(i|em)>/.test(replies[0].html || "") && replies[0].body === "Thanks");
