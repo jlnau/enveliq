@@ -24,9 +24,12 @@ New email, Reply, Reply all and Forward all use the same writing box on the web.
 - **Bullet list, numbered list, less and more indent** and **quote**.
 - **Add a link** (also Ctrl+K): choose words, press the link button and type an address such as example.com. Only web and email addresses are accepted.
 - **Add a picture**, or **paste** one (a screenshot, say) or **drop** one onto the box. PNG, JPEG, GIF and WebP work, up to 12 pictures. Big photos are made smaller before they are added.
+- **Resize a picture:** press it and drag a corner; it keeps its shape. The size you choose is the size it is sent at.
 - **Clear formatting** takes the styling off the chosen words.
 
 **Why every email is sent with formatting.** Other email programs do the same: an email goes out as a formatted copy together with a plain-text copy of the same words. The person reading sees whichever suits their program; a program that cannot show formatting shows the plain-text copy, with a link's address written after its words. You do not choose or see any of this. Pictures travel inside the email, so the reader sees them without anything being fetched from the internet.
+
+**Top and bottom stay put.** In a writing window the title bar (with minimise and close) and the buttons at the bottom (Attach, Cancel, Send) stay fixed; only the middle scrolls when the email is long.
 
 **Send and its arrow.** **Send** has a small arrow beside it. The arrow opens **Send later** and, when Quick AI Send is on, **Quick AI Send**. (They used to be separate buttons.)
 

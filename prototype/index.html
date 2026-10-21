@@ -433,6 +433,15 @@ body:has(#cmTray:not([hidden])) .toast{bottom:62px;z-index:46}
 .cm-chip-x{background:transparent;border:0;color:var(--muted);padding:0 12px;min-height:40px;cursor:pointer;font-size:16px;white-space:nowrap}
 .cm-chip-x.armed{color:var(--c-ecd7a7);font-size:12px}
 @media(max-width:760px){.cm-tray{left:0;right:0;max-width:none;gap:6px;padding:0 8px}.cm-chip{flex:1 1 140px;width:auto;min-width:0}.cm-chip-open,.cm-chip-x{min-height:48px}}
+@media(min-width:761px){
+#compose.open,#newMail.open{display:flex;flex-direction:column;overflow:hidden}
+#compose.open>.compose-head,#newMail.open>.compose-head,#compose.open>.compose-foot,#newMail.open>.compose-foot{flex:none}
+#compose.open>.compose-body,#newMail.open>.compose-body{flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start}
+}
+.rte-handles{position:absolute;border:2px solid var(--c-5b8def,#5b8def);pointer-events:none;z-index:3;box-sizing:border-box}.rte-handles[hidden]{display:none}
+.rte-h{position:absolute;width:14px;height:14px;background:#fff;border:2px solid var(--c-5b8def,#5b8def);border-radius:3px;pointer-events:auto;touch-action:none;box-sizing:border-box}
+.rte-h.nw{left:-8px;top:-8px;cursor:nwse-resize}.rte-h.se{right:-8px;bottom:-8px;cursor:nwse-resize}.rte-h.ne{right:-8px;top:-8px;cursor:nesw-resize}.rte-h.sw{left:-8px;bottom:-8px;cursor:nesw-resize}
+@media(max-width:760px){.rte-h{width:22px;height:22px}.rte-h.nw{left:-12px;top:-12px}.rte-h.se{right:-12px;bottom:-12px}.rte-h.ne{right:-12px;top:-12px}.rte-h.sw{left:-12px;bottom:-12px}}
 .rte{border:1px solid var(--c-303746);border-radius:9px;background:var(--c-0f131a);position:relative}
 .rte:focus-within{border-color:var(--c-5b8def,#5b8def)}
 .rte-bar{display:flex;flex-wrap:wrap;align-items:center;gap:2px;padding:4px 6px;border-bottom:1px solid var(--c-303746);position:sticky;top:0;z-index:2;background:var(--c-0f131a);border-radius:9px 9px 0 0}
@@ -4601,7 +4610,7 @@ function rteSan(src,opts){
       if(!RTE_TAGS.has(t)||depth>60){walk(c,into,depth+1);continue}
       if(t==="IMG"){
         const s=c.getAttribute("src")||"";
-        if(opts.images&&RTE_PIC.test(s)){const i=document.createElement("img");i.setAttribute("src",s);i.setAttribute("alt",(c.getAttribute("alt")||"Picture").slice(0,200));into.append(i)}
+        if(opts.images&&RTE_PIC.test(s)){const i=document.createElement("img");i.setAttribute("src",s);i.setAttribute("alt",(c.getAttribute("alt")||"Picture").slice(0,200));const pw=parseInt(c.getAttribute("width")||c.style.width,10);if(pw>=20&&pw<=4000)i.setAttribute("width",String(pw));into.append(i)}
         continue;
       }
       const e=document.createElement(t.toLowerCase());
@@ -4783,6 +4792,28 @@ function rich(ed,tag){
   ed.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.altKey&&e.key.toLowerCase()==="k"){e.preventDefault();keep();showLink()}});
   ed.addEventListener("input",empty);
   ed.addEventListener("blur",()=>keep());
+  // A picture can be made bigger or smaller by its corners; its shape stays the same.
+  const hb=document.createElement("div");hb.className="rte-handles";hb.hidden=true;
+  for(const c of ["nw","ne","sw","se"]){const k=document.createElement("span");k.className="rte-h "+c;k.dataset.c=c;hb.append(k)}
+  wrap.append(hb);
+  let cur=null;
+  const place=()=>{
+    if(!cur||!cur.isConnected){hb.hidden=true;cur=null;return}
+    const r=cur.getBoundingClientRect(),w=wrap.getBoundingClientRect();
+    hb.style.left=(r.left-w.left)+"px";hb.style.top=(r.top-w.top)+"px";hb.style.width=r.width+"px";hb.style.height=r.height+"px";
+  };
+  const pick=img=>{cur=img;hb.hidden=!img;if(img)place()};
+  ed.addEventListener("click",e=>pick(e.target&&e.target.tagName==="IMG"&&ed.contentEditable==="true"?e.target:null));
+  ed.addEventListener("keydown",()=>{if(cur)pick(null)});
+  document.addEventListener("scroll",place,true);addEventListener("resize",place);
+  hb.addEventListener("pointerdown",e=>{
+    const k=e.target.closest&&e.target.closest(".rte-h");if(!k||!cur)return;
+    e.preventDefault();k.setPointerCapture(e.pointerId);
+    const x0=e.clientX,w0=cur.getBoundingClientRect().width,sign=k.dataset.c.endsWith("e")?1:-1,max=Math.max(40,ed.clientWidth-20);
+    const mv=ev=>{const w=Math.max(30,Math.min(max,Math.round(w0+sign*(ev.clientX-x0))));cur.setAttribute("width",String(w));cur.removeAttribute("height");place()};
+    const up=()=>{k.removeEventListener("pointermove",mv);k.removeEventListener("pointerup",up);k.removeEventListener("pointercancel",up);ed.dispatchEvent(new Event("input",{bubbles:true}))};
+    k.addEventListener("pointermove",mv);k.addEventListener("pointerup",up);k.addEventListener("pointercancel",up);
+  });
   // The same few properties a text box has.
   const setPlain=v=>{
     const lines=String(v==null?"":v).replace(/\r\n/g,"\n").split("\n"),nodes=[];

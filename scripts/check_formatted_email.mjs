@@ -91,6 +91,15 @@ for (const [width, height] of [[1200, 900], [390, 800]]) {
   await pastePicture(page, "#nmText");
   await page.waitForSelector("#nmText img");
   check(tag + "a pasted picture appears in the message", (await page.locator("#nmText img").count()) === 1);
+  // Resize a picture by its corner; the shape stays the same.
+  await page.locator("#nmText img").click();
+  check(tag + "pressing a picture shows corner handles", await page.locator("#newMail .rte-handles").isVisible() && (await page.locator("#newMail .rte-h").count()) === 4);
+  const w0 = await page.locator("#nmText img").evaluate((e) => e.getBoundingClientRect().width), r0 = await page.locator("#nmText img").evaluate((e) => e.getBoundingClientRect().height / e.getBoundingClientRect().width);
+  const hb = await page.locator("#newMail .rte-h.se").boundingBox();
+  await page.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2); await page.mouse.down(); await page.mouse.move(hb.x + hb.width / 2 + 40, hb.y + hb.height / 2 + 5, { steps: 4 }); await page.mouse.up();
+  const w1 = await page.locator("#nmText img").evaluate((e) => e.getBoundingClientRect().width), r1 = await page.locator("#nmText img").evaluate((e) => e.getBoundingClientRect().height / e.getBoundingClientRect().width);
+  check(tag + "dragging a corner makes the picture bigger and keeps its shape", w1 > w0 + 30 && Math.abs(r1 - r0) < 0.03);
+  check(tag + "the new size goes with the email", (await page.evaluate(() => document.getElementById("nmText").rteOut().html)).includes('width="' + Math.round(w1) + '"'));
   const text = await page.evaluate(() => document.getElementById("nmText").value);
   check(tag + "the plain-text copy has the words, the bullet and the link address", text.includes("Hello Dana") && text.includes("- First point") && text.includes("https://example.com"));
   await shot(page, "formatted-" + width);
@@ -102,6 +111,13 @@ for (const [width, height] of [[1200, 900], [390, 800]]) {
     return box.innerHTML;
   });
   check(tag + "scripts, frames, remote pictures, event handlers and unsafe links are left out", !/script|iframe|onclick|tracker|javascript:/i.test(clean) && clean.includes('href="https://ok.example.com/a"'));
+  // The top bar and the bottom buttons stay put; the middle scrolls (on a phone the whole window is the screen).
+  await page.locator("#nmText").evaluate((e) => { e.rteAppend("\n".repeat(60) + "end of a long email"); });
+  const geo = await page.evaluate(() => { const d = document.getElementById("newMail").getBoundingClientRect(), f = document.getElementById("nmForm"), hd = d && document.querySelector("#newMail .compose-head").getBoundingClientRect(), ft = document.querySelector("#newMail .compose-foot").getBoundingClientRect(); return { dTop: d.top, dBottom: d.bottom, hTop: hd.top, fBottom: ft.bottom, scrolls: f.scrollHeight > f.clientHeight, vh: innerHeight }; });
+  if (width > 760) check(tag + "a long email scrolls in the middle while the top bar and the Send row stay in view", geo.scrolls && geo.fBottom <= geo.vh && geo.hTop >= 0);
+  else check(tag + "on a phone the Send row is still reachable with a long email", await page.locator("#nmSend").isVisible());
+  await shot(page, "long-" + width);
+  await page.locator("#nmText").evaluate((e) => { e.rteLoad(e.rteOut().html, e.rteOut().images); e.focus(); });
   // The split Send button
   check(tag + "the menu is closed until the arrow is pressed", await page.locator("#nmMenu").isHidden());
   await page.locator("#nmMore").click();
