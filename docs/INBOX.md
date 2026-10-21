@@ -10,7 +10,7 @@ The Tag, Task, Reply and other email actions have a fine oval outline so they ar
 
 The action row under an email ends, at the far right on a computer and on a phone, with a **three-dot button**. It opens a menu with Reply, Reply all, Forward and Snooze (these stay in the row too), and also: **Important person**, **Always archive these**, **Send to Junk**, **Block sender** (it sends this email to Junk and makes sure new email from them goes there too; undo it in Settings, Mail rules), **Mute conversation** (see [Mute](MUTE.md)), **Print email** and **Save as PDF**. On a phone the same menu slides up from the bottom. Escape closes it and the arrow keys move through it. The same three-dot button is in the open original email. The Android app already had these actions behind its three dots; it now has **Mute conversation** there too.
 
-**Print email** and **Save as PDF** open the email on its own, as the sender made it when it has formatting, and then your browser's print window. Choose a printer to print, or choose **Save as PDF** as the destination to keep a PDF with the original formatting. Enveliq does not make or keep a PDF itself, and the email is still only fetched from your mailbox while you look at it.
+**Print email** and **Save as PDF** open the email on its own, as the sender made it when it has formatting, and then your browser's print window. Your email stays open while you print: Enveliq prints a hidden copy of it. Choose a printer to print, or choose **Save as PDF** as the destination to keep a PDF with the original formatting. Enveliq does not make or keep a PDF itself, and the email is still only fetched from your mailbox while you look at it.
 
 ## Mark unread
 
@@ -19,6 +19,10 @@ A Reviewed email (the ones kept for a few days) has a **Mark unread** button, an
 ## Conversation View
 
 **Customise, Conversations, Conversation View** (off by default) groups emails of the same conversation, among the emails in the list you are looking at, under the newest one. A line such as "3 emails in this conversation" shows the others when you press **Show**. Grouping uses the emails' own reply markers, and nothing about reviewing changes: each email keeps its own buttons, and Reviewed, Archive and Bin still act on that one email. Select all, keyboard moves and the counts work as before, and the Focus deck always shows one email at a time. The choice is saved for your own account and applies on all your devices.
+
+## Back while writing, on a phone
+
+With a new email, reply or forward open, the phone's Back button asks whether to keep it as a draft. Pressing Back a second time saves it as a draft and closes it. If nothing was written, Back simply closes it.
 
 ## Opening the menu on a phone
 

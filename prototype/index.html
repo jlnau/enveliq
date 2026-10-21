@@ -105,7 +105,8 @@ html[data-theme="light"] .back-inbox{background:rgba(255,255,255,.82);border-col
 .qkv{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:8px 0;border-bottom:1px solid var(--c-232a36)}.qkv:last-of-type{border-bottom:0}.qkv span:first-child{color:var(--faint)}.qkv span:last-child{text-align:right;overflow-wrap:anywhere}
 .qbtns{display:flex;flex-direction:column;gap:8px;margin-top:8px}.qbtns .two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.qbtns .action{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 12px;font-size:14px;width:100%}.qbtns .action.reviewed{background:var(--c-122219);border-color:var(--c-315644)}
 .qfoot{display:flex;align-items:center;justify-content:space-between;margin-top:18px;gap:12px}.qfoot .qleft{flex:1;min-width:0}.conv-bar{padding:0 16px 8px 52px;margin-top:-4px}.conv-bar .linkbtn{font-size:13px}.conv-kids{margin:0 0 6px 18px;padding-left:10px;border-left:2px solid var(--line)}.qmore{flex:none;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;width:40px;min-width:40px;height:40px;padding:0;border-radius:999px}.actions .qmore{margin-left:auto}.modal-actions .qmore{margin-left:auto}.more-menu{padding:6px}.more-menu button[role=menuitem]{display:flex;width:100%;align-items:center;border:0;background:transparent;color:var(--text);padding:10px 12px;border-radius:8px;font:inherit;font-size:14px;text-align:left;min-height:44px}.more-menu button[role=menuitem]:hover,.more-menu button[role=menuitem]:focus-visible{background:var(--panel2)}.more-menu hr{border:0;border-top:1px solid var(--line);margin:4px 6px}
-@media print{body.printing-email>*:not(#attachmentModal){display:none!important}body.printing-email,body.printing-email html{background:#fff!important;overflow:visible!important}body.printing-email #attachmentModal{display:block!important;position:static!important;transform:none!important;width:auto!important;height:auto!important;border:0!important;box-shadow:none!important;background:#fff!important;overflow:visible!important}body.printing-email .attachment-viewer{overflow:visible!important;height:auto!important;padding:0!important;background:#fff!important;display:block!important}body.printing-email #attachmentViewerControls,body.printing-email #viewerStrip,body.printing-email .attachment-modal-foot,body.printing-email .attachment-modal-close,body.printing-email .fmt-tabs,body.printing-email .fmt-wait,body.printing-email .link-ask,body.printing-email .mail-notice{display:none!important}body.printing-email .attachment-modal-head{background:#fff!important;color:#000!important}body.printing-email .email-doc{background:#fff!important;color:#000!important;box-shadow:none!important;max-width:none!important}body.printing-email .email-frame{border:0!important}}
+#printDoc{position:absolute;left:-10000px;top:0;width:800px;background:#fff;color:#000;padding:0}
+@media print{body.printing-email>*:not(#printDoc){display:none!important}body.printing-email{background:#fff!important;overflow:visible!important}body.printing-email #printDoc{position:static!important;width:auto!important;background:#fff!important;color:#000!important}#printDoc .email-head{margin:0 0 14px}#printDoc .email-frame{border:0;width:100%}}
 .subtle{border:0;background:transparent;color:var(--muted);font-size:14px;font-weight:500;padding:8px 10px;margin-left:-10px;border-radius:8px;display:inline-flex;align-items:center;gap:8px}.subtle:hover{background:var(--panel2);color:var(--text)}
 /* Email controls: draw the approved thin oval within each existing button box.
    Inset outlines change no measurements, padding, gaps or touch targets. */
@@ -490,6 +491,8 @@ body:has(#cmTray:not([hidden])) .toast{bottom:62px;z-index:46}
 .dg-row .dg-main{flex:1;min-width:0}.dg-row .dg-title{display:block;font-weight:600}.dg-row.read .dg-title{font-weight:400}
 .dg-row .dg-sub{display:block;font-size:13px;opacity:.75}
 .dg-row .dg-dot{width:9px;height:9px;border-radius:50%;background:var(--c-1f5fc4);flex:none}.dg-row.read .dg-dot{visibility:hidden}
+.dg-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60}.dg-scrim.show{display:block}
+#digestView.open{display:flex;flex-direction:column;overflow:hidden}#digestView .compose-body{flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start}#digestView .compose-head,#digestView .compose-foot{flex:none}.dg-when{font-size:12px;opacity:.7;margin-left:8px;white-space:nowrap}.dg-acts .dg-back{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:1px solid var(--c-343b4b);border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:14px;cursor:pointer}.dg-acts .dg-back:hover{border-color:var(--c-1f5fc4)}.dg-acts .dg-back svg{width:18px;height:18px}
 #digestView{z-index:61}@media(min-width:761px){#digestView{width:min(720px,94vw)}}
 @media(max-width:760px){#digestView.open{display:flex;flex-direction:column;overflow:hidden}#digestView .compose-body{flex:1 1 auto;min-height:0;overflow-y:auto}#digestView .compose-head,#digestView .compose-foot{flex:none}#digestView .compose-foot{padding-bottom:calc(12px + env(safe-area-inset-bottom))}#digestView .compose-head{flex-wrap:wrap}}
 #digestView button,#digestView a.dg-open{min-height:44px}
@@ -2197,6 +2200,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
   </div>
   <div class="compose-foot"><span></span><div class="modal-actions"><button class="btn" id="whCheckNo" type="button">Go back</button><button class="primary" id="whCheckYes" type="button">Yes, send it</button></div></div>
 </div>
+<div class="dg-scrim" id="dgScrim"></div>
 <div class="compose" id="digestView" role="dialog" aria-modal="true" aria-labelledby="dgTitle">
   <div class="compose-head"><div><h3 id="dgTitle" tabindex="-1">Your daily summary</h3><p id="dgSub"></p></div><button class="primary" id="dgDoneTop" type="button">Done with summary</button></div>
   <div class="compose-body" id="dgBody"></div>
@@ -4613,16 +4617,29 @@ document.addEventListener("keydown",e=>{
 window.addEventListener("resize",()=>closeMoreMenu());
 document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("#moreMenu"))setTimeout(()=>closeMoreMenu(),0)});
 // Print email / Save as PDF: both show the original email on its own and open the browser's print window. In that window, "Save as PDF" keeps the sender's own look.
-function printEmail(m){
-  const go=()=>{
-    document.body.classList.add("printing-email");
-    const done=()=>{document.body.classList.remove("printing-email");removeEventListener("afterprint",done)};
-    addEventListener("afterprint",done);setTimeout(()=>{try{window.print()}catch{done()}},80);
-  };
-  if($("attachmentModal").classList.contains("open")&&currentViewerMessageId===m.id){go();return}
-  Promise.resolve(openEmailViewer(m.id)).then(()=>{
-    const t0=Date.now(),tick=()=>{const w=document.querySelector("#attachmentViewer .fmt-wait");if(!w||w.hidden||Date.now()-t0>6500)setTimeout(go,150);else setTimeout(tick,120)};tick();
-  });
+async function printEmail(m){
+  const doc=document.createElement("div");doc.id="printDoc";
+  const head=rows=>{const dl=document.createElement("dl");dl.className="email-head";for(const [k,v] of rows){if(!v)continue;const dt=document.createElement("dt"),dd=document.createElement("dd");dt.textContent=k;dd.textContent=v;dl.append(dt,dd)}return dl};
+  let frame=null;
+  try{
+    if(m.real){
+      const base=`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}`;
+      toast("Getting the email ready to print…",3000);
+      const o=await secureBackendRequest(base+"/original",{method:"GET",headers:{}});
+      doc.append(head([["From",`${o.from.name?o.from.name+" ":""}<${o.from.address}>`],["To",(o.to||[]).map(t=>t.address).join(", ")],["Date",o.date||m.date||m.time],["Subject",o.subject||m.subject]]));
+      if(o.has_html){frame=document.createElement("iframe");frame.className="email-frame";frame.title="The email";frame.setAttribute("sandbox","allow-scripts");frame.setAttribute("referrerpolicy","no-referrer");frame.src=base+"/original/html";doc.append(frame)}
+      else{const pre=document.createElement("pre");pre.className="email-text";pre.textContent=o.text||"(no text content)";doc.append(pre)}
+    }else{
+      doc.append(head([["From",`${m.sender} <${m.address}>`],["Date",m.date||m.time],["Subject",m.subject]]));
+      for(const par of m.body||[]){const p=document.createElement("p");p.textContent=par;doc.append(p)}
+    }
+  }catch(er){toast(er.message||"Could not get the email to print.",6000);return}
+  document.body.append(doc);
+  if(frame){const t0=Date.now();await new Promise(res=>{const tick=()=>{if(frame.style.height||Date.now()-t0>6500)res();else setTimeout(tick,120)};tick()});await new Promise(r=>setTimeout(r,150))}
+  document.body.classList.add("printing-email");
+  const done=()=>{document.body.classList.remove("printing-email");doc.remove();removeEventListener("afterprint",done)};
+  addEventListener("afterprint",done);
+  setTimeout(()=>{try{window.print()}catch{done()}},80);
 }
 async function muteConversation(m){
   try{await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/mute`,{method:"POST",body:"{}"})}
@@ -5067,7 +5084,7 @@ function openComposer(id,mode,pre){
   closeAttachmentViewer();
   cmCount();
   composing.base=composeSnap();composing.saved=null;{const n=$("cmAuto");n.hidden=true;n.textContent=""}
-  $("compose").classList.add("open");$("composeScrim").classList.add("show");
+  $("compose").classList.add("open");$("composeScrim").classList.add("show");writePush();
   if(mode==="forward"){
     setTimeout(()=>f.to.input.focus(),0);
     const mine=composing;
@@ -5097,7 +5114,7 @@ async function quoteInline(){
   }catch(e){if(composing===mine){btn.disabled=false;toast("Could not get the original email. Try again.")}}
 }
 function closeComposer(){
-  $("compose").classList.remove("open");$("composeScrim").classList.remove("show");composing=null;
+  $("compose").classList.remove("open");$("composeScrim").classList.remove("show");composing=null;writePop();
 }
 let sendingReply=false,whPassed=false,quickOverride=null,quickBusy=false;
 function sendReply(){
@@ -5173,8 +5190,20 @@ function readerHistorySync(){
   if(want&&!readerHistory){try{history.pushState({enveliqReader:1},"");readerHistory=true}catch{}}
   else if(!want&&readerHistory){readerHistory=false;try{if(history.state&&history.state.enveliqReader)history.back()}catch{}}
 }
+// A new email, reply or forward on a phone: Back asks whether to keep it as a draft; Back again saves it as a draft.
+let writeHistory=false,writeIgnore=false;
+function writePush(){if(!phoneQuery.matches||writeHistory)return;try{history.pushState({enveliqWrite:1},"");writeHistory=true}catch{}}
+function writePop(){if(!writeHistory)return;writeHistory=false;if(history.state&&history.state.enveliqWrite){writeIgnore=true;try{history.back()}catch{writeIgnore=false}}}
+function writeOpen(){return $("newMail").classList.contains("open")?"nm":$("compose").classList.contains("open")?"cm":""}
+function writeBack(){
+  const which=writeOpen();
+  if(!which){writeHistory=false;return}
+  if($("dkAsk").classList.contains("open")){writeHistory=false;dkDone("save");return}       // the second Back: save it as a draft
+  try{history.pushState({enveliqWrite:1},"");writeHistory=true}catch{}                       // keep a step for the second Back
+  if(which==="nm")requestCloseNewMail();else requestCloseComposer();                           // the first Back: ask (or just close if nothing was written)
+}
 // (Back from a window opened over an email lands on the email's own step: nothing to close.)
-window.addEventListener("popstate",()=>{if(mobileMenuHistory){mobileMenuHistory=false;setMenu(false,true);return}if(viewerHistory){viewerHistory=false;closeAttachmentViewer(true);return}if(readerHistory){if(history.state&&history.state.enveliqReader){if(notificationReturn)restoreNotificationOrigin();return}readerHistory=false;readerOpen=false;if(!restoreNotificationOrigin())render();return}if(notificationReturn&&!readerOpen){restoreNotificationOrigin();return}if(stateReady&&(location.hash||"")!==wantedHash())applyHashNav()});   // only when the address names a different section than the one showing
+window.addEventListener("popstate",()=>{if(writeIgnore){writeIgnore=false;return}if(writeHistory){writeHistory=false;writeBack();return}if(mobileMenuHistory){mobileMenuHistory=false;setMenu(false,true);return}if(viewerHistory){viewerHistory=false;closeAttachmentViewer(true);return}if(readerHistory){if(history.state&&history.state.enveliqReader){if(notificationReturn)restoreNotificationOrigin();return}readerHistory=false;readerOpen=false;if(!restoreNotificationOrigin())render();return}if(notificationReturn&&!readerOpen){restoreNotificationOrigin();return}if(stateReady&&(location.hash||"")!==wantedHash())applyHashNav()});   // only when the address names a different section than the one showing
 function closeAttachmentViewer(fromBack){
   if(!document.getElementById("attachmentModal"))return;
   setTimeout(()=>{if(typeof findBack==="function")findBack()},0);
@@ -7204,7 +7233,7 @@ async function whLoad(){
 // The summary is simply the list of held email, so it is always up to date. Reviewed, Archive and Bin are the normal actions.
 var dgState={enabled:false,count:0,unread:false,items:[]};
 const DG_OK=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,DG_ARCH=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg>`,DG_BIN=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>`;
-const ICON_BACK=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7 4 12l5 5"/><path d="M4 12h11a5 5 0 0 1 5 5v1"/></svg>`;
+const ICON_BACK=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h5l1.5 3h5L16 13h5"/><path d="M5.5 6.5 3 13v5a1.5 1.5 0 0 0 1.5 1.5h15A1.5 1.5 0 0 0 21 18v-5l-2.5-6.5z"/></svg>`;
 function isHeld(m){return m.status==="inbox"&&!!m.held&&!!(dgState&&dgState.enabled)}
 function isAside(m){return isSnoozed(m)||isHeld(m)}
 async function dgLoad(){
@@ -7223,9 +7252,11 @@ function dgPaint(){
 }
 function dgItem(i){
   const box=whEl("div","dg-item");
-  box.append(whEl("div","dg-from",i.sender||"Unknown sender"),whEl("div","dg-subj",i.subject||"(no subject)"),whEl("p",null,i.summary||""));
+  const when=i.received_at?new Date(i.received_at*1000).toLocaleString([],{weekday:"short",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"}):"";
+  const from=whEl("div","dg-from",i.sender||"Unknown sender");if(when)from.append(whEl("span","dg-when",when));
+  box.append(from,whEl("div","dg-subj",i.subject||"(no subject)"),whEl("p",null,i.summary||""));
   const acts=whEl("div","dg-acts");
-  const ic=(label,svg,fn)=>{const b=whEl("button","dg-ic");b.type="button";b.title=label;b.setAttribute("aria-label",label);b.innerHTML=svg;b.onclick=async()=>{acts.querySelectorAll("button").forEach(x=>x.disabled=true);try{await fn()}finally{acts.querySelectorAll("button").forEach(x=>x.disabled=false)}};return b};
+  const ic=(label,svg,fn)=>{const b=whEl("button",svg.includes("<span>")?"dg-back":"dg-ic");b.type="button";b.title=label;b.setAttribute("aria-label",label);b.innerHTML=svg;b.onclick=async()=>{acts.querySelectorAll("button").forEach(x=>x.disabled=true);try{await fn()}finally{acts.querySelectorAll("button").forEach(x=>x.disabled=false)}};return b};
   const mailOf=()=>data.find(x=>x.real&&x.real.accountId===i.account_id&&x.real.messageId===i.message_id);
   const act=status=>async()=>{
     const m=mailOf();
@@ -7234,7 +7265,7 @@ function dgItem(i){
     await dgRefresh();render();
   };
   acts.append(ic("Mark reviewed",DG_OK,act("reviewed")),ic("Archive",DG_ARCH,act("archived")),ic("Bin",DG_BIN,act("trashed")),
-    ic("Take out of the summary and put back in my inbox",ICON_BACK,async()=>{
+    ic("Take out of the summary and put back in my inbox",ICON_BACK+"<span>Back to inbox</span>",async()=>{
       try{await secureBackendRequest("/api/v1/me/held-summary/remove",{method:"POST",body:JSON.stringify({account_id:i.account_id,message_id:i.message_id})})}catch(er){toast(er.message,6000);return}
       const m=mailOf();if(m)m.held=false;await dgRefresh();render();toast("Back in your inbox");
     }));
@@ -7255,10 +7286,11 @@ async function dgRefresh(){await dgLoad();dgPaint();if($("digestView").classList
 async function dgOpen(){
   await dgLoad();dgPaint();
   if(!dgState.enabled||!dgState.count){toast("Nothing is waiting in your summary.");return}
-  dgFill();$("digestView").classList.add("open");$("dgTitle").focus();
+  dgFill();$("digestView").classList.add("open");$("dgScrim").classList.add("show");$("dgTitle").focus();
   if(dgState.unread){try{await secureBackendRequest("/api/v1/me/held-summary/seen",{method:"POST",body:"{}"})}catch{}dgState.unread=false;dgPaint()}
 }
-function dgClose(){$("digestView").classList.remove("open")}
+function dgClose(){$("digestView").classList.remove("open");$("dgScrim").classList.remove("show")}
+$("dgScrim").onclick=()=>dgClose();
 $("dgClose").onclick=dgClose;
 async function dgDone(){
   try{const r=await secureBackendRequest("/api/v1/me/held-summary/complete",{method:"POST",body:"{}"});
@@ -7642,11 +7674,11 @@ function openNewMail(pre){
   nm.base=nmSnap();nm.saved=null;{const n=$("nmAuto");n.hidden=true;n.textContent=""}
   const n=realPrefs.undo_send_seconds||0;
   $("nmHint").textContent=n>0?`Held for ${n} ${n===1?"second":"seconds"} so you can undo`:"Sent as soon as you press Send";
-  $("newMail").classList.add("open");$("nmScrim").classList.add("show");
+  $("newMail").classList.add("open");$("nmScrim").classList.add("show");writePush();
   setTimeout(()=>f.to.input.focus(),0);
 }
 function closeNewMail(){
-  $("newMail").classList.remove("open");$("nmScrim").classList.remove("show");nm.files=[];nm.armed=false;nmWarned=false;nm.draftId=null;
+  $("newMail").classList.remove("open");$("nmScrim").classList.remove("show");nm.files=[];nm.armed=false;nmWarned=false;nm.draftId=null;writePop();
 }
 $("cmAttach").onclick=()=>$("cmFile").click();
 $("cmFile").addEventListener("change",async e=>{

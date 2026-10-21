@@ -4,6 +4,12 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Daily summary fixes.** The box keeps its top bar and bottom bar in place and only the middle scrolls (computer and phone). Each email shows the day and time it arrived. The button that takes an email out of the summary is now a clear **Back to inbox** button (it was a reply arrow). Clicking outside the box closes it. Touches `prototype/index.html`, `backend/mail/digest.py`, `scripts/check_daily_summary.mjs`.
+
+**Print email and Save as PDF keep your email open.** They print a hidden copy of the email instead of opening it over the one you are reading. Touches `prototype/index.html`, `scripts/check_more_menu.mjs`.
+
+**Phone Back button while writing.** With a new email, reply or forward open on a phone, Back asks whether to keep it as a draft, and Back again saves it as a draft. With nothing written, Back just closes it. Touches `prototype/index.html`, `scripts/check_more_menu.mjs`.
+
 **Pick any date and time (web and Android).** Snooze and Send later now have **Pick date and time**, for any day and time from a minute to a year ahead, in your own time zone (Send later used to stop at 30 days). A time that has passed is refused in plain words. Presets and cancelling work as before. Touches `prototype/index.html`, `backend/mail/scheduled.py`, `android/`, `docs/SNOOZE.md`, `docs/SEND_LATER.md`, `scripts/check_snooze.mjs`, `scripts/check_send_later.mjs`.
 
 **Mute conversation.** In an email's new three-dot menu (and in Android's), **Mute conversation** archives the email and files later replies in Archive without an alert; nothing is deleted. **Settings, Muted conversations** lists them with **Unmute** (web and Android). Works the same for Proton, IMAP and Microsoft mailboxes. Touches `backend/mail/muted.py`, `backend/mail/muted_routes.py`, `backend/mail/service.py`, `backend/app.py`, `backend/export.py`, `prototype/index.html`, `web/static/auth.js`, `android/`, `tests/test_mute_away_signatures.py`, `scripts/check_more_menu.mjs`, `docs/MUTE.md`, `SECURITY.md`.

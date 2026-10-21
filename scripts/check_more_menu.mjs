@@ -40,6 +40,8 @@ const handler = async (route) => {
     posts.push([p.split("/").pop(), p.split("/")[6], JSON.parse(req.postData() || "{}")]);
     return route.fulfill({ status: p.endsWith("/mute") ? 200 : 204, contentType: "application/json", body: p.endsWith("/mute") ? JSON.stringify({ muted: true, id: "q0123456789abcdef" }) : "" });
   }
+  if (p === "/api/v1/me/drafts" && m === "POST") { posts.push(["draft", "", JSON.parse(req.postData() || "{}")]); return json(200, { id: "d0123456789abcdef", items: [] }); }
+  if (p === "/api/v1/me/drafts") return json(200, { items: [] });
   if (/\/original$/.test(p)) return json(200, { from: { name: "Alice", address: "alice@example.invalid" }, to: [{ address: "me@example.invalid" }], date: "Today", subject: "Trip plans", text: "Plain words of the original email.", links: [], has_html: false, remote_images: 0, attachments: [], truncated: false });
   if (p === "/api/v1/me/preferences") return json(200, { keep_reviewed: true, keep_archived: true, keep_days: 7, max_days: 14, instructions: "", undo_send_seconds: 0 });
   if (p === "/api/v1/me/features") return json(200, { effective: features, admin: features, user: features });
@@ -51,7 +53,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 async function open(width, height = 900) {
   messages = make(); posts = []; prints = 0;
   const context = await browser.newContext({ viewport: { width, height } });
-  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-calm", "0"); } catch (e) {} window.print = () => { window.__prints = (window.__prints || 0) + 1; }; });
+  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-calm", "0"); } catch (e) {} window.print = () => { window.__prints = (window.__prints || 0) + 1; window.__printDoc = !!document.getElementById("printDoc") && document.getElementById("printDoc").textContent.includes("Plain words"); setTimeout(() => dispatchEvent(new Event("afterprint")), 50); }; });
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
@@ -84,10 +86,8 @@ for (const width of [1200, 390]) {
   await more.click();
   await menu.locator("[data-print]").click();
   await page.waitForFunction(() => window.__prints >= 1, null, { timeout: 12000 });
-  check(tag + "Print email opens the print window for the original", (await page.evaluate(() => window.__prints)) === 1 && (await page.evaluate(() => document.getElementById("attachmentModal").classList.contains("open"))));
-  await page.evaluate(() => document.getElementById("attachmentModalClose").click());
-  await page.waitForTimeout(200);
-  await page.evaluate(() => document.body.classList.remove("printing-email"));
+  await page.waitForTimeout(300);
+  check(tag + "Print email prints the original and the email you were reading stays open", (await page.evaluate(() => window.__prints)) === 1 && (await page.evaluate(() => window.__printDoc)) && (await page.locator(".qmore").first().isVisible()) && !(await page.evaluate(() => document.getElementById("attachmentModal").classList.contains("open"))) && (await page.locator("#printDoc").count()) === 0 && (await page.evaluate(() => !document.body.classList.contains("printing-email"))));
   await pick(page, "Electricity bill");
   await page.locator(".qmore").first().click();
   await page.locator("#moreMenu [data-mute]").click();
@@ -128,6 +128,26 @@ for (const width of [1200, 390]) {
   await page.locator("#vConv").uncheck();
   await page.waitForTimeout(200);
   check("switching it off puts every email back in its own row", (await page.locator("article.mail").count()) === 3 && (await page.locator(".conv-bar").count()) === 0);
+  check("no page errors", errors.length === 0);
+  await context.close();
+}
+{
+  const { page, errors, context } = await open(390);
+  await page.evaluate(() => openNewMail());
+  await page.waitForTimeout(300);
+  await page.locator("#nmSubject").fill("Plans for Friday");
+  await page.locator("#nmText").fill("Some words.");
+  await page.goBack();
+  await page.waitForSelector("#dkAsk.open");
+  check("phone: Back asks whether to keep the new email as a draft", (await page.locator("#newMail.open").count()) === 1);
+  await page.goBack();
+  await page.waitForFunction(() => !document.getElementById("newMail").classList.contains("open"));
+  check("phone: Back again saves it as a draft and closes it", posts.some((x) => x[0] === "draft" && x[2].subject === "Plans for Friday") && (await page.locator("#dkAsk.open").count()) === 0);
+  await page.evaluate(() => openNewMail());
+  await page.waitForTimeout(300);
+  await page.goBack();
+  await page.waitForFunction(() => !document.getElementById("newMail").classList.contains("open"));
+  check("phone: Back on an empty new email just closes it", (await page.locator("#dkAsk.open").count()) === 0);
   check("no page errors", errors.length === 0);
   await context.close();
 }

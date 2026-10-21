@@ -113,7 +113,7 @@ class DigestBook:
         seen = float(self._raw(user_id).get("seen_at") or 0)
         items = [{"account_id": a["id"], "message_id": m["id"], "sender": _clean(m.get("sender_display") or m.get("sender_address"), 120),
                   "subject": _clean(m.get("subject"), 200) or "(no subject)", "summary": _clean(m.get("summary"), 400),
-                  "category": _clean(m.get("category"), 40) or "Other", "held_at": m.get("held_at") or m.get("received_at") or 0} for a, m in held]
+                  "category": _clean(m.get("category"), 40) or "Other", "held_at": m.get("held_at") or m.get("received_at") or 0, "received_at": m.get("received_at") or 0} for a, m in held]
         return {"enabled": self.enabled(user_id), "count": len(items), "unread": any(float(i["held_at"] or 0) > seen for i in items), "items": items}
 
     def mark_seen(self, user_id: str) -> None:
