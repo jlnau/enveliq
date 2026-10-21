@@ -438,6 +438,10 @@ body:has(#cmTray:not([hidden])) .toast{bottom:62px;z-index:46}
 #compose.open>.compose-head,#newMail.open>.compose-head,#compose.open>.compose-foot,#newMail.open>.compose-foot{flex:none}
 #compose.open>.compose-body,#newMail.open>.compose-body{flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start}
 }
+.rte-card{position:absolute;z-index:4;display:flex;flex-wrap:wrap;gap:6px;align-items:center;max-width:calc(100% - 8px);background:var(--c-11161f);border:1px solid var(--c-343b4b);border-radius:8px;box-shadow:var(--shadow);padding:7px 10px;font-size:13px}.rte-card[hidden]{display:none}
+.rte-card-url{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--c-8ab4f8,#8ab4f8)}
+.rte-card button{background:transparent;border:0;color:var(--c-8ab4f8,#8ab4f8);font:inherit;cursor:pointer;padding:2px 4px}.rte-card-sep{color:var(--faint)}
+@media(max-width:760px){.rte-card button{min-height:40px;padding:0 8px}}
 .rte-handles{position:absolute;border:2px solid var(--c-5b8def,#5b8def);pointer-events:none;z-index:3;box-sizing:border-box}.rte-handles[hidden]{display:none}
 .rte-h{position:absolute;width:14px;height:14px;background:#fff;border:2px solid var(--c-5b8def,#5b8def);border-radius:3px;pointer-events:auto;touch-action:none;box-sizing:border-box}
 .rte-h.nw{left:-8px;top:-8px;cursor:nwse-resize}.rte-h.se{right:-8px;bottom:-8px;cursor:nwse-resize}.rte-h.ne{right:-8px;top:-8px;cursor:nesw-resize}.rte-h.sw{left:-8px;bottom:-8px;cursor:nesw-resize}
@@ -451,7 +455,7 @@ body:has(#cmTray:not([hidden])) .toast{bottom:62px;z-index:46}
 .rte-a{font-weight:700;border-bottom:3px solid #d93025;line-height:1}
 .rte-sep{width:1px;height:20px;background:var(--c-303746);margin:0 4px}
 .rte-pop{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px;border-bottom:1px solid var(--c-303746);background:var(--c-10141b)}.rte-pop[hidden]{display:none}
-.rte-pop.link input{flex:1 1 200px;min-width:0}
+.rte-pop.link input{flex:1 1 100%;min-width:0}
 .rte-sw{width:26px;height:26px;border-radius:50%;border:2px solid var(--c-303746);cursor:pointer;padding:0}
 .rte-msg{flex-basis:100%;color:var(--c-ecd7a7)}
 .compose-body .rte-body{min-height:170px;padding:9px 10px;line-height:1.5;outline:0;white-space:pre-wrap;overflow-wrap:anywhere;border:0;background:transparent;border-radius:0 0 9px 9px;width:auto;display:block}
@@ -4711,7 +4715,7 @@ function rich(ed,tag){
     cmd("formatBlock",n&&n!==ed?"div":"blockquote");
   });
   sep();
-  add("link","Add a link (Ctrl+K)",RTE_ICONS.link,()=>{keep();showLink()});
+  add("link","Add or change a link (Ctrl+K)",RTE_ICONS.link,()=>{keep();showLink()});
   add("photo","Add a picture",RTE_ICONS.photo,()=>{keep();file.click()});
   sep();
   add("clear","Clear formatting","T<small>x</small>",()=>cmd("removeFormat"));
@@ -4737,25 +4741,58 @@ function rich(ed,tag){
     }
     pop.hidden=false;
   };
-  const showLink=()=>{
+  const anchorAt=()=>{const s=sel();if(!s.rangeCount)return null;let n=s.anchorNode;while(n&&n!==ed){if(n.nodeType===1&&n.tagName==="A")return n;n=n.parentNode}return null};
+  // Add or change a link: the words to show and where it goes.
+  const showLink=a=>{
+    a=a||anchorAt();hideCard();
     pop.replaceChildren();pop.className="rte-pop link";
-    const inp=document.createElement("input");inp.type="text";inp.placeholder="Web address, like example.com";inp.setAttribute("aria-label","Web address");inp.autocomplete="off";
-    const ok=document.createElement("button");ok.type="button";ok.className="primary";ok.textContent="Add link";
+    const selText=a?a.textContent:(saved&&!saved.collapsed?saved.toString():"");
+    const mk=(ph,val)=>{const i=document.createElement("input");i.type="text";i.placeholder=ph;i.setAttribute("aria-label",ph);i.autocomplete="off";i.value=val||"";return i};
+    const t=mk("Text to show",selText),u=mk("Web address, like example.com",a?(a.getAttribute("href")||"").replace(/^mailto:/i,""):"");
+    const ok=document.createElement("button");ok.type="button";ok.className="primary";ok.textContent=a?"Apply":"Add link";
     const no=document.createElement("button");no.type="button";no.className="btn";no.textContent="Cancel";
     const msg=document.createElement("small");msg.className="rte-msg";
     const go=()=>{
-      let u=inp.value.trim();
-      if(u&&!/^[a-z][a-z0-9+.-]*:/i.test(u))u=/^[^\s@\/]+@[^\s@\/]+$/.test(u)?"mailto:"+u:"https://"+u;
-      if(!/^(https?:\/\/|mailto:)[^\s"'<>]{3,}$/i.test(u)){msg.textContent="Enter a web address, like example.com";inp.focus();return}
+      let v=u.value.trim();
+      if(v&&!/^[a-z][a-z0-9+.-]*:/i.test(v))v=/^[^\s@\/]+@[^\s@\/]+$/.test(v)?"mailto:"+v:"https://"+v;
+      if(!/^(https?:\/\/|mailto:)[^\s"'<>]{3,}$/i.test(v)){msg.textContent="Enter a web address, like example.com";u.focus();return}
+      const text=t.value.trim()||v.replace(/^mailto:/i,"");
+      if(a&&a.isConnected){
+        a.setAttribute("href",v);if(a.textContent!==text)a.textContent=text;
+        hidePop();ed.dispatchEvent(new Event("input",{bubbles:true}));paint();return;
+      }
       back();
       const r=sel().rangeCount?sel().getRangeAt(0):null;
-      if(r&&!r.collapsed)document.execCommand("createLink",false,u);
-      else{const t=u.replace(/^mailto:/i,"");document.execCommand("insertHTML",false,`<a href="${esc(u)}">${esc(t)}</a>&nbsp;`)}
+      if(r&&!r.collapsed&&text===selText)document.execCommand("createLink",false,v);
+      else document.execCommand("insertHTML",false,`<a href="${esc(v)}">${esc(text)}</a>&nbsp;`);
       hidePop();paint();
     };
     ok.addEventListener("click",go);no.addEventListener("click",()=>{hidePop();back()});
-    inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();go()}else if(e.key==="Escape"){e.preventDefault();e.stopPropagation();hidePop();back()}});
-    pop.append(inp,ok,no,msg);pop.hidden=false;inp.focus();
+    for(const i of [t,u])i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();go()}else if(e.key==="Escape"){e.preventDefault();e.stopPropagation();hidePop();back()}});
+    pop.append(t,u,ok,no,msg);pop.hidden=false;(selText?u:t).focus();
+  };
+  // Pressing a link in the box shows where it goes, with Change and Remove.
+  const card=document.createElement("div");card.className="rte-card";card.hidden=true;wrap.append(card);
+  let cardA=null;
+  const hideCard=()=>{card.hidden=true;cardA=null};
+  const placeCard=()=>{
+    if(!cardA||!cardA.isConnected){hideCard();return}
+    const r=cardA.getBoundingClientRect(),w=wrap.getBoundingClientRect();
+    card.style.top=(r.bottom-w.top+4)+"px";card.style.left=Math.max(4,Math.min(r.left-w.left,w.width-card.offsetWidth-4))+"px";
+  };
+  const showCard=a=>{
+    cardA=a;card.replaceChildren();
+    const href=a.getAttribute("href")||"",go=document.createElement("a");
+    go.href=href;go.target="_blank";go.rel="noopener noreferrer";go.textContent=href.replace(/^mailto:/i,"");go.className="rte-card-url";
+    const mkb=(label,fn)=>{const b=document.createElement("button");b.type="button";b.textContent=label;b.addEventListener("mousedown",e=>e.preventDefault());b.addEventListener("click",fn);return b};
+    const sp=()=>{const s=document.createElement("span");s.className="rte-card-sep";s.textContent="|";return s};
+    const lab=document.createElement("span");lab.textContent="Go to link: ";
+    card.append(lab,go,sp(),mkb("Change",()=>{const t=cardA;hideCard();keep();showLink(t)}),sp(),mkb("Remove",()=>{
+      const t=cardA;hideCard();if(!t)return;
+      const par=t.parentNode;while(t.firstChild)par.insertBefore(t.firstChild,t);t.remove();
+      ed.dispatchEvent(new Event("input",{bubbles:true}));paint();
+    }));
+    card.hidden=false;placeCard();
   };
   const count=()=>ed.querySelectorAll("img").length;
   const bytes=()=>[...ed.querySelectorAll("img")].reduce((n,i)=>n+Math.floor(((i.getAttribute("src")||"").length)*0.75),0);
@@ -4803,9 +4840,15 @@ function rich(ed,tag){
     hb.style.left=(r.left-w.left)+"px";hb.style.top=(r.top-w.top)+"px";hb.style.width=r.width+"px";hb.style.height=r.height+"px";
   };
   const pick=img=>{cur=img;hb.hidden=!img;if(img)place()};
-  ed.addEventListener("click",e=>pick(e.target&&e.target.tagName==="IMG"&&ed.contentEditable==="true"?e.target:null));
-  ed.addEventListener("keydown",()=>{if(cur)pick(null)});
-  document.addEventListener("scroll",place,true);addEventListener("resize",place);
+  ed.addEventListener("click",e=>{
+    const on=ed.contentEditable==="true";
+    pick(on&&e.target&&e.target.tagName==="IMG"?e.target:null);
+    const a=on&&e.target&&e.target.closest?e.target.closest("a"):null;
+    if(a&&ed.contains(a)){pop.hidden=true;showCard(a)}else hideCard();
+  });
+  ed.addEventListener("keydown",()=>{if(cur)pick(null);if(cardA)hideCard()});
+  const replace=()=>{place();placeCard()};
+  document.addEventListener("scroll",replace,true);addEventListener("resize",replace);
   hb.addEventListener("pointerdown",e=>{
     const k=e.target.closest&&e.target.closest(".rte-h");if(!k||!cur)return;
     e.preventDefault();k.setPointerCapture(e.pointerId);

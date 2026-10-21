@@ -22,7 +22,7 @@
 New email, Reply, Reply all and Forward all use the same writing box on the web. Above the words is a small toolbar:
 - **Bold, italic, underline, strikethrough** and **text colour** (a few plain colours).
 - **Bullet list, numbered list, less and more indent** and **quote**.
-- **Add a link** (also Ctrl+K): choose words, press the link button and type an address such as example.com. Only web and email addresses are accepted.
+- **Add a link** (also Ctrl+K): the box asks for the **text to show** (filled in from any words you chose) and the **web address** (for example example.com; only web and email addresses are accepted). Press a link in the box to see where it goes, with **Change** (edit the text and address) and **Remove** (keeps the words, takes the link off).
 - **Add a picture**, or **paste** one (a screenshot, say) or **drop** one onto the box. PNG, JPEG, GIF and WebP work, up to 12 pictures. Big photos are made smaller before they are added.
 - **Resize a picture:** press it and drag a corner; it keeps its shape. The size you choose is the size it is sent at.
 - **Clear formatting** takes the styling off the chosen words.

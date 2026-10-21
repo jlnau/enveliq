@@ -80,9 +80,29 @@ for (const [width, height] of [[1200, 900], [390, 800]]) {
   await page.locator("#newMail .rte-sw").nth(1).click();
   check(tag + "a colour can be chosen", /color:\s*(rgb\(217, 48, 37\)|#d93025)/i.test(await page.locator("#nmText").innerHTML()));
   await bar("link").click();
-  await page.locator("#newMail .rte-pop.link input").fill("example.com");
-  await page.locator("#newMail .rte-pop.link input").press("Enter");
+  check(tag + "the link box has the words to show (filled in from the chosen words) and the address", (await page.locator("#newMail .rte-pop.link input").count()) === 2 && (await page.locator("#newMail .rte-pop.link input").first().inputValue()) === "Hello Dana");
+  await page.locator("#newMail .rte-pop.link input").nth(1).fill("example.com");
+  await page.locator("#newMail .rte-pop.link input").nth(1).press("Enter");
   check(tag + "a link is added to the chosen words with https in front", (await page.locator('#nmText a[href="https://example.com"]').count()) === 1);
+  await page.locator('#nmText a').click();
+  check(tag + "pressing a link shows where it goes with Change and Remove", await page.locator("#newMail .rte-card").isVisible() && (await page.locator("#newMail .rte-card").innerText()).includes("example.com") && (await page.locator("#newMail .rte-card button").allInnerTexts()).join() === "Change,Remove");
+  await shot(page, "link-card-" + width);
+  await page.locator("#newMail .rte-card button", { hasText: "Change" }).click();
+  await shot(page, "link-edit-" + width);
+  await page.locator("#newMail .rte-pop.link input").first().fill("Our plans");
+  await page.locator("#newMail .rte-pop.link input").nth(1).fill("example.org/plans");
+  await page.locator("#newMail .rte-pop.link input").nth(1).press("Enter");
+  check(tag + "Change updates the words and the address", (await page.locator('#nmText a[href="https://example.org/plans"]').innerText()) === "Our plans");
+  await page.locator('#nmText a').click();
+  await page.locator("#newMail .rte-card button", { hasText: "Remove" }).click();
+  check(tag + "Remove takes the link off and keeps the words", (await page.locator("#nmText a").count()) === 0 && (await page.evaluate(() => document.getElementById("nmText").value)).includes("Our plans"));
+  await page.locator("#nmText").press("Control+End");
+  await page.keyboard.type(" see ");
+  await bar("link").click();
+  await page.locator("#newMail .rte-pop.link input").first().fill("the site");
+  await page.locator("#newMail .rte-pop.link input").nth(1).fill("https://example.com");
+  await page.locator("#newMail .rte-pop.link input").nth(1).press("Enter");
+  check(tag + "a link can be added with its own words and address, with nothing chosen first", (await page.locator('#nmText a[href="https://example.com"]').innerText()) === "the site");
   await page.locator("#nmText").press("Control+End");
   await page.locator("#nmText").press("Enter");
   await bar("ul").click();
@@ -101,7 +121,7 @@ for (const [width, height] of [[1200, 900], [390, 800]]) {
   check(tag + "dragging a corner makes the picture bigger and keeps its shape", w1 > w0 + 30 && Math.abs(r1 - r0) < 0.03);
   check(tag + "the new size goes with the email", (await page.evaluate(() => document.getElementById("nmText").rteOut().html)).includes('width="' + Math.round(w1) + '"'));
   const text = await page.evaluate(() => document.getElementById("nmText").value);
-  check(tag + "the plain-text copy has the words, the bullet and the link address", text.includes("Hello Dana") && text.includes("- First point") && text.includes("https://example.com"));
+  check(tag + "the plain-text copy has the words, the bullet and the link address", text.includes("Our plans") && text.includes("- First point") && text.includes("https://example.com"));
   await shot(page, "formatted-" + width);
   // Safety: nothing but plain formatting comes out, whatever was pasted or typed in.
   const clean = await page.evaluate(() => {
@@ -130,7 +150,7 @@ for (const [width, height] of [[1200, 900], [390, 800]]) {
   await page.waitForFunction(() => !document.getElementById("newMail").classList.contains("open"));
   const s = sent[0] || {};
   if (process.env.DEBUG) console.log(JSON.stringify({ ...s, images: (s.images || []).map((i) => i.cid) }));
-  check(tag + "the email goes out with its formatted copy, plain text and the picture", sent.length === 1 && /<(b|strong)[ >]/.test(s.html || "") && (s.html || "").includes('href="https://example.com"') && /<ul>.*<li>/.test(s.html || "") && s.body.includes("Hello Dana") && Array.isArray(s.images) && s.images.length === 1);
+  check(tag + "the email goes out with its formatted copy, plain text and the picture", sent.length === 1 && /<(b|strong)[ >]/.test(s.html || "") && (s.html || "").includes('href="https://example.com"') && /<ul>.*<li>/.test(s.html || "") && s.body.includes("Our plans") && Array.isArray(s.images) && s.images.length === 1);
   check(tag + "the picture is sent as its own part and named in the text, never as a web address", s.images[0].type === "image/png" && /^[A-Za-z0-9+/=]+$/.test(s.images[0].data) && (s.html || "").includes("cid:" + s.images[0].cid) && !/data:image/.test(s.html || ""));
   // Minimise
   await page.evaluate(() => openNewMail());
