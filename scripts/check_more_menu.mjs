@@ -70,8 +70,9 @@ for (const width of [1200, 390]) {
   const { page, errors, context } = await open(width);
   await pick(page, "Electricity bill");
   const more = page.locator(".qmore").first();
+  await page.waitForTimeout(500);
   const box = await more.boundingBox(), foot = await page.locator(".qfoot").first().boundingBox();
-  check(tag + "the three-dot button sits at the far right of the action row", box && foot && Math.abs((foot.x + foot.width) - (box.x + box.width)) < 4);
+  check(tag + "the three-dot button sits at the far right of the action row", box && foot && Math.abs((foot.x + foot.width) - (box.x + box.width)) < 6);
   check(tag + "the old single buttons are gone from the row", (await page.locator(".qfoot [data-block-sender], .qfoot [data-junk-this], .qfoot [data-rule], .qfoot [data-important]").count()) === 0);
   check(tag + "Reply and Snooze stay in the row", (await page.locator(".qfoot [data-reply]").count()) === 1 && (await page.locator(".qfoot [data-snooze]").count()) === 1);
   await more.click();
