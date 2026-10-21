@@ -4630,10 +4630,14 @@ function sendReply(){
     const base=`/api/v1/accounts/${m.real.accountId}/messages/${m.real.messageId}`;
     // A plain reply with nothing changed lets the server use the sender's address exactly as it was received.
     const inlineQuote=hasInlineQuote(text);
-    const plainDefault=!inlineQuote&&mode==="reply"&&!ccList.length&&!bccList.length&&toList.length===1&&toList[0]===plan.to;
+    // The subject is sent only when the person changed it from the usual "Re: ..." / "Fwd: ...".
+    const usualSubject=mode==="forward"?(/^fwd?:/i.test(m.subject)?m.subject:`Fwd: ${m.subject}`):(/^re:/i.test(m.subject)?m.subject:`Re: ${m.subject}`);
+    const ownSubject=$("composeSubject").value.trim();
+    const subjectChange=ownSubject&&ownSubject!==usualSubject?{subject:ownSubject}:{};
+    const plainDefault=!inlineQuote&&mode==="reply"&&!Object.keys(subjectChange).length&&!ccList.length&&!bccList.length&&toList.length===1&&toList[0]===plan.to;
     const req=mode==="forward"
-      ?secureBackendRequest(base+"/forward",{method:"POST",body:JSON.stringify({body:text,from_address:from,to:toList,cc:ccList,bcc:bccList,keep_files:cm.files.map(x=>x.index),files:cmExtra.map(x=>({name:x.name,type:x.type,data:x.data}))})})
-      :secureBackendRequest(base+"/reply",{method:"POST",body:JSON.stringify(plainDefault&&!cmExtra.length?{body:text,from_address:from}:{body:text,from_address:from,kind:mode,to:toList,cc:ccList,bcc:bccList,add_original:!inlineQuote,files:cmExtra.map(x=>({name:x.name,type:x.type,data:x.data}))})});
+      ?secureBackendRequest(base+"/forward",{method:"POST",body:JSON.stringify({body:text,from_address:from,to:toList,cc:ccList,bcc:bccList,keep_files:cm.files.map(x=>x.index),files:cmExtra.map(x=>({name:x.name,type:x.type,data:x.data})),...subjectChange})})
+      :secureBackendRequest(base+"/reply",{method:"POST",body:JSON.stringify(plainDefault&&!cmExtra.length?{body:text,from_address:from}:{body:text,from_address:from,kind:mode,to:toList,cc:ccList,bcc:bccList,add_original:!inlineQuote,files:cmExtra.map(x=>({name:x.name,type:x.type,data:x.data})),...subjectChange})});
     const tgt=composing;
     req.then(async r=>{
         await settleAuto();const did=tgt.draftId;

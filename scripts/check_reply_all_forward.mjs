@@ -150,6 +150,19 @@ await page.click("#composeSend");
 await page.waitForFunction(() => !document.getElementById("compose").classList.contains("open"));
 check("a file taken off the list is not sent", calls.at(-1)[1].keep_files.length === 0);
 
+// The subject can be changed in a forward (and a reply); it is sent only when it was changed.
+check("a subject left as it was is not sent", calls.at(-1)[1].subject === undefined);
+await page.waitForTimeout(300);
+await expand(ccRow);
+await ccRow.locator("[data-forward]").first().click();
+await page.waitForSelector("#cmFiles .nm-file");
+await page.fill("#composeSubject", "Fyi, the plan");
+await page.fill("#cmTo input", "mum@example.invalid");
+await page.locator("#cmTo input").press("Enter");
+await page.click("#composeSend");
+await page.waitForFunction(() => !document.getElementById("compose").classList.contains("open"));
+check("a changed subject is sent with the forward", calls.at(-1)[0] === "forward" && calls.at(-1)[1].subject === "Fyi, the plan");
+
 check("no script errors on the page", errors.length === 0);
 await browser.close();
 process.exit(failed ? 1 : 0);

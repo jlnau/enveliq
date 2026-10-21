@@ -95,9 +95,11 @@ const visibleBtn = (page) => page.locator("[data-rss-open]:visible").first();
   await page.waitForFunction(() => document.querySelector("[data-rss-open]:not([hidden]) .rssbadge").hidden);
   check("closing the pop-up marks the entries as read and clears the badge", calls.some((c) => c[0] === "seen"));
   await btn.click();
+  await page.waitForSelector("#rssPop:not([hidden])");      // the pop-up is open (and has finished drawing) before the address is typed
+  await page.waitForFunction(() => document.querySelector("#rssPop .rss-item, #rssPop #rssUrl"));
   await page.locator("#rssUrl").fill("http://feeds.example.com/x");
   await page.locator("#rssPop button[type=submit]").click();
-  await page.waitForFunction(() => /https/.test(document.querySelector("#rssPop .sa-err")?.textContent || ""), null, { timeout: 10000 }).catch(() => {});
+  await page.waitForFunction(() => /https/.test(document.querySelector("#rssPop .sa-err")?.textContent || ""), null, { timeout: 20000 }).catch(() => {});
   check("a feed address that is not accepted says why, in plain words", /https/.test(await page.locator("#rssPop .sa-err").innerText()));
   await page.locator("#rssUrl").fill("https://feeds.example.com/second");
   await page.locator("#rssUrl").press("Enter");

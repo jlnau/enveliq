@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Web: the subject of a reply or forward can be changed.** The Subject box in the reply and forward window was already there but its text was ignored when sending. Now what you type is sent (left as it was, the usual "Re: ..." or "Fwd: ..." is used). Also steadied three browser checks that could fail on a slow machine. Touches `prototype/index.html`, `scripts/check_reply_all_forward.mjs`, `check_inbox_real_mail.mjs`, `check_no_sample_flash.mjs`, `check_rss.mjs`, `docs/INBOX.md`.
+
 **Android: one look for every line of a draft, and an editable subject.** In a new email, reply or forward, **From:**, **To:**, **Cc:**, **Bcc:** and **Subject:** each have their label inside their box, the people you add sit inside the To box (the box grows as you add more), and the message box has "Message" written inside it until you type. The subject of a reply or forward can now be changed (it starts as "Re: ..." or "Fwd: ..."). The server accepts an optional `subject` when sending a reply or forward (also when scheduled); left out or blank it is the usual one. Touches `Compose.kt`, `SpellField.kt`, `Api.kt`, `backend/mail/routes.py`, `service.py`, `scheduled.py`, `scheduled_routes.py`, `tests/test_reply_all_forward.py`, `docs/ANDROID.md`.
 
 **Android: neater address lines.** In a new email, reply or forward, **To**, **Subject** and **From** now sit on one line each with their label, a small person button in each address box picks from the phone's contacts (typing still searches your address list), and a drop-down arrow in the To box shows or hides Cc and Bcc. Touches `Compose.kt`, `docs/ANDROID.md`.

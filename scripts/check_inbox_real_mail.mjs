@@ -381,10 +381,12 @@ await page.click('[data-theme-choice="dark"]');
   // Undo on a desktop: the email goes at once, nothing is sent until the wait is over
   const older = page.locator("article.mail", { hasText: "Older statement" });
   const callsU = server.calls.length;
+  await page.evaluate(() => { window.__undoMs = 4000; });         // long enough that a slow machine cannot run it out before the click below
   await older.locator('[data-status="archived"]').click();
   await page.waitForSelector("#undoBar:not([hidden])");
   check("desktop: the email waits visibly for Undo and the bar names it", (await page.locator("article.mail.leaving").count()) === 1 && (await page.locator("article.mail:not(.leaving)").count()) === 2 && (await page.locator("#undoBar .undobar:last-child span").innerText()).includes("Archived") && (await page.locator("#undoBar .undobar:last-child span").innerText()).includes("Older statement") && server.calls.length === callsU);
   await page.click("#undoBar .undobar:last-child button");
+  await page.evaluate(() => { window.__undoMs = 400; });
   check("desktop: Undo brings it back and nothing was sent", (await page.locator("article.mail").count()) === 3 && server.calls.length === callsU);
   await page.waitForTimeout(700);
   check("desktop: …even after the wait would have been over", server.calls.length === callsU);

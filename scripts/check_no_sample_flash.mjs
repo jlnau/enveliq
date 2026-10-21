@@ -65,11 +65,12 @@ const shown = (page, sel) => page.locator(sel).first().evaluate((el) => {
 // ---- a real server whose answer is slow: only the background (and a calm line) shows, nothing personal or sample does ----
 {
   const page = await open("real", 2500);
+  const noteAtFirst = await shown(page, "#bootNote");       // looked at first, before anything else, so a slow machine cannot let the delay run out
   check("while the server has not said who is signed in, no part of the page is drawn in a wrong place: only the background shows", !(await shown(page, 'button[data-filter="all"]')) && !(await shellVisible(page)));
   check("the sample name Morgan, the sample role and initials cannot be seen", !(await shown(page, "#userName")) && !(await shown(page, "#userRole")) && !(await shown(page, "#avatar")));
   check("no greeting, no counts and no version label show yet", !(await shown(page, ".top-left h2")) && !(await shown(page, ".badge")) && !(await shown(page, "#brandVer")));
   check("no sample emails or notices show", !(await shown(page, "article.mail")) && !(await shown(page, ".sample-banner")));
-  check("a quick load shows no loading line", !(await shown(page, "#bootNote")));
+  check("a quick load shows no loading line", !noteAtFirst);
   await sleep(1000);
   check("if it takes longer, a calm line says the inbox is getting ready", (await shown(page, "#bootNote")) && /Getting your inbox ready/.test(await page.locator("#bootNote").innerText()));
   if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, "starting-up.png") });
