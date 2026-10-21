@@ -97,10 +97,14 @@ const visibleBtn = (page) => page.locator("[data-rss-open]:visible").first();
   await btn.click();
   await page.waitForSelector("#rssPop:not([hidden])");      // the pop-up is open (and has finished drawing) before the address is typed
   await page.waitForFunction(() => document.querySelector("#rssPop .rss-item, #rssPop #rssUrl"));
-  await page.locator("#rssUrl").fill("http://feeds.example.com/x");
-  await page.locator("#rssPop button[type=submit]").click();
-  await page.waitForFunction(() => /https/.test(document.querySelector("#rssPop .sa-err")?.textContent || ""), null, { timeout: 20000 }).catch(() => {});
-  check("a feed address that is not accepted says why, in plain words", /https/.test(await page.locator("#rssPop .sa-err").innerText()));
+  // The earlier "mark as read" answer can arrive late and redraw the pop-up, so on a slow machine the first try can be wiped: try again until the answer shows.
+  for (let attempt = 0; attempt < 4; attempt++) {
+    await page.locator("#rssUrl").fill("http://feeds.example.com/x");
+    await page.locator("#rssPop button[type=submit]").click();
+    const got = await page.waitForFunction(() => /https/.test(document.querySelector("#rssPop .sa-err")?.textContent || ""), null, { timeout: 5000 }).then(() => true).catch(() => false);
+    if (got) break;
+  }
+  check("a feed address that is not accepted says why, in plain words", /https/.test(await page.locator("#rssPop .sa-err").innerText({ timeout: 3000 }).catch(() => "")));
   await page.locator("#rssUrl").fill("https://feeds.example.com/second");
   await page.locator("#rssUrl").press("Enter");
   await page.waitForFunction(() => /Feed added/.test(document.getElementById("toast").textContent));
