@@ -174,10 +174,10 @@ await page.evaluate(() => closeSettings());
   const ready = async () => { await page.waitForFunction(() => document.body.classList.contains("real-mail")); };
   await ready();
   check("New email and Sent are available by default", (await page.locator("#newMailBtn").isVisible()) && (await page.locator("#sentNav").isVisible()));
-  // Sent comes from the mailbox's Sent folder, last 14 days only
+  // Sent comes from the mailbox's Sent folder, last 4 months only
   await page.click("#sentNav");
   await page.waitForSelector(".srow");
-  check("Sent lists the last 14 days and leaves out older mail", (await page.locator(".ssub").allInnerTexts()).join("|") === "Recent sent mail" && (await page.locator("#sentFoot").innerText()) === "Limited to the last 14 days.");
+  check("Sent lists the last 4 months and leaves out older mail", (await page.locator(".ssub").allInnerTexts()).join("|") === "Recent sent mail" && (await page.locator("#sentFoot").innerText()) === "Limited to the last 4 months.");
   await page.locator(".shead").first().click();
   await page.locator(".sbody button").first().click();
   await page.waitForSelector("#attachmentModal.open");

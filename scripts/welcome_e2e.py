@@ -36,11 +36,11 @@ tmp = pathlib.Path(tempfile.mkdtemp())
 bridge = FakeBridge(tmp)
 for uid, subject, sender in ((1, "Quarterly update", "Alice Example <alice@example.invalid>"), (2, "Weekly news", "News <news@example.invalid>"), (3, "Invoice question", "Bob <bob@example.invalid>")):
     bridge.add(uid, raw_email(subject, sender, "me@example.invalid", message_id=f"<m{uid}@example.invalid>", body="Hello.\n"))
-# A Sent folder: one email from yesterday and one from a month ago (only the first may be listed)
+# A Sent folder: one email from yesterday and one from five months ago (only the first may be listed)
 from email.utils import format_datetime
 from datetime import datetime, timedelta, timezone
 bridge.folders.append(("\\HasNoChildren \\Sent", "Sent"))
-for uid, subject, days in ((501, "Recent sent mail", 1), (502, "Old sent mail", 30)):
+for uid, subject, days in ((501, "Recent sent mail", 1), (502, "Old sent mail", 150)):
     when = format_datetime(datetime.now(timezone.utc) - timedelta(days=days))
     bridge.add(uid, f"From: me@example.invalid\r\nTo: Zed <zed@example.invalid>\r\nSubject: {subject}\r\nDate: {when}\r\nMessage-ID: <s{uid}@example.invalid>\r\n\r\nSent body text\r\n".encode(), folder="Sent")
 env = dict(os.environ, ENVELIQ_VAULT_KEY="e2e-vault-key-0123456789abcdef0123456789abcdef", ENVELIQ_DATA_DIR=str(tmp / "data"), ENVELIQ_SETUP_CODE="e2e-setup-code-12345", ENVELIQ_PORT="8797", ENVELIQ_SYNC_MINUTES="0",

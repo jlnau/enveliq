@@ -159,7 +159,7 @@ The window that shows an original email, an attachment, a picture or a PDF now g
 Web addresses in the text of an email can be clicked, but they never open by themselves: you are first asked where it goes (see "Where does this link go?" in the Be careful guide).
 
 ## Getting back to My inbox
-- The Sent page uses the same header as the other pages (Back button, title, then a line saying it shows your last 14 days of sent mail). The page keeps room for its scroll bar, so nothing moves sideways when the emails finish loading.
+- The Sent page uses the same header as the other pages (Back button, title, then a line saying it shows your last 4 months of sent mail). The page keeps room for its scroll bar, so nothing moves sideways when the emails finish loading.
 - On every page other than My inbox (Needs action, Tasks, Shipping, Waiting for reply, Attachments, Reviewed, Archived, Sent and so on), a **Back to My inbox** button sits above the page title. The title now shows the name of the page you are on instead of "My inbox".
 - Needs action, Attachments, Reviewed and Archived show the same **Recent emails** panel with **Options** as My inbox, so the options fold away in the same way everywhere.
 - On **Waiting for reply**, the **Closed** section is folded away until you open it with its arrow, so the page does not look like a long list of open items.

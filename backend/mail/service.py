@@ -657,8 +657,8 @@ class MailService:
 
     # ---------- sent (read-only, live from the mailbox, never kept) ----------
 
-    SENT_DAYS = 14
-    SENT_LIMIT = 100
+    SENT_DAYS = 120            # about four months of sent mail
+    SENT_LIMIT = 300
 
     def sent_list(self, account: dict[str, Any], days: int = SENT_DAYS, limit: int = SENT_LIMIT, with_ids: bool = False) -> dict[str, Any]:
         days = max(1, min(int(days), self.SENT_DAYS))

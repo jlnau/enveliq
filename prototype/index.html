@@ -1813,7 +1813,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
     <div id="sentStatus" class="sent-status" role="status" aria-live="polite"></div>
     <div id="sentWaiting" class="sent-list" hidden></div>
     <div id="sentList" class="sent-list"></div>
-    <p id="sentFoot" class="sent-foot" hidden>Limited to the last 14 days.</p>
+    <p id="sentFoot" class="sent-foot" hidden>Limited to the last 4 months.</p>
   </section>
   <div id="peek" class="peek" role="tooltip" hidden><div class="peek-in" id="peekIn"></div></div>
 </section>
@@ -4310,7 +4310,7 @@ function render(){
   previewSyncMenu();
   $("todayDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"});
   $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(calmOn()?(inbox.length?"One thing at a time. Important deadlines stay visible.":"Nothing waiting. Enjoy the quiet."):inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:(document.body.classList.contains("backend")&&!realMail?"No mailbox is connected yet":"All caught up"));
-  if(filter==="cleanup")$("inboxSubtitle").textContent="Quiet the mailing lists you do not need";if(filter==="junk")$("inboxSubtitle").textContent=junkData.needs_review?`${junkData.needs_review} ${junkData.needs_review===1?"email needs":"emails need"} a look`:"Checked by the AI";if(filter==="found")$("inboxSubtitle").textContent="Emails you found by searching. Each is kept for 60 days, or until you press Reviewed.";if(filter==="sent")$("inboxSubtitle").textContent="Your last 14 days of sent mail";if(filter==="drafts")$("inboxSubtitle").textContent="Emails you started and have not sent";
+  if(filter==="cleanup")$("inboxSubtitle").textContent="Quiet the mailing lists you do not need";if(filter==="junk")$("inboxSubtitle").textContent=junkData.needs_review?`${junkData.needs_review} ${junkData.needs_review===1?"email needs":"emails need"} a look`:"Checked by the AI";if(filter==="found")$("inboxSubtitle").textContent="Emails you found by searching. Each is kept for 60 days, or until you press Reviewed.";if(filter==="sent")$("inboxSubtitle").textContent="Your last 4 months of sent mail";if(filter==="drafts")$("inboxSubtitle").textContent="Emails you started and have not sent";
 
   previewRenderOverview(inbox,needN);dgPaint();
   const rows=data.filter(visible);
@@ -7783,7 +7783,7 @@ async function loadWaiting(){
     }));
   }catch{box.hidden=true}
 }
-// ---- Sent: the last 14 days, read from the mailbox when opened, never stored ----
+// ---- Sent: the last 4 months, read from the mailbox when opened, never stored ----
 let sentAcct="";
 async function loadSent(){
   if(!accounts.length)return;
@@ -7799,9 +7799,9 @@ async function loadSent(){
   try{
     const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/sent`,{method:"GET",headers:{}});
     if(aid!==sentAcct||filter!=="sent")return;
-    status.textContent=r.items.length?"":"Nothing sent in the last 14 days.";
+    status.textContent=r.items.length?"":"Nothing sent in the last 4 months.";
     list.replaceChildren(...r.items.map(it=>sentRow(it,r,aid)));
-    foot.textContent=r.more?"Showing the newest 100. Limited to the last 14 days.":"Limited to the last 14 days.";foot.hidden=false;
+    foot.textContent=r.more?"Showing the newest 300. Limited to the last 4 months.":"Limited to the last 4 months.";foot.hidden=false;
   }catch(er){
     status.textContent="";
     const msg=document.createElement("div");msg.className="sent-note";msg.textContent=er.message+" ";
