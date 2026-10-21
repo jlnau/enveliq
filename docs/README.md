@@ -45,6 +45,7 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 - [Your inbox, day to day](INBOX.md) (the paperclip, ticking several emails, the version number, staying signed in)
 - [Tags](TAGS.md) (the labels from your mail service, shown on emails and changeable from Enveliq)
 - [News feeds](NEWS_FEEDS.md) (follow websites with RSS or Atom; a badge shows what is new)
+- [Clean up](CLEAN_UP.md) (see the mailing lists filling your inbox; unsubscribe, archive by sender, keep)
 - [Junk Mail](JUNK_MAIL.md) (the AI checks your Junk and Spam folders; Not Junk moves an email back to the Inbox)
 - [Trips](TRIPS.md) (flights, stays and hire cars, put together and added to your calendar)
 - [Messages between people](MESSAGES.md)

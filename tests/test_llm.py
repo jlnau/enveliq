@@ -91,7 +91,8 @@ def test_a_good_answer_is_kept_and_the_email_text_goes_only_to_the_model(model):
     m = model()
     result = summariser(m).summarise("Appointment", "Sunny Dental <hello@sunny.example>", "See you Friday at 2:30 PM.")
     assert result == {"summary": GOOD["summary"], "category": "Personal", "priority": "high", "action_required": True,
-                      "suggested_task": {"title": "Arrive 10 minutes early", "due": "Fri 9 Oct", "detail": "Bring the health fund card."}}
+                      "suggested_task": {"title": "Arrive 10 minutes early", "due": "Fri 9 Oct", "detail": "Bring the health fund card."},
+                      "act_today": False, "today_reason": None}
     sent = m.requests[0]
     assert sent["model"] == "test-model" and sent["stream"] is False
     assert "See you Friday at 2:30 PM." in sent["messages"][1]["content"]
@@ -133,7 +134,7 @@ def test_odd_values_are_cleaned_not_trusted():
     assert len(out["summary"]) == 600 and "\x00" not in out["summary"] and "\x1b" not in out["summary"]
     assert out["category"] == "Other" and out["priority"] == "normal" and out["action_required"] is True
     assert len(out["suggested_task"]["title"]) == 120 and out["suggested_task"]["due"] is None and out["suggested_task"]["detail"] is None
-    assert set(out) == {"summary", "category", "priority", "action_required", "suggested_task"}
+    assert set(out) == {"summary", "category", "priority", "action_required", "suggested_task", "act_today", "today_reason"}
 
 
 def test_category_and_priority_are_matched_ignoring_case():

@@ -162,7 +162,7 @@ def test_new_mail_found_by_a_pass_is_announced_but_mail_already_waiting_is_not(e
     assert len(rec.calls) == 1
     uid, new = rec.calls[0]
     assert uid == appm.vault.list_users()[0]["id"] and [m["subject"] for m in new] == ["Brand new"]
-    assert set(new[0]) == {"account_id", "id", "sender_display", "sender_address", "subject", "priority", "action_required"}  # internal filtering metadata; no summary or body
+    assert set(new[0]) == {"account_id", "id", "sender_display", "sender_address", "subject", "priority", "action_required", "act_today"}  # internal filtering metadata; no summary or body
     assert new[0]["account_id"] == aid
     clock.now += 5 * 60 + 1
     sync.run_once()

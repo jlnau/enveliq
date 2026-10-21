@@ -1335,6 +1335,7 @@ const FEATURE_HINTS = {
   sent: "A read-only list of the last 14 days of sent mail, read from the mailbox when opened and never stored.",
   media: "Show pictures that are part of an email, preview picture attachments and save attachments, fetched only when asked for and never stored.",
   junk_mail: "Adds a Junk Mail folder to the left menu. Enveliq reads the sender, subject and date of recent mail in each mailbox's Junk or Spam folder, and the AI says whether each one is junk or needs a look, with a short summary. The email stays in the mailbox. You can view an email with links, pictures from the internet and anything that runs switched off, and press Not junk to move it back to the Inbox at your mail service. Only the AI's short answer is stored, encrypted.",
+  clean_up: "Adds a Clean up page that lists the mailing lists filling the inbox (last 60 days). For each one a person can unsubscribe, archive what is already there, archive new email from it, or keep it. Only email headers are read, in memory, and nothing is ever deleted.",
   find_mail: "Adds a Search all my mail button under the inbox search box. It asks each of your mail services to search the whole mailbox and lists every match as sender, subject and date only. Nothing found is stored. Press Summarise on a result to keep that one email in Found emails for 60 days, or until you press Reviewed. Your search words go only to your own mail service and are never logged.",
   all_mail: "Adds an Include read mail button to the inbox (website and Android app) that also lists mail you have already read, for the last 60 days, with no limit on how many. Only the sender, subject and date are kept, encrypted. A summary is written only when you press Generate summary, which sends that email's text to your AI model.",
   subscriptions: "Follows your subscriptions and free trials. When a summary finds that an email is about one, Enveliq keeps the service, the price as written, how often it is charged and the renewal or trial-end date (never the email) in a Subscriptions list, shows what is coming up on Home, and can send a reminder a few days before. The AI only copies what the email says; Enveliq works out every date itself. Emails that carry a Be careful warning are never filed. No extra AI request is made.",
@@ -1531,8 +1532,10 @@ async function remindersPage(me) {
   const box = (id, checked, title, hint) => h("label", { class: "check", for: id }, h("input", { id, type: "checkbox", checked }), h("span", {}, h("strong", { text: title }), hint ? h("div", { class: "hint", text: hint }) : null));
   const form = h("form", {},
     h("p", { class: "hint", text: "Choose what you would like to hear about. Each one goes to the places you turned on above." }),
-    box("rs_morning", s.morning_on, "A morning summary", "One message each morning saying what is due today."),
+    box("rs_morning", s.morning_on, "A daily summary", "One morning message: tasks due, parcels out for delivery, replies you are waiting for."),
     field("Send it at", input("rs_morning_time", { type: "time", value: s.morning_time })),
+    box("rs_digest", s.digest_mail, "Send new email in this summary instead", "New email is counted in the summary, not announced one by one. Important people still come through."),
+    box("rs_inbox", s.digest_inbox, "Hold email for the daily summary", "The AI picks out email that needs you today, and that still alerts you at once, as does anyone you marked important. All other new email is held out of your inbox and gathered in one summary at the top of your inbox and in Held for summary on the left. Once a day, at the time above, one alert says how many are waiting. Nothing is lost: when you press Done with summary, or after 7 days, whatever you left goes back to your inbox."),
     box("rs_due", s.due_on, "When something is due", "Sent once, when a task is due or when a new task for today appears."),
     box("rs_mail", s.mail_on, "When new email arrives", "One short message each time Enveliq finds new email for you. The email itself is never sent."),
     more("Repeats, quiet hours and privacy",
@@ -1548,7 +1551,7 @@ async function remindersPage(me) {
   onSubmit(form, async () => {
     const g = id => form.querySelector("#" + id);
     await api("/me/notifications/settings", { method: "PUT", body: { morning_on: g("rs_morning").checked, morning_time: g("rs_morning_time").value || "08:00", due_on: g("rs_due").checked,
-      repeat_hours: Number(g("rs_hours").value) || 2, repeat_max: Math.max(0, Number(g("rs_max").value) || 0), quiet_on: g("rs_quiet").checked, quiet_from: g("rs_from").value || "21:00", quiet_to: g("rs_to").value || "07:00", show_titles: g("rs_titles").checked, mail_on: g("rs_mail").checked, mail_details: g("rs_maildetails").checked } });
+      repeat_hours: Number(g("rs_hours").value) || 2, repeat_max: Math.max(0, Number(g("rs_max").value) || 0), quiet_on: g("rs_quiet").checked, quiet_from: g("rs_from").value || "21:00", quiet_to: g("rs_to").value || "07:00", show_titles: g("rs_titles").checked, mail_on: g("rs_mail").checked, mail_details: g("rs_maildetails").checked, digest_mail: g("rs_digest").checked, digest_inbox: g("rs_inbox").checked } });
     toast("Saved");
   });
   const mine = ov.channels.filter(c => c.allowed);
@@ -1934,7 +1937,8 @@ async function aiInstructionsPage(me) {
     toast("Saved. New summaries will follow these instructions.");
   });
   const help = await writingHelpSection();
-  show(...chrome(me, "instructions", h("h1", { text: "AI instructions" }), h("section", { class: "section" }, form), ...(help ? [help] : [])));
+  const styled = await writingStyleSection();
+  show(...chrome(me, "instructions", h("h1", { text: "AI instructions" }), h("section", { class: "section" }, form), ...(help ? [help] : []), ...(styled ? [styled] : [])));
 }
 // Writing help: off until the person turns it on; the box starts with a plain, generic set of instructions they can change.
 async function writingHelpSection() {
@@ -1943,22 +1947,74 @@ async function writingHelpSection() {
   if (!w.available) return null;
   const on = h("input", { type: "checkbox", id: "wh_on" });
   on.checked = !!w.on;
+  const quick = h("input", { type: "checkbox", id: "wh_quick" });
+  quick.checked = !!w.quick;
   const box = h("textarea", { id: "wh_instr", rows: 8, maxlength: w.max }, w.instructions);
   const form = h("form", {},
     h("p", { class: "lead", text: "Writing help adds a button to the reply box and the New email box. It can write a reply for you, or check what you wrote. The suggestion appears in a separate box: you choose what to use, and nothing is sent until you press Send." }),
     h("label", { class: "check", for: "wh_on" }, on, h("span", {}, h("strong", { text: "Turn on writing help" }),
       h("div", { class: "hint", text: "When you use it, the email you are answering and what you have written are sent to your AI model. Nothing is kept afterwards. If your AI model is a cloud service, that text leaves your computer." }))),
+    h("label", { class: "check", for: "wh_quick" }, quick, h("span", {}, h("strong", { text: "Turn on Quick AI Send" }),
+      h("div", { class: "hint", text: "Adds a Quick AI Send button next to Send. It fixes spelling, grammar and punctuation, then sends at once. It never adds or changes what you meant. If anything goes wrong, nothing is sent and your draft stays as it is." }))),
     w.ai_ready ? null : h("p", { class: "hint", text: "No AI model is set up yet. An administrator can add one under Administration, AI model." }),
     guideNote("WRITING_HELP.md", "", "More about writing help"),
     field("Your writing instructions", box, "This starts with plain, friendly wording. Keep it, type over it, or add to it. It changes the style only, not what the AI is allowed to do."),
     h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" }), " ",
       h("button", { class: "btn", type: "button", text: "Use the standard instructions", onclick: () => { box.value = w.default; } })));
   onSubmit(form, async () => {
-    const r = await api("/me/write-help", { method: "PUT", body: { on: on.checked, instructions: box.value } });
+    const r = await api("/me/write-help", { method: "PUT", body: { on: on.checked, quick: quick.checked, instructions: box.value } });
     w = r; box.value = r.instructions;
-    toast(r.on ? "Saved. Writing help is on." : "Saved. Writing help is off.");
+    toast(r.on || r.quick ? "Saved." : "Saved. Writing help is off.");
   });
   return h("section", { class: "section" }, h("h2", { text: "Writing help" }), form);
+}
+// My writing style: a guide the AI makes from the person's own recent sent emails, which they can read and edit. Used by Writing help and Quick AI Send.
+async function writingStyleSection() {
+  let st;
+  try { st = await api("/me/writing-style"); } catch { return null; }
+  if (!st.available) return null;
+  const on = h("input", { type: "checkbox", id: "ws_on" });
+  on.checked = !!st.on;
+  const guide = h("textarea", { id: "ws_guide", rows: 10, maxlength: st.max, placeholder: "Nothing here yet. Turn this on and press Make it now, or write your own." }, st.guide || "");
+  const auto = h("input", { type: "checkbox", id: "ws_auto" });
+  auto.checked = st.mode === "auto";
+  const note = h("p", { class: "hint", id: "ws_note" });
+  const when = a => new Date(a * 1000).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const paint = r => {
+    st = r;
+    on.checked = !!r.on; auto.checked = r.mode === "auto";
+    if (document.activeElement !== guide) guide.value = r.guide || "";
+    note.textContent = r.busy ? "Learning from your recent emails… this can take a minute."
+      : r.error ? r.error
+      : r.generated_at ? `Last made on ${when(r.generated_at)}, from ${r.samples} of your recent emails. ${r.mode === "auto" ? "It will be made again once a week." : "You have edited it, so it will not change unless you turn automatic updates back on."}`
+      : "Not made yet.";
+  };
+  paint(st);
+  const form = h("form", {},
+    h("p", { class: "lead", text: "Enveliq can learn how you write from the 20 emails you sent most recently, and write you a short guide. Writing help and Quick AI Send use the guide so they sound like you." }),
+    h("label", { class: "check", for: "ws_on" }, on, h("span", {}, h("strong", { text: "Learn my writing style" }),
+      h("div", { class: "hint", text: "Only your own words are used: quoted replies, signatures, forwarded emails and attachments are left out first. The words are sent to your AI model, and a few are kept here, separate from your normal email." }))),
+    h("label", { class: "check", for: "ws_auto" }, auto, h("span", {}, h("strong", { text: "Update it automatically each week" }),
+      h("div", { class: "hint", text: "Switches off by itself when you edit the guide below. Switch it back on to let the AI write a new one." }))),
+    note,
+    field("My writing style", guide, "You can change this. The AI reads it as a description of how you write, never as facts."),
+    h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" }), " ",
+      h("button", { class: "btn", type: "button", id: "ws_now", text: "Make it now", onclick: async () => {
+        try { paint(await api("/me/writing-style/rebuild", { method: "POST", body: {} })); toast("Learning from your recent emails."); poll(0); } catch (e) { toast(e.message); }
+      } })));
+  async function poll(n) {
+    if (n > 40) return;
+    await new Promise(r => setTimeout(r, 3000));
+    try { const r = await api("/me/writing-style"); paint(r); if (r.busy) poll(n + 1); } catch { /* the page was left */ }
+  }
+  onSubmit(form, async () => {
+    const body = { on: on.checked };
+    if (guide.value.trim() !== (st.guide || "").trim()) body.guide = guide.value;
+    if (auto.checked !== (st.mode === "auto")) body.mode = auto.checked ? "auto" : "manual";       // editing the guide makes the server switch to manual by itself
+    paint(await api("/me/writing-style", { method: "PUT", body }));
+    toast("Saved.");
+  });
+  return h("section", { class: "section" }, h("h2", { text: "My writing style" }), guideNote("WRITING_HELP.md", "", "More about writing style"), form);
 }
 // ---------- mailboxes (Proton Bridge and app-password services) ----------
 const BRIDGE_ERRORS = { ok: "Working" };

@@ -21,8 +21,9 @@ import androidx.compose.ui.viewinterop.AndroidView
  * It looks like the other boxes in the app (a thin outline, the app's colours).
  */
 @Composable
-internal fun SpellField(value: String, onChange: (String) -> Unit, singleLine: Boolean, modifier: Modifier = Modifier, minLines: Int = 1) {
+internal fun SpellField(value: String, onChange: (String) -> Unit, singleLine: Boolean, modifier: Modifier = Modifier, minLines: Int = 1, onFocus: ((Boolean) -> Unit)? = null, hint: String = "", bare: Boolean = false) {
     val latest by rememberUpdatedState(onChange)
+    val focusLatest by rememberUpdatedState(onFocus)
     val ink = Ink.toArgb()
     val muted = Muted.toArgb()
     val line = Line.toArgb()
@@ -36,8 +37,10 @@ internal fun SpellField(value: String, onChange: (String) -> Unit, singleLine: B
                 if (singleLine) { maxLines = 1; isSingleLine = true } else { this.minLines = minLines; gravity = Gravity.TOP or Gravity.START }
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
                 val pad = (14 * ctx.resources.displayMetrics.density).toInt()
-                setPadding(pad, pad, pad, pad)
+                if (bare) setPadding(0, (12 * ctx.resources.displayMetrics.density).toInt(), (8 * ctx.resources.displayMetrics.density).toInt(), (12 * ctx.resources.displayMetrics.density).toInt())
+                else setPadding(pad, pad, pad, pad)
                 setText(value)
+                setOnFocusChangeListener { _, has -> focusLatest?.invoke(has) }
                 addTextChangedListener(object : TextWatcher {
                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -49,7 +52,8 @@ internal fun SpellField(value: String, onChange: (String) -> Unit, singleLine: B
             et.setTextColor(ink)
             et.setHintTextColor(muted)
             et.highlightColor = (accent and 0x00FFFFFF) or 0x55000000
-            et.background = GradientDrawable().apply {
+            et.hint = hint
+            et.background = if (bare) null else GradientDrawable().apply {
                 cornerRadius = 12f * et.resources.displayMetrics.density
                 setStroke((1 * et.resources.displayMetrics.density).toInt().coerceAtLeast(1), line)
             }

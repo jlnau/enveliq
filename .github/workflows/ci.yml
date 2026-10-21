@@ -146,6 +146,8 @@ jobs:
         run: node scripts/check_devices_page.mjs
       - name: Send later (simulated server)
         run: node scripts/check_send_later.mjs
+      - name: Writing box, Send arrow and minimise (simulated server)
+        run: node scripts/check_formatted_email.mjs
       - name: Snooze (simulated server)
         run: node scripts/check_snooze.mjs
       - name: Search everywhere (simulated server)
@@ -269,6 +271,8 @@ jobs:
         run: node scripts/check_scrolllock.mjs
       - name: Settings and Administration on a phone
         run: node scripts/check_mobile_settings.mjs
+      - name: Daily summary settings, desktop and phone (simulated server)
+        run: node scripts/check_daily_summary.mjs
       - name: Look of every Settings and Administration page (simulated server)
         run: node scripts/check_settings_look.mjs
       - name: User menu, Profile settings and tidied Settings (simulated server)
@@ -277,6 +281,10 @@ jobs:
         run: node scripts/check_messages.mjs
       - name: Writing help in the reply and New email boxes (simulated server)
         run: node scripts/check_writehelp.mjs
+      - name: Daily summary item in the inbox (simulated server)
+        run: node scripts/check_daily_summary.mjs
+      - name: Quick AI Send beside Send (simulated server)
+        run: node scripts/check_quick_send.mjs
       - name: Links from the app to the step-by-step guides
         run: node scripts/check_guide_links.mjs
       - name: Waiting for reply page and Home card (simulated server)
@@ -287,6 +295,8 @@ jobs:
         run: node scripts/check_find.mjs
       - name: Junk Mail - list, AI answers, safe viewer, Not Junk and the phone layout (simulated server)
         run: node scripts/check_junk.mjs
+      - name: Clean up page, desktop and phone (simulated server)
+        run: node scripts/check_clean_up.mjs
       - name: Google Calendar - new or existing calendar choice, picker and the phone layout (simulated server)
         run: node scripts/check_google_calendar.mjs
       - name: Push relay for the Android app - what it forwards, what it refuses, and that nothing private passes through

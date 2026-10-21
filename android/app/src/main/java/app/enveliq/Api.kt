@@ -227,8 +227,11 @@ class EnveliqApi(address: String) {
             for (j in 0 until messages.length()) {
                 val r = messages.getJSONObject(j)
                 val state = r.str("state")
+                val held = r.optBoolean("held_for_summary", false)
                 if (view == "inbox") {
-                    if (state == "reviewed" || state == "archived") continue
+                    if (state == "reviewed" || state == "archived" || held) continue      // held for the summary: not in the inbox
+                } else if (view == "held") {
+                    if (!held || state == "reviewed" || state == "archived") continue
                 } else if (state != view) {
                     continue
                 }
@@ -290,6 +293,7 @@ class EnveliqApi(address: String) {
                         replyTo = r.optJSONObject("reply_context")?.str("reply_to") ?: "",
                         replyCc = r.optJSONObject("reply_context")?.optJSONArray("cc").strings(),
                         quiet = quiet,
+                        held = held,
                         ungenerated = quiet && r.str("summary").startsWith("Not summarised yet"),
                         replyAlsoTo = r.optJSONObject("reply_context")?.optJSONArray("also_to").strings(),
                     )
@@ -299,6 +303,9 @@ class EnveliqApi(address: String) {
         out.sortByDescending { it.received }
         return out
     }
+
+    /** The numbers behind the daily summary: tasks, waiting, parcels, coming, unread, and digest (true when new email waits for the summary). Counts only. */
+    fun dailySummary(): JSONObject = JSONObject(call("GET", "/api/v1/me/summary"))
 
     /** Whether the administrator has set up Google push, so the app can offer it. */
     fun pushAvailable(): Boolean = JSONObject(call("GET", "/api/v1/me/notifications/android")).optBoolean("available", false)
@@ -379,20 +386,21 @@ class EnveliqApi(address: String) {
 
     fun reply(
         mail: Mail, all: Boolean, text: String, from: String? = null, files: List<PickedFile> = emptyList(),
-        to: List<String>? = null, cc: List<String>? = null, bcc: List<String>? = null,
+        to: List<String>? = null, cc: List<String>? = null, bcc: List<String>? = null, subject: String? = null,
     ): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/reply",
             JSONObject().put("body", text).put("kind", if (all) "reply_all" else "reply").also { if (from != null) it.put("from_address", from) }
-                .also { if (to != null) it.put("to", JSONArray(to)) }.also { if (cc != null) it.put("cc", JSONArray(cc)) }.also { if (bcc != null) it.put("bcc", JSONArray(bcc)) }
+                .also { if (!subject.isNullOrBlank()) it.put("subject", subject) }.also { if (to != null) it.put("to", JSONArray(to)) }.also { if (cc != null) it.put("cc", JSONArray(cc)) }.also { if (bcc != null) it.put("bcc", JSONArray(bcc)) }
                 .also { if (files.isNotEmpty()) it.put("files", filesJson(files)) },
         ),
     )
 
-    fun forward(mail: Mail, to: List<String>, cc: List<String>, bcc: List<String>, text: String, from: String? = null, files: List<PickedFile> = emptyList()): Sent = sentFrom(
+    fun forward(mail: Mail, to: List<String>, cc: List<String>, bcc: List<String>, text: String, from: String? = null, files: List<PickedFile> = emptyList(), subject: String? = null): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/forward",
             JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("body", text).also { if (from != null) it.put("from_address", from) }
+                .also { if (!subject.isNullOrBlank()) it.put("subject", subject) }
                 .also { if (files.isNotEmpty()) it.put("files", filesJson(files)) },
         ),
     )
@@ -568,10 +576,121 @@ class EnveliqApi(address: String) {
         call("POST", "/api/v1/me/mail-opened", JSONObject().put("account_id", mail.accountId).put("message_id", mail.id))
     }
 
+    // ---- Writing help, Quick AI Send and the writing style (the same routes the website uses) ----
+    private fun writeInfo(r: JSONObject) = WriteHelpInfo(r.optBoolean("available"), r.optBoolean("ai_ready"), r.optBoolean("on"), r.optBoolean("quick"), r.str("instructions"), r.optBoolean("is_default", true), r.str("default"), r.optInt("max", 2000))
+
+    /** The person's Writing help settings. Throws when the feature is switched off for them. */
+    fun writeHelp(): WriteHelpInfo = writeInfo(JSONObject(call("GET", "/api/v1/me/write-help")))
+
+    fun saveWriteHelp(on: Boolean, quick: Boolean, instructions: String?): WriteHelpInfo =
+        writeInfo(JSONObject(call("PUT", "/api/v1/me/write-help", JSONObject().put("on", on).put("quick", quick).also { if (instructions != null) it.put("instructions", instructions) })))
+
+    private fun suggestion(text: String): WriteSuggestion {
+        val r = JSONObject(text)
+        val n = r.optJSONArray("notes")
+        return WriteSuggestion(r.str("text"), (0 until (n?.length() ?: 0)).map { n!!.optString(it) }, r.optBoolean("gaps"))
+    }
+
+    /** Suggested wording for a reply or forward. The server reads the email itself; the page never chooses what the AI sees. */
+    fun writeForReply(mail: Mail, draft: String): WriteSuggestion =
+        suggestion(call("POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/write-help", JSONObject().put("draft", draft)))
+
+    fun writeForNew(subject: String, draft: String): WriteSuggestion =
+        suggestion(call("POST", "/api/v1/me/write-help/new", JSONObject().put("subject", subject).put("draft", draft)))
+
+    /** Quick AI Send, step one: a strict proofread. Sends nothing. The caller sends the result and keeps the person's own draft if anything fails. */
+    fun quickFix(subject: String, draft: String): QuickFixed {
+        val r = JSONObject(call("POST", "/api/v1/me/write-help/quick-fix", JSONObject().put("subject", subject).put("draft", draft)))
+        return QuickFixed(r.str("subject"), r.str("text"), r.optBoolean("changed"))
+    }
+
+    private fun styleInfo(text: String): StyleInfo {
+        val r = JSONObject(text)
+        return StyleInfo(r.optBoolean("available"), r.optBoolean("ai_ready"), r.optBoolean("on"), r.str("guide"), r.str("mode").ifBlank { "auto" }, r.optDouble("generated_at", 0.0).let { if (it.isNaN()) 0.0 else it }, r.optInt("samples"), r.str("error"), r.optInt("max", 2500), r.optBoolean("busy"))
+    }
+
+    fun writingStyle(): StyleInfo = styleInfo(call("GET", "/api/v1/me/writing-style"))
+
+    /** Only the parts that changed are sent. Editing the guide makes the server switch to manual; mode "auto" turns weekly updates back on. */
+    fun saveWritingStyle(on: Boolean? = null, guide: String? = null, mode: String? = null): StyleInfo =
+        styleInfo(call("PUT", "/api/v1/me/writing-style", JSONObject().also { if (on != null) it.put("on", on); if (guide != null) it.put("guide", guide); if (mode != null) it.put("mode", mode) }))
+
+    fun rebuildWritingStyle(): StyleInfo = styleInfo(call("POST", "/api/v1/me/writing-style/rebuild", JSONObject()))
+
+    // ---- The daily summary: email that can wait is held for it, out of the inbox (the website's routes) ----
+    fun summary(): SummaryInfo {
+        val r = JSONObject(call("GET", "/api/v1/me/held-summary"))
+        val arr = r.optJSONArray("items")
+        val items = (0 until (arr?.length() ?: 0)).mapNotNull { i ->
+            val x = arr?.optJSONObject(i) ?: return@mapNotNull null
+            DigestItem(x.str("account_id"), x.str("message_id"), x.str("sender"), x.str("subject"), x.str("summary"), x.str("category").ifBlank { "Other" }, x.optDouble("held_at", 0.0))
+        }
+        return SummaryInfo(r.optBoolean("enabled"), r.optInt("count"), r.optInt("unread"), items)
+    }
+
+    fun summarySeen() { call("POST", "/api/v1/me/held-summary/seen", JSONObject()) }
+
+    /** "Done with summary": everything still in it goes back to the inbox. Returns how many. */
+    fun summaryDone(): Int = JSONObject(call("POST", "/api/v1/me/held-summary/complete", JSONObject())).optInt("returned")
+
+    /** Takes one email out of the summary and puts it back in the inbox. */
+    fun summaryRemove(accountId: String, messageId: String) {
+        call("POST", "/api/v1/me/held-summary/remove", JSONObject().put("account_id", accountId).put("message_id", messageId))
+    }
+
+    fun digestInboxOn(): Boolean = JSONObject(call("GET", "/api/v1/me/notifications")).optJSONObject("settings")?.optBoolean("digest_inbox", false) ?: false
+
+    fun setDigestInbox(on: Boolean) { call("PUT", "/api/v1/me/notifications/settings", JSONObject().put("digest_inbox", on)) }
+
     /** True when "Include read mail" is switched on for this person on the server (administrators can switch it off). */
     fun includeReadAvailable(): Boolean = try {
         JSONObject(call("GET", "/api/v1/me/features")).optJSONObject("effective")?.optBoolean("all_mail", false) ?: false
     } catch (e: Exception) { false }
+
+    /** True when Clean up is switched on for this person on the server (administrators can switch it off). */
+    fun cleanUpAvailable(): Boolean = try {
+        JSONObject(call("GET", "/api/v1/me/features")).optJSONObject("effective")?.optBoolean("clean_up", false) ?: false
+    } catch (e: Exception) { false }
+
+    private fun cleanUp(text: String, archived: Boolean = false): CleanUp {
+        val r = JSONObject(text)
+        val arr = r.optJSONArray("senders")
+        val senders = (0 until (arr?.length() ?: 0)).mapNotNull { i ->
+            val s = arr?.optJSONObject(i) ?: return@mapNotNull null
+            val u = s.optJSONObject("unsubscribe")
+            Sender(
+                s.str("id"), s.str("name").ifBlank { s.str("address") }, s.str("address"), s.optInt("count"), s.optInt("opened"), s.optLong("last"), s.str("mailbox"),
+                s.optBoolean("flagged", false), u?.str("url")?.ifBlank { null }, u?.str("mailto")?.ifBlank { null }, u?.str("subject") ?: "",
+            )
+        }
+        val problems = r.optJSONArray("problems")?.let { p -> (0 until p.length()).map { p.optString(it) } } ?: emptyList()
+        val offer = r.optJSONObject("undo_offer")
+        val token = if (archived) r.str("undo") else (offer?.str("token") ?: "")
+        return CleanUp(senders, r.optInt("kept"), r.optInt("days", 60), r.optLong("now"), r.optInt("mailboxes", 1), problems, token, if (archived) r.optInt("archived") else (offer?.optInt("count") ?: 0), offer?.str("name") ?: "")
+    }
+
+    /** The mailing lists in the last 60 days. [refresh] looks through the mailbox again instead of using the last look. */
+    fun senders(refresh: Boolean = false): CleanUp = cleanUp(call("GET", "/api/v1/me/senders" + if (refresh) "?refresh=true" else ""))
+
+    /** Moves what is in the inbox from this sender to Archive and marks it read. Nothing is deleted. */
+    fun archiveSender(id: String): CleanUp {
+        val text = call("POST", "/api/v1/me/senders/" + enc(id) + "/archive", JSONObject())
+        val r = JSONObject(text)
+        val n = r.optInt("archived")
+        val note = if (n == 0) "Nothing to archive." else "Archived $n" + (if (r.optBoolean("more")) ". Press again for the rest." else ".") +
+            (if (r.optInt("left_for_tasks") > 0) " " + r.optInt("left_for_tasks") + " with a task stayed in your inbox." else "")
+        return cleanUp(text, archived = true).copy(toast = note)
+    }
+
+    /** Makes a normal Mail rule: new email from this sender is archived. */
+    fun alwaysArchive(id: String): CleanUp = cleanUp(call("POST", "/api/v1/me/senders/" + enc(id) + "/always", JSONObject()))
+
+    fun keepSender(id: String): CleanUp = cleanUp(call("POST", "/api/v1/me/senders/" + enc(id) + "/keep", JSONObject()))
+
+    fun showKeptSenders(): CleanUp = cleanUp(call("DELETE", "/api/v1/me/senders/keep"))
+
+    /** Puts back what the last archive moved. Returns how many were put back. */
+    fun undoClean(token: String): Int = JSONObject(call("POST", "/api/v1/me/senders/undo", JSONObject().put("token", token))).optInt("restored")
 
     /** Asks for the AI summary of a quiet entry. It is sent to your AI model only now. */
     fun askSummary(mail: Mail) {
@@ -773,10 +892,12 @@ class EnveliqApi(address: String) {
         call("DELETE", "/api/v1/me/rules/" + enc(id))
     }
 
-    fun resolve(mail: Mail, outcome: Outcome) {
+    fun resolve(mail: Mail, outcome: Outcome) = resolveIds(mail.accountId, mail.id, outcome)
+
+    fun resolveIds(accountId: String, messageId: String, outcome: Outcome) {
         call(
             "POST",
-            "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/resolve",
+            "/api/v1/accounts/" + enc(accountId) + "/messages/" + enc(messageId) + "/resolve",
             JSONObject().put("outcome", outcome.api),
         )
     }

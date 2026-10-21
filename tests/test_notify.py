@@ -350,33 +350,37 @@ def _subscription(appm, uid, clock, **kw):
     assert appm.subbook.observe(uid, "a1", "m-sub", clock - 3600, raw)
 
 
+def _has(sent, words):
+    return [n for n in sent if words in n["title"] or words in n["body"]]
+
+
 def test_a_renewal_is_announced_once_when_it_is_inside_the_days_before(due):
     appm, client, uid, tid, sent, at = due
     _subscription(appm, uid, datetime(2026, 10, 9, 6, 0, tzinfo=SYD).timestamp())              # renews on the 12th: three days away
     at(7, 30)
-    assert not [n for n in sent if "Streamly" in n["title"]]                                    # not before the morning time
+    assert not _has(sent, "Streamly")                                                           # not before the morning time
     at(8, 1)
-    notes = [n for n in sent if "Streamly" in n["title"]]
-    assert len(notes) == 1 and notes[0]["title"] == "Streamly renews in 3 days" and "$12.99" not in notes[0]["title"]
+    notes = _has(sent, "Streamly")
+    assert len(notes) == 1 and "Streamly renews in 3 days" in notes[0]["body"] and "$12.99" not in notes[0]["body"]      # inside the one daily summary
     at(8, 5), at(10, 30), at(14, 0)
-    assert len([n for n in sent if "Streamly" in n["title"]]) == 1                              # never twice for the same date
+    assert len(_has(sent, "Streamly")) == 1                                                     # never twice for the same date
 
 
 def test_a_renewal_further_away_than_the_persons_number_of_days_waits(due):
     appm, client, uid, tid, sent, at = due
     _subscription(appm, uid, datetime(2026, 10, 9, 6, 0, tzinfo=SYD).timestamp(), renews_on="20 Oct 2026")
     at(8, 1)
-    assert not [n for n in sent if "Streamly" in n["title"]]
+    assert not _has(sent, "Streamly")
     assert client.put("/api/v1/me/subscriptions/settings", json={"nudge_days": 14}).status_code == 200
-    at(8, 10)
-    assert [n["title"] for n in sent if "Streamly" in n["title"]] == ["Streamly renews in 11 days"]
+    soon = appm.subbook.due_nudges(uid, datetime(2026, 10, 9, 8, 10, tzinfo=SYD).timestamp())     # the summary has gone for today; this is what tomorrow's would hold
+    assert [d["service"] for d in soon] == ["Streamly"] and soon[0]["days"] == 11
 
 
 def test_a_free_trial_is_announced_in_its_own_words(due):
     appm, client, uid, tid, sent, at = due
     _subscription(appm, uid, datetime(2026, 10, 9, 6, 0, tzinfo=SYD).timestamp(), kind="trial_started", renews_on=None, trial_ends_on="10 Oct 2026")
     at(8, 1)
-    assert "Streamly free trial ends tomorrow" in [n["title"] for n in sent]
+    assert any("Streamly free trial ends tomorrow" in n["body"] for n in sent)
 
 
 def test_private_mode_keeps_the_service_name_out(due):
@@ -384,8 +388,8 @@ def test_private_mode_keeps_the_service_name_out(due):
     client.put("/api/v1/me/notifications/settings", json={"show_titles": False})
     _subscription(appm, uid, datetime(2026, 10, 9, 6, 0, tzinfo=SYD).timestamp())
     at(8, 1)
-    private = [n for n in sent if "subscription" in n["body"]]
-    assert len(private) == 1 and private[0]["title"] == "Enveliq" and "Streamly" not in private[0]["body"] and "Open Enveliq" in private[0]["body"]
+    assert len(sent) == 1 and sent[0]["title"] == "Enveliq"                                     # one summary, the subscription counted in it
+    assert "Streamly" not in sent[0]["body"] and "2 things" in sent[0]["body"] and "Open Enveliq" in sent[0]["body"]
 
 
 def test_a_cancelled_subscription_is_not_announced(due):
@@ -697,3 +701,23 @@ def test_other_kinds_only_count_and_only_growth_is_news():
     broken = NS(messages=NS(enabled=lambda u: 1 / 0), inbound=NS(unread=lambda u: 4),
                 tasks=None, shipping=None)
     assert other_counts(broken, "u1") == {"bell": 4}
+
+
+# ---------- the daily summary ----------
+
+def test_the_summary_instead_of_alerts_switch_is_saved_and_checked(env):
+    _, client, _, _ = env
+    assert client.get("/api/v1/me/notifications").json()["settings"]["digest_mail"] is False        # off until the person turns it on
+    r = client.put("/api/v1/me/notifications/settings", json={"digest_mail": True})
+    assert r.status_code == 200 and r.json()["settings"]["digest_mail"] is True
+    assert client.put("/api/v1/me/notifications/settings", json={"digest_mail": "maybe"}).status_code == 422
+
+
+def test_the_summary_numbers_for_the_phone_are_only_counts_and_need_sign_in(env):
+    appm, client, _, _ = env
+    r = client.get("/api/v1/me/summary")
+    assert r.status_code == 200
+    assert set(r.json()) == {"tasks", "waiting", "parcels", "coming", "unread", "digest"} and r.json()["digest"] is False
+    assert all(isinstance(v, int) for k, v in r.json().items() if k != "digest")
+    from fastapi.testclient import TestClient
+    assert TestClient(appm.app).get("/api/v1/me/summary").status_code in (401, 403)

@@ -184,6 +184,7 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var page by remember { mutableStateOf("home") }
+    val writeOn = rememberWriteHelp(api, if (page == "home") 1 else 0) != null          // the Writing help page shows only when the feature is on for this person
 
     var mailAlerts by remember { mutableStateOf(AlertPrefs.on(context)) }
     var quietOn by remember { mutableStateOf(AlertPrefs.quietOn(context)) }
@@ -271,6 +272,7 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
 
     when (page) {
         "alerts" -> Page("Notifications", back("home")) {
+            Group { DigestSetting(api) }
             Group {
                 ToggleRow("New email alerts", "A quiet note once the AI has finished reading an email. The lock screen only says \"New email\".", mailAlerts) { on ->
                     if (!on) {
@@ -489,6 +491,7 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
             }
             if (devNote.isNotEmpty()) Footnote(devNote, Amber)
         }
+        "writing" -> WritingSettingsPage(api, back("home"))
         "blocked" -> Page("Blocked senders", back("home")) {
             var rules by remember { mutableStateOf<List<Rule>?>(null) }
             var note by remember { mutableStateOf("") }
@@ -639,6 +642,9 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                 }
                 HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
                 NavRow("🚫", tintAlerts, "Blocked senders") { page = "blocked" }
+            }
+            if (writeOn) Group {
+                NavRow("✎", tintAccount, "Writing help", note = "Suggested wording, Quick AI Send and your writing style.") { page = "writing" }
             }
             Group {
                 NavRow("👤", tintAccount, "Account") { page = "account" }

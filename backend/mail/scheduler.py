@@ -45,6 +45,7 @@ class AutoSync:
         self._fails: dict[str, int] = {}
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
+        self.digest_hold: Any = None                    # set by the application: holds new email that can wait for the daily summary (mail/digest.py)
         self.mail_alerts: Any = None                    # set by the application: new-email alerts (mail/mail_alerts.py)
         self.checker: Any = None                        # set by the application: answers forwarded emails (mail/checkbox.py)
 
@@ -135,6 +136,8 @@ class AutoSync:
                 for uid, new in arrived.items():
                     if new:                                       # nothing arrived for this person: say nothing
                         self.mail_alerts.send(uid, new)
+                        if self.digest_hold is not None:
+                            self.digest_hold(uid)                 # mail that can wait goes straight to the summary, not the inbox
         return done
 
     def _known_ids(self, account: dict[str, Any]) -> set[str]:
@@ -151,7 +154,7 @@ class AutoSync:
         except Exception:
             return []
         fresh.sort(key=lambda m: m.get("received_at") or 0, reverse=True)
-        return [{"account_id": account["id"], "id": m["id"], "sender_display": m.get("sender_display"), "sender_address": m.get("sender_address"), "subject": m.get("subject"), "priority": m.get("priority"), "action_required": m.get("action_required")} for m in fresh]
+        return [{"account_id": account["id"], "id": m["id"], "sender_display": m.get("sender_display"), "sender_address": m.get("sender_address"), "subject": m.get("subject"), "priority": m.get("priority"), "action_required": m.get("action_required"), "act_today": m.get("act_today")} for m in fresh]
 
     def _sync_one(self, account: dict[str, Any]) -> None:
         aid = account["id"]

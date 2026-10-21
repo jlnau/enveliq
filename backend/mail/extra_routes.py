@@ -19,7 +19,7 @@ from .limits import SlidingWindowLimiter
 from .summary_queue import SummaryQueue
 from .render import view as render_view
 from .parse import PREVIEW_IMAGE_TYPES, attachment_bytes, render_original, sending_identities
-from .routes import AccountId, FileIn, MessageId, fail
+from .routes import AccountId, FileIn, ImageIn, MessageId, fail
 
 log = logging.getLogger("enveliq.queue")
 
@@ -44,6 +44,7 @@ class FeaturesBody(StrictModel):
     tags: bool | None = None
     find_mail: bool | None = None
     junk_mail: bool | None = None
+    clean_up: bool | None = None
 
 
 class FollowBody(StrictModel):
@@ -62,6 +63,8 @@ class NewMailBody(StrictModel):
     body: str = Field(default="", max_length=100_000)
     from_address: str | None = Field(default=None, max_length=320)
     files: list[FileIn] = Field(default_factory=list, max_length=10)
+    html: str | None = Field(default=None, max_length=1_500_000)        # the formatted version of `body`; rebuilt from allowed parts (see outhtml)
+    images: list[ImageIn] = Field(default_factory=list, max_length=12)  # pictures the formatted text refers to
 
     @field_validator("subject", "from_address")
     @classmethod
@@ -317,7 +320,8 @@ def build_extra_router(ctx: Any) -> APIRouter:
         from . import review
         delay = review.user_prefs(vault, user)["undo_send_seconds"]
         try:
-            built = service.build_new(account, body.to, body.cc, body.bcc, body.subject, body.body, body.from_address, [f.model_dump() for f in body.files])
+            built = service.build_new(account, body.to, body.cc, body.bcc, body.subject, body.body, body.from_address, [f.model_dump() for f in body.files],
+                                     body.html, [i.model_dump() for i in body.images])
             _, chosen, recipients = built
             named = [parseaddr(v) for v in (*body.to, *body.cc, *body.bcc)]
             people = [(n, a) for n, a in named]
@@ -327,7 +331,8 @@ def build_extra_router(ctx: Any) -> APIRouter:
 
             if delay > 0:
                 draft = {"to": body.to, "cc": body.cc, "bcc": body.bcc, "subject": body.subject, "attachments": len(body.files)}
-                item = outbox.enqueue(user, account_id, None, built, body.body, delay, draft=draft, on_sent=noted)
+                item = outbox.enqueue(user, account_id, None, built, body.body, delay, draft=draft, on_sent=noted, html=body.html,
+                                      images=[i.model_dump() for i in body.images])
                 return {"queued": True, "id": item.id, "send_at": item.send_at, "now": time.time(), "from": item.chosen,
                         "to": item.recipients[0] if item.recipients else ""}
             service.bridge.send(service.target(account), built[0], chosen, recipients)

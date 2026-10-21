@@ -110,7 +110,7 @@ check("a reply says the original is added under it when sent, and offers to put 
 await page.fill("#composeText", "Thanks for this.");
 await page.click("#cmQuoteIn");
 await page.waitForFunction(() => document.getElementById("composeText").value.includes("> Hello"));
-const inline = await page.inputValue("#composeText");
+const inline = await page.evaluate(() => document.getElementById("composeText").value);
 check("the button puts 'On <date>, <name> <address> wrote:' and the quoted text under the message", inline.startsWith("Thanks for this.") && inline.includes("wrote:\n> Hello") && inline.includes("Alice <alice@example.invalid>"));
 await page.fill("#composeText", inline.replace("> Hello", "> Hello (cut down)"));
 await shot("reply_inline");
@@ -149,6 +149,19 @@ await page.locator("#cmTo input").press("Enter");
 await page.click("#composeSend");
 await page.waitForFunction(() => !document.getElementById("compose").classList.contains("open"));
 check("a file taken off the list is not sent", calls.at(-1)[1].keep_files.length === 0);
+
+// The subject can be changed in a forward (and a reply); it is sent only when it was changed.
+check("a subject left as it was is not sent", calls.at(-1)[1].subject === undefined);
+await page.waitForTimeout(300);
+await expand(ccRow);
+await ccRow.locator("[data-forward]").first().click();
+await page.waitForSelector("#cmFiles .nm-file");
+await page.fill("#composeSubject", "Fyi, the plan");
+await page.fill("#cmTo input", "mum@example.invalid");
+await page.locator("#cmTo input").press("Enter");
+await page.click("#composeSend");
+await page.waitForFunction(() => !document.getElementById("compose").classList.contains("open"));
+check("a changed subject is sent with the forward", calls.at(-1)[0] === "forward" && calls.at(-1)[1].subject === "Fyi, the plan");
 
 check("no script errors on the page", errors.length === 0);
 await browser.close();

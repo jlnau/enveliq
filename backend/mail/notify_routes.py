@@ -49,6 +49,8 @@ class SettingsBody(StrictModel):
     show_titles: bool | None = None
     mail_on: bool | None = None
     mail_details: bool | None = None
+    digest_mail: bool | None = None
+    digest_inbox: bool | None = None
     mail_filter: Literal["all", "important", "action"] | None = None
     mail_muted_accounts: list[str] | None = Field(default=None, max_length=100)
 
@@ -133,7 +135,30 @@ def other_counts(ctx: Any, user_id: str) -> dict[str, int]:
         out["shipping"] = sum(1 for o in ctx.shipping.view(user_id).get("orders", []) if o.get("needs_confirm"))
     except Exception:
         pass
+    try:
+        out["summary"] = int(ctx.notifier.get_state(user_id).get("summary_seq") or 0)       # goes up by one each time the daily summary goes out
+    except Exception:
+        pass
     return out
+
+
+def digest_filter(ctx: Any, user_id: str, fresh: list[tuple[str, str]]) -> list[tuple[str, str]]:
+    """When the person chose "new email in the daily summary instead", the phone is not told about each new email, except from important people."""
+    try:
+        st = ctx.notifier.settings(user_id)
+        if not ((st.get("digest_mail") and st.get("morning_on", True)) or st.get("digest_inbox")):
+            return fresh
+        keep: list[tuple[str, str]] = []
+        for account_id, message_id in fresh:
+            try:
+                message = ctx.vault.get_message(account_id, message_id)
+            except Exception:
+                continue
+            if ctx.important.contains(user_id, message.get("sender_address")) or message.get("act_today") is True:      # urgent mail still comes at once
+                keep.append((account_id, message_id))
+        return keep
+    except Exception:
+        return fresh
 
 
 def grown(before: dict[str, int], latest: dict[str, int]) -> list[str]:
@@ -167,7 +192,7 @@ def build_notify_router(ctx: Any) -> APIRouter:
                 for m in ctx.vault.list_messages(aid):
                     rows.append((aid, str(m.get("id", "")), str(m.get("state", "")),
                                  str(m.get("folder", "")), str(m.get("mailbox", "")),
-                                 str(m.get("snoozed_until", "")), str(m.get("replied_at", "")),
+                                 str(m.get("snoozed_until", "")), str(m.get("replied_at", "")), str(m.get("held_for_summary", "")),
                                  tuple(sorted(str(t) for t in (m.get("tags") or []))),
                                  str(m.get("summary", "")), str(m.get("ai_pending", ""))))
             except (KeyError, ValueError):
@@ -271,6 +296,8 @@ def build_notify_router(ctx: Any) -> APIRouter:
                         ticks = 0
                 fresh, gone = mail_changes(seen, now)
                 seen = set(now)
+                if fresh:
+                    fresh = await asyncio.to_thread(digest_filter, ctx, user_id, fresh)
                 if gone:                              # reviewed, archived or moved somewhere else: the phone takes its alert down at once
                     ids = [{"a": a, "m": m} for a, m in gone[:50]]
                     yield "event: gone\ndata: " + json.dumps({"ids": ids}, separators=(",", ":")) + "\n\n"
@@ -358,6 +385,16 @@ def build_notify_router(ctx: Any) -> APIRouter:
             selection = {"account_id": body.account_id, "message_id": body.message_id}
         ctx.vault.set_global("mail-context-v1:" + session.principal.user_id, selection or {})
         return {"selection": selection}
+
+    @router.get("/me/summary")
+    def daily_summary(session: Session = Depends(session_dep)):
+        """The numbers behind the daily summary, for the Android app's note. Counts only: no sender, subject or title."""
+        user = session.principal.user_id
+        st = notifier.settings(user)
+        counts = ctx.summary.counts(user, with_unread=bool(st.get("digest_mail")))
+        tasks = sum(1 for t in ctx.tasks.view(user)["tasks"] if t["state"] == "open" and t["days"] <= 0)
+        return {"tasks": tasks, "waiting": counts["waiting"], "parcels": counts["parcels"], "coming": counts["coming"], "unread": counts["unread"],
+                "digest": bool(st.get("digest_mail") and st.get("morning_on", True))}
 
     @router.get("/me/notifications")
     def overview(session: Session = Depends(session_dep)):

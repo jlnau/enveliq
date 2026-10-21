@@ -32,6 +32,8 @@ data class Mail(
     /** A quiet entry from "Include read mail": no summary until you ask for one. */
     val quiet: Boolean = false,
     val ungenerated: Boolean = false,
+    /** Held for the daily summary: not in the inbox, listed under Held for summary. */
+    val held: Boolean = false,
 )
 
 /** A file that came with an email. [summary] is written by the AI and is labelled that way where it is shown. */
@@ -114,3 +116,30 @@ data class FoundRow(val token: String, val from: String, val subject: String, va
 
 /** How a search is going: [done] when every mailbox has answered. */
 data class FindProgress(val id: String, val done: Boolean, val listed: Int, val notes: List<String>)
+
+/** A mailing list in Clean up. [unsubUrl] or [unsubMailto] is null when the sender has none, or looks like a fake. [last] is seconds since 1970. */
+data class Sender(
+    val id: String, val name: String, val address: String, val count: Int, val opened: Int, val last: Long, val mailbox: String,
+    val flagged: Boolean, val unsubUrl: String?, val unsubMailto: String?, val unsubSubject: String,
+)
+
+/** What Clean up knows right now. [undo] is the one-time Undo token after an archive (it lasts about ten minutes), [undoName] says whose email it was. */
+data class CleanUp(val senders: List<Sender>, val kept: Int, val days: Int, val now: Long, val mailboxes: Int, val problems: List<String>, val undo: String = "", val undoCount: Int = 0, val undoName: String = "", val toast: String = "")
+
+/** Writing help settings from the server (Settings, Writing help). */
+data class WriteHelpInfo(val available: Boolean, val aiReady: Boolean, val on: Boolean, val quick: Boolean, val instructions: String, val isDefault: Boolean, val default: String, val max: Int)
+
+/** Text the AI suggested. It is only ever shown in its own box; nothing is sent until the person accepts it and sends. */
+data class WriteSuggestion(val text: String, val notes: List<String>, val gaps: Boolean)
+
+/** The corrected subject and text from Quick AI Send. */
+data class QuickFixed(val subject: String, val text: String, val changed: Boolean)
+
+/** The personal writing-style guide (Settings, Writing style). */
+data class StyleInfo(val available: Boolean, val aiReady: Boolean, val on: Boolean, val guide: String, val mode: String, val generatedAt: Double, val samples: Int, val error: String, val max: Int, val busy: Boolean)
+
+/** One email held for the summary. The one-line summary was written by the AI. */
+data class DigestItem(val accountId: String, val messageId: String, val sender: String, val subject: String, val summary: String, val category: String, val heldAt: Double)
+
+/** The daily summary: the emails held for it (they are not in the inbox). [enabled] is false when the person has not switched it on. */
+data class SummaryInfo(val enabled: Boolean, val count: Int, val unread: Int, val items: List<DigestItem>)

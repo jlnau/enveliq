@@ -246,7 +246,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("the bar at the bottom says an email is on its way", (await page.locator("#sendBar").innerText()).includes("Sending your email to cara@example.invalid"));
   await page.click("#sendBar .sendrow button");
   await page.waitForSelector("#newMail.open");
-  check("Undo brings the email back with its text and recipient", (await page.inputValue("#nmText")) === "Draft body" && (await page.inputValue("#nmSubject")) === "Hold me" && (await page.locator("#nmTo .pchip").count()) === 1);
+  check("Undo brings the email back with its text and recipient", (await page.evaluate(() => document.getElementById("nmText").value)) === "Draft body" && (await page.inputValue("#nmSubject")) === "Hold me" && (await page.locator("#nmTo .pchip").count()) === 1);
   check("Undo keeps the attachment", (await page.locator("#nmFiles").innerText()).includes("Booking.pdf"));
   check("the user is told the attachments are back too", (await page.locator("body > #toast").innerText()).includes("attachments are back"));
   await page.click("#nmSend");

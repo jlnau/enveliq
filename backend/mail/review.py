@@ -163,7 +163,7 @@ def keep_record(message: dict[str, Any], state: str, now: float | None = None) -
     data = {k: v for k, v in message.items() if k != "id"}
     data.update(state=state, resolved_at=now if now is not None else time.time(),
                 source_locator=message.get("source_locator") if state == "reviewed" else None,
-                attachments=[], attachment_summaries=[], from_all_mail=False, snoozed_until=None)
+                attachments=[], attachment_summaries=[], from_all_mail=False, snoozed_until=None, held_for_summary=False, held_at=None)
     return data
 
 

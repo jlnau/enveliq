@@ -269,7 +269,7 @@ def test_the_reply_may_carry_a_shipment_and_only_a_valid_one():
     assert "shipment" not in llm.parse_reply(json.dumps({**base, "shipment": None}))
     assert "shipment" not in llm.parse_reply(json.dumps({**base, "shipment": {"kind": "refund"}}))
     assert "shipment" not in llm.parse_reply(json.dumps({**base, "shipment": "shipped"}))
-    assert set(llm.parse_reply(json.dumps(base))) == {"summary", "category", "priority", "action_required", "suggested_task"}
+    assert set(llm.parse_reply(json.dumps(base))) == {"summary", "category", "priority", "action_required", "suggested_task", "act_today", "today_reason"}
 
 
 def test_the_reply_keeps_a_fuller_item_description_and_the_total():

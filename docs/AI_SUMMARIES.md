@@ -93,6 +93,25 @@ says **Summary written by AI** and **The file itself is not stored**.
 - **Old emails.** Emails summarised before this existed have no file summaries
   until they are summarised again or you press **Try again**.
 
+## Needs you today, and the daily summary in your inbox
+
+Besides the short summary, the AI also judges, for each email, whether **you should deal with it today** (or by the next working day). It looks at what the email says (a deadline, an urgent request, a question waiting for an answer, a payment, a booking, a security matter), not at who sent it, and gives a one-line reason ("Payment is due tomorrow"). Newsletters, receipts and promotions are never marked. It only suggests: it is stored as `act_today` and `today_reason` with the summary, and plain code does the rest. The AI still gets no tools and treats the email as data.
+
+Turn on **Hold email for the daily summary** (Settings, **Alerts**, the same page as the daily summary time; in the Android app Settings, **Notifications**). It is off until you switch it on. Then:
+
+- Email the AI marked **needs you today**, and email from important people, stay in the **inbox** and alert you **at once**, as before. They are never held, so nothing is in two places.
+- Email that **can wait** is **held for the summary**. It is **not in the inbox**. It is listed under **Held for summary** in the left menu (the filter menu on Android) and it is in the **summary** straight away. The summary is one special row at the top of the inbox (a Summary tag and a dashed border, so it cannot be mistaken for email; it is stored in no mailbox) that says how many emails are waiting. It opens like an email, grouped by kind, each line with the AI's short summary, labelled as written by AI, and an **Open this email** link. You can open it as often as you like during the day. It stays from one day to the next.
+- Each email in the summary has four **icon-only** buttons (their names show when you hover or press and hold): **Reviewed**, **Archive**, **Bin**, and **Take out of the summary** (back to the inbox). The first three are the normal actions, with the usual Undo, and the email leaves the summary. When the last one goes the summary closes.
+- **Done with summary** (at the top and at the bottom) closes the summary and puts everything still in it **back in the inbox, unchanged** (it was not dealt with, so it is waiting there for you).
+- If the summary is left alone, email held for **7 days** goes back to the inbox by itself. Email you read or handle somewhere else (another app, the mailbox itself) leaves the summary too.
+- Once a day, at your daily summary time (and not in quiet hours), **one alert** says how many emails are waiting and opens the summary. Nothing else about the summary alerts. With no way to be alerted, nothing is sent; you simply open the summary when you look.
+- Switching it off puts every held email back in the inbox. Mail already in the inbox when you switch it on stays where it is.
+- **A second look.** Held mail is looked at again every minute: when an open task for it falls due today it leaves the summary, goes back to the inbox and alerts once, so a deadline never waits.
+
+Held is only a flag on Enveliq's own record of the email (`held_for_summary`, `held_at`). The email in the mailbox is untouched and the summary has no copy of its own.
+
+Code: `backend/mail/digest.py` (holding, the daily alert, the second look), `digest_routes.py` (`/api/v1/me/held-summary`), `llm.py` (the two new answer fields), `mail_alerts.py` and `notify_routes.py` (urgent mail still alerts), `review.py` (a record kept again is not held). Browser check: `scripts/check_daily_summary.mjs`.
+
 ## 1. Choose the model server
 
 Enveliq needs an address that accepts OpenAI-style chat requests

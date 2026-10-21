@@ -288,6 +288,8 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     var error by remember { mutableStateOf("") }
     var tab by remember { mutableStateOf(if (startOnSettings) Tab.Settings else Tab.Inbox) }
     var opened by remember { mutableStateOf<Mail?>(null) }
+    var summary by remember { mutableStateOf<SummaryInfo?>(null) }      // the daily summary at the top of the inbox (email held for it is not in the list)
+    var digestOpen by remember { mutableStateOf(false) }
     var loaded by remember { mutableStateOf(false) }
     var view by remember { mutableStateOf("inbox") }
     val inboxList = rememberLazyListState()
@@ -335,6 +337,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 val list = withContext(Dispatchers.IO) { api.inbox(view, includeRead) }
                 mails.clear()
                 mails.addAll(list)
+                summary = try { withContext(Dispatchers.IO) { api.summary() } } catch (_: Exception) { null }
                 if (view == "inbox") WaitingWidget.update(activity, list.count { !it.quiet })
                 if (view == "inbox") Notifier.clearGone(activity, list.map { it.id }, AlertPrefs.alerted(activity))     // reviewed elsewhere: take its alert down
             } catch (e: ApiException) {
@@ -630,6 +633,18 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         ComposeScreen(writing, api, onClose = { composing = null }, onSent = { afterSend(it) })
         return
     }
+    if (digestOpen) {
+        DigestScreen(
+            api, onBack = { digestOpen = false },
+            onOpenMail = { a, m ->
+                digestOpen = false
+                val found = mails.firstOrNull { it.id == m && it.accountId == a }
+                if (found != null) { tab = Tab.Inbox; opened = found } else scope.launch { snack.showSnackbar("That email is no longer in your list.") }
+            },
+            onChanged = { load() },
+        )
+        return
+    }
 
     val current = opened
     var moreStart by remember { mutableStateOf("home") }
@@ -711,6 +726,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                         includeRead = includeRead, includeReadOk = includeReadOk,
                         onIncludeRead = { on -> includeRead = on; prefs.edit().putBoolean("include_read", on).apply(); load() },
                         onOpen = { opened = it },
+                        summary = summary, onOpenDigest = { digestOpen = true },
                         onSwipe = { m, outcome -> resolve(m, outcome) },
                         onRefresh = { load() },
                     )
@@ -783,7 +799,7 @@ private fun InboxTab(
     swipeRight: String, swipeLeft: String,
     fresh: (Mail) -> Boolean, tagsOf: (Mail) -> List<String>,
     includeRead: Boolean, includeReadOk: Boolean, onIncludeRead: (Boolean) -> Unit,
-    onOpen: (Mail) -> Unit, onSwipe: (Mail, Outcome) -> Unit, onRefresh: () -> Unit,
+    onOpen: (Mail) -> Unit, summary: SummaryInfo?, onOpenDigest: () -> Unit, onSwipe: (Mail, Outcome) -> Unit, onRefresh: () -> Unit,
 ) {
     var onlyAction by filters::onlyAction
     var tag by filters::tag
@@ -821,7 +837,7 @@ private fun InboxTab(
                 Box {
                     IconButton(onClick = { viewMenu = true }) { FilterIcon(if (view != "inbox") Blue else Muted) }
                     DropdownMenu(expanded = viewMenu, onDismissRequest = { viewMenu = false }, containerColor = Panel) {
-                        listOf("inbox" to "Inbox", "reviewed" to "Reviewed", "archived" to "Archived").forEach { (id, label) ->
+                        (listOf("inbox" to "Inbox") + (if (summary?.enabled == true) listOf("held" to "Held for summary") else emptyList()) + listOf("reviewed" to "Reviewed", "archived" to "Archived")).forEach { (id, label) ->
                             DropdownMenuItem(text = { Text((if (view == id) "✓  " else "") + label, color = Ink) }, onClick = { viewMenu = false; onView(id) })
                         }
                     }
@@ -879,11 +895,12 @@ private fun InboxTab(
                 Text(error, color = Red, fontSize = 16.sp)
                 OutlinedButton(onClick = onRefresh, modifier = Modifier.padding(top = 14.dp)) { Text("Try again") }
             }
-            shown.isEmpty() -> Text(
+            shown.isEmpty() && !(view == "inbox" && summary != null && summary.enabled && summary.count > 0) -> Text(
                 if (q.length >= 2) "Nothing here matches that." else if (view != "inbox") "Nothing here at the moment." else if (tag != null || box != null) "Nothing matches that." else if (onlyAction) "Nothing needs you right now." else "You're all caught up.",
                 color = Muted, fontSize = 17.sp, modifier = Modifier.padding(24.dp),
             )
             else -> LazyColumn(Modifier.fillMaxSize(), state = listState) {
+                if ((view == "inbox" || view == "held") && q.length < 2 && !onlyAction && tag == null && box == null && summary != null && summary.enabled && summary.count > 0) item(key = "summary") { DigestCard(summary) { onOpenDigest() } }
                 items(shown, key = { it.accountId + ":" + it.id }) { m ->
                     SwipeRow(
                         mail = m, right = swipeRight, left = swipeLeft, selecting = selecting, picked = selected.contains(keyOf(m)), fresh = fresh(m), tags = tagsOf(m),
@@ -935,6 +952,8 @@ private fun SwipeRow(
             }
         },
     )
+    // A row put back by Undo must not come back still showing as slid away (the swipe state is saved per email, so it is reset here).
+    LaunchedEffect(Unit) { if (state.currentValue != SwipeToDismissBoxValue.Settled) state.snapTo(SwipeToDismissBoxValue.Settled) }
     // A slower, visible finish: the row slides off, the coloured bar holds for a moment, then the gap folds closed. Then the email is actioned and Undo appears.
     val outcomeNow = chosen
     LaunchedEffect(outcomeNow) {

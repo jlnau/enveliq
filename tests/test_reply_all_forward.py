@@ -162,3 +162,16 @@ def test_the_original_is_quoted_only_in_what_is_sent_never_kept(env):
     aid, m = synced_with_cc(client, bridge)
     client.post(f"/api/v1/accounts/{aid}/messages/{m['Plan for May']['id']}/reply", json={"body": "Ok."})
     assert "Hello there." not in str(appm.vault.get_message(aid, m["Plan for May"]["id"]))
+
+
+def test_a_reply_or_forward_can_carry_the_persons_own_subject(env):
+    _, client, bridge, _ = env
+    aid, m = synced_with_cc(client, bridge)
+    base = f"/api/v1/accounts/{aid}/messages/{m['Plan for May']['id']}"
+    assert client.post(base + "/reply", json={"body": "Hi", "subject": "Re: Plan for June\r\nBcc: x@example.invalid"}).status_code == 200
+    item, msg = sent_message(bridge)
+    assert msg["Subject"].startswith("Re: Plan for June") and msg["Bcc"] is None                  # a line break cannot add a header
+    assert client.post(base + "/forward", json={"to": ["mum@example.invalid"], "subject": "Fyi, the plan"}).status_code == 200
+    assert sent_message(bridge)[1]["Subject"] == "Fyi, the plan"
+    assert client.post(base + "/reply", json={"body": "Hi", "subject": "   "}).status_code == 200
+    assert sent_message(bridge)[1]["Subject"] == "Re: Plan for May"                               # blank means the usual one

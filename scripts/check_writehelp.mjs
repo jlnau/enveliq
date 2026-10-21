@@ -80,21 +80,21 @@ async function openReply(page) {
   check("an empty box is allowed: the server is asked with no draft", server.calls.some((c) => c[0] === "help" && c[1] === ""));
   const box = await page.locator("#whSug_reply").innerText();
   check("the suggestion is in a second box labelled Suggested by AI, with Nothing here is sent", box.includes("Suggested by AI") && box.includes("Nothing here is sent") && box.includes("Thanks for asking"));
-  check("the person's own box is still empty", (await page.inputValue("#composeText")) === "");
+  check("the person's own box is still empty", (await page.evaluate(() => document.getElementById("composeText").value)) === "");
   check("the bracket gap is pointed out", box.includes("Check the [brackets]"));
   await shot(page, "writehelp-reply");
 
   await page.getByRole("button", { name: "Accept", exact: true }).click();
-  check("Accept puts the suggestion in the person's box", (await page.inputValue("#composeText")).includes("Thanks for asking"));
+  check("Accept puts the suggestion in the person's box", (await page.evaluate(() => document.getElementById("composeText").value)).includes("Thanks for asking"));
   check("the button now offers to check", (await page.locator("#whBtn_reply").innerText()) === "Check my reply");
   await page.getByRole("button", { name: "Put my version back" }).click();
-  check("Put my version back restores what was there", (await page.inputValue("#composeText")) === "");
+  check("Put my version back restores what was there", (await page.evaluate(() => document.getElementById("composeText").value)) === "");
 
   await page.fill("#composeText", "yes tuesday ok");
   check("with text in the box the button says Check my reply", (await page.locator("#whBtn_reply").innerText()) === "Check my reply");
   await page.click("#whBtn_reply");
   await page.waitForFunction(() => document.getElementById("whSug_reply") && !document.getElementById("whBtn_reply").disabled);
-  check("the draft goes to the server and the box is not changed by the AI", server.calls.some((c) => c[0] === "help" && c[1] === "yes tuesday ok") && (await page.inputValue("#composeText")) === "yes tuesday ok");
+  check("the draft goes to the server and the box is not changed by the AI", server.calls.some((c) => c[0] === "help" && c[1] === "yes tuesday ok") && (await page.evaluate(() => document.getElementById("composeText").value)) === "yes tuesday ok");
   check("Accept says it replaces the text", (await page.locator("#whSug_reply").innerText()).includes("Accept (replaces my text)"));
 
   // sending with an open suggestion that was not used
@@ -102,7 +102,7 @@ async function openReply(page) {
   await page.waitForSelector("#whCheck.open");
   check("sending after using writing help asks first, and says only the box is sent", (await page.locator("#whCheckMsg").innerText()).includes("Only what is in your box will be sent") && (await page.locator("#whCheckText").innerText()) === "yes tuesday ok");
   await page.click("#whCheckNo");
-  check("Go back sends nothing", !server.calls.some((c) => c[0] === "reply") && (await page.inputValue("#composeText")) === "yes tuesday ok");
+  check("Go back sends nothing", !server.calls.some((c) => c[0] === "reply") && (await page.evaluate(() => document.getElementById("composeText").value)) === "yes tuesday ok");
 
   // accepted wording with a gap
   await page.getByRole("button", { name: "Accept (replaces my text)" }).click();
@@ -182,9 +182,9 @@ async function openReply(page) {
   await page.fill("#nmSubject", "Dinner on Friday");
   await page.click("#whBtn_new");
   await page.waitForSelector("#whSug_new");
-  check("the subject goes along, the box is not changed and the suggestion is labelled", server.calls.some((c) => c[0] === "helpnew" && c[2] === "Dinner on Friday") && (await page.inputValue("#nmText")) === "" && (await page.locator("#whSug_new").innerText()).includes("Suggested by AI"));
+  check("the subject goes along, the box is not changed and the suggestion is labelled", server.calls.some((c) => c[0] === "helpnew" && c[2] === "Dinner on Friday") && (await page.evaluate(() => document.getElementById("nmText").value)) === "" && (await page.locator("#whSug_new").innerText()).includes("Suggested by AI"));
   await page.getByRole("button", { name: "Accept", exact: true }).click();
-  check("Accept fills the New email box", (await page.inputValue("#nmText")).includes("Dinner is at seven"));
+  check("Accept fills the New email box", (await page.evaluate(() => document.getElementById("nmText").value)).includes("Dinner is at seven"));
   await context.close();
 }
 

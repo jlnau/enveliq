@@ -240,7 +240,7 @@ async function open(server, { seen = true } = {}) {
   const barIn = await page.evaluate(() => { const b = document.getElementById("bulk"); return b.classList.contains("show") && !!b.closest(".filters") && getComputedStyle(b).display !== "none"; });
   const listTop2 = await page.locator("#list").evaluate((e) => Math.round(e.getBoundingClientRect().top));
   check("selecting two emails shows the bar between Filter and Sort without moving the list", barIn && listTop === listTop2 && (await page.locator("#bulk [data-bulk]").count()) === 3);
-  await page.click("#clear");
+  await page.locator("#previewBulkClear:visible, #clear:visible").first().click();
   check("Clear removes the bar", !(await page.locator("#bulk.show").count()));
   check("every Reviewed, Archive and Bin waits five seconds", (await page.evaluate(() => window.__undoMs)) === 5000);
   {
@@ -314,7 +314,7 @@ await page.click('[data-theme-choice="dark"]');
   await page.click("#composeSend");
   await page.waitForFunction(() => document.getElementById("toast").textContent.includes("Reply sent from alias@example.invalid"));
   const reply = server.calls.find((c) => c[0] === "reply");
-  check("reply request carries only the text and chosen sender", reply && reply[2].body === "Thanks." && reply[2].from_address === "alias@example.invalid" && Object.keys(reply[2]).length === 2);
+  check("reply request carries only the text, its formatted copy and the chosen sender", reply && reply[2].body === "Thanks." && reply[2].from_address === "alias@example.invalid" && String(reply[2].html).includes("Thanks.") && Array.isArray(reply[2].images) && Object.keys(reply[2]).sort().join() === "body,from_address,html,images");
 
   check("a replied email says Replied under its time, in the list row", (await newsRow.locator(".qrow .time .replied").innerText()).includes("Replied"));
   await newsRow.locator(".qrow").first().click().catch(() => {});
@@ -362,7 +362,7 @@ await page.click('[data-theme-choice="dark"]');
   check("the bar comes back after a refresh", await page.locator("#sendBar .sendrow").isVisible());
   await page.locator("#sendBar button").click();
   await page.waitForSelector("#compose.open");
-  check("Undo cancels it and puts the text back in the reply box", (await page.inputValue("#composeText")) === "Hold this" && server.calls.some((c) => c[0] === "cancel") && (await page.locator("#sendBar .sendrow").count()) === 0);
+  check("Undo cancels it and puts the text back in the reply box", (await page.evaluate(() => document.getElementById("composeText").value)) === "Hold this" && server.calls.some((c) => c[0] === "cancel") && (await page.locator("#sendBar .sendrow").count()) === 0);
   await page.click("#composeSend");
   await page.waitForSelector("#sendBar .sendrow");
   await page.waitForFunction(() => document.getElementById("toast").textContent.includes("Reply sent from"), null, { timeout: 9000 });
@@ -381,10 +381,12 @@ await page.click('[data-theme-choice="dark"]');
   // Undo on a desktop: the email goes at once, nothing is sent until the wait is over
   const older = page.locator("article.mail", { hasText: "Older statement" });
   const callsU = server.calls.length;
+  await page.evaluate(() => { window.__undoMs = 4000; });         // long enough that a slow machine cannot run it out before the click below
   await older.locator('[data-status="archived"]').click();
   await page.waitForSelector("#undoBar:not([hidden])");
   check("desktop: the email waits visibly for Undo and the bar names it", (await page.locator("article.mail.leaving").count()) === 1 && (await page.locator("article.mail:not(.leaving)").count()) === 2 && (await page.locator("#undoBar .undobar:last-child span").innerText()).includes("Archived") && (await page.locator("#undoBar .undobar:last-child span").innerText()).includes("Older statement") && server.calls.length === callsU);
   await page.click("#undoBar .undobar:last-child button");
+  await page.evaluate(() => { window.__undoMs = 400; });
   check("desktop: Undo brings it back and nothing was sent", (await page.locator("article.mail").count()) === 3 && server.calls.length === callsU);
   await page.waitForTimeout(700);
   check("desktop: …even after the wait would have been over", server.calls.length === callsU);

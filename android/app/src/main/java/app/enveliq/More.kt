@@ -46,7 +46,7 @@ import kotlinx.coroutines.withContext
 
 /** Loads something from the server and shows it; a plain-words message when it fails. [reload] changes to load again. */
 @Composable
-private fun <T : Any> Loader(reload: Int, load: () -> T, content: @Composable (T) -> Unit) {
+internal fun <T : Any> Loader(reload: Int, load: () -> T, content: @Composable (T) -> Unit) {
     var data by remember { mutableStateOf<T?>(null) }
     var err by remember { mutableStateOf("") }
     LaunchedEffect(reload) {
@@ -68,17 +68,17 @@ private fun <T : Any> Loader(reload: Int, load: () -> T, content: @Composable (T
 }
 
 @Composable
-private fun Empty(text: String) = Text(text, color = Muted, fontSize = 16.sp, lineHeight = 23.sp, modifier = Modifier.padding(20.dp))
+internal fun Empty(text: String) = Text(text, color = Muted, fontSize = 16.sp, lineHeight = 23.sp, modifier = Modifier.padding(20.dp))
 
 @Composable
-private fun Card(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, content: @Composable () -> Unit) {
+internal fun Card(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, content: @Composable () -> Unit) {
     val base = if (onClick != null) modifier.fillMaxWidth().clickable(onClick = onClick) else modifier.fillMaxWidth()
     Surface(color = Panel, shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Line), modifier = base) { Column(Modifier.padding(16.dp)) { content() } }
 }
 
 /** A sub-page with a Back button fixed at the top. */
 @Composable
-private fun SubPage(title: String, subtitle: String = "", onBack: () -> Unit, trailing: @Composable () -> Unit = {}, content: @Composable () -> Unit) {
+internal fun SubPage(title: String, subtitle: String = "", onBack: () -> Unit, trailing: @Composable () -> Unit = {}, content: @Composable () -> Unit) {
     BackHandler(onBack = onBack)
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -178,6 +178,8 @@ internal fun TasksScreen(api: EnveliqApi, mails: List<Mail>, onOpen: (Mail) -> U
 internal fun MoreTab(api: EnveliqApi, start: String = "home") {
     var page by remember { mutableStateOf(start) }
     val back = { page = "home" }
+    var cleanOn by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { cleanOn = withContext(Dispatchers.IO) { api.cleanUpAvailable() } }
     when {
         page == "bell" -> BellPage(api, back)
         page == "shipping" -> ShippingPage(api, back)
@@ -186,10 +188,12 @@ internal fun MoreTab(api: EnveliqApi, start: String = "home") {
         page == "chat" -> ChatsPage(api, back)
         page == "find" -> FindPage(api, back)
         page == "later" -> WaitingPage(api, back)
+        page == "cleanup" -> CleanUpPage(api, back)
         else -> Column(Modifier.fillMaxSize()) {
             Heading("More", "")
             LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(listOf(
+                    Triple("cleanup", "Clean up", "Quiet the mailing lists you do not need."),
                     Triple("find", "Find any email", "Search everything in your mailboxes, old email too."),
                     Triple("later", "Waiting to send", "Emails you set to go later, and any that could not go."),
                     Triple("bell", "Notes and alerts", "Things your other services told Enveliq."),
@@ -197,7 +201,7 @@ internal fun MoreTab(api: EnveliqApi, start: String = "home") {
                     Triple("shipping", "Shipping", "Parcels on their way and when they arrive."),
                     Triple("trips", "Trips and calendar", "Flights, stays and bookings from your email."),
                     Triple("news", "News feeds", "The sites you follow."),
-                )) { (id, title, note) ->
+                ).filter { it.first != "cleanup" || cleanOn }) { (id, title, note) ->
                     Card(onClick = { page = id }) {
                         Text(title, color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
                         Text(note, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 2.dp))
