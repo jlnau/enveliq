@@ -40,6 +40,11 @@ from .mail.tag_routes import build_tag_router
 from .mail.rss_routes import build_rss_router
 from .mail.important import ImportantPeople
 from .mail.important_routes import build_important_router
+from .mail.parse import sending_identities
+from .mail.muted import MutedBook, MuteError, thread_ids
+from .mail.muted_routes import build_muted_router
+from .mail.awayreply import AwayBook, eligible as away_eligible
+from .mail.away_routes import build_away_router
 from .mail.rules import Rules
 from .mail.rules_routes import build_rules_router
 from .mail.drafts import Drafts
@@ -536,6 +541,8 @@ def delete_user_data(user_id: str) -> None:
     draftbook.forget_user(user_id)
     scheduledbook.forget_user(user_id)
     rulebook.forget_user(user_id)
+    mutebook.forget_user(user_id)
+    awaybook.forget_user(user_id)
     senderbook.forget_user(user_id)
     junkbook.forget_user(user_id)
     finder = getattr(mail_ctx, "find_index", None)
@@ -656,6 +663,8 @@ draftbook = Drafts(vault)
 scheduledbook = ScheduledMail(vault)
 scheduled_sender = ScheduledSender(vault, mail_service, scheduledbook, vault.audit)
 rulebook = Rules(vault)
+mutebook = MutedBook(vault)
+awaybook = AwayBook(vault, taskbook.timezone_of)
 tripbook = TripBook(vault, taskbook.timezone_of)
 messagebook = MessageBook(vault, users)
 writehelpbook = WriteHelpBook(vault)
@@ -715,7 +724,7 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, senders=senderbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, scheduled=scheduledbook, rules=rulebook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, style=stylebook, digest=digestbook, waiting=waitbook, summary=dailysummary, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, senders=senderbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, scheduled=scheduledbook, rules=rulebook, muted=mutebook, away=awaybook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, style=stylebook, digest=digestbook, waiting=waitbook, summary=dailysummary, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))
@@ -731,21 +740,38 @@ app.include_router(build_saved_writing_router(mail_ctx))
 app.include_router(build_drafts_router(mail_ctx))
 app.include_router(build_scheduled_router(mail_ctx))
 app.include_router(build_rules_router(mail_ctx))
+app.include_router(build_muted_router(mail_ctx))
+app.include_router(build_away_router(mail_ctx))
 app.include_router(build_trips_router(mail_ctx))
 app.include_router(build_waiting_router(mail_ctx))
 app.include_router(build_junk_router(mail_ctx))
 app.include_router(build_senders_router(mail_ctx))
 app.include_router(build_check_router(mail_ctx))
 def apply_rules(account: dict, arrived: list) -> None:
-    """Mail that has just arrived: apply the owner's rules (archive it, or mark it reviewed). Nothing else about the
-    email is read. Mail from the owner's important people is never touched, and a rule never bins anything (sending to Junk is
-    not binning: the email stays in the mailbox's Junk folder)."""
+    """Mail that has just arrived: first a muted conversation (filed in Archive, never shown, never alerted), then the owner's rules (archive it,
+    or mark it reviewed), then, for what is left, the away reply if the owner switched it on. Nothing else about the email is read. Mail from
+    the owner's important people is never touched by a rule or a mute, and a rule never bins anything (sending to Junk is not binning: the
+    email stays in the mailbox's Junk folder)."""
     user = account.get("owner_user_id")
     if not user:
         return
     for item in arrived:
+        if importantbook.contains(user, item["sender_address"]):
+            _away_reply(account, item, user)              # never muted or filed by a rule, but still politely answered while away
+            continue
+        muted = mutebook.match(user, item.get("ids") or [])
+        if muted:
+            try:
+                resolve_message(account["id"], item["id"], "archived", user, by="mute")
+                mutebook.hit(user, muted, item.get("ids") or [])
+            except BridgeError:
+                break
+            except KeyError:
+                pass
+            continue
         rule = rulebook.match(user, item["sender_address"], item["subject"])
-        if not rule or importantbook.contains(user, item["sender_address"]):
+        if not rule:
+            _away_reply(account, item, user)
             continue
         try:
             resolve_message(account["id"], item["id"], rule["action"], user, by="rule")
@@ -753,6 +779,32 @@ def apply_rules(account: dict, arrived: list) -> None:
             break                              # the mailbox cannot be changed right now: leave the rest where they are
         except KeyError:
             continue
+
+
+def _away_reply(account: dict, item: dict, user: str) -> None:
+    """The owner's away reply, when it is on and this email qualifies. Sent on its own thread so a slow mail server never holds up a sync."""
+    if awaybook.state_of(user) != "active":
+        return
+    try:
+        stored = vault.get_message(account["id"], item["id"])
+    except KeyError:
+        return
+    own = {a.lower() for acct in vault.list_accounts() if acct.get("owner_user_id") == user for a in sending_identities(acct)}
+    target = away_eligible(item, stored, own, time.time())
+    if not target or not awaybook.claim(user, target):
+        return
+
+    def send() -> None:
+        try:
+            built = mail_service.build_reply(account, stored, awaybook.body_of(user), None, add_original=False,
+                                             subject="Automatic reply: " + str(stored.get("subject") or "(no subject)")[:200], auto=True)
+            mail_service.bridge.send(mail_service.target(account), built[0], built[1], built[2])
+            vault.audit({"event": "away_reply_sent", "actor_user_id": user, "account_id": account["id"], "at": time.time()})
+        except Exception:
+            awaybook.release(user, target)                       # not sent: this sender can be answered next time
+            logger.info("away reply could not be sent")
+
+    threading.Thread(target=send, daemon=True).start()
 
 
 mail_service.on_new = apply_rules
@@ -1097,6 +1149,36 @@ def list_retained_messages_endpoint(account_id: AccountId, session: Session = De
         stored = vault.list_messages(account_id)           # (mail that is no longer waited for has just been released)
     # New mail stays out of the list until its summary and the summaries of its files are ready.
     return [public_message(m) for m in stored if not (m.get("ai_pending") and m.get("state", "unread") == "unread")]
+
+
+@app.post("/api/v1/accounts/{account_id}/messages/{message_id}/mute")
+def mute_conversation_endpoint(
+    account_id: AccountId,
+    message_id: MessageId,
+    session: Session = Depends(current_session),
+):
+    """Mute this email's conversation: later replies are filed in Archive on arrival. This email is archived now too."""
+    load_account(account_id, session.principal, owner_only=True, action="mute a conversation")
+    try:
+        stored = vault.get_message(account_id, message_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Message not found") from exc
+    ids = thread_ids(stored.get("reply_context"))
+    if not ids:
+        raise HTTPException(status_code=422, detail="This email cannot be muted because it has no conversation marker.")
+    try:
+        entry = mutebook.add(session.principal.user_id, stored.get("subject"), ids)
+    except MuteError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from None
+    try:
+        resolve_message(account_id, message_id, "archived", session.principal.user_id)
+    except BridgeError as err:
+        mutebook.remove(session.principal.user_id, entry["id"])        # the mailbox could not be changed: leave things as they were
+        raise HTTPException(status_code=BRIDGE_HTTP_STATUS.get(err.code, 502), detail={"code": err.code, "message": err.message}) from None
+    except KeyError:
+        pass
+    vault.audit({"event": "conversation_muted", "actor_user_id": session.principal.user_id, "account_id": account_id, "at": time.time()})
+    return {"muted": True, "id": entry["id"]}
 
 
 @app.post("/api/v1/accounts/{account_id}/messages/{message_id}/resolve", status_code=204)

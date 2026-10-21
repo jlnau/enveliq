@@ -1849,50 +1849,201 @@ async function importantPage(me) {
 }
 
 // ---------- signature and saved replies: the person's own text, to reuse when they write ----------
+// A small writing box for a signature: bold, italic, a link, and line breaks. What it hands back is plain, safe HTML (the server checks it again).
+function sigBox(label) {
+  const box = h("div", { class: "sig-edit", role: "textbox", "aria-multiline": "true", "aria-label": label, contenteditable: "true", spellcheck: "true" });
+  box.contentEditable = "true";
+  const linkIn = h("input", { type: "url", placeholder: "https://example.com", "aria-label": "Web address for the link", autocomplete: "off" });
+  const linkGo = h("button", { class: "btn small primary", type: "button", text: "Add link" });
+  const linkNo = h("button", { class: "btn small", type: "button", text: "Cancel" });
+  const linkRow = h("div", { class: "sig-link", hidden: true }, linkIn, linkGo, linkNo);
+  let range = null;
+  const keep = () => { const s = getSelection(); if (s.rangeCount && box.contains(s.getRangeAt(0).commonAncestorContainer)) range = s.getRangeAt(0).cloneRange(); };
+  const restore = () => { box.focus(); if (range) { const s = getSelection(); s.removeAllRanges(); s.addRange(range); } };
+  const cmd = (c, v) => { box.focus(); try { document.execCommand(c, false, v); } catch (e) { /* not available */ } };
+  const tool = (text, title, run, cls) => { const b = h("button", { class: "rte-b" + (cls ? " " + cls : ""), type: "button", title, "aria-label": title, onclick: run }); b.innerHTML = text; b.addEventListener("mousedown", (e) => e.preventDefault()); return b; };
+  const bar = h("div", { class: "sig-bar", role: "toolbar", "aria-label": "Formatting" },
+    tool("<b>B</b>", "Bold", () => cmd("bold")), tool("<i>I</i>", "Italic", () => cmd("italic")),
+    tool("Link", "Add a link to the selected words", () => { keep(); linkRow.hidden = false; linkIn.value = ""; linkIn.focus(); }),
+    tool("No link", "Take the link off the selected words", () => cmd("unlink")));
+  linkGo.addEventListener("click", () => {
+    const u = linkIn.value.trim();
+    if (!/^(https?:\/\/|mailto:)[^\s"'<>]+$/i.test(u)) { toast("Type a web address that starts with https://"); return; }
+    restore();
+    const s = getSelection();
+    if (s.isCollapsed) cmd("insertHTML", `<a href="${u.replace(/"/g, "")}">${u.replace(/[<>&]/g, "")}</a>`); else cmd("createLink", u);
+    linkRow.hidden = true;
+  });
+  linkNo.addEventListener("click", () => { linkRow.hidden = true; restore(); });
+  // Enter makes a line break (not a new block), so the signature stays simple.
+  box.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); cmd("insertLineBreak"); } });
+  box.addEventListener("paste", (e) => { e.preventDefault(); const t = (e.clipboardData || window.clipboardData).getData("text/plain"); cmd("insertText", t.replace(/\r?\n/g, " ")); });
+  const out = (n) => {
+    let s = "";
+    for (const c of n.childNodes) {
+      if (c.nodeType === 3) { s += c.data.replace(/[&<>]/g, (x) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[x])); continue; }
+      if (c.nodeType !== 1) continue;
+      const t = c.tagName.toUpperCase();
+      if (t === "BR") s += "<br>";
+      else if (t === "B" || t === "STRONG") s += "<b>" + out(c) + "</b>";
+      else if (t === "I" || t === "EM") s += "<i>" + out(c) + "</i>";
+      else if (t === "A") { const u = c.getAttribute("href") || ""; s += /^(https?:\/\/|mailto:)[^\s"'<>]+$/i.test(u) ? `<a href="${u}">${out(c)}</a>` : out(c); }
+      else if (t === "DIV" || t === "P") s += (s && !s.endsWith("<br>") ? "<br>" : "") + out(c);
+      else s += out(c);
+    }
+    return s;
+  };
+  return {
+    el: h("div", { class: "sig-box" }, bar, linkRow, box),
+    box,
+    html: () => out(box).replace(/(<br>)+$/, ""),
+    set(html, text) {
+      if (html) { const doc = new DOMParser().parseFromString("<body>" + html + "</body>", "text/html"); box.innerHTML = out(doc.body); }
+      else { box.textContent = ""; String(text || "").split("\n").forEach((l, i) => { if (i) box.append(document.createElement("br")); if (l) box.append(document.createTextNode(l)); }); }
+    },
+  };
+}
+
 async function savedPage(me) {
-  let state = { signature: "", replies: [], limits: { signature: 1000, replies: 30, title: 60, text: 3000 } };
+  let state = { signature: "", signature_html: "", signatures: [], addresses: [], replies: [], limits: { signature: 1000, replies: 30, title: 60, text: 3000 } };
   let editing = null;
-  const sig = h("textarea", { id: "sv_sig", rows: "4", "aria-label": "Your signature" });
+  const def = sigBox("Your signature");
   const sigSaved = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
+  const flash = (el) => { el.textContent = "Saved ✓"; el.classList.add("show"); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("show"), 1800); };
   const list = h("div", { class: "ab-list" });
-  const title = h("input", { id: "sv_title", type: "text", placeholder: "A short name, for example \u201cRunning late\u201d", "aria-label": "Name of the saved reply", autocomplete: "off" });
+  const addrBox = h("div", { class: "ab-list" });
+  const title = h("input", { id: "sv_title", type: "text", placeholder: "A short name, for example “Running late”", "aria-label": "Name of the saved reply", autocomplete: "off" });
   const text = h("textarea", { id: "sv_text", rows: "4", placeholder: "The words to insert", "aria-label": "Text of the saved reply" });
   const save = h("button", { class: "btn primary", type: "button", text: "Save reply" });
   const cancel = h("button", { class: "btn", type: "button", text: "Cancel", hidden: true });
+  // One box for each sending address. The default signature is used for any address that has none of its own.
+  const addrBoxes = new Map();
+  function paintAddresses() {
+    const all = [...new Set([...(state.addresses || []), ...state.signatures.map((s) => s.address)])].sort();
+    addrBox.replaceChildren(...(all.length > 1 || state.signatures.length ? all.map((a) => {
+      const own = state.signatures.find((s) => s.address === a);
+      const ed = sigBox(`Signature for ${a}`); ed.set(own ? own.html : "", "");
+      const tag = h("span", { class: "savedtag", role: "status", "aria-live": "polite" });
+      addrBoxes.set(a, ed);
+      const put = async () => {
+        const html = ed.html();
+        if (html === (own ? own.html : "")) return;
+        try { const keepAddr = state.addresses; state = await api(`/me/saved/signatures?address=${encodeURIComponent(a)}`, { method: "PUT", body: { html } }); state.addresses = keepAddr; flash(tag); } catch (er) { toast(er.message); }
+      };
+      ed.box.addEventListener("blur", put);
+      return h("div", { class: "sv-addr" }, h("label", {}, h("strong", { text: a }), " ", tag),
+        ed.el,
+        h("div", { class: "hint", text: own ? "Used when you write from this address." : "Empty: your main signature is used for this address." }));
+    }) : [h("p", { class: "hint", text: "You have one sending address, so the signature above is used for it. Add another mailbox or sending address to give each its own." })]));
+  }
   function paint() {
-    sig.value = state.signature; sig.maxLength = state.limits.signature; title.maxLength = state.limits.title; text.maxLength = state.limits.text;
+    state.signatures = state.signatures || []; state.addresses = state.addresses || [];
+    def.set(state.signature_html, state.signature);
+    title.maxLength = state.limits.title; text.maxLength = state.limits.text;
     list.replaceChildren(...(state.replies.length ? state.replies.map(r => h("div", { class: "ab-row" },
-      h("span", { class: "ab-who" }, h("strong", { text: r.title }), h("small", { text: r.text.length > 120 ? r.text.slice(0, 120) + "\u2026" : r.text })),
+      h("span", { class: "ab-who" }, h("strong", { text: r.title }), h("small", { text: r.text.length > 120 ? r.text.slice(0, 120) + "…" : r.text })),
       h("button", { class: "btn small", type: "button", text: "Edit", onclick: () => { editing = r.id; title.value = r.title; text.value = r.text; save.textContent = "Update reply"; cancel.hidden = false; title.focus(); } }),
-      h("button", { class: "ab-x", type: "button", "aria-label": `Remove ${r.title}`, text: "\u00d7", onclick: async () => {
-        try { state = await api(`/me/saved/replies/${r.id}`, { method: "DELETE" }); if (editing === r.id) reset(); paint(); toast("Removed"); } catch (er) { toast(er.message); }
+      h("button", { class: "ab-x", type: "button", "aria-label": `Remove ${r.title}`, text: "×", onclick: async () => {
+        try { const keepAddr = state.addresses; state = await api(`/me/saved/replies/${r.id}`, { method: "DELETE" }); state.addresses = keepAddr; if (editing === r.id) reset(); paint(); toast("Removed"); } catch (er) { toast(er.message); }
       } }))) : [h("p", { class: "hint", text: "No saved replies yet. Add one below." })]));
+    paintAddresses();
   }
   function reset() { editing = null; title.value = ""; text.value = ""; save.textContent = "Save reply"; cancel.hidden = true; }
   cancel.addEventListener("click", reset);
-  // The signature saves by itself when you click away from it.
-  sig.addEventListener("change", async () => {
-    try { state = await api("/me/saved/signature", { method: "PUT", body: { text: sig.value } }); paint(); sigSaved.textContent = "Saved ✓"; sigSaved.classList.add("show"); clearTimeout(sigSaved._t); sigSaved._t = setTimeout(() => sigSaved.classList.remove("show"), 1800); } catch (er) { toast(er.message); }
+  // The main signature saves by itself when you click away from it.
+  let lastDefault = "";
+  def.box.addEventListener("blur", async () => {
+    const html = def.html();
+    if (html === lastDefault) return;
+    try { const keepAddr = state.addresses; state = await api("/me/saved/signature", { method: "PUT", body: { text: "", html } }); state.addresses = keepAddr; lastDefault = def.html(); flash(sigSaved); } catch (er) { toast(er.message); }
   });
   save.addEventListener("click", async () => {
     try {
+      const keepAddr = state.addresses;
       state = editing ? await api(`/me/saved/replies/${editing}`, { method: "PUT", body: { title: title.value, text: text.value } })
         : await api("/me/saved/replies", { method: "POST", body: { title: title.value, text: text.value } });
-      reset(); paint(); toast("Saved");
+      state.addresses = keepAddr; reset(); paint(); toast("Saved");
     } catch (er) { toast(er.message); }
   });
   try { state = await api("/me/saved"); } catch (er) { show(...chrome(me, "saved", h("h1", { text: "Signature & saved replies" }), alertBox("bad", er.message))); return; }
-  paint();
+  paint(); lastDefault = def.html();
   const wrap = h("div", {},
     h("div", { class: "sv-block" },
       h("h2", {}, "Your signature ", sigSaved),
-      h("p", { class: "lead", text: "Put at the bottom of every new email and reply when you open the box. You can change or delete it in the message box before you send. Leave this empty for no signature." }),
-      sig),
+      h("p", { class: "lead", text: "Put at the bottom of every new email and reply when you open the box. It can have bold, italic and links. You can change or delete it in the message box before you send. Leave this empty for no signature." }),
+      def.el),
+    h("div", { class: "sv-block" },
+      h("h2", { text: "A different signature for each address" }),
+      h("p", { class: "lead", text: "When you choose a different From address in the message box, its signature is put in. An address with no signature of its own uses the one above." }),
+      addrBox),
     h("div", { class: "sv-block" },
       h("h2", { text: "Saved replies" }),
-      h("p", { class: "lead", text: "Short pieces of text you use often. In the message box, choose one from \u201cSaved reply\u201d and it is put in where your cursor is. Only you can see them." }),
+      h("p", { class: "lead", text: "Short pieces of text you use often. In the message box, choose one from “Saved reply” and it is put in where your cursor is. Only you can see them." }),
       list, title, text, h("div", { class: "row" }, save, cancel)));
   show(...chrome(me, "saved", h("h1", { text: "Signature & saved replies" }), h("section", { class: "section" }, wrap)));
+}
+
+// ---------- muted conversations: the list, and Unmute ----------
+async function mutedPage(me) {
+  let state = { items: [], max: 300 };
+  const list = h("div", { class: "ab-list" });
+  const when = (t) => t ? new Date(t * 1000).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "";
+  function paint() {
+    list.replaceChildren(...(state.items.length ? state.items.map((it) => h("div", { class: "ab-row" },
+      h("span", { class: "ab-who" }, h("strong", { text: it.subject }),
+        h("small", { text: `Muted ${when(it.muted_at)}. ${it.count ? `${it.count} later ${it.count === 1 ? "reply was" : "replies were"} put in Archive.` : "No later replies yet."}` })),
+      h("button", { class: "btn small", type: "button", text: "Unmute", "aria-label": `Unmute ${it.subject}`, onclick: async () => {
+        try { state = await api(`/me/muted/${it.id}`, { method: "DELETE" }); paint(); toast("Unmuted. New replies come to your inbox again."); } catch (er) { toast(er.message); }
+      } }))) : [h("p", { class: "hint", text: "Nothing is muted. Open an email, press the three dots, then Mute conversation." })]));
+  }
+  try { state = await api("/me/muted"); } catch (er) { show(...chrome(me, "muted", h("h1", { text: "Muted conversations" }), alertBox("bad", er.message))); return; }
+  paint();
+  const wrap = h("div", { class: "sv-block" },
+    h("h2", { text: "Muted conversations" }),
+    h("p", { class: "lead", text: "New replies in a muted conversation go straight to Archive in your mailbox. They do not come to your inbox and they do not send an alert. Nothing is deleted. Unmute it to hear about replies again." }),
+    list);
+  show(...chrome(me, "muted", h("h1", { text: "Muted conversations" }), h("section", { class: "section" }, wrap)));
+}
+
+// ---------- away reply: an automatic answer while you are away ----------
+async function awayPage(me) {
+  let state = { enabled: false, start: "", end: "", body: "", state: "off", answered: 0, limits: { body: 2000 }, today: "" };
+  const on = h("input", { id: "aw_on", type: "checkbox" });
+  const start = h("input", { id: "aw_start", type: "date", "aria-label": "First day" });
+  const end = h("input", { id: "aw_end", type: "date", "aria-label": "Last day" });
+  const body = h("textarea", { id: "aw_body", rows: "6", "aria-label": "Message for people who write to you", placeholder: "Hello, I am away until the 20th and will answer when I am back." });
+  const status = h("p", { class: "hint", role: "status", "aria-live": "polite" });
+  const save = h("button", { class: "btn primary", type: "button", text: "Save" });
+  function paint() {
+    on.checked = state.enabled; start.value = state.start; end.value = state.end; body.value = state.body; body.maxLength = state.limits.body;
+    if (state.today) start.min = state.today;
+    status.textContent = !state.enabled ? "The away reply is off."
+      : state.state === "scheduled" ? `It will start on ${state.start}.`
+      : state.state === "ended" ? "It has ended. Switch it off, or set new dates."
+      : `It is on until ${state.end}. ${state.answered ? `${state.answered} ${state.answered === 1 ? "person has" : "people have"} been answered.` : "Nobody has been answered yet."}`;
+  }
+  save.addEventListener("click", async () => {
+    try { state = await api("/me/away", { method: "PUT", body: { enabled: on.checked, start: start.value, end: end.value, body: body.value } }); paint(); toast(state.enabled ? "Away reply saved" : "Away reply is off"); } catch (er) { toast(er.message); }
+  });
+  try { state = await api("/me/away"); } catch (er) { show(...chrome(me, "away", h("h1", { text: "Away reply" }), alertBox("bad", er.message))); return; }
+  paint();
+  const wrap = h("div", { class: "sv-block" },
+    h("h2", { text: "Away reply" }),
+    h("p", { class: "lead", text: "While this is on, Enveliq answers new email for you with the words below, even though you did not press Send. It is off until you turn it on." }),
+    h("label", { class: "check", for: "aw_on" }, on, h("span", {}, h("strong", { text: "Send an away reply between these dates" }))),
+    h("div", { class: "row" }, h("div", {}, h("label", { for: "aw_start", text: "First day" }), start), h("div", {}, h("label", { for: "aw_end", text: "Last day" }), end)),
+    h("label", { for: "aw_body", text: "Your message" }), body,
+    status,
+    h("div", { class: "row" }, save),
+    more("How it stays careful",
+      h("ul", { class: "hint" },
+        h("li", { text: "Each person gets one reply, however many emails they send." }),
+        h("li", { text: "Newsletters, mailing lists, automatic mail and “no reply” addresses never get one." }),
+        h("li", { text: "Only mail sent to you gets one, not mail where you were hidden on the list." }),
+        h("li", { text: "The reply is marked as automatic, says only what you wrote here, and does not quote their email." }),
+        h("li", { text: "At most 20 replies go out in an hour. Your mailbox is only changed by sending the reply; nothing is deleted." }),
+        h("li", { text: "It is plain text, and it goes out from the address the email was sent to." }))));
+  show(...chrome(me, "away", h("h1", { text: "Away reply" }), h("section", { class: "section" }, wrap)));
 }
 
 // ---------- mail rules: "archive (or mark reviewed) new mail from this sender" ----------
@@ -2212,4 +2363,4 @@ if (!window.ENVELIQ_EMBED) {
   if (!["/login", "/setup", "/unlock", "/terms", "/privacy", "/security", "/welcome", "/app-signin"].includes(location.pathname) && !new URLSearchParams(location.search).has("enroll")) sendWatcher();
 }
 
-if (window.ENVELIQ_EMBED) window.EnveliqEmbed = { setMount, api, profilePage, mailboxesPage, accountPage, welcomePage, adminPage, generalPage, aiInstructionsPage, addressBookPage, importantPage, savedPage, rulesPage, remindersPage, syncPage };
+if (window.ENVELIQ_EMBED) window.EnveliqEmbed = { setMount, api, profilePage, mailboxesPage, accountPage, welcomePage, adminPage, generalPage, aiInstructionsPage, addressBookPage, importantPage, savedPage, mutedPage, awayPage, rulesPage, remindersPage, syncPage };

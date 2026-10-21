@@ -178,14 +178,20 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
     val hasContent = body.isNotBlank() || to.isNotBlank() || toTyping.isNotBlank() || (kind == "new" && subject.isNotBlank())
 
     // Your signature (from Settings on the website) is put in the box when a new message starts, where you can change or remove it.
-    LaunchedEffect(Unit) {
-        if (draft == null && body.isBlank()) {
-            try {
-                val sig = withContext(Dispatchers.IO) { api.signature() }
-                if (sig.isNotBlank() && body.isBlank()) body = "\n\n" + sig
-            } catch (_: Exception) { }
+    // Each sending address can have its own: choosing another From swaps it, as long as you have not changed the signature yourself.
+    var sigIn by remember { mutableStateOf("") }
+    suspend fun swapSignature(address: String?) {
+        val sig = try { withContext(Dispatchers.IO) { api.signatureFor(address) } } catch (_: Exception) { return }
+        if (sig == sigIn) return
+        if (sigIn.isNotBlank() && body.trimEnd().endsWith(sigIn)) {
+            body = body.trimEnd().removeSuffix(sigIn).trimEnd() + (if (sig.isNotBlank()) "\n\n" + sig else "")
+            sigIn = sig
+        } else if (sigIn.isBlank() && draft == null && body.isBlank() && sig.isNotBlank()) {
+            body = "\n\n" + sig
+            sigIn = sig
         }
     }
+    LaunchedEffect(from?.address) { if (draft == null) swapSignature(from?.address) }
 
     LaunchedEffect(Unit) {
         try {
@@ -444,6 +450,8 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
                         val toMonday = ((java.util.Calendar.MONDAY - c.get(java.util.Calendar.DAY_OF_WEEK) + 7) % 7).let { if (it == 0) 7 else it }
                         pick(at(toMonday, 8), "on Monday morning")
                     }) { Text("Next Monday morning", color = Blue, fontSize = 16.sp) }
+                    val pickContext = androidx.compose.ui.platform.LocalContext.current
+                    TextButton(onClick = { pickDateAndTime(pickContext) { ms, words -> pick(ms, words) } }) { Text("Pick date and time…", color = Blue, fontSize = 16.sp) }
                 }
             },
             confirmButton = {},

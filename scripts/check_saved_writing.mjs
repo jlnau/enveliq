@@ -45,7 +45,7 @@ function makeServer(initial) {
     if (p === "/api/v1/accounts/a1/send") { calls.push(["send", JSON.parse(req.postData())]); return json(200, { sent: true, from: "me@example.invalid" }); }
     if (/\/api\/v1\/accounts\/a1\/messages\/m1\/reply$/.test(p)) { calls.push(["reply", JSON.parse(req.postData())]); return json(200, { sent: true, from: "me@example.invalid" }); }
     if (p === "/api/v1/me/saved" && m === "GET") return json(200, view());
-    if (p === "/api/v1/me/saved/signature" && m === "PUT") { signature = JSON.parse(req.postData()).text.trim(); calls.push(["sig", signature]); return json(200, view()); }
+    if (p === "/api/v1/me/saved/signature" && m === "PUT") { signature = (JSON.parse(req.postData()).html || "").replace(/<br>/g, "\n").replace(/<[^>]+>/g, "").trim(); calls.push(["sig", signature]); return json(200, view()); }
     if (p === "/api/v1/me/saved/replies" && m === "POST") {
       const b = JSON.parse(req.postData()); calls.push(["add", b]);
       if (!b.title.trim() || !b.text.trim()) return json(422, { detail: "Give the reply a short name and some text." });
@@ -136,12 +136,13 @@ const SIG = "Thanks,\nMorgan";
   check("Settings has a Signature & saved replies page", (await page.locator('#settingsNav [data-settings-tab~="saved"]').innerText()).includes("People & writing"));
   await page.evaluate(() => document.querySelector('#settingsNav [data-settings-tab~="saved"]').click());
   const host = page.locator('[data-settings-panel="saved"] .embed-host');
-  await host.locator("#sv_sig").waitFor({ timeout: 8000 });
+  await host.locator("[aria-label=\"Your signature\"]").waitFor({ timeout: 8000 });
   const text = () => host.evaluate((h) => h.shadowRoot.textContent);
-  check("it shows the signature and the saved reply", (await host.locator("#sv_sig").inputValue()) === SIG && /Running late/.test(await text()));
+  check("it shows the signature and the saved reply", (await host.locator("[aria-label=\"Your signature\"]").innerText()).trim() === SIG && /Running late/.test(await text()));
   await shot(page, "saved-settings");
-  await host.locator("#sv_sig").fill("Best wishes,\nMorgan");
-  await host.locator("#sv_sig").press("Tab");
+  await host.locator("[aria-label=\"Your signature\"]").evaluate((el) => { el.innerHTML = "Best wishes,<br>Morgan"; });
+  await host.locator("[aria-label=\"Your signature\"]").focus();
+  await host.locator("[aria-label=\"Your signature\"]").evaluate((el) => el.blur());
   await page.waitForTimeout(400);
   check("saving the signature sends it", server.calls.some((c) => c[0] === "sig" && c[1] === "Best wishes,\nMorgan"));
   await host.locator("#sv_title").fill("");

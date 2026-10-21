@@ -526,6 +526,40 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
             }
             if (note.isNotEmpty()) Footnote(note, Amber)
         }
+        "muted" -> Page("Muted conversations", back("home")) {
+            var items by remember { mutableStateOf<List<MutedConversation>?>(null) }
+            var note by remember { mutableStateOf("") }
+            var reload by remember { mutableStateOf(0) }
+            LaunchedEffect(reload) {
+                try { items = withContext(Dispatchers.IO) { api.mutedConversations() } }
+                catch (e: Exception) { note = "Could not load this list. Check your connection and try again." }
+            }
+            val list = items
+            if (list == null && note.isEmpty()) Footnote("Loading...")
+            if (list != null && list.isEmpty()) Footnote("Nothing is muted. Open an email, press the three dots, then Mute conversation.")
+            if (list != null && list.isNotEmpty()) {
+                Group {
+                    list.forEachIndexed { i, c ->
+                        if (i > 0) HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(c.subject, color = Ink, fontSize = 16.sp)
+                                Text(if (c.count == 0) "No later replies yet" else c.count.toString() + " later " + (if (c.count == 1) "reply was" else "replies were") + " put in Archive", color = Muted, fontSize = 13.sp)
+                            }
+                            TextButton(onClick = {
+                                scope.launch {
+                                    try { withContext(Dispatchers.IO) { api.unmute(c.id) }; note = "" }
+                                    catch (e: Exception) { note = "Could not unmute that conversation. Please try again." }
+                                    reload++
+                                }
+                            }) { Text("Unmute", color = Blue) }
+                        }
+                    }
+                }
+                Footnote("New replies in these conversations go to Archive in your mailbox and do not alert you. Nothing is deleted.")
+            }
+            if (note.isNotEmpty()) Footnote(note, Amber)
+        }
         "account" -> Page("Account", back("home")) {
             Group {
                 NavRow("", tintTool, "Server", value = server.removePrefix("https://")) { }
@@ -642,6 +676,8 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                 }
                 HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
                 NavRow("🚫", tintAlerts, "Blocked senders") { page = "blocked" }
+                HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                NavRow("🔇", tintAlerts, "Muted conversations") { page = "muted" }
             }
             if (writeOn) Group {
                 NavRow("✎", tintAccount, "Writing help", note = "Suggested wording, Quick AI Send and your writing style.") { page = "writing" }

@@ -210,3 +210,51 @@ def forward_block_html(head: str, text: str) -> str:
 
 def has_content(html: str | None, images: list[Any] | None) -> bool:
     return bool(html and (re.sub(r"<[^>]*>|&nbsp;|\s", "", html) or images))
+
+
+class _Plain(HTMLParser):
+    BLOCK = {"p", "div", "li", "ul", "ol", "blockquote", "h1", "h2", "h3", "pre", "hr"}
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.out: list[str] = []
+        self.links: list[str] = []
+        self.starts: list[int] = []
+
+    def _nl(self) -> None:
+        text = "".join(self.out)
+        if text and not text.endswith("\n"):
+            self.out.append("\n")
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "br":
+            self.out.append("\n")
+        elif tag == "li":
+            self._nl()
+            self.out.append("- ")
+        elif tag in self.BLOCK:
+            self._nl()
+        elif tag == "a":
+            href = dict(attrs).get("href") or ""
+            self.links.append(href if _WEB.match(href) else "")
+            self.starts.append(len("".join(self.out)))
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in self.BLOCK:
+            self._nl()
+        elif tag == "a" and self.starts:
+            start, href = self.starts.pop(), self.links.pop()
+            label = "".join(self.out)[start:].strip()
+            if href and label and label.rstrip("/") != href.rstrip("/") and label != re.sub(r"^https?://", "", href).rstrip("/"):
+                self.out.append(f" ({href})")
+
+    def handle_data(self, data: str) -> None:
+        self.out.append(data.replace("\xa0", " "))
+
+
+def to_text(html: str) -> str:
+    """The words of formatted text as plain text: lines, "- " for bullets, a link's address after its words."""
+    parser = _Plain()
+    parser.feed(html)
+    parser.close()
+    return re.sub(r"\n{3,}", "\n\n", "".join(parser.out)).strip("\n")

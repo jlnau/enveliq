@@ -68,6 +68,7 @@ class MailViewBody(StrictModel):
     peek: bool
     action_feedback: bool = True
     show_original: bool = False
+    conversations: bool = False
 
 
 class MailContextBody(StrictModel):

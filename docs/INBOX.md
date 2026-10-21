@@ -6,6 +6,20 @@ The small things that make the inbox calm to use.
 
 The Tag, Task, Reply and other email actions have a fine oval outline so they are easier to recognise as buttons. The outline is drawn inside each existing button, without changing its size or spacing. The same design works in light and dark mode.
 
+## The three-dot menu on an email
+
+The action row under an email ends, at the far right on a computer and on a phone, with a **three-dot button**. It opens a menu with Reply, Reply all, Forward and Snooze (these stay in the row too), and also: **Important person**, **Always archive these**, **Send to Junk**, **Block sender** (it sends this email to Junk and makes sure new email from them goes there too; undo it in Settings, Mail rules), **Mute conversation** (see [Mute](MUTE.md)), **Print email** and **Save as PDF**. On a phone the same menu slides up from the bottom. Escape closes it and the arrow keys move through it. The same three-dot button is in the open original email. The Android app already had these actions behind its three dots; it now has **Mute conversation** there too.
+
+**Print email** and **Save as PDF** open the email on its own, as the sender made it when it has formatting, and then your browser's print window. Choose a printer to print, or choose **Save as PDF** as the destination to keep a PDF with the original formatting. Enveliq does not make or keep a PDF itself, and the email is still only fetched from your mailbox while you look at it.
+
+## Mark unread
+
+A Reviewed email (the ones kept for a few days) has a **Mark unread** button, and the same item in its three-dot menu. It puts the unread mark back on the email in your mailbox (Proton, IMAP and Microsoft alike) and returns it to the inbox. Android has had this on Reviewed emails since v0.100. Emails you archived are in your mailbox's Archive folder, so open them there if you want them unread again.
+
+## Conversation View
+
+**Customise, Conversations, Conversation View** (off by default) groups emails of the same conversation, among the emails in the list you are looking at, under the newest one. A line such as "3 emails in this conversation" shows the others when you press **Show**. Grouping uses the emails' own reply markers, and nothing about reviewing changes: each email keeps its own buttons, and Reviewed, Archive and Bin still act on that one email. Select all, keyboard moves and the counts work as before, and the Focus deck always shows one email at a time. The choice is saved for your own account and applies on all your devices.
+
 ## Opening the menu on a phone
 
 Swipe inward from the left edge of the screen to open the mailbox menu. Swipe left across the open menu to close it. The browser Back button, including the phone's system Back button, closes the open menu rather than leaving the current page. The menu button and the dimmed area outside the menu still work as before.

@@ -78,17 +78,23 @@ async function open(server, width = 1200, height = 900) {
   const server = makeServer([], ["beth@example.invalid"]);
   const { page, errors } = await open(server);
   await page.locator("article.mail", { hasText: "School trip form" }).locator(".qmain").click();
-  check("an important person's email does not offer a rule (a rule would never touch it)", (await page.locator("[data-rule]").count()) === 0);
+  const menuOf = async () => { await page.locator(".qmore").first().click(); return page.locator("#moreMenu"); };
+  await page.locator("article.mail", { hasText: "School trip form" }).locator(".qmain").click();
+  let menu = await menuOf();
+  check("an important person's email does not offer a rule (a rule would never touch it)", (await menu.locator("[data-rule]").count()) === 0);
+  await page.keyboard.press("Escape");
   await page.locator("article.mail", { hasText: "School trip form" }).locator(".qmain").click();
   await page.locator("article.mail", { hasText: "Weekly sale" }).locator(".qmain").click();
-  const btn = page.locator("[data-rule]");
-  check("another email offers 'Always archive these'", (await btn.innerText()) === "Always archive these");
+  menu = await menuOf();
+  const btn = menu.locator("[data-rule]");
+  check("another email offers 'Always archive these' in the three-dot menu", (await btn.innerText()) === "Always archive these");
+  check("it is no longer a button in the row", (await page.locator("article.mail .qleft [data-rule]").count()) === 0);
   await btn.click();
-  await page.waitForFunction(() => document.querySelector("[data-rule]") && document.querySelector("[data-rule]").textContent === "Rule saved");
+  await page.waitForFunction(() => /new email from Shop is archived/.test(document.getElementById("toast").innerText));
   const add = server.calls.find((c) => c[0] === "add")[1];
   check("pressing it sends the sender and the Archive action, with no subject words", add.sender === "deals@shop.example.invalid" && add.action === "archived" && add.subject === "");
   check("a plain message says what will happen and where to change it", /new email from Shop is archived for you/.test(await page.locator("#toast").innerText()) && /Settings, Mail rules/.test(await page.locator("#toast").innerText()));
-  check("the button is used up so one press makes one rule", await btn.isDisabled());
+  check("the menu closes", await page.locator("#moreMenu").isHidden());
   check("no script errors", errors.length === 0);
   await page.close();
 }

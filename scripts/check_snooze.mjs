@@ -124,11 +124,11 @@ const badge = (page, id) => page.locator("#" + id).innerText();
   await expandAll(page);
   await row(page, "Book club").locator("[data-snooze]").click();
   const menu = page.locator("#snoozeMenu");
-  check("a date can be picked, and only from tomorrow on", (await menu.locator("#snzDate").getAttribute("min")) === "2026-10-15");
-  await menu.locator("#snzDate").fill("2026-10-20");
+  check("a date and time can be picked, and only from now on", String(await menu.locator("#snzDate").getAttribute("type")) === "datetime-local" && (await menu.locator("#snzDate").getAttribute("min")).startsWith("2026-10-14"));
+  await menu.locator("#snzDate").fill("2026-10-20T15:30");
   await menu.locator("[data-snooze-date]").click();
   await page.waitForTimeout(200);
-  check("a picked date means 8 am that day, Melbourne time", posted[posted.length - 1].until === utc("2026-10-20T08:00:00+11:00"));
+  check("a picked date and time is used exactly, Melbourne time", posted[posted.length - 1].until === utc("2026-10-20T15:30:00+11:00"));
   await context.close();
 }
 
