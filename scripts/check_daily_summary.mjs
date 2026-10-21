@@ -103,14 +103,14 @@ const subjects = (page) => page.evaluate(() => [...document.querySelectorAll("ar
   check("it opens like an email: written by AI, grouped by kind, nothing treated as page code", text.includes("Summaries written by AI") && text.includes("Shopping") && text.includes("Newsletters") && (await page.locator("#dgBody img").count()) === 0 && (await page.evaluate(() => window.__pwned)) === undefined && text.includes("<b>Everything is half price.</b>"));
   const first = page.locator("#dgBody .dg-item").first();
   const names = await first.locator(".dg-ic").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label") + "|" + e.title + "|" + e.innerText.trim()));
-  check("each email has three icon-only buttons with names on hover: reviewed, archive, bin", names.length === 3 && names.every((n) => n.split("|")[2] === "" && n.split("|")[1]) && /reviewed/i.test(names[0]) && /archive/i.test(names[1]) && /bin/i.test(names[2]));
-  check("taking one out is a clear button that says Back to inbox, not a reply arrow", (await first.locator(".dg-back").innerText()).trim() === "Back to inbox" && (await first.locator("[aria-label*='reply' i]").count()) === 0);
+  check("each email has four icon-only buttons with names on hover: reviewed, archive, bin, send back", names.length === 4 && names.every((n) => n.split("|")[2] === "" && n.split("|")[1]) && /reviewed/i.test(names[0]) && /archive/i.test(names[1]) && /bin/i.test(names[2]) && /send back to the inbox/i.test(names[3]));
+  check("taking one out is a same-size icon button titled Send back to the inbox, not a reply arrow", (await first.locator("button[title='Send back to the inbox']").count()) === 1 && (await first.locator("[aria-label*='reply' i]").count()) === 0);
   check("every email shows the day and time it arrived", (await page.locator("#dgBody .dg-when").count()) === (await page.locator("#dgBody .dg-item").count()) && /\d/.test(await first.locator(".dg-when").innerText()));
   check("the top and bottom bars stay put and only the middle scrolls", await page.evaluate(() => { const v = document.getElementById("digestView"), b = document.getElementById("dgBody"); return getComputedStyle(v).overflow === "hidden" && getComputedStyle(b).overflowY === "auto" && v.getBoundingClientRect().bottom <= innerHeight && document.querySelector("#digestView .compose-foot").getBoundingClientRect().bottom <= innerHeight; }));
   check("opening it marks it seen", await page.waitForFunction(() => document.querySelector(".dg-row.read")).then(() => true).catch(() => false) && server.calls.some((c) => c[0] === "seen"));
   await shot(page, "daily-summary-open");
   // take one out: it goes back to the inbox
-  await page.locator("#dgBody .dg-item", { hasText: "newsletter" }).locator(".dg-back").click();
+  await page.locator("#dgBody .dg-item", { hasText: "newsletter" }).locator("button[title='Send back to the inbox']").click();
   await page.waitForFunction(() => document.querySelectorAll("#dgBody .dg-item").length === 1);
   check("taking one out puts it back in the inbox and out of the summary", server.calls.some((c) => c[0] === "remove" && c[1] === "m3"));
   // archive the other: the summary finishes by itself

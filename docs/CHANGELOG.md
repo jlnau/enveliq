@@ -4,7 +4,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-**Daily summary fixes.** The box keeps its top bar and bottom bar in place and only the middle scrolls (computer and phone). Each email shows the day and time it arrived. The button that takes an email out of the summary is now a clear **Back to inbox** button (it was a reply arrow). Clicking outside the box closes it. Touches `prototype/index.html`, `backend/mail/digest.py`, `scripts/check_daily_summary.mjs`.
+**Daily summary fixes.** The box keeps its top bar and bottom bar in place and only the middle scrolls (computer and phone). Each email shows the day and time it arrived. The button that takes an email out of the summary is now a small down-arrow button, the same size as the others, titled "Send back to the inbox" (it was a reply arrow). Clicking outside the box closes it. Touches `prototype/index.html`, `backend/mail/digest.py`, `scripts/check_daily_summary.mjs`.
 
 **Print email and Save as PDF keep your email open.** They print a hidden copy of the email instead of opening it over the one you are reading. Touches `prototype/index.html`, `scripts/check_more_menu.mjs`.
 

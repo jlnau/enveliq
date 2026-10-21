@@ -492,8 +492,7 @@ body:has(#cmTray:not([hidden])) .toast{bottom:62px;z-index:46}
 .dg-row .dg-sub{display:block;font-size:13px;opacity:.75}
 .dg-row .dg-dot{width:9px;height:9px;border-radius:50%;background:var(--c-1f5fc4);flex:none}.dg-row.read .dg-dot{visibility:hidden}
 .dg-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60}.dg-scrim.show{display:block}
-#digestView.open{display:flex;flex-direction:column;overflow:hidden}#digestView .compose-body{flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start}#digestView .compose-head,#digestView .compose-foot{flex:none}.dg-when{font-size:12px;opacity:.7;margin-left:8px;white-space:nowrap}.dg-acts .dg-back{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:1px solid var(--c-343b4b);border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:14px;cursor:pointer}.dg-acts .dg-back:hover{border-color:var(--c-1f5fc4)}.dg-acts .dg-back svg{width:18px;height:18px}
-#digestView{z-index:61}@media(min-width:761px){#digestView{width:min(720px,94vw)}}
+#digestView.open{display:flex;flex-direction:column;overflow:hidden}#digestView .compose-body{flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start}#digestView .compose-head,#digestView .compose-foot{flex:none}.dg-when{font-size:12px;opacity:.7;margin-left:8px;white-space:nowrap}#digestView{z-index:61}@media(min-width:761px){#digestView{width:min(720px,94vw)}}
 @media(max-width:760px){#digestView.open{display:flex;flex-direction:column;overflow:hidden}#digestView .compose-body{flex:1 1 auto;min-height:0;overflow-y:auto}#digestView .compose-head,#digestView .compose-foot{flex:none}#digestView .compose-foot{padding-bottom:calc(12px + env(safe-area-inset-bottom))}#digestView .compose-head{flex-wrap:wrap}}
 #digestView button,#digestView a.dg-open{min-height:44px}
 .dg-note{font-size:13px;opacity:.8;margin:0 0 10px}
@@ -4617,6 +4616,11 @@ document.addEventListener("keydown",e=>{
 window.addEventListener("resize",()=>closeMoreMenu());
 document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("#moreMenu"))setTimeout(()=>closeMoreMenu(),0)});
 // Print email / Save as PDF: both show the original email on its own and open the browser's print window. In that window, "Save as PDF" keeps the sender's own look.
+// While the print window is open the browser lays the page out at paper width, which looks like a phone-size screen for a moment. That must not
+// reset the layout or close the email being read, so size changes are ignored from the start of printing until just after it ends.
+let printGuard=false,printGuardTimer=0;
+addEventListener("beforeprint",()=>{printGuard=true;clearTimeout(printGuardTimer)});
+addEventListener("afterprint",()=>{clearTimeout(printGuardTimer);printGuardTimer=setTimeout(()=>{printGuard=false},800)});
 async function printEmail(m){
   const doc=document.createElement("div");doc.id="printDoc";
   const head=rows=>{const dl=document.createElement("dl");dl.className="email-head";for(const [k,v] of rows){if(!v)continue;const dt=document.createElement("dt"),dd=document.createElement("dd");dt.textContent=k;dd.textContent=v;dl.append(dt,dd)}return dl};
@@ -7233,7 +7237,7 @@ async function whLoad(){
 // The summary is simply the list of held email, so it is always up to date. Reviewed, Archive and Bin are the normal actions.
 var dgState={enabled:false,count:0,unread:false,items:[]};
 const DG_OK=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,DG_ARCH=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg>`,DG_BIN=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>`;
-const ICON_BACK=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h5l1.5 3h5L16 13h5"/><path d="M5.5 6.5 3 13v5a1.5 1.5 0 0 0 1.5 1.5h15A1.5 1.5 0 0 0 21 18v-5l-2.5-6.5z"/></svg>`;
+const ICON_BACK=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v13"/><path d="m6 12 6 6 6-6"/><path d="M5 21h14"/></svg>`;
 function isHeld(m){return m.status==="inbox"&&!!m.held&&!!(dgState&&dgState.enabled)}
 function isAside(m){return isSnoozed(m)||isHeld(m)}
 async function dgLoad(){
@@ -7256,7 +7260,7 @@ function dgItem(i){
   const from=whEl("div","dg-from",i.sender||"Unknown sender");if(when)from.append(whEl("span","dg-when",when));
   box.append(from,whEl("div","dg-subj",i.subject||"(no subject)"),whEl("p",null,i.summary||""));
   const acts=whEl("div","dg-acts");
-  const ic=(label,svg,fn)=>{const b=whEl("button",svg.includes("<span>")?"dg-back":"dg-ic");b.type="button";b.title=label;b.setAttribute("aria-label",label);b.innerHTML=svg;b.onclick=async()=>{acts.querySelectorAll("button").forEach(x=>x.disabled=true);try{await fn()}finally{acts.querySelectorAll("button").forEach(x=>x.disabled=false)}};return b};
+  const ic=(label,svg,fn)=>{const b=whEl("button","dg-ic");b.type="button";b.title=label;b.setAttribute("aria-label",label);b.innerHTML=svg;b.onclick=async()=>{acts.querySelectorAll("button").forEach(x=>x.disabled=true);try{await fn()}finally{acts.querySelectorAll("button").forEach(x=>x.disabled=false)}};return b};
   const mailOf=()=>data.find(x=>x.real&&x.real.accountId===i.account_id&&x.real.messageId===i.message_id);
   const act=status=>async()=>{
     const m=mailOf();
@@ -7265,7 +7269,7 @@ function dgItem(i){
     await dgRefresh();render();
   };
   acts.append(ic("Mark reviewed",DG_OK,act("reviewed")),ic("Archive",DG_ARCH,act("archived")),ic("Bin",DG_BIN,act("trashed")),
-    ic("Take out of the summary and put back in my inbox",ICON_BACK+"<span>Back to inbox</span>",async()=>{
+    ic("Send back to the inbox",ICON_BACK,async()=>{
       try{await secureBackendRequest("/api/v1/me/held-summary/remove",{method:"POST",body:JSON.stringify({account_id:i.account_id,message_id:i.message_id})})}catch(er){toast(er.message,6000);return}
       const m=mailOf();if(m)m.held=false;await dgRefresh();render();toast("Back in your inbox");
     }));
@@ -8478,7 +8482,7 @@ $("sidebar").addEventListener("click",e=>{if(e.target.closest(".nav:not(.more-to
 $("mSearchBtn").onclick=()=>{document.body.classList.add("msearch");$("search").focus()};
 $("mSearchBack").onclick=()=>{document.body.classList.remove("msearch");if(query){query="";$("search").value="";render()}};
 $("mSyncBtn").onclick=()=>$("syncBtn").click();
-phoneQuery.addEventListener("change",()=>{setMenu(false);document.body.classList.remove("msearch","scrolled");applyView();render()});
+phoneQuery.addEventListener("change",()=>{if(printGuard)return;setMenu(false);document.body.classList.remove("msearch","scrolled");applyView();render()});
 function updateScrolled(){const h=document.querySelector("header.top");document.body.classList.toggle("scrolled",isPhone()&&h.getBoundingClientRect().bottom<60);
   const stuck=!isPhone()&&window.scrollY>6;document.body.classList.toggle("stuck",stuck);
   if(stuck){const bar=document.getElementById("previewToolbar").offsetHeight;document.body.style.setProperty("--fade",Math.min(36,window.scrollY)+"px");   // the soft edge grows over the first 36px of scrolling, so nothing dims before you move
