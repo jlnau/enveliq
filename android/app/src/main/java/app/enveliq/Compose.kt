@@ -335,7 +335,7 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             }
         }
         Column(
-            Modifier.weight(1f).onSizeChanged { viewH = it.height }.verticalScroll(scroll).padding(horizontal = 20.dp),
+            Modifier.weight(1f).onSizeChanged { viewH = it.height }.verticalScroll(scroll).padding(horizontal = 10.dp),
         ) {
             if (options.size > 1) FromPicker(options, from) { from = it }
             AddressField("To", to, { to = it }, toTyping, { toTyping = it }, api, onPhone = { pickPhone("to") }, expanded = showCc, onExpand = { showCc = !showCc })
@@ -375,7 +375,7 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
         val helpOn = writeInfo != null && writeInfo.on && writeInfo.aiReady && (kind == "new" || mail != null)
         val quickOn = helpOn && writeInfo != null && writeInfo.quick
         val tight = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp)
-        Column(Modifier.fillMaxWidth().background(Panel).padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(Modifier.fillMaxWidth().background(Panel).padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             if (helpOn) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 OutlinedButton(
                     onClick = { askWrite() }, enabled = !busy && !wh.busy, contentPadding = tight,
@@ -475,7 +475,7 @@ private fun FromPicker(options: List<FromOption>, selected: FromOption?, onPick:
     Box(Modifier.fillMaxWidth().padding(top = 4.dp)) {
         Surface(color = Color.Transparent, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line), modifier = Modifier.fillMaxWidth().clickable { open = true }) {
             Row(Modifier.padding(horizontal = 12.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("From:", color = Muted, fontSize = 15.sp, modifier = Modifier.width(60.dp))
+                Text("From:", color = Muted, fontSize = 15.sp, modifier = Modifier.width(76.dp))
                 Text(selected?.address ?: "", color = Ink, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 Text("▾", color = Muted, fontSize = 16.sp)
             }
@@ -527,7 +527,7 @@ private fun AddressField(
     }
     Surface(color = Color.Transparent, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line), modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Row(Modifier.padding(start = 12.dp), verticalAlignment = Alignment.Top) {
-            Text("$label:", color = Muted, fontSize = 15.sp, modifier = Modifier.width(48.dp).padding(top = 14.dp))
+            Box(Modifier.width(76.dp).height(48.dp), contentAlignment = Alignment.CenterStart) { Text("$label:", color = Muted, fontSize = 15.sp) }
             androidx.compose.foundation.layout.FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.weight(1f).padding(vertical = 7.dp),
@@ -576,7 +576,7 @@ private fun AddressField(
 private fun FieldBox(label: String, modifier: Modifier = Modifier, content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
     Surface(color = Color.Transparent, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line), modifier = modifier.fillMaxWidth()) {
         Row(Modifier.padding(start = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(label, color = Muted, fontSize = 15.sp, modifier = Modifier.width(72.dp))
+            Text(label, color = Muted, fontSize = 15.sp, modifier = Modifier.width(76.dp))
             content()
         }
     }
