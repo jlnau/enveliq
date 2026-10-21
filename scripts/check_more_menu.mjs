@@ -128,6 +128,14 @@ for (const width of [1200, 390]) {
   await shot(page, "conversation-view");
   await page.locator("[data-conv]").click();
   check("Show lists the older email, with its own buttons", (await page.locator("article.mail").count()) === 3 && (await page.locator(".conv-kids article.mail .qic").count()) === 3);
+  await page.locator(".conv-kids article.mail .qrow").first().click();   // open the older email, then press Hide: it must really hide
+  await page.waitForTimeout(200);
+  await page.locator("[data-conv]").click();
+  await page.waitForTimeout(200);
+  check("Hide works even while the older email is the open one", (await page.locator(".conv-kids").count()) === 0 && /Show/.test(await page.locator(".conv-bar").innerText()));
+  await page.locator("[data-conv]").click();
+  await page.waitForTimeout(200);
+  check("and Show brings it back", (await page.locator(".conv-kids article.mail").count()) === 1);
   await page.evaluate(() => setViewPanel(true));   // clicking in the list closed the panel, so open it again
   await page.waitForTimeout(400);
   await page.locator("#vConv").uncheck();

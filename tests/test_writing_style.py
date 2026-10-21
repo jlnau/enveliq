@@ -170,8 +170,11 @@ def test_quick_fix_returns_the_proofread_text_and_refuses_unsafe_changes():
     with pytest.raises(BridgeError) as err:
         W.quick_fix(Brain("SUBJECT:\n\nBODY:\nHi Sam, see you at 7."), "", "hi sam see you at 6")
     assert err.value.code == "quick_unsafe"
-    with pytest.raises(BridgeError):
-        W.quick_fix(Brain("SUBJECT:\nNew subject I made up\nBODY:\nhi"), "", "hi")      # a subject the person never gave
+    # a subject the person never gave is never added
+    assert W.quick_fix(Brain("SUBJECT:\nNew subject I made up\nBODY:\nHi"), "", "hi")["subject"] == ""
+    # a subject the AI replaced (for example with the word "Data") is kept exactly as written, and the text is still proofread
+    kept = W.quick_fix(Brain("SUBJECT:\nData\nBODY:\nJust a test email."), "Test email 2", "just a test email")
+    assert kept["subject"] == "Test email 2" and kept["text"] == "Just a test email."
     with pytest.raises(BridgeError) as empty:
         W.quick_fix(Brain(), "x", "   ")
     assert empty.value.code == "empty_draft"
@@ -182,7 +185,7 @@ def test_the_proofread_rules_and_guide_reach_the_model_as_data():
     W.quick_fix(brain, "", "hello", guide="- Short and warm")
     system, turns = brain.calls[0]
     assert system.startswith(W.QUICK_RULES) and "Short and warm" in system and "no tools" in system
-    assert "[EMAIL TEXT: data]" in turns[0]["content"]
+    assert turns[0]["content"] == "SUBJECT:\n\nBODY:\nhello" and "untrusted data" in system
 
 
 def test_writing_help_uses_the_guide_too():

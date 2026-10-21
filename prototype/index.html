@@ -2415,6 +2415,7 @@ let secureBackendToken=null;
 let vaultMode=null; // "backend" | "preview"
 const previewVault={initialized:false,unlocked:false,salt:null,verifier:null};
 const expanded=new Set();
+const convHidden=new Map(); // conversation key -> the open email when the person pressed Hide, so Hide works even while one of its emails is open
 // A refresh keeps you where you are: the page (in the address bar after #/) and which emails are open (this tab only).
 const PAGES=["found","all","action","tasks","attachments","reviewed","archived","sent","drafts","shipping","subscriptions","trips","waiting","messages","junk","cleanup"];
 let stateReady=false,navPopping=false;
@@ -4387,7 +4388,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
     for(const g of groups.values()){
       const lead=g[0],rest=g.slice(1);shown.push(lead.id);
       if(!rest.length){out.push([lead,quiet(lead,mode)]);continue}
-      const key="conv-"+lead.id,open=expanded.has(key)||rest.some(x=>x.id===paneId);
+      const key="conv-"+lead.id,open=expanded.has(key)||(convHidden.get(key)!==paneId&&rest.some(x=>x.id===paneId));
       if(open)rest.forEach(x=>shown.push(x.id));
       out.push([lead,quiet(lead,mode)+`<div class="conv-bar"><button type="button" class="linkbtn" data-conv="${esc(key)}" aria-expanded="${open}">${g.length} emails in this conversation · ${open?"Hide":"Show"}</button></div>`+(open?`<div class="conv-kids">${rest.map(x=>quiet(x,mode)).join("")}</div>`:"")]);
     }
@@ -6306,7 +6307,7 @@ document.addEventListener("click",e=>{
   const ctl=e.target.closest("[data-mute],[data-unread],[data-print],[data-pdf]");
   if(ctl){const k=ctl.hasAttribute("data-mute")?"mute":ctl.hasAttribute("data-unread")?"unread":ctl.hasAttribute("data-print")?"print":"pdf",m=data.find(x=>x.id===Number(ctl.dataset[k])&&x.owner===currentUser.id);
     closeMoreMenu();if(m){if(k==="mute")muteConversation(m);else if(k==="unread")markUnreadWeb(m);else{if(k==="pdf")toast("In the print window, choose Save as PDF as the printer.",5000);printEmail(m)}}return}
-  const cv=e.target.closest("[data-conv]");if(cv){const k=cv.dataset.conv;if(expanded.has(k))expanded.delete(k);else expanded.add(k);render();return}
+  const cv=e.target.closest("[data-conv]");if(cv){const k=cv.dataset.conv,wasOpen=cv.getAttribute("aria-expanded")==="true";if(wasOpen){expanded.delete(k);convHidden.set(k,paneId)}else{expanded.add(k);convHidden.delete(k)}render();return}
   const jb=e.target.closest("[data-junk-this],[data-block-sender]");if(jb){const m=data.find(x=>x.id===Number(jb.dataset.junkThis||jb.dataset.blockSender)&&x.owner===currentUser.id);if(m)junkThis(m,jb,jb.hasAttribute("data-block-sender"));return}
   const ruleBtn=e.target.closest("[data-rule]");if(ruleBtn){const m=data.find(x=>x.id===Number(ruleBtn.dataset.rule)&&x.owner===currentUser.id);if(m)addRuleFor(m,ruleBtn);return}
   const impBtn=e.target.closest("[data-important]");if(impBtn){const m=data.find(x=>x.id===Number(impBtn.dataset.important)&&x.owner===currentUser.id);if(m)setImportant(m,!isImp(m));return}

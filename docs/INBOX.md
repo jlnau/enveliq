@@ -27,7 +27,7 @@ A Reviewed email (the ones kept for a few days) has a **Mark unread** button, an
 
 ## Conversation View
 
-**Customise, Conversations, Conversation View** (off by default) groups emails of the same conversation, among the emails in the list you are looking at, under the newest one. A line such as "3 emails in this conversation" shows the others when you press **Show**. Grouping uses the emails' own reply markers, and nothing about reviewing changes: each email keeps its own buttons, and Reviewed, Archive and Bin still act on that one email. Select all, keyboard moves and the counts work as before, and the Focus deck always shows one email at a time. The choice is saved for your own account and applies on all your devices.
+**Customise, Conversations, Conversation View** (off by default) groups emails of the same conversation, among the emails in the list you are looking at, under the newest one. A line such as "3 emails in this conversation" shows the others when you press **Show**. Grouping uses the emails' own reply markers, and nothing about reviewing changes: each email keeps its own buttons, and Reviewed, Archive and Bin still act on that one email. Select all, keyboard moves and the counts work as before, and the Focus deck always shows one email at a time. The choice is saved for your own account and applies on all your devices. **Hide** always hides the others, even when one of them is the open email.
 
 ## Back while writing, on a phone
 

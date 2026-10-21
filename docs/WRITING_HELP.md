@@ -12,6 +12,8 @@ The AI can write a reply for you, or check one you wrote. It only ever **suggest
 
 ## Quick AI Send
 
+If the AI changes the subject more than a proofread should (or gives back something else), the subject is kept exactly as written and only the text is proofread; the text is still refused if numbers, names, links or its length change.
+
 A button beside Send in the reply, forward and New email boxes (website and Android app). It proofreads and sends in one press: the AI corrects spelling, grammar, punctuation and formatting and **must not** change the meaning, the facts, the tone or the intent, add anything or shorten anything. There is no extra question: pressing it is the "yes".
 
 - It has its own switch (Settings, Writing help, **Quick AI Send**) and is **off** until the person turns it on. It needs Writing help on and an AI model.
