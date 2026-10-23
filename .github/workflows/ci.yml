@@ -1,4 +1,4 @@
-# Automated checks for every push and pull request.
+# Fast essential checks on development changes, complete validation for releases and scheduled runs.
 # Actions are pinned to full commit hashes; Dependabot proposes updates.
 #
 # Where the checks run: on GitHub's own machines by default. To use your own machine instead (for example when the
@@ -7,8 +7,9 @@
 # On your own machine, install the browser libraries once: sudo npx playwright@1.56.0 install-deps chromium
 #
 # What runs when: a pull request runs only the checks its changed files can affect (job "Work out what changed").
-# A push to main runs the quick set (backend tests, website, Docker image, dependency scan) because the pull request
-# already ran everything. The browser checks and everything else run in full on the weekly schedule, on a release and by hand.
+# A push to main runs backend and website checks. Pull requests run changed backend, website and
+# essential browser smoke checks. Full browser, Docker and dependency scanning runs weekly, on
+# releases, by manual request and through merge queue validation.
 # Never leave it set on a public repository: strangers' pull requests could then run code on your machine.
 name: Checks
 
@@ -43,6 +44,7 @@ jobs:
       website: ${{ steps.pick.outputs.website }}
       docker: ${{ steps.pick.outputs.docker }}
       audit: ${{ steps.pick.outputs.audit }}
+      full: ${{ steps.pick.outputs.full }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -58,13 +60,14 @@ jobs:
           set_all() { for k in backend browser website docker audit; do echo "$k=$1" >> "$GITHUB_OUTPUT"; done; }
           case "$EVENT" in
             push)
-              # Quick set on main: the pull request already ran the browser checks.
-              for k in backend website docker audit; do echo "$k=true" >> "$GITHUB_OUTPUT"; done
-              echo "browser=false" >> "$GITHUB_OUTPUT"
+              # Fast main validation following pull request review.
+              for k in backend website; do echo "$k=true" >> "$GITHUB_OUTPUT"; done
+              for k in browser docker audit; do echo "$k=false" >> "$GITHUB_OUTPUT"; done
+              echo "full=false" >> "$GITHUB_OUTPUT"
               exit 0 ;;
-            pull_request) base="$PR_BASE" ;;
-            merge_group) base="$MG_BASE" ;;
-            *) set_all true; exit 0 ;;
+            pull_request) base="$PR_BASE"; echo "full=false" >> "$GITHUB_OUTPUT" ;;
+            merge_group) echo "full=true" >> "$GITHUB_OUTPUT"; set_all true; exit 0 ;;
+            *) echo "full=true" >> "$GITHUB_OUTPUT"; set_all true; exit 0 ;;
           esac
           files="$(git diff --name-only "$base" HEAD 2>/dev/null)" || { echo "Could not compare; running everything."; set_all true; exit 0; }
           echo "Changed files:"; echo "$files"
@@ -72,11 +75,16 @@ jobs:
           # Some tests and browser checks read the guides, so a change to docs or the top-level .md files counts for them.
           # Anything outside these folders (workflows, requirements, root files) is treated as touching everything.
           unknown="$(echo "$files" | grep -Ev '^(backend/|tests/|prototype/|web/|scripts/|website/|docs/|[A-Za-z_]+\.md$)' || true)"
-          if [ -n "$unknown" ]; then set_all true; exit 0; fi
+          if [ -n "$unknown" ]; then
+            # Unknown changes get essential validation without an expensive full suite.
+            for k in backend browser website; do echo "$k=true" >> "$GITHUB_OUTPUT"; done
+            for k in docker audit; do echo "$k=false" >> "$GITHUB_OUTPUT"; done
+            exit 0
+          fi
           echo "backend=$(any '^(backend/|tests/|docs/|[A-Za-z_]+\.md$)')" >> "$GITHUB_OUTPUT"
           echo "browser=$(any '^(backend/|prototype/|web/|scripts/|docs/|[A-Za-z_]+\.md$)')" >> "$GITHUB_OUTPUT"
           echo "website=$(any '^(website/|docs/|prototype/|web/|scripts/check_site|scripts/check_website|[A-Za-z_]+\.md$)')" >> "$GITHUB_OUTPUT"
-          echo "docker=$(any '^(backend/|tests/sample\.pdf)')" >> "$GITHUB_OUTPUT"
+          echo "docker=false" >> "$GITHUB_OUTPUT"
           echo "audit=false" >> "$GITHUB_OUTPUT"
 
   tests:
@@ -101,7 +109,7 @@ jobs:
     runs-on: ${{ fromJSON(vars.RUNNER_LABELS || '["ubuntu-24.04"]') }}
     timeout-minutes: 20
     needs: changes
-    if: needs.changes.outputs.browser == 'true'
+    if: needs.changes.outputs.browser == 'true' && needs.changes.outputs.full == 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -202,7 +210,7 @@ jobs:
     runs-on: ${{ fromJSON(vars.RUNNER_LABELS || '["ubuntu-24.04"]') }}
     timeout-minutes: 20
     needs: changes
-    if: needs.changes.outputs.browser == 'true'
+    if: needs.changes.outputs.browser == 'true' && needs.changes.outputs.full == 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -319,7 +327,7 @@ jobs:
     runs-on: ${{ fromJSON(vars.RUNNER_LABELS || '["ubuntu-24.04"]') }}
     timeout-minutes: 20
     needs: changes
-    if: needs.changes.outputs.browser == 'true'
+    if: needs.changes.outputs.browser == 'true' && needs.changes.outputs.full == 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -341,16 +349,40 @@ jobs:
       - name: Setup guide against a fake Bridge and a fake AI model
         run: python scripts/welcome_e2e.py
 
-  # One result called "Browser checks", so a rule that requires that name keeps working now the checks are split in three.
-  # It passes when the three parts passed or were skipped because nothing they cover changed.
+  # Smoke tests on everyday pull requests. Full browser regression is release-only.
+  smoke:
+    name: Essential browser smoke
+    needs: changes
+    if: needs.changes.outputs.browser == 'true' && needs.changes.outputs.full != 'true'
+    runs-on: ${{ fromJSON(vars.RUNNER_LABELS || '["ubuntu-24.04"]') }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - run: pip install -r requirements.txt
+      - run: npm install --no-save --no-package-lock playwright@1.56.0
+      - run: npx playwright install ${{ vars.RUNNER_LABELS == '' && '--with-deps' || '' }} chromium
+      - run: node scripts/check_prototype_injection.mjs
+      - run: node scripts/check_inbox_real_mail.mjs
+      - run: node scripts/check_original_html.mjs
+      - run: node scripts/check_back_button.mjs
+
+  # Keep the required Browser checks status context stable.
   browser:
     name: Browser checks
-    needs: [browser1, browser2, browser3]
+    needs: [smoke, browser1, browser2, browser3]
     if: always()
     runs-on: ${{ fromJSON(vars.RUNNER_LABELS || '["ubuntu-24.04"]') }}
     timeout-minutes: 5
     steps:
-      - name: All three parts passed or were not needed
+      - name: Essential or full browser checks passed
         env:
           RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
@@ -374,11 +406,15 @@ jobs:
       - run: node website/build.mjs
       - name: Every link and picture resolves, only the search runs a script
         run: node website/check.mjs
-      - run: npm install --no-save --no-package-lock playwright@1.56.0
-      - run: npx playwright install ${{ vars.RUNNER_LABELS == '' && '--with-deps' || '' }} chromium
+      - if: needs.changes.outputs.full == 'true'
+        run: npm install --no-save --no-package-lock playwright@1.56.0
+      - if: needs.changes.outputs.full == 'true'
+        run: npx playwright install ${{ vars.RUNNER_LABELS == '' && '--with-deps' || '' }} chromium
       - name: Search the guides (browser)
+        if: needs.changes.outputs.full == 'true'
         run: node scripts/check_site_search.mjs
       - name: Website light / dark switch (browser)
+        if: needs.changes.outputs.full == 'true'
         run: node scripts/check_website_theme.mjs
 
   docker:
