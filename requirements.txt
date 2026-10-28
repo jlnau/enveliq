@@ -1,13 +1,13 @@
 # Runtime dependencies. Versions are pinned and were at least two weeks old
 # when chosen. Argon2id comes from `cryptography` (no argon2-cffi needed).
-fastapi==0.142.2
+fastapi==0.143.0
 # Pinned directly: versions before 1.1.0 have published advisories.
 starlette==1.7.0
 uvicorn==0.54.0
 # The WebSocket door for Home Assistant and other local services (uvicorn needs a WebSocket library to speak it).
 websockets==17.2
 cryptography==50.0.2
-pydantic==2.13.5
+pydantic==2.14.0
 httpx==0.28.1            # talks to your OpenID Connect provider
 PyJWT==2.15.1            # verifies ID tokens from your provider
 webauthn==2.8.0          # passkeys (py_webauthn)
