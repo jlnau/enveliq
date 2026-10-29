@@ -302,6 +302,9 @@ body.backend .savebar{display:none}
 
 
 
+.invite-card{margin:14px 0 4px;border:1px solid var(--line);border-radius:12px;background:var(--c-10141b);padding:14px;display:grid;gap:10px}.invite-card[hidden]{display:none}.invite-card .iv-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.invite-card .iv-kind{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;opacity:.75}.invite-card h3{margin:2px 0 0;font-size:17px;line-height:1.3}.invite-card .iv-pill{flex:none;font-size:12px;font-weight:600;border-radius:999px;padding:4px 10px;border:1px solid var(--line)}.invite-card .iv-pill.yes{background:var(--c-0a7bff,#0a7bff);border-color:transparent;color:#fff}.invite-card .iv-grid{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px}.invite-card .iv-grid dt{opacity:.7}.invite-card .iv-grid dd{margin:0;overflow-wrap:anywhere}.invite-card .iv-btns{display:flex;flex-wrap:wrap;gap:8px}.invite-card .iv-btns button{border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);padding:0 16px;min-height:44px;font:inherit;font-weight:600;cursor:pointer}.invite-card .iv-btns button.primary{background:var(--c-0a7bff,#0a7bff);border-color:transparent;color:#fff}.invite-card .iv-btns button:disabled{opacity:.5;cursor:default}.invite-card .iv-note{font-size:13px;opacity:.8;margin:0}.invite-card .iv-warn{font-size:13px;border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;gap:6px}.invite-card .iv-warn label{display:flex;gap:8px;align-items:flex-start}
+.invite-prop{position:fixed;z-index:130;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,92vw);max-height:90vh;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--text);box-shadow:0 12px 40px rgba(0,0,0,.45)}.invite-prop[hidden]{display:none!important}.invite-prop .sf-top{padding:12px 16px;border-bottom:1px solid var(--line)}.invite-prop .sf-body{padding:14px 16px;overflow-y:auto}.invite-prop .sf-foot{padding:12px 16px;border-top:1px solid var(--line);justify-content:flex-end}.invite-prop label{display:grid;gap:4px;font-size:13px;font-weight:600}.invite-prop input,.invite-prop textarea{border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);padding:9px 10px;font:inherit;font-weight:400;box-sizing:border-box;width:100%}.invite-prop .sf-foot button{border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--text);padding:9px 14px;font:inherit;cursor:pointer}.invite-prop .sf-foot button.primary{background:var(--c-0a7bff,#0a7bff);border-color:transparent;color:#fff}.invite-prop .iv-hint{font-size:13px;opacity:.8;margin:0}.invite-prop .iv-times{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:760px){.invite-prop{transform:none!important;left:0!important;top:0!important;max-height:none!important}.invite-prop input,.invite-prop textarea{font-size:16px;min-height:44px}}
 .attachment-summary-block{margin:14px 0 4px;border:1px solid var(--c-232a36);border-radius:12px;background:var(--c-10141b);overflow:hidden}
 .ad-title{padding:9px 14px 7px;font-size:12px;font-weight:650;color:var(--muted)}
 .ad-row{border-top:1px solid var(--c-232a36)}
@@ -2576,6 +2579,100 @@ function toast(t,ms=1500,kind){
   el.classList.add("show");
   toastTimer=setTimeout(()=>{el.classList.remove("show");toastTimer=null},ms);
 }
+
+// ---- Calendar invitations on an open email: Accept / Maybe / Decline, Propose a new time, Add to calendar ----
+// The server reads the invite from the original email on demand (nothing is stored but the answer) and does all the sending; this only draws the card.
+const inviteCards=new Map();          // "account:message" -> the card from the server, or null when the email has no invitation
+const inviteBusy=new Set();
+const invKey=m=>m&&m.real?m.real.accountId+":"+m.real.messageId:"";
+const invUrl=m=>`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/invite`;
+function hydrateInvites(){
+  document.querySelectorAll("section[data-invite]").forEach(el=>{
+    const m=data.find(x=>String(x.id)===el.dataset.invite);if(!m||!m.real)return;
+    const key=invKey(m);
+    if(inviteCards.has(key)){paintInvite(el,m,inviteCards.get(key));return}
+    if(inviteBusy.has(key))return;
+    inviteBusy.add(key);
+    secureBackendRequest(invUrl(m)).then(c=>inviteCards.set(key,c)).catch(()=>inviteCards.set(key,null)).finally(()=>{inviteBusy.delete(key);repaintInvites()});
+  });
+}
+function repaintInvites(){document.querySelectorAll("section[data-invite]").forEach(el=>{const m=data.find(x=>String(x.id)===el.dataset.invite);if(m&&m.real&&inviteCards.has(invKey(m)))paintInvite(el,m,inviteCards.get(invKey(m)))})}
+function invWhen(c){
+  if(c.all_day){const d=new Date(c.start_day+"T00:00");return d.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",year:"numeric"})+" (all day)"}
+  if(c.start==null)return "";
+  const a=new Date(c.start*1000),b=new Date((c.end||c.start)*1000),same=a.toDateString()===b.toDateString();
+  const day=a.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"}),t=x=>x.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+  return same?`${day}, ${t(a)} to ${t(b)} (your time)`:`${day} ${t(a)} to ${b.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"})} ${t(b)} (your time)`;
+}
+function paintInvite(el,m,c){
+  if(!c){el.hidden=true;el.replaceChildren();return}
+  if(el.dataset.busy==="1")return;
+  const a=c.answer||{},r=a.response;
+  const pill=c.cancelled?"Cancelled":r==="accepted"?"You accepted":r==="tentative"?"You said maybe":r==="declined"?"You declined":r==="added"?"Added":a.proposed?"New time suggested":"Not answered";
+  const org=c.organizer.name?`${esc(c.organizer.name)} (${esc(c.organizer.email)})`:esc(c.organizer.email);
+  const grid=[["When",esc(invWhen(c))],c.location?["Where",esc(c.location)]:null,c.organizer.email?["From",org]:null,c.people>1?["People",c.people+" invited"]:null,c.repeats?["Repeats","Yes. Your answer covers the whole series."]:null,c.description?["Notes",esc(c.description).replace(/\n/g,"<br>")]:null].filter(Boolean).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("");
+  const id=esc(m.id),btn=(act,label,cls)=>`<button type="button" class="${cls||""}" data-invite-act="${act}" data-invite-id="${id}">${label}</button>`;
+  let btns="",note="",warn="";
+  if(c.cancelled){
+    note=`<p class="iv-note">This meeting was cancelled.${a.calendar?` It is still in ${esc(a.calendar)}.`:""}</p>`;
+    btns=a.calendar&&c.calendar?btn("remove","Remove from my calendar"):"";
+  }else if(c.can_answer){
+    if(c.organizer_differs)warn=`<div class="iv-warn"><span>Be careful: this invitation names <b>${esc(c.organizer.email)}</b> as the organiser, but the email is from someone else. Your answer would go to the organiser.</span><label><input type="checkbox" data-invite-ok="${id}"> Send my answer to ${esc(c.organizer.email)} anyway</label></div>`;
+    btns=btn("accepted","Accept",r==="accepted"?"":"primary")+btn("tentative","Maybe")+btn("declined","Decline")+btn("propose","Propose new time");
+    note=`<p class="iv-note">Your answer is sent to ${esc(c.organizer.name||c.organizer.email)} by email from ${esc(c.mine)}.${c.calendar?` Accepting adds the meeting to ${esc(c.calendar)}.`:" No calendar is connected, so nothing will be added to one (Settings, Calendar &amp; to-do)."}</p>`;
+  }else if(c.can_add){
+    btns=c.calendar?btn("add","Add to my calendar","primary"):"";
+    note=`<p class="iv-note">${c.calendar?"This is a calendar event, not an invitation to answer.":"This is a calendar event. Connect a calendar under Settings, Calendar &amp; to-do to add it."}</p>`;
+  }
+  if(a.calendar_problem)note+=`<p class="iv-note">The meeting could not be put in your calendar: ${esc(a.calendar_problem)}</p>`;
+  else if(a.calendar&&(r==="accepted"||r==="tentative"||r==="added"))note+=`<p class="iv-note">It is in ${esc(a.calendar)}.</p>`;
+  el.hidden=false;
+  el.innerHTML=`<div class="iv-top"><div><span class="iv-kind">${c.cancelled?"Cancelled meeting":c.can_answer?"Meeting invitation":"Calendar event"}</span><h3>${esc(c.summary)}</h3></div><span class="iv-pill${r==="accepted"||r==="added"?" yes":""}">${pill}</span></div><dl class="iv-grid">${grid}</dl>${warn}${btns?`<div class="iv-btns">${btns}</div>`:""}${note}`;
+}
+async function inviteAct(act,id,btn){
+  const m=data.find(x=>String(x.id)===String(id));if(!m||!m.real)return;
+  const key=invKey(m),el=btn.closest("section[data-invite]");
+  if(act==="propose"){openInvitePropose(m);return}
+  const c=inviteCards.get(key);
+  const ok=el&&el.querySelector(`input[data-invite-ok]`);
+  if(c&&c.organizer_differs&&!(ok&&ok.checked)){toast("Tick the box first to answer the organiser.",3500);return}
+  const all=el?[...el.querySelectorAll(".iv-btns button")]:[btn];all.forEach(b=>b.disabled=true);
+  try{
+    if(act==="add"||act==="remove"){
+      await secureBackendRequest(invUrl(m)+"/calendar",{method:"POST",body:JSON.stringify({action:act})});
+      toast(act==="add"?"✓ Added to your calendar":"✓ Removed from your calendar",3500);inviteCards.delete(key);hydrateInvites();return;
+    }
+    const r=await secureBackendRequest(invUrl(m)+"/answer",{method:"POST",body:JSON.stringify({response:act,confirm_organizer:!!(c&&c.organizer_differs)})});
+    if(r.queued){noteQueuedReply(r,m,"reply");setTimeout(()=>{inviteCards.delete(key);hydrateInvites()},Math.max(1500,(r.send_at-r.now)*1000+2500))}
+    else{toast("✓ Your answer was sent",3500);inviteCards.delete(key);hydrateInvites()}
+  }catch(er){toast(er.message,6000);all.forEach(b=>b.disabled=false)}
+}
+function openInvitePropose(m){
+  const c=inviteCards.get(invKey(m));if(!c)return;
+  let box=$("invProp");if(box)box.remove();
+  box=document.createElement("div");box.id="invProp";box.className="sheetform popcard invite-prop";box.setAttribute("role","dialog");box.setAttribute("aria-modal","true");box.setAttribute("aria-label","Propose a new time");
+  const d=c.start!=null?new Date(c.start*1000):new Date(Date.now()+86400000),e=c.end!=null?new Date(c.end*1000):new Date(d.getTime()+3600000);
+  const dd=x=>`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`,tt=x=>`${String(x.getHours()).padStart(2,"0")}:${String(x.getMinutes()).padStart(2,"0")}`;
+  box.innerHTML=`<div class="sf-top"><strong>Propose a new time</strong><button type="button" class="sf-close" data-ivp-close>Close</button></div><div class="sf-body"><p class="iv-hint">${esc(c.organizer.name||c.organizer.email)} asked for ${esc(invWhen(c))}.</p><label>Day<input type="date" id="ivpDay" value="${dd(d)}"></label><div class="iv-times"><label>Starts<input type="time" id="ivpStart" value="${tt(d)}"></label><label>Ends<input type="time" id="ivpEnd" value="${tt(e)}"></label></div><label>Note (optional)<textarea id="ivpNote" rows="3" maxlength="500"></textarea></label><p class="iv-hint">This sends a normal email with your suggestion. Calendar apps do not all understand proposals, so it is written in plain words. Your calendar is not changed.</p></div><div class="sf-foot"><button type="button" data-ivp-close>Cancel</button><button type="button" class="primary" id="ivpSend">Send suggestion</button></div>`;
+  document.body.appendChild(box);
+  const close=()=>{box.remove();document.removeEventListener("keydown",esc_)},esc_=ev=>{if(ev.key==="Escape")close()};
+  document.addEventListener("keydown",esc_);
+  box.querySelectorAll("[data-ivp-close]").forEach(b=>b.onclick=close);
+  $("ivpSend").onclick=async()=>{
+    const a=new Date($("ivpDay").value+"T"+$("ivpStart").value),b=new Date($("ivpDay").value+"T"+$("ivpEnd").value);
+    if(isNaN(a)||isNaN(b)||b<=a){toast("Pick a day, and an end time after the start time.",4000);return}
+    const ok=document.querySelector(`input[data-invite-ok]`);
+    $("ivpSend").disabled=true;
+    try{
+      const r=await secureBackendRequest(invUrl(m)+"/propose",{method:"POST",body:JSON.stringify({start:a.getTime()/1000,end:b.getTime()/1000,zone:Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC",note:$("ivpNote").value,confirm_organizer:!!(c.organizer_differs&&ok&&ok.checked)})});
+      close();
+      if(r.queued){noteQueuedReply(r,m,"reply");setTimeout(()=>{inviteCards.delete(invKey(m));hydrateInvites()},Math.max(1500,(r.send_at-r.now)*1000+2500))}else toast("✓ Your suggestion was sent",3500);
+    }catch(er){toast(er.message,6000);$("ivpSend").disabled=false}
+  };
+  $("ivpDay").focus();
+}
+{let queued=false;new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;if(document.querySelector("section[data-invite]:empty"))hydrateInvites()})}).observe(document.body,{childList:true,subtree:true})}     // an email opened or expanded after the page was drawn
+document.addEventListener("click",e=>{const b=e.target.closest("button[data-invite-act]");if(b){e.preventDefault();inviteAct(b.dataset.inviteAct,b.dataset.inviteId,b)}});
 const fmtBytes=n=>!n?"":n<1024?n+" B":n<1048576?Math.round(n/1024)+" KB":(n/1048576).toFixed(1)+" MB";
 const fileN=m=>m.attachments.length||(m.hasFiles?(m.fileCount||1):0);          // real mail keeps only a count, never the files themselves
 const clipWords=m=>{const n=fileN(m),sure=m.attachments.length||m.fileCount!=null;return n===1?(sure?"Has an attachment":"May have an attachment"):`Has ${n} attachments`};
@@ -2865,7 +2962,8 @@ function disclosure(key,label,preview,body){
   </button><div class="disclosure-body">${body}</div></div>`;
 }
 const unreadFilesBlock=m=>`<section class="attachment-summary-block" aria-label="Attachments" data-files-unread><div class="ad-title">${m.fileCount===1?"1 attachment":m.fileCount+" attachments"}</div><div class="ad-wait">Enveliq has not read the files of this email yet.${m.real?` <button class="subtle" type="button" data-att-retry="${esc(m.id)}">Read the files again</button>`:""} You can still open them with View original email.</div></section>`;
-const attachmentsBlock=m=>!m.attachments.length&&m.real&&m.fileCount>0&&m.status==="inbox"?unreadFilesBlock(m):m.attachments.length?`<section class="attachment-summary-block" aria-label="Attachments"><div class="ad-title">${m.attachments.length===1?"1 attachment":m.attachments.length+" attachments"}</div>${m.attachments.map((a,i)=>attachmentDisclosure(m,a,i)).join("")}</section>`:"";
+const inviteBlock=m=>m.real&&m.hasFiles&&!m.found&&m.status!=="sent"?`<section class="invite-card" data-invite="${esc(m.id)}" aria-label="Calendar invitation" hidden></section>`:"";
+const attachmentsBlock=m=>inviteBlock(m)+(!m.attachments.length&&m.real&&m.fileCount>0&&m.status==="inbox"?unreadFilesBlock(m):m.attachments.length?`<section class="attachment-summary-block" aria-label="Attachments"><div class="ad-title">${m.attachments.length===1?"1 attachment":m.attachments.length+" attachments"}</div>${m.attachments.map((a,i)=>attachmentDisclosure(m,a,i)).join("")}</section>`:"");
 function attachmentDisclosure(m,a,i){
   const key=`att-${m.id}-${i}`,open=expanded.has(key),st=a.state||"done";
   const kindOf=x=>/wordprocessingml/.test(x)?"Word":/pdf/.test(x)?"PDF":/csv/.test(x)?"CSV":/^text\//.test(x)?"Text":/^image\//.test(x)?"Picture":"",meta=[kindOf(a.mime||""),a.pages?`${a.pages} pages`:"",a.size].filter(Boolean).join(" · ");
@@ -4291,6 +4389,7 @@ function render(){
   {const os=shipOn()?(shipData.orders||[]).filter(o=>!(o.delivered_at&&o.ack)):[];const sb=$("shipBadge");if(sb){sb.textContent=os.length;sb.hidden=!os.length;sb.classList.toggle("hot",os.some(o=>o.needs_confirm||o.unsure))}}
   {const mb=$("msgBadge");if(mb){const n=msgOn()?msgSum.unread:0;mb.textContent=n;mb.hidden=!n;mb.classList.toggle("hot",n>0)}}
   bellPaint();
+  hydrateInvites();
   {const ns=waitOn()?(waitData.notes||[]).filter(n=>n.state==="waiting"):[];const wb=$("waitBadge");if(wb){wb.textContent=ns.length;wb.hidden=!ns.length;wb.classList.toggle("hot",ns.some(n=>n.due))}}
   {const fl=findOn()?userMessages().filter(m=>m.found):[];const fn=$("foundNav"),fb=$("foundBadge");if(fn){fn.hidden=!fl.length&&filter!=="found";fb.textContent=fl.length;fb.hidden=!fl.length}}
   {const hd=mine.filter(isHeld),hn=$("heldNav"),hb=$("heldBadge");if(hn){hn.hidden=!hd.length&&filter!=="held";hb.textContent=hd.length;hb.hidden=!hd.length}}

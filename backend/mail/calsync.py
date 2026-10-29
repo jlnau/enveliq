@@ -551,6 +551,61 @@ class Sync:
                 raise OutboundError("error", f"Google refused an event ({status}).")
             pushed[bid] = {"sig": sig}
 
+    # ----- meetings the person accepted from an email invite (mail/invites.py) -----
+    def invite_target(self, uid: str) -> str:
+        """Which connected calendar takes accepted meetings: "google", "caldav" or "" (none). Google first when both are on."""
+        rec = self._load(uid)
+        g, c = rec["google"], rec["caldav"]
+        if g["enabled"] and g["refresh_token"] and g["calendar_id"]:
+            return "google"
+        if c["enabled"] and c["url"] and c["password"]:
+            return "caldav"
+        return ""
+
+    def invite_place(self, uid: str) -> str:
+        return {"google": "Google Calendar", "caldav": "your calendar"}.get(self.invite_target(uid), "")
+
+    def invite_put(self, uid: str, key: str, google_body: dict[str, Any], ics: str) -> str:
+        """Add or update one meeting in the connected calendar. Returns where it went ("" when no calendar is connected). Raises OutboundError."""
+        which = self.invite_target(uid)
+        rec = self._load(uid)
+        if which == "google":
+            g = rec["google"]
+            cal = "/calendars/" + urllib.parse.quote(g["calendar_id"], safe="")
+            status, _ = self.google.call(uid, g["refresh_token"], "POST", f"{cal}/events", google_body)
+            if status == 409:                                          # already there (or removed before): update it
+                status, _ = self.google.call(uid, g["refresh_token"], "PUT", f"{cal}/events/{google_body['id']}", google_body)
+            if status == 404:
+                raise OutboundError("not_found", "Google cannot find the calendar. Connect Google Calendar again.")
+            if status >= 400:
+                raise OutboundError("error", f"Google refused the meeting ({status}).")
+            return "Google Calendar"
+        if which == "caldav":
+            cd = rec["caldav"]
+            status, _ = self._dav(cd, "PUT", cd["url"] + f"enveliq-inv-{key}.ics", body=ics.encode("utf-8"), headers={"Content-Type": "text/calendar; charset=utf-8"})
+            if status not in (200, 201, 204):
+                raise OutboundError("error", f"The calendar refused the meeting ({status}).")
+            return "your calendar"
+        return ""
+
+    def invite_remove(self, uid: str, key: str) -> str:
+        """Take one meeting Enveliq added out of the connected calendar again. Only the event Enveliq made is touched."""
+        which = self.invite_target(uid)
+        rec = self._load(uid)
+        if which == "google":
+            g = rec["google"]
+            status, _ = self.google.call(uid, g["refresh_token"], "DELETE", f"/calendars/{urllib.parse.quote(g['calendar_id'], safe='')}/events/inv{key}")
+            if status not in (200, 204, 404, 410):
+                raise OutboundError("error", f"Google refused to remove the meeting ({status}).")
+            return "Google Calendar"
+        if which == "caldav":
+            cd = rec["caldav"]
+            status, _ = self._dav(cd, "DELETE", cd["url"] + f"enveliq-inv-{key}.ics")
+            if status not in (200, 202, 204, 404, 410):
+                raise OutboundError("error", f"The calendar refused to remove the meeting ({status}).")
+            return "your calendar"
+        return ""
+
     # ----- Home Assistant To-do -----
     def _ha(self, td: dict[str, Any], service: str, data: dict[str, Any], response: bool = False) -> Any:
         url = f"{td['url']}/api/services/todo/{service}" + ("?return_response" if response else "")

@@ -5,7 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 
-/** The "Reviewed" and "Archive" buttons on a new-email alert. Uses the kept sign-in; the email is marked at your mailbox like in the app. */
+/** The "Archive" and "Delete" (move to Bin) buttons on a new-email alert. Uses the kept sign-in; the email is marked at your mailbox like in the app. */
 class MailActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val account = intent.getStringExtra("account") ?: return

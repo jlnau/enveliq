@@ -1155,6 +1155,9 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
                 }
             }
 
+            // A calendar invitation (Accept, Maybe, Decline, Propose new time). Shown only when the email carries one.
+            InviteCard(mail, api)
+
             Surface(
                 color = Panel, shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Line),
                 modifier = Modifier.fillMaxWidth().padding(top = 14.dp),

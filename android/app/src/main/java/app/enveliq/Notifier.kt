@@ -143,8 +143,8 @@ object Notifier {
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
             builder.setContentIntent(open)
-            builder.addAction(action(context, id, 1, "Reviewed", m, Outcome.Reviewed))
-            builder.addAction(action(context, id, 2, "Archive", m, Outcome.Archived))
+            builder.addAction(action(context, id, 1, "Archive", m, Outcome.Archived))
+            builder.addAction(action(context, id, 2, "Delete", m, Outcome.Binned))      // Delete moves the email to the Bin, like the Bin button in the app
         } else {
             builder.setContentTitle("${mails.size} new emails")
             builder.setContentText(mails.take(3).joinToString(", ") { it.sender })

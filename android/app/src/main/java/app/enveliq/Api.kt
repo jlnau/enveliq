@@ -965,4 +965,49 @@ class EnveliqApi(address: String) {
         val r = JSONObject(call("GET", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/original"))
         return r.str("text").ifBlank { "(no text content)" }
     }
+
+    // ---------- calendar invitations (the server reads the invite and does all the sending; see docs/INVITES.md) ----------
+
+    private fun invitePath(mail: Mail) = "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/invite"
+
+    /** The invitation in this email, or null when it has none. */
+    fun invite(mail: Mail): Invite? {
+        val text = try {
+            call("GET", invitePath(mail))
+        } catch (e: ApiException) {
+            if (e.code == 404) return null
+            throw e
+        }
+        val r = JSONObject(text)
+        val a = r.optJSONObject("answer")
+        val o = r.optJSONObject("organizer")
+        return Invite(
+            summary = r.str("summary"), location = r.str("location"), description = r.str("description"),
+            start = if (r.isNull("start")) null else r.optDouble("start"), end = if (r.isNull("end")) null else r.optDouble("end"),
+            allDay = r.optBoolean("all_day", false), startDay = r.str("start_day"), endDay = r.str("end_day"),
+            repeats = r.optBoolean("repeats", false), cancelled = r.optBoolean("cancelled", false),
+            organizerName = o?.str("name") ?: "", organizerEmail = o?.str("email") ?: "", people = r.optInt("people", 0),
+            canAnswer = r.optBoolean("can_answer", false), canAdd = r.optBoolean("can_add", false), organizerDiffers = r.optBoolean("organizer_differs", false),
+            mine = r.str("mine"), calendar = r.str("calendar"),
+            response = a?.str("response") ?: "", calendarProblem = a?.str("calendar_problem") ?: "", proposed = a != null && a.has("proposed"),
+        )
+    }
+
+    /** Accept (accepted), Maybe (tentative) or Decline (declined). [confirmOrganizer] is the person's tick when the organiser is not the sender. */
+    fun answerInvite(mail: Mail, response: String, confirmOrganizer: Boolean): Sent = sentFrom(
+        call("POST", invitePath(mail) + "/answer", JSONObject().put("response", response).put("confirm_organizer", confirmOrganizer)),
+    )
+
+    /** Sends the organiser a plain email suggesting another time. Times are Unix seconds. */
+    fun proposeInvite(mail: Mail, startSeconds: Double, endSeconds: Double, zone: String, note: String, confirmOrganizer: Boolean): Sent = sentFrom(
+        call(
+            "POST", invitePath(mail) + "/propose",
+            JSONObject().put("start", startSeconds).put("end", endSeconds).put("zone", zone).put("note", note).put("confirm_organizer", confirmOrganizer),
+        ),
+    )
+
+    /** "add" puts the meeting in the connected calendar, "remove" takes it out again. */
+    fun inviteCalendar(mail: Mail, action: String) {
+        call("POST", invitePath(mail) + "/calendar", JSONObject().put("action", action))
+    }
 }
