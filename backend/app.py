@@ -28,6 +28,7 @@ from .mail.microsoft import Microsoft
 from .mail.microsoft_routes import build_microsoft_router
 from .mail.routes import build_mail_router
 from .mail.extra_routes import build_extra_router
+from .mail.invite_routes import build_invite_router
 from .mail.find_routes import build_find_router
 from .mail.task_routes import build_task_router
 from .mail.shipping import ShipBook
@@ -729,6 +730,7 @@ mail_ctx = SimpleNamespace(
 )
 app.include_router(build_mail_router(mail_ctx))
 app.include_router(build_extra_router(mail_ctx))          # after the main router: shares its send limits
+app.include_router(build_invite_router(mail_ctx))         # answers to calendar invites use the same send limits
 app.include_router(build_find_router(mail_ctx))           # after the extra router: uses its summary queue
 app.include_router(build_task_router(mail_ctx))
 app.include_router(build_shipping_router(mail_ctx))

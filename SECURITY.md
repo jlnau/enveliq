@@ -524,3 +524,11 @@ The daily summary (Settings, Notifications) is counted by Enveliq from lists the
 **Signatures.** A formatted signature is stored as HTML rebuilt from the same short allowlist as outgoing email (bold, italic, underline, links to http, https or mailto, line breaks; no pictures, scripts, styles or classes), with its plain-text copy made by the server. A per-address signature can only be set for an address the signed-in person can send from; anything else is refused. The signature lives in the person's own encrypted record and is part of their export.
 
 **Print email and Save as PDF** use the browser's print window on the page's own copy of the email. Enveliq makes and keeps no PDF and stores no email body; the email is fetched from the mailbox only while it is shown, as before.
+
+## Calendar invitations (v0.104)
+- An invitation (`.ics`) is untrusted input. It is parsed in memory by plain code from the original email fetched on demand, limited to 1 MB, one event, 50 people, with every field length-limited and stripped of control characters. Nothing in it is run, fetched or shown as a link, and the AI plays no part in reading dates.
+- Nothing about a meeting is stored. Only the person's own answer (the answer, its time, and which calendar it reached) is kept, encrypted in the vault per person, for 180 days.
+- A reply goes to the organiser named in the invitation. When the organiser is on a different domain from the sender, the server refuses to send until the person confirms, because that is how forged invitations work. The check is on the server, not only in the page.
+- Replies and new-time emails use the same sending identity checks, header-injection rules, rate limits and Undo send as other mail. A person always presses the button; the AI never answers an invitation.
+- Calendar writes go through the same outbound rules as the existing calendar connections. Only events Enveliq made itself (an id derived from the invitation) are changed or removed.
+- Every invitation route needs a full sign-in, checks that the mailbox belongs to the person (anything else answers "not found"), and is rate limited.

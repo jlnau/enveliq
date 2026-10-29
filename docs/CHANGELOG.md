@@ -4,7 +4,9 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**Calendar invitations: read them, answer them, add them to your calendar (website and Android).** An email that carries an invitation now shows a card with **Accept**, **Maybe**, **Decline** and **Propose new time**. Answers go to the organiser as the standard calendar reply by email (with the usual Undo), and an accepted meeting is added to the Google Calendar or CalDAV calendar you already connected; declining takes it out again. Propose new time sends a plain email with the time you pick. If the organiser is not the sender, you must tick a box first. Attached `.ics` files are now readable and previewable in plain words instead of "cannot read this kind of file yet". Only your answer is kept, not the meeting. The Android app has the same card, with a full-screen form for a new time. Touches `backend/mail/invites.py` (new), `backend/mail/invite_routes.py` (new), `backend/mail/calsync.py`, `backend/mail/render.py`, `backend/app.py`, `prototype/index.html`, `android/` (`Invite.kt`, `Api.kt`, `Home.kt`), `docs/INVITES.md` (new), `docs/CALENDAR.md`, `docs/ANDROID.md`, `SECURITY.md`, `tests/test_invites.py` (new) and `scripts/check_invites.mjs` (new, in CI).
+
+**Android alerts: the buttons are now Archive and Delete.** The two buttons on a new-email alert used to be Reviewed and Archive. They are now **Archive** and **Delete**. Delete moves the email to your Bin, the same as the Bin button in the app; it does not erase it from your mail service. Touches `android/` (`Notifier.kt`, `MailActionReceiver.kt`, `AndroidManifest.xml`), `docs/ANDROID.md`.
 
 ## v0.103 (2026-10-21)
 

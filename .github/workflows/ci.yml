@@ -158,6 +158,8 @@ jobs:
         run: node scripts/check_formatted_email.mjs
       - name: Snooze (simulated server)
         run: node scripts/check_snooze.mjs
+      - name: Calendar invitations (simulated server)
+        run: node scripts/check_invites.mjs
       - name: Search everywhere (simulated server)
         run: node scripts/check_search_everywhere.mjs
       - name: A blank install shows no sample mail (simulated server)

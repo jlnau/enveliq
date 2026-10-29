@@ -73,7 +73,7 @@ def kind_of(name: str, ctype: str, data: bytes) -> str:
 def can_view(name: str, ctype: str) -> bool:
     """For the attachment list: the kinds the viewer might open (decided again when the bytes are known)."""
     ext = os.path.splitext(name.lower())[1]
-    return ctype == "application/pdf" or ctype in TEXT_TYPES or (ext in TEXT_EXTENSIONS and ctype in ("application/octet-stream", "text/plain")) \
+    return ctype in ("application/pdf", "text/calendar", "application/ics") or ext in (".ics", ".ical") or ctype in TEXT_TYPES or (ext in TEXT_EXTENSIONS and ctype in ("application/octet-stream", "text/plain")) \
         or (ext == ".pdf" and ctype == "application/octet-stream")
 
 
@@ -227,6 +227,11 @@ def render_text(data: bytes, kind: str, ctype: str, name: str) -> dict[str, Any]
 
 
 def view(data: bytes, name: str, ctype: str) -> dict[str, Any]:
+    if ctype in ("text/calendar", "application/ics") or (os.path.splitext(name.lower())[1] in (".ics", ".ical") and ctype in ("application/octet-stream", "text/plain")):
+        from . import invites
+        got = invites.parse(data[:invites.MAX_BYTES].decode("utf-8", "replace"))
+        if got is not None:                      # a plain-words summary of the event, not the file's raw lines
+            return render_text(invites.summary_text(got).encode("utf-8"), "text", "text/plain", name)
     kind = kind_of(name, ctype, data)
     if kind == "pdf":
         return render_pdf(data)
@@ -394,6 +399,12 @@ def docx_text(data: bytes) -> dict[str, Any]:
 
 def read_text(data: bytes, name: str, ctype: str) -> dict[str, Any]:
     """The words of an attachment, in memory: {'kind': 'text', 'text', 'pages', 'read_pages'} or {'kind': 'none', 'reason'}."""
+    if ctype in ("text/calendar", "application/ics") or (os.path.splitext(name.lower())[1] in (".ics", ".ical") and ctype in ("application/octet-stream", "text/plain")):
+        from . import invites
+        got = invites.parse(data[:invites.MAX_BYTES].decode("utf-8", "replace"))
+        if got is None:
+            return {"kind": "none", "reason": "This calendar file has no event Enveliq can read."}
+        return {"kind": "text", "text": invites.summary_text(got), "pages": None, "read_pages": None}
     kind = read_kind(name, ctype, data)
     if kind == "pdf":
         return pdf_text(data)

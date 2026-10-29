@@ -74,7 +74,7 @@
         <meta-data android:name="firebase_messaging_auto_init_enabled" android:value="false" />
         <meta-data android:name="firebase_analytics_collection_enabled" android:value="false" />
 
-        <!-- The Reviewed and Archive buttons on a new-email alert. -->
+        <!-- The Archive and Delete buttons on a new-email alert. -->
         <!-- The home-screen square that shows how many emails are waiting (the number only). -->
         <receiver android:name=".WaitingWidget" android:exported="false">
             <intent-filter>
