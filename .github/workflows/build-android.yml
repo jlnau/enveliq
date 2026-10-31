@@ -37,7 +37,7 @@ jobs:
     steps:
       - name: Find the saved key, or make it the first time
         id: saved
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.android/debug.keystore
           key: enveliq-android-debug-keystore
@@ -86,7 +86,7 @@ jobs:
           fi
       - name: Use the saved key, so this build installs over the last one
         if: ${{ env.ANDROID_KEYSTORE_PATH == '' }}
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.android/debug.keystore
           key: enveliq-android-debug-keystore
