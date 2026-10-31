@@ -139,7 +139,7 @@ jobs:
             echo "$CERTS" | grep -i 'digest' | grep -v -i 'md5' || true
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: Enveliq-android-apk
           path: |
