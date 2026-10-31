@@ -10,16 +10,16 @@ Nothing here changes anything on your server by itself. An update only reaches y
 | --- | --- | --- |
 | The database | SQLite, one encrypted file (`vault.sqlite3`) read by the Python inside the Enveliq container. There is no separate database server. | With the Python base image, when the image is rebuilt. |
 | Python and the base image | `python:3.13-slim` in `Dockerfile` and `Dockerfile.render` | Dependabot proposes newer images. Rebuilding also picks up fixes inside the same tag. |
-| Python packages (FastAPI, cryptography and so on) | `requirements.txt`, every version pinned | Dependabot proposes updates weekly. |
+| Python packages (FastAPI, cryptography and so on) | `requirements.txt`, every version pinned | Dependabot proposes updates monthly. |
 | The PDF viewer container | `Dockerfile.render` (poppler) | Rebuilt with each release. |
-| GitHub Actions that build and test | `.github/workflows/` | Dependabot proposes updates weekly. |
+| GitHub Actions that build and test | `.github/workflows/` | Dependabot proposes updates monthly. |
 | The website's one package (`marked`) | `website/package.json` | Updated by hand when its advisory list changes. |
 | Arcane, Docker and the host system | Your server | Updated on the host, not by Enveliq. |
 | Proton Bridge, Microsoft, your AI provider | Outside services | Their own updates; Enveliq only changes if they change how they work. |
 
 ## The routine
 
-**Every week (about 5 minutes).** Open the pull requests list. Dependabot may have opened one pull request called something like "python-small-updates". If its checks are green, read what changed and fold it into the current version pull request (or merge it into the branch). Anything GitHub marks as a **security** update goes first. A major version jump (for example 2.x to 3.x) comes as its own pull request: leave it until you have time to test it on the preview.
+**Every month (about 5 minutes).** Open the pull requests list. Dependabot may have opened one pull request called something like "python-small-updates". If its checks are green, read what changed and fold it into the current version pull request (or merge it into the branch). Anything GitHub marks as a **security** update goes first. A major version jump (for example 2.x to 3.x) comes as its own pull request: leave it until you have time to test it on the preview.
 
 **With each release.** After publishing the release and redeploying, look at Administration, **Updates** and **Reporting** to confirm the new version is running and nothing is reporting errors.
 
@@ -37,7 +37,7 @@ Nothing here changes anything on your server by itself. An update only reaches y
 
 ## Turn on GitHub's security alerts (one time)
 
-Dependabot already proposes *updates* every week, but it only *warns you about a known vulnerability* if these are switched on. They are free. In the repository, open **Settings, Advanced Security** (or **Code security**) and switch on:
+Dependabot already proposes *updates* every month, but it only *warns you about a known vulnerability* if these are switched on. They are free. In the repository, open **Settings, Advanced Security** (or **Code security**) and switch on:
 
 1. **Dependency graph**
 2. **Dependabot alerts** (a warning when a package you use has a known security hole)

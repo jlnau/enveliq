@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Dependabot now proposes updates once a month.** Updates to Python packages, GitHub Actions and Docker images used to arrive as pull requests every week. They now arrive once a month, still grouped, with major version jumps on their own. Security updates are not delayed by this. Touches `.github/dependabot.yml`, `docs/MAINTENANCE.md`.
+
 **Quick AI Send no longer fails or changes the subject so often.** The AI was shown the subject under a label that said "data", and it sometimes answered with the word "Data" as the subject. A changed subject then made the safety check stop the whole send. The subject is now shown to the AI in the same shape as its answer, and if the AI changes the subject more than a proofread should, your subject is kept exactly as you wrote it while the text is still proofread. The text itself is still refused if the AI changes numbers, names, links or the length. Touches `backend/mail/writehelp.py`, `tests/test_writing_style.py`, `docs/WRITING_HELP.md`.
 
 **The Conversation View Hide button works when one of its emails is open.** If one of the older emails of a conversation was the open one, pressing **Hide** did nothing until you opened a different email. Hide now hides it, and Show brings it back. Touches `prototype/index.html`, `scripts/check_more_menu.mjs`, `docs/INBOX.md`.
