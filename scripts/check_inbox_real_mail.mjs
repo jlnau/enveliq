@@ -197,7 +197,7 @@ async function open(server, { seen = true } = {}) {
   check("every email is one thin row, not grouped", (await page.locator(".grp").count()) === 0 && (await page.locator("article.mail.quiet").count()) === 3);
   const rights = await page.locator("article.mail .time").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().right)));
   check("every row shows when it arrived, lined up on the right", rights.length === 3 && new Set(rights).size === 1 && (await page.locator("article.mail .time").allInnerTexts()).every((t) => t.trim().length > 0));
-  check("each row has three icon buttons (tick, archive, red bin) and no arrow; Reply and View original email stay hidden until it is opened", (await page.locator("article.mail .qrow [data-status=reviewed]").count()) === 3 && (await page.locator("article.mail .qrow [data-status=archived]").count()) === 3 && (await page.locator("article.mail .qrow [data-status=trashed]").count()) === 3 && (await page.locator("article.mail .qrow .qic").evaluateAll((els) => els.every((e) => e.getAttribute("aria-label") && e.innerText.trim() === "" && e.querySelector("svg")))) && (await page.locator("article.mail .qtoggle").evaluateAll((els) => els.every((e) => e.getBoundingClientRect().width <= 1))) && (await page.locator("article.mail [data-open-email]").count()) === 0);
+  check("each row has two icon buttons (archive, red bin; no Reviewed tick) and no arrow; Reply and View original email stay hidden until it is opened", (await page.locator("article.mail .qrow [data-status=reviewed]").count()) === 0 && (await page.locator("article.mail .qrow [data-status=archived]").count()) === 3 && (await page.locator("article.mail .qrow [data-status=trashed]").count()) === 3 && (await page.locator("article.mail .qrow .qic").evaluateAll((els) => els.every((e) => e.getAttribute("aria-label") && e.innerText.trim() === "" && e.querySelector("svg")))) && (await page.locator("article.mail .qtoggle").evaluateAll((els) => els.every((e) => e.getBoundingClientRect().width <= 1))) && (await page.locator("article.mail [data-open-email]").count()) === 0);
   const hdr0 = [await page.locator(".top-left h2").innerText(), await page.locator("#inboxSubtitle").innerText()];
   check("new default Calm view is shown with a discreet inbox options control", hdr0[0] === "One thing at a time" && await page.locator("#previewInboxOptions").isVisible());
   await page.click("#previewInboxOptions");
@@ -402,12 +402,14 @@ await page.click('[data-theme-choice="dark"]');
   // The normal five-second setting was verified above; earlier fast-path tests use a 400 ms override.
   await page.evaluate(() => { window.__undoMs = 2000; });
   // The three outcomes
-  await page.locator("article.mail", { hasText: "Weekly news" }).locator('[data-status="reviewed"]').click();
+  await expand(page.locator("article.mail", { hasText: "Weekly news" }));
+  await page.locator("article.mail", { hasText: "Weekly news" }).locator("[data-more]").first().click();
+  await page.locator("#moreMenu [data-markread]").click();
   await page.waitForFunction(() => document.querySelectorAll("article.mail:not(.leaving)").length === 1);
   await expand(page.locator("article.mail:not(.leaving)").first());
   await page.locator("article.mail:not(.leaving)").first().locator('[data-status="trashed"]').click();
   await page.waitForFunction(() => document.querySelectorAll("article.mail:not(.leaving)").length === 0);
-  check("desktop: two actions in a row each get their own Undo bar, the newest at the bottom", (await page.locator("#undoBar .undobar").count()) === 2 && (await page.locator("#undoBar .undobar").first().innerText()).includes("Marked reviewed") && (await page.locator("#undoBar .undobar").last().innerText()).includes("Moved to Bin"));
+  check("desktop: two actions in a row each get their own Undo bar, the newest at the bottom", (await page.locator("#undoBar .undobar").count()) === 2 && (await page.locator("#undoBar .undobar").first().innerText()).includes("Marked as read") && (await page.locator("#undoBar .undobar").last().innerText()).includes("Moved to Bin"));
   for (let i = 0; i < 60 && server.calls.filter((c) => c[0] === "resolve").length < 4; i++) await page.waitForTimeout(100);
   await page.waitForFunction(() => document.getElementById("undoBar").hidden);
   await page.waitForTimeout(300);
@@ -564,7 +566,7 @@ await page.click('[data-theme-choice="dark"]');
   await page.waitForTimeout(400);
   check("hover preview is off in the reading-pane layouts", await page.locator("#peek").isHidden());
   const callsBefore = server.calls.length;
-  await page.locator(".reading [data-status=reviewed]").click();
+  await page.locator(".reading [data-more]:not([data-rules-menu])").first().click(); await page.locator("#moreMenu [data-markread]").click();
   await page.waitForTimeout(1500);
   check("Reviewed in the reading pane works and clears the selection", server.calls.slice(callsBefore).some((c) => c[0] === "resolve" && c[2].outcome === "reviewed") && (await page.locator(".reading .rhead h3").count()) === 0 && (await page.locator(".panelist article.mail.current").count()) === 0);
   // reading pane below
@@ -631,7 +633,7 @@ await page.click('[data-theme-choice="dark"]');
   const rows0 = await page.locator("article.mail").count();
   const callsP = server.calls.length;
   await swipe(0, 120);
-  check("phone: dragging a row right shows a green Reviewed strip", (await page.locator(".swipebg.armed.ok").count()) === 1 && (await page.locator(".swipebg").innerText()).includes("Reviewed"));
+  check("phone: dragging a row right shows an Archive strip (Reviewed is no longer a swipe)", (await page.locator(".swipebg.armed.arch").count()) === 1 && (await page.locator(".swipebg").innerText()).includes("Archive"));
   await page.mouse.up();
   await page.waitForSelector("#undoBar:not([hidden])");
   check("phone: the email stays greyed while Undo appears at the bottom", (await page.locator("article.mail.leaving").count()) === 1 && (await page.locator("article.mail:not(.leaving)").count()) === rows0 - 1 && (await page.locator("#undoBar").isVisible()));
@@ -671,7 +673,7 @@ await page.click('[data-theme-choice="dark"]');
   await page.evaluate(() => { copyText = window.__copyOriginal; delete window.__copyOriginal; });
 
   const callsQ = server.calls.length;
-  await page.locator(".reader .ract [data-status=reviewed]").click();
+  await page.locator(".reader [data-more]:not([data-rules-menu])").first().click(); await page.locator("#moreMenu [data-markread]").click();
   await page.waitForSelector("#undoBar:not([hidden])");
   check("phone: the buttons inside an open email also wait for Undo", server.calls.length === callsQ && (await page.locator("article.mail.leaving").count()) === 1 && (await page.locator("article.mail:not(.leaving)").count()) === rows1 - 1);
   await page.click("#undoBar .undobar:last-child button");
@@ -698,7 +700,7 @@ await page.click('[data-theme-choice="dark"]');
   // Wait and measure in one step. The list can be redrawn at any moment (a sync tick, say), which would replace the
   // reader element between a separate "wait until visible" and "measure it" and make the measurement come back empty.
   const rdr = await (await page.waitForFunction(() => { const r = document.querySelector(".reader")?.getBoundingClientRect(); return r && r.width > 0 && r.height > 0 ? { width: r.width, height: r.height } : null; })).jsonValue();
-  check("full screen: tapping a row opens the email over the whole screen with a Close button and pinned buttons", rdr.width >= 419 && rdr.height >= 819 && (await page.locator(".rtop [data-reader-close]").innerText()).includes("Close") && (await page.locator(".ract [data-status=reviewed]").isVisible()) && (await page.locator(".ract [data-status=trashed]").isVisible()));
+  check("full screen: tapping a row opens the email over the whole screen with a Close button and pinned buttons", rdr.width >= 419 && rdr.height >= 819 && (await page.locator(".rtop [data-reader-close]").innerText()).includes("Close") && (await page.locator(".ract [data-status=archived]").isVisible()) && (await page.locator(".ract [data-status=trashed]").isVisible()));
   check("full screen: on a phone there are no Next or Previous arrows (Close is the way to the next email)", (await page.locator(".rtop [data-pick]").count()) === 0);
   await page.locator(".ract [data-status=trashed]").click();
   await page.waitForSelector("#undoBar:not([hidden])");

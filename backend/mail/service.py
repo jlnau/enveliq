@@ -891,9 +891,16 @@ class MailService:
             main, _, sub = ctype.partition("/")
             part.add_related(data, maintype=main, subtype=sub, cid=f"<{cids[name]}>", disposition="inline")
 
+    @staticmethod
+    def _flag_important(msg: EmailMessage, important: bool) -> None:
+        """Mark an outgoing email as high importance (the two headers mail programs understand). Only when the person asked."""
+        if important:
+            msg["Importance"] = "high"
+            msg["X-Priority"] = "1 (Highest)"
+
     def build_new(self, account: dict[str, Any], to: list[str], cc: list[str], bcc: list[str], subject: str, body: str,
                   from_address: str | None, files: list[dict[str, str]], html: str | None = None,
-                  images: list[dict[str, str]] | None = None) -> tuple[EmailMessage, str, list[str]]:
+                  images: list[dict[str, str]] | None = None, important: bool = False) -> tuple[EmailMessage, str, list[str]]:
         identities = {i.lower(): i for i in sending_identities(account)}
         mailbox = str(account.get("email_address") or "")
         chosen = identities.get((from_address or mailbox).lower())
@@ -916,6 +923,7 @@ class MailService:
         self.set_content(msg, body.replace("\r\n", "\n"), html, images)
         self.attach_files(msg, files)
         recipients = [a.addr_spec for a in to_a + cc_a + bcc_a]
+        self._flag_important(msg, important)
         return msg, chosen, recipients
 
     # ---------- reply ----------
@@ -954,7 +962,7 @@ class MailService:
                     to: list[str] | None = None, cc: list[str] | None = None, bcc: list[str] | None = None,
                     kind: str = "reply", add_original: bool = True, files: list[dict[str, str]] | None = None,
                     subject: str | None = None, html: str | None = None,
-                    images: list[dict[str, str]] | None = None, auto: bool = False) -> tuple[EmailMessage, str, list[str]]:
+                    images: list[dict[str, str]] | None = None, auto: bool = False, important: bool = False) -> tuple[EmailMessage, str, list[str]]:
         """A reply. Unless the person already put the original into their own message (add_original False), the whole
         original email is fetched from the mailbox now and quoted under their words. It is never kept."""
         ctx = message.get("reply_context")
@@ -1003,12 +1011,13 @@ class MailService:
         self.set_content(msg, text, html, images, tail)
         if files:
             self.attach_files(msg, files)
+        self._flag_important(msg, important)
         return msg, chosen, [a.addr_spec for a in to_a + cc_a + bcc_a]
 
     def build_forward(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None,
                       to: list[str], cc: list[str], bcc: list[str], keep_files: list[int] | None,
                       extra_files: list[dict[str, str]] | None = None, subject: str | None = None, html: str | None = None,
-                      images: list[dict[str, str]] | None = None) -> tuple[EmailMessage, str, list[str]]:
+                      images: list[dict[str, str]] | None = None, important: bool = False) -> tuple[EmailMessage, str, list[str]]:
         """Forward an email: the original is fetched from the mailbox now, quoted under the person's note, and never kept.
         keep_files are the numbers of the original's files to send along (None sends all of them)."""
         ctx = message.get("reply_context") or {}
@@ -1043,6 +1052,7 @@ class MailService:
             msg.add_attachment(data, maintype=main, subtype=sub, filename=clean(name, 200) or "attachment")
         if extra_files:
             self.attach_files(msg, extra_files, already=len(files), already_bytes=total)
+        self._flag_important(msg, important)
         return msg, chosen, [a.addr_spec for a in to_a + cc_a + bcc_a]
 
     def reply(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None,

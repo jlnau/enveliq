@@ -41,18 +41,18 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 760 }], ["phone", {
   const progress = await bars().last().locator(".undoprog").evaluate((e) => ({ name: getComputedStyle(e).animationName, seconds: parseFloat(getComputedStyle(e).animationDuration) }));
   check(name + ": Undo progress retains the full action countdown in Calm mode", progress.name.includes("undoRun") && progress.seconds >= 59);
 
-  check(name + ": the newest is at the bottom", /Marked reviewed/.test(await bars().last().innerText()) && /Archived/.test(await bars().first().innerText()));
+  check(name + ": the newest is at the bottom", /Marked as read/.test(await bars().last().innerText()) && /Archived/.test(await bars().first().innerText()));
   const boxes = await bars().evaluateAll((els) => els.map((e) => e.getBoundingClientRect()));
   check(name + ": the bars sit on top of each other without overlapping", boxes.every((r, i) => i === 0 || r.top >= boxes[i - 1].bottom - 0.5));
   check(name + ": the bars stay inside the screen", boxes.every((r) => r.left >= 0 && r.right <= vp.width && r.bottom <= vp.height));
   if (shots) await p.screenshot({ path: path.join(shots, `stacked-undo-${name}.png`) });
   const before = await p.locator("article.mail:not(.leaving)").count();
   await bars().nth(1).locator("button").click();
-  check(name + ": Undo on the middle bar brings back only that email", (await bars().count()) === 2 && (await p.locator("article.mail:not(.leaving)").count()) === before + 1 && /Archived/.test(await bars().first().innerText()) && /Marked reviewed/.test(await bars().last().innerText()));
+  check(name + ": Undo on the middle bar brings back only that email", (await bars().count()) === 2 && (await p.locator("article.mail:not(.leaving)").count()) === before + 1 && /Archived/.test(await bars().first().innerText()) && /Marked as read/.test(await bars().last().innerText()));
   await queue("trashed", 2);
   check(name + ": two emails done together are one bar", (await bars().count()) === 3 && /2 emails/.test(await bars().last().innerText()));
   await queue("archived");
-  check(name + ": a fourth action makes the oldest go through, so three bars stay", (await bars().count()) === 3 && /Marked reviewed/.test(await bars().first().innerText()) && /2 emails/.test(await bars().nth(1).innerText()));
+  check(name + ": a fourth action makes the oldest go through, so three bars stay", (await bars().count()) === 3 && /Marked as read/.test(await bars().first().innerText()) && /2 emails/.test(await bars().nth(1).innerText()));
   check(name + ": no script errors", errors.length === 0);
   await p.close();
 }

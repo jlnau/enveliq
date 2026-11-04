@@ -73,7 +73,7 @@ private fun appVersion(context: Context): String = try {
     ""
 }
 
-private val swipeNames = listOf("archive" to "Archive", "bin" to "Bin", "reviewed" to "Reviewed", "none" to "Nothing")
+private val swipeNames = listOf("archive" to "Archive", "bin" to "Bin", "none" to "Nothing")
 private val scopeNames = listOf(
     Triple("all", "All new email", "Every new email gets a quiet note."),
     Triple("action", "Only email that needs action", "Emails the AI marked as needing something from you."),
@@ -194,8 +194,8 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
     var mode by remember { mutableStateOf(AlertPrefs.mode(context)) }
     var googleOffered by remember { mutableStateOf(false) }
     var working by remember { mutableStateOf(false) }
-    var swipeRight by remember { mutableStateOf(prefs.getString("swipe_right", "archive") ?: "archive") }
-    var swipeLeft by remember { mutableStateOf(prefs.getString("swipe_left", "bin") ?: "bin") }
+    var swipeRight by remember { mutableStateOf(prefs.getString("swipe_right", "archive").let { if (it == "reviewed") "archive" else it } ?: "archive") }
+    var swipeLeft by remember { mutableStateOf(prefs.getString("swipe_left", "bin").let { if (it == "reviewed") "bin" else it } ?: "bin") }
     val power = remember { context.getSystemService(android.os.PowerManager::class.java) }
     var unrestricted by remember { mutableStateOf(power.isIgnoringBatteryOptimizations(context.packageName)) }
     var openNext by remember { mutableStateOf(prefs.getBoolean("open_next", false)) }
@@ -670,7 +670,7 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                 NavRow("🔒", tintSecurity, "Security", value = if (appLock) "Lock on" else "") { page = "security" }
             }
             Group {
-                ToggleRow("Open the next email", "After you archive or mark an email reviewed, open the next one.", openNext) {
+                ToggleRow("Open the next email", "After you archive an email or mark it as read, open the next one.", openNext) {
                     openNext = it
                     prefs.edit().putBoolean("open_next", it).apply()
                 }

@@ -86,11 +86,12 @@ for (const layout of ["list", "right", "bottom", "screen", "deck"]) {
 }
 
 // Reviewed, Archive and Bin inside the full screen email: it closes at once, the Undo bar still shows, and Undo brings the email back
-for (const [cls, word] of [["reviewed", "Marked reviewed"], ["archive", "Archived"], ["trash", "Moved to Bin"]]) {
+for (const [cls, word] of [["reviewed", "Marked as read"], ["archive", "Archived"], ["trash", "Moved to Bin"]]) {
   const { page, context, errors } = await run("list", 390, 800);
   await page.locator("article.mail", { hasText: "Plan for May" }).locator(".qmain").click();
   await page.waitForSelector(".reader");
-  await page.locator(`.reader .ract .action.${cls}`).click();
+  if (cls === "reviewed") { check("[reviewed] there is no Reviewed button at the bottom", (await page.locator(".reader .ract .action.reviewed").count()) === 0); await page.locator(".reader [data-more]:not([data-rules-menu])").first().click(); await page.locator("#moreMenu [data-markread]").click(); }
+  else await page.locator(`.reader .ract .action.${cls}`).click();
   check(`[${cls}] the full screen email closes straight away`, (await page.locator(".reader").count()) === 0);
   check(`[${cls}] the Undo bar shows "${word}"`, (await page.locator("#undoBar .undobar").innerText()).includes(word));
   await page.locator("#undoBar .undobar button").click();

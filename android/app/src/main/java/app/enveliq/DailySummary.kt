@@ -145,7 +145,7 @@ internal fun DigestScreen(api: EnveliqApi, onBack: () -> Unit, onOpenMail: (Stri
                             Text(i.summary, color = Ink, fontSize = 14.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 2.dp))
                             Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 TextButton(onClick = { onOpenMail(i.accountId, i.messageId) }, modifier = Modifier.weight(1f)) { Text("Open", color = Blue, fontSize = 14.sp, modifier = Modifier.fillMaxWidth()) }
-                                SummaryIcon("Reviewed", Color(0xFF16382B), { act(i) { api.resolveIds(i.accountId, i.messageId, Outcome.Reviewed) } }) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
+                                SummaryIcon("Mark as read", Color(0xFF16382B), { act(i) { api.resolveIds(i.accountId, i.messageId, Outcome.Reviewed) } }) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
                                 SummaryIcon("Archive", Color(0xFF173056), { act(i) { api.resolveIds(i.accountId, i.messageId, Outcome.Archived) } }) { ArchiveIcon(Color(0xFF8DB8FF)) }
                                 SummaryIcon("Bin", Color(0xFF3A1D22), { act(i) { api.resolveIds(i.accountId, i.messageId, Outcome.Binned) } }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Red) }
                                 SummaryIcon("Take out of the summary and put back in my inbox", PanelHigh, { act(i) { api.summaryRemove(i.accountId, i.messageId) } }) { Icon(Icons.Filled.ArrowBack, contentDescription = null, tint = Ink) }

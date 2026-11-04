@@ -65,6 +65,7 @@ class NewMailBody(StrictModel):
     files: list[FileIn] = Field(default_factory=list, max_length=10)
     html: str | None = Field(default=None, max_length=1_500_000)        # the formatted version of `body`; rebuilt from allowed parts (see outhtml)
     images: list[ImageIn] = Field(default_factory=list, max_length=12)  # pictures the formatted text refers to
+    important: bool = False                                              # send it with high importance
 
     @field_validator("subject", "from_address")
     @classmethod
@@ -321,7 +322,7 @@ def build_extra_router(ctx: Any) -> APIRouter:
         delay = review.user_prefs(vault, user)["undo_send_seconds"]
         try:
             built = service.build_new(account, body.to, body.cc, body.bcc, body.subject, body.body, body.from_address, [f.model_dump() for f in body.files],
-                                     body.html, [i.model_dump() for i in body.images])
+                                     body.html, [i.model_dump() for i in body.images], important=body.important)
             _, chosen, recipients = built
             named = [parseaddr(v) for v in (*body.to, *body.cc, *body.bcc)]
             people = [(n, a) for n, a in named]

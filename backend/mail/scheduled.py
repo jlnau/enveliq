@@ -90,7 +90,7 @@ class ScheduledMail:
         item = {"id": "s" + secrets.token_hex(8), "kind": kind, "account_id": _line(data.get("account_id"), 64),
                 "message_id": _line(data.get("message_id"), 64) or None, "from_address": _line(data.get("from_address"), 320) or None,
                 "to": _people(data.get("to")), "cc": _people(data.get("cc")), "bcc": _people(data.get("bcc")),
-                "subject": _line(data.get("subject"), 900), "body": body, "html": html, "send_at": send_at, "created": now, "state": "pending"}
+                "subject": _line(data.get("subject"), 900), "body": body, "html": html, "important": bool(data.get("important")), "send_at": send_at, "created": now, "state": "pending"}
         with _LOCK:
             items = self._load(user_id)
             if sum(1 for d in items if d.get("state") == "pending") >= MAX_ITEMS:
@@ -182,14 +182,14 @@ class ScheduledSender:
                 raise BridgeError("not_found", "That mailbox is not yours.")
             kind = item["kind"]
             if kind == "new":
-                built = self.service.build_new(account, item["to"], item["cc"], item["bcc"], item["subject"], item["body"], item.get("from_address"), [], item.get("html"))
+                built = self.service.build_new(account, item["to"], item["cc"], item["bcc"], item["subject"], item["body"], item.get("from_address"), [], item.get("html"), important=bool(item.get("important")))
             else:
                 message = self.vault.get_message(item["account_id"], item["message_id"])
                 if kind == "forward":
-                    built = self.service.build_forward(account, message, item["body"], item.get("from_address"), item["to"], item["cc"], item["bcc"], None, None, item.get("subject") or None, item.get("html"))
+                    built = self.service.build_forward(account, message, item["body"], item.get("from_address"), item["to"], item["cc"], item["bcc"], None, None, item.get("subject") or None, item.get("html"), important=bool(item.get("important")))
                 else:
                     built = self.service.build_reply(account, message, item["body"], item.get("from_address"), item["to"] or None,
-                                                     item["cc"] or None, item["bcc"] or None, kind, True, None, item.get("subject") or None, item.get("html"))
+                                                     item["cc"] or None, item["bcc"] or None, kind, True, None, item.get("subject") or None, item.get("html"), important=bool(item.get("important")))
             self.service.bridge.send(self.service.target(account), built[0], built[1], built[2])
         except BridgeError as err:
             error = err.message or err.code

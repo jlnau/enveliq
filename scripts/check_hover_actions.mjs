@@ -36,7 +36,7 @@ const settle = (p) => p.waitForTimeout(350);
   const o = (loc) => loc.evaluate((e) => +getComputedStyle(e).opacity);
   check("with the mouse elsewhere, no row shows its buttons", (await o(pair(0))) === 0 && (await o(pair(1))) === 0 && (await o(time(0))) === 1);
   await rows.nth(2).hover(); await settle(p);
-  check("the mouse over a row shows that row's three buttons", (await o(pair(2))) === 1 && (await pair(2).locator("button").count()) === 3);
+  check("the mouse over a row shows that row's two buttons (Archive, Bin)", (await o(pair(2))) === 1 && (await pair(2).locator("button").count()) === 2);
   check("…in the place of its date and paperclip", (await o(time(2))) === 0);
   check("…and the other rows stay as they were", (await o(pair(1))) === 0 && (await o(time(1))) === 1);
   const fits = await rows.nth(2).evaluate((a) => { const r = a.getBoundingClientRect(), q = a.querySelector(".qpair").getBoundingClientRect(), t = a.querySelector(".time").getBoundingClientRect(), s = a.querySelector(".subject").getBoundingClientRect(); return { inside: q.left >= r.left && q.right <= r.right && q.top >= r.top && q.bottom <= r.bottom, overDate: q.right > t.left && q.left < t.right + 40, notOnSubject: q.left >= s.right - 1 || s.right - s.left < q.left - s.left }; });
@@ -49,11 +49,11 @@ const settle = (p) => p.waitForTimeout(350);
   await p.mouse.move(5, 5); await settle(p);
   await p.keyboard.press("Tab");
   // Keyboard: a button that has focus shows its row's buttons
-  await rows.nth(0).locator(".qic.reviewed").focus(); await settle(p);
+  await rows.nth(0).locator(".qic.archive").focus(); await settle(p);
   check("a button with the keyboard focus shows its row's buttons", (await o(pair(0))) === 1 && (await o(time(0))) === 0);
   // An open row keeps the buttons it already has
   await rows.nth(1).locator(".qmain").click(); await p.waitForTimeout(300);
-  check("an opened email still has its own Reviewed, Archive and Bin buttons", (await p.locator("article.mail.open .qbtns button").count()) === 3);
+  check("an opened email still has its own Archive and Bin buttons (Reviewed moved to the three-dot menu)", (await p.locator("article.mail.open .qbtns button").count()) === 2);
   check("no script errors", errors.length === 0);
   await p.close();
 }
@@ -68,7 +68,7 @@ const settle = (p) => p.waitForTimeout(350);
   const o = (loc) => loc.evaluate((e) => +getComputedStyle(e).opacity);
   check("[reading pane] with the mouse elsewhere, no row shows its buttons", (await o(pair(0))) === 0 && (await o(time(0))) === 1);
   await rows.nth(1).hover(); await settle(p);
-  check("[reading pane] the mouse over a row shows its three buttons in place of the date", (await o(pair(1))) === 1 && (await pair(1).locator("button").count()) === 3 && (await o(time(1))) === 0);
+  check("[reading pane] the mouse over a row shows its two buttons in place of the date", (await o(pair(1))) === 1 && (await pair(1).locator("button").count()) === 2 && (await o(time(1))) === 0);
   const inside = await rows.nth(1).evaluate((a) => { const r = a.getBoundingClientRect(), q = a.querySelector(".qpair").getBoundingClientRect(); return q.left >= r.left && q.right <= r.right && q.top >= r.top && q.bottom <= r.bottom; });
   check("[reading pane] the buttons sit inside the row", inside);
   if (shots) await p.screenshot({ path: path.join(shots, "hover-reading-pane.png") });

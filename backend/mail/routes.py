@@ -119,6 +119,7 @@ class ReplyBody(StrictModel):
     subject: str | None = Field(default=None, max_length=900)           # the person's own subject; left out, it is "Re: " and the original's
     html: str | None = Field(default=None, max_length=1_500_000)        # the formatted version of `body`; rebuilt from allowed parts (see outhtml)
     images: list[ImageIn] = Field(default_factory=list, max_length=12)  # pictures the formatted text refers to
+    important: bool = False                                              # send it with high importance
     files: list[FileIn] = Field(default_factory=list, max_length=10)      # files the person attached (name, type, base64 data); held in memory only
 
     @field_validator("from_address")
@@ -146,6 +147,7 @@ class ForwardBody(StrictModel):
     subject: str | None = Field(default=None, max_length=900)          # the person's own subject; left out, it is "Fwd: " and the original's
     html: str | None = Field(default=None, max_length=1_500_000)
     images: list[ImageIn] = Field(default_factory=list, max_length=12)
+    important: bool = False
 
     @field_validator("from_address")
     @classmethod
@@ -472,6 +474,35 @@ def build_mail_router(ctx: Any) -> APIRouter:
                         headers={"Content-Security-Policy": htmlview.policy_header(images), "Cache-Control": "no-store", "X-Frame-Options": "SAMEORIGIN",
                                  "Referrer-Policy": "no-referrer"})
 
+    @router.get("/accounts/{account_id}/messages/{message_id}/original/headers")
+    def original_headers(account_id: AccountId, message_id: MessageId, response: Response, session: Session = Depends(session_dep)):
+        """The header lines of the email (who sent it, the route it took, and so on), fetched now and never kept."""
+        account = owned(account_id, session, "view original emails")
+        message = message_of(account_id, message_id)
+        if not view_limit.allow(f"view:{session.principal.user_id}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        try:
+            raw = service.original_raw(account, message)
+        except BridgeError as err:
+            raise fail(err) from None
+        head = raw.replace(b"\r\n", b"\n").split(b"\n\n", 1)[0][:100_000]
+        response.headers["Cache-Control"] = "no-store"
+        return {"headers": head.decode("utf-8", "replace")}
+
+    @router.get("/accounts/{account_id}/messages/{message_id}/original/eml")
+    def original_eml(account_id: AccountId, message_id: MessageId, session: Session = Depends(session_dep)):
+        """The whole email as a standard .eml file for the person to keep. Fetched now, sent to them, never kept here."""
+        account = owned(account_id, session, "view original emails")
+        message = message_of(account_id, message_id)
+        if not view_limit.allow(f"view:{session.principal.user_id}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        try:
+            raw = service.original_raw(account, message)
+        except BridgeError as err:
+            raise fail(err) from None
+        return Response(raw, media_type="message/rfc822",
+                        headers={"Content-Disposition": 'attachment; filename="email.eml"', "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
+
     @router.post("/accounts/{account_id}/messages/{message_id}/reply")
     def reply(body: ReplyBody, account_id: AccountId, message_id: MessageId, session: Session = Depends(session_dep)):
         account = owned(account_id, session, "send replies")
@@ -483,11 +514,11 @@ def build_mail_router(ctx: Any) -> APIRouter:
         try:
             if delay > 0:
                 # Undo send: check everything now, then hold the reply for the person's chosen time.
-                built = service.build_reply(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.kind, body.add_original, [f.model_dump() for f in body.files], body.subject, body.html, [i.model_dump() for i in body.images])
+                built = service.build_reply(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.kind, body.add_original, [f.model_dump() for f in body.files], body.subject, body.html, [i.model_dump() for i in body.images], important=body.important)
                 item = outbox.enqueue(user, account_id, message_id, built, body.body, delay, kind=body.kind, html=body.html, images=[i.model_dump() for i in body.images])
                 return {"queued": True, "id": item.id, "send_at": item.send_at, "now": time.time(), "from": item.chosen,
                         "to": item.recipients[0] if item.recipients else "", "people": len(item.recipients)}
-            built = service.build_reply(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.kind, body.add_original, [f.model_dump() for f in body.files], body.subject, body.html, [i.model_dump() for i in body.images])
+            built = service.build_reply(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.kind, body.add_original, [f.model_dump() for f in body.files], body.subject, body.html, [i.model_dump() for i in body.images], important=body.important)
             sent_from = service.reply(account, message, body.body, body.from_address, built)
         except BridgeError as err:
             raise fail(err) from None
@@ -506,7 +537,7 @@ def build_mail_router(ctx: Any) -> APIRouter:
             raise HTTPException(status_code=429, detail="Too many emails sent recently. Wait a few minutes.")
         delay = review.user_prefs(vault, user)["undo_send_seconds"]
         try:
-            built = service.build_forward(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.keep_files, [f.model_dump() for f in body.files], body.subject, body.html, [i.model_dump() for i in body.images])
+            built = service.build_forward(account, message, body.body, body.from_address, body.to, body.cc, body.bcc, body.keep_files, [f.model_dump() for f in body.files], body.subject, body.html, [i.model_dump() for i in body.images], important=body.important)
             if delay > 0:
                 item = outbox.enqueue(user, account_id, message_id, built, body.body, delay, kind="forward", html=body.html, images=[i.model_dump() for i in body.images])
                 return {"queued": True, "id": item.id, "send_at": item.send_at, "now": time.time(), "from": item.chosen,

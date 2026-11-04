@@ -12,9 +12,9 @@ on:
     branches:
       - "preview/**"
       - "main"
-    paths:
-      - "android/**"
-      - ".github/workflows/build-android.yml"
+    # No "paths" filter on purpose: every push to a preview branch builds the app, so the newest
+    # Android app is always the run right under the newest preview build in Actions, even when
+    # the push changed nothing in android/.
   schedule:
     - cron: "23 3 * * 1"
   release:

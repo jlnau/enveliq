@@ -275,6 +275,8 @@ jobs:
         run: node scripts/check_more_menu.mjs
       - name: Never make tasks rule (simulated server)
         run: node scripts/check_never_tasks.mjs
+      - name: Mark as read, next/previous, headers, .eml and importance (simulated server)
+        run: node scripts/check_stage1.mjs
       - name: Trips page and Home card (simulated server)
         run: node scripts/check_trips.mjs
       - name: Subscriptions page and Home card (simulated server)

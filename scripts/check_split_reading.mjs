@@ -64,8 +64,8 @@ for (const theme of ["dark", "light"]) {
   check(t + "unopened emails have blue glow", await page.locator("#paneList article.mail.enveliq-new").count() > 0);
   await page.locator("#paneList article.mail .qmain").first().click();
   check(t + "opening email clears its glow", await page.locator("#paneList article.mail").first().evaluate(e => !e.classList.contains("enveliq-new")));
-  const btn = await box(page, "#readDock .reading .qbtns .reviewed");
-  check(t + "selecting an email shows Reviewed, Archive and Bin at the bottom", btn && btn.b <= dock.b && btn.b >= dock.b - 80);
+  const btn = await box(page, "#readDock .reading .qbtns .archive");
+  check(t + "selecting an email shows Archive and Bin at the bottom", btn && btn.b <= dock.b && btn.b >= dock.b - 80);
   await page.reload(); await page.waitForSelector("#paneList article.mail");
   check(t + "refresh returns the reading pane to blank", (await page.locator("#readDock .enveliq-empty-actions .enveliq-empty-action").count()) === 4 && await page.locator("#paneList article.current").count() === 0);
   check(t + "demo resets temporary opened state after refresh", await page.locator("#paneList article.mail.enveliq-new").count() > 0);

@@ -107,7 +107,7 @@ for (const width of [1200, 390]) {
   await page.waitForSelector("article.mail");
   await pick(page, "Already read one");
   const btn = page.locator("[data-unread]").first();
-  check("a Reviewed email has a clear Mark unread button", (await btn.count()) > 0 && (await btn.innerText()) === "Mark unread");
+  check("a Reviewed email has a clear Mark as unread button", (await btn.count()) > 0 && (await btn.innerText()) === "Mark as unread");
   await btn.click();
   await page.waitForFunction(() => /back in your inbox/.test(document.getElementById("toast").innerText));
   check("it asks the server to restore the unread mark", posts.some((x) => x[0] === "unread" && x[1] === "m-r"));

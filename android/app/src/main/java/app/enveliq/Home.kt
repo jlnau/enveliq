@@ -713,7 +713,6 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 ActionBar(
                     onResolve = { outcome -> resolve(current, outcome) }, onSnooze = { askSnooze = true },
                     onTag = { openTags(current) }, onTask = { askTask = true },
-                    onUnread = if (current.state == "reviewed") ({ markUnread(current) }) else null,
                 )
             } else if (selected.isNotEmpty() && tab == Tab.Inbox) {
                 val chosen = mails.filter { selected.contains(keyOf(it)) }
@@ -736,8 +735,8 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
             InboxTab(
                         mails, loading, error, inboxList, selected, view, filters, onView = { view = it; selected.clear() },
                         searching = searching, query = query, onQuery = { query = it },
-                        swipeRight = prefs.getString("swipe_right", "archive") ?: "archive",
-                        swipeLeft = prefs.getString("swipe_left", "bin") ?: "bin",
+                        swipeRight = prefs.getString("swipe_right", "archive").let { if (it == "reviewed") "archive" else it } ?: "archive",
+                        swipeLeft = prefs.getString("swipe_left", "bin").let { if (it == "reviewed") "bin" else it } ?: "bin",
                         tagsOf = { m -> tagMap[keyOf(m)] ?: m.tags },
                         fresh = { m -> openedLoaded && view == "inbox" && !m.quiet && openedKeys[keyOf(m)] != true },
                         includeRead = includeRead, includeReadOk = includeReadOk,
@@ -766,12 +765,12 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 Row(Modifier.fillMaxSize()) {
                     Box(Modifier.weight(0.42f).fillMaxHeight()) { inboxPane() }
                     Box(Modifier.weight(0.58f).fillMaxHeight()) {
-                        if (current != null) DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion, onMute = { mute(current) })
+                        if (current != null) DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion, onMute = { mute(current) }, onMarkRead = if (current.state == "inbox") ({ resolve(current, Outcome.Reviewed) }) else null, onUnread = if (current.state == "reviewed") ({ markUnread(current) }) else null)
                         else Text("Choose an email to read it here.", color = Muted, fontSize = 16.sp, modifier = Modifier.padding(32.dp))
                     }
                 }
             } else if (current != null) {
-                DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion, onMute = { mute(current) })
+                DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion, onMute = { mute(current) }, onMarkRead = if (current.state == "inbox") ({ resolve(current, Outcome.Reviewed) }) else null, onUnread = if (current.state == "reviewed") ({ markUnread(current) }) else null)
             } else {
                 when (tab) {
                     Tab.Inbox -> inboxPane()
@@ -994,7 +993,7 @@ private fun SwipeRow(
         modifier = Modifier.semantics {
             // Swiping is hard or impossible with a screen reader, so the same actions are offered in TalkBack's actions menu.
             customActions = listOf(
-                CustomAccessibilityAction("Mark reviewed") { onSwipe(Outcome.Reviewed); true },
+                CustomAccessibilityAction("Mark as read") { onSwipe(Outcome.Reviewed); true },
                 CustomAccessibilityAction("Archive") { onSwipe(Outcome.Archived); true },
                 CustomAccessibilityAction("Move to Bin") { onSwipe(Outcome.Binned); true },
             )
@@ -1027,7 +1026,7 @@ private fun SwipeRow(
                         else -> {}
                     }
                     Text(
-                        when (outcome) { Outcome.Reviewed -> "  Reviewed"; Outcome.Archived -> "  Archive"; Outcome.Binned -> "  Bin"; else -> "" },
+                        when (outcome) { Outcome.Reviewed -> "  Mark as read"; Outcome.Archived -> "  Archive"; Outcome.Binned -> "  Bin"; else -> "" },
                         color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
                     )
                 }
@@ -1097,7 +1096,7 @@ private fun MailRow(mail: Mail, picked: Boolean, fresh: Boolean, tags: List<Stri
 }
 
 @Composable
-private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit, onJunk: (Boolean) -> Unit, onAskedSummary: () -> Unit = {}, taskVersion: Int = 0, onMute: () -> Unit = {}) {
+private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit, onJunk: (Boolean) -> Unit, onAskedSummary: () -> Unit = {}, taskVersion: Int = 0, onMute: () -> Unit = {}, onMarkRead: (() -> Unit)? = null, onUnread: (() -> Unit)? = null) {
     var summaryAsked by remember(mail.id) { mutableStateOf(false) }
     var showOriginal by remember(mail.id) { mutableStateOf(false) }
     var unsubLink by remember(mail.id) { mutableStateOf<String?>(null) }
@@ -1201,6 +1200,8 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
                         shape = shape, border = BorderStroke(1.dp, Line), contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                     ) { Icon(Icons.Filled.MoreVert, contentDescription = null, tint = Ink) }
                     DropdownMenu(expanded = moreMenu, onDismissRequest = { moreMenu = false }, containerColor = Panel) {
+                        if (onMarkRead != null) DropdownMenuItem(text = { Text("Mark as read", color = Ink) }, onClick = { moreMenu = false; onMarkRead() })
+                        if (onUnread != null) DropdownMenuItem(text = { Text("Mark as unread", color = Ink) }, onClick = { moreMenu = false; onUnread() })
                         if (mail.address.isNotBlank() && important != null) DropdownMenuItem(
                             text = { Text(if (important == true) "Not an important person" else "Important person", color = Ink) },
                             onClick = {
@@ -1277,14 +1278,12 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
     )
 }
 
-/** Always visible at the bottom of an open email. Symbols only: bin, archive, reviewed (or mark unread), tag, remind me later, add a task. */
+/** Always visible at the bottom of an open email. Symbols only: bin, archive, tag, remind me later, add a task. */
 @Composable
-private fun ActionBar(onResolve: (Outcome) -> Unit, onSnooze: () -> Unit, onTag: () -> Unit, onTask: () -> Unit, onUnread: (() -> Unit)? = null) {
+private fun ActionBar(onResolve: (Outcome) -> Unit, onSnooze: () -> Unit, onTag: () -> Unit, onTask: () -> Unit) {
     Row(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 10.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         BarIcon("Bin", Red, Color(0xFF3A1D22), { onResolve(Outcome.Binned) }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Red) }
         BarIcon("Archive", Color(0xFF8DB8FF), Color(0xFF173056), { onResolve(Outcome.Archived) }) { ArchiveIcon(Color(0xFF8DB8FF)) }
-        if (onUnread != null) BarIcon("Mark unread", Color(0xFF8DB8FF), Color(0xFF173056), onUnread) { Icon(Icons.Filled.Email, contentDescription = null, tint = Color(0xFF8DB8FF)) }
-        else BarIcon("Reviewed", Green, Color(0xFF16382B), { onResolve(Outcome.Reviewed) }) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
         BarIcon("Tags", Ink, PanelHigh, onTag) { TagIcon(Ink) }
         BarIcon("Remind me later", Ink, PanelHigh, onSnooze) { ClockIcon(Ink) }
         BarIcon("Add a task", Ink, PanelHigh, onTask) { AddTaskIcon(Ink) }
@@ -1297,7 +1296,7 @@ private fun SelectionBar(count: Int, onResolve: (Outcome) -> Unit, onCancel: () 
     Column(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(if (count == 1) "1 email selected" else "$count emails selected", color = Ink, fontSize = 15.sp, modifier = Modifier.padding(bottom = 8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            BarIcon("Reviewed", Green, Color(0xFF16382B), { onResolve(Outcome.Reviewed) }) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
+            BarIcon("Mark as read", Green, Color(0xFF16382B), { onResolve(Outcome.Reviewed) }) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
             BarIcon("Archive", Color(0xFF8DB8FF), Color(0xFF173056), { onResolve(Outcome.Archived) }) { ArchiveIcon(Color(0xFF8DB8FF)) }
             BarIcon("Bin", Red, Color(0xFF3A1D22), { onResolve(Outcome.Binned) }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Red) }
         }

@@ -30,6 +30,7 @@ class ScheduleBody(StrictModel):
     subject: str = Field(default="", max_length=900)
     body: str = Field(default="", max_length=MAX_BODY)
     html: str | None = Field(default=None, max_length=1_500_000)      # the formatted version of `body` (no pictures: they cannot wait)
+    important: bool = False                                           # send it with high importance
     send_at: float                                                    # a Unix time in seconds
 
 

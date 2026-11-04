@@ -51,7 +51,7 @@ data class Me(val id: String, val name: String, val initials: String, val avatar
 data class TagInfo(val names: List<String>, val canCreate: Boolean)
 
 enum class Outcome(val api: String, val done: String) {
-    Reviewed("reviewed", "Marked reviewed"),
+    Reviewed("reviewed", "Marked as read"),
     Archived("archived", "Archived"),
     Binned("binned", "Moved to Bin"),
     Junked("junked", "Sent to Junk"),
