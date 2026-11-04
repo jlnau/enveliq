@@ -6318,7 +6318,7 @@ async function detectVaultMode(){
     vaultMode=(st&&typeof st==="object"&&"initialized" in st&&"setup_required" in st&&"sign_in" in st)?"backend":"preview";
     if(vaultMode==="backend"){      // the version is for signed-in people only (the public status page does not say)
       try{const sys=await secureBackendRequest("/api/v1/system",{method:"GET",headers:{}});
-        if(sys&&typeof sys.version==="string"&&/^[0-9.]{1,12}$/.test(sys.version)){$("brandVer").textContent="Version "+sys.version;showUpdate(sys.update)}}catch{}
+        if(sys&&typeof sys.version==="string"&&/^[0-9.]{1,12}$/.test(sys.version)){{const bv=$("brandVer"),pb=typeof sys.build==="string"&&/^[0-9]{1,9}$/.test(sys.build)?sys.build:"";bv.textContent=pb?"Preview build "+pb:"Version "+sys.version;bv.title=pb?"Preview build "+pb+" of version "+sys.version+". This is a test copy, not a released version.":"Version "+sys.version}showUpdate(sys.update)}}catch{}
     }
   }catch{vaultMode="preview"}
   return vaultMode;

@@ -93,7 +93,7 @@ from .mail.gcal_routes import build_gcal_router
 from .mail.mail_alerts import MailAlerts
 from .mail.reminders import Reminders
 from .mail.outbox import Outbox
-from .version import VERSION
+from .version import BUILD, VERSION
 from .update_check import UpdateChecker
 from .mail.scheduler import AutoSync
 from .mail import review
@@ -969,6 +969,7 @@ def system_endpoint(session: Session = Depends(full_session)):
     detail (encryption settings, public address, key-file unlock) is for administrators."""
     out: dict[str, Any] = {
         "version": VERSION,
+        **({"build": BUILD} if BUILD else {}),
         "cipher": "AES-256-GCM", "kdf": "Argon2id",
         "idle_lock_seconds": 0 if AUTO_UNLOCK else vault.idle_lock_seconds,
         "raw_message_body_persistence": False, "raw_attachment_persistence": False,

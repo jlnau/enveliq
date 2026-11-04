@@ -2799,7 +2799,7 @@ async function vaultSecurityPage(me) {
     { label: "", items: [{ title: "Lock Enveliq", ic: LI.lock, color: "red", content: [
       note("Normally there is nothing to do here. Locking signs everyone out until an administrator unlocks Enveliq again."),
       h("div", { class: "grp" }, lockBtn)] }] },
-  ], { sub: sys.version ? "Enveliq version " + sys.version : null }));
+  ], { sub: sys.version ? (sys.build ? "Enveliq preview build " + sys.build + " (version " + sys.version + ")" : "Enveliq version " + sys.version) : null }));
 }
 
 if (window.ENVELIQ_EMBED) window.EnveliqEmbed = { setMount, api, profilePage, mailboxesPage, accountPage, welcomePage, adminPage, generalPage, aiInstructionsPage, addressBookPage, landingPage, shortcutsPage, importantPage, savedPage, mutedPage, awayPage, rulesPage, remindersPage, syncPage, mailAlertsPage, vaultSecurityPage };
