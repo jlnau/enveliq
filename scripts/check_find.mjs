@@ -156,7 +156,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.waitForFunction(() => document.querySelector(".top-left h2")?.textContent === "Found emails");
   check("Found emails lists it, and says how long it is kept", (await page.locator("article.mail").count()) === 1 && (await page.locator("#inboxSubtitle").innerText()).includes("60 days"));
   await page.locator("article.mail .subject").first().click();
-  check("a found email offers Reviewed but not Archive or Bin", (await page.locator("article.mail.open [data-status=reviewed]").first().isVisible()) && !(await page.locator("article.mail.open [data-status=archived]").first().isVisible()) && !(await page.locator("article.mail.open [data-status=trashed]").first().isVisible()));
+  check("a found email offers Mark as read but not Archive or Bin", (await page.locator("article.mail.open [data-status=reviewed]").first().isVisible()) && !(await page.locator("article.mail.open [data-status=archived]").first().isVisible()) && !(await page.locator("article.mail.open [data-status=trashed]").first().isVisible()));
   await shot(page, "found");
   await page.locator("article.mail.open [data-status=reviewed]").first().click();
   await page.waitForFunction(() => document.querySelectorAll("article.mail").length === 0);

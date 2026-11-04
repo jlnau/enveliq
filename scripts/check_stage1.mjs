@@ -147,8 +147,8 @@ for (const width of [1200, 390]) {
   await pick(page, "Electricity bill");
   await page.locator(".qfoot [data-reply]").first().click();
   await page.waitForSelector("#compose.open");
-  check("the reply window has More options, closed", (await page.locator("#cmMore").count()) === 1 && !(await page.locator("#cmMore").evaluate((e) => e.open)));
-  await page.locator("#cmMore summary").click();
+  check("the reply window has More options, closed", (await page.locator("#cmOptions").count()) === 1 && !(await page.locator("#cmOptions").evaluate((e) => e.open)));
+  await page.locator("#cmOptions summary").click();
   check("More options holds Mark as read when I send and Send with high importance, both unticked", (await page.locator("#cmMarkRead").isVisible()) && (await page.locator("#cmImportant").isVisible()) && !(await page.locator("#cmMarkRead").isChecked()) && !(await page.locator("#cmImportant").isChecked()));
   await page.locator("#composeText").click();
   await page.keyboard.type("Thanks, got it.");
