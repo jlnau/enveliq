@@ -86,8 +86,9 @@ async function open(server, width = 1200, height = 900) {
   await page.locator("article.mail", { hasText: "School trip form" }).locator(".qmain").click();
   await page.locator("article.mail", { hasText: "Weekly sale" }).locator(".qmain").click();
   menu = await menuOf();
+  await menu.locator("[data-rules-open]").click();         // the rules are in a second list inside the same pop-up
   const btn = menu.locator("[data-rule]");
-  check("another email offers 'Always archive these' in the three-dot menu", (await btn.innerText()) === "Always archive these");
+  check("another email offers 'Always archive these' in the three-dot menu, under Mail rules", (await btn.innerText()) === "Always archive these");
   check("it is no longer a button in the row", (await page.locator("article.mail .qleft [data-rule]").count()) === 0);
   await btn.click();
   await page.waitForFunction(() => /new email from Shop is archived/.test(document.getElementById("toast").innerText));

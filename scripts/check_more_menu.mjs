@@ -78,7 +78,7 @@ for (const width of [1200, 390]) {
   await more.click();
   const menu = page.locator("#moreMenu");
   const items = (await menu.locator("[role=menuitem]").allInnerTexts()).join("|");
-  check(tag + "the menu holds Reply, Snooze, Important, Always archive, Junk, Block, Mute, Print and Save as PDF", ["Reply", "Snooze", "Important person", "Always archive these", "Send to Junk", "Block sender", "Mute conversation", "Print email", "Save as PDF"].every((t) => items.includes(t)));
+  check(tag + "the menu holds Reply, Snooze, Important, Mail rules, Junk, Mute, Print and Save as PDF", ["Reply", "Snooze", "Important person", "Mail rules for this sender", "Send to Junk", "Mute conversation", "Print email", "Save as PDF"].every((t) => items.includes(t)));
   const mb = await menu.boundingBox();
   check(tag + "the menu stays on the screen", mb && mb.x >= 0 && mb.y >= 0 && mb.x + mb.width <= width && mb.y + mb.height <= 900);
   await shot(page, "more-menu-" + width);

@@ -76,7 +76,14 @@ for (const width of [1200, 390]) {
   await page.locator(".qmore").first().click();
   const menu = page.locator("#moreMenu");
   const items = (await menu.locator("[role=menuitem]").allInnerTexts()).join("|");
-  check(tag + "the three-dot menu offers Never make tasks from this sender", items.includes("Never make tasks from this sender"));
+  check(tag + "the three-dot menu has one Mail rules entry", items.includes("Mail rules for this sender"));
+  await menu.locator("[data-rules-open]").click();
+  const sub = (await menu.locator("[role=menuitem]").allInnerTexts()).join("|");
+  check(tag + "it opens the rules list in the same pop-up, with a Back entry", await menu.isVisible() && sub.includes("Back") && sub.includes("Never make tasks from this sender") && sub.includes("Always archive these") && sub.includes("Always mark these as reviewed") && sub.includes("Block sender") && sub.includes("See all my mail rules"));
+  await shot(page, "rules-popup-" + width);
+  await menu.locator("[data-rules-back]").click();
+  check(tag + "Back returns to the main menu", (await menu.locator("[role=menuitem]").allInnerTexts()).join("|").includes("Reply"));
+  await menu.locator("[data-rules-open]").click();
   await menu.locator("[data-notask]").click();
   await page.waitForTimeout(400);
   check(tag + "a never-make-tasks rule is saved for that sender", rulePosts.length === 1 && rulePosts[0].action === "notasks" && rulePosts[0].sender === "bills@example.invalid" && rulePosts[0].subject === "");
@@ -97,6 +104,28 @@ for (const width of [1200, 390]) {
   await btn.click();
   await page.waitForTimeout(400);
   check(tag + "pressing it saves the rule and removes the task", rulePosts.length === 1 && rulePosts[0].action === "notasks" && taskList[0].state === "removed");
+  check(tag + "no page errors", errors.length === 0);
+  await context.close();
+}
+for (const width of [1200, 390]) {
+  const tag = width + "px wide: ";
+  const { page, errors, context } = await open(width);
+  await pick(page, "Electricity bill");
+  await page.waitForTimeout(300);
+  const dots = page.locator(".taskline [data-rules-menu]").first();
+  check(tag + "the task card has a vertical three-dot rules button", (await dots.count()) === 1 && await dots.isVisible());
+  await dots.click();
+  const menu = page.locator("#moreMenu");
+  const items = (await menu.locator("[role=menuitem]").allInnerTexts()).join("|");
+  check(tag + "it offers the usual rules: never make tasks, archive, mark reviewed, block sender, and all my rules", ["Never make tasks from this sender", "Always archive these", "Always mark these as reviewed", "Block sender", "See all my mail rules"].every((t) => items.includes(t)));
+  await shot(page, "rules-menu-" + width);
+  await menu.locator("[data-rule-reviewed]").click();
+  await page.waitForTimeout(400);
+  check(tag + "Always mark as reviewed saves a reviewed rule for that sender", rulePosts.length === 1 && rulePosts[0].action === "reviewed" && rulePosts[0].sender === "bills@example.invalid");
+  await dots.click();
+  await page.locator("#moreMenu [data-rule]").click();
+  await page.waitForTimeout(400);
+  check(tag + "Always archive these saves an archive rule", rulePosts.length === 2 && rulePosts[1].action === "archived");
   check(tag + "no page errors", errors.length === 0);
   await context.close();
 }

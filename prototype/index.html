@@ -1011,7 +1011,7 @@ html[data-theme="light"] .jk-chip.junk{background:#fde8e8;border-color:#e3a8a8;c
 .tgroup .trow2{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:7px;padding:10px 12px}
 .reason{font-size:12px;color:var(--green);white-space:nowrap}
 .taskline{margin-top:11px;border-top:1px solid var(--line);padding-top:10px;display:grid;gap:6px}
-.tlhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tltitle{min-width:0}.tlsp{flex:1}
+.tbtn.tdots{padding-left:9px;padding-right:9px;display:inline-flex;align-items:center}.tlhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tltitle{min-width:0}.tlsp{flex:1}
 .tpill{display:inline-block;font-size:11.5px;border:1px solid var(--line);border-radius:99px;padding:1px 9px;color:var(--muted);white-space:nowrap}.tpill.auto{color:var(--accent);border-color:var(--accent)}.tpill.soft{color:var(--amber);border-color:var(--amber)}.tpill.ok{color:var(--green);border-color:var(--green)}
 .tbtn{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:5px 11px;font-size:13px}.tbtn:hover{background:var(--panel3)}
 .movebar{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.movebar label{color:var(--muted);font-size:13px;display:inline-flex;gap:6px;align-items:center}.movebar input{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:4px 8px}
@@ -3080,7 +3080,7 @@ function moveBar(t){
 }
 function taskLine(t){
   const open=t.state==="open";
-  const tm=open?taskMsg(t):null,nt=tm&&tm.address&&!tm.found&&!isImp(tm)?`<button class="tbtn" type="button" data-notask="${esc(tm.id)}" data-task-id="${esc(t.id)}" title="Remove this task and never make tasks from this sender again. The email still arrives.">No tasks from this sender</button>`:"";
+  const tm=open?taskMsg(t):null,nt=tm&&tm.address&&!tm.found&&!isImp(tm)?`<button class="tbtn" type="button" data-notask="${esc(tm.id)}" data-task-id="${esc(t.id)}" title="Remove this task and never make tasks from this sender again. The email still arrives.">No tasks from this sender</button><button class="tbtn tdots" type="button" data-more="${esc(tm.id)}" data-rules-menu="1" aria-haspopup="menu" aria-expanded="false" aria-label="More mail rules for this sender" title="More mail rules for this sender"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></button>`:"";
   return `<div class="taskline"><div class="tlhead"><span class="tpill ${open?"auto":"ok"}">${open?(t.manual?"Your task":"Task added"):"Task done"}</span><b class="tltitle">${esc(t.title)}</b>${open?`<span class="tpill soft">${esc(taskWhen(t))}</span>`:`<span class="tpill">${esc(t.reason_text||"Done")}</span>`}<span class="tlsp"></span>${open?`<button class="tbtn" type="button" data-task-movetoggle="${esc(t.id)}" aria-expanded="${taskMoveFor===t.id}">Move</button><button class="tbtn" type="button" data-task-act="remove" data-task-id="${esc(t.id)}">Remove</button>${nt}`:`<button class="tbtn" type="button" data-task-act="reopen" data-task-id="${esc(t.id)}">Undo</button>`}</div>${t.detail?`<div class="detail-text">${esc(t.detail)}</div>`:""}${open&&taskMoveFor===t.id?moveBar(t):""}</div>`;
 }
 function taskRow(t,fin){
@@ -4182,12 +4182,12 @@ function insertSaved(sel,ta){
   ta.focus();ta.setSelectionRange(pos,pos);ta.dispatchEvent(new Event("input",{bubbles:true}));
 }
 // ---- Mail rules: one press creates "archive new mail from this sender". It acts only on new mail as it arrives (never on what is here now). ----
-async function addRuleFor(m,btn){
-  const who=m.sender||m.address;
+async function addRuleFor(m,btn,action){
+  const who=m.sender||m.address,act=action||"archived";
   btn.disabled=true;
   try{
-    await secureBackendRequest("/api/v1/me/rules",{method:"POST",body:JSON.stringify({sender:m.address,subject:"",action:"archived"})});
-    toast(`From now on, new email from ${who} is archived for you. You can change this in Settings, Mail rules.`,7000);
+    await secureBackendRequest("/api/v1/me/rules",{method:"POST",body:JSON.stringify({sender:m.address,subject:"",action:act})});
+    toast(act==="reviewed"?`From now on, new email from ${who} is marked as reviewed for you. You can change this in Settings, Mail rules.`:`From now on, new email from ${who} is archived for you. You can change this in Settings, Mail rules.`,7000);
     btn.textContent="Rule saved";
   }catch(er){toast(er.message,6000);btn.disabled=false}
 }
@@ -4675,6 +4675,17 @@ const ICON_MORE=`<svg viewBox="0 0 24 24" width="18" height="18" fill="currentCo
 // Send to Junk, Block sender, Mute, Mark unread, Print and Save as PDF live only here. Items keep their usual data-* names so the same handlers run.
 const ICON_RTASK=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>`,ICON_RTAG=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="8" cy="8" r="1.2"/></svg>`;
 const moreBtn=m=>`<button type="button" class="subtle qmore" data-more="${esc(m.id)}" aria-haspopup="menu" aria-expanded="false" aria-label="More actions" title="More actions">${ICON_MORE}</button>`;
+// The rules menu on a task card (a vertical three-dot button): the usual mail rules for this sender, in one place.
+function ruleItemsFor(m,back){
+  const id=esc(m.id),out=[],item=(attr,label)=>out.push(`<button type="button" role="menuitem" ${attr}="${id}">${label}</button>`);
+  if(back)out.push(`<button type="button" role="menuitem" data-rules-back="${id}">&lsaquo; Back</button><hr>`);
+  if(realMail&&!m.found){item("data-rule","Always archive these");item("data-rule-reviewed","Always mark these as reviewed")}
+  item("data-notask","Never make tasks from this sender");
+  if(realMail&&!m.found)item("data-block-sender","Block sender (new email goes to Junk)");
+  out.push("<hr>");
+  out.push(`<button type="button" role="menuitem" data-open-rules="1">See all my mail rules</button>`);
+  return out.join("");
+}
 function menuItemsFor(m,viewer){
   const id=esc(m.id),out=[],item=(attr,label)=>out.push(`<button type="button" role="menuitem" ${attr}="${id}">${label}</button>`),sep=()=>{if(out.length&&out[out.length-1]!=="<hr>")out.push("<hr>")};
   if(!viewer){
@@ -4686,10 +4697,8 @@ function menuItemsFor(m,viewer){
     sep();
   }
   if(!m.kept&&m.address)item("data-important",isImp(m)?"Not important":"Important person");
-  if(!m.kept&&m.address&&realMail&&!isImp(m))item("data-rule","Always archive these");
-  if(!m.kept&&m.address&&!isImp(m)&&!m.found)item("data-notask","Never make tasks from this sender");
+  if(!m.kept&&m.address&&!isImp(m)&&!m.found)item("data-rules-open","Mail rules for this sender &rsaquo;");
   if(!m.kept&&m.real&&!m.found)item("data-junk-this","Send to Junk");
-  if(!m.kept&&m.address&&realMail&&!m.found&&!isImp(m))item("data-block-sender","Block sender");
   if(!m.kept&&m.real&&realMail&&!m.found)item("data-mute","Mute conversation");
   sep();
   item("data-print","Print email");item("data-pdf","Save as PDF");
@@ -4697,10 +4706,10 @@ function menuItemsFor(m,viewer){
 }
 let moreFor=null;
 function closeMoreMenu(back){const m=$("moreMenu");if(m)m.hidden=true;const b=moreFor&&document.querySelector(`[data-more="${moreFor.id}"][aria-expanded="true"]`);document.querySelectorAll("[data-more][aria-expanded=true]").forEach(x=>x.setAttribute("aria-expanded","false"));if(back&&b)b.focus();moreFor=null}
-function openMoreMenu(btn,m,viewer){
+function openMoreMenu(btn,m,viewer,rules){
   let menu=$("moreMenu");
   if(!menu){menu=document.createElement("div");menu.id="moreMenu";menu.className="snz-menu more-menu";menu.setAttribute("role","menu");menu.setAttribute("aria-label","More actions");document.body.append(menu)}
-  menu.innerHTML=menuItemsFor(m,viewer);menu.hidden=false;moreFor={id:m.id,viewer:!!viewer};btn.setAttribute("aria-expanded","true");
+  menu.innerHTML=rules?ruleItemsFor(m):menuItemsFor(m,viewer);menu.setAttribute("aria-label",rules?"Mail rules for this sender":"More actions");menu.hidden=false;moreFor={id:m.id,viewer:!!viewer};btn.setAttribute("aria-expanded","true");
   menu.style.zIndex=viewer?"140":"";
   const r=btn.getBoundingClientRect(),w=Math.min(260,innerWidth-24);
   menu.style.width=w+"px";menu.style.left=Math.max(12,Math.min(r.right-w,innerWidth-w-12))+"px";
@@ -4709,7 +4718,7 @@ function openMoreMenu(btn,m,viewer){
 }
 document.addEventListener("click",e=>{
   const b=e.target.closest&&e.target.closest("[data-more]");
-  if(b){e.stopPropagation();const was=moreFor&&String(moreFor.id)===b.dataset.more&&!$("moreMenu").hidden;closeMoreMenu();const m=data.find(x=>x.id===+b.dataset.more&&x.owner===currentUser.id);if(!was&&m)openMoreMenu(b,m,!!b.closest("#attachmentModal"));return}
+  if(b){e.stopPropagation();const was=moreFor&&String(moreFor.id)===b.dataset.more&&!$("moreMenu").hidden;closeMoreMenu();const m=data.find(x=>x.id===+b.dataset.more&&x.owner===currentUser.id);if(!was&&m)openMoreMenu(b,m,!!b.closest("#attachmentModal"),b.hasAttribute("data-rules-menu"));return}
   if(moreFor&&!(e.target.closest&&e.target.closest("#moreMenu")))closeMoreMenu();
 },true);
 document.addEventListener("keydown",e=>{
@@ -4718,7 +4727,12 @@ document.addEventListener("keydown",e=>{
   if(e.key==="ArrowDown"||e.key==="ArrowUp"){const items=[...menu.querySelectorAll("button")],i=items.indexOf(document.activeElement);e.preventDefault();items[(i+(e.key==="ArrowDown"?1:-1)+items.length)%items.length].focus()}
 },true);
 window.addEventListener("resize",()=>closeMoreMenu());
-document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("#moreMenu"))setTimeout(()=>closeMoreMenu(),0)});
+document.addEventListener("click",e=>{
+  const t=e.target.closest&&e.target.closest("#moreMenu");if(!t)return;
+  const sw=e.target.closest("[data-rules-open],[data-rules-back]");    // the Rules entry opens a second list in the same pop-up, and Back returns
+  if(sw){const m=data.find(x=>x.id===Number(sw.dataset.rulesOpen||sw.dataset.rulesBack)&&x.owner===currentUser.id),menu=$("moreMenu");
+    if(m){const rules=sw.hasAttribute("data-rules-open");menu.innerHTML=rules?ruleItemsFor(m,true):menuItemsFor(m,moreFor&&moreFor.viewer);menu.setAttribute("aria-label",rules?"Mail rules for this sender":"More actions");const f=menu.querySelector("button");if(f)f.focus();return}}
+  setTimeout(()=>closeMoreMenu(),0)});
 // Print email / Save as PDF: both show the original email on its own and open the browser's print window. In that window, "Save as PDF" keeps the sender's own look.
 // While the print window is open the browser lays the page out at paper width, which looks like a phone-size screen for a moment. That must not
 // reset the layout or close the email being read, so size changes are ignored from the start of printing until just after it ends.
@@ -6423,6 +6437,8 @@ document.addEventListener("click",e=>{
     closeMoreMenu();if(m){if(k==="mute")muteConversation(m);else if(k==="unread")markUnreadWeb(m);else{if(k==="pdf")toast("In the print window, choose Save as PDF as the printer.",5000);printEmail(m)}}return}
   const cv=e.target.closest("[data-conv]");if(cv){const k=cv.dataset.conv,wasOpen=cv.getAttribute("aria-expanded")==="true";if(wasOpen){expanded.delete(k);convHidden.set(k,paneId)}else{expanded.add(k);convHidden.delete(k)}render();return}
   const jb=e.target.closest("[data-junk-this],[data-block-sender]");if(jb){const m=data.find(x=>x.id===Number(jb.dataset.junkThis||jb.dataset.blockSender)&&x.owner===currentUser.id);if(m)junkThis(m,jb,jb.hasAttribute("data-block-sender"));return}
+  const orBtn=e.target.closest("[data-open-rules]");if(orBtn){openSettings("settings");const b=document.querySelector('[data-settings-tab~="rules"]');if(b)b.click();return}
+  const rvBtn=e.target.closest("[data-rule-reviewed]");if(rvBtn){const m=data.find(x=>x.id===Number(rvBtn.dataset.ruleReviewed)&&x.owner===currentUser.id);if(m)addRuleFor(m,rvBtn,"reviewed");return}
   const ntBtn=e.target.closest("[data-notask]");if(ntBtn){const m=data.find(x=>x.id===Number(ntBtn.dataset.notask)&&x.owner===currentUser.id);if(m)neverTasksFor(m,ntBtn.dataset.taskId||"",ntBtn);return}
   const ruleBtn=e.target.closest("[data-rule]");if(ruleBtn){const m=data.find(x=>x.id===Number(ruleBtn.dataset.rule)&&x.owner===currentUser.id);if(m)addRuleFor(m,ruleBtn);return}
   const impBtn=e.target.closest("[data-important]");if(impBtn){const m=data.find(x=>x.id===Number(impBtn.dataset.important)&&x.owner===currentUser.id);if(m)setImportant(m,!isImp(m));return}
