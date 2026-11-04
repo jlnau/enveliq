@@ -25,6 +25,10 @@ Enveliq shows the tags your email service already has on each email, lets you pu
 
 Tag names: up to 40 letters, digits, spaces and the signs `- _ . & + ( )`. Names that match one of your mail folders (Inbox, Archive, Trash, Sent and so on) are refused, and so is a name that only differs from an existing tag in capital letters.
 
+## When the mailbox is busy
+
+Only one thing happens to a mailbox at a time, such as a sync or writing summaries. If you open the Tags window or change a tag meanwhile, Enveliq waits its turn (up to 25 seconds) and then does it, rather than refusing. Only if the mailbox is still busy after that does it say so, calmly, and nothing is lost.
+
 ## Staying in step
 
 Enveliq reads the tags of your inbox emails after each automatic sync (every few minutes), so a tag you add in your mail app appears here, and one you remove disappears. For Proton Bridge this means looking through up to 60 label folders (the newest 300 emails in each); for Gmail and other services it is one request.

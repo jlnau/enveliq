@@ -68,17 +68,20 @@ def target_for(account: dict[str, Any], microsoft: Any = None) -> Target:
 
 
 class AccountLocks:
-    """One mailbox operation at a time per account."""
+    """One mailbox operation at a time per account. A person's request that arrives while another operation (a sync, a summary) is
+    using the mailbox waits its turn for up to WAIT seconds, so it simply happens a moment later instead of being refused."""
+
+    WAIT = 25.0
 
     def __init__(self) -> None:
         self._guard = threading.Lock()
         self._locks: dict[str, threading.Lock] = {}
 
-    def acquire(self, account_id: str) -> threading.Lock:
+    def acquire(self, account_id: str, wait: float | None = None) -> threading.Lock:
         with self._guard:
             lock = self._locks.setdefault(account_id, threading.Lock())
-        if not lock.acquire(blocking=False):
-            raise BridgeError("busy", "This mailbox is already syncing. Try again in a moment.")
+        if not lock.acquire(timeout=self.WAIT if wait is None else max(0.0, wait)):
+            raise BridgeError("busy", "Your mailbox is busy with something else right now. Nothing is lost. Try again in a few seconds.")
         return lock
 
 
