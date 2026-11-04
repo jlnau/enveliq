@@ -164,7 +164,7 @@ Email sending requires an explicit user action.
 
 The AI may suggest wording but cannot independently send messages.
 
-User configured mail rules can automatically archive or mark qualifying messages as reviewed. These rules cannot send, forward or delete email. The "Never make tasks" rule does not touch the email at all: it only decides, on the server, whether a task is made from it. It looks only at the sender and subject, belongs to one person and is stored encrypted with their other rules. It is never applied to a person's important people, and tasks added by hand are never blocked.
+User configured mail rules can automatically archive or mark qualifying messages as reviewed. These rules cannot send, forward or delete email. The "Never make tasks" rule does not touch the email at all: it only decides, on the server, whether a task is made from it. It looks only at the sender and subject, belongs to one person and is stored encrypted with their other rules. It is never applied to a person's important people, and tasks added by hand are never blocked. The "Always apply tags" rule only adds tags that already exist in the person's own mailbox to new email from the chosen sender; it uses the same server routine and Tags switch as the Tags button, never touches important people, and a failure is skipped without affecting mail.
 
 Mailbox actions are performed through the connected email provider, with server side ownership and permission checks.
 

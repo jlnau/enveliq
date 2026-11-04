@@ -19,6 +19,7 @@ class RuleBody(StrictModel):
     sender: str = Field(max_length=320)
     subject: str = Field(default="", max_length=MAX_SUBJECT * 4)
     action: str = Field(max_length=20)
+    tags: list[Annotated[str, Field(max_length=80)]] = Field(default_factory=list, max_length=20)
 
 
 def build_rules_router(ctx: Any) -> APIRouter:
@@ -45,7 +46,7 @@ def build_rules_router(ctx: Any) -> APIRouter:
     def add_rule(body: RuleBody, response: Response, session: Session = Depends(session_dep)):
         user = mine(session, response)
         try:
-            book.add(user, body.sender, body.subject, body.action)
+            book.add(user, body.sender, body.subject, body.action, body.tags)
         except RuleError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from None
         return view(user)

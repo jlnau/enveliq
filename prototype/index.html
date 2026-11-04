@@ -1011,7 +1011,7 @@ html[data-theme="light"] .jk-chip.junk{background:#fde8e8;border-color:#e3a8a8;c
 .tgroup .trow2{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:7px;padding:10px 12px}
 .reason{font-size:12px;color:var(--green);white-space:nowrap}
 .taskline{margin-top:11px;border-top:1px solid var(--line);padding-top:10px;display:grid;gap:6px}
-.tbtn.tdots{padding-left:9px;padding-right:9px;display:inline-flex;align-items:center}.tlhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tltitle{min-width:0}.tlsp{flex:1}
+.tag-always{display:flex;align-items:center;gap:8px;flex:1 1 100%;font-size:14px;cursor:pointer}.tag-always input{width:18px;height:18px;flex:none}.tbtn.tdots{padding-left:9px;padding-right:9px;display:inline-flex;align-items:center}.tlhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tltitle{min-width:0}.tlsp{flex:1}
 .tpill{display:inline-block;font-size:11.5px;border:1px solid var(--line);border-radius:99px;padding:1px 9px;color:var(--muted);white-space:nowrap}.tpill.auto{color:var(--accent);border-color:var(--accent)}.tpill.soft{color:var(--amber);border-color:var(--amber)}.tpill.ok{color:var(--green);border-color:var(--green)}
 .tbtn{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:5px 11px;font-size:13px}.tbtn:hover{background:var(--panel3)}
 .movebar{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.movebar label{color:var(--muted);font-size:13px;display:inline-flex;gap:6px;align-items:center}.movebar input{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:4px 8px}
@@ -3247,17 +3247,19 @@ function tagPopPaint(keep){
   m.innerHTML=`<form data-tag-form novalidate style="display:contents">
     <div class="sf-top"><b id="tagTitle">Tags</b><button class="sf-close" type="button" data-tag-close aria-label="Close tags">✕ Close</button></div>
     <div class="sf-body">${mail?`<p class="pop-note">${esc(mail.subject)}</p>`:""}${body}${tagUi.err?`<p class="sa-err" role="alert">${esc(tagUi.err)}</p>`:""}<p class="pop-note"><button class="olink" type="button" data-tag-info aria-haspopup="dialog">Always tag or filter this sender.</button></p></div>
-    <div class="sf-foot">${tagUi.supported&&tagUi.canCreate&&!tagUi.loading?`<button class="obtn blue" type="submit"${tagUi.busy?" disabled":""}>${tagUi.busy?"Working…":"Make tag"}</button>`:""}<button class="obtn" type="button" data-tag-close>Done</button></div></form>`+
+    <div class="sf-foot">${tagUi.supported&&!tagUi.loading&&mail&&mail.address&&!isImp(mail)?`<label class="tag-always"><input type="checkbox" data-tag-always${tagUi.always?" checked":""}${tagUi.busy?" disabled":""}><span>Always apply these tags for this sender</span></label>`:""}${tagUi.supported&&tagUi.canCreate&&!tagUi.loading?`<button class="obtn blue" type="submit"${tagUi.busy?" disabled":""}>${tagUi.busy?"Working…":"Make tag"}</button>`:""}<button class="obtn" type="button" data-tag-close>Done</button></div></form>`+
     (tagUi.info?`<div class="tag-info-back"><div class="tag-info" role="dialog" aria-modal="true" aria-labelledby="tagInfoTitle"><b id="tagInfoTitle">Always tag emails from one sender</b><p>To tag every email from a sender automatically, set up a filter in your email provider (Proton Mail, Gmail, Microsoft or another service).</p><p>Sign in to your provider, open its Filters settings, and make a filter that says: from this sender, add this tag. Enveliq shows the tag on those emails the next time it checks your mail.</p><button class="obtn blue" type="button" data-tag-info-close>Got it</button></div></div>`:"");
   const b=m.querySelector(".sf-body");if(b&&sc)b.scrollTop=sc;
 }
 async function tagOpen(id){
   const mail=data.find(x=>x.id===+id&&x.owner===currentUser.id);if(!mail||!tagsOn(mail))return;
-  tagUi={open:true,id:mail.id,names:null,supported:true,canCreate:true,busy:false,loading:true,err:"",name:"",info:false,q:""};
+  tagUi={open:true,id:mail.id,names:null,supported:true,canCreate:true,busy:false,loading:true,err:"",name:"",info:false,q:"",always:false};
   $("tagPop").hidden=false;tagPopPaint(false);const c=$("tagPop").querySelector(".sf-close");if(c)c.focus();
   try{const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(mail.real.accountId)}/tags`,{method:"GET",headers:{}});
     tagUi.supported=!!r.supported;tagUi.names=r.names||[];tagUi.canCreate=!!r.can_create}
   catch(er){tagUi.err=er.message||"Could not read your tags. Try again."}
+  try{const rr=await secureBackendRequest("/api/v1/me/rules",{method:"GET",headers:{}});      // is there already an "always apply tags" rule for this sender?
+    tagUi.always=(rr.rules||[]).some(x=>x.action==="tag"&&String(x.sender).toLowerCase()===String(mail.address||"").toLowerCase())}catch{}
   tagUi.loading=false;if(tagUi.open)tagPopPaint(false);
 }
 function tagClose(){if(!tagUi.open)return;tagUi.open=false;$("tagPop").hidden=true;const b=document.querySelector(`[data-tag-open="${tagUi.id}"]`);if(b)b.focus()}
@@ -3266,6 +3268,10 @@ async function tagCall(fn){
   try{await fn();return true}catch(er){tagUi.err=er.message||"That did not work. Try again.";toast(tagUi.err,4500,"error")}
   finally{tagUi.busy=false;if(tagUi.open)tagPopPaint(true);render()}
 }
+// "Always apply these tags for this sender": one rule per sender that holds the tags on this email right now. Taking the tick away removes it.
+async function tagRuleSave(mail){
+  await secureBackendRequest("/api/v1/me/rules",{method:"POST",body:JSON.stringify({sender:mail.address,subject:"",action:"tag",tags:tagUi.always?(mail.tags||[]):[]})});
+}
 async function tagSet(mail,name,on){
   const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(mail.real.accountId)}/messages/${encodeURIComponent(mail.real.messageId)}/tags`,{method:"PUT",body:JSON.stringify({name,on})});
   mail.tags=Array.isArray(r.tags)?r.tags.map(String):[];
@@ -3273,7 +3279,12 @@ async function tagSet(mail,name,on){
 document.addEventListener("change",e=>{
   const t=e.target.closest?e.target.closest("[data-tag-toggle]"):null;if(!t)return;
   const mail=tagMsg();if(!mail)return;const on=t.checked;
-  tagCall(async()=>{try{await tagSet(mail,t.dataset.tagToggle,on);toast(on?"Tag added":"Tag removed",1800,"success")}catch(er){t.checked=!on;throw er}});
+  tagCall(async()=>{try{await tagSet(mail,t.dataset.tagToggle,on);if(tagUi.always)await tagRuleSave(mail);toast(on?"Tag added":"Tag removed",1800,"success")}catch(er){t.checked=!on;throw er}});
+});
+document.addEventListener("change",e=>{
+  const t=e.target.closest?e.target.closest("[data-tag-always]"):null;if(!t)return;
+  const mail=tagMsg();if(!mail)return;const on=t.checked,who=mail.sender||mail.address;
+  tagCall(async()=>{try{tagUi.always=on;await tagRuleSave(mail);toast(on?(mail.tags&&mail.tags.length?`New email from ${who} will get these tags. Change it in Settings, Mail rules.`:`Tick the tags to apply to new email from ${who}.`):`New email from ${who} will no longer get tags automatically.`,5000,"success")}catch(er){tagUi.always=!on;t.checked=!on;throw er}});
 });
 document.addEventListener("input",e=>{if(e.target&&e.target.matches&&e.target.matches("[data-tag-name]")){tagUi.name=e.target.value;tagUi.err=""}});
 document.addEventListener("submit",e=>{
@@ -3283,7 +3294,7 @@ document.addEventListener("submit",e=>{
   tagCall(async()=>{
     const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(mail.real.accountId)}/tags`,{method:"POST",body:JSON.stringify({name})});
     tagUi.names=r.names||tagUi.names;tagUi.canCreate=!!r.can_create;tagUi.name="";
-    await tagSet(mail,r.name||name,true);toast("Tag added");
+    await tagSet(mail,r.name||name,true);if(tagUi.always)await tagRuleSave(mail);toast("Tag added");
   });
 });
 document.addEventListener("input",e=>{
@@ -4681,6 +4692,7 @@ function ruleItemsFor(m,back){
   if(back)out.push(`<button type="button" role="menuitem" data-rules-back="${id}">&lsaquo; Back</button><hr>`);
   if(realMail&&!m.found){item("data-rule","Always archive these");item("data-rule-reviewed","Always mark these as reviewed")}
   item("data-notask","Never make tasks from this sender");
+  if(realMail&&!m.found&&tagsOn(m))item("data-tag-open","Always apply a tag&hellip;");
   if(realMail&&!m.found)item("data-block-sender","Block sender (new email goes to Junk)");
   out.push("<hr>");
   out.push(`<button type="button" role="menuitem" data-open-rules="1">See all my mail rules</button>`);

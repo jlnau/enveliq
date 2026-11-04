@@ -774,6 +774,7 @@ def apply_rules(account: dict, arrived: list) -> None:
             except KeyError:
                 pass
             continue
+        _apply_tag_rules(account, item, user)
         rule = rulebook.match(user, item["sender_address"], item["subject"])
         if not rule:
             _away_reply(account, item, user)
@@ -784,6 +785,19 @@ def apply_rules(account: dict, arrived: list) -> None:
             break                              # the mailbox cannot be changed right now: leave the rest where they are
         except KeyError:
             continue
+
+
+def _apply_tag_rules(account: dict, item: dict, user: str) -> None:
+    """"Always apply tags" rules: put the chosen tags on the email that has just arrived. A tag that cannot be put on (the mailbox does not keep tags,
+    the tag was deleted, the mail service is busy) is skipped without a word: it never holds up a sync or another rule."""
+    names = rulebook.tags_for(user, item["sender_address"], item["subject"])
+    if not names or not features.effective(vault, user)["tags"]:
+        return
+    for name in names:
+        try:
+            tagservice.set_for_message(account, item["id"], name, True)
+        except Exception:
+            logger.info("a tag rule could not put a tag on a new email")
 
 
 def _away_reply(account: dict, item: dict, user: str) -> None:

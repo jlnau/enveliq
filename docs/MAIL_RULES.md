@@ -4,7 +4,7 @@ A rule tells Enveliq what to do with **new** email from a sender you choose. The
 
 ## Make a rule
 
-- **From an email.** Open an email, press its three-dot button and choose **Mail rules for this sender**. A list opens in the same pop-up (with a **Back** entry) with **Always archive these**, **Always mark these as reviewed**, **Never make tasks from this sender**, **Block sender** and **See all my mail rules**. Choosing **Always archive these** From now on, new email from that sender is archived for you. **Block sender** is the same idea with Junk: new email from that sender goes to your mailbox's Junk folder (see [Junk mail](JUNK_MAIL.md)).
+- **From an email.** Open an email, press its three-dot button and choose **Mail rules for this sender**. A list opens in the same pop-up (with a **Back** entry) with **Always archive these**, **Always mark these as reviewed**, **Never make tasks from this sender**, **Always apply a tag…** (opens the Tags window, see [Tags](TAGS.md)), **Block sender** and **See all my mail rules**. Choosing **Always archive these** From now on, new email from that sender is archived for you. **Block sender** is the same idea with Junk: new email from that sender goes to your mailbox's Junk folder (see [Junk mail](JUNK_MAIL.md)).
 - **From Clean up.** **Always archive new ones** on a mailing list makes the same rule (see [Clean up](CLEAN_UP.md)).
 - **For tasks.** Press **No tasks from this sender** on the task card (the small vertical three-dot button beside it opens the same rules list), or choose **Never make tasks from this sender** in the rules list. The rule is saved and the open task for that email is removed. Other open tasks from the same sender stay until you finish or remove them.
 - **In Settings.** Open **Settings, Mail rules**. Type who the email is from: one address (`news@example.com`), or a whole website with an at sign (`@example.com`, meaning everyone at example.com). If you like, add words the subject must contain. Choose **Archive it**, **Mark it reviewed**, **Send it to Junk** or **Never make tasks** and press **Add rule**.
@@ -18,6 +18,8 @@ The same page lists your rules and lets you remove any of them with the **×**.
 - **Send it to Junk** moves the email to your mailbox's Junk or Spam folder. Nothing is deleted, and you can move it back from there.
 
 - **Never make tasks** leaves the email exactly where it is. It only stops Enveliq from turning email from that sender (or website, or with those subject words) into a task. The email still arrives, is still summarised and can still be archived by another rule. A sender can have both an archive rule and a never-make-tasks rule. Tasks you add by hand are never blocked, and email from your important people still makes tasks.
+
+- **Always apply tags** puts the tags you chose on new email from that sender, in your own mailbox, as it arrives. It does not move or mark the email, so it works together with an archive rule. There is one such rule per sender: saving it again replaces the tags, and saving it with no tags removes it. You make it in the Tags window of an email (tick **Always apply these tags for this sender**) and can see and remove it in Settings, Mail rules.
 
 ## What a rule never does
 

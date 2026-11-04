@@ -18,10 +18,15 @@ from .contacts import clean_address
 RECORD_PREFIX = "rules:"
 MAX_RULES = 50
 MAX_SUBJECT = 80
-ACTIONS = {"archived": "Archive it", "reviewed": "Mark it reviewed", "junked": "Send it to Junk", "notasks": "Never make tasks"}
+ACTIONS = {"archived": "Archive it", "reviewed": "Mark it reviewed", "junked": "Send it to Junk", "notasks": "Never make tasks", "tag": "Always apply tags"}
 # "Never make tasks" does nothing to the email itself: it only stops Enveliq from turning mail from that sender into a task.
 # It sits beside the other rules, so a sender can have both (for example archive it, and never make tasks).
 NO_TASKS = "notasks"
+TAG = "tag"
+MAX_TAGS = 10
+MAX_TAG_NAME = 40
+# These two rules do not move or mark the email, so they sit beside an archive, reviewed or Junk rule instead of replacing it.
+SIDE_ACTIONS = {NO_TASKS, TAG}
 _LOCK = threading.Lock()
 _CTRL = re.compile(r"[\x00-\x1f\x7f]")
 _DOMAIN = re.compile(r"^@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,24}$")
@@ -41,6 +46,15 @@ def clean_sender(value: Any) -> str:
     if _DOMAIN.match(text):
         return text
     raise RuleError("Type one email address, or a whole website such as @example.com.")
+
+
+def clean_tags(value: Any) -> list[str]:
+    names: list[str] = []
+    for raw in value if isinstance(value, list) else []:
+        name = " ".join(_CTRL.sub(" ", str(raw or "")).split())[:MAX_TAG_NAME]
+        if name and not any(name.lower() == n.lower() for n in names):
+            names.append(name)
+    return names[:MAX_TAGS]
 
 
 def clean_subject(value: Any) -> str:
@@ -66,12 +80,24 @@ class Rules:
         self.vault.set_global(RECORD_PREFIX + user_id, {"rules": rules})
 
     def listing(self, user_id: str) -> list[dict[str, Any]]:
-        return [{"id": r["id"], "sender": r["sender"], "subject": r.get("subject", ""), "action": r["action"]} for r in self._load(user_id)]
+        return [{"id": r["id"], "sender": r["sender"], "subject": r.get("subject", ""), "action": r["action"],
+                 **({"tags": list(r.get("tags") or [])} if r["action"] == TAG else {})} for r in self._load(user_id)]
 
-    def add(self, user_id: str, sender: Any, subject: Any, action: Any) -> list[dict[str, Any]]:
+    def add(self, user_id: str, sender: Any, subject: Any, action: Any, tags: Any = None) -> list[dict[str, Any]]:
         who, words = clean_sender(sender), clean_subject(subject)
         if action not in ACTIONS:
             raise RuleError("Choose what to do with the email: archive it, mark it reviewed, or send it to Junk.")
+        if action == TAG:
+            # One "always apply tags" rule per sender: saving it again replaces the tags, and saving it with no tags removes it.
+            names = clean_tags(tags)
+            with _LOCK:
+                rules = [r for r in self._load(user_id) if not (r["action"] == TAG and r["sender"] == who and r.get("subject", "") == words)]
+                if names:
+                    if len(rules) >= MAX_RULES:
+                        raise RuleError(f"You can keep up to {MAX_RULES} rules. Remove one first.")
+                    rules.append({"id": "u" + secrets.token_hex(8), "sender": who, "subject": words, "action": TAG, "tags": names})
+                self._save(user_id, rules)
+            return self.listing(user_id)
         with _LOCK:
             rules = self._load(user_id)
             if any(r["sender"] == who and r.get("subject", "").lower() == words.lower() and r["action"] == action for r in rules):
@@ -95,7 +121,7 @@ class Rules:
         """The first rule that acts on the email (archive, reviewed, Junk) that fits mail from this address with this subject, or None."""
         title = str(subject or "").lower()
         for r in self._load(user_id):
-            if r["action"] == NO_TASKS:
+            if r["action"] in SIDE_ACTIONS:
                 continue
             if not sender_matches(r["sender"], address):
                 continue
@@ -115,6 +141,19 @@ class Rules:
             if not words or words in title:
                 return True
         return False
+
+    def tags_for(self, user_id: str, address: Any, subject: Any) -> list[str]:
+        """The tags every "Always apply tags" rule that fits this mail asks for (no repeats)."""
+        title = str(subject or "").lower()
+        out: list[str] = []
+        for r in self._load(user_id):
+            if r["action"] != TAG or not sender_matches(r["sender"], address):
+                continue
+            words = str(r.get("subject") or "").lower()
+            if words and words not in title:
+                continue
+            out.extend(n for n in r.get("tags") or [] if not any(n.lower() == o.lower() for o in out))
+        return out[:MAX_TAGS]
 
     def forget_user(self, user_id: str) -> None:
         self.vault.set_global(RECORD_PREFIX + user_id, {})
