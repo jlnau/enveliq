@@ -38,3 +38,31 @@ def test_each_mailbox_has_its_own_turn():
 
 def test_the_normal_wait_is_long_enough_to_cover_a_sync():
     assert AccountLocks.WAIT >= 20
+
+
+def test_the_mailbox_is_free_while_the_model_writes_a_summary(tmp_path):
+    """Writing a summary can take a while. During it the mailbox must not be held, or tags, sync and Reviewed would be made to wait for no reason."""
+    from test_summaries import account, start
+    from test_llm import FakeModel
+    model = FakeModel()
+    appm, client, bridge = start(tmp_path, model)
+    try:
+        aid = account(client, bridge)
+        client.post(f"/api/v1/accounts/{aid}/sync", json={})
+        seen = []
+        real = appm.mail_service.summariser.summarise
+
+        def spy(*a, **k):
+            try:
+                appm.mail_service.locks.acquire(aid, wait=0).release()
+                seen.append("free")
+            except BridgeError:
+                seen.append("held")
+            return real(*a, **k)
+
+        appm.mail_service.summariser.summarise = spy
+        assert client.post(f"/api/v1/accounts/{aid}/summarise", json={}).status_code == 200
+        assert seen and set(seen) == {"free"}
+    finally:
+        bridge.close()
+        model.close()

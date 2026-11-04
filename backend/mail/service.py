@@ -421,6 +421,7 @@ class MailService:
         instructions = review.instructions_for(vault, account.get("owner_user_id"))
         prompt = review.active_prompt(vault)
         lock = self.locks.acquire(account_id)
+        locked = True
         try:
             # Read the texts first and close Bridge, so a slow model never holds the mailbox connection open.
             with self.bridge.session(target) as s:
@@ -453,6 +454,8 @@ class MailService:
                     except BridgeError as err:
                         failed += 1
                         self.problems[m["id"]] = f"The email could not be read from your mailbox ({err.message})."
+            lock.release()                  # the mailbox is not needed while the model writes: tags, sync, Reviewed and the rest can go ahead
+            locked = False
             done = 0
             for m in batch:
                 if m["id"] not in texts:
@@ -515,7 +518,8 @@ class MailService:
                     except Exception:                  # a problem filing a booking never loses the summary
                         pass
         finally:
-            lock.release()
+            if locked:
+                lock.release()
         # The files are read after the mailbox is free again, so a long document never holds up Reviewed, Archive or a sync.
         for message_id, raw in raws.items():
             if message_id not in summarised:

@@ -27,7 +27,7 @@ Tag names: up to 40 letters, digits, spaces and the signs `- _ . & + ( )`. Names
 
 ## When the mailbox is busy
 
-Only one thing happens to a mailbox at a time, such as a sync or writing summaries. If you open the Tags window or change a tag meanwhile, Enveliq waits its turn (up to 25 seconds) and then does it, rather than refusing. Only if the mailbox is still busy after that does it say so, calmly, and nothing is lost.
+Only one thing talks to a mailbox at a time, such as a sync or reading emails for a summary. While the AI is writing a summary the mailbox is free, so tags are not held up by it. If you open the Tags window or change a tag meanwhile, Enveliq waits its turn (up to 25 seconds) and then does it, rather than refusing. Only if the mailbox is still busy after that does it say so, calmly, and nothing is lost.
 
 ## Staying in step
 
