@@ -3170,7 +3170,7 @@ function renderTasksPage(){
 }
 // ---- Shipping: orders followed from the emails that arrive ----
 // Only facts are kept (shop, numbers, carrier, dates). Plain text only; the Track link is used only when it is https.
-let shipData={enabled:false,orders:[]},shipOpen=new Set(),shipNoteOpen=new Set(),shipDraft={},shipCar={open:false,name:"",url:"",example:"",err:"",confirm:"",editing:"",addr:{}};
+let shipData={enabled:false,orders:[]},shipRecvOpen=false,shipOpen=new Set(),shipNoteOpen=new Set(),shipDraft={},shipCar={open:false,name:"",url:"",example:"",err:"",confirm:"",editing:"",addr:{}};
 // Copy text: the browser's clipboard is missing on a page opened over plain http, so fall back to a hidden box.
 async function copyText(t){
   try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(t);return true}}catch{}
@@ -3766,7 +3766,11 @@ function renderShipPage(){
   const tn=shipTrackable().length;
   const head='<div class="tp-head"><h3>Shipping</h3></div><p class="sp-sub">Your online orders, followed from the emails you get. Each new email about the same order updates its card.</p>'+shipAddHtml()+(tn>1?`<div class="oact" style="margin:0 0 12px"><button class="obtn blue" type="button" data-ship-trackall>Track all (${Math.min(tn,10)})</button><span class="meta">Opens each parcel on its way in its carrier's own page. If only one opens, allow pop-ups for Enveliq.</span></div>`:"");
   if(!os.length){box.innerHTML=head+'<div class="focus-card"><div class="focus-big">No orders to follow</div><div class="focus-sub">When an email says you ordered something, it shows up here by itself.</div></div>'+carriersBox();return}
-  box.innerHTML=head+os.map(orderCard).join("")+'<p class="sp-sub">Arrived orders stay here for 14 days, then are forgotten. "Track" opens the carrier\'s own page in a new tab. Enveliq never contacts the carrier.</p>'+carriersBox();
+  // Orders you have marked "You got it" move to their own list under the parcels still to come, folded away so they do not fill the page.
+  const got=os.filter(o=>o.delivered_at&&o.ack),active=os.filter(o=>!(o.delivered_at&&o.ack));
+  const recv=got.length?`<h4 class="wgroup wclosed-head"><button class="wclosed-toggle" type="button" data-ship-recv-toggle aria-expanded="${shipRecvOpen}">Received · ${got.length}<span class="wclosed-arrow" aria-hidden="true">${ICON_FOLD}</span></button></h4>`+(shipRecvOpen?got.map(orderCard).join(""):""):"";
+  const none=!active.length?'<div class="focus-card"><div class="focus-big">Nothing on its way</div><div class="focus-sub">Parcels you have not marked as received show here.</div></div>':"";
+  box.innerHTML=head+active.map(orderCard).join("")+none+recv+'<p class="sp-sub">Arrived orders stay here for 14 days, then are forgotten. "Track" opens the carrier\'s own page in a new tab. Enveliq never contacts the carrier.</p>'+carriersBox();
   linkShipEmails();
 }
 function renderShipHome(){
@@ -6425,6 +6429,7 @@ document.addEventListener("click",e=>{
   const qrow=e.target.closest(".qrow");if(qrow&&!e.target.closest("button,input,a,label,select")){if(lay()==="list"&&view.rows==="open")return;const t=qrow.querySelector("[data-expand],[data-pick]");if(t){t.click();return}}
   if(e.target.closest("[data-reader-close]")){readerOpen=false;render();return}
   const dt=e.target.closest("[data-due-toggle]");if(dt){if(splitNow()){goTasks();return}dueOpen=!dueOpen;render();return}
+  const srt=e.target.closest("[data-ship-recv-toggle]");if(srt){shipRecvOpen=!shipRecvOpen;renderShipPage();return}
   const wct=e.target.closest("[data-wait-closed-toggle]");if(wct){waitClosedOpen=!waitClosedOpen;renderWaitPage();return}
   const lt=e.target.closest("[data-later-toggle]");if(lt){if(splitNow()){goTasks();return}calmLaterOpen=!calmLaterOpen;render();return}
   const pk=e.target.closest("[data-pick]");if(pk){if(lay()==="screen"){captureMailPosition();readerOpen=true}const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;enMarkOpened(nid);render();return}
