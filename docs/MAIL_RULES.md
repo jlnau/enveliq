@@ -6,7 +6,8 @@ A rule tells Enveliq what to do with **new** email from a sender you choose. The
 
 - **From an email.** Open an email and press **Always archive these**. From now on, new email from that sender is archived for you. **Block sender** is the same idea with Junk: new email from that sender goes to your mailbox's Junk folder (see [Junk mail](JUNK_MAIL.md)).
 - **From Clean up.** **Always archive new ones** on a mailing list makes the same rule (see [Clean up](CLEAN_UP.md)).
-- **In Settings.** Open **Settings, Mail rules**. Type who the email is from: one address (`news@example.com`), or a whole website with an at sign (`@example.com`, meaning everyone at example.com). If you like, add words the subject must contain. Choose **Archive it**, **Mark it reviewed** or **Send it to Junk** and press **Add rule**.
+- **For tasks.** Open an email and choose **Never make tasks from this sender** in its three-dot menu, or press **No tasks from this sender** on the task card. The rule is saved and the open task for that email is removed. Other open tasks from the same sender stay until you finish or remove them.
+- **In Settings.** Open **Settings, Mail rules**. Type who the email is from: one address (`news@example.com`), or a whole website with an at sign (`@example.com`, meaning everyone at example.com). If you like, add words the subject must contain. Choose **Archive it**, **Mark it reviewed**, **Send it to Junk** or **Never make tasks** and press **Add rule**.
 
 The same page lists your rules and lets you remove any of them with the **×**.
 
@@ -15,6 +16,8 @@ The same page lists your rules and lets you remove any of them with the **×**.
 - **Archive it** moves the email to your mailbox's Archive folder and marks it read, exactly as pressing Archive does. Enveliq keeps a short card for a few days, as it does for anything you archive, so you can still find it.
 - **Mark it reviewed** marks the email read and leaves it where it is.
 - **Send it to Junk** moves the email to your mailbox's Junk or Spam folder. Nothing is deleted, and you can move it back from there.
+
+- **Never make tasks** leaves the email exactly where it is. It only stops Enveliq from turning email from that sender (or website, or with those subject words) into a task. The email still arrives, is still summarised and can still be archived by another rule. A sender can have both an archive rule and a never-make-tasks rule. Tasks you add by hand are never blocked, and email from your important people still makes tasks.
 
 ## What a rule never does
 

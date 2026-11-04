@@ -367,7 +367,7 @@ function landingGroups(tab, me, o) {
       R("saved", "Signature & saved replies", "Words you use often", "pen", "green"),
       R("aiinstr", "Your AI instructions", "How you like summaries", "spark", "purple")] }] },
     rules: { title: "Rules & calendar", groups: [{ label: "", rows: [
-      R("rules", "Mail rules", "Archive or mark reviewed", "filter", "blue"),
+      R("rules", "Mail rules", "Archive, mark reviewed or skip tasks", "filter", "blue"),
       R("muted", "Muted conversations", "See and unmute", "mute", "grey"),
       R("away", "Away reply", "An answer while you are away", "moon", "purple"),
       R("calendar", "Calendar & to-do", "Send tasks to a calendar", "cal", "green")] }] },
@@ -2429,9 +2429,9 @@ async function awayPage(me) {
 
 // ---------- mail rules: "archive (or mark reviewed) new mail from this sender" ----------
 async function rulesPage(me) {
-  let state = { rules: [], actions: { archived: "Archive it", reviewed: "Mark it reviewed", junked: "Send it to Junk" }, max: 50 };
+  let state = { rules: [], actions: { archived: "Archive it", reviewed: "Mark it reviewed", junked: "Send it to Junk", notasks: "Never make tasks" }, max: 50 };
   const title = "Mail rules";
-  const help = "Enveliq can tidy new email for you. Choose who it is from and what to do with it. A rule acts only on new email as it arrives, never on what is already in your inbox, and never on email from your important people. No rule can delete email. Archived email is kept in Enveliq for a few days, as usual, and stays in your mailbox\u2019s Archive folder.";
+  const help = "Enveliq can tidy new email for you. Choose who it is from and what to do with it. A rule acts only on new email as it arrives, never on what is already in your inbox, and never on email from your important people. \u201cNever make tasks\u201d leaves the email alone and only stops tasks being made from it. No rule can delete email. Archived email is kept in Enveliq for a few days, as usual, and stays in your mailbox\u2019s Archive folder.";
   const sender = h("input", { id: "ru_sender", type: "text", class: "wide", placeholder: "name@example.com or @example.com", "aria-label": "Mail from", autocomplete: "off", maxlength: 320 });
   const words = h("input", { id: "ru_subject", type: "text", placeholder: "Optional", "aria-label": "Subject contains", autocomplete: "off", maxlength: 80 });
   const action = h("select", { id: "ru_action", class: "dd", "aria-label": "What to do" });
@@ -2447,7 +2447,7 @@ async function rulesPage(me) {
     action.replaceChildren(...Object.entries(state.actions).map(([k, v]) => h("option", { value: k, text: v })));
     redraw(title, () => [
       { label: state.rules.length ? "Your rules" : "", items: state.rules.length ? state.rules.map(r => itemRow({
-        title: state.actions[r.action] || r.action, sub: `New mail from ${who(r)}${r.subject ? ` with \u201c${r.subject}\u201d in the subject` : ""}`,
+        title: state.actions[r.action] || r.action, sub: `${r.action === "notasks" ? "Mail from" : "New mail from"} ${who(r)}${r.subject ? ` with \u201c${r.subject}\u201d in the subject` : ""}${r.action === "notasks" ? " no longer makes tasks. The email still arrives." : ""}`,
         buttons: xBtn(`Remove the rule for ${who(r)}`, async () => { try { state = await api(`/me/rules/${r.id}`, { method: "DELETE" }); draw(); toast("Rule removed"); } catch (er) { toast(er.message); } }) }))
         : [noteRow("No rules yet. Add one, or open an email and press Always archive these or Block sender.")] },
       { label: "", items: [{ title: "Add a rule", center: true, key: "add", content: [

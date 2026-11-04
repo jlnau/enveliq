@@ -273,6 +273,8 @@ jobs:
         run: node scripts/check_rules.mjs
       - name: Three-dot menu, Mute, Mark unread, Print and Conversation View (simulated server)
         run: node scripts/check_more_menu.mjs
+      - name: Never make tasks rule (simulated server)
+        run: node scripts/check_never_tasks.mjs
       - name: Trips page and Home card (simulated server)
         run: node scripts/check_trips.mjs
       - name: Subscriptions page and Home card (simulated server)

@@ -18,7 +18,10 @@ from .contacts import clean_address
 RECORD_PREFIX = "rules:"
 MAX_RULES = 50
 MAX_SUBJECT = 80
-ACTIONS = {"archived": "Archive it", "reviewed": "Mark it reviewed", "junked": "Send it to Junk"}
+ACTIONS = {"archived": "Archive it", "reviewed": "Mark it reviewed", "junked": "Send it to Junk", "notasks": "Never make tasks"}
+# "Never make tasks" does nothing to the email itself: it only stops Enveliq from turning mail from that sender into a task.
+# It sits beside the other rules, so a sender can have both (for example archive it, and never make tasks).
+NO_TASKS = "notasks"
 _LOCK = threading.Lock()
 _CTRL = re.compile(r"[\x00-\x1f\x7f]")
 _DOMAIN = re.compile(r"^@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,24}$")
@@ -89,9 +92,11 @@ class Rules:
         return True
 
     def match(self, user_id: str, address: Any, subject: Any) -> dict[str, Any] | None:
-        """The first rule that fits mail from this address with this subject, or None."""
+        """The first rule that acts on the email (archive, reviewed, Junk) that fits mail from this address with this subject, or None."""
         title = str(subject or "").lower()
         for r in self._load(user_id):
+            if r["action"] == NO_TASKS:
+                continue
             if not sender_matches(r["sender"], address):
                 continue
             words = str(r.get("subject") or "").lower()
@@ -99,6 +104,17 @@ class Rules:
                 continue
             return r
         return None
+
+    def blocks_tasks(self, user_id: str, address: Any, subject: Any) -> bool:
+        """True when a "Never make tasks" rule fits mail from this address with this subject."""
+        title = str(subject or "").lower()
+        for r in self._load(user_id):
+            if r["action"] != NO_TASKS or not sender_matches(r["sender"], address):
+                continue
+            words = str(r.get("subject") or "").lower()
+            if not words or words in title:
+                return True
+        return False
 
     def forget_user(self, user_id: str) -> None:
         self.vault.set_global(RECORD_PREFIX + user_id, {})

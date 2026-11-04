@@ -664,6 +664,9 @@ draftbook = Drafts(vault)
 scheduledbook = ScheduledMail(vault)
 scheduled_sender = ScheduledSender(vault, mail_service, scheduledbook, vault.audit)
 rulebook = Rules(vault)
+# "Never make tasks": mail from that sender or website is left out of the task list. Your important people always still make tasks.
+taskbook.suppress = lambda user, m: bool(m.get("sender_address")) and not importantbook.contains(user, m["sender_address"]) \
+    and rulebook.blocks_tasks(user, m["sender_address"], m.get("subject"))
 mutebook = MutedBook(vault)
 awaybook = AwayBook(vault, taskbook.timezone_of)
 tripbook = TripBook(vault, taskbook.timezone_of)

@@ -20,7 +20,7 @@ def test_a_new_person_has_no_rules_and_it_is_never_cached(env):
     _, client, _, _ = env
     r = client.get("/api/v1/me/rules")
     assert r.status_code == 200 and r.headers["cache-control"] == "no-store"
-    assert r.json()["rules"] == [] and set(r.json()["actions"]) == {"archived", "reviewed", "junked"}
+    assert r.json()["rules"] == [] and set(r.json()["actions"]) == {"archived", "reviewed", "junked", "notasks"}
 
 
 def test_adding_listing_and_removing_a_rule(env):
@@ -193,3 +193,21 @@ def test_one_email_can_be_sent_to_junk_by_hand(env):
     r = client.post(f"/api/v1/accounts/{aid}/messages/{m['Quarterly update']['id']}/resolve", json={"outcome": "junked"})
     assert r.status_code == 204 and bridge.messages[1]["folder"] == "Spam"
     assert "Quarterly update" not in [x["subject"] for x in client.get(f"/api/v1/accounts/{aid}/messages").json()]
+
+
+def test_a_never_make_tasks_rule_does_not_stop_an_archive_rule_for_the_same_sender(env):
+    _, client, bridge, _ = env
+    add_rule(client, ALICE, "notasks")
+    add_rule(client, ALICE, "archived")
+    assert len(rules(client)) == 2
+    synced(client, bridge)
+    assert bridge.messages[1]["folder"] == "Archive"               # the archive rule still ran
+    r = add_rule(client, ALICE, "notasks")
+    assert len(r.json()["rules"]) == 2                              # the same rule twice is one rule
+
+
+def test_a_never_make_tasks_rule_alone_leaves_the_email_where_it_is(env):
+    _, client, bridge, _ = env
+    add_rule(client, ALICE, "notasks")
+    synced(client, bridge)
+    assert all(m["folder"] == "INBOX" for m in bridge.messages.values())

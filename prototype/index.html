@@ -3028,7 +3028,7 @@ function taskMsg(t){return t.demoId?data.find(m=>m.id===t.demoId):data.find(m=>m
 function syncDemoTasks(){
   const today=new Date();today.setHours(0,0,0,0);
   for(const m of data){
-    if(m.owner!==currentUser.id||!m.task)continue;
+    if(m.owner!==currentUser.id||!m.task||noTaskSenders.has(m.address))continue;
     let t=demoTasks.find(x=>x.demoId===m.id&&!x.manual);
     if(!t&&m.status==="inbox"){const d=parseDue(m.task.due,m.received?m.received*1000:Date.now())||today;t={id:"d"+m.id,demoId:m.id,owner:m.owner,title:m.task.title,detail:m.task.detail||"",sender:m.sender,priority:m.priority||"normal",due:isoLocal(d),remind_at:null,state:"open",reason:null,closed_at:null,account_id:"",message_id:"",received:m.received||0};demoTasks.push(t)}
     if(t&&t.state==="open"&&m.status!=="inbox"){t.state="done";t.reason="handled";t.closed_at=Date.now()/1000}
@@ -3080,7 +3080,8 @@ function moveBar(t){
 }
 function taskLine(t){
   const open=t.state==="open";
-  return `<div class="taskline"><div class="tlhead"><span class="tpill ${open?"auto":"ok"}">${open?(t.manual?"Your task":"Task added"):"Task done"}</span><b class="tltitle">${esc(t.title)}</b>${open?`<span class="tpill soft">${esc(taskWhen(t))}</span>`:`<span class="tpill">${esc(t.reason_text||"Done")}</span>`}<span class="tlsp"></span>${open?`<button class="tbtn" type="button" data-task-movetoggle="${esc(t.id)}" aria-expanded="${taskMoveFor===t.id}">Move</button><button class="tbtn" type="button" data-task-act="remove" data-task-id="${esc(t.id)}">Remove</button>`:`<button class="tbtn" type="button" data-task-act="reopen" data-task-id="${esc(t.id)}">Undo</button>`}</div>${t.detail?`<div class="detail-text">${esc(t.detail)}</div>`:""}${open&&taskMoveFor===t.id?moveBar(t):""}</div>`;
+  const tm=open?taskMsg(t):null,nt=tm&&tm.address&&!tm.found&&!isImp(tm)?`<button class="tbtn" type="button" data-notask="${esc(tm.id)}" data-task-id="${esc(t.id)}" title="Remove this task and never make tasks from this sender again. The email still arrives.">No tasks from this sender</button>`:"";
+  return `<div class="taskline"><div class="tlhead"><span class="tpill ${open?"auto":"ok"}">${open?(t.manual?"Your task":"Task added"):"Task done"}</span><b class="tltitle">${esc(t.title)}</b>${open?`<span class="tpill soft">${esc(taskWhen(t))}</span>`:`<span class="tpill">${esc(t.reason_text||"Done")}</span>`}<span class="tlsp"></span>${open?`<button class="tbtn" type="button" data-task-movetoggle="${esc(t.id)}" aria-expanded="${taskMoveFor===t.id}">Move</button><button class="tbtn" type="button" data-task-act="remove" data-task-id="${esc(t.id)}">Remove</button>${nt}`:`<button class="tbtn" type="button" data-task-act="reopen" data-task-id="${esc(t.id)}">Undo</button>`}</div>${t.detail?`<div class="detail-text">${esc(t.detail)}</div>`:""}${open&&taskMoveFor===t.id?moveBar(t):""}</div>`;
 }
 function taskRow(t,fin){
   const m=taskMsg(t);
@@ -4190,6 +4191,19 @@ async function addRuleFor(m,btn){
     btn.textContent="Rule saved";
   }catch(er){toast(er.message,6000);btn.disabled=false}
 }
+// "Never make tasks": new email from this sender no longer turns into a task. The email itself is not touched. An open task for this email is removed.
+const noTaskSenders=new Set();
+async function neverTasksFor(m,taskId,btn){
+  const who=m.sender||m.address;
+  if(btn)btn.disabled=true;
+  try{
+    if(realMail)await secureBackendRequest("/api/v1/me/rules",{method:"POST",body:JSON.stringify({sender:m.address,subject:"",action:"notasks"})});
+    else noTaskSenders.add(m.address);
+    toast(`From now on, email from ${who} will not make tasks. The email still arrives. You can change this in Settings, Mail rules.`,7000);
+    const open=tasksData.tasks.find(x=>x.id===taskId)||tasksData.tasks.find(x=>x.state==="open"&&taskMsg(x)&&taskMsg(x).id===m.id);
+    if(open)await taskAct(open.id,"remove");else{if(!realMail)syncDemoTasks();render()}
+  }catch(er){toast(er.message,6000);if(btn)btn.disabled=false}
+}
 // "Send to Junk" moves one email to the mailbox's Junk folder; "Block sender" also adds a rule so new email from that sender goes there too.
 async function junkThis(m,btn,block){
   const who=m.sender||m.address;
@@ -4673,6 +4687,7 @@ function menuItemsFor(m,viewer){
   }
   if(!m.kept&&m.address)item("data-important",isImp(m)?"Not important":"Important person");
   if(!m.kept&&m.address&&realMail&&!isImp(m))item("data-rule","Always archive these");
+  if(!m.kept&&m.address&&!isImp(m)&&!m.found)item("data-notask","Never make tasks from this sender");
   if(!m.kept&&m.real&&!m.found)item("data-junk-this","Send to Junk");
   if(!m.kept&&m.address&&realMail&&!m.found&&!isImp(m))item("data-block-sender","Block sender");
   if(!m.kept&&m.real&&realMail&&!m.found)item("data-mute","Mute conversation");
@@ -6408,6 +6423,7 @@ document.addEventListener("click",e=>{
     closeMoreMenu();if(m){if(k==="mute")muteConversation(m);else if(k==="unread")markUnreadWeb(m);else{if(k==="pdf")toast("In the print window, choose Save as PDF as the printer.",5000);printEmail(m)}}return}
   const cv=e.target.closest("[data-conv]");if(cv){const k=cv.dataset.conv,wasOpen=cv.getAttribute("aria-expanded")==="true";if(wasOpen){expanded.delete(k);convHidden.set(k,paneId)}else{expanded.add(k);convHidden.delete(k)}render();return}
   const jb=e.target.closest("[data-junk-this],[data-block-sender]");if(jb){const m=data.find(x=>x.id===Number(jb.dataset.junkThis||jb.dataset.blockSender)&&x.owner===currentUser.id);if(m)junkThis(m,jb,jb.hasAttribute("data-block-sender"));return}
+  const ntBtn=e.target.closest("[data-notask]");if(ntBtn){const m=data.find(x=>x.id===Number(ntBtn.dataset.notask)&&x.owner===currentUser.id);if(m)neverTasksFor(m,ntBtn.dataset.taskId||"",ntBtn);return}
   const ruleBtn=e.target.closest("[data-rule]");if(ruleBtn){const m=data.find(x=>x.id===Number(ruleBtn.dataset.rule)&&x.owner===currentUser.id);if(m)addRuleFor(m,ruleBtn);return}
   const impBtn=e.target.closest("[data-important]");if(impBtn){const m=data.find(x=>x.id===Number(impBtn.dataset.important)&&x.owner===currentUser.id);if(m)setImportant(m,!isImp(m));return}
   const replyBtn=e.target.closest("[data-reply]");if(replyBtn){openComposer(replyBtn.dataset.reply);return}
