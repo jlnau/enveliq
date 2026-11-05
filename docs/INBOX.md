@@ -23,7 +23,7 @@ The action row under an email ends, at the far right on a computer and on a phon
 
 ## Mark unread
 
-A read email has a red **Mark as unread** button (an unread email has a green **Mark as read** button in the same place), and the same item in its three-dot menu. It puts the unread mark back on the email in your mailbox (Proton, IMAP and Microsoft alike) and the email is highlighted as new again. Mark as read and Mark as unread are the usual ones: the email is not moved or hidden. Read email shows in the inbox only while **Include read mail** is on; otherwise it is simply no longer in your list of unread mail, as for any read email. Emails you archived are in your mailbox's Archive folder, so open them there if you want them unread again.
+A read email has a red **Mark as unread** button (an unread email has a green **Mark as read** button in the same place), and the same item in its three-dot menu. It puts the unread mark back on the email in your mailbox (Proton, IMAP and Microsoft alike) and the email is highlighted as new again. Mark as read and Mark as unread only change the read mark on your mail service (Proton, IMAP or Microsoft). Enveliq's own blue "new" shine is not touched by them: it goes when you open an email, as before. The email is not moved or hidden. Read email shows in the inbox only while **Include read mail** is on; otherwise it is simply no longer in your list of unread mail, as for any read email. Emails you archived are in your mailbox's Archive folder, so open them there if you want them unread again.
 
 ## Conversation View
 
@@ -86,7 +86,7 @@ Open an email and its files are listed under the summary, above the task: one ro
 
 ## Mark as read, Archive and Bin
 
-**Mark as read** (green), **Archive** and **Bin** are the buttons on an email. Mark as read is the ordinary one: your mailbox gets its read mark and the email loses its "new" highlight. It stays exactly where it is while **Include read mail** is on (and is out of the unread list when that is off, like any read email). There is no Reviewed list and no five seconds of Undo: **Mark as unread** (the same button turns red once the email is read, and it is in the three-dot menu too) is the way back. On a phone, swiping right archives and swiping left bins. When you tick several emails, the bar has a **Mark as read** button too. Emails that were in the old Reviewed list become ordinary read mail.
+**Mark as read** (green), **Archive** and **Bin** are the buttons on an email. Mark as read is the ordinary one: your mailbox gets its read mark and the email loses its "new" highlight. It stays exactly where it is while **Include read mail** is on (and is out of the unread list when that is off, like any read email). There is no Reviewed list and no five seconds of Undo: **Mark as unread** (the same button turns red once your mailbox has it as read, and it is in the three-dot menu too) is the way back. On a phone, swiping right archives and swiping left bins. When you tick several emails, the bar has a **Mark as read** button too. Emails that were in the old Reviewed list become ordinary read mail.
 
 **Next and previous email.** When one email is open next to the list or over it (the reading pane layouts and a phone), two small arrows beside the three-dot button open the previous or next email in the list. At the ends, a quiet note says it is the first or last email. They are not shown when emails open in place inside the list.
 

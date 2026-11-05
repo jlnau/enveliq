@@ -117,8 +117,8 @@ def test_a_reviewed_email_can_be_marked_unread_again(env):
     assert "\\Seen" not in bridge.messages[1]["flags"]            # the real mailbox has its unread mark back
     states = by_state(client, aid)
     assert "Quarterly update" in states["unread"] and "Quarterly update" not in states.get("reviewed", {})
-    # it can only be done for a Reviewed email, never twice, and never for an email that moved
-    assert client.post(f"/api/v1/accounts/{aid}/messages/{mid}/unread").status_code == 409
+    # marking an already unread email unread is harmless; an email that moved cannot be
+    assert client.post(f"/api/v1/accounts/{aid}/messages/{mid}/unread").status_code == 204
     other = states["unread"]["Weekly news"]["id"]
     assert resolve(client, aid, other, "archived").status_code == 204
     assert client.post(f"/api/v1/accounts/{aid}/messages/{other}/unread").status_code == 409

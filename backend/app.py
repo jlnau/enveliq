@@ -1232,8 +1232,8 @@ def mark_message_unread(account_id: AccountId, message_id: MessageId, session: S
         stored = vault.get_message(account_id, message_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Message not found") from exc
-    if stored.get("found_until") or not (stored.get("from_all_mail") or stored.get("state") == "reviewed"):
-        raise HTTPException(status_code=409, detail="Only an email that is already read can be marked unread.")
+    if stored.get("found_until") or stored.get("state") == "archived":
+        raise HTTPException(status_code=409, detail="This email has moved, so it cannot be marked unread here.")
     try:
         mail_service.mark_unread(vault.get_account(account_id), stored)
     except BridgeError as err:
@@ -1242,24 +1242,9 @@ def mark_message_unread(account_id: AccountId, message_id: MessageId, session: S
     data = {k: v for k, v in stored.items() if k != "id"}
     data.update(state="unread", resolved_at=None, from_all_mail=False)
     vault.update_message(account_id, message_id, data)
-    set_opened_mark(session.principal.user_id, account_id, message_id, False)
     vault.audit({"event": "message_marked_unread", "actor_user_id": session.principal.user_id, "account_id": account_id,
                  "message_id": message_id, "at": time.time()})
     return Response(status_code=204)
-
-
-def set_opened_mark(user_id: str, account_id: str, message_id: str, opened: bool) -> None:
-    """Mark as read / Mark as unread also set or clear the 'opened' mark that decides whether the row is highlighted as new."""
-    key = f"{account_id}:{message_id}"
-    rec = vault.get_global("enveliq-opened-v1:" + user_id) or {}
-    keys = rec.get("keys", []) if isinstance(rec, dict) and isinstance(rec.get("keys"), list) else []
-    if opened and key not in keys:
-        keys.append(key)
-    elif not opened and key in keys:
-        keys = [k for k in keys if k != key]
-    else:
-        return
-    vault.set_global("enveliq-opened-v1:" + user_id, {"keys": keys[-20000:]})
 
 
 def resolve_message(account_id: str, message_id: str, outcome: str, user_id: str, *, by: str | None = None) -> None:
@@ -1279,7 +1264,6 @@ def resolve_message(account_id: str, message_id: str, outcome: str, user_id: str
         mail_service.apply_outcome(account, stored, outcome)
     preview_leases.purge_message(account_id, message_id)
     if outcome == "reviewed" and not found:
-        set_opened_mark(user_id, account_id, message_id, True)
         taskbook.close_message(user_id, account_id, message_id, "handled")
         if features.effective(vault, user_id)["all_mail"]:
             # Mark as read: with read mail shown, the email stays in the list exactly where it was, just without the unread highlight.
