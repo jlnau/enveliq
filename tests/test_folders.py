@@ -68,7 +68,7 @@ def test_looking_inside_a_folder_lists_newest_first_and_opens_one_email(env):
     assert client.get(f"/api/v1/folder-mail/{page['rows'][0]['token'][:-3]}abc/original").status_code == 404
 
 
-def test_a_move_rule_files_new_mail_from_a_sender_into_the_folder_and_important_people_are_left_alone(env):
+def test_a_move_rule_files_new_mail_from_a_sender_into_the_folder(env):
     appm, client, bridge, _ = env
     aid, m = synced(client, bridge)
     bridge.folders.append(("\\HasNoChildren", "Bills"))
@@ -101,10 +101,10 @@ def test_a_rule_pointing_at_a_folder_this_mailbox_lacks_leaves_the_mail_in_the_i
     assert bridge.messages[1]["folder"] == "INBOX" and "Quarterly update" in m
 
 
-def test_important_people_are_never_moved_by_a_rule(env):
+def test_important_people_are_moved_by_a_rule_the_owner_made_for_them(env):
     _, client, bridge, _ = env
     bridge.folders.append(("\\HasNoChildren", "Bills"))
     client.post("/api/v1/me/important", json={"address": "alice@example.invalid"})
     move_rule(client, "alice@example.invalid")
     synced(client, bridge)
-    assert bridge.messages[1]["folder"] == "INBOX"
+    assert bridge.messages[1]["folder"] == "Bills"

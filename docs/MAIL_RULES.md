@@ -25,7 +25,7 @@ The same page lists your rules and lets you remove any of them with the **×**.
 
 - It never deletes anything. There is no rule for the Bin.
 - It only acts on **new** email as it arrives. It does not touch what is already in your inbox when you make the rule.
-- It never touches email from your **important people**, so a rule can never hide a message from someone you chose to see first.
+- Rules you make for an **important person** do apply to them (you chose the rule on purpose). Only a muted conversation never hides an important person's email.
 - It does not read the email itself. It looks only at who it is from and the subject.
 - It works on your own mailboxes only. Other people's rules never affect your mail, and yours never affect theirs.
 
@@ -37,4 +37,4 @@ The same page lists your rules and lets you remove any of them with the **×**.
 - Your rules are kept encrypted, are part of **Export my data**, and nobody else can see them, not even an administrator.
 
 ## Move to a folder
-**Always move new email from this sender into a folder** is made from an email: open the folder box (three-dot menu, **Move to folder…**, or the Folders button) and tick "Always move new email from this sender into this folder", or use **Mail rules for this sender, Always move to a folder…**. The email moves now and later email from that sender is filed in that folder as it arrives. It is listed in Settings, Mail rules, where it can be removed (it cannot be added there, because folder names must match your mailbox exactly). One sender has one such rule; choosing another folder replaces it. It never applies to Important people, and a folder that no longer exists is skipped. A folder takes the email out of the Inbox; for "in both", use an always-apply Tag rule instead.
+**Always move new email from this sender into a folder** is made from an email: open the folder box (three-dot menu, **Move to folder…**, or the Folders button) and tick "Always move new email from this sender into this folder", or use **Mail rules for this sender, Always move to a folder…**. The email moves now and later email from that sender is filed in that folder as it arrives. It is listed in Settings, Mail rules, where it can be removed (it cannot be added there, because folder names must match your mailbox exactly). One sender has one such rule; choosing another folder replaces it. It applies to Important people too if you make it for them, and a folder that no longer exists is skipped. A folder takes the email out of the Inbox; for "in both", use an always-apply Tag rule instead.

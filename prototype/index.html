@@ -4748,12 +4748,11 @@ const moreBtn=m=>`<button type="button" class="subtle qmore" data-more="${esc(m.
 function ruleItemsFor(m,back){
   const id=esc(m.id),out=[],item=(attr,label)=>out.push(`<button type="button" role="menuitem" ${attr}="${id}">${label}</button>`);
   if(back)out.push(`<button type="button" role="menuitem" data-rules-back="${id}">&lsaquo; Back</button><hr>`);
-  if(realMail&&!m.found&&!isImp(m)){item("data-rule","Always archive these");item("data-rule-reviewed","Always mark these as read")}
+  if(realMail&&!m.found){item("data-rule","Always archive these");item("data-rule-reviewed","Always mark these as read")}
   item("data-notask","Never make tasks from this sender");
-  if(canStar(m)&&!isImp(m))item("data-rule-folder","Always move to a folder&hellip;");
+  if(canStar(m))item("data-rule-folder","Always move to a folder&hellip;");
   if(realMail&&!m.found&&tagsOn(m))item("data-tag-open","Always apply a tag&hellip;");
-  if(realMail&&!m.found&&!isImp(m))item("data-block-sender","Block sender (new email goes to Junk)");
-  if(isImp(m))out.push(`<p class="menu-note" role="note">${esc(m.sender||"This person")} is on your Important list, so archive, mark as read, folder and Junk rules never touch their email.</p>`);
+  if(realMail&&!m.found)item("data-block-sender","Block sender (new email goes to Junk)");
   out.push("<hr>");
   out.push(`<button type="button" role="menuitem" data-open-rules="1">See all my mail rules</button>`);
   return out.join("");
@@ -4777,7 +4776,7 @@ function menuItemsFor(m,viewer){
     sep();
   }
   if(!m.kept&&m.address)item("data-important",isImp(m)?"Not important":"Important person");
-  if(!m.kept&&m.address)item("data-rules-open","Mail rules for this sender &rsaquo;");
+  if(m.address)item("data-rules-open","Mail rules for this sender &rsaquo;");
   if(!m.kept&&m.real&&!m.found)item("data-junk-this","Send to Junk");
   if(!m.kept&&m.real&&realMail&&!m.found)item("data-mute","Mute conversation");
   sep();

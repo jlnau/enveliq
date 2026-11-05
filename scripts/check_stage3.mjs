@@ -176,8 +176,8 @@ for (const width of [1200, 390]) {
     check(`Mail rules for this sender is in the menu: ${title}`, (await menuTexts(page)).some((t) => /Mail rules for this sender/.test(t)));
     await page.locator("#moreMenu [data-rules-open]").click();
     const items = await menuTexts(page);
-    check(`${title}: ${important ? "important people only get the rules that can apply" : "all the rules are there, with Always move to a folder"}`,
-      important ? !items.some((t) => /Always archive|Block sender|Always move/.test(t)) && items.some((t) => /Never make tasks/.test(t)) : items.some((t) => /Always move to a folder/.test(t)) && items.some((t) => /Always archive/.test(t)));
+    check(`${title}: all the rules are there, with Always move to a folder${important ? " (important person too)" : ""}`,
+      items.some((t) => /Always move to a folder/.test(t)) && items.some((t) => /Always archive/.test(t)) && items.some((t) => /Block sender/.test(t)) && !items.some((t) => /Important list/.test(t)));
     check(`${title}: no page errors`, errors.length === 0);
     await context.close();
   }

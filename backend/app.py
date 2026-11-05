@@ -759,16 +759,14 @@ app.include_router(build_check_router(mail_ctx))
 def apply_rules(account: dict, arrived: list) -> None:
     """Mail that has just arrived: first a muted conversation (filed in Archive, never shown, never alerted), then the owner's rules (archive it,
     or mark it reviewed), then, for what is left, the away reply if the owner switched it on. Nothing else about the email is read. Mail from
-    the owner's important people is never touched by a rule or a mute, and a rule never bins anything (sending to Junk is not binning: the
+    the owner's important people is never muted, but the owner's own rules for them do apply, and a rule never bins anything (sending to Junk is not binning: the
     email stays in the mailbox's Junk folder)."""
     user = account.get("owner_user_id")
     if not user:
         return
     for item in arrived:
-        if importantbook.contains(user, item["sender_address"]):
-            _away_reply(account, item, user)              # never muted or filed by a rule, but still politely answered while away
-            continue
-        muted = mutebook.match(user, item.get("ids") or [])
+        important = importantbook.contains(user, item["sender_address"])
+        muted = None if important else mutebook.match(user, item.get("ids") or [])      # a mute never hides an important person; their own rules do apply
         if muted:
             try:
                 resolve_message(account["id"], item["id"], "archived", user, by="mute")

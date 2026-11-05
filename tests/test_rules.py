@@ -142,12 +142,12 @@ def test_a_reviewed_rule_marks_it_read_and_leaves_it_in_the_inbox(env):
     assert "\\Seen" in bridge.messages[1]["flags"] and bridge.messages[1]["folder"] == "INBOX"
 
 
-def test_mail_from_an_important_person_is_never_touched_by_a_rule(env):
+def test_a_rule_the_owner_made_applies_to_an_important_person_too(env):
     _, client, bridge, _ = env
     client.post("/api/v1/me/important", json={"address": ALICE})
     add_rule(client, "@example.invalid", "archived")
     synced(client, bridge)
-    assert bridge.messages[1]["folder"] == "INBOX" and "\\Seen" not in bridge.messages[1]["flags"]
+    assert bridge.messages[1]["folder"] == "Archive"
     assert bridge.messages[3]["folder"] == "Archive"
 
 
@@ -260,11 +260,11 @@ def test_a_tag_that_cannot_be_put_on_never_stops_the_sync_or_an_archive_rule(env
     assert bridge.messages[1]["folder"] == "Archive"
 
 
-def test_tag_rules_skip_important_people_and_each_person_has_their_own(env, monkeypatch):
+def test_tag_rules_apply_to_important_people_and_each_person_has_their_own(env, monkeypatch):
     appm, client, bridge, _ = env
     calls = []
     monkeypatch.setattr(appm.tagservice, "set_for_message", lambda account, mid, name, on: calls.append(name) or [name])
     add_tag_rule(client, ["Work"])
     client.post("/api/v1/me/important", json={"address": ALICE})
     synced(client, bridge)
-    assert calls == []
+    assert calls and set(calls) == {"Work"}
