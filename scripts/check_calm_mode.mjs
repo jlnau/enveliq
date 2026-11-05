@@ -92,7 +92,7 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
     }
   }
   const off = await calmState();
-  check(name + ": switching off restores counters", off.badges > 0 && /\d/.test(off.today) && /\d/.test(off.sub));
+  check(name + ": switching off restores counters", off.badges > 0 && /\d/.test(off.today));
   await p.reload(); await p.waitForTimeout(800);
   check(name + ": explicit opt out is remembered after reload", await p.evaluate(() => !document.body.classList.contains("calm")));
   await p.evaluate(() => document.querySelector(".demo-banner")?.remove());

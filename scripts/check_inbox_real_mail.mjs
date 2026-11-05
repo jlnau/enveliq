@@ -203,7 +203,7 @@ async function open(server, { seen = true } = {}) {
   await page.click("#previewInboxOptions");
   check("existing filters are accessible when requested", await page.locator("#filterBy").isVisible());
   await page.selectOption("#filterBy", "action");
-  check("changing the filter names the page and offers Back to My inbox, and the summary line is unchanged", (await page.locator(".top-left h2").innerText()) === "Needs action" && await page.locator("#backInbox").isVisible() && (await page.locator("#inboxSubtitle").innerText()) === hdr0[1] && hdr0[0] === "One thing at a time");
+  check("changing the filter names the page and has no Back button, and the summary line is unchanged", (await page.locator(".top-left h2").innerText()) === "Needs action" && (await page.locator("#backInbox").count()) === 0 && (await page.locator("#inboxSubtitle").innerText()) === hdr0[1] && hdr0[0] === "One thing at a time");
   await page.selectOption("#filterBy", "");
   const cy = async (sel) => { const b = await page.locator(sel).boundingBox(); return b.y + b.height / 2; };
   check("last-synced text is available in the separate search toolbar", await page.locator("#syncAgo").isVisible() && (await page.locator("#syncAgo").boundingBox()).y < (await page.locator("#inboxSubtitle").boundingBox()).y);
@@ -709,7 +709,7 @@ await page.click('[data-theme-choice="dark"]');
     await page.setViewportSize({ width: w, height: 800 });
     await page.waitForTimeout(150);
     const g = await page.locator(".greet h2").boundingBox(), sub = await page.locator("#inboxSubtitle").boundingBox(), se = await page.locator("#search").boundingBox();
-    const ok = g.height < 55 && g.y + g.height <= sub.y + 2 && se.y + se.height <= g.y + 2 && (await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+    const ok = g.height < 55 && (!sub || g.y + g.height <= sub.y + 2) && se.y + se.height <= g.y + 2 && (await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
     check(`new header is tidy at ${w}px wide: search above title, nothing overlaps or runs off`, ok);
   }
   check("back on a wide screen the left sidebar and default reading pane return", (await page.locator("#sidebar").isVisible()) && (await page.locator("body.layout-right").count()) === 1);

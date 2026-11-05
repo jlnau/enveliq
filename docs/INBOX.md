@@ -200,7 +200,7 @@ Web addresses in the text of an email can be clicked, but they never open by the
 
 ## Getting back to My inbox
 - The Sent page uses the same header as the other pages (Back button, title, then a line saying it shows your last 4 months of sent mail). The page keeps room for its scroll bar, so nothing moves sideways when the emails finish loading.
-- On every page other than My inbox (Needs action, Tasks, Shipping, Waiting for reply, Attachments, Archived, Sent and so on), a **Back to My inbox** button sits above the page title. The title now shows the name of the page you are on instead of "My inbox".
+- Every page has a small page title (18px) in the same place, right under the search box. It shows the name of the page you are on (My inbox, Needs action, Tasks, Shipping and so on). There is no "Back to My inbox" button: use **My inbox** in the left menu. The line "N emails to look at, N need you" is gone. Pages that explain themselves (Clean up, Junk Mail, Found emails, Sent, Drafts) keep their short line under the title.
 - Needs action, Attachments and Archived show the same **Recent emails** panel with **Options** as My inbox, so the options fold away in the same way everywhere.
 - On **Waiting for reply**, the **Closed** section is folded away until you open it with its arrow, so the page does not look like a long list of open items.
 - With **Open full screen**, on a computer the email sits beside the left menu and below the top bar, and **Archive** and **Bin** are normal buttons centred along the bottom (they used to be stretched across the screen and partly hidden).

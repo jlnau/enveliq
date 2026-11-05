@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**A calmer top of every page.** The page title is smaller (18px) and sits in the same place under the search box on every page. The "32 emails to look at, 14 need you" line is removed, and so is the "Back to My inbox" button (use My inbox in the left menu). Short explanations that some pages show under their title stay. Touches `prototype/index.html`, `docs/INBOX.md`, `scripts/check_back_to_inbox.mjs`, `scripts/check_drafts.mjs`, `scripts/check_all_mail.mjs`, `scripts/check_inbox_real_mail.mjs`.
+
 **Hide the counts and the Today section.** The View panel has a new **Top of the inbox** group with two switches: **Counts across the top** (the four boxes) and **Today and coming up** (the Today and Coming up lists, also the "Start here" card in Calm mode). Both are on to begin with, saved with your other View choices and put back by Reset to default. Touches `prototype/index.html`, `backend/mail/notify_routes.py`, `docs/INBOX.md`, `tests/test_notify.py`, `scripts/check_home_sections.mjs`.
 
 **Android: a tidier menu on Shipping cards.** The three-dot menu now opens right under the dots, raised above the cards, with small icons, instead of appearing under the card at the left. Touches `android/`.
