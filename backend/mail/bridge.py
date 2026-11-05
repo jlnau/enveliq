@@ -672,6 +672,15 @@ class _ImapSession:
     def mark_seen(self, uid: int) -> None:
         self._call("store", self.imap.uid, "STORE", str(uid), "+FLAGS.SILENT", "(\\Seen)")
 
+    def set_flagged(self, uid: int, on: bool) -> None:
+        """Star (the standard Flagged flag) or unstar an email in the open folder."""
+        self._call("store", self.imap.uid, "STORE", str(uid), ("+" if on else "-") + "FLAGS.SILENT", "(\\Flagged)")
+
+    def flagged_uids(self) -> set[int]:
+        """Every starred (Flagged) email in the open folder."""
+        data = self._call("search", self.imap.uid, "SEARCH", None, "FLAGGED")
+        return {int(x) for x in (data[0] or b"").split() if x.isdigit()}
+
     def mark_unseen(self, uid: int) -> None:
         self._call("store", self.imap.uid, "STORE", str(uid), "-FLAGS.SILENT", "(\\Seen)")
 

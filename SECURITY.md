@@ -168,6 +168,8 @@ User configured mail rules can automatically archive or mark qualifying messages
 
 Mailbox actions are performed through the connected email provider, with server side ownership and permission checks.
 
+**Stars.** Starring an email sets or clears the mailbox's own Flagged mark, only on the signed-in person's own mailbox, after the same ownership check as every other mailbox action (another person's email answers "not found"), and is rate limited. Enveliq stores one yes/no per email; no email text is kept for it. A flagged email Enveliq did not hold is added as a quiet card with only sender, subject, date and no body, and it is never summarised until the person asks.
+
 **Formatted email you write.** The web writing box makes simple HTML. The page's version is never trusted: before an email is built, the server rebuilds the HTML from a short list of allowed tags and settings (`backend/mail/outhtml.py`). Scripts, frames, forms, plug-ins, SVG, style sheets and every event handler are dropped. Links keep only web and email addresses. A picture can only be one added to that message: it is sent inside the email as its own part and referred to by a `cid:` name, so an email you write can never contain a picture fetched from the internet and never tells a third party it was opened. Pictures are checked as real PNG, JPEG, GIF or WebP files (type and file header), at most 12, 6 MB each and 12 MB together. Pictures are never kept in Drafts or waiting emails; the formatted words of those are kept encrypted in the vault, like the plain words, and are rebuilt the same way when sent. The page also strips pasted content to the same allowed list before it is placed in the box.
 
 ## AI security and privacy

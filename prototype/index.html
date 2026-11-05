@@ -179,6 +179,7 @@ html[data-theme="light"] .settings-scroll{--panel:#ffffff;--panel2:#edf0f6;--lin
 .settings-scroll .fold{margin-bottom:0}
 .compose-more{margin-top:10px}.compose-more>summary{cursor:pointer;color:var(--muted);font-size:14px;padding:4px 0}.compose .cm-opt{display:flex;flex-direction:row;align-items:center;gap:10px;margin:0;padding:7px 0;font-size:14px;font-weight:500;color:var(--text)}.compose .cm-opt input{width:18px;height:18px;flex:none;margin:0;padding:0}
 .hdr-text{margin:0;padding:14px 16px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text);max-height:70vh}
+.starmark{margin-left:6px;color:var(--c-ecd7a7);font-size:13px;vertical-align:1px}.action.star,.starbtn.on{color:var(--c-ecd7a7)}.qic.star.on{background:var(--c-261f12);border-color:var(--c-5a4720)}
 .action.unread,.qic.unread,.rl-rail .action.unread{color:var(--c-ff7f87);background:var(--c-2d1a20);border-color:var(--c-58343b)}
 .shortcut-fold>summary{cursor:pointer;font-weight:700;padding:8px 0}
 .fold{border:1px solid var(--line);background:var(--panel);border-radius:14px;margin-bottom:12px}.fold>summary{list-style:none;cursor:pointer;padding:13px 16px;display:flex;flex-direction:column;gap:2px}.fold>summary::-webkit-details-marker{display:none}.fold>summary strong{font-size:14px}.fold>summary small{color:var(--muted);font-size:12px}.fold{position:relative}.fold>summary{padding-right:70px}.fold>summary::after{content:"Show";position:absolute;right:16px;top:14px;color:var(--brand);font-size:12px;font-weight:700}.fold[open]>summary::after{content:"Hide"}.fold-body{padding:0 16px 14px}.fold-body .section-card{border:0;padding:0;background:none}
@@ -1686,6 +1687,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
     <button class="nav active" data-filter="all" title="My inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h5l2 3h4l2-3h5"/><path d="M5.5 5h13L21 13v6H3v-6z"/></svg><span class="nav-label">My inbox</span><span class="badge" id="allBadge"></span></button>
     <button class="nav" data-filter="held" id="heldNav" title="Held for summary" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="16" r="3.2"/><path d="M18 14.6v1.6l1 .6"/></svg><span class="nav-label">Held for summary</span><span class="badge" id="heldBadge"></span></button>
     <button class="nav" data-filter="action" title="Needs action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/></svg><span class="nav-label">Needs action</span><span class="badge" id="actionBadge"></span></button>
+    <button class="nav" data-filter="starred" title="Starred"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9 6.8 19.7l1-5.9L3.5 9.7l5.9-.8z"/></svg><span class="nav-label">Starred</span></button>
     <button class="nav" data-filter="tasks" title="Tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 6h10M10 12h10M10 18h10"/><path d="m3.5 6 1.3 1.3L7 5M3.5 12l1.3 1.3L7 11M3.5 18l1.3 1.3L7 17"/></svg><span class="nav-label">Tasks</span><span class="badge" id="taskBadge"></span></button>
     <button class="nav" data-filter="attachments" title="Attachments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5 12.4 19.6a5 5 0 0 1-7.1-7.1L13.6 4.2a3.4 3.4 0 0 1 4.8 4.8l-8.2 8.2a1.8 1.8 0 0 1-2.6-2.6L15 7.2"/></svg><span class="nav-label">Attachments</span><span class="badge" id="attachBadge"></span></button>
     <button class="nav" data-filter="snoozed" id="snoozeNav" title="Snoozed" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span class="nav-label">Snoozed</span><span class="badge" id="snoozeBadge"></span></button>
@@ -1774,6 +1776,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
       <option value="need">Needs you</option>
       <option value="high">High priority</option>
       <option value="attachments">Has attachment</option>
+      <option value="starred">Starred</option>
     </select>
     <button class="linkbtn expall" id="expandAll" type="button" hidden>Expand all</button>
     <div class="bulk" id="bulk">
@@ -2431,7 +2434,7 @@ const previewVault={initialized:false,unlocked:false,salt:null,verifier:null};
 const expanded=new Set();
 const convHidden=new Map(); // conversation key -> the open email when the person pressed Hide, so Hide works even while one of its emails is open
 // A refresh keeps you where you are: the page (in the address bar after #/) and which emails are open (this tab only).
-const PAGES=["found","all","action","tasks","attachments","archived","sent","drafts","shipping","subscriptions","trips","waiting","messages","junk","cleanup"];
+const PAGES=["found","all","action","starred","tasks","attachments","archived","sent","drafts","shipping","subscriptions","trips","waiting","messages","junk","cleanup"];
 let stateReady=false,navPopping=false;
 const rowKeyOf=id=>{const m=data.find(x=>String(x.id)===String(id));return m&&m.real?m.real.accountId+":"+m.real.messageId:null};
 function saveOpen(){
@@ -2813,7 +2816,9 @@ function visible(m){
   if(filter==="snoozed"){if(!isSnoozed(m))return false}else if(isSnoozed(m))return false;      // a snoozed email waits out of sight until its time
   if(filter==="held"){if(!isHeld(m))return false}else if(isHeld(m))return false;                  // email held for the daily summary waits in its own list
   if(query&&!(`${m.sender} ${m.address} ${m.subject} ${m.summary} ${m.category} ${(m.tags||[]).join(" ")}`.toLowerCase().includes(query.toLowerCase())))return false;
+  if(m.extra&&!m.found&&filter!=="starred"&&!(feat.all_mail&&allMail))return false;       // read mail only shows while "include read mail" is on (a starred email also shows in Starred)
   if(filter==="all"&&m.status!=="inbox")return false;
+  if(filter==="starred"&&!(m.status==="inbox"&&m.starred))return false;
   if(filter==="action"&&!(m.status==="inbox"&&m.action))return false;
   if(filter==="need"&&!(m.status==="inbox"&&(m.action||m.priority==="high")))return false;
   if(filter==="high"&&!(m.status==="inbox"&&m.priority==="high"))return false;
@@ -4442,13 +4447,13 @@ function render(){
   const asleep=mine.filter(isSnoozed);{const sn=$("snoozeNav"),sb=$("snoozeBadge");sn.hidden=!asleep.length&&filter!=="snoozed";sb.textContent=asleep.length;sb.hidden=!asleep.length}
   for(const [id,n] of [["allBadge",mine.filter(m=>m.status==="inbox"&&!isAside(m)).length],["actionBadge",mine.filter(m=>m.status==="inbox"&&!isAside(m)&&m.action).length],["attachBadge",mine.filter(m=>m.status==="inbox"&&!isAside(m)&&fileN(m)).length],["taskBadge",openTasks().length]]){const el=$(id);el.textContent=n;el.hidden=n===0}
   $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent"&&filter!=="drafts");
-  document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",filter==="all"));{const fb=$("filterBy");tagFilterOptions(fb);const pick=["action","need","high","attachments"].includes(filter)||[...fb.options].some(o=>o.value===filter)?filter:"";fb.value=pick;fb.classList.toggle("active",!!pick)}
+  document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",filter==="all"));{const fb=$("filterBy");tagFilterOptions(fb);const pick=["action","need","high","attachments","starred"].includes(filter)||[...fb.options].some(o=>o.value===filter)?filter:"";fb.value=pick;fb.classList.toggle("active",!!pick)}
   $("selectedCount").textContent=selected.size;$("bulk").classList.toggle("show",selected.size>1||selMode);$("previewBulk").classList.toggle("show",selected.size>1||selMode);$("previewSelCount").textContent=selected.size;
   $("userName").textContent=currentUser.name;$("userRole").textContent=currentUser.is_admin?"Administrator":"User";paintAvatar();previewSyncAccount();
   const inbox=mine.filter(m=>m.status==="inbox"&&!isAside(m)),needN=inbox.filter(m=>m.action||m.priority==="high").length;
   const hr=new Date().getHours(),first=String(currentUser.name||"").trim().split(/\s+/)[0];
   const greeting=(hr<12?"Good morning":hr<18?"Good afternoon":"Good evening")+(first?`, ${first}`:"");
-  const VIEW_NAMES={held:"Held for summary",action:"Needs action",need:"Needs action",high:"Important",attachments:"Attachments",tasks:"Tasks",shipping:"Shipping",waiting:"Waiting for reply",found:"Found emails",archived:"Archived",subscriptions:"Subscriptions",trips:"Trips",messages:"Messages",junk:"Junk Mail",cleanup:"Clean up",sent:"Sent",drafts:"Drafts"};
+  const VIEW_NAMES={held:"Held for summary",starred:"Starred",action:"Needs action",need:"Needs action",high:"Important",attachments:"Attachments",tasks:"Tasks",shipping:"Shipping",waiting:"Waiting for reply",found:"Found emails",archived:"Archived",subscriptions:"Subscriptions",trips:"Trips",messages:"Messages",junk:"Junk Mail",cleanup:"Clean up",sent:"Sent",drafts:"Drafts"};
   document.querySelector(".top-left h2").textContent=VIEW_NAMES[filter]||(filter==="all"&&calmOn()?"One thing at a time":filter==="all"?"My inbox":greeting);
   $("backInbox").hidden=filter==="all";
   $("previewCalmNotice").hidden=!(filter==="all"&&calmOn());
@@ -4487,14 +4492,14 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
     
     const flag=!m.kept&&(m.action||m.priority==="high")?`<span class="flag" title="Needs action" aria-label="Needs action"></span>`:"";
     const lead=m.kept?"<span></span>":`<input class="check" type="checkbox" data-select="${esc(m.id)}" aria-label="Select ${esc(m.subject)}" ${esc(selected.has(m.id)?"checked":"")}>`;
-    const quick=m.kept?`<span class="qpair"><button class="action trash qic" data-id="${esc(m.id)}" data-status="expired" aria-label="Remove from this list" title="Remove from this list">${ICON_BIN}</button></span>`:`<span class="qpair">${rdSwap(m,`<button class="action reviewed qic" data-id="${esc(m.id)}" data-status="reviewed" aria-label="Mark as read" title="Mark as read">${ICON_OK}</button>`)}<button class="action archive qic" data-id="${esc(m.id)}" data-status="archived" aria-label="Archive" title="Archive">${ICON_ARCH}</button><button class="action trash qic" data-id="${esc(m.id)}" data-status="trashed" aria-label="Bin" title="Bin">${ICON_BIN}</button></span>`;
+    const quick=m.kept?`<span class="qpair"><button class="action trash qic" data-id="${esc(m.id)}" data-status="expired" aria-label="Remove from this list" title="Remove from this list">${ICON_BIN}</button></span>`:`<span class="qpair">${canStar(m)?`<button class="action star qic${m.starred?" on":""}" data-star="${esc(m.id)}" aria-label="${m.starred?"Remove star":"Star"}" title="${m.starred?"Remove star":"Star"}">${m.starred?ICON_STAR_ON:ICON_STAR}</button>`:""}${rdSwap(m,`<button class="action reviewed qic" data-id="${esc(m.id)}" data-status="reviewed" aria-label="Mark as read" title="Mark as read">${ICON_OK}</button>`)}<button class="action archive qic" data-id="${esc(m.id)}" data-status="archived" aria-label="Archive" title="Archive">${ICON_ARCH}</button><button class="action trash qic" data-id="${esc(m.id)}" data-status="trashed" aria-label="Bin" title="Bin">${ICON_BIN}</button></span>`;
     const category=m.action?"Needs action":m.priority==="high"?"High priority":"Information";
     const attCount=fileN(m)?`${fileN(m)} ${fileN(m)===1?"file":"files"}`:"None";
     const replyBtn=(m.replyTo?`<button class="subtle" data-reply="${esc(m.id)}">${ICON_REPLY}Reply</button>`:"")+moreReplyBtns(m)+(m.kept?"":isSnoozed(m)?`<button class="subtle" data-unsnooze="${esc(m.id)}">${ICON_SNOOZE}Wake now</button>`:`<button class="subtle" data-snooze="${esc(m.id)}" aria-haspopup="menu">${ICON_SNOOZE}Snooze</button>`)+`<button class="subtle" data-task-add="${esc(m.id)}" aria-haspopup="dialog">Task</button>`+(tagsOn(m)?`<button class="subtle" data-tag-open="${esc(m.id)}" aria-haspopup="dialog">Tags</button>`:"");
     const OR=!m.kept&&origOn(m);
     const detail=m.kept
-      ?`<div class="qdetail"><div class="qfrom">${boxChip(m)}<span class="addr">&lt;${esc(m.address)}&gt;</span></div>${tagChips(m)}<div class="qsummary"><span class="qsummary-label">✦ AI summary</span><span class="qsummary-copy">${esc(m.summary)}</span></div>${taskHtml}${attachmentsBlock(m)}<div class="kept-note">Archived in your mailbox. Kept here until ${esc(m.keptUntil)}.${m.replied?` You replied ${esc(m.repliedAt||"just now")}.`:""}</div><div class="actions">${m.replyTo?`<button class="action reply" data-reply="${esc(m.id)}">↩ Reply</button>`:""}${moreReplyBtns(m,"action reply")}<button class="action reply" data-task-add="${esc(m.id)}" aria-haspopup="dialog">Task</button><button class="action trash" data-id="${esc(m.id)}" data-status="expired">Remove from this list</button>${navBtns()}${moreBtn(m)}</div></div>`
-      :`<div class="qdetail split${OR?" has-orig":""}"><div class="qmainc">${scamHtml(m.scam)}${tagChips(m)}${m.ungen&&m.real?genBlock(m):`<div class="qsummary"><span class="qsummary-head"><span class="qsummary-label">✦ AI summary</span><button type="button" class="linkbtn view-email summary-original-link" data-open-email="${esc(m.id)}">View original email</button></span><span class="qsummary-copy">${esc(m.summary)}</span></div>`}${attachmentsBlock(m)}${taskHtml}${OR?"":`<div class="qfill"></div>`}<div class="qfoot"><span class="qleft">${replyBtn}${unsubHtml(m.unsub,!!m.scam)}</span>${navBtns()}${moreBtn(m)}</div>${OR?origBox(m):""}</div>
+      ?`<div class="qdetail"><div class="qfrom">${boxChip(m)}<span class="addr">&lt;${esc(m.address)}&gt;</span></div>${tagChips(m)}<div class="qsummary"><span class="qsummary-label">✦ AI summary</span><span class="qsummary-copy">${esc(m.summary)}</span></div>${taskHtml}${attachmentsBlock(m)}<div class="kept-note">Archived in your mailbox. Kept here until ${esc(m.keptUntil)}.${m.replied?` You replied ${esc(m.repliedAt||"just now")}.`:""}</div><div class="actions">${m.replyTo?`<button class="action reply" data-reply="${esc(m.id)}">↩ Reply</button>`:""}${moreReplyBtns(m,"action reply")}<button class="action reply" data-task-add="${esc(m.id)}" aria-haspopup="dialog">Task</button><button class="action trash" data-id="${esc(m.id)}" data-status="expired">Remove from this list</button>${starBtn(m)}${navBtns()}${moreBtn(m)}</div></div>`
+      :`<div class="qdetail split${OR?" has-orig":""}"><div class="qmainc">${scamHtml(m.scam)}${tagChips(m)}${m.ungen&&m.real?genBlock(m):`<div class="qsummary"><span class="qsummary-head"><span class="qsummary-label">✦ AI summary</span><button type="button" class="linkbtn view-email summary-original-link" data-open-email="${esc(m.id)}">View original email</button></span><span class="qsummary-copy">${esc(m.summary)}</span></div>`}${attachmentsBlock(m)}${taskHtml}${OR?"":`<div class="qfill"></div>`}<div class="qfoot"><span class="qleft">${replyBtn}${unsubHtml(m.unsub,!!m.scam)}</span>${starBtn(m)}${navBtns()}${moreBtn(m)}</div>${OR?origBox(m):""}</div>
         <aside class="qside" aria-label="Email details"><div class="qkv"><span>From</span><span class="addr">${esc(m.address)}</span></div>${multiBox()&&m.real?`<div class="qkv"><span>Mailbox</span><span>${boxChip(m)}</span></div>`:""}<div class="qkv"><span>Received</span><span>${esc(m.time)}</span></div>${m.replied?`<div class="qkv replied-kv"><span>Replied</span><span>${esc(m.repliedAt||"Just now")}</span></div>`:""}<div class="qkv"><span>Category</span><span>${esc(category)}</span></div><div class="qkv"><span>Attachments</span><span>${esc(attCount)}</span></div>
         <div class="qbtns">${rdSwap(m,`<button class="action reviewed" data-id="${esc(m.id)}" data-status="reviewed">${ICON_OK}Mark as read</button>`)}<div class="two"><button class="action archive" data-id="${esc(m.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(m.id)}" data-status="trashed">${ICON_BIN}Bin</button></div></div></aside></div>`;
     if(mode==="rail"){          // the "Side rail" email style: buttons in a bar down the left (along the bottom on a phone), the task along the top
@@ -4508,14 +4513,14 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
       const copyInner=copyMailButtons(m).replace(/^<span[^>]*>|<\/span>$/g,"");
       const addr=ph?`<details class="mail-copy-menu rl-addr"><summary aria-label="Copy options for ${esc(m.address)}">${esc(m.address)}</summary><div class="mail-copy-options">${copyInner}</div></details>`:`<span class="rl-addr">${esc(m.address)}</span>`;
       const summary=m.ungen&&m.real?genBlock(m):`<div class="qsummary"><span class="qsummary-head"><span class="qsummary-label">✦ AI summary</span><button type="button" class="linkbtn view-email summary-original-link" data-open-email="${esc(m.id)}">View original email</button></span><span class="qsummary-copy">${esc(m.summary)}</span></div>`;
-      const head=`<header class="rl-head"><div class="rl-titlerow"><h3>${esc(m.subject)}</h3><div class="rl-tools">${navBtns()}${ph&&m.replyTo?`<button type="button" class="subtle rl-icon" data-reply="${id}" aria-label="Reply" title="Reply">${ICON_REPLY}</button>`:""}${moreBtn(m)}</div></div><div class="rl-sub">${addr}<span class="rl-dot"> · </span><span>${esc(m.sender)}</span><span class="rl-dot"> · </span><span>${esc(m.time)}</span></div>${tagChips(m)}${ph?"":`<div class="rl-copy">${copyMailButtons(m)}</div>`}</header>`;
+      const head=`<header class="rl-head"><div class="rl-titlerow"><h3>${esc(m.subject)}</h3><div class="rl-tools">${starBtn(m)}${navBtns()}${ph&&m.replyTo?`<button type="button" class="subtle rl-icon" data-reply="${id}" aria-label="Reply" title="Reply">${ICON_REPLY}</button>`:""}${moreBtn(m)}</div></div><div class="rl-sub">${addr}<span class="rl-dot"> · </span><span>${esc(m.sender)}</span><span class="rl-dot"> · </span><span>${esc(m.time)}</span></div>${tagChips(m)}${ph?"":`<div class="rl-copy">${copyMailButtons(m)}</div>`}</header>`;
       return `<div class="rl${ph?" rl-phone":""}">${ph?"":`<nav class="rl-rail" aria-label="Email actions">${tools}<span class="rl-gap"></span>${acts}</nav>`}<div class="rl-main">${taskHtml?`<div class="rl-task">${taskHtml}</div>`:""}<div class="rl-body">${head}${scamHtml(m.scam)}${summary}${attachmentsBlock(m)}${unsubHtml(m.unsub,!!m.scam)}${OR&&!ph?origBox(m):""}</div></div></div>`;
     }
     if(mode==="detail")return detail;
     const tog=mode==="pane"?`<button class="qtoggle" data-pick="${esc(m.id)}" aria-label="Show this email">Show email</button>`:view.rows==="open"?"":`<button class="qtoggle" data-expand="row-${esc(m.id)}" aria-expanded="${esc(open)}" aria-label="${open?"Hide":"Show"} the full email summary and actions">${open?"Hide":"Show"} details</button>`;
     return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(m._pending?"leaving to-"+m._pending:"")} ${esc(mode==="pane"&&lay()!=="screen"&&m.id===paneId?"current":"")} ${!isSeen(m)?"enveliq-new":""}"${leaveStyle(m)}><div class="qrow">
       ${lead}
-      <div class="sender">${flag}${esc(m.sender)}</div>
+      <div class="sender">${flag}${esc(m.sender)}${m.starred?`<span class="starmark" role="img" aria-label="Starred" title="Starred">★</span>`:""}</div>
       <div class="qmain">${boxChip(m)}${isImp(m)?'<span class="imp-pill" title="You marked this person as important">&#9733; Important</span>':""}${m.scam?'<span class="scam-pill" title="Something about this email looks odd. Open it to see what.">Be careful</span>':""}<span class="subject">${esc(m.subject)}</span>${tagChips(m,2)}</div>
       <div class="time">${fileN(m)?`<span class="clip" role="img" aria-label="${esc(clipWords(m))}" title="${esc(clipWords(m))}">${ICON_CLIP}</span>`:""}<span class="time-text">${esc(m.time)}</span>${m.replied?'<span class="replied">↩ Replied</span>':""}${isSnoozed(m)?`<span class="snz">Snoozed until ${esc(snoozeWhen(m.snoozeUntil))}</span>`:wokeBack(m)?'<span class="snz back">↺ Back from snooze</span>':""}</div>
       ${open?"<span></span>":quick}
@@ -4711,6 +4716,19 @@ function navBtns(){
   if(lay()==="list")return "";
   return `<button type="button" class="subtle rl-icon" data-nav-mail="-1" aria-label="Previous email" title="Previous email"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button><button type="button" class="subtle rl-icon" data-nav-mail="1" aria-label="Next email" title="Next email"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>`;
 }
+const ICON_STAR=`<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9 6.8 19.7l1-5.9L3.5 9.7l5.9-.8z"/></svg>`;
+const ICON_STAR_ON=ICON_STAR.replace('fill="none"','fill="currentColor"');
+const canStar=m=>!!(m.real&&realMail&&!m.kept&&!m.found&&m.status==="inbox"&&!m._pending);
+const starBtn=m=>canStar(m)?`<button type="button" class="subtle rl-icon starbtn${m.starred?" on":""}" data-star="${esc(m.id)}" aria-pressed="${m.starred?"true":"false"}" aria-label="${m.starred?"Remove star":"Star this email"}" title="${m.starred?"Remove star":"Star this email"}">${m.starred?ICON_STAR_ON:ICON_STAR}</button>`:"";
+// Star: the mailbox's own Flagged flag is changed first (so it shows as starred in Gmail or Proton too), then this page.
+async function toggleStar(m){
+  const on=!m.starred;
+  if(m.real){
+    try{await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/star`,{method:"POST",body:JSON.stringify({starred:on})})}
+    catch(er){toast(er.message||"Could not change the star. Try again.",6000,"error");return}
+  }
+  m.starred=on;render();toast(on?"Starred":"Star removed",1800,"success");
+}
 const moreBtn=m=>`<button type="button" class="subtle qmore" data-more="${esc(m.id)}" aria-haspopup="menu" aria-expanded="false" aria-label="More actions" title="More actions">${ICON_MORE}</button>`;
 // The rules menu on a task card (a vertical three-dot button): the usual mail rules for this sender, in one place.
 function ruleItemsFor(m,back){
@@ -4737,6 +4755,7 @@ function menuItemsFor(m,viewer){
     if(m.replyTo&&m.replyCc&&m.replyCc.length)item("data-reply-all","Reply all");
     if(m.real&&realMail)item("data-forward","Forward");
     if(!m.kept)item(isSnoozed(m)?"data-unsnooze":"data-snooze",isSnoozed(m)?"Wake now":"Snooze");
+    if(canStar(m))item("data-star",m.starred?"Remove star":"Star");
     if(!m.kept&&m.status==="inbox"&&!m._pending&&m.real&&!m.found)item(isRead(m)?"data-unread":"data-markread",isRead(m)?"Mark as unread":"Mark as read");
     sep();
   }
@@ -6476,6 +6495,8 @@ document.addEventListener("click",e=>{
   const srt=e.target.closest("[data-ship-recv-toggle]");if(srt){shipRecvOpen=!shipRecvOpen;renderShipPage();return}
   const wct=e.target.closest("[data-wait-closed-toggle]");if(wct){waitClosedOpen=!waitClosedOpen;renderWaitPage();return}
   const lt=e.target.closest("[data-later-toggle]");if(lt){if(splitNow()){goTasks();return}calmLaterOpen=!calmLaterOpen;render();return}
+  const stb=e.target.closest("[data-star]");
+  if(stb){e.stopPropagation();closeMoreMenu();const m=data.find(x=>x.id===+stb.dataset.star&&x.owner===currentUser.id);if(m&&canStar(m))toggleStar(m);return}
   const nv=e.target.closest("[data-nav-mail]");
   if(nv){navMail(+nv.dataset.navMail);return}
   const pk=e.target.closest("[data-pick]");if(pk){if(lay()==="screen"){captureMailPosition();readerOpen=true}const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;enMarkOpened(nid);render();return}
@@ -6930,7 +6951,7 @@ async function loadRealMail(me){
   document.body.classList.toggle("allmail",wantAll);
   for(const a of bridges){
     const identities=[a.email_address,...((a.settings&&a.settings.send_identities)||[])].filter((v,i,arr)=>v&&arr.indexOf(v)===i);
-    const msgs=(await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(a.id)}/messages`,{method:"GET",headers:{}})).map(r=>r.state==="reviewed"?{...r,from_all_mail:true}:r).filter(r=>wantAll||!r.from_all_mail||(r.found_until&&feat.find_mail));
+    const msgs=(await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(a.id)}/messages`,{method:"GET",headers:{}})).map(r=>r.state==="reviewed"?{...r,from_all_mail:true}:r).filter(r=>wantAll||!r.from_all_mail||r.starred||(r.found_until&&feat.find_mail));
     const isBridge=a.auth_method==="proton_bridge";
     accts.push({id:a.id,color:(a.settings&&a.settings.color)||"",providerId:isBridge?"proton":(a.settings&&a.settings.provider_id)||"imap",owner:me.id,provider:a.provider||"Email",method:isBridge?"Proton Bridge":"App password (IMAP)",name:a.display_name,address:a.email_address,identities,
       status:"Connected",visibility:"private",server:a.server,port:String(a.port),username:a.username,security:isBridge?"STARTTLS / pinned Bridge certificate":"Encrypted (TLS), certificate checked",
@@ -6941,7 +6962,7 @@ async function loadRealMail(me){
         subject:r.subject,time:realTime(r.received_at),date:r.received_at?new Date(r.received_at*1000).toLocaleString():"",received:r.received_at||0,
         summary:r.summary,priority:r.priority||"normal",category:r.category||"Email",action:!!r.action_required,status:r.state==="archived"?"archived":"inbox",kept:r.state==="archived",keptUntil:r.resolved_at?new Date((r.resolved_at+realPrefs.keep_days*86400)*1000).toLocaleDateString(undefined,{day:"numeric",month:"short"}):"",
         task:r.suggested_task&&r.suggested_task.title?{title:r.suggested_task.title,due:r.suggested_task.due||"",detail:r.suggested_task.detail||""}:null,attachments:(r.attachment_summaries||[]).map(a=>({name:a.filename,mime:a.mime_type||"",size:fmtBytes(a.size_bytes),bytes:a.size_bytes||0,pages:a.pages||0,index:a.index,state:a.state==="reading"?"working":a.state||"done",summary:a.summary||"",parts:(a.parts||[]).map(p=>({title:p.title||"",text:p.text})),note:a.note||"",reason:a.reason||"",real:true})),tags:Array.isArray(r.tags)?r.tags.map(String):[],hasFiles:!!r.has_attachments,fileCount:Number.isInteger(r.attachment_count)?r.attachment_count:null,
-        replyTo:ctx.reply_to||null,refs:[...(ctx.references||[]),ctx.message_id].filter(x=>typeof x==="string"&&x),replyCc:ctx.cc||[],replyAlsoTo:ctx.also_to||[],deliveredTo:ctx.delivered_to||null,viaAlias:ctx.via_alias||null,unsub:r.unsubscribe||null,scam:r.scam_warning||null,real:{accountId:a.id,messageId:r.id},extra:!!r.from_all_mail||r.state==="reviewed",found:r.found_until?r.found_until*1000:0,ungen:String(r.summary||"").startsWith("Not summarised yet"),snoozeUntil:r.snoozed_until?r.snoozed_until*1000:0,held:!!r.held_for_summary,replied:!!r.replied_at,repliedAt:r.replied_at?realTime(r.replied_at):""});
+        replyTo:ctx.reply_to||null,refs:[...(ctx.references||[]),ctx.message_id].filter(x=>typeof x==="string"&&x),replyCc:ctx.cc||[],replyAlsoTo:ctx.also_to||[],deliveredTo:ctx.delivered_to||null,viaAlias:ctx.via_alias||null,unsub:r.unsubscribe||null,scam:r.scam_warning||null,real:{accountId:a.id,messageId:r.id},starred:!!r.starred,extra:!!r.from_all_mail||r.state==="reviewed",found:r.found_until?r.found_until*1000:0,ungen:String(r.summary||"").startsWith("Not summarised yet"),snoozeUntil:r.snoozed_until?r.snoozed_until*1000:0,held:!!r.held_for_summary,replied:!!r.replied_at,repliedAt:r.replied_at?realTime(r.replied_at):""});
     }
   }
   items.sort((x,y)=>y.received-x.received);

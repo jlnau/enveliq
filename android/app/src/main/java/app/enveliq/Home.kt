@@ -59,6 +59,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.graphics.graphicsLayer
@@ -509,6 +510,25 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         }
     }
 
+    // Stars or un-stars an email at your mailbox (its own Flagged mark, so it shows in Gmail and Proton too).
+    fun toggleStar(m: Mail) {
+        val at = mails.indexOf(m)
+        val fresh = m.copy(starred = !m.starred)
+        if (at >= 0) mails[at] = fresh
+        if (opened == m) opened = fresh
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) { api.star(m, fresh.starred) }
+                snack.showSnackbar(if (fresh.starred) "Starred" else "Star removed")
+            } catch (e: Exception) {
+                val now = mails.indexOf(fresh)
+                if (now >= 0) mails[now] = m
+                if (opened == fresh) opened = m
+                snack.showSnackbar((e as? ApiException)?.message ?: "That did not work. Please try again.")
+            }
+        }
+    }
+
     // Puts the unread mark back on a read email; it shows as new again.
     fun markUnread(m: Mail) {
         val at = mails.indexOf(m)
@@ -732,7 +752,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         bottomBar = {
             if (current != null) {
                 ActionBar(
-                    read = current.quiet, onRead = { markRead(current) }, onUnread = { markUnread(current) },
+                    read = current.quiet, starred = current.starred, onStar = { toggleStar(current) }, onRead = { markRead(current) }, onUnread = { markUnread(current) },
                     onResolve = { outcome -> resolve(current, outcome) }, onSnooze = { askSnooze = true },
                     onTag = { openTags(current) }, onTask = { askTask = true },
                 )
@@ -822,10 +842,11 @@ internal fun Heading(title: String, subtitle: String, trailing: @Composable () -
 /** The inbox filters that are not the Inbox/Reviewed/Archived choice. Kept here so Back can clear them. */
 internal class InboxFilters {
     var onlyAction by mutableStateOf(false)
+    var onlyStarred by mutableStateOf(false)
     var tag by mutableStateOf<String?>(null)
     var box by mutableStateOf<String?>(null)
-    val active: Boolean get() = onlyAction || tag != null || box != null
-    fun clear() { onlyAction = false; tag = null; box = null }
+    val active: Boolean get() = onlyAction || onlyStarred || tag != null || box != null
+    fun clear() { onlyAction = false; onlyStarred = false; tag = null; box = null }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -840,6 +861,7 @@ private fun InboxTab(
     onOpen: (Mail) -> Unit, summary: SummaryInfo?, onOpenDigest: () -> Unit, onSwipe: (Mail, Outcome) -> Unit, onRefresh: () -> Unit,
 ) {
     var onlyAction by filters::onlyAction
+    var onlyStarred by filters::onlyStarred
     var tag by filters::tag
     var box by filters::box
     val q = query.trim()
@@ -849,7 +871,7 @@ private fun InboxTab(
     val tagCounts = mails.flatMap { it.tags }.groupBy { it.lowercase() }.values.map { it.first() to it.size }.sortedBy { it.first.lowercase() }
     val boxes = mails.map { it.mailbox }.filter { it.isNotBlank() }.distinct()
     val base = mails.filter {
-        (!onlyAction || it.needsAction) &&
+        (!onlyAction || it.needsAction) && (!onlyStarred || it.starred) &&
             (tag == null || it.tags.any { t -> t.equals(tag, ignoreCase = true) }) &&
             (box == null || it.mailbox == box)
     }
@@ -880,12 +902,13 @@ private fun InboxTab(
                         }
                     }
                 }
-                val narrowed = onlyAction || tag != null || box != null
+                val narrowed = onlyAction || onlyStarred || tag != null || box != null
                 Box {
                     IconButton(onClick = { otherMenu = true }) { TagIcon(if (narrowed) Blue else Muted) }
                     DropdownMenu(expanded = otherMenu, onDismissRequest = { otherMenu = false }, containerColor = Panel) {
-                        DropdownMenuItem(text = { Text((if (!narrowed) "✓  " else "") + "All", color = Ink) }, onClick = { otherMenu = false; onlyAction = false; tag = null; box = null })
+                        DropdownMenuItem(text = { Text((if (!narrowed) "✓  " else "") + "All", color = Ink) }, onClick = { otherMenu = false; onlyAction = false; onlyStarred = false; tag = null; box = null })
                         DropdownMenuItem(text = { Text((if (onlyAction) "✓  " else "") + "Needs action", color = Ink) }, onClick = { otherMenu = false; onlyAction = !onlyAction })
+                        DropdownMenuItem(text = { Text((if (onlyStarred) "✓  " else "") + "Starred", color = Ink) }, onClick = { otherMenu = false; onlyStarred = !onlyStarred })
                         if (boxes.size > 1) boxes.forEach { b ->
                             DropdownMenuItem(text = { Text((if (box == b) "✓  " else "") + b, color = Ink) }, onClick = { otherMenu = false; box = if (box == b) null else b })
                         }
@@ -1302,11 +1325,12 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
 
 /** Always visible at the bottom of an open email. Symbols only: bin, archive, tag, remind me later, add a task. */
 @Composable
-private fun ActionBar(read: Boolean, onRead: () -> Unit, onUnread: () -> Unit, onResolve: (Outcome) -> Unit, onSnooze: () -> Unit, onTag: () -> Unit, onTask: () -> Unit) {
+private fun ActionBar(read: Boolean, starred: Boolean, onStar: () -> Unit, onRead: () -> Unit, onUnread: () -> Unit, onResolve: (Outcome) -> Unit, onSnooze: () -> Unit, onTag: () -> Unit, onTask: () -> Unit) {
     Row(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 10.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         // One button: green "Mark as read", or red "Mark as unread" once the email is read.
         if (read) BarIcon("Mark as unread", Red, Color(0xFF3A1D22), onUnread) { Icon(Icons.Filled.Check, contentDescription = null, tint = Red) }
         else BarIcon("Mark as read", Green, Color(0xFF16382B), onRead) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
+        BarIcon(if (starred) "Remove star" else "Star", Color(0xFFE6C36A), PanelHigh, onStar) { Icon(Icons.Filled.Star, contentDescription = null, tint = if (starred) Color(0xFFE6C36A) else Color(0xFF6B6A63)) }
         BarIcon("Bin", Red, Color(0xFF3A1D22), { onResolve(Outcome.Binned) }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Red) }
         BarIcon("Archive", Color(0xFF8DB8FF), Color(0xFF173056), { onResolve(Outcome.Archived) }) { ArchiveIcon(Color(0xFF8DB8FF)) }
         BarIcon("Tags", Ink, PanelHigh, onTag) { TagIcon(Ink) }

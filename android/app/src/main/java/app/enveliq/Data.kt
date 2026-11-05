@@ -34,6 +34,8 @@ data class Mail(
     val ungenerated: Boolean = false,
     /** Held for the daily summary: not in the inbox, listed under Held for summary. */
     val held: Boolean = false,
+    /** Starred (the mailbox's own Flagged mark). */
+    val starred: Boolean = false,
 )
 
 /** A file that came with an email. [summary] is written by the AI and is labelled that way where it is shown. */

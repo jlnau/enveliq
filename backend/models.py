@@ -340,6 +340,8 @@ class RetainedMessageCreate(StrictModel):
     resolved_at: float | None = Field(default=None, ge=0, le=4_102_444_800)
     # Listed by the "All emails" switch (recent mail that is not in the unread list).
     from_all_mail: bool = False
+    # Starred: mirrors the mailbox's own Flagged flag (it shows as starred in Gmail and Proton too). Kept in step by every sync.
+    starred: bool = False
     # A search result the person kept (Find any email): shown in Found emails until this Unix time, or until Reviewed.
     found_until: float | None = Field(default=None, ge=0, le=4_102_444_800)
     # The mail service's own tags (labels, keywords) on this email: names only, kept in step with the mailbox (see backend/mail/tags.py).

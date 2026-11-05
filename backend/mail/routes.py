@@ -166,6 +166,10 @@ class ForwardBody(StrictModel):
 MAX_SNOOZE_DAYS = 366
 
 
+class StarBody(StrictModel):
+    starred: bool
+
+
 class SnoozeBody(StrictModel):
     until: float | None = Field(default=None, ge=0, le=4_102_444_800)
 
@@ -548,6 +552,26 @@ def build_mail_router(ctx: Any) -> APIRouter:
         vault.audit({"event": "email_forwarded", "actor_user_id": user, "account_id": account_id, "people": len(built[2]),
                      "message_id": message_id, "at": time.time()})
         return {"sent": True, "from": built[1]}
+
+    @router.post("/accounts/{account_id}/messages/{message_id}/star")
+    def star(body: StarBody, account_id: AccountId, message_id: MessageId, response: Response, session: Session = Depends(session_dep)):
+        """Star or unstar an email: the mailbox's own Flagged flag is changed first, so it shows as starred in Gmail or Proton too."""
+        response.headers["Cache-Control"] = "no-store"
+        user = session.principal.user_id
+        account = owned(account_id, session, "star this email")
+        stored = message_of(account_id, message_id)
+        if not snooze_limit.allow(f"star:{user}"):
+            raise HTTPException(status_code=429, detail="Too many changes. Wait a minute.")
+        if stored.get("found_until") or stored.get("state", "unread") != "unread" or not stored.get("source_locator"):
+            raise HTTPException(status_code=409, detail="Only emails that are still in your mailbox's inbox can be starred.")
+        try:
+            service.set_starred(account, stored, body.starred)
+        except BridgeError as err:
+            raise fail(err) from None
+        service.mark_starred(vault, account_id, message_id, body.starred)
+        vault.audit({"event": "message_starred" if body.starred else "message_unstarred", "actor_user_id": user, "account_id": account_id,
+                     "message_id": message_id, "at": time.time()})
+        return {"starred": body.starred}
 
     @router.post("/accounts/{account_id}/messages/{message_id}/snooze")
     def snooze(body: SnoozeBody, account_id: AccountId, message_id: MessageId, response: Response, session: Session = Depends(session_dep)):

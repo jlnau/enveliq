@@ -376,6 +376,10 @@ class MailService:
                         vault.update_message(account_id, stored["id"], data)
                     except (ValueError, KeyError):
                         continue
+                try:
+                    self._sync_stars(vault, account, s, validity)
+                except Exception:
+                    log.warning("stars could not be read after a sync", exc_info=True)           # stars never break a sync
                 if self.tags_sync:
                     try:
                         self.tags_sync(s, account, validity)
@@ -593,7 +597,7 @@ class MailService:
         for m in stored_all:
             if (account_id, m["id"]) in held:
                 continue
-            if m.get("from_all_mail") and not m.get("found_until") and m.get("state", "unread") == "unread" and (m.get("received_at") or 0) and m["received_at"] < cutoff:
+            if m.get("from_all_mail") and not m.get("found_until") and not m.get("starred") and m.get("state", "unread") == "unread" and (m.get("received_at") or 0) and m["received_at"] < cutoff:
                 vault.delete_message(account_id, m["id"])
                 removed += 1
         return {"added": added, "removed": removed}
@@ -1091,7 +1095,61 @@ class MailService:
         vault.update_message(account_id, message_id, RetainedMessageCreate(**data).model_dump(mode="python"))
         return {"snoozed_until": until}
 
+    @staticmethod
+    def mark_starred(vault: Any, account_id: str, message_id: str, on: bool) -> None:
+        stored = vault.get_message(account_id, message_id)
+        data = {k: v for k, v in stored.items() if k != "id"}
+        data["starred"] = on
+        vault.update_message(account_id, message_id, RetainedMessageCreate(**data).model_dump(mode="python"))
+
     # ---------- resolve ----------
+
+    def set_starred(self, account: dict[str, Any], message: dict[str, Any], on: bool) -> None:
+        """Star or unstar an inbox email in the real mailbox (its Flagged flag)."""
+        if account.get("auth_method") not in MAIL_METHODS or not message.get("source_locator"):
+            raise BridgeError("not_found", "Enveliq can no longer find this email in the mailbox.")
+        validity, uid = parse_locator(message["source_locator"])
+        with self.bridge.session(self.target(account)) as s:
+            if s.select_inbox(readonly=False) != validity:
+                raise BridgeError("not_found", "The mailbox was reset on the server. Sync again.")
+            s.set_flagged(uid, on)
+
+    STAR_LIMIT = 100
+
+    def _sync_stars(self, vault: Any, account: dict[str, Any], s: Any, validity: int) -> None:
+        """Called by the sync with its open session: bring each email's star in line with the mailbox's Flagged flag, and list starred emails
+        that Enveliq does not hold yet (already read, say) as quiet entries, so a star set in Gmail or Proton shows up here."""
+        flagged = s.flagged_uids()
+        account_id = account["id"]
+        stored = vault.list_messages(account_id)
+        known_uids: set[int] = set()
+        known_ids = {(m.get("reply_context") or {}).get("message_id") for m in stored} - {None, ""}
+        for m in stored:
+            parts = str(m.get("source_locator") or "").split("|")
+            if len(parts) != 3 or parts[0] != "INBOX" or not parts[1].isdigit() or not parts[2].isdigit() or int(parts[1]) != validity:
+                continue
+            uid = int(parts[2])
+            known_uids.add(uid)
+            if bool(m.get("starred")) != (uid in flagged):
+                try:
+                    data = {k: v for k, v in m.items() if k != "id"}
+                    data["starred"] = uid in flagged
+                    vault.update_message(account_id, m["id"], RetainedMessageCreate(**data).model_dump(mode="python"))
+                except (ValueError, KeyError):
+                    continue
+        fresh = sorted(flagged - known_uids, reverse=True)[: self.STAR_LIMIT]
+        identities = sending_identities(account)
+        for uid, raw in s.header_blocks(fresh):
+            info = summarise_headers(raw, identities)
+            if info is None or (info["message_id"] and info["message_id"] in known_ids) or marks.ours(vault, info["message_id"], info.get("reminder_mark")):
+                continue
+            body = RetainedMessageCreate(subject=info["subject"], sender_display=info["sender_display"], sender_address=info["sender_address"],
+                                         summary=PLACEHOLDER_SUMMARY, reply_context=info["reply_context"], unsubscribe=info["unsubscribe"],
+                                         scam_warning=info["scam_warning"], received_at=info["received_at"], source_locator=locator(validity, uid),
+                                         from_all_mail=True, has_attachments=info["has_attachments"], starred=True)
+            vault.create_message(account_id, body.model_dump(mode="python"))
+            if info["message_id"]:
+                known_ids.add(info["message_id"])
 
     def mark_unread(self, account: dict[str, Any], message: dict[str, Any]) -> None:
         """Put the unread mark back on a Reviewed email, in the real mailbox."""

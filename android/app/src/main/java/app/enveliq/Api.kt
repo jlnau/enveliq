@@ -236,7 +236,7 @@ class EnveliqApi(address: String) {
                     continue
                 }
                 val quiet = r.optBoolean("from_all_mail", false) || state == "reviewed"
-                if (quiet && (!includeRead || r.optDouble("found_until", 0.0) > 0)) continue      // quiet entries only when "Include read mail" is on
+                if (quiet && !r.optBoolean("starred", false) && (!includeRead || r.optDouble("found_until", 0.0) > 0)) continue      // quiet entries only when "Include read mail" is on
                 val snoozedUntil = r.optDouble("snoozed_until", 0.0)
                 if (view == "inbox" && snoozedUntil * 1000 > System.currentTimeMillis()) continue        // snoozed: it comes back when the time is up
                 val files = ArrayList<Attachment>()
@@ -293,6 +293,7 @@ class EnveliqApi(address: String) {
                         replyTo = r.optJSONObject("reply_context")?.str("reply_to") ?: "",
                         replyCc = r.optJSONObject("reply_context")?.optJSONArray("cc").strings(),
                         quiet = quiet,
+                        starred = r.optBoolean("starred", false),
                         held = held,
                         ungenerated = quiet && r.str("summary").startsWith("Not summarised yet"),
                         replyAlsoTo = r.optJSONObject("reply_context")?.optJSONArray("also_to").strings(),
@@ -494,6 +495,11 @@ class EnveliqApi(address: String) {
     fun importantAddresses(): Set<String> {
         val items = JSONObject(call("GET", "/api/v1/me/important")).optJSONArray("items") ?: return emptySet()
         return (0 until items.length()).map { items.getJSONObject(it).str("address").lowercase() }.filter { it.isNotBlank() }.toSet()
+    }
+
+    /** Stars or un-stars an email at the person's mailbox (its own Flagged mark). */
+    fun star(mail: Mail, on: Boolean) {
+        call("POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/star", JSONObject().put("starred", on))
     }
 
     /** Puts the unread mark back on an email that was marked as read. */

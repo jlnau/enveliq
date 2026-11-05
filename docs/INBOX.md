@@ -21,6 +21,15 @@ The action row under an email ends, at the far right on a computer and on a phon
 
 **Print email** and **Save as PDF** open the email on its own, as the sender made it when it has formatting, and then your browser's print window. Your email stays open while you print: Enveliq prints a hidden copy of it. Choose a printer to print, or choose **Save as PDF** as the destination to keep a PDF with the original formatting. Enveliq does not make or keep a PDF itself, and the email is still only fetched from your mailbox while you look at it.
 
+## Star an email
+
+A star marks an email you want to find again. It is the mailbox's own Flagged mark, so it shows in Gmail and Proton too, and a star you set there shows in Enveliq after the next sync.
+
+- **Where:** the star in the row of buttons under an open email, the three-dot menu (**Star** / **Remove star**), and a small star that appears when you point at an email row. Starred emails show a small star after the sender's name.
+- **Starred page:** the left menu has **Starred** (and Filter has a **Starred** choice). It lists every starred email, including ones already read: those appear quietly even when **Include read mail** is off.
+- **Limits:** only emails Enveliq can reach in your mailbox can be starred. Archived cards kept by Enveliq alone have no star button. Starred emails are not removed by the clean-up of old read mail.
+- **Android:** a star button in the bottom bar of an open email, and **Starred** in the filter menu.
+
 ## Mark unread
 
 A read email has a red **Mark as unread** button (an unread email has a green **Mark as read** button in the same place), and the same item in its three-dot menu. It puts the unread mark back on the email in your mailbox (Proton, IMAP and Microsoft alike) and the email is highlighted as new again. Mark as read and Mark as unread only change the read mark on your mail service (Proton, IMAP or Microsoft). Enveliq's own blue "new" shine is not touched by them: it goes when you open an email, as before. The email is not moved or hidden. Read email shows in the inbox only while **Include read mail** is on; otherwise it is simply no longer in your list of unread mail, as for any read email. Emails you archived are in your mailbox's Archive folder, so open them there if you want them unread again.

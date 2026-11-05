@@ -209,6 +209,8 @@ class FakeBridge:
                 inbox = bridge.in_folder(self.cur)
                 if sub == "SEARCH":
                     hits = [u for u in inbox if "UNSEEN" not in rest or "\\Seen" not in bridge.messages[u]["flags"]]
+                    if "FLAGGED" in rest:
+                        hits = [u for u in hits if "\\Flagged" in bridge.messages[u]["flags"]]
                     wanted = re.search(r'HEADER Message-ID "([^"]+)"', rest)
                     if wanted:
                         hits = [u for u in hits if f"Message-ID: {wanted.group(1)}".encode() in bridge.messages[u]["raw"]]
@@ -241,7 +243,7 @@ class FakeBridge:
                 elif sub == "STORE":
                     uid = int(rest.split(" ")[0])
                     if uid in bridge.messages:
-                        flag = "\\Seen" if "\\Seen" in rest else "\\Deleted"
+                        flag = "\\Seen" if "\\Seen" in rest else "\\Flagged" if "\\Flagged" in rest else "\\Deleted"
                         if "-FLAGS" in rest:
                             bridge.messages[uid]["flags"].discard(flag)
                         else:
