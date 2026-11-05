@@ -1403,20 +1403,34 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
     )
 }
 
-/** Always visible at the bottom of an open email. Symbols only: bin, archive, tag, remind me later, add a task. */
+/** Floats at the bottom of an open email: read or unread, bin, folder, tag and a three-dot button that holds the rest. */
 @Composable
 private fun ActionBar(read: Boolean, onMove: () -> Unit, starred: Boolean, onStar: () -> Unit, onRead: () -> Unit, onUnread: () -> Unit, onResolve: (Outcome) -> Unit, onSnooze: () -> Unit, onTag: () -> Unit, onTask: () -> Unit) {
-    Row(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 10.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        // One button: green "Mark as read", or red "Mark as unread" once the email is read.
-        if (read) BarIcon("Mark as unread", Red, Color(0xFF3A1D22), onUnread) { Icon(Icons.Filled.Check, contentDescription = null, tint = Red) }
-        else BarIcon("Mark as read", Green, Color(0xFF16382B), onRead) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
-        BarIcon(if (starred) "Remove star" else "Star", Color(0xFFE6C36A), PanelHigh, onStar) { Icon(Icons.Filled.Star, contentDescription = null, tint = if (starred) Color(0xFFE6C36A) else Color(0xFF6B6A63)) }
-        BarIcon("Move to a folder", Color(0xFF8DB8FF), Color(0xFF173056), onMove) { FolderIcon(Color(0xFF8DB8FF)) }
-        BarIcon("Bin", Red, Color(0xFF3A1D22), { onResolve(Outcome.Binned) }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Red) }
-        BarIcon("Archive", Color(0xFF8DB8FF), Color(0xFF173056), { onResolve(Outcome.Archived) }) { ArchiveIcon(Color(0xFF8DB8FF)) }
-        BarIcon("Tags", Ink, PanelHigh, onTag) { TagIcon(Ink) }
-        BarIcon("Remind me later", Ink, PanelHigh, onSnooze) { ClockIcon(Ink) }
-        BarIcon("Add a task", Ink, PanelHigh, onTask) { AddTaskIcon(Ink) }
+    var more by remember { mutableStateOf(false) }
+    Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
+        Surface(color = PanelHigh, shape = RoundedCornerShape(34.dp), shadowElevation = 8.dp, modifier = Modifier.fillMaxWidth().height(62.dp)) {
+            Row(Modifier.fillMaxSize().padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                // One button: green "Mark as read", or red "Mark as unread" once the email is read.
+                if (read) BarIcon("Mark as unread", Red, Color.Transparent, onUnread) { Icon(Icons.Filled.Check, contentDescription = null, tint = Red) }
+                else BarIcon("Mark as read", Green, Color.Transparent, onRead) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
+                BarIcon("Bin", Ink, Color.Transparent, { onResolve(Outcome.Binned) }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Ink) }
+                BarIcon("Move to a folder", Ink, Color.Transparent, onMove) { FolderIcon(Ink) }
+                BarIcon("Tags", Ink, Color.Transparent, onTag) { TagIcon(Ink) }
+                Box(Modifier.weight(1f)) {
+                    Box(
+                        Modifier.fillMaxWidth().height(52.dp).clip(CircleShape).clickable(onClickLabel = "More actions") { more = true }
+                            .semantics { contentDescription = "More actions" },
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.Filled.MoreVert, contentDescription = null, tint = Ink) }
+                    DropdownMenu(expanded = more, onDismissRequest = { more = false }, containerColor = PanelHigh) {
+                        DropdownMenuItem(text = { Text(if (starred) "Remove star" else "Star", color = Ink) }, onClick = { more = false; onStar() })
+                        DropdownMenuItem(text = { Text("Archive", color = Ink) }, onClick = { more = false; onResolve(Outcome.Archived) })
+                        DropdownMenuItem(text = { Text("Remind me later", color = Ink) }, onClick = { more = false; onSnooze() })
+                        DropdownMenuItem(text = { Text("Add a task", color = Ink) }, onClick = { more = false; onTask() })
+                    }
+                }
+            }
+        }
     }
 }
 
