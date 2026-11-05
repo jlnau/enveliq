@@ -121,6 +121,34 @@ data class MutedConversation(val id: String, val subject: String, val count: Int
 const val APP_DOWNLOAD_PAGE = "https://github.com/jlnau/enveliq/releases/latest"
 
 /** One email found by "Find any email". [token] opens it; the email itself stays at the mailbox. */
+/** What a search is: the words and every filter. Anything left empty is not used. Dates are YYYY-MM-DD. */
+data class FindSpec(
+    val query: String = "", val sender: String = "", val to: String = "", val since: String = "", val until: String = "",
+    val unread: Boolean = false, val starred: Boolean = false, val files: Boolean = false, val junk: Boolean = false,
+    val accountId: String = "", val folder: String = "",
+) {
+    /** How many filters are set (the words and the Junk switch do not count). */
+    val filterCount: Int get() = listOf(sender, to, since, until, accountId).count { it.isNotBlank() } + listOf(unread, starred, files).count { it }
+    val canSearch: Boolean get() = query.trim().length >= 2 || filterCount > 0
+    fun chips(mailboxes: List<Mailbox> = emptyList()): List<String> {
+        val parts = ArrayList<String>()
+        if (query.isNotBlank()) parts.add(query.trim())
+        if (sender.isNotBlank()) parts.add("from " + sender)
+        if (to.isNotBlank()) parts.add("to " + to)
+        if (since.isNotBlank()) parts.add("since " + since)
+        if (until.isNotBlank()) parts.add("until " + until)
+        if (files) parts.add("has files")
+        if (unread) parts.add("unread")
+        if (starred) parts.add("starred")
+        mailboxes.firstOrNull { it.id == accountId }?.let { parts.add(it.label) }
+        if (folder.isNotBlank()) parts.add(folder.substringAfterLast('/'))
+        if (junk) parts.add("with Spam and Bin")
+        return parts
+    }
+    fun describe(mailboxes: List<Mailbox> = emptyList()): String = chips(mailboxes).joinToString(" · ").ifBlank { "All mail" }
+}
+data class SavedSearch(val id: String, val name: String, val spec: FindSpec)
+data class FindHistory(val recent: List<FindSpec>, val saved: List<SavedSearch>)
 data class FoundRow(val token: String, val from: String, val subject: String, val date: String, val mailbox: String, val folder: String)
 
 /** How a search is going: [done] when every mailbox has answered. */

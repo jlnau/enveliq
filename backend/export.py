@@ -20,6 +20,7 @@ PLAIN_RECORDS = {
     "trips": "trips:",
     "junk_mail": "junk:",
     "muted_conversations": "muted:",
+    "recent_and_saved_searches": "searches:",
     "away_reply": "away:",
     "waiting_for_replies": "wait:",
     "writing_help": "writehelp:",

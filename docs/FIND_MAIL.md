@@ -13,6 +13,25 @@ It is on for everyone and needs no setup. An administrator can switch it off for
 5. Each result has a tick box on its left. Tick one, or hold **Shift** and tick another to tick everything between, or use **Select all** at the top of the results. Once two or more are ticked, a **Summarise Emails** button appears above the results: it keeps all the ticked emails in **Found emails** and adds them to the AI summary queue (up to 100 at a time), the same queue the Summarise button uses. **Clear** unticks them.
 6. **Summarise** on one result keeps that one email in **Found emails** and queues its summary with the other summaries. You are told it will be kept for 60 days, or until you press **Reviewed**.
 
+## Filters
+
+Under **Search inbox** there is a **Filters** button (on a phone, **Search with filters** appears under the search box once you type). It opens the same panel with a **Filters** fold:
+
+- **Words**, **From**, **To**: you can search with only a filter and no words at all.
+- **Since** and **Until** dates (both days count).
+- **Has files**, **Unread only**, **Starred only**.
+- **Where**: one mailbox, and then one of its folders (when you have more than one mailbox, or one mailbox chosen).
+
+They use the standard mail-service search words, so they behave the same on Gmail, Proton, iCloud, Fastmail and the rest, not only on Gmail. **Has files** is the one exception: Gmail searches for it directly; on other services Enveliq reads the headers of the newest 1,500 matches and keeps those that carry a file, and says so when there were more.
+
+With Fast search on, the words come from the word list and the filters are then asked of the mail service, so a search stays quick.
+
+## Recent and saved searches
+
+- **Recent:** the last 8 searches (words and filters) show under the filters before you search, with **Clear**.
+- **Save this search** names the search you just ran (up to 30 saved; saving the same name replaces it). Saved searches are listed in the left menu once you have one (and in the main menu on Android), under the filters, and each can be removed. Tapping one runs it.
+- They are kept in your own encrypted vault record, readable only by you. They hold your words and filters, never results or email.
+
 ## Found emails
 
 **Found emails** appears in the left menu once you have kept one, with a count. It lists them like any other list, and each one works the same way: open it, read the summary, reply, make a task.

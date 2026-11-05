@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenu
@@ -739,6 +740,8 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     val current = opened
     var moreStart by remember { mutableStateOf("home") }
     var moreKey by remember { mutableStateOf(0) }
+    var savedSearches by remember { mutableStateOf<List<SavedSearch>>(emptyList()) }
+    var moreFind by remember { mutableStateOf<FindSpec?>(null) }
     var bellUnread by remember { mutableStateOf(false) }
     LaunchedEffect(tab, moreKey) {
         bellUnread = try { withContext(Dispatchers.IO) { api.bell() }.any { it.unread } } catch (_: Exception) { false }
@@ -751,10 +754,13 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         } else { pickFor = null; scope.launch { snack.showSnackbar("Pick emails from one mailbox at a time to move them.") } }
     }
     var shipDue by remember { mutableStateOf(0) }
+    LaunchedEffect(drawer.isOpen, tab) {
+        if (drawer.isOpen) savedSearches = try { withContext(Dispatchers.IO) { api.findHistory().saved } } catch (_: Exception) { savedSearches }
+    }
     LaunchedEffect(tab, drawer.isOpen) {
         shipDue = try { withContext(Dispatchers.IO) { api.shipping() }.items.count { it.needsConfirm } } catch (_: Exception) { 0 }
     }
-    fun goTo(t: Tab) { moreStart = "home"; moreKey++; tab = t; opened = null; scope.launch { drawer.close() } }
+    fun goTo(t: Tab) { moreStart = "home"; moreFind = null; moreKey++; tab = t; opened = null; scope.launch { drawer.close() } }
     ModalNavigationDrawer(
         drawerState = drawer,
         gesturesEnabled = drawer.isOpen,      // opened with the menu button; swiping the list is for archiving, so the edge swipe is left off
@@ -779,6 +785,17 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                         badge = if (t == Tab.Shipping && shipDue > 0) ({ Text(shipDue.toString(), color = Ink) }) else null,
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                     )
+                }
+                if (savedSearches.isNotEmpty()) {
+                    Text("Saved searches", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(start = 28.dp, top = 12.dp, bottom = 4.dp))
+                    savedSearches.take(8).forEach { s ->
+                        NavigationDrawerItem(
+                            label = { Text(s.name, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }, selected = false,
+                            onClick = { moreStart = "find"; moreFind = s.spec; moreKey++; tab = Tab.More; opened = null; scope.launch { drawer.close() } },
+                            icon = { Icon(Icons.Filled.Search, contentDescription = null) }, colors = colors,
+                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                        )
+                    }
                 }
             }
         },
@@ -863,7 +880,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                     Tab.Tasks -> TasksScreen(api, mails, onOpen = { opened = it })
                     Tab.Shipping -> ShippingPage(api, onBack = { tab = Tab.Inbox })
                     Tab.Folders -> FoldersPage(api, mails.map { it.accountId }.distinct(), onBack = { tab = Tab.Inbox })
-                    Tab.More -> androidx.compose.runtime.key(moreKey) { MoreTab(api, moreStart) }
+                    Tab.More -> androidx.compose.runtime.key(moreKey) { MoreTab(api, moreStart, moreFind) }
                     Tab.Drafts -> DraftsTab(api, onOpen = { d -> composing = ComposeTarget(d.kind, mailForDraft(d), d) })
                     Tab.Settings -> SettingsTab(activity, prefs, server, api, onLeave)
                 }

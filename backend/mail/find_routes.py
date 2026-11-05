@@ -7,16 +7,18 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi import Path as PathParam
+from pydantic import Field
 
 from ..security import Session
 from ..models import StrictModel
 from . import features
 from .errors import BridgeError
-from .find import FindError, FindJobs, parse_query
+from .find import FindError, FindJobs, make_filters, parse_query
 from .find_index import FindIndex
 from .limits import SlidingWindowLimiter
 from .parse import render_original
 from .routes import AccountId, fail
+from .saved_searches import SearchBookError
 from .service import MAIL_METHODS, target_for
 
 JobId = Annotated[str, PathParam(pattern=r"^[A-Za-z0-9_-]{8,16}$")]
@@ -31,8 +33,21 @@ class FastBody(StrictModel):
 
 
 class StartBody(StrictModel):
-    query: str
+    query: str = Field(default="", max_length=400)
     include_junk: bool = False
+    sender: str = Field(default="", max_length=200)
+    to: str = Field(default="", max_length=200)
+    since: str = Field(default="", max_length=10)
+    until: str = Field(default="", max_length=10)
+    unread: bool = False
+    starred: bool = False
+    files: bool = False
+    account_id: str = Field(default="", max_length=64)
+    folder: str = Field(default="", max_length=300)
+
+
+class SaveBody(StartBody):
+    name: str = Field(max_length=100)
 
 
 class KeepManyBody(StrictModel):
@@ -55,6 +70,8 @@ def build_find_router(ctx: Any) -> APIRouter:
     jobs = FindJobs(service.bridge, lambda account_id: vault.get_account(account_id), service.target, fast=index)
     ctx.find_jobs = jobs
     fast_limit = SlidingWindowLimiter(max_events=30, window=60)
+    searches = ctx.searches
+    hist_limit = SlidingWindowLimiter(max_events=60, window=60)
 
     def need(session: Session) -> str:
         user = session.principal.user_id
@@ -119,14 +136,49 @@ def build_find_router(ctx: Any) -> APIRouter:
             raise HTTPException(status_code=429, detail="Too many searches. Wait a minute.")
         no_store(response)
         try:
-            terms = parse_query(body.query)
+            filters = make_filters(body.sender, body.to, body.since, body.until, body.unread, body.starred, body.files, body.folder if body.account_id else "")
+            terms = parse_query(body.query, optional=filters.any)
             accounts = [(a["id"], str(a.get("email_address") or a.get("name") or "Mailbox"))
                         for a in vault.list_accounts() if a.get("owner_user_id") == user and a.get("auth_method") in MAIL_METHODS]
-            job = jobs.start(user, accounts, terms, body.include_junk)
+            if body.account_id:
+                accounts = [x for x in accounts if x[0] == body.account_id]
+                if not accounts:
+                    raise HTTPException(status_code=404, detail="Not found.")
+            job = jobs.start(user, accounts, terms, body.include_junk, filters)
         except FindError as err:
             raise HTTPException(status_code=err.status, detail=err.message) from None
+        searches.remember(user, body.model_dump())
         vault.audit({"event": "mail_search_started", "actor_user_id": user, "at": time.time()})   # that a search happened; never the words
         return jobs.progress(job)
+
+    @router.get("/history")
+    def history(response: Response, session: Session = Depends(session_dep)):
+        user = need(session)
+        no_store(response)
+        return searches.listing(user)
+
+    @router.delete("/history/recent", status_code=204)
+    def clear_recent(session: Session = Depends(session_dep)):
+        searches.clear_recent(need(session))
+        return Response(status_code=204)
+
+    @router.post("/saved", status_code=201)
+    def save_search(body: SaveBody, response: Response, session: Session = Depends(session_dep)):
+        user = need(session)
+        if not hist_limit.allow(f"findsave:{user}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        no_store(response)
+        try:
+            return searches.add(user, body.name, body.model_dump())
+        except SearchBookError as err:
+            raise HTTPException(status_code=400, detail=str(err)) from None
+
+    @router.delete("/saved/{saved_id}", status_code=204)
+    def forget_search(saved_id: Annotated[str, PathParam(pattern=r"^s[0-9a-f]{16}$")], session: Session = Depends(session_dep)):
+        user = need(session)
+        if not searches.remove(user, saved_id):
+            raise HTTPException(status_code=404, detail="Not found.")
+        return Response(status_code=204)
 
     @router.get("/searches/{job_id}")
     def progress(job_id: JobId, response: Response, session: Session = Depends(session_dep)):

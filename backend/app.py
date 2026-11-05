@@ -30,6 +30,7 @@ from .mail.routes import build_mail_router
 from .mail.extra_routes import build_extra_router
 from .mail.invite_routes import build_invite_router
 from .mail.find_routes import build_find_router
+from .mail.saved_searches import SearchBook
 from .mail.folder_routes import build_folder_router
 from pydantic import Field
 from .mail.task_routes import build_task_router
@@ -546,6 +547,7 @@ def delete_user_data(user_id: str) -> None:
     scheduledbook.forget_user(user_id)
     rulebook.forget_user(user_id)
     mutebook.forget_user(user_id)
+    searchbook.forget_user(user_id)
     awaybook.forget_user(user_id)
     senderbook.forget_user(user_id)
     junkbook.forget_user(user_id)
@@ -671,6 +673,7 @@ rulebook = Rules(vault)
 taskbook.suppress = lambda user, m: bool(m.get("sender_address")) and not importantbook.contains(user, m["sender_address"]) \
     and rulebook.blocks_tasks(user, m["sender_address"], m.get("subject"))
 mutebook = MutedBook(vault)
+searchbook = SearchBook(vault)
 awaybook = AwayBook(vault, taskbook.timezone_of)
 tripbook = TripBook(vault, taskbook.timezone_of)
 messagebook = MessageBook(vault, users)
@@ -731,7 +734,7 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, senders=senderbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, scheduled=scheduledbook, rules=rulebook, muted=mutebook, away=awaybook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, style=stylebook, digest=digestbook, waiting=waitbook, summary=dailysummary, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, senders=senderbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, scheduled=scheduledbook, rules=rulebook, muted=mutebook, searches=searchbook, away=awaybook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, style=stylebook, digest=digestbook, waiting=waitbook, summary=dailysummary, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))

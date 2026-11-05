@@ -217,6 +217,17 @@ class FakeBridge:
                     for value in re.findall(r'FROM "((?:[^"\\]|\\.)*)"', rest):        # SEARCH FROM "address": the From line contains it
                         needle = value.lower().encode()
                         hits = [u for u in hits if any(line.lower().startswith(b"from:") and needle in line.lower() for line in bridge.messages[u]["raw"].split(b"\r\n\r\n", 1)[0].split(b"\r\n"))]
+                    for value in re.findall(r'TO "((?:[^"\\]|\\.)*)"', rest):
+                        needle = value.lower().encode()
+                        hits = [u for u in hits if any(line.lower().startswith(b"to:") and needle in line.lower() for line in bridge.messages[u]["raw"].split(b"\r\n"))]
+                    for kind, day in (re.findall(r"(SINCE|BEFORE) (\d{1,2}-[A-Za-z]{3}-\d{4})", rest) if getattr(bridge, "honour_dates", False) else []):
+                        from datetime import datetime as _dt
+                        from email.utils import parsedate_to_datetime as _pd
+                        limit = _dt.strptime(day, "%d-%b-%Y").date()
+                        def _day(u):
+                            m = re.search(rb"(?im)^Date: (.+)$", bridge.messages[u]["raw"])
+                            return _pd(m.group(1).decode()).date() if m else None
+                        hits = [u for u in hits if _day(u) is not None and ((_day(u) >= limit) if kind == "SINCE" else (_day(u) < limit))]
                     # Find any email: TEXT "words" (all must appear) and Gmail's X-GM-RAW "words"
                     for kind, value in re.findall(r'(TEXT|X-GM-RAW) "((?:[^"\\]|\\.)*)"', rest):
                         value = re.sub(r"\\(.)", r"\1", value).lower()

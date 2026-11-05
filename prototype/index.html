@@ -371,6 +371,12 @@ body.backend .savebar{display:none}
 .snz-date{padding:8px 10px 6px;border-top:1px solid var(--line);margin-top:4px;font-size:13px}.snz-date label{display:block;margin-bottom:6px;color:var(--muted);font-size:12px;font-weight:700}.snz-date span{display:flex;gap:8px}.snz-date input{flex:1;min-width:0;min-height:40px;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:6px 8px;font:inherit}.snz-date button{min-height:40px;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:0 14px;font:inherit;font-weight:600}
 .find-inline{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:14px;margin:0 0 14px;display:grid;gap:10px}.find-inline[hidden]{display:none}.fi-head{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.fi-head b{font-size:16px}.fi-btns{display:flex;gap:8px;flex-wrap:wrap}.fi-tools{display:flex;gap:12px;align-items:center;flex-wrap:wrap;min-height:40px;padding:6px 4px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.fi-tools .selall{margin:0}.fi-count{color:var(--muted);font-size:13px}.fi-tools .obtn.blue{margin-left:auto}.find-box{display:grid;gap:10px}.find-q{margin:0;color:var(--muted);font-size:13.5px;overflow-wrap:anywhere}.find-q b{color:var(--text)}
 .find-mbx{margin:0;padding:0;list-style:none;display:grid;gap:4px;font-size:13px;color:var(--muted)}.find-mbx li{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.find-mbx .ok{color:var(--text)}.find-mbx .bad{color:var(--warn,#b45309)}
+.find-filters{border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--panel2,var(--bg))}.find-filters>summary{cursor:pointer;font-weight:650;min-height:36px;display:flex;align-items:center}
+.ff-grid{display:grid;min-width:0;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:8px 0}.ff-f{display:grid;gap:4px;font-size:13px;color:var(--muted)}.ff-f input,.ff-f select{width:100%;min-width:0;min-height:40px;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);padding:0 10px;font:inherit}.ff-wide,.ff-checks{grid-column:1/-1}.ff-checks{display:flex;gap:16px;flex-wrap:wrap}
+.ff-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ff-name{min-height:40px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);padding:0 10px;font:inherit;flex:1;min-width:140px}
+.ff-hist{margin-top:12px;display:grid;gap:6px}.ff-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.ff-chip{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:18px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer;text-align:left;display:grid;gap:2px}.ff-chip span{color:var(--muted);font-size:12px}.ff-saved{display:flex;gap:8px;align-items:center}.ff-saved .ff-chip{flex:1;border-radius:10px}
+@media(max-width:760px){.ff-grid{grid-template-columns:1fr}}
+#savedNav .nav-sub{margin:10px 12px 2px;font-size:12px;color:var(--muted)}
 .find-total{margin:0;font-weight:650}.find-opt{display:flex;gap:8px;align-items:center;font-size:13.5px;min-height:36px}.find-opt input{width:18px;height:18px}
 .find-row{grid-template-columns:auto minmax(0,1fr);column-gap:12px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);display:grid;gap:4px}.find-row b{overflow-wrap:anywhere}.find-row .fr-from{font-size:13px;color:var(--muted);overflow-wrap:anywhere}.find-row .fr-meta{font-size:12px;color:var(--faint,var(--muted))}
 .find-row{column-gap:12px}.find-row>.check{grid-row:1/span 4;align-self:start;margin-top:3px}.find-row.picked{outline:1px solid var(--accent);background:var(--c-181c28)}.find-row>*:not(.check){grid-column:2}.find-row .fr-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}.find-row .fr-note{font-size:12.5px;color:var(--muted);margin:4px 0 0}
@@ -1712,6 +1718,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
     <button class="nav" data-filter="junk" id="junkNav" title="Junk Mail" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v5c0 4.6 3.2 8.4 8 10 4.8-1.6 8-5.4 8-10V6z"/><path d="m9.5 9.5 5 5m0-5-5 5"/></svg><span class="nav-label">Junk Mail</span><span class="badge" id="junkBadge" hidden></span></button>
     <button class="nav" data-filter="cleanup" id="cleanNav" title="Clean up" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h9M4 17h6"/><path d="m15 14 5 5m0-5-5 5"/></svg><span class="nav-label">Clean up</span></button>
     <button class="nav" data-filter="found" id="foundNav" title="Found emails" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><span>Found emails</span><span class="badge" id="foundBadge" hidden>0</span></button>
+    <div id="savedNav" role="group" aria-label="Saved searches" hidden><p class="nav-sub">Saved searches</p><div id="savedItems"></div></div>
     <div class="more-nav" id="moreNav">
       <button class="nav more-toggle" id="moreToggle" type="button" aria-expanded="false" aria-controls="moreItems" title="More mailbox views"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3zM3 9h18"/><path class="more-chev" d="m9.5 13.2 2.5 2.4 2.5-2.4"/></svg><span class="nav-label">More</span><span class="more-arrow" aria-hidden="true">⌄</span></button>
       <div class="more-items" id="moreItems"></div>
@@ -1757,7 +1764,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
   <div class="preview-calm-notice" id="previewCalmNotice" hidden><strong>Calm mode is on</strong><span>One thing at a time. Counts are hidden.</span><button type="button" id="previewCalmOff">Turn off</button></div>
   <div class="top-inner">
     <div class="top-left"><button class="back-inbox" id="backInbox" type="button" data-back-inbox hidden><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>Back to My inbox</button><div class="greet"><h2>Inbox</h2><span class="today" id="todayDate"></span></div><p id="inboxSubtitle">Private mail for the signed-in person</p></div><div class="enveliq-landscape" aria-hidden="true"><span class="landscape-sun"></span><span class="landscape-mountain landscape-back"></span><span class="landscape-mountain landscape-front"></span></div>
-    <div class="search-col"><div class="search"><input id="search" type="search" placeholder="Search inbox" aria-label="Search inbox"><button class="attachment-view sync-btn" id="syncBtn" type="button" hidden>Sync mail</button></div><div class="syncago" id="syncAgo" role="status" aria-live="off" hidden></div></div>
+    <div class="search-col"><div class="search"><input id="search" type="search" placeholder="Search inbox" aria-label="Search inbox"><button class="attachment-view sync-btn" id="findFiltersBtn" type="button" hidden title="Search with filters">Filters</button><button class="attachment-view sync-btn" id="syncBtn" type="button" hidden>Sync mail</button></div><div class="syncago" id="syncAgo" role="status" aria-live="off" hidden></div></div>
   </div>
 </header>
 
@@ -2881,7 +2888,7 @@ function searchMore(rows){
   const canFind=findOn();
   if(!groups.length&&(!canFind||findUi.open))return "";
   const total=groups.reduce((a,[,l])=>a+l.length,0);
-  const findBtn=canFind&&!findUi.open?`<button type="button" class="srch-all" data-find-open>Search all my mail</button>`:"";
+  const findBtn=canFind&&!findUi.open?`<button type="button" class="srch-all" data-find-open>Search all my mail</button><button type="button" class="srch-all" data-find-filters>Search with filters</button>`:"";
   return `<section class="srch-more" aria-label="Also found elsewhere"><b>${groups.length?`Also found elsewhere <span>${total}</span>`:"Not in your lists?"}</b>${groups.map(([name,list])=>`<div class="srch-group"><h4>${esc(name)}</h4>${list.slice(0,SEARCH_EACH).map(([attr,title,sub])=>`<button type="button" class="srch-hit" ${attr}><span class="srch-t">${esc(String(title).slice(0,120))}</span><span class="srch-w">${esc(String(sub).slice(0,120))}</span></button>`).join("")}${list.length>SEARCH_EACH?`<div class="srch-more-n">and ${list.length-SEARCH_EACH} more</div>`:""}</div>`).join("")}${findBtn}</section>`;
 }
 document.addEventListener("click",e=>{
@@ -3422,9 +3429,54 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&bellUi.open){e.stop
 // Nothing a search finds is stored. The page holds only the rows on screen; the server holds folder and message numbers for a few minutes.
 // Summarise keeps one email in Found emails (60 days, or until Reviewed). The search words are shown back to the person only.
 const findOn=()=>!!(realMail&&feat.find_mail);
-let findUi={open:false,viewing:false,id:"",query:"",junk:false,prog:null,rows:[],more:false,busy:false,err:"",notes:{},timer:null,last:null,sel:new Set(),anchor:null,shift:false,summing:false,sumNote:""};
+const FIND_NONE={sender:"",to:"",since:"",until:"",unread:false,starred:false,files:false,account_id:"",folder:""};
+let findHist={recent:[],saved:[]},findFolders={};
+let findUi={open:false,viewing:false,id:"",query:"",junk:false,f:{...FIND_NONE},fopen:false,naming:false,saveNote:"",prog:null,rows:[],more:false,busy:false,err:"",notes:{},timer:null,last:null,sel:new Set(),anchor:null,shift:false,summing:false,sumNote:""};
 const findN=n=>Number(n||0).toLocaleString();
 function findShortDate(t){if(!t)return "";const d=new Date(t*1000);return isNaN(d)?"":d.toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"})}
+const findSet=f=>[f.sender,f.to,f.since,f.until,f.unread,f.starred,f.files,f.account_id].filter(Boolean).length;
+const findWords=q=>String(q||"").trim().length>=2;
+const findCan=()=>findWords(findUi.query)||findSet(findUi.f)>0;
+const findSpec=()=>({query:findUi.query.trim(),include_junk:findUi.junk,...findUi.f,folder:findUi.f.account_id?findUi.f.folder:""});
+function findDay(v){const d=new Date(v+"T00:00:00");return isNaN(d)?v:d.toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"})}
+function findDescribe(s){      // a short plain line for a search: the words and what was set
+  const a=(accounts||[]).find(x=>x.id===s.account_id),parts=[];
+  if(s.query)parts.push(s.query);if(s.sender)parts.push("from "+s.sender);if(s.to)parts.push("to "+s.to);
+  if(s.since)parts.push("since "+findDay(s.since));if(s.until)parts.push("until "+findDay(s.until));
+  if(s.files)parts.push("has files");if(s.unread)parts.push("unread");if(s.starred)parts.push("starred");
+  if(a)parts.push(a.name);if(s.folder)parts.push(String(s.folder).split("/").pop());if(s.include_junk)parts.push("with Spam and Bin");
+  return parts.join(" · ")||"All mail";
+}
+const findSpecOf=e=>({query:e.query||"",include_junk:!!e.include_junk,sender:e.sender||"",to:e.to||"",since:e.since||"",until:e.until||"",unread:!!e.unread,starred:!!e.starred,files:!!e.files,account_id:e.account_id||"",folder:e.folder||""});
+async function findHistLoad(){
+  if(!findOn()){findHist={recent:[],saved:[]};savedPaint();return}
+  try{const r=await secureBackendRequest("/api/v1/find/history",{method:"GET",headers:{}});findHist={recent:r.recent||[],saved:r.saved||[]}}catch{}
+  savedPaint();if(findUi.open)findPaint();
+}
+function savedPaint(){
+  const box=$("savedNav"),list=$("savedItems");if(!box||!list)return;
+  const items=findOn()?findHist.saved:[];
+  box.hidden=!items.length;
+  list.replaceChildren(...items.slice(0,12).map(e=>{const b=document.createElement("button");b.type="button";b.className="nav";b.dataset.savedRun=e.id;b.title=findDescribe(findSpecOf(e));
+    b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><span></span>';b.querySelector("span").textContent=e.name;return b}));
+}
+function findFiltersHtml(){
+  const f=f2=>findUi.f[f2],n=findSet(findUi.f),accts=accounts||[];
+  const mb=accts.length>1?`<label class="ff-f">Where<select data-ff="account_id"><option value="">All my mailboxes</option>${accts.map(a=>`<option value="${esc(a.id)}"${a.id===f("account_id")?" selected":""}>${esc(a.name)}</option>`).join("")}</select></label>`:"";
+  const fl=f("account_id")?(findFolders[f("account_id")]||[]):null;
+  const folder=fl?`<label class="ff-f">Folder<select data-ff="folder"><option value="">Every folder</option>${fl.map(r=>`<option value="${esc(r.name)}"${r.name===f("folder")?" selected":""}>${esc(r.label)}</option>`).join("")}</select></label>`:"";
+  const hist=!findUi.prog?`${findHist.recent.length?`<div class="ff-hist"><b>Recent</b><div class="ff-chips">${findHist.recent.map((e,i)=>`<button type="button" class="ff-chip" data-find-recent="${i}">${esc(findDescribe(findSpecOf(e)))}</button>`).join("")}<button type="button" class="linkbtn" data-find-recent-clear>Clear</button></div></div>`:""}${findHist.saved.length?`<div class="ff-hist"><b>Saved searches</b>${findHist.saved.map(e=>`<div class="ff-saved"><button type="button" class="ff-chip" data-saved-run="${esc(e.id)}"><strong>${esc(e.name)}</strong><span>${esc(findDescribe(findSpecOf(e)))}</span></button><button type="button" class="linkbtn" data-saved-del="${esc(e.id)}" aria-label="Remove ${esc(e.name)}">Remove</button></div>`).join("")}</div>`:""}`:"";
+  return `<details class="find-filters" data-find-fold${findUi.fopen?" open":""}><summary>Filters${n?` · ${n} set`:""}</summary><div class="ff-grid">
+    <label class="ff-f ff-wide">Words<input type="search" data-ff="query" value="${esc(findUi.query)}" maxlength="200" autocomplete="off"></label>
+    <label class="ff-f">From<input type="text" data-ff="sender" value="${esc(f("sender"))}" maxlength="100" placeholder="a name or address" autocomplete="off"></label>
+    <label class="ff-f">To<input type="text" data-ff="to" value="${esc(f("to"))}" maxlength="100" placeholder="a name or address" autocomplete="off"></label>
+    <label class="ff-f">Since<input type="date" data-ff="since" value="${esc(f("since"))}"></label>
+    <label class="ff-f">Until<input type="date" data-ff="until" value="${esc(f("until"))}"></label>
+    ${mb}${folder}
+    <div class="ff-checks"><label class="find-opt"><input type="checkbox" data-ff="files"${f("files")?" checked":""}> Has files</label><label class="find-opt"><input type="checkbox" data-ff="unread"${f("unread")?" checked":""}> Unread only</label><label class="find-opt"><input type="checkbox" data-ff="starred"${f("starred")?" checked":""}> Starred only</label></div>
+    </div><div class="ff-actions"><button type="button" class="obtn blue" data-find-go${findCan()?"":" disabled"}>Search</button><button type="button" class="obtn" data-find-reset-filters>Clear filters</button>${findCan()?(findUi.naming?`<input type="text" class="ff-name" data-find-name maxlength="60" placeholder="Name this search" aria-label="Name this search" value=""><button type="button" class="obtn blue" data-find-save>Save</button><button type="button" class="obtn" data-find-save-no>Cancel</button>`:`<button type="button" class="obtn" data-find-save-ask>Save this search</button>`):""}</div>
+    ${findUi.saveNote?`<p class="fr-note" role="status">${esc(findUi.saveNote)}</p>`:""}${hist}</details>`;
+}
 // The search results sit in the main list area, above the ordinary search results, and look and behave like the inbox list:
 // a tick box on the left of each email (Shift ticks a run), Select all, and a Summarise Emails button once two or more are ticked.
 function findInlineHtml(){
@@ -3444,8 +3496,8 @@ function findInlineHtml(){
   const none=p&&p.done&&!findUi.rows.length&&!p.cancelled?`<p class="pop-note">Nothing matched. Try fewer or different words, or <label class="find-opt" style="display:inline-flex"><input type="checkbox" data-find-junk${findUi.junk?" checked":""}> include Spam and Bin</label>.</p>`:"";
   const n=findUi.sel.size,allOn=findUi.rows.length>0&&findUi.rows.every(r=>findUi.sel.has(r.token));
   const tools=findUi.rows.length?`<div class="fi-tools"><label class="selall"><input class="check" type="checkbox" id="findSelectAll" data-find-all${allOn?" checked":""} aria-label="Select all the emails listed"><span>Select all</span></label>${n?`<span class="fi-count" aria-live="polite">${n} selected</span><button class="linkbtn" type="button" data-find-clear>Clear</button>`:""}${n>=2?`<button class="obtn blue" type="button" data-find-sum${findUi.summing?" disabled":""}>${findUi.summing?"Adding…":"Summarise Emails"}</button>`:""}</div>`:"";
-  return `<section class="find-inline" id="findInline" aria-label="Search all my mail"><div class="fi-head"><b>Search all my mail</b><div class="fi-btns">${running?`<button class="obtn" type="button" data-find-cancel>Cancel search</button>`:`<button class="obtn blue" type="button" data-find-again>Search again</button>`}<button class="obtn" type="button" data-find-close>Close</button></div></div>
-    <div class="find-box"><p class="find-q">Searching every folder for <b>${esc(findUi.query)}</b></p>${mbx?`<ul class="find-mbx">${mbx}</ul>`:""}${total}${findUi.err?`<p class="sa-err" role="alert">${esc(findUi.err)}</p>`:""}
+  return `<section class="find-inline" id="findInline" aria-label="Search all my mail"><div class="fi-head"><b>Search all my mail</b><div class="fi-btns">${running?`<button class="obtn" type="button" data-find-cancel>Cancel search</button>`:`${p?`<button class="obtn blue" type="button" data-find-again>Search again</button>`:""}`}<button class="obtn" type="button" data-find-close>Close</button></div></div>
+    ${findFiltersHtml()}<div class="find-box">${p||findUi.err?`<p class="find-q">Searching for <b>${esc(findDescribe(findUi.shown||findSpec()))}</b></p>`:`<p class="find-q">Set a filter or type some words, then press Search.</p>`}${mbx?`<ul class="find-mbx">${mbx}</ul>`:""}${total}${findUi.err?`<p class="sa-err" role="alert">${esc(findUi.err)}</p>`:""}
       <label class="find-opt"><input type="checkbox" data-find-junk${findUi.junk?" checked":""}> Include Spam and Bin</label></div>
     ${findUi.sumNote?`<p class="fr-note" role="status">${esc(findUi.sumNote)}</p>`:""}${tools}${rows}${none}${findUi.more?`<button class="obtn" type="button" data-find-more${findUi.busy?" disabled":""}>Show more</button>`:""}</section>`;
 }
@@ -3453,16 +3505,17 @@ function findPaint(){
   const box=$("findInline");
   if(!findUi.open){if(box)box.remove();return}
   if(!box){render();return}                      // the list is drawn again and takes the panel with it
+  const act0=document.activeElement;if(act0&&act0.closest&&act0.closest(".find-filters")&&/INPUT|SELECT/.test(act0.tagName)&&act0.type!=="checkbox")return;      // never take the field someone is typing in
   const act=document.activeElement,inBox=!!(act&&box.contains(act)),key=inBox?(act.dataset.findSel?`[data-find-sel="${CSS.escape(act.dataset.findSel)}"]`:act.hasAttribute("data-find-all")?"[data-find-all]":act.hasAttribute("data-find-junk")?"[data-find-junk]":""):"";
   const tmp=document.createElement("div");tmp.innerHTML=findInlineHtml();
   const fresh=tmp.firstElementChild;if(fresh){box.replaceWith(fresh);if(key){const f=fresh.querySelector(key);if(f)f.focus()}}
 }
 async function findStart(){
   if(findUi.timer){clearTimeout(findUi.timer);findUi.timer=null}
-  findUi.err="";findUi.rows=[];findUi.more=false;findUi.notes={};findUi.prog=null;findPaint();
+  findUi.err="";findUi.rows=[];findUi.more=false;findUi.notes={};findUi.prog=null;findUi.naming=false;findUi.saveNote="";findUi.shown=findSpec();findPaint();
   try{
-    const r=await secureBackendRequest("/api/v1/find/searches",{method:"POST",body:JSON.stringify({query:findUi.query,include_junk:findUi.junk})});
-    findUi.id=r.id;findUi.prog=r;await findPoll();
+    const r=await secureBackendRequest("/api/v1/find/searches",{method:"POST",body:JSON.stringify(findUi.shown)});
+    findUi.id=r.id;findUi.prog=r;findHistLoad();await findPoll();
   }catch(er){findUi.err=er.message||"The search could not start. Try again.";findPaint()}
 }
 async function findPoll(){
@@ -3504,29 +3557,57 @@ function findAuto(){
     if(!(await fastCheck()))return;
     if(String(query||"").trim()!==q||autoDismissed===q)return;
     if(findUi.open)findReset();
-    findUi={...findUi,open:true,viewing:false,query:q,sel:new Set(),anchor:null,sumNote:"",summing:false};
+    findUi={...findUi,open:true,manual:false,viewing:false,query:q,sel:new Set(),anchor:null,sumNote:"",summing:false};
     render();findStart();
   },450);
 }
 function findOpen(){
   const q=String(query||"").trim();
   if(q.length<2)return;
-  findUi={...findUi,open:true,viewing:false,query:q,sel:new Set(),anchor:null,sumNote:"",summing:false};
+  findUi={...findUi,open:true,manual:false,viewing:false,query:q,sel:new Set(),anchor:null,sumNote:"",summing:false};
   findStart();
   setTimeout(()=>{const b=$("findInline");if(b&&b.scrollIntoView)b.scrollIntoView({block:"nearest"})},0);
+}
+function findShowFilters(){         // the Filters button: the panel opens with its filters out, ready to fill in, without any words typed
+  if(!findOn())return;
+  const q=String(query||"").trim();
+  findUi={...findUi,open:true,manual:true,fopen:true,viewing:false,query:findUi.query||(q.length>=2?q:""),sel:new Set(),anchor:null,sumNote:""};
+  findHistLoad();render();
+  setTimeout(()=>{const b=$("findInline");if(b){if(b.scrollIntoView)b.scrollIntoView({block:"nearest"});const i=b.querySelector('[data-ff="sender"]');if(i)i.focus()}},0);
+}
+async function findLoadFolders(aid){
+  if(!aid||findFolders[aid])return;
+  try{findFolders[aid]=(await secureBackendRequest(foldersUrl(aid),{method:"GET",headers:{}})).folders||[]}catch{findFolders[aid]=[]}
+  findPaint();
+}
+function findRunSpec(spec){          // run a recent or saved search
+  if(findUi.id&&findUi.prog&&!findUi.prog.done){secureBackendRequest(`/api/v1/find/searches/${encodeURIComponent(findUi.id)}`,{method:"DELETE",headers:{}}).catch(()=>{})}
+  const sp=findSpecOf(spec),{query:q,include_junk:j,...f}=sp;
+  findUi={...findUi,open:true,manual:true,viewing:false,query:q,junk:j,f:{...FIND_NONE,...f},fopen:false,sel:new Set(),anchor:null,sumNote:"",summing:false};
+  if(f.account_id)findLoadFolders(f.account_id);
+  if(filter!=="all"){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"))}
+  render();findStart();
+  setTimeout(()=>{const b=$("findInline");if(b&&b.scrollIntoView)b.scrollIntoView({block:"nearest"})},0);
+}
+async function findSaveNow(){
+  const el=document.querySelector("[data-find-name]"),name=(el&&el.value||"").trim();
+  if(!name){findUi.saveNote="Give this search a name.";findPaint();return}
+  try{await secureBackendRequest("/api/v1/find/saved",{method:"POST",body:JSON.stringify({name,...findSpec()})});findUi.naming=false;findUi.saveNote="Saved. It is in the left menu.";await findHistLoad()}
+  catch(er){findUi.saveNote=er.message||"That did not save. Try again."}
+  findPaint();
 }
 function findReset(){          // the search words were cleared: forget the search without redrawing
   if(!findUi.open)return;
   if(findUi.id&&findUi.prog&&!findUi.prog.done){secureBackendRequest(`/api/v1/find/searches/${encodeURIComponent(findUi.id)}`,{method:"DELETE",headers:{}}).catch(()=>{})}
   if(findUi.timer){clearTimeout(findUi.timer);findUi.timer=null}
-  findUi={...findUi,open:false,viewing:false,id:"",prog:null,rows:[],more:false,err:"",notes:{},sel:new Set(),anchor:null,sumNote:"",summing:false};
+  findUi={...findUi,open:false,manual:false,viewing:false,id:"",prog:null,rows:[],more:false,err:"",notes:{},sel:new Set(),anchor:null,sumNote:"",summing:false};
 }
 function findClose(){
   if(!findUi.open)return;
   autoDismissed=findUi.query;
   if(findUi.id&&findUi.prog&&!findUi.prog.done){secureBackendRequest(`/api/v1/find/searches/${encodeURIComponent(findUi.id)}`,{method:"DELETE",headers:{}}).catch(()=>{})}
   if(findUi.timer){clearTimeout(findUi.timer);findUi.timer=null}
-  findUi={...findUi,open:false,viewing:false,id:"",prog:null,rows:[],more:false,err:"",notes:{},sel:new Set(),anchor:null,sumNote:"",summing:false};
+  findUi={...findUi,open:false,manual:false,viewing:false,id:"",prog:null,rows:[],more:false,err:"",notes:{},sel:new Set(),anchor:null,sumNote:"",summing:false};
   render();
 }
 async function findView(token){
@@ -3578,9 +3659,19 @@ document.addEventListener("click",e=>{
   const t=e.target.closest?e.target:null;if(!t)return;
   if(t.matches("[data-find-sel]"))findUi.shift=e.shiftKey;
   if(t.closest("[data-find-open]")){findOpen();return}
+  if(t.closest("#findFiltersBtn,[data-find-filters]")){findShowFilters();return}
+  if(t.closest("[data-find-go]")){if(findCan())findStart();return}
+  if(t.closest("[data-find-reset-filters]")){findUi.f={...FIND_NONE};findUi.query="";findUi.naming=false;findUi.saveNote="";findPaint();return}
+  if(t.closest("[data-find-save-ask]")){findUi.naming=true;findUi.saveNote="";findPaint();setTimeout(()=>{const i=document.querySelector("[data-find-name]");if(i)i.focus()},0);return}
+  if(t.closest("[data-find-save-no]")){findUi.naming=false;findPaint();return}
+  if(t.closest("[data-find-save]")){findSaveNow();return}
+  const rc=t.closest("[data-find-recent]");if(rc){const e=findHist.recent[+rc.dataset.findRecent];if(e)findRunSpec(e);return}
+  if(t.closest("[data-find-recent-clear]")){secureBackendRequest("/api/v1/find/history/recent",{method:"DELETE",headers:{}}).then(()=>{findHist.recent=[];findPaint()}).catch(()=>{});return}
+  const sr=t.closest("[data-saved-run]");if(sr){const e=findHist.saved.find(x=>x.id===sr.dataset.savedRun);if(e){document.body.classList.remove("menu-open");findRunSpec(e)}return}
+  const sd=t.closest("[data-saved-del]");if(sd){secureBackendRequest(`/api/v1/find/saved/${encodeURIComponent(sd.dataset.savedDel)}`,{method:"DELETE",headers:{}}).then(()=>findHistLoad()).catch(()=>{});return}
   if(t.closest("[data-find-close]")){findClose();return}
   if(t.closest("[data-find-cancel]")){if(findUi.id)secureBackendRequest(`/api/v1/find/searches/${encodeURIComponent(findUi.id)}`,{method:"DELETE",headers:{}}).then(findPoll).catch(()=>{});return}
-  if(t.closest("[data-find-again]")){const q=String(query||"").trim();if(q.length>=2)findUi.query=q;findUi.sel=new Set();findUi.anchor=null;findUi.sumNote="";findStart();return}
+  if(t.closest("[data-find-again]")){const q=String(query||"").trim();if(q.length>=2&&!findSet(findUi.f))findUi.query=q;findUi.sel=new Set();findUi.anchor=null;findUi.sumNote="";findStart();return}
   if(t.closest("[data-find-more]")){findMore();return}
   if(t.closest("[data-find-clear]")){findUi.sel=new Set();findUi.anchor=null;findPaint();return}
   if(t.closest("[data-find-sum]")){findKeepMany();return}
@@ -3589,6 +3680,11 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("change",e=>{
   const t=e.target;if(!t||!t.matches)return;
+  if(t.matches("[data-ff]")){
+    const k=t.dataset.ff,v=t.type==="checkbox"?t.checked:t.value;
+    if(k==="query")findUi.query=v;else{findUi.f[k]=v;if(k==="account_id"){findUi.f.folder="";findLoadFolders(v)}}
+    const go=document.querySelector("#findInline [data-find-go]");if(go)go.disabled=!findCan();
+    if(k==="account_id")findPaint();return}
   if(t.matches("[data-find-junk]")){findUi.junk=t.checked;findStart();return}
   if(t.matches("[data-find-all]")){
     if(t.checked)findUi.rows.forEach(r=>findUi.sel.add(r.token));else findUi.sel=new Set();
@@ -3600,6 +3696,9 @@ document.addEventListener("change",e=>{
     else on?findUi.sel.add(tok):findUi.sel.delete(tok);
     findUi.anchor=tok;findUi.shift=false;findPaint()}
 });
+document.addEventListener("toggle",e=>{if(e.target&&e.target.matches&&e.target.matches("[data-find-fold]"))findUi.fopen=e.target.open},true);
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target&&e.target.matches&&e.target.matches("#findInline [data-ff]:not([type=checkbox]):not(select)")){e.preventDefault();e.target.dispatchEvent(new Event("change",{bubbles:true}));if(findCan())findStart();return}
+  if(e.key==="Enter"&&e.target&&e.target.matches&&e.target.matches("[data-find-name]")){e.preventDefault();findSaveNow();return}},true);
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&findUi.open&&e.target&&e.target.closest&&e.target.closest("#findInline")){e.stopPropagation();findClose()}},true);
 
 // ---------- News feeds (RSS and Atom) ----------
@@ -4434,7 +4533,7 @@ document.addEventListener("click",e=>{const btn=e.target.closest("[data-en-actio
 let lastScrolledTo="";
 function render(){
   window.__hidePeek&&window.__hidePeek();
-  if(findUi.open&&String(query||"").trim().length<2)findReset();
+  if(findUi.open&&!findUi.manual&&String(query||"").trim().length<2)findReset();
   if(selMode&&(!selected.size||!isPhone()))selMode=false;
   document.body.classList.toggle("selecting",selMode);
   document.body.classList.toggle("in-sent",filter==="sent"||filter==="folders");document.body.classList.toggle("in-folders",filter==="folders");document.body.classList.toggle("in-found",filter==="found");document.body.classList.toggle("on-draft",filter==="drafts");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="folders"?"Folders":filter==="sent"?"Sent":filter==="drafts"?"Drafts":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="junk"?"Junk Mail":filter==="cleanup"?"Clean up":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
@@ -4455,6 +4554,7 @@ function render(){
   bellPaint();
   hydrateInvites();
   {const ns=waitOn()?(waitData.notes||[]).filter(n=>n.state==="waiting"):[];const wb=$("waitBadge");if(wb){wb.textContent=ns.length;wb.hidden=!ns.length;wb.classList.toggle("hot",ns.some(n=>n.due))}}
+  {const fb2=$("findFiltersBtn");if(fb2)fb2.hidden=!findOn()}
   {const fl=findOn()?userMessages().filter(m=>m.found):[];const fn=$("foundNav"),fb=$("foundBadge");if(fn){fn.hidden=!fl.length&&filter!=="found";fb.textContent=fl.length;fb.hidden=!fl.length}}
   {const hd=mine.filter(isHeld),hn=$("heldNav"),hb=$("heldBadge");if(hn){hn.hidden=!hd.length&&filter!=="held";hb.textContent=hd.length;hb.hidden=!hd.length}}
   const asleep=mine.filter(isSnoozed);{const sn=$("snoozeNav"),sb=$("snoozeBadge");sn.hidden=!asleep.length&&filter!=="snoozed";sb.textContent=asleep.length;sb.hidden=!asleep.length}
@@ -7001,7 +7101,7 @@ async function loadRealMail(me){
   }else{mailboxSel="";box.hidden=true}
   {const here=new Set(data.map(m=>m.id));for(const k of [...selected])if(!here.has(k))selected.delete(k)}   // a reload (for example when an AI summary finishes) keeps the emails you ticked
   realMail=true;applyFeatures();
-  await fetchTasks();await fetchShipping();await fetchRss();await fetchBell();await fetchSubs();await fetchTrips();await fetchJunk();await fetchWaiting();await fetchImportant();await fetchSaved();      // after realMail is set, so the first load already has the person's tasks
+  await fetchTasks();await fetchShipping();await fetchRss();findHistLoad();await fetchBell();await fetchSubs();await fetchTrips();await fetchJunk();await fetchWaiting();await fetchImportant();await fetchSaved();      // after realMail is set, so the first load already has the person's tasks
   document.body.classList.add("real-mail");
   $("syncBtn").hidden=false;
   return true;

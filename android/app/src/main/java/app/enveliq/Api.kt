@@ -880,8 +880,40 @@ class EnveliqApi(address: String) {
         }
     }
 
-    fun findStart(query: String, includeJunk: Boolean): FindProgress =
-        findProgressOf(JSONObject(call("POST", "/api/v1/find/searches", JSONObject().put("query", query).put("include_junk", includeJunk))))
+    private fun specJson(s: FindSpec): JSONObject = JSONObject().put("query", s.query.trim()).put("include_junk", s.junk)
+        .put("sender", s.sender.trim()).put("to", s.to.trim()).put("since", s.since).put("until", s.until)
+        .put("unread", s.unread).put("starred", s.starred).put("files", s.files)
+        .put("account_id", s.accountId).put("folder", if (s.accountId.isBlank()) "" else s.folder)
+
+    private fun specOf(o: JSONObject): FindSpec = FindSpec(
+        o.str("query"), o.str("sender"), o.str("to"), o.str("since"), o.str("until"),
+        o.optBoolean("unread", false), o.optBoolean("starred", false), o.optBoolean("files", false), o.optBoolean("include_junk", false),
+        o.str("account_id"), o.str("folder"),
+    )
+
+    fun findStart(spec: FindSpec): FindProgress =
+        findProgressOf(JSONObject(call("POST", "/api/v1/find/searches", specJson(spec))))
+
+    /** Recent searches (newest first) and the ones this person saved. */
+    fun findHistory(): FindHistory {
+        val r = JSONObject(call("GET", "/api/v1/find/history"))
+        return FindHistory(
+            r.list("recent").map { specOf(it) },
+            r.list("saved").map { SavedSearch(it.str("id"), it.str("name"), specOf(it)) },
+        )
+    }
+
+    fun findSave(name: String, spec: FindSpec) {
+        call("POST", "/api/v1/find/saved", specJson(spec).put("name", name.trim()))
+    }
+
+    fun findForget(id: String) {
+        call("DELETE", "/api/v1/find/saved/" + enc(id))
+    }
+
+    fun findClearRecent() {
+        call("DELETE", "/api/v1/find/history/recent")
+    }
 
     fun findProgress(id: String): FindProgress = findProgressOf(JSONObject(call("GET", "/api/v1/find/searches/" + enc(id))))
 
