@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Left and Right arrow keys move between emails.** While you are reading an email, Left opens the previous one and Right the next, the same as the two arrows. They do nothing while anything else is open (writing window, pop-up, menu, headers, original email, attachment, a text box). They follow the keyboard shortcuts switch and are listed on the Keyboard shortcuts page. Touches `prototype/index.html`, `web/static/auth.js`, `docs/INBOX.md`.
+
 **Reviewed is gone; Mark as read is the ordinary one.** The Reviewed list and its keep-for-days setting are removed. **Mark as read** (a green button; red **Mark as unread** once the email is read, also in the three-dot menu) just sets your mailbox's read mark and removes the "new" highlight. The email is not moved or hidden: it stays in place while **Include read mail** is on, and is out of the unread list when that is off, like any read email. There is no Undo (Mark as unread is the way back). Emails in the old Reviewed list become ordinary read mail on the next sync. Archive and Bin are unchanged, and swiping on a phone is only Archive or Bin. The Android app follows (green tick and red tick in the bottom bar, no Reviewed in the filter or the swipe choices). Mail rules now say "Mark it as read". Touches `prototype/index.html`, `web/static/auth.js`, `backend/app.py`, `backend/mail/service.py`, `backend/mail/rules.py`, the Android app, `docs/INBOX.md`, `docs/UNDO.md`, `docs/ANDROID.md`.
 
 **Next and previous email.** Two small arrows beside the three-dot button open the previous or next email in the list (reading-pane layouts and on a phone). Touches `prototype/index.html`.

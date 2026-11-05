@@ -1842,7 +1842,7 @@ async function shortcutsPage(me) {
   const kbd = (name, k) => h("div", { class: "li" }, h("span", { class: "lb" }, h("b", { text: name })), h("kbd", { text: k }));
   show(...chrome(me, "general", listPage("Keyboard shortcuts", () => [
     { label: "", items: [swRow("Enable keyboard shortcuts", on, c => { try { localStorage.setItem(key, c ? "1" : "0"); } catch (e) { /* not saved */ } toast("Saved"); }, { id: "keyboardShortcutsOn", help: "Optional desktop keyboard commands for moving around your inbox. They never run while you type in a field or use a dialog." })] },
-    { label: "Shortcuts", items: [kbd("Search", "/"), kbd("Next message", "J"), kbd("Previous message", "K"), kbd("Reply to the selected message", "R"), kbd("Archive the selected message", "E"), kbd("Open this page", "?")] },
+    { label: "Shortcuts", items: [kbd("Search", "/"), kbd("Next message", "J"), kbd("Previous message", "K"), kbd("Previous email while reading one", "Left arrow"), kbd("Next email while reading one", "Right arrow"), kbd("Reply to the selected message", "R"), kbd("Archive the selected message", "E"), kbd("Open this page", "?")] },
   ], { help: "Keyboard commands only work while you are in the inbox on a computer. The question mark in the top bar still opens the help website." })));
 }
 // ---------- reminders (everyone) ----------

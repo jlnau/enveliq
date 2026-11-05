@@ -4724,6 +4724,12 @@ function ruleItemsFor(m,back){
   out.push(`<button type="button" role="menuitem" data-open-rules="1">See all my mail rules</button>`);
   return out.join("");
 }
+// Previous (-1) and next (+1) email in the list. The arrow buttons and the Left / Right arrow keys both use this.
+function navMail(d){
+  const ci=lastRowIds.indexOf(paneId),nid=ci>=0?lastRowIds[ci+d]:undefined;
+  if(nid===undefined){toast(d<0?"This is the first email in the list":"This is the last email in the list");return}
+  deckDir=d<0?"prev":"next";paneId=nid;enMarkOpened(nid);render();
+}
 function menuItemsFor(m,viewer){
   const id=esc(m.id),out=[],item=(attr,label)=>out.push(`<button type="button" role="menuitem" ${attr}="${id}">${label}</button>`),sep=()=>{if(out.length&&out[out.length-1]!=="<hr>")out.push("<hr>")};
   if(!viewer){
@@ -6471,9 +6477,7 @@ document.addEventListener("click",e=>{
   const wct=e.target.closest("[data-wait-closed-toggle]");if(wct){waitClosedOpen=!waitClosedOpen;renderWaitPage();return}
   const lt=e.target.closest("[data-later-toggle]");if(lt){if(splitNow()){goTasks();return}calmLaterOpen=!calmLaterOpen;render();return}
   const nv=e.target.closest("[data-nav-mail]");
-  if(nv){const ci=lastRowIds.indexOf(paneId),d=+nv.dataset.navMail,nid=ci>=0?lastRowIds[ci+d]:undefined;
-    if(nid===undefined){toast(d<0?"This is the first email in the list":"This is the last email in the list");return}
-    deckDir=d<0?"prev":"next";paneId=nid;enMarkOpened(nid);render();return}
+  if(nv){navMail(+nv.dataset.navMail);return}
   const pk=e.target.closest("[data-pick]");if(pk){if(lay()==="screen"){captureMailPosition();readerOpen=true}const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;enMarkOpened(nid);render();return}
   const copyButton=e.target.closest("[data-copy-mail]");
   if(copyButton){
@@ -8832,6 +8836,21 @@ document.addEventListener("keydown",e=>{
     e.preventDefault();
     queueAction([m],"archived");
   }
+});
+// Left / Right arrow: previous / next email, but only while you are plainly reading an email (its arrow buttons are on screen) and nothing
+// else is open: no writing window, pop-up, menu, attachment, original email, headers or typing box.
+document.addEventListener("keydown",e=>{
+  if(e.defaultPrevented||e.isComposing||e.repeat||e.ctrlKey||e.altKey||e.metaKey||e.shiftKey||!keyboardShortcutsEnabled())return;
+  if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight")return;
+  const t=e.target;
+  if(t&&t.closest&&t.closest('input,textarea,select,[contenteditable],[role="textbox"],[role="combobox"],[role="listbox"],[role="menu"],[role="dialog"]:not(.reader),[aria-modal="true"]:not(.reader)'))return;
+  if(!document.querySelector("[data-nav-mail]"))return;
+  if(document.querySelector(".settings.open,.compose.open,.attachment-modal.open,.oauth-modal.open,.picbox:not([hidden]),.scrim.show"))return;
+  if(document.body.classList.contains("vopen")||document.body.classList.contains("menu-open"))return;
+  const busy=[...document.querySelectorAll('[role="dialog"],[aria-modal="true"],[role="menu"],dialog[open]')].some(el=>!el.closest(".reader")&&!el.classList.contains("reader")&&el.getClientRects().length>0);
+  if(busy||!["all","action","archived"].includes(filter))return;
+  const sel=window.getSelection&&window.getSelection();if(sel&&!sel.isCollapsed)return;
+  e.preventDefault();navMail(e.key==="ArrowLeft"?-1:1);
 });
 applyView();
 render();

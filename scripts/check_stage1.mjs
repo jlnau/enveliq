@@ -143,6 +143,26 @@ for (const width of [1200, 390]) {
   await shot(page, "stage1-arrows-" + width);
   await page.locator("[data-nav-mail='-1']").first().click(); await page.waitForTimeout(500);
   check(tag + "Previous goes back to the one before", (await title()) === first);
+  await page.keyboard.press("ArrowRight"); await page.waitForTimeout(500);
+  check(tag + "the Right arrow key opens the next email", (await title()) === second);
+  await page.keyboard.press("ArrowLeft"); await page.waitForTimeout(500);
+  check(tag + "the Left arrow key goes back to the previous one", (await title()) === first);
+  if (width > 800) {
+    await page.locator(".qmore").first().click();
+    await page.locator("#moreMenu [data-headers]").click();
+    await page.waitForSelector("#hdrBox:not([hidden])");
+    await page.keyboard.press("ArrowRight"); await page.waitForTimeout(400);
+    check(tag + "the arrow keys do nothing while the headers window is open", (await title()) === first);
+    await page.keyboard.press("Escape");
+    await page.locator("#search").focus();
+    await page.keyboard.press("ArrowRight"); await page.waitForTimeout(400);
+    check(tag + "the arrow keys do nothing while typing in the search box", (await title()) === first);
+    await page.locator("#search").blur();
+    await page.locator(".qmore").first().click();
+    await page.keyboard.press("ArrowRight"); await page.waitForTimeout(400);
+    check(tag + "the arrow keys do nothing while the three-dot menu is open", (await title()) === first);
+    await page.keyboard.press("Escape");
+  }
   check(tag + "no page errors", errors.length === 0);
   await context.close();
 }
