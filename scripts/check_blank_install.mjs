@@ -66,9 +66,9 @@ for (const [name, vp] of [["desktop", { width: 1200, height: 900 }], ["phone", {
   check(name + ": the empty list invites them to set up a mailbox", /Your mail will appear here once a mailbox is connected/.test(text));
   check(name + ": it does not claim they are all caught up", !/All caught up/.test(text));
   const seen = [];
-  for (const f of ["tasks", "attachments", "reviewed", "archived", "action"]) {
+  for (const f of ["tasks", "attachments", "archived", "action"]) {
     if (name === "phone") await page.click("#menuBtn");
-    if ((f === "reviewed" || f === "archived") && !(await page.locator("#moreToggle").getAttribute("aria-expanded")).includes("true")) await page.click("#moreToggle");
+    if (f === "archived" && !(await page.locator("#moreToggle").getAttribute("aria-expanded")).includes("true")) await page.click("#moreToggle");
     await page.locator(`.side-nav .nav[data-filter="${f}"]`).click(); await page.waitForTimeout(250);
     seen.push(await page.evaluate(() => document.body.innerText));
   }

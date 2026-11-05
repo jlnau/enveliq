@@ -76,7 +76,7 @@ for (const width of [1200, 390]) {
   const { page, errors, context } = await open(width);
   await pick(page, "Electricity bill");
   await page.waitForTimeout(400);
-  check(tag + "there is no Reviewed button on the email", (await page.locator("article.mail.open .action.reviewed, article.mail.open [data-status=reviewed]").count()) === 0);
+  check(tag + "the open email has a green Mark as read button, and Archive and Bin", (await page.locator(".action.reviewed:not(.qic)").count()) >= 1 && (await page.locator(".action.archive").count()) >= 1 && (await page.locator(".action.trash").count()) >= 1);
   check(tag + "Archive and Bin are still there", (await page.locator(".action.archive").count()) >= 1 && (await page.locator(".action.trash").count()) >= 1);
   await page.locator(".qmore").first().click();
   const items = await menuTexts(page);
@@ -93,8 +93,8 @@ for (const width of [1200, 390]) {
   check(tag + "Download this email saves a .eml file", dl.suggestedFilename() === "email.eml");
   await page.locator(".qmore").first().click();
   await page.locator("#moreMenu [data-markread]").click();
-  await page.waitForSelector("#undoBar:not([hidden])");
-  check(tag + "Mark as read shows an Undo bar that says Marked as read", /Marked as read/.test(await page.locator("#undoBar").innerText()));
+  await page.waitForFunction(() => /Marked as read/.test(document.getElementById("toast").innerText));
+  check(tag + "Mark as read says so, asks the server, and has no Undo bar (Mark as unread is the way back)", (await page.locator("#undoBar .undobar").count()) === 0 && posts.some((x) => x[0] === "resolve"));
   check(tag + "no sideways scroll", await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   check(tag + "no page errors", errors.length === 0);
   await context.close();
@@ -102,14 +102,19 @@ for (const width of [1200, 390]) {
 
 {
   const { page, errors, context } = await open(1200);
-  await page.evaluate(() => document.querySelector('.nav[data-filter="reviewed"]').click());
-  await page.waitForSelector("article.mail");
+  features.all_mail = true;
+  await page.evaluate(() => { localStorage.setItem("enveliq-all-mail", "1"); });
+  await page.reload(); await page.waitForSelector("article.mail");                      // read mail shown
   await pick(page, "Already read one");
   await page.locator(".qmore").first().click();
   const items = await menuTexts(page);
-  check("a read email offers Mark as unread (and not Mark as read)", items.includes("Mark as unread") && !items.includes("Mark as read"));
+  check("a read email offers Mark as unread (and not Mark as read) in the menu", items.includes("Mark as unread") && !items.includes("Mark as read"));
+  await page.keyboard.press("Escape");
+  const red = page.locator(".action.unread:not(.qic)").first();
+  check("a read email has a red Mark as unread button", (await red.count()) === 1 && /Mark as unread/.test(await red.innerText()) && (await red.evaluate((e) => getComputedStyle(e).color)) === "rgb(255, 127, 135)");
+  await page.locator(".qmore").first().click();
   await page.locator("#moreMenu [data-unread]").click();
-  await page.waitForFunction(() => /back in your inbox/.test(document.getElementById("toast").innerText));
+  await page.waitForFunction(() => /Marked as unread/.test(document.getElementById("toast").innerText));
   check("Mark as unread asks the server", posts.some((x) => x[0] === "unread" && x[1] === "m-r"));
   check("no page errors", errors.length === 0);
   await context.close();
@@ -159,7 +164,7 @@ for (const width of [1200, 390]) {
   await page.waitForTimeout(1200);
   const rep = sent.find((x) => x[0] === "reply");
   check("the reply is sent with important: true", rep && rep[1].important === true);
-  check("Mark as read when I send puts the email on the Undo bar", /Marked as read/.test(await page.locator("#undoBar").innerText().catch(() => "")));
+  check("Mark as read when I send marks the email read", posts.some((x) => x[0] === "resolve"));
   await page.locator("article.mail", { hasText: "Trip plans" }).first().locator(".qmain, .qtoggle").first().click().catch(() => {});
   await page.locator(".qfoot [data-reply]").first().click();
   await page.waitForSelector("#compose.open");

@@ -488,21 +488,42 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         }
     }
 
-    // Puts the unread mark back on an email you had marked Reviewed. It goes back to the inbox.
+    // Mark as read: the mailbox gets its read flag. The email stays where it is when "Include read mail" is on (just without the
+    // "new" look); otherwise it leaves the unread list like any read email. There is no Undo: Mark as unread is the way back.
+    fun markRead(m: Mail) {
+        val at = mails.indexOf(m)
+        val read = m.copy(quiet = true)
+        if (at >= 0) { if (includeRead) mails[at] = read else mails.removeAt(at) }
+        if (opened == m) opened = if (includeRead) read else null
+        Notifier.clearOne(activity, m.id)
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) { api.resolve(m, Outcome.Reviewed) }
+                snack.showSnackbar("Marked as read")
+            } catch (e: Exception) {
+                val now = mails.indexOf(read)
+                if (now >= 0) mails[now] = m else mails.add(at.coerceIn(0, mails.size), m)
+                if (opened == read) opened = m
+                snack.showSnackbar((e as? ApiException)?.message ?: "That did not work. Please try again.")
+            }
+        }
+    }
+
+    // Puts the unread mark back on a read email; it shows as new again.
     fun markUnread(m: Mail) {
-        val at = mails.indexOf(m).coerceAtLeast(0)
-        mails.remove(m)
-        opened = null
+        val at = mails.indexOf(m)
+        val fresh = m.copy(quiet = false)
+        if (at >= 0) mails[at] = fresh
+        if (opened == m) opened = fresh
         scope.launch {
             try {
                 withContext(Dispatchers.IO) { api.markUnread(m) }
-                snack.showSnackbar("Marked unread. It is back in your inbox.")
-            } catch (e: ApiException) {
-                mails.add(at.coerceAtMost(mails.size), m)
-                snack.showSnackbar(e.message ?: "That did not work.")
+                snack.showSnackbar("Marked as unread")
             } catch (e: Exception) {
-                mails.add(at.coerceAtMost(mails.size), m)
-                snack.showSnackbar("That did not work. Please try again.")
+                val now = mails.indexOf(fresh)
+                if (now >= 0) mails[now] = m
+                if (opened == fresh) opened = m
+                snack.showSnackbar((e as? ApiException)?.message ?: "That did not work. Please try again.")
             }
         }
     }
@@ -711,12 +732,13 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         bottomBar = {
             if (current != null) {
                 ActionBar(
+                    read = current.quiet, onRead = { markRead(current) }, onUnread = { markUnread(current) },
                     onResolve = { outcome -> resolve(current, outcome) }, onSnooze = { askSnooze = true },
                     onTag = { openTags(current) }, onTask = { askTask = true },
                 )
             } else if (selected.isNotEmpty() && tab == Tab.Inbox) {
                 val chosen = mails.filter { selected.contains(keyOf(it)) }
-                SelectionBar(chosen.size, onResolve = { outcome -> resolveAll(chosen, outcome) }, onCancel = { selected.clear() })
+                SelectionBar(chosen.size, onResolve = { outcome -> if (outcome == Outcome.Reviewed) { chosen.forEach { markRead(it) }; selected.clear() } else resolveAll(chosen, outcome) }, onCancel = { selected.clear() })
             }
         },
     ) { inner ->
@@ -765,12 +787,12 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 Row(Modifier.fillMaxSize()) {
                     Box(Modifier.weight(0.42f).fillMaxHeight()) { inboxPane() }
                     Box(Modifier.weight(0.58f).fillMaxHeight()) {
-                        if (current != null) DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion, onMute = { mute(current) }, onMarkRead = if (current.state == "inbox") ({ resolve(current, Outcome.Reviewed) }) else null, onUnread = if (current.state == "reviewed") ({ markUnread(current) }) else null)
+                        if (current != null) DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion, onMute = { mute(current) }, onMarkRead = if (current.state == "inbox" && !current.quiet) ({ markRead(current) }) else null, onUnread = if (current.quiet) ({ markUnread(current) }) else null)
                         else Text("Choose an email to read it here.", color = Muted, fontSize = 16.sp, modifier = Modifier.padding(32.dp))
                     }
                 }
             } else if (current != null) {
-                DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion, onMute = { mute(current) }, onMarkRead = if (current.state == "inbox") ({ resolve(current, Outcome.Reviewed) }) else null, onUnread = if (current.state == "reviewed") ({ markUnread(current) }) else null)
+                DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion, onMute = { mute(current) }, onMarkRead = if (current.state == "inbox" && !current.quiet) ({ markRead(current) }) else null, onUnread = if (current.quiet) ({ markUnread(current) }) else null)
             } else {
                 when (tab) {
                     Tab.Inbox -> inboxPane()
@@ -847,13 +869,13 @@ private fun InboxTab(
                 TextButton(onClick = { selected.clear() }) { Text("Cancel", color = Blue, fontSize = 14.sp) }
             } else {
                 Text(
-                    when (view) { "reviewed" -> "Reviewed"; "archived" -> "Archived"; else -> "Inbox" },
+                    when (view) { "archived" -> "Archived"; else -> "Inbox" },
                     color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
                 )
                 Box {
                     IconButton(onClick = { viewMenu = true }) { FilterIcon(if (view != "inbox") Blue else Muted) }
                     DropdownMenu(expanded = viewMenu, onDismissRequest = { viewMenu = false }, containerColor = Panel) {
-                        (listOf("inbox" to "Inbox") + (if (summary?.enabled == true) listOf("held" to "Held for summary") else emptyList()) + listOf("reviewed" to "Reviewed", "archived" to "Archived")).forEach { (id, label) ->
+                        (listOf("inbox" to "Inbox") + (if (summary?.enabled == true) listOf("held" to "Held for summary") else emptyList()) + listOf("archived" to "Archived")).forEach { (id, label) ->
                             DropdownMenuItem(text = { Text((if (view == id) "✓  " else "") + label, color = Ink) }, onClick = { viewMenu = false; onView(id) })
                         }
                     }
@@ -1280,8 +1302,11 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
 
 /** Always visible at the bottom of an open email. Symbols only: bin, archive, tag, remind me later, add a task. */
 @Composable
-private fun ActionBar(onResolve: (Outcome) -> Unit, onSnooze: () -> Unit, onTag: () -> Unit, onTask: () -> Unit) {
+private fun ActionBar(read: Boolean, onRead: () -> Unit, onUnread: () -> Unit, onResolve: (Outcome) -> Unit, onSnooze: () -> Unit, onTag: () -> Unit, onTask: () -> Unit) {
     Row(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 10.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        // One button: green "Mark as read", or red "Mark as unread" once the email is read.
+        if (read) BarIcon("Mark as unread", Red, Color(0xFF3A1D22), onUnread) { Icon(Icons.Filled.Check, contentDescription = null, tint = Red) }
+        else BarIcon("Mark as read", Green, Color(0xFF16382B), onRead) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
         BarIcon("Bin", Red, Color(0xFF3A1D22), { onResolve(Outcome.Binned) }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Red) }
         BarIcon("Archive", Color(0xFF8DB8FF), Color(0xFF173056), { onResolve(Outcome.Archived) }) { ArchiveIcon(Color(0xFF8DB8FF)) }
         BarIcon("Tags", Ink, PanelHigh, onTag) { TagIcon(Ink) }

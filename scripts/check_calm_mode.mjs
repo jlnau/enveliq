@@ -43,12 +43,12 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
     }));
     check(name + ": More starts collapsed in Calm mode", (await p.locator("#moreToggle").getAttribute("aria-expanded")) === "false");
     await p.click("#moreToggle");
-    check(name + ": More still exposes Reviewed and Archived", await p.locator('.more-items [data-filter="reviewed"]').isVisible() && await p.locator('.more-items [data-filter="archived"]').isVisible());
+    check(name + ": More still exposes Archived",  await p.locator('.more-items [data-filter="archived"]').isVisible());
     await p.click("#moreToggle");
   } else {
     check(name + ": mobile has no landscape banner", await p.evaluate(() => getComputedStyle(document.querySelector(".enveliq-landscape")).display === "none" && document.querySelector(".preview-toolbar").getBoundingClientRect().height === 0));
     await p.click("#moreToggle");
-    check(name + ": opening More does not close mobile navigation", await p.evaluate(() => document.body.classList.contains("menu-open")) && await p.locator('.more-items [data-filter="reviewed"]').isVisible());
+    check(name + ": opening More does not close mobile navigation", await p.evaluate(() => document.body.classList.contains("menu-open")) && await p.locator('.more-items [data-filter="archived"]').isVisible());
     await p.click("#moreToggle");
   }
 

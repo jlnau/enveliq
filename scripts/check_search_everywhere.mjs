@@ -1,4 +1,4 @@
-// Browser check for "Search everywhere": the one search box also shows matches in Reviewed, Archived and Snoozed emails, tasks, orders and
+// Browser check for "Search everywhere": the one search box also shows matches in Archived and Snoozed emails, tasks, orders and
 // waiting notes, using only what the page already holds. Matches are shown as text and lead to the right place.
 // The page is loaded from a pretend Enveliq server (Playwright intercepts requests).
 //
@@ -22,10 +22,10 @@ const base = { priority: "normal", category: "Information", action_required: fal
 const ctx = (id) => ({ reply_to: "x@example.invalid", delivered_to: null, via_alias: null, message_id: `<${id}@x>`, references: [] });
 const messages = [
   { ...base, id: 101, subject: "Dentist on Monday", sender_display: "Brightwater Dental", sender_address: "clinic@example.invalid", received_at: nowS - 300, reply_context: ctx("a"), summary: "Reminds you of a check-up on Monday at 10:30." },
-  { ...base, id: 102, subject: "Your electricity bill", sender_display: "Northside Power", sender_address: "bills@example.invalid", received_at: nowS - 90000, reply_context: ctx("b"), summary: "Your bill is ready and due in two weeks.", state: "reviewed", resolved_at: nowS - 3600 },
+  { ...base, id: 102, subject: "Your electricity bill", sender_display: "Northside Power", sender_address: "bills@example.invalid", received_at: nowS - 90000, reply_context: ctx("b"), summary: "Your bill is ready and due in two weeks.", state: "archived", resolved_at: nowS - 3600 },
   { ...base, id: 103, subject: "Photos from the trip", sender_display: "Alice", sender_address: "alice@example.invalid", received_at: nowS - 200000, reply_context: ctx("c"), summary: "Shares the holiday photos and asks about dinner.", state: "archived", resolved_at: nowS - 7200 },
   { ...base, id: 104, subject: "Book club", sender_display: "Kim", sender_address: "kim@example.invalid", received_at: nowS - 400, reply_context: ctx("d"), summary: "Asks which book to read next.", snoozed_until: Math.floor(Date.now() / 1000) + 86400 },
-  { ...base, id: 105, subject: "<img src=x onerror=window.__pwned=1>Offer", sender_display: "Odd Sender", sender_address: "odd@example.invalid", received_at: nowS - 500, reply_context: ctx("e"), summary: "A <b>special</b> offer for the trip.", state: "reviewed", resolved_at: nowS - 100 },
+  { ...base, id: 105, subject: "<img src=x onerror=window.__pwned=1>Offer", sender_display: "Odd Sender", sender_address: "odd@example.invalid", received_at: nowS - 500, reply_context: ctx("e"), summary: "A <b>special</b> offer for the trip.", state: "archived", resolved_at: nowS - 100 },
 ];
 const tasks = { today: "2026-10-14", tasks: [
   { id: "t1", title: "Ring to confirm the check-up", state: "open", due: "2026-10-15", days: 1, priority: "normal", sender: "Brightwater Dental", received: nowS - 300, account_id: "a1", message_id: 101 },
@@ -86,7 +86,7 @@ const more = (page) => page.locator(".srch-more");
   const { page, errors, context } = await open(1200, 900);
   await type(page, "electricity");
   let t = await more(page).innerText();
-  check("a Reviewed email is found from the inbox, and says where it is", /Your electricity bill/.test(t) && /Reviewed · Northside Power/.test(t));
+  check("an Archived email is found from the inbox, and says where it is", /Your electricity bill/.test(t) && /Archived · Northside Power/.test(t));
   await type(page, "check-up");
   check("a task is found, with when it is due", /Tasks/.test(await more(page).innerText()) && /Ring to confirm the check-up/.test(await more(page).innerText()));
   check("an email already shown in the list is not repeated below", !/Dentist on Monday/.test(await more(page).innerText()));
@@ -109,7 +109,7 @@ const more = (page) => page.locator(".srch-more");
   await type(page, "electricity");
   await more(page).locator("[data-search-open]").first().click();
   await page.waitForTimeout(200);
-  check("choosing an email opens the list it is in, with the search cleared and the email open", (await page.locator("#search").inputValue()) === "" && (await page.locator('.nav[data-filter="reviewed"].active').count()) === 1 && (await page.locator("article.mail.open", { hasText: "Your electricity bill" }).count()) === 1);
+  check("choosing an email opens the list it is in, with the search cleared and the email open", (await page.locator("#search").inputValue()) === "" && (await page.locator('.nav[data-filter="archived"].active').count()) === 1 && (await page.locator("article.mail.open", { hasText: "Your electricity bill" }).count()) === 1);
   await page.locator('.nav[data-filter="all"]').click();
   await type(page, "fence");
   await more(page).locator("[data-search-go]").first().click();

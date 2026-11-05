@@ -287,6 +287,16 @@ class MailService:
         hold = self._holds(account)
         stored_all = vault.list_messages(account_id)
         for stored in stored_all:
+            if stored.get("state") == "reviewed" and not stored.get("found_until"):
+                # The old Reviewed list is gone: such an email is simply a read email, listed with the read mail.
+                try:
+                    data = {k: v for k, v in stored.items() if k != "id"}
+                    data.update(state="unread", resolved_at=None, from_all_mail=True)
+                    vault.update_message(account_id, stored["id"], RetainedMessageCreate(**data).model_dump(mode="python"))
+                    stored["state"], stored["from_all_mail"] = "unread", True
+                except (ValueError, KeyError):
+                    pass
+        for stored in stored_all:
             if stored.get("source_locator"):
                 known_locators.add(stored["source_locator"])
             mid = (stored.get("reply_context") or {}).get("message_id")

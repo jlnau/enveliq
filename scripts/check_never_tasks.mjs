@@ -79,7 +79,7 @@ for (const width of [1200, 390]) {
   check(tag + "the three-dot menu has one Mail rules entry", items.includes("Mail rules for this sender"));
   await menu.locator("[data-rules-open]").click();
   const sub = (await menu.locator("[role=menuitem]").allInnerTexts()).join("|");
-  check(tag + "it opens the rules list in the same pop-up, with a Back entry", await menu.isVisible() && sub.includes("Back") && sub.includes("Never make tasks from this sender") && sub.includes("Always archive these") && sub.includes("Always mark these as reviewed") && sub.includes("Block sender") && sub.includes("See all my mail rules"));
+  check(tag + "it opens the rules list in the same pop-up, with a Back entry", await menu.isVisible() && sub.includes("Back") && sub.includes("Never make tasks from this sender") && sub.includes("Always archive these") && sub.includes("Always mark these as read") && sub.includes("Block sender") && sub.includes("See all my mail rules"));
   await shot(page, "rules-popup-" + width);
   await menu.locator("[data-rules-back]").click();
   check(tag + "Back returns to the main menu", (await menu.locator("[role=menuitem]").allInnerTexts()).join("|").includes("Reply"));
@@ -117,7 +117,7 @@ for (const width of [1200, 390]) {
   await dots.click();
   const menu = page.locator("#moreMenu");
   const items = (await menu.locator("[role=menuitem]").allInnerTexts()).join("|");
-  check(tag + "it offers the usual rules: never make tasks, archive, mark reviewed, block sender, and all my rules", ["Never make tasks from this sender", "Always archive these", "Always mark these as reviewed", "Block sender", "See all my mail rules"].every((t) => items.includes(t)));
+  check(tag + "it offers the usual rules: never make tasks, archive, mark reviewed, block sender, and all my rules", ["Never make tasks from this sender", "Always archive these", "Always mark these as read", "Block sender", "See all my mail rules"].every((t) => items.includes(t)));
   await shot(page, "rules-menu-" + width);
   await menu.locator("[data-rule-reviewed]").click();
   await page.waitForTimeout(400);

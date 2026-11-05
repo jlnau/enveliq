@@ -37,10 +37,10 @@ Settings is a short list of topics: **Notifications**, **Swipe on an email**, **
 - **What to alert me about** (Settings, Notifications): all new email, only email that needs action, or only email from people on your important list. Email you are not alerted about still waits in your inbox. This is a setting, and "all new email" is the default.
 - **Hide the watching note:** a button that opens Android's own switch for the small "watching" note (alerts keep working).
 - **Alerts clear at once:** when an email is reviewed, archived or moved somewhere else, the server tells the phone and its alert is taken down straight away (the phone does not need to wait until the app next looks).
-- **Mark as unread:** open an email in the Reviewed view and choose **Mark as unread** in its three-dot menu. The mailbox gets its unread mark back and the email returns to the inbox. Only emails you marked Reviewed can be marked unread (an archived email has moved to another folder). A Reviewed card keeps its pointer to the mailbox for this; an Archived card still drops it.
+- **Mark as read and Mark as unread:** the first icon in the bottom bar of an open email is a green tick, **Mark as read**; once the email is read it is a red tick, **Mark as unread** (both are in the three-dot menu too). The email is not moved or hidden: it loses its "new" look, and with **Include read mail** on it stays in the list. With that off, it leaves the unread list like any read email. There is no Undo; Mark as unread is the way back.
 - **Check connection** on the sign-in screen says in plain words whether the address answers.
 - **A welcome** after your first sign-in explains summaries, alerts and the lock in three short cards, with a button that goes straight to those settings. It shows once.
-- **Screen reader:** every email row offers Mark reviewed, Archive and Move to Bin in TalkBack's actions menu (swiping is hard with a screen reader).
+- **Screen reader:** every email row offers Archive and Move to Bin in TalkBack's actions menu (swiping is hard with a screen reader).
 
 ## Writing: who it comes from
 
@@ -73,7 +73,7 @@ Settings, Security, **Your devices** lists the places you are signed in and lets
 - **Files with this email:** each file's size and the AI's note (labelled). **Save to my phone** asks where to save it. The file is fetched at that moment and not kept by the app.
 - **Show the original email:** opens the email full screen as its sender made it: layout, colours, tables, pictures that came inside the email, and links. If an email has no formatted version, you see its plain text instead, and **Plain text** can always be chosen. Pictures that live on the internet are held back (they can tell the sender you opened the email) until you tap **Show pictures**. It uses the same safe copy the website shows: the server rebuilds the email from allowed parts only (no scripts, forms or frames), and the app shows it with JavaScript off, no file or storage access and no network until you allow pictures. Pinch to zoom.
 - **Links:** every link, in the formatted email or the plain text, asks first and names the site it goes to. Unusual links (plain http, look-alike characters, bare numbers) get an extra warning.
-- **Inbox, Reviewed, Archived:** the filter button on the thin row under the top bar switches views. Reviewed and Archived show what the server still keeps (a few days). Back from any of them (or from a needs-action, mailbox or tag filter) returns to the whole inbox first.
+- **Inbox, Archived:** the filter button on the thin row under the top bar switches views. Archived shows what the server still keeps (a few days). There is no Reviewed list. Back from any of them (or from a needs-action, mailbox or tag filter) returns to the whole inbox first.
 - **Needs action, mailbox and tags:** the second button on that row. With more than one mailbox it also lists each mailbox.
 
 ## Added in versions 0.97 and 0.98
@@ -86,7 +86,7 @@ Settings, Security, **Your devices** lists the places you are signed in and lets
 - **Signature.** The signature you saved on the website is put in the box when a new email starts, where you can change or remove it.
 - **Pick from phone contacts** on a new email opens Android's contact picker. Only the one address you choose is handed over, so Enveliq does not need permission to read your contacts.
 - **Links that start an email.** Tapping an email address or `mailto:` link in another app can offer Enveliq, and a new email opens with the address (and subject or text, if the link had them) filled in. Nothing is sent until you press Send.
-- **Open the next email** (Settings): after you archive or mark reviewed the email you are reading, the next one in the list opens.
+- **Open the next email** (Settings): after you archive the email you are reading, the next one in the list opens.
 - **Get the Android app** (Settings, About) opens the download page, for this or another phone. The website's front page and Settings link to this guide, which has the download button.
 
 - **Files and their summaries.** An email's files are listed under the AI summary with the AI's note on each (labelled), or the reason a file was not read. **View** (or **Preview** for a picture) opens the same viewer as the website: PDF pages with zoom, pictures, tables and plain text, made by your server in memory. **Save to my phone** keeps a copy where you choose. Nothing is kept by Enveliq or the app.

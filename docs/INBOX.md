@@ -23,7 +23,7 @@ The action row under an email ends, at the far right on a computer and on a phon
 
 ## Mark unread
 
-A read email (the ones you marked as read, kept for a few days) has a **Mark as unread** button, and the same item in its three-dot menu. It puts the unread mark back on the email in your mailbox (Proton, IMAP and Microsoft alike) and returns it to the inbox. Android has had this on Reviewed emails since v0.100. Emails you archived are in your mailbox's Archive folder, so open them there if you want them unread again.
+A read email has a red **Mark as unread** button (an unread email has a green **Mark as read** button in the same place), and the same item in its three-dot menu. It puts the unread mark back on the email in your mailbox (Proton, IMAP and Microsoft alike) and the email is highlighted as new again. Mark as read and Mark as unread are the usual ones: the email is not moved or hidden. Read email shows in the inbox only while **Include read mail** is on; otherwise it is simply no longer in your list of unread mail, as for any read email. Emails you archived are in your mailbox's Archive folder, so open them there if you want them unread again.
 
 ## Conversation View
 
@@ -86,7 +86,7 @@ Open an email and its files are listed under the summary, above the task: one ro
 
 ## Mark as read, Archive and Bin
 
-**Archive** and **Bin** are the two buttons on an email. What used to be the **Reviewed** button is now **Mark as read**, in the three-dot menu (it works exactly as before: the email leaves your inbox, is marked read in your mailbox, and waits five seconds for Undo). It is no longer a button on a row, in the reading pane or at the bottom of an open email, and no longer a swipe on a phone (swiping right now archives). The list of emails you marked as read is still called **Reviewed** in the left menu. When you tick several emails, the bar keeps a **Mark as read** button.
+**Mark as read** (green), **Archive** and **Bin** are the buttons on an email. Mark as read is the ordinary one: your mailbox gets its read mark and the email loses its "new" highlight. It stays exactly where it is while **Include read mail** is on (and is out of the unread list when that is off, like any read email). There is no Reviewed list and no five seconds of Undo: **Mark as unread** (the same button turns red once the email is read, and it is in the three-dot menu too) is the way back. On a phone, swiping right archives and swiping left bins. When you tick several emails, the bar has a **Mark as read** button too. Emails that were in the old Reviewed list become ordinary read mail.
 
 **Next and previous email.** When one email is open next to the list or over it (the reading pane layouts and a phone), two small arrows beside the three-dot button open the previous or next email in the list. At the ends, a quiet note says it is the first or last email. They are not shown when emails open in place inside the list.
 
@@ -156,11 +156,11 @@ The **Include read mail** button (before it was called **All emails**) opens a s
 
 **Junk Mail** lists what your mail services put in their Junk and Spam folders, with the AI's answer for each. See [Junk Mail](JUNK_MAIL.md).
 
-**Found emails** lists the emails you found with **Search all my mail** and chose to keep. Each stays for 60 days, or until you press **Reviewed**. See [Find any email](FIND_MAIL.md).
+**Found emails** lists the emails you found with **Search all my mail** and chose to keep. Each stays for 60 days, or until you press **Mark as read**. See [Find any email](FIND_MAIL.md).
 
 The **Recent emails** section lists your mail. **Options** starts closed on computers and phones. Press it to show the mailbox filter, sorting, **Include read mail**, **Expand all**, and the other available inbox controls; press it again to hide them. On phones, **Recent emails** can also be expanded or collapsed.
 
-The left menu leads to **My inbox**, **Needs action**, **Tasks**, **Shipping**, **Waiting for reply**, and **Attachments**. The **More** section contains other views, including Sent, Reviewed, and Archived where available. Collapsing the desktop menu keeps the icons; the compact Calm mode control remains available.
+The left menu leads to **My inbox**, **Needs action**, **Tasks**, **Shipping**, **Waiting for reply**, and **Attachments**. The **More** section contains other views, including Sent and Archived where available. Collapsing the desktop menu keeps the icons; the compact Calm mode control remains available.
 
 ## Bigger windows for emails and attachments
 
@@ -170,8 +170,8 @@ Web addresses in the text of an email can be clicked, but they never open by the
 
 ## Getting back to My inbox
 - The Sent page uses the same header as the other pages (Back button, title, then a line saying it shows your last 4 months of sent mail). The page keeps room for its scroll bar, so nothing moves sideways when the emails finish loading.
-- On every page other than My inbox (Needs action, Tasks, Shipping, Waiting for reply, Attachments, Reviewed, Archived, Sent and so on), a **Back to My inbox** button sits above the page title. The title now shows the name of the page you are on instead of "My inbox".
-- Needs action, Attachments, Reviewed and Archived show the same **Recent emails** panel with **Options** as My inbox, so the options fold away in the same way everywhere.
+- On every page other than My inbox (Needs action, Tasks, Shipping, Waiting for reply, Attachments, Archived, Sent and so on), a **Back to My inbox** button sits above the page title. The title now shows the name of the page you are on instead of "My inbox".
+- Needs action, Attachments and Archived show the same **Recent emails** panel with **Options** as My inbox, so the options fold away in the same way everywhere.
 - On **Waiting for reply**, the **Closed** section is folded away until you open it with its arrow, so the page does not look like a long list of open items.
 - With **Open full screen**, on a computer the email sits beside the left menu and below the top bar, and **Archive** and **Bin** are normal buttons centred along the bottom (they used to be stretched across the screen and partly hidden).
 
@@ -273,7 +273,7 @@ A form or pop-up that asks you to type something (Add a parcel, Task, News feeds
 
 ## The Back button
 
-Moving to another section (Sent, Reviewed, Tasks and so on) adds a step to the browser's history, so the **Back** button of the browser, or a phone's back gesture, returns to the section you were in before, inside Enveliq, instead of leaving it. **Forward** works too. Back also closes Settings and Administration if they are open. Moving between the tabs of Settings does not add steps, so one Back leaves Settings. On a computer, opening or closing an email does not add steps. **On a phone, an email that is open full screen has its own step**: Back (or the back gesture) closes the email and shows the list again, instead of leaving Enveliq. Closing it with the **✕ Close** button, or with Reviewed, Archive or Bin, leaves no extra step behind. `scripts/check_back_button.mjs` checks this.
+Moving to another section (Sent, Archived, Tasks and so on) adds a step to the browser's history, so the **Back** button of the browser, or a phone's back gesture, returns to the section you were in before, inside Enveliq, instead of leaving it. **Forward** works too. Back also closes Settings and Administration if they are open. Moving between the tabs of Settings does not add steps, so one Back leaves Settings. On a computer, opening or closing an email does not add steps. **On a phone, an email that is open full screen has its own step**: Back (or the back gesture) closes the email and shows the list again, instead of leaving Enveliq. Closing it with the **✕ Close** button, or with Reviewed, Archive or Bin, leaves no extra step behind. `scripts/check_back_button.mjs` checks this.
 
 ## Reading pane on the right (computer)
 

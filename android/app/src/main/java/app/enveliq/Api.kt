@@ -210,7 +210,7 @@ class EnveliqApi(address: String) {
         return out
     }
 
-    /** [view] is "inbox" (still to look at), "reviewed" or "archived". */
+    /** [view] is "inbox" (still to look at) or "archived". */
     fun inbox(view: String = "inbox", includeRead: Boolean = false): List<Mail> {
         val accounts = JSONArray(call("GET", "/api/v1/accounts"))
         val out = ArrayList<Mail>()
@@ -229,13 +229,13 @@ class EnveliqApi(address: String) {
                 val state = r.str("state")
                 val held = r.optBoolean("held_for_summary", false)
                 if (view == "inbox") {
-                    if (state == "reviewed" || state == "archived" || held) continue      // held for the summary: not in the inbox
+                    if (state == "archived" || held) continue      // held for the summary: not in the inbox
                 } else if (view == "held") {
-                    if (!held || state == "reviewed" || state == "archived") continue
+                    if (!held || state == "archived") continue
                 } else if (state != view) {
                     continue
                 }
-                val quiet = r.optBoolean("from_all_mail", false)
+                val quiet = r.optBoolean("from_all_mail", false) || state == "reviewed"
                 if (quiet && (!includeRead || r.optDouble("found_until", 0.0) > 0)) continue      // quiet entries only when "Include read mail" is on
                 val snoozedUntil = r.optDouble("snoozed_until", 0.0)
                 if (view == "inbox" && snoozedUntil * 1000 > System.currentTimeMillis()) continue        // snoozed: it comes back when the time is up
@@ -496,7 +496,7 @@ class EnveliqApi(address: String) {
         return (0 until items.length()).map { items.getJSONObject(it).str("address").lowercase() }.filter { it.isNotBlank() }.toSet()
     }
 
-    /** Puts the unread mark back on an email that was marked Reviewed. */
+    /** Puts the unread mark back on an email that was marked as read. */
     fun markUnread(mail: Mail) {
         call("POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/unread")
     }

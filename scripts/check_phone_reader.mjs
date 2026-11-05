@@ -90,9 +90,15 @@ for (const [cls, word] of [["reviewed", "Marked as read"], ["archive", "Archived
   const { page, context, errors } = await run("list", 390, 800);
   await page.locator("article.mail", { hasText: "Plan for May" }).locator(".qmain").click();
   await page.waitForSelector(".reader");
-  if (cls === "reviewed") { check("[reviewed] there is no Reviewed button at the bottom", (await page.locator(".reader .ract .action.reviewed").count()) === 0); await page.locator(".reader [data-more]:not([data-rules-menu])").first().click(); await page.locator("#moreMenu [data-markread]").click(); }
-  else await page.locator(`.reader .ract .action.${cls}`).click();
+  await page.locator(`.reader .ract .action.${cls}`).click();
   check(`[${cls}] the full screen email closes straight away`, (await page.locator(".reader").count()) === 0);
+  if (cls === "reviewed") {            // Mark as read has no Undo: Mark as unread is the way back
+    await page.waitForFunction(() => /Marked as read/.test(document.getElementById("toast").innerText));
+    check("[reviewed] says Marked as read", true);
+    check("[reviewed] no script errors", errors.length === 0);
+    await context.close();
+    continue;
+  }
   check(`[${cls}] the Undo bar shows "${word}"`, (await page.locator("#undoBar .undobar").innerText()).includes(word));
   await page.locator("#undoBar .undobar button").click();
   await page.waitForSelector("article.mail", { hasText: "Plan for May" });

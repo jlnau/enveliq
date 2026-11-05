@@ -50,9 +50,8 @@ const box = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   check("side rail: the reading panel uses the rail layout", (await p.locator(".reading.rail .rl-rail").count()) === 1);
   const rail = await box(p, ".rl-rail"), read = await box(p, ".reading.rail");
   check("side rail: the bar sits down the left edge of the email", rail && read && Math.abs(rail.x - read.x) <= 2 && rail.w >= 60 && rail.w <= 100);
-  for (const [l, sel] of [["Archive", '.rl-rail .action.archive'], ["Bin", '.rl-rail .action.trash'], ["Task", '.rl-rail [data-task-add]'], ["Snooze", '.rl-rail [data-snooze], .rl-rail [data-unsnooze]']])
+  for (const [l, sel] of [["Reviewed", '.rl-rail .action.reviewed'], ["Archive", '.rl-rail .action.archive'], ["Bin", '.rl-rail .action.trash'], ["Task", '.rl-rail [data-task-add]'], ["Snooze", '.rl-rail [data-snooze], .rl-rail [data-unsnooze]']])
     check("side rail: " + l + " button is there", (await p.locator(sel).count()) >= 1);
-  check("side rail: there is no Reviewed button (Mark as read is in the three-dot menu)", (await p.locator(".rl-rail .action.reviewed").count()) === 0);
   check("side rail: the AI summary, with View original email, is shown", (await p.locator(".reading.rail .qsummary-copy").count()) === 1 && (await p.locator(".reading.rail .summary-original-link").count()) === 1);
   check("side rail: the email address and the four copy buttons are shown", (await p.locator(".reading.rail .rl-addr").count()) === 1 && (await p.locator(".reading.rail .mail-copy-action").count()) >= 3);
   check("side rail: the details box (From, Received, Category, Attachments) is not repeated", (await p.locator(".reading.rail .qside").count()) === 0);
@@ -84,8 +83,8 @@ const box = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   const x = await box(p, ".reader.rail .rclose");
   check("phone: just a small X at the top, not a wide Close button", x && x.w <= 48 && (await p.locator(".reader.rail .rclose").innerText()).trim() === "✕");
   const bar = await p.evaluate(() => [...document.querySelectorAll(".reader.rail .rl-bar > *")].map((e) => { const r = e.getBoundingClientRect(); return { l: e.getAttribute("aria-label"), w: Math.round(r.width), h: Math.round(r.height), txt: e.innerText.trim() }; }));
-  check("phone: the bottom bar has square icon buttons only", bar.length >= 3 && bar.every((e) => Math.abs(e.w - e.h) <= 2 && e.w >= 44 && e.txt === ""));
-  check("phone: Archive and Bin are in the bottom bar (Reviewed is in the three-dot menu)", ["Archive", "Bin"].every((l) => bar.some((e) => e.l === l)));
+  check("phone: the bottom bar has square icon buttons only", bar.length >= 4 && bar.every((e) => Math.abs(e.w - e.h) <= 2 && e.w >= 44 && e.txt === ""));
+  check("phone: Mark as read, Archive and Bin are in the bottom bar", ["Mark as read", "Archive", "Bin"].every((l) => bar.some((e) => e.l === l)));
   const bb = await box(p, ".reader.rail .rl-bar");
   check("phone: the bottom bar is fixed at the bottom of the screen", bb && Math.abs(bb.b - 844) <= 2);
   check("phone: the email address opens the copy choices", await (async () => {

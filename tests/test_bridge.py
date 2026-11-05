@@ -381,7 +381,8 @@ def test_reviewed_marks_read_and_does_not_return(env):
     assert "\\Seen" in bridge.messages[1]["flags"] and bridge.messages[1]["folder"] == "INBOX"
     assert client.post(f"/api/v1/accounts/{aid}/sync", json={}).json()["added"] == 0
     listed = client.get(f"/api/v1/accounts/{aid}/messages").json()
-    assert len([x for x in listed if x["state"] == "unread"]) == 2 and len(listed) == 3      # the reviewed one is kept for a few days
+    assert len(listed) == 3 and all(x["state"] == "unread" for x in listed)                # still listed, as read mail
+    assert [x["from_all_mail"] for x in listed if x["subject"] == "Quarterly update"] == [True]
 
 
 def test_archive_and_bin_move_the_email(env):

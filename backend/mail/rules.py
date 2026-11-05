@@ -18,7 +18,7 @@ from .contacts import clean_address
 RECORD_PREFIX = "rules:"
 MAX_RULES = 50
 MAX_SUBJECT = 80
-ACTIONS = {"archived": "Archive it", "reviewed": "Mark it reviewed", "junked": "Send it to Junk", "notasks": "Never make tasks", "tag": "Always apply tags"}
+ACTIONS = {"archived": "Archive it", "reviewed": "Mark it as read", "junked": "Send it to Junk", "notasks": "Never make tasks", "tag": "Always apply tags"}
 # "Never make tasks" does nothing to the email itself: it only stops Enveliq from turning mail from that sender into a task.
 # It sits beside the other rules, so a sender can have both (for example archive it, and never make tasks).
 NO_TASKS = "notasks"

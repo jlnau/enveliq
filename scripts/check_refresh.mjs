@@ -131,7 +131,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("an email closed before the refresh stays closed", (await page.locator("article.mail.open").count()) === 0);
 
   // The page you were on
-  for (const [nav, sel, hash, what] of [["#shipNav", "#shipPage", "#/shipping", "Shipping"], ["#waitNav", "#waitPage", "#/waiting", "Waiting for reply"], ['.nav[data-filter="tasks"]', "#tasksPage", "#/tasks", "Tasks"], ['.nav[data-filter="reviewed"]', "#list", "#/reviewed", "Reviewed"], ["#sentNav", "#sentList", "#/sent", "Sent"]]) {
+  for (const [nav, sel, hash, what] of [["#shipNav", "#shipPage", "#/shipping", "Shipping"], ["#waitNav", "#waitPage", "#/waiting", "Waiting for reply"], ['.nav[data-filter="tasks"]', "#tasksPage", "#/tasks", "Tasks"], ['.nav[data-filter="archived"]', "#list", "#/archived", "Archived"], ["#sentNav", "#sentList", "#/sent", "Sent"]]) {
     if (hash === "#/shipping" || hash === "#/waiting") continue;                     // those switches are off in this mock; covered in their own checks
     await page.click(nav);
     check(`${what}: the address shows where you are`, (await page.evaluate(() => location.hash)) === hash);

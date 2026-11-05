@@ -108,7 +108,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   // Opening a quiet email keeps today's layout and adds the summary note
   await page.locator("article.mail.extra").first().locator(".subject").click();
   const open1 = page.locator("article.mail.extra.open").first();
-  check("the opened email keeps From, Received, Archive, Bin and View original (Reviewed is now Mark as read in the menu)", ["From", "Received", "Reviewed", "Archive", "Bin", "View original email"].every((t) => true) && (await open1.locator(".qside").innerText()).includes("From") && (await open1.locator(".qbtns button").count()) === 2 && (await open1.locator("[data-open-email]").count()) === 1);
+  check("the opened email keeps From, Received, Reviewed, Archive, Bin and View original", ["From", "Received", "Reviewed", "Archive", "Bin", "View original email"].every((t) => true) && (await open1.locator(".qside").innerText()).includes("From") && (await open1.locator(".qbtns button").count()) === 3 && (await open1.locator("[data-open-email]").count()) === 1);
   check("it says the summary is not generated and offers the button", (await open1.locator(".nosum").innerText()).includes("Summary not generated") && (await open1.locator("[data-gen]").innerText()) === "Generate summary");
   await shot(page, "open-quiet");
 
