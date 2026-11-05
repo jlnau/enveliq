@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Folders.** **Move to folder…** in an email's three-dot menu opens a picker (search box, recent folders first, and a box to make a new folder). Tick several emails and use the folder button to move them together. A move has Undo, like Archive. A new **Folders** page in the left menu lists a mailbox's folders and shows what is in each (newest first, 25 at a time; read live, never saved). Works with Proton Bridge and ordinary IMAP mailboxes. Touches `prototype/index.html`, `backend/mail/`.
+
 **Android: Shipping moves to the main menu and can be acted on.** Shipping now sits beside Tasks (not under More), with a count of parcels waiting for you. Delivered parcels have **Yes, I've got it** and **Not yet**; a three-dot button gives Copy tracking number, Add a note and Not an order (Remove for hand-made orders). Received parcels fold away under **Received · N**, with Undo. No server change. Touches `android/`.
 
 **Star an email.** A small star on the email row, the open email and the three-dot menu (Star / Remove star) sets the mailbox's own Flagged mark, so it also shows in Gmail and Proton. There is a **Starred** page in the left menu and a **Starred** choice in Filter, and on the Android app a star button in the bottom bar and a Starred choice in the filter menu. A star set in your mailbox shows up in Enveliq after the next sync, including on emails that are already read (they appear quietly, only as stars). Starred emails are kept past the usual clean-up. Touches `prototype/index.html`, `backend/mail/`, Android.

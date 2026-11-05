@@ -1114,6 +1114,13 @@ class MailService:
                 raise BridgeError("not_found", "The mailbox was reset on the server. Sync again.")
             s.set_flagged(uid, on)
 
+    def move_to_folder(self, folders: Any, account: dict[str, Any], message: dict[str, Any], folder: str) -> None:
+        """Move an Inbox email into a folder of the person's own."""
+        if account.get("auth_method") not in MAIL_METHODS or not message.get("source_locator"):
+            raise BridgeError("not_found", "Enveliq can no longer find this email in the mailbox.")
+        validity, uid = parse_locator(message["source_locator"])
+        folders.move(account, uid, validity, folder)
+
     STAR_LIMIT = 100
 
     def _sync_stars(self, vault: Any, account: dict[str, Any], s: Any, validity: int) -> None:

@@ -30,6 +30,15 @@ A star marks an email you want to find again. It is the mailbox's own Flagged ma
 - **Limits:** only emails Enveliq can reach in your mailbox can be starred. Archived cards kept by Enveliq alone have no star button. Starred emails are not removed by the clean-up of old read mail.
 - **Android:** a star button in the bottom bar of an open email, and **Starred** in the filter menu.
 
+## Folders
+
+- **Move to folder:** the three-dot menu on an email has **Move to folder…**. A box lists your own folders (the ones you made, not Archive, Bin or Junk, which have their own buttons). Type to narrow the list; folders you used lately come first. On a phone the box fills the screen with Close at the top.
+- **Make a new folder:** type a name under "Or make a new folder" and press **Make it**. The folder is made in your mailbox and the email goes into it. Names are short, with no slashes. On Proton the folder is made under Folders, so it shows in Proton too.
+- **Move several:** tick emails, then press the folder button in the bar of buttons.
+- **Undo:** like Archive, the move waits a few seconds. The bar says "Moved to Bills" and **Undo** puts it back; nothing has been sent to the mailbox yet.
+- **Open any folder:** **Folders** in the left menu lists the mailbox's folders (and a mailbox choice when you have more than one). Pick one to see its newest emails, 25 at a time, and open any of them. They are read from the mailbox when you look and are never saved in Enveliq, like Sent. A folder's emails cannot be moved from here yet.
+- Only Inbox emails can be moved. Emails already read stay readable and keep their read or unread mark.
+
 ## Mark unread
 
 A read email has a red **Mark as unread** button (an unread email has a green **Mark as read** button in the same place), and the same item in its three-dot menu. It puts the unread mark back on the email in your mailbox (Proton, IMAP and Microsoft alike) and the email is highlighted as new again. Mark as read and Mark as unread only change the read mark on your mail service (Proton, IMAP or Microsoft). Enveliq's own blue "new" shine is not touched by them: it goes when you open an email, as before. The email is not moved or hidden. Read email shows in the inbox only while **Include read mail** is on; otherwise it is simply no longer in your list of unread mail, as for any read email. Emails you archived are in your mailbox's Archive folder, so open them there if you want them unread again.

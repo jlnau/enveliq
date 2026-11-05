@@ -545,8 +545,13 @@ body:has(#cmTray:not([hidden])) .toast{bottom:62px;z-index:46}
 .nm-file b{color:var(--text);font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nm-attach{display:inline-flex}
 #newMail .compose-foot small{flex:1;text-align:right}
-.sentview{display:none}
-body.in-sent .sentview{display:block}
+.sentview,.folderview{display:none}
+body.in-sent:not(.in-folders) .sentview{display:block}
+body.in-folders .folderview{display:block}
+.fdr-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 12px}.fdr-chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.fchip{border:1px solid var(--line,#2a3a57);background:transparent;color:var(--text);border-radius:999px;padding:7px 14px;font:inherit;cursor:pointer}.fchip.on{background:var(--c-173056,#173056);border-color:var(--blue,#2f7bff)}
+.fmore{display:block;margin:12px auto}.frow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;width:100%;text-align:left;border:1px solid var(--line,#2a3a57);border-radius:12px;padding:10px 12px;margin:0 0 8px;background:transparent;color:var(--text);font:inherit;cursor:pointer}.frow b,.frow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.frow .fsub{grid-column:1/-1;opacity:.8}
+.fpick-new{align-items:center}#folderPick label{display:grid;gap:6px}.fpick-list{display:flex;flex-direction:column;gap:6px;margin:10px 0}.fpick-item{text-align:left;border:1px solid var(--line,#2a3a57);background:transparent;color:var(--text);border-radius:10px;padding:11px 12px;font:inherit;cursor:pointer}.fpick-item:hover,.fpick-item:focus-visible{background:var(--c-173056,#173056)}.fpick-new{display:flex;gap:8px;margin-top:8px}.fpick-new input{flex:1}
 body.in-sent .filters,body.in-sent #list,body.in-sent .sample-banner,body.in-sent #dueBars,body.in-sent #shipBars,body.in-sent #subBars,body.in-sent #tripBars,body.in-sent #waitBars,body.in-sent #mTitleSub,body.in-sent #peek{display:none!important}
 .sent-top{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin:0 0 12px}
 .sent-tools{display:flex;gap:8px;align-items:center}
@@ -773,7 +778,7 @@ body.vopen .vpanel{transform:none;visibility:visible;transition:transform .3s cu
 @media(hover:hover) and (min-width:761px){body.layout-right .mail.quiet .qpair{display:flex;position:absolute;right:12px;top:5px;opacity:0;transition:opacity .15s;gap:6px}body.layout-right .mail.quiet:hover .qpair,body.layout-right .mail.quiet:focus-within .qpair{opacity:1}body.layout-right .mail.quiet .time{transition:opacity .15s}body.layout-right .mail.quiet:hover .time,body.layout-right .mail.quiet:focus-within .time{opacity:0}body.layout-right .mail.quiet .qic{width:30px;height:26px}body.layout-right .mail.quiet .qic svg{width:15px;height:15px}}
 .mail.quiet.leaving>*,.deckcard.leaving>*{animation:leavePulse 2.4s ease-in-out infinite}
 .mail.quiet.leaving::after,.deckcard.leaving::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--leavec);transform-origin:left;transform:scaleX(0);animation:leaveRun var(--leave-ms,5s) var(--leave-delay,0s) linear forwards}
-.leaving.to-reviewed{--leavec:var(--green)}.leaving.to-archived{--leavec:var(--accent)}.leaving.to-trashed{--leavec:var(--red)}
+.leaving.to-reviewed{--leavec:var(--green)}.leaving.to-archived{--leavec:var(--accent)}.leaving.to-trashed{--leavec:var(--red)}.leaving.to-moved{--leavec:var(--accent)}
 @keyframes leavePulse{0%,100%{opacity:.62}50%{opacity:.34}}
 @keyframes leaveRun{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @media(prefers-reduced-motion:reduce){.mail.quiet.leaving>*,.deckcard.leaving>*{animation:none;opacity:.5}}
@@ -1702,6 +1707,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
 
     <button class="nav" data-filter="archived" title="Archived"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4.5" rx="1"/><path d="M5 8.5V20h14V8.5"/><path d="M10 12.5h4"/></svg><span class="nav-label">Archived</span></button>
     <button class="nav" data-filter="sent" id="sentNav" title="Sent" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg><span class="nav-label">Sent</span></button>
+    <button class="nav" data-filter="folders" id="folderNav" title="Folders" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span class="nav-label">Folders</span></button>
     <button class="nav" data-filter="drafts" id="draftNav" title="Drafts" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg><span class="nav-label">Drafts</span><span class="badge" id="draftBadge" hidden></span></button>
     <button class="nav" data-filter="junk" id="junkNav" title="Junk Mail" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v5c0 4.6 3.2 8.4 8 10 4.8-1.6 8-5.4 8-10V6z"/><path d="m9.5 9.5 5 5m0-5-5 5"/></svg><span class="nav-label">Junk Mail</span><span class="badge" id="junkBadge" hidden></span></button>
     <button class="nav" data-filter="cleanup" id="cleanNav" title="Clean up" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h9M4 17h6"/><path d="m15 14 5 5m0-5-5 5"/></svg><span class="nav-label">Clean up</span></button>
@@ -1766,7 +1772,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
   <div id="tripBars" class="duebars" role="region" aria-label="Trips coming up" hidden></div>
   <div id="waitBars" class="duebars" role="region" aria-label="Waiting on others" hidden></div>
   <div id="msgBars" class="duebars" role="region" aria-label="New messages" hidden></div>
-  <div class="preview-list-heading" id="previewListHeading"><label class="selall" id="selectAllWrap" title="Tick every email in this list"><input class="check" type="checkbox" id="selectAll" aria-label="Select all emails in this list"><span>Select all</span></label><strong>Recent emails</strong><div class="preview-bulk" id="previewBulk" role="group" aria-label="What to do with the emails you ticked"><span class="pb-actions"><button class="action reviewed qic" type="button" data-bulk="reviewed" aria-label="Mark as read" title="Mark as read"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button><button class="action archive qic" type="button" data-bulk="archived" aria-label="Archive" title="Archive"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg></button><button class="action trash qic" type="button" data-bulk="trashed" aria-label="Bin" title="Bin"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button></span><span class="pb-sub"><span class="pb-count"><b id="previewSelCount">0</b> selected</span><button class="linkbtn" type="button" id="previewBulkClear">Clear</button></span></div><span class="preview-heading-actions"><button type="button" id="previewInboxOptions" aria-expanded="false">Options ▾</button><button class="preview-fold-toggle" type="button" data-preview-fold="emails" aria-label="Collapse recent emails" aria-expanded="true">⌃</button></span></div>
+  <div class="preview-list-heading" id="previewListHeading"><label class="selall" id="selectAllWrap" title="Tick every email in this list"><input class="check" type="checkbox" id="selectAll" aria-label="Select all emails in this list"><span>Select all</span></label><strong>Recent emails</strong><div class="preview-bulk" id="previewBulk" role="group" aria-label="What to do with the emails you ticked"><span class="pb-actions"><button class="action reviewed qic" type="button" data-bulk="reviewed" aria-label="Mark as read" title="Mark as read"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button><button class="action archive qic" type="button" data-bulk="archived" aria-label="Archive" title="Archive"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg></button><button class="action qic" type="button" data-bulk-move aria-label="Move to a folder" title="Move to a folder"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M10 14h5m-2-2 2 2-2 2"/></svg></button><button class="action trash qic" type="button" data-bulk="trashed" aria-label="Bin" title="Bin"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button></span><span class="pb-sub"><span class="pb-count"><b id="previewSelCount">0</b> selected</span><button class="linkbtn" type="button" id="previewBulkClear">Clear</button></span></div><span class="preview-heading-actions"><button type="button" id="previewInboxOptions" aria-expanded="false">Options ▾</button><button class="preview-fold-toggle" type="button" data-preview-fold="emails" aria-label="Collapse recent emails" aria-expanded="true">⌃</button></span></div>
   <div class="filters">
     <button class="chip active" data-chip="all">All</button>
     <label class="flabel" for="filterBy">Filter</label>
@@ -1781,7 +1787,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
     <button class="linkbtn expall" id="expandAll" type="button" hidden>Expand all</button>
     <div class="bulk" id="bulk">
       <div class="bulk-actions">
-        <button class="action reviewed qic" data-bulk="reviewed" aria-label="Mark as read" title="Mark as read"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button><button class="action archive qic" data-bulk="archived" aria-label="Archive" title="Archive"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg></button><button class="action trash qic" data-bulk="trashed" aria-label="Bin" title="Bin"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button>
+        <button class="action reviewed qic" data-bulk="reviewed" aria-label="Mark as read" title="Mark as read"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button><button class="action archive qic" data-bulk="archived" aria-label="Archive" title="Archive"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg></button><button class="action qic" type="button" data-bulk-move aria-label="Move to a folder" title="Move to a folder"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M10 14h5m-2-2 2 2-2 2"/></svg></button><button class="action trash qic" data-bulk="trashed" aria-label="Bin" title="Bin"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button>
       </div>
       <span class="bulk-sub"><strong><span id="selectedCount">0</span> selected</strong> <button class="linkbtn" id="clear" type="button">Clear</button></span>
     </div>
@@ -1823,6 +1829,13 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
     <div id="sentWaiting" class="sent-list" hidden></div>
     <div id="sentList" class="sent-list"></div>
     <p id="sentFoot" class="sent-foot" hidden>Limited to the last 4 months.</p>
+  </section>
+  <section id="folderView" class="folderview" aria-label="Folders">
+    <div class="fdr-bar"><select id="fdrBox" aria-label="Mailbox" hidden></select><button class="btn" id="fdrRefresh" type="button">Refresh</button></div>
+    <div class="sent-note" role="note">Read from your mailbox when you open a folder. Nothing is saved in Enveliq.</div>
+    <div id="fdrChips" class="fdr-chips"></div>
+    <div id="fdrStatus" class="sent-status" role="status" aria-live="polite"></div>
+    <div id="fdrList"></div>
   </section>
   <div id="peek" class="peek" role="tooltip" hidden><div class="peek-in" id="peekIn"></div></div>
 </section>
@@ -2434,7 +2447,7 @@ const previewVault={initialized:false,unlocked:false,salt:null,verifier:null};
 const expanded=new Set();
 const convHidden=new Map(); // conversation key -> the open email when the person pressed Hide, so Hide works even while one of its emails is open
 // A refresh keeps you where you are: the page (in the address bar after #/) and which emails are open (this tab only).
-const PAGES=["found","all","action","starred","tasks","attachments","archived","sent","drafts","shipping","subscriptions","trips","waiting","messages","junk","cleanup"];
+const PAGES=["found","all","action","starred","tasks","attachments","archived","sent","folders","drafts","shipping","subscriptions","trips","waiting","messages","junk","cleanup"];
 let stateReady=false,navPopping=false;
 const rowKeyOf=id=>{const m=data.find(x=>String(x.id)===String(id));return m&&m.real?m.real.accountId+":"+m.real.messageId:null};
 function saveOpen(){
@@ -2472,11 +2485,11 @@ function applyHashNav(){
     }
     if(isOpen)closeSettings();
     const pm=/^#\/([a-z]+)$/.exec(h);let want=pm&&PAGES.includes(pm[1])?pm[1]:"all";
-    const ok={sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,messages:feat.messages,junk:feat.junk_mail,cleanup:feat.clean_up}[want];
+    const ok={folders:realMail,sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,messages:feat.messages,junk:feat.junk_mail,cleanup:feat.clean_up}[want];
     if(want!=="all"&&ok===false)want="all";
     filter=want;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===want));
     closeSnoozeMenu();readerOpen=false;if(want==="all")paneId=null;render();
-    if(want==="sent")loadSent();
+    if(want==="sent")loadSent();if(want==="folders")loadFolders();
     if(want==="drafts")loadDrafts();
     if(want==="messages")openMsgPage();
     if(want==="junk")openJunkPage();if(want==="cleanup")openCleanPage();
@@ -2553,7 +2566,7 @@ function restorePage(){
     const want=p[1],ok={sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,messages:feat.messages,junk:feat.junk_mail,cleanup:feat.clean_up}[want];
     if(want!=="all"&&ok!==false){
       filter=want;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===want));
-      if(want==="sent")loadSent();
+      if(want==="sent")loadSent();if(want==="folders")loadFolders();
       if(want==="drafts")loadDrafts();
       if(want==="messages")openMsgPage();
       if(want==="junk")openJunkPage();if(want==="cleanup")openCleanPage();
@@ -2811,7 +2824,7 @@ function applyView(){
   $("vOpen").disabled=$("vPeek").disabled=!classic;$("vOpenL").classList.toggle("off",!classic);$("vPeekL").classList.toggle("off",!classic);
 }
 function visible(m){
-  if(m.owner!==currentUser.id||filter==="sent"||filter==="drafts"||filter==="tasks")return false;
+  if(m.owner!==currentUser.id||filter==="sent"||filter==="folders"||filter==="drafts"||filter==="tasks")return false;
   if(mailboxSel&&m.account!==mailboxSel)return false;
   if(filter==="snoozed"){if(!isSnoozed(m))return false}else if(isSnoozed(m))return false;      // a snoozed email waits out of sight until its time
   if(filter==="held"){if(!isHeld(m))return false}else if(isHeld(m))return false;                  // email held for the daily summary waits in its own list
@@ -2851,7 +2864,7 @@ function snoozeOptions(now){
 // ---- Search everywhere: the one search box also looks in the other places Enveliq keeps things for this person ----
 // Reviewed, Archived and Snoozed emails, tasks, orders and waiting notes. It uses only what this page already holds for the signed-in person
 // (kept summaries and results): nothing new is stored and nothing extra is asked of the server. Matches are shown as text, a few at a time.
-const SEARCH_PAGES=["tasks","sent","shipping","subscriptions","trips","waiting","messages"],SEARCH_EACH=4;
+const SEARCH_PAGES=["tasks","sent","folders","shipping","subscriptions","trips","waiting","messages"],SEARCH_EACH=4;
 function searchMore(rows){
   const q=String(query||"").trim().toLowerCase();
   if(q.length<2||SEARCH_PAGES.includes(filter))return "";
@@ -3116,7 +3129,7 @@ const splitNow=()=>document.body.classList.contains("split-read")&&window.matchM
 const goTasks=()=>{filter="tasks";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="tasks"));render()};
 function renderToday(){
   const box=$("dueBars"),open=openTasks(),now=open.filter(t=>t.days<=0);
-  if(!now.length||filter==="tasks"||filter==="sent"){box.hidden=true;box.replaceChildren();return}
+  if(!now.length||filter==="tasks"||filter==="sent"||filter==="folders"){box.hidden=true;box.replaceChildren();return}
   const calm=calmOn(),shown=now.slice(0,calm?1:3),important=calm?now.slice(1):[],rest=open.filter(t=>t.days>0);
   const mobile=window.matchMedia("(max-width:760px)").matches;
   const title=calm?"Start here":'Today · '+now.length+' '+(now.length===1?"thing":"things");
@@ -3790,7 +3803,7 @@ function renderShipPage(){
 }
 function renderShipHome(){
   const box=$("shipBars"),due=shipOn()?(shipData.orders||[]).filter(o=>o.needs_confirm):[];
-  if(!due.length||filter==="shipping"||filter==="sent"){box.hidden=true;box.replaceChildren();return}
+  if(!due.length||filter==="shipping"||filter==="sent"||filter==="folders"){box.hidden=true;box.replaceChildren();return}
   box.innerHTML=`<div class="shipcard"><div class="thead"><b>Delivered · did it arrive?</b><button class="linkbtn" type="button" data-ship-go>Open Shipping</button></div>${due.slice(0,3).map(o=>`<div class="shiprow"><div class="who"><b>${esc(o.shop||"An order")}${o.order_number?" · "+esc(o.order_number):""}</b><span>${esc(o.items||"")}${o.delivered_at?(o.items?" · ":"")+esc(shipWhen(o.delivered_at)):""}</span></div><button class="obtn teal" type="button" data-ship="confirm" data-ship-id="${esc(o.id)}">Yes, I've got it</button><button class="obtn" type="button" data-ship="not_yet" data-ship-id="${esc(o.id)}">Not yet</button></div>`).join("")}${due.length>3?`<button class="tmore" type="button" data-ship-go>+${due.length-3} more</button>`:""}</div>`;
   box.hidden=false;
 }
@@ -3840,7 +3853,7 @@ function renderSubPage(){
 }
 function renderSubHome(){
   const box=$("subBars"),due=subOn()?(subData.items||[]).filter(s=>s.soon&&s.next):[];
-  if(!due.length||filter==="subscriptions"||filter==="sent"){box.hidden=true;box.replaceChildren();return}
+  if(!due.length||filter==="subscriptions"||filter==="sent"||filter==="folders"){box.hidden=true;box.replaceChildren();return}
   box.innerHTML=`<div class="subcard"><div class="thead"><b>Coming up</b><button class="linkbtn" type="button" data-sub-go>Open Subscriptions</button></div>${due.slice(0,3).map(s=>`<div class="subrow"><div class="who"><b>${esc(s.service||"A subscription")} ${s.next.kind==="trial_ends"?"free trial ends":s.estimated?"probably renews":"renews"} ${esc(subWhenText(s))}</b><span>${esc([subMoney(s),subDayLong(s.next.on)].filter(Boolean).join(" · "))}</span></div></div>`).join("")}${due.length>3?`<button class="tmore" type="button" data-sub-go>+${due.length-3} more</button>`:""}</div>`;
   box.hidden=false;
 }
@@ -4063,7 +4076,7 @@ function renderTripPage(){
 }
 function renderTripHome(){
   const box=$("tripBars"),near=tripOn()?(tripData.trips||[]).filter(t=>!t.cancelled&&(t.state==="now"||(t.state==="soon"&&t.days_to_start<=7))):[];
-  if(!near.length||filter==="trips"||filter==="sent"){box.hidden=true;box.replaceChildren();return}
+  if(!near.length||filter==="trips"||filter==="sent"||filter==="folders"){box.hidden=true;box.replaceChildren();return}
   box.innerHTML=`<div class="tripcard"><div class="thead"><b>Trips</b><button class="linkbtn" type="button" data-trip-go>Open Trips</button></div>${near.slice(0,3).map(t=>`<div class="triprow"><div class="who"><b>${esc(t.title)}</b><span>${esc(t.state==="now"?`Under way · until ${tripDay(t.end)}`:`Starts ${tripIn(t.days_to_start)} · ${tripDay(t.start)}`)}</span></div></div>`).join("")}${near.length>3?`<button class="tmore" type="button" data-trip-go>+${near.length-3} more</button>`:""}</div>`;
   box.hidden=false;
 }
@@ -4156,7 +4169,7 @@ function renderMsgPage(){
 }
 function renderMsgHome(){
   const box=$("msgBars"),L=msgOn()?msgSum.latest||[]:[];
-  if(!msgOn()||!msgSum.unread||!L.length||filter==="messages"||filter==="sent"){box.hidden=true;box.replaceChildren();return}
+  if(!msgOn()||!msgSum.unread||!L.length||filter==="messages"||filter==="sent"||filter==="folders"){box.hidden=true;box.replaceChildren();return}
   const names=[...new Set(L.map(x=>x.from.name))],more=Math.max(0,(msgSum.conversations||L.length)-L.length);
   const who=names.length===1&&!more?names[0]:names.length===2&&!more?names.join(" and "):names.slice(0,2).join(", ")+" and "+(names.length-2+more>0?`${names.length-2+more} more`:"others");
   box.innerHTML=`<div class="msgcard"><span class="mgstack">${L.map(x=>msgAvatar(x.from)).join("")}</span><div class="mtx"><b>${esc(who)} left you ${msgSum.unread} ${msgSum.unread===1?"message":"messages"}</b><span>${L.map(x=>esc(x.from.name+": “"+x.text+"”")).join(" · ")}</span></div><button class="mgbtn pri" type="button" data-msg-go>Read messages</button></div>`;
@@ -4286,7 +4299,7 @@ function renderWaitPage(){
 }
 function renderWaitHome(){
   const box=$("waitBars"),due=waitOn()?(waitData.notes||[]).filter(n=>n.due):[];
-  if(!due.length||filter==="waiting"||filter==="sent"||filter==="shipping"||filter==="subscriptions"||filter==="trips"){box.hidden=true;box.replaceChildren();return}
+  if(!due.length||filter==="waiting"||filter==="sent"||filter==="folders"||filter==="shipping"||filter==="subscriptions"||filter==="trips"){box.hidden=true;box.replaceChildren();return}
   const btn=(n,a,t)=>`<button class="wbtn" type="button" data-wait="${a}" data-wait-id="${esc(n.id)}">${t}</button>`;
   box.innerHTML=`<div class="waitcard"><div class="thead"><b>Waiting on others · ${due.length}</b><button class="linkbtn" type="button" data-wait-go>Open</button></div>${due.slice(0,3).map(n=>`<div class="waitrow"><div><span class="wto">${esc(waitTo(n))}</span> <span class="wsub">· ${esc(n.subject||"")}</span></div><div class="wage">${esc(waitAge(n))}. No reply yet.${n.ask?" "+esc(n.ask):""}</div><div class="wb"><button class="wbtn amber" type="button" data-wait-nudge="${esc(n.id)}">Write a nudge</button>${btn(n,"got_reply","Got a reply")}${btn(n,"later","Ask again in "+waitData.days+(waitData.days===1?" day":" days"))}${btn(n,"not_needed","Not needed")}</div></div>`).join("")}${due.length>3?`<button class="tmore" type="button" data-wait-go>+${due.length-3} more</button>`:""}</div>`;
   box.hidden=false;
@@ -4424,7 +4437,7 @@ function render(){
   if(findUi.open&&String(query||"").trim().length<2)findReset();
   if(selMode&&(!selected.size||!isPhone()))selMode=false;
   document.body.classList.toggle("selecting",selMode);
-  document.body.classList.toggle("in-sent",filter==="sent");document.body.classList.toggle("in-found",filter==="found");document.body.classList.toggle("on-draft",filter==="drafts");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="sent"?"Sent":filter==="drafts"?"Drafts":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="junk"?"Junk Mail":filter==="cleanup"?"Clean up":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
+  document.body.classList.toggle("in-sent",filter==="sent"||filter==="folders");document.body.classList.toggle("in-folders",filter==="folders");document.body.classList.toggle("in-found",filter==="found");document.body.classList.toggle("on-draft",filter==="drafts");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="folders"?"Folders":filter==="sent"?"Sent":filter==="drafts"?"Drafts":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="junk"?"Junk Mail":filter==="cleanup"?"Clean up":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
   const mine=userMessages().filter(m=>!m.extra);          // the quiet "All emails" entries are never counted
   if(!realMail)syncDemoTasks();else settleTasks();
   document.body.classList.toggle("on-tasks",filter==="tasks");
@@ -4446,7 +4459,7 @@ function render(){
   {const hd=mine.filter(isHeld),hn=$("heldNav"),hb=$("heldBadge");if(hn){hn.hidden=!hd.length&&filter!=="held";hb.textContent=hd.length;hb.hidden=!hd.length}}
   const asleep=mine.filter(isSnoozed);{const sn=$("snoozeNav"),sb=$("snoozeBadge");sn.hidden=!asleep.length&&filter!=="snoozed";sb.textContent=asleep.length;sb.hidden=!asleep.length}
   for(const [id,n] of [["allBadge",mine.filter(m=>m.status==="inbox"&&!isAside(m)).length],["actionBadge",mine.filter(m=>m.status==="inbox"&&!isAside(m)&&m.action).length],["attachBadge",mine.filter(m=>m.status==="inbox"&&!isAside(m)&&fileN(m)).length],["taskBadge",openTasks().length]]){const el=$(id);el.textContent=n;el.hidden=n===0}
-  $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent"&&filter!=="drafts");
+  $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent"&&filter!=="folders"&&filter!=="drafts");
   document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",filter==="all"));{const fb=$("filterBy");tagFilterOptions(fb);const pick=["action","need","high","attachments","starred"].includes(filter)||[...fb.options].some(o=>o.value===filter)?filter:"";fb.value=pick;fb.classList.toggle("active",!!pick)}
   $("selectedCount").textContent=selected.size;$("bulk").classList.toggle("show",selected.size>1||selMode);$("previewBulk").classList.toggle("show",selected.size>1||selMode);$("previewSelCount").textContent=selected.size;
   $("userName").textContent=currentUser.name;$("userRole").textContent=currentUser.is_admin?"Administrator":"User";paintAvatar();previewSyncAccount();
@@ -4457,7 +4470,7 @@ function render(){
   document.querySelector(".top-left h2").textContent=VIEW_NAMES[filter]||(filter==="all"&&calmOn()?"One thing at a time":filter==="all"?"My inbox":greeting);
   $("backInbox").hidden=filter==="all";
   $("previewCalmNotice").hidden=!(filter==="all"&&calmOn());
-  $("previewListHeading").hidden=["sent","drafts","tasks","shipping","waiting","subscriptions","trips","messages","junk","cleanup"].includes(filter);
+  $("previewListHeading").hidden=["sent","folders","drafts","tasks","shipping","waiting","subscriptions","trips","messages","junk","cleanup"].includes(filter);
   previewSyncMenu();
   $("todayDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"});
   $("inboxSubtitle").innerHTML=`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+(calmOn()?(inbox.length?"One thing at a time. Important deadlines stay visible.":"Nothing waiting. Enjoy the quiet."):inbox.length?`<b>${inbox.length} ${inbox.length===1?"email":"emails"}</b> to look at${needN?`, <span class="need" role="button" tabindex="0" data-need title="Show only these">${needN} need${needN===1?"s":""} you</span>`:""}`:(document.body.classList.contains("backend")&&!realMail?"No mailbox is connected yet":"All caught up"));
@@ -4473,7 +4486,7 @@ function render(){
   if(cmp)rows.sort(cmp);
   if(impSet.size)rows.sort((a,b)=>isImp(b)-isImp(a));          // a stable sort: important people first, the chosen order kept inside each group
   scheduleWake();
-  {const b=$("expandAll"),can=lay()==="list"&&!["tasks","sent","drafts","shipping","subscriptions","trips","waiting","messages","junk","cleanup"].includes(filter)&&rows.length>0;
+  {const b=$("expandAll"),can=lay()==="list"&&!["tasks","sent","folders","drafts","shipping","subscriptions","trips","waiting","messages","junk","cleanup"].includes(filter)&&rows.length>0;
    b.hidden=!can||selected.size>1;if(can){const all=view.rows==="open"||rows.every(m=>expanded.has(`row-${m.id}`));b.textContent=all?"Collapse all":"Expand all";b.dataset.mode=all?"collapse":"expand"}}
   const copyMailButtons=(m,mobile=false)=>{
     const id=esc(m.id);
@@ -4579,7 +4592,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
         ${act}<div class="deckdots" aria-hidden="true">${dots}</div></div>`;
     }else{
       const readingHtml=cur?(view.style==="rail"?`<section class="reading rail" aria-label="Selected email">${quiet(cur,"rail")}</section>`:`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div>${copyMailButtons(cur)}</header>${quiet(cur,"detail")}</section>`):`<section class="reading enveliq-empty" aria-label="No email selected">${enEmptyReading()}</section>`;
-      if(lay()==="right"&&!["sent","drafts","tasks","shipping","waiting","subscriptions","trips","messages","junk","cleanup"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
+      if(lay()==="right"&&!["sent","folders","drafts","tasks","shipping","waiting","subscriptions","trips","messages","junk","cleanup"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
         dockHtml=readingHtml;
         listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rowsHtml(rows,"pane")}</div></div>`;
       }else listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rowsHtml(rows,"pane")}</div>${readingHtml}</div>`;
@@ -4756,6 +4769,7 @@ function menuItemsFor(m,viewer){
     if(m.real&&realMail)item("data-forward","Forward");
     if(!m.kept)item(isSnoozed(m)?"data-unsnooze":"data-snooze",isSnoozed(m)?"Wake now":"Snooze");
     if(canStar(m))item("data-star",m.starred?"Remove star":"Star");
+    if(canStar(m))item("data-move-folder","Move to folder…");
     if(!m.kept&&m.status==="inbox"&&!m._pending&&m.real&&!m.found)item(isRead(m)?"data-unread":"data-markread",isRead(m)?"Mark as unread":"Mark as read");
     sep();
   }
@@ -6497,6 +6511,9 @@ document.addEventListener("click",e=>{
   const lt=e.target.closest("[data-later-toggle]");if(lt){if(splitNow()){goTasks();return}calmLaterOpen=!calmLaterOpen;render();return}
   const stb=e.target.closest("[data-star]");
   if(stb){e.stopPropagation();closeMoreMenu();const m=data.find(x=>x.id===+stb.dataset.star&&x.owner===currentUser.id);if(m&&canStar(m))toggleStar(m);return}
+  const mvf=e.target.closest("[data-move-folder]");
+  if(mvf){e.stopPropagation();closeMoreMenu();const m=data.find(x=>x.id===+mvf.dataset.moveFolder&&x.owner===currentUser.id);if(m&&canStar(m))openFolderPicker([m]);return}
+  if(e.target.closest("[data-bulk-move]")){openFolderPicker([...selected].map(id=>data.find(x=>x.id===id&&x.owner===currentUser.id)).filter(m=>m&&canStar(m)));return}
   const nv=e.target.closest("[data-nav-mail]");
   if(nv){navMail(+nv.dataset.navMail);return}
   const pk=e.target.closest("[data-pick]");if(pk){if(lay()==="screen"){captureMailPosition();readerOpen=true}const nid=+pk.dataset.pick,ni=lastRowIds.indexOf(nid),ci=lastRowIds.indexOf(paneId);deckDir=ni>=0&&ci>=0&&ni<ci?"prev":"next";paneId=nid;enMarkOpened(nid);render();return}
@@ -6567,7 +6584,7 @@ document.addEventListener("click",e=>{
      if(t.matches("[data-msg-unsend]")&&msgS.cur){msgReq(`/threads/${encodeURIComponent(msgS.cur.id)}/messages/${encodeURIComponent(t.dataset.msgUnsend)}`,"DELETE").then(async()=>{await loadMsgs();render()}).catch(er=>toast(er.message,5000));return}
    }}
   if(e.target.closest("[data-back-inbox]")){paneId=null;filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();window.scrollTo({top:0});return}
-  const n=e.target.closest("[data-filter]");if(n){filter=n.dataset.filter;if(filter==="all")paneId=null;if(n.classList.contains("nav")&&query){query="";$("search").value="";document.body.classList.remove("msearch")}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="drafts")loadDrafts();if(filter==="messages")openMsgPage();if(filter==="junk")openJunkPage();if(filter==="cleanup")openCleanPage();return}
+  const n=e.target.closest("[data-filter]");if(n){filter=n.dataset.filter;if(filter==="all")paneId=null;if(n.classList.contains("nav")&&query){query="";$("search").value="";document.body.classList.remove("msearch")}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="folders")loadFolders();if(filter==="drafts")loadDrafts();if(filter==="messages")openMsgPage();if(filter==="junk")openJunkPage();if(filter==="cleanup")openCleanPage();return}
   const c=e.target.closest("[data-chip]");if(c){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();return}
   const wa=e.target.closest("[data-wait]");if(wa){waitAct(wa.dataset.waitId,wa.dataset.wait);return}
   const wn=e.target.closest("[data-wait-nudge]");if(wn){waitNudge(wn.dataset.waitNudge);return}
@@ -7235,7 +7252,7 @@ async function pollOutbox(){
 function applyFeatures(){
   const on=realMail&&accounts.length>0;rssPaint();
   $("newMailBtn").hidden=!(on&&feat.compose);
-  $("sentNav").hidden=!(on&&feat.sent);$("draftNav").hidden=!on;if(on&&!draftData.loaded)loadDrafts();
+  $("sentNav").hidden=!(on&&feat.sent);$("folderNav").hidden=!on;$("draftNav").hidden=!on;if(on&&!draftData.loaded)loadDrafts();
   if(filter==="drafts"&&!on){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   $("shipNav").hidden=!(on&&feat.shipping);$("waitNav").hidden=!(on&&feat.waiting);subNavSync();
   if(filter==="waiting"&&!(on&&feat.waiting)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
@@ -8005,6 +8022,95 @@ async function loadWaiting(){
     }));
   }catch{box.hidden=true}
 }
+// ---- Folders: move an email into a folder of your own, make a new folder, and look inside any folder ----
+// Folder names are read from the mailbox when needed and never stored. The server only moves into a folder the mailbox listed.
+const recentFolderKey=aid=>"enveliq-recent-folders-"+aid;
+function recentFolders(aid){try{const v=JSON.parse(localStorage.getItem(recentFolderKey(aid))||"[]");return Array.isArray(v)?v.filter(x=>typeof x==="string").slice(0,6):[]}catch{return[]}}
+function rememberFolder(aid,name){try{localStorage.setItem(recentFolderKey(aid),JSON.stringify([name,...recentFolders(aid).filter(x=>x!==name)].slice(0,6)))}catch{}}
+const foldersUrl=aid=>`/api/v1/accounts/${encodeURIComponent(aid)}/folders`;
+async function moveRealOne(m,folder){
+  try{
+    await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}/move`,{method:"POST",keepalive:true,body:JSON.stringify({folder})});
+    const ix=data.indexOf(m);if(ix>=0)data.splice(ix,1);
+    selected.delete(m.id);if(currentViewerMessageId===m.id)closeAttachmentViewer();refreshTasks();return true;
+  }catch(er){toast(er.message||"Could not move this email.",6000,"error");return false}
+}
+async function openFolderPicker(list){
+  const ms=list.filter(m=>m&&m.real&&!m._pending);
+  if(!ms.length)return;
+  const aid=ms[0].real.accountId;
+  if(ms.some(m=>m.real.accountId!==aid)){toast("Pick emails from one mailbox at a time to move them.",4500);return}
+  document.getElementById("folderPick")?.remove();
+  const box=document.createElement("div");box.id="folderPick";box.className="sheetform popcard";box.setAttribute("role","dialog");box.setAttribute("aria-modal","true");box.setAttribute("aria-label","Move to a folder");
+  box.innerHTML=`<div class="sf-top"><strong>Move ${ms.length===1?"this email":ms.length+" emails"} to…</strong><button type="button" class="sf-close" data-fp-close>Close</button></div><div class="sf-body"><label>Find a folder<input type="text" id="fpFind" autocomplete="off" placeholder="Start typing a folder name"></label><div class="fpick-list" id="fpList" role="list"><p class="sp-sub">Reading your folders…</p></div><div class="fpick-new"><input type="text" id="fpNew" maxlength="80" placeholder="Or make a new folder" aria-label="Name of a new folder"><button type="button" class="btn" id="fpMake">Make it</button></div><p class="sp-sub" id="fpNote" role="status"></p></div>`;
+  document.body.appendChild(box);
+  const close=()=>{box.remove();document.removeEventListener("keydown",onKey)},onKey=ev=>{if(ev.key==="Escape")close()};
+  document.addEventListener("keydown",onKey);box.querySelector("[data-fp-close]").onclick=close;
+  let rows=[];
+  const choose=f=>{close();rememberFolder(aid,f.name);queueAction(ms,"moved",{folder:f.name,folderLabel:f.label});selMode=false};
+  const paint=()=>{
+    const q=$("fpFind").value.trim().toLowerCase(),rec=recentFolders(aid),mine=rows.filter(r=>r.target&&(!q||r.label.toLowerCase().includes(q)));
+    mine.sort((a,b)=>{const ra=rec.indexOf(a.name),rb=rec.indexOf(b.name);return (ra<0?99:ra)-(rb<0?99:rb)||a.label.localeCompare(b.label)});
+    const L=$("fpList");L.replaceChildren();
+    if(!mine.length){const p=document.createElement("p");p.className="sp-sub";p.textContent=rows.some(r=>r.target)?"No folder matches that.":"You have no folders of your own yet. Make one below.";L.append(p);return}
+    for(const f of mine){const b=document.createElement("button");b.type="button";b.className="fpick-item";b.setAttribute("role","listitem");b.textContent=f.label;b.onclick=()=>choose(f);L.append(b)}
+  };
+  try{rows=(await secureBackendRequest(foldersUrl(aid),{method:"GET",headers:{}})).folders||[];paint()}
+  catch(er){$("fpList").textContent=er.message||"Could not read your folders.";}
+  $("fpFind").oninput=paint;$("fpFind").focus();
+  $("fpMake").onclick=async()=>{
+    const name=$("fpNew").value.trim();if(!name)return;
+    $("fpMake").disabled=true;$("fpNote").textContent="";
+    try{const f=await secureBackendRequest(foldersUrl(aid),{method:"POST",body:JSON.stringify({name})});f.target=true;rows.push(f);choose(f)}
+    catch(er){$("fpNote").textContent=er.message||"That folder could not be made.";$("fpMake").disabled=false}
+  };
+}
+let fdrAcct="",fdrFolder="",fdrRows=[],fdrToken=0;
+async function loadFolders(){
+  if(!accounts.length)return;
+  const box=$("fdrBox");
+  if(accounts.length>1){
+    if(box.options.length!==accounts.length)box.replaceChildren(...accounts.map(a=>new Option(a.name,a.id)));
+    if(!fdrAcct||!accounts.some(a=>a.id===fdrAcct))fdrAcct=accounts[0].id;
+    box.value=fdrAcct;box.hidden=false;
+  }else{fdrAcct=accounts[0].id;box.hidden=true}
+  const aid=fdrAcct,chips=$("fdrChips"),status=$("fdrStatus");
+  $("fdrList").replaceChildren();chips.replaceChildren();status.textContent="Reading your folders…";$("fdrRefresh").disabled=true;
+  try{
+    const r=await secureBackendRequest(foldersUrl(aid),{method:"GET",headers:{}});
+    if(aid!==fdrAcct||filter!=="folders")return;
+    status.textContent=r.folders.length?"Pick a folder to see what is in it.":"This mailbox has no other folders.";
+    chips.replaceChildren(...r.folders.map(f=>{const b=document.createElement("button");b.type="button";b.className="fchip"+(f.name===fdrFolder?" on":"");b.textContent=f.label;b.onclick=()=>{fdrFolder=f.name;chips.querySelectorAll(".fchip").forEach(x=>x.classList.toggle("on",x===b));openFolder(aid,f,0)};return b}));
+    if(fdrFolder){const f=r.folders.find(x=>x.name===fdrFolder);if(f)openFolder(aid,f,0);else fdrFolder=""}
+  }catch(er){status.textContent=er.message||"Could not read your folders."}
+  finally{$("fdrRefresh").disabled=false}
+}
+async function openFolder(aid,f,offset){
+  const list=$("fdrList"),status=$("fdrStatus"),mine=++fdrToken;
+  if(!offset){list.replaceChildren();fdrRows=[]}
+  list.querySelectorAll(".fmore").forEach(x=>x.remove());
+  status.textContent="Reading "+f.label+"…";
+  try{
+    const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/folder-mail?folder=${encodeURIComponent(f.name)}&offset=${offset}`,{method:"GET",headers:{}});
+    if(mine!==fdrToken||filter!=="folders")return;
+    status.textContent=r.total?`${f.label}: ${r.total} ${r.total===1?"email":"emails"}, newest first.`:`${f.label} is empty.`;
+    for(const it of r.rows){
+      const row=document.createElement("button");row.type="button";row.className="frow";
+      const who=document.createElement("b");who.textContent=it.from_name||it.from_address||"(no sender)";
+      const when=document.createElement("span");when.textContent=it.date?realTime(it.date):"";
+      const sub=document.createElement("span");sub.className="fsub";sub.textContent=it.subject;
+      row.append(who,when,sub);
+      row.onclick=async()=>{
+        toast("Fetching the email from your mailbox…");
+        try{const o=await secureBackendRequest(`/api/v1/folder-mail/${encodeURIComponent(it.token)}/original`,{method:"GET",headers:{}});
+          presentOriginal({...o,attachments:[]},{title:it.subject,context:`${it.from_name||it.from_address} · ${f.label}${(o.attachments||[]).length?" · Open it in your mail app for its files":""}`,fallbackDate:it.date?realTime(it.date):""});
+        }catch(er){toast(er.message,6000)}
+      };
+      list.append(row);
+    }
+    if(r.more){const b=document.createElement("button");b.type="button";b.className="btn fmore";b.textContent="Show more";b.onclick=()=>openFolder(aid,f,offset+r.rows.length);list.append(b)}
+  }catch(er){status.textContent=er.message||"Could not open that folder."}
+}
 // ---- Sent: the last 4 months, read from the mailbox when opened, never stored ----
 let sentAcct="";
 async function loadSent(){
@@ -8423,6 +8529,7 @@ $("nmCcBtn").onclick=()=>{$("nmCcRow").hidden=false;nmFields().cc.input.focus()}
 $("nmBccBtn").onclick=()=>{$("nmBccRow").hidden=false;nmFields().bcc.input.focus()};
 $("cmCcBtn").onclick=()=>{$("cmCcRow").hidden=false;cmFields().cc.input.focus()};
 $("cmBccBtn").onclick=()=>{$("cmBccRow").hidden=false;cmFields().bcc.input.focus()};
+$("fdrRefresh").onclick=loadFolders;$("fdrBox").onchange=e=>{fdrAcct=e.target.value;fdrFolder="";loadFolders()};
 $("sentRefresh").onclick=loadSent;
 $("sentBox").onchange=e=>{sentAcct=e.target.value;loadSent()};
 bootBackendMode().finally(()=>document.body.classList.remove("booting"));
@@ -8655,7 +8762,7 @@ function drawUndos(){          // one bar per waiting action, the newest at the 
   const box=$("undoBar");box.textContent="";box.hidden=!pendingActs.length;
   pendingActs.forEach(entry=>{
     const n=entry.ms.length,bar=document.createElement("div");bar.className="undobar";
-    const t=document.createElement("span");t.textContent=`${UNDO_LABEL[entry.status]} · ${n===1?entry.ms[0].subject:n+" emails"}`;
+    const t=document.createElement("span");t.textContent=`${entry.status==="moved"?"Moved to "+entry.folderLabel:UNDO_LABEL[entry.status]} · ${n===1?entry.ms[0].subject:n+" emails"}`;
     const btn=document.createElement("button");btn.type="button";btn.textContent="Undo";btn.onclick=()=>undoEntryNow(entry);
     bar._entry=entry;
     const pr=document.createElement("i");pr.className="undoprog";
@@ -8690,12 +8797,12 @@ function undoEntryNow(e){
   clearTimeout(e.timer);const i=pendingActs.indexOf(e);if(i>=0)pendingActs.splice(i,1);
   e.ms.forEach(m=>{delete m._pending});drawUndos();render();toast("Undone");
 }
-function queueAction(list,status){
+function queueAction(list,status,extra){
   const ms=list.filter(m=>m&&!m._pending&&!m.kept);
   if(!ms.length)return;
   if(status==="reviewed"){const rd=ms.filter(m=>m.real&&!m.found);if(rd.length){markReadNow(rd);selMode=false;if(rd.length===ms.length)return;ms.splice(0,ms.length,...ms.filter(m=>!(m.real&&!m.found)))}}
   ms.forEach(m=>{m._pending=status;selected.delete(m.id)});
-  const entry={ms,status,total:window.__undoMs,end:Date.now()+window.__undoMs};
+  const entry={ms,status,total:window.__undoMs,end:Date.now()+window.__undoMs,...(extra||{})};
   pendingActs.push(entry);
   entry.timer=setTimeout(()=>commitAction(entry),window.__undoMs);
   while(pendingActs.length>UNDO_MAX)commitAction(pendingActs[0]);
@@ -8707,6 +8814,7 @@ async function commitAction(entry,together){
   drawUndos();
   const {ms,status}=entry,many=ms.length>1;let done=0,failed=false;
   const one=async m=>{
+    if(status==="moved"){if(await moveRealOne(m,entry.folder))done++;else failed=true;return}
     if(m.real){if(await resolveRealOne(m,status,document.createElement("button"),many))done++;else failed=true}
     else{m.status=status;m.attachments=[];m.attachmentsPurged=true;selected.delete(m.id);done++}
   };
@@ -8715,6 +8823,7 @@ async function commitAction(entry,together){
     else for(const m of ms){await one(m);if(failed)break}
     if(ms.some(m=>currentViewerMessageId===m.id))closeAttachmentViewer();
     if(!many&&!ms[0].real)toast(status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${status} · attachment data purged`,2000,"success");
+    if(!many&&status==="moved"&&!failed)toast("Moved to "+entry.folderLabel+" in your mailbox",2500,"success");
     if(many)toast(failed?`${done} updated, then stopped. The rest are back in your list.`:`${done} emails updated${ms.some(m=>m.real)?" in your mailbox":" · attachment data purged"}`,failed?6000:2500,failed?"error":"success");
     if(many&&ms.some(m=>m.real))refreshTasks();
   }finally{ms.forEach(m=>{delete m._pending});render()}

@@ -279,6 +279,8 @@ jobs:
         run: node scripts/check_stage1.mjs
       - name: Star check
         run: node scripts/check_stage2.mjs
+      - name: Folders check
+        run: node scripts/check_stage3.mjs
       - name: Trips page and Home card (simulated server)
         run: node scripts/check_trips.mjs
       - name: Subscriptions page and Home card (simulated server)

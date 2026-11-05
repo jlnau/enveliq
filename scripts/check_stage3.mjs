@@ -1,0 +1,154 @@
+// Browser check for Stage 3: move an email into a folder (picker, new folder, Undo, several at once) and the Folders page.
+// The page is loaded from a pretend Enveliq server (Playwright intercepts requests).
+//
+// Usage (needs Playwright and a Chromium build):
+//   node scripts/check_stage3.mjs [path/to/prototype/index.html]
+import { chromium } from "playwright";
+import { fileURLToPath } from "node:url";
+import fs from "node:fs";
+import path from "node:path";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const html = fs.readFileSync(path.resolve(process.argv[2] || path.join(here, "..", "prototype", "index.html")), "utf8");
+const ORIGIN = "http://enveliq.test";
+let failed = false;
+const check = (label, good) => { console.log((good ? "✓ " : "✗ ") + label); if (!good) { failed = true; console.log("::error::" + label); } };
+for (const ev of ["uncaughtException", "unhandledRejection"]) process.on(ev, (e) => { console.log("::error::" + String((e && e.message) || e).split("\n").slice(0, 3).join(" | ")); process.exit(1); });
+const features = { compose: true, address_book: true, sent: true, media: true };
+const now = Math.floor(Date.now() / 1000);
+const ctx = (id, refs = []) => ({ reply_to: "x@example.invalid", delivered_to: null, via_alias: null, message_id: `<${id}@x>`, references: refs });
+const base = { summary: "A short summary.", priority: "normal", category: "Information", action_required: false, state: "unread", snoozed_until: null };
+const make = () => [
+  { ...base, id: "m-a", subject: "Trip plans", sender_display: "Alice", sender_address: "alice@example.invalid", received_at: now - 300, reply_context: ctx("a2", ["<a1@x>"]) },
+  { ...base, id: "m-b", subject: "Re: Trip plans", sender_display: "Bob", sender_address: "bob@example.invalid", received_at: now - 900, reply_context: ctx("a1") },
+  { ...base, id: "m-c", subject: "Electricity bill", starred: true, sender_display: "Northside Power", sender_address: "bills@example.invalid", received_at: now - 1200, reply_context: ctx("c") },
+  { ...base, id: "m-r", subject: "Starred and already read", sender_display: "Cara", sender_address: "cara@example.invalid", received_at: now - 5000, from_all_mail: true, starred: true, reply_context: ctx("r") },
+];
+let messages, posts, prints, sent, madeFolder;
+const handler = async (route) => {
+  const req = route.request(), u = new URL(req.url()), p = u.pathname, m = req.method();
+  const json = (status, body) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
+  if (u.origin !== ORIGIN) return route.abort();
+  if (p === "/") return route.fulfill({ status: 200, contentType: "text/html", body: html });
+  if (p === "/api/v1/status") return json(200, { initialized: true, unlocked: true, setup_required: false, sign_in: { password: true, passkeys: true, sso: { enabled: false, label: null } } });
+  if (p === "/api/v1/system") return json(200, { cipher: "AES-256-GCM", kdf: "Argon2id", idle_lock_seconds: 900 });
+  if (p === "/api/v1/me") return json(200, { id: "u1", username: "morgan", display_name: "Morgan", role: "admin" });
+  if (p === "/api/v1/accounts") return json(200, [{ id: "a1", provider: "proton", auth_method: "proton_bridge", owner_user_id: "u1", display_name: "Proton test", email_address: "me@example.invalid", server: "172.30.0.1", port: 1143, username: "me@example.invalid", settings: {} }]);
+  if (p === "/api/v1/accounts/a1/messages") return json(200, messages);
+  if (p === "/api/v1/me/mail-view") return json(200, m === "GET" ? { view: null } : { view: JSON.parse(req.postData() || "{}") });
+  if (/\/api\/v1\/accounts\/a1\/messages\/[^/]+\/(mute|unread|resolve)$/.test(p) && m === "POST") {
+    posts.push([p.split("/").pop(), p.split("/")[6], JSON.parse(req.postData() || "{}")]);
+    return route.fulfill({ status: p.endsWith("/mute") ? 200 : 204, contentType: "application/json", body: p.endsWith("/mute") ? JSON.stringify({ muted: true, id: "q0123456789abcdef" }) : "" });
+  }
+  if (/\/api\/v1\/accounts\/a1\/messages\/[^/]+\/star$/.test(p) && m === "POST") {
+    const body = JSON.parse(req.postData() || "{}"); const id = p.split("/")[6]; posts.push(["star", id, body]);
+    const row = messages.find((x) => x.id === id); if (row) row.starred = body.starred;
+    return json(200, { starred: body.starred });
+  }
+  if (p === "/api/v1/accounts/a1/folders" && m === "GET") return json(200, { folders: [
+    { name: "Folders/Bills", label: "Bills", special: false, target: true }, { name: "Folders/Holidays", label: "Holidays", special: false, target: true },
+    ...(madeFolder ? [{ name: "Folders/Receipts", label: "Receipts", special: false, target: true }] : []),
+    { name: "Archive", label: "Archive", special: true, target: false }, { name: "Trash", label: "Bin", special: true, target: false } ] });
+  if (p === "/api/v1/accounts/a1/folders" && m === "POST") { const b = JSON.parse(req.postData() || "{}"); posts.push(["make", "", b]); madeFolder = true; return json(201, { name: "Folders/" + b.name, label: b.name, special: false, target: true }); }
+  if (/\/messages\/[^/]+\/move$/.test(p) && m === "POST") { posts.push(["move", p.split("/")[6], JSON.parse(req.postData() || "{}")]); messages = messages.filter((x) => x.id !== p.split("/")[6]); return route.fulfill({ status: 204 }); }
+  if (p === "/api/v1/accounts/a1/folder-mail") return json(200, { rows: [{ token: "tok1.mac", from_name: "Power Co", from_address: "bills@example.invalid", subject: "March bill", date: now - 86400, has_files: false }, { token: "tok2.mac", from_name: "Water Co", from_address: "water@example.invalid", subject: "Water notice", date: now - 172800, has_files: false }], total: 2, more: false, now });
+  if (/\/folder-mail\/[^/]+\/original$/.test(p)) { posts.push(["open", p.split("/")[4], {}]); return json(200, { from: { name: "Power Co", address: "bills@example.invalid" }, to: [{ address: "me@example.invalid" }], date: "Today", subject: "March bill", text: "Plain words of the bill.", links: [], has_html: false, attachments: [] }); }
+  if (p === "/api/v1/me/drafts" && m === "POST") { posts.push(["draft", "", JSON.parse(req.postData() || "{}")]); return json(200, { id: "d0123456789abcdef", items: [] }); }
+  if (p === "/api/v1/me/drafts") return json(200, { items: [] });
+  if (/\/original\/headers$/.test(p)) return json(200, { headers: "From: Alice <alice@example.invalid>\nSubject: Trip plans\nReceived: from mx.example.invalid" });
+  if (/\/original\/eml$/.test(p)) return route.fulfill({ status: 200, contentType: "message/rfc822", headers: { "Content-Disposition": 'attachment; filename="email.eml"' }, body: "Subject: Trip plans\r\n\r\nHello" });
+  if (/\/messages\/[^/]+\/(reply|forward)$/.test(p) && m === "POST") { sent.push([p.split("/").pop(), JSON.parse(req.postData() || "{}")]); return json(200, { sent: true, from: "me@example.invalid" }); }
+  if (/\/accounts\/a1\/send$/.test(p) && m === "POST") { sent.push(["send", JSON.parse(req.postData() || "{}")]); return json(200, { sent: true, from: "me@example.invalid" }); }
+  if (/\/original$/.test(p)) return json(200, { from: { name: "Alice", address: "alice@example.invalid" }, to: [{ address: "me@example.invalid" }], date: "Today", subject: "Trip plans", text: "Plain words of the original email.", links: [], has_html: false, remote_images: 0, attachments: [], truncated: false });
+  if (p === "/api/v1/me/preferences") return json(200, { keep_reviewed: true, keep_archived: true, keep_days: 7, max_days: 14, instructions: "", undo_send_seconds: 0 });
+  if (p === "/api/v1/me/features") return json(200, { effective: features, admin: features, user: features });
+  if (p === "/api/v1/sync/status") return json(200, { enabled: true, minutes: 10, now: Date.now() / 1000, accounts: { a1: { ok: true, at: now } } });
+  return json(404, { detail: "not found" });
+};
+const browser = await chromium.launch();
+const shot = async (page, name) => { if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, name + ".png") }); };
+async function open(width, height = 900) {
+  messages = make(); madeFolder = false; posts = []; prints = 0; sent = [];
+  const context = await browser.newContext({ viewport: { width, height } });
+  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-calm", "0"); } catch (e) {} window.print = () => { window.__prints = (window.__prints || 0) + 1; window.__printDoc = !!document.getElementById("printDoc") && document.getElementById("printDoc").textContent.includes("Plain words"); dispatchEvent(new Event("beforeprint")); setTimeout(() => dispatchEvent(new Event("afterprint")), 700); }; });
+  const page = await context.newPage();
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(String(e)));
+  await context.route("**/*", handler);
+  await page.goto(`${ORIGIN}/`);
+  await page.waitForSelector("article.mail");
+  await page.waitForTimeout(300);
+  return { page, errors, context };
+}
+const pick = async (page, title) => { if (await page.locator(".qmore").first().isVisible().catch(() => false)) return; await page.locator("article.mail", { hasText: title }).locator(".qmain, .qtoggle").first().click(); await page.waitForSelector(".qmore"); };
+const menuTexts = async (page) => (await page.locator("#moreMenu [role=menuitem]").allInnerTexts()).map((x) => x.trim());
+
+for (const width of [1200, 390]) {
+  const tag = width + "px wide: ";
+  const { page, errors, context } = await open(width);
+  await pick(page, "Trip plans");
+  await page.locator(".qmore").first().click();
+  check(tag + "the three-dot menu has Move to folder", (await menuTexts(page)).includes("Move to folder…"));
+  await page.locator("#moreMenu [data-move-folder]").click();
+  await page.waitForSelector("#folderPick .fpick-item");
+  const items = await page.locator("#folderPick .fpick-item").allInnerTexts();
+  check(tag + "the picker lists only folders you can move into (not Archive or Bin)", items.join("|") === "Bills|Holidays");
+  await shot(page, "stage3-picker-" + width);
+  if (width < 600) check(tag + "on a phone the picker fills the screen", await page.locator("#folderPick").evaluate((el) => { const r = el.getBoundingClientRect(); return r.left <= 1 && r.top <= 1 && r.width >= innerWidth - 2 && r.height >= innerHeight - 2; }));
+  await page.fill("#fpFind", "hol");
+  check(tag + "typing narrows the list", (await page.locator("#folderPick .fpick-item").allInnerTexts()).join("|") === "Holidays");
+  await page.locator("#folderPick .fpick-item", { hasText: "Holidays" }).click();
+  await page.waitForSelector("#undoBar .undobar");
+  check(tag + "an Undo bar says where it is going", /Moved to Holidays/.test(await page.locator("#undoBar").innerText()));
+  await page.locator("#undoBar button", { hasText: "Undo" }).click();
+  await page.waitForTimeout(200);
+  check(tag + "Undo brings it back and nothing was sent to the server", posts.every((x) => x[0] !== "move") && (await page.locator("article.mail", { hasText: "Trip plans" }).count()) >= 1);
+  // Move for real and make a new folder from the picker
+  await pick(page, "Trip plans");
+  await page.locator(".qmore").first().click();
+  await page.locator("#moreMenu [data-move-folder]").click();
+  await page.waitForSelector("#folderPick .fpick-item");
+  await page.fill("#fpNew", "Receipts");
+  await page.click("#fpMake");
+  await page.waitForSelector("#undoBar .undobar");
+  check(tag + "a new folder is made and used", posts.some((x) => x[0] === "make" && x[2].name === "Receipts") && /Moved to Receipts/.test(await page.locator("#undoBar").innerText()));
+  await page.waitForFunction(() => window.__undoMs, null, { timeout: 2000 }).catch(() => {});
+  await page.evaluate(() => { window.__undoMs = 0; });
+  await page.waitForTimeout(100);
+  await page.evaluate(() => flushActs());
+  await page.waitForTimeout(600);
+  check(tag + "after the Undo time the email is moved at the mailbox with the folder the server listed", posts.some((x) => x[0] === "move" && x[1] === "m-a" && x[2].folder === "Folders/Receipts"));
+  check(tag + "and it has left the list", (await page.locator("article.mail", { hasText: "Trip plans" }).filter({ hasNotText: "Re:" }).count()) === 0);
+  check(tag + "no page errors", errors.length === 0);
+  await context.close();
+}
+{
+  const { page, errors, context } = await open(1200);
+  await page.evaluate(() => document.querySelector('.nav[data-filter="folders"]').click());
+  await page.waitForSelector(".fchip");
+  check("the Folders page lists the mailbox folders", (await page.locator(".fchip").allInnerTexts()).join("|") === "Bills|Holidays|Archive|Bin");
+  await page.locator(".fchip", { hasText: "Bills" }).click();
+  await page.waitForSelector(".frow");
+  check("opening a folder lists its emails, newest first", (await page.locator(".frow .fsub").allInnerTexts()).join("|") === "March bill|Water notice");
+  await shot(page, "stage3-folders-1200");
+  await page.locator(".frow").first().click();
+  await page.waitForTimeout(500);
+  check("opening one fetches it by its token", posts.some((x) => x[0] === "open" && x[1] === "tok1.mac"));
+  check("no page errors", errors.length === 0);
+  await context.close();
+}
+{
+  const { page, errors, context } = await open(1200);
+  await page.locator("article.mail", { hasText: "Trip plans" }).locator(".qmain, .qtoggle").first().click();
+  await page.evaluate(() => { for (const id of ["m-a", "m-b"]) selected.add(data.find((x) => x.real && x.real.messageId === id).id); render(); });
+  check("with several ticked there is a Move button", (await page.locator("[data-bulk-move]:visible").count()) >= 1);
+  await page.locator("[data-bulk-move]:visible").first().click();
+  await page.waitForSelector("#folderPick .fpick-item");
+  await page.locator("#folderPick .fpick-item", { hasText: "Bills" }).click();
+  await page.waitForSelector("#undoBar .undobar");
+  check("several are one Undo bar", /Moved to Bills · 2 emails/.test(await page.locator("#undoBar").innerText()));
+  check("no page errors", errors.length === 0);
+  await context.close();
+}
+await browser.close();
+if (failed) process.exit(1);

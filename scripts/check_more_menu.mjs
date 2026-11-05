@@ -129,7 +129,7 @@ for (const width of [1200, 390]) {
   check("switching it on groups the two emails of one conversation", (await page.locator("article.mail").count()) === 2 && /2 emails in this conversation/.test(await page.locator(".conv-bar").innerText()));
   await shot(page, "conversation-view");
   await page.locator("[data-conv]").click();
-  check("Show lists the older email, with its own buttons", (await page.locator("article.mail").count()) === 3 && (await page.locator(".conv-kids article.mail .qic").count()) === 3);
+  check("Show lists the older email, with its own buttons", (await page.locator("article.mail").count()) === 3 && (await page.locator(".conv-kids article.mail .qic").count()) === 4);          // Mark as read, Archive, Bin and the star
   await page.locator(".conv-kids article.mail .qrow").first().click();   // open the older email, then press Hide: it must really hide
   await page.waitForTimeout(200);
   await page.locator("[data-conv]").click();

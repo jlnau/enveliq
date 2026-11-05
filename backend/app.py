@@ -30,6 +30,8 @@ from .mail.routes import build_mail_router
 from .mail.extra_routes import build_extra_router
 from .mail.invite_routes import build_invite_router
 from .mail.find_routes import build_find_router
+from .mail.folder_routes import build_folder_router
+from pydantic import Field
 from .mail.task_routes import build_task_router
 from .mail.shipping import ShipBook
 from .mail.inbound import InboundBook
@@ -109,6 +111,7 @@ from .crypto_vault import (
     VaultNotInitialized,
 )
 from .models import (
+    StrictModel,
     AccountCreate,
     AccountPatch,
     AttachmentPolicyPatch,
@@ -734,6 +737,7 @@ mail_ctx = SimpleNamespace(
 app.include_router(build_mail_router(mail_ctx))
 app.include_router(build_extra_router(mail_ctx))          # after the main router: shares its send limits
 app.include_router(build_invite_router(mail_ctx))         # answers to calendar invites use the same send limits
+app.include_router(build_folder_router(mail_ctx))
 app.include_router(build_find_router(mail_ctx))           # after the extra router: uses its summary queue
 app.include_router(build_task_router(mail_ctx))
 app.include_router(build_shipping_router(mail_ctx))
@@ -1221,6 +1225,32 @@ def resolve_message_endpoint(
     except BridgeError as err:
         raise HTTPException(status_code=BRIDGE_HTTP_STATUS.get(err.code, 502),
                             detail={"code": err.code, "message": err.message}) from None
+    return Response(status_code=204)
+
+
+class MoveMessageRequest(StrictModel):
+    folder: str = Field(min_length=1, max_length=300)
+
+
+@app.post("/api/v1/accounts/{account_id}/messages/{message_id}/move", status_code=204)
+def move_message_to_folder(body: MoveMessageRequest, account_id: AccountId, message_id: MessageId, session: Session = Depends(current_session)):
+    """Moves an Inbox email into one of the person's own folders at the mailbox. Like Archive, the email then leaves the list."""
+    load_account(account_id, session.principal, owner_only=True, action="move this email")
+    try:
+        stored = vault.get_message(account_id, message_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Message not found") from exc
+    if stored.get("found_until") or stored.get("state") != "unread" or not stored.get("source_locator"):
+        raise HTTPException(status_code=409, detail="This email cannot be moved from here.")
+    try:
+        mail_service.move_to_folder(mail_ctx.folders, vault.get_account(account_id), stored, body.folder)
+    except BridgeError as err:
+        raise HTTPException(status_code=BRIDGE_HTTP_STATUS.get(err.code, 502),
+                            detail={"code": err.code, "message": err.message}) from None
+    preview_leases.purge_message(account_id, message_id)
+    taskbook.close_message(session.principal.user_id, account_id, message_id, "handled")
+    vault.delete_message(account_id, message_id)
+    vault.audit({"event": "message_moved", "actor_user_id": session.principal.user_id, "account_id": account_id, "message_id": message_id, "at": time.time()})
     return Response(status_code=204)
 
 
