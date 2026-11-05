@@ -738,9 +738,14 @@ class EnveliqApi(address: String) {
         val r = JSONObject(call("GET", "/api/v1/me/shipping"))
         return Section(r.optBoolean("enabled", false), r.list("orders").map {
             Order(it.str("id"), it.str("shop"), it.str("items"), it.str("status"), it.str("expected_text").ifBlank { it.str("expected") },
-                it.optBoolean("delayed", false), it.optDouble("delivered_at", 0.0) > 0, it.optBoolean("needs_confirm", false), it.str("track_url"))
+                it.optBoolean("delayed", false), it.optDouble("delivered_at", 0.0) > 0, it.optBoolean("needs_confirm", false), it.str("track_url"),
+                it.str("ack").isNotBlank(), it.optBoolean("manual", false), it.str("note"), it.str("tracking"), it.optDouble("delivered_at", 0.0).toLong())
         })
     }
+
+    /** One of: confirm (yes, I got it), not_yet, not_order, undo, remove. */
+    fun shippingAct(id: String, action: String) { call("POST", "/api/v1/me/shipping/" + enc(id) + "/" + action) }
+    fun shippingNote(id: String, note: String) { call("PUT", "/api/v1/me/shipping/" + enc(id) + "/note", JSONObject().put("note", note)) }
 
     fun trips(): Section<Trip> {
         val r = JSONObject(call("GET", "/api/v1/me/trips"))

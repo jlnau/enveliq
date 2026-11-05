@@ -49,7 +49,8 @@ When you have more than one address (a mailbox's own address and its aliases, fr
 
 ## Beyond email
 - **Tasks tab:** the website's task list. Done, Move, Not today, Remove, and Put back for finished ones.
-- **More tab:** Notes and alerts, Messages, Shipping, Trips and calendar, News feeds. Shipping, trips and news are read-only here (set them up on the website); Messages can be read and answered; the bell can be dismissed.
+- **Shipping** is in the main menu beside Tasks (with a small count of parcels waiting for you to confirm). Parcels that need you show **Yes, I've got it** and **Not yet**; the three-dot button has Copy tracking number, Add a note and Not an order (or Remove, for an order you added by hand). Parcels you have received fold away under **Received · N** (tap to open; Undo puts one back).
+- **More tab:** Notes and alerts, Messages, Trips and calendar, News feeds. Trips and news are read-only here (set them up on the website); Messages can be read and answered; the bell can be dismissed.
 - **Share to Enveliq:** use Android's Share menu on text in any app and choose Enveliq. A new email opens with the text in the body (and the shared title as the subject).
 - **Wide screens:** from 720 dp wide (a tablet, or a phone on its side) the inbox and the open email show side by side.
 - **Home-screen widget:** add "Enveliq" from the phone's widget list for a square that says how many emails are waiting. It shows the number only and is updated whenever the inbox loads; signing out clears it.
@@ -111,7 +112,7 @@ Settings, Security, **Your devices** lists the places you are signed in and lets
 ## Not in the app
 
 - **A calendar of events.** Trips and bookings are listed under More, Trips and calendar.
-- **Settings, Administration and mailbox setup** stay on the website. Shipping, trips and news are read-only in the app (set them up on the website).
+- **Settings, Administration and mailbox setup** stay on the website. Trips and news are read-only in the app (set them up on the website).
 
 ## How new-email alerts work
 

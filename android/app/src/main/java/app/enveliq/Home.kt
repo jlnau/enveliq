@@ -59,6 +59,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.ui.layout.layout
@@ -184,7 +185,7 @@ private fun AddTaskPopup(mail: Mail, api: EnveliqApi, onClose: () -> Unit, onDon
     )
 }
 
-private enum class Tab { Inbox, Tasks, Drafts, More, Settings }
+private enum class Tab { Inbox, Tasks, Shipping, Drafts, More, Settings }
 
 @Composable
 fun EnveliqApp(activity: MainActivity) {
@@ -711,6 +712,10 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     LaunchedEffect(tab, moreKey) {
         bellUnread = try { withContext(Dispatchers.IO) { api.bell() }.any { it.unread } } catch (_: Exception) { false }
     }
+    var shipDue by remember { mutableStateOf(0) }
+    LaunchedEffect(tab, drawer.isOpen) {
+        shipDue = try { withContext(Dispatchers.IO) { api.shipping() }.items.count { it.needsConfirm } } catch (_: Exception) { 0 }
+    }
     fun goTo(t: Tab) { moreStart = "home"; moreKey++; tab = t; opened = null; scope.launch { drawer.close() } }
     ModalNavigationDrawer(
         drawerState = drawer,
@@ -726,13 +731,14 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                     selectedTextColor = Blue, unselectedTextColor = Ink, selectedIconColor = Blue, unselectedIconColor = Muted,
                 )
                 listOf(
-                    Triple(Tab.Inbox, "Inbox", Icons.Filled.Email), Triple(Tab.Tasks, "Tasks", Icons.Filled.CheckCircle),
+                    Triple(Tab.Inbox, "Inbox", Icons.Filled.Email), Triple(Tab.Tasks, "Tasks", Icons.Filled.CheckCircle), Triple(Tab.Shipping, "Shipping", Icons.Filled.ShoppingCart),
                     Triple(Tab.Drafts, "Drafts", Icons.Filled.Edit), Triple(Tab.More, "More", Icons.Filled.Menu),
                     Triple(Tab.Settings, "Settings", Icons.Filled.Settings),
                 ).forEach { (t, label, icon) ->
                     NavigationDrawerItem(
                         label = { Text(label, fontSize = 16.sp) }, selected = tab == t, onClick = { goTo(t) },
                         icon = { Icon(icon, contentDescription = null) }, colors = colors,
+                        badge = if (t == Tab.Shipping && shipDue > 0) ({ Text(shipDue.toString(), color = Ink) }) else null,
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                     )
                 }
@@ -817,6 +823,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 when (tab) {
                     Tab.Inbox -> inboxPane()
                     Tab.Tasks -> TasksScreen(api, mails, onOpen = { opened = it })
+                    Tab.Shipping -> ShippingPage(api, onBack = { tab = Tab.Inbox })
                     Tab.More -> androidx.compose.runtime.key(moreKey) { MoreTab(api, moreStart) }
                     Tab.Drafts -> DraftsTab(api, onOpen = { d -> composing = ComposeTarget(d.kind, mailForDraft(d), d) })
                     Tab.Settings -> SettingsTab(activity, prefs, server, api, onLeave)

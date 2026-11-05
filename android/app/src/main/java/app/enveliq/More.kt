@@ -182,7 +182,6 @@ internal fun MoreTab(api: EnveliqApi, start: String = "home") {
     LaunchedEffect(Unit) { cleanOn = withContext(Dispatchers.IO) { api.cleanUpAvailable() } }
     when {
         page == "bell" -> BellPage(api, back)
-        page == "shipping" -> ShippingPage(api, back)
         page == "trips" -> TripsPage(api, back)
         page == "news" -> NewsPage(api, back)
         page == "chat" -> ChatsPage(api, back)
@@ -198,7 +197,6 @@ internal fun MoreTab(api: EnveliqApi, start: String = "home") {
                     Triple("later", "Waiting to send", "Emails you set to go later, and any that could not go."),
                     Triple("bell", "Notes and alerts", "Things your other services told Enveliq."),
                     Triple("chat", "Messages", "Chat with the people in your household."),
-                    Triple("shipping", "Shipping", "Parcels on their way and when they arrive."),
                     Triple("trips", "Trips and calendar", "Flights, stays and bookings from your email."),
                     Triple("news", "News feeds", "The sites you follow."),
                 ).filter { it.first != "cleanup" || cleanOn }) { (id, title, note) ->
@@ -238,31 +236,106 @@ private fun BellPage(api: EnveliqApi, onBack: () -> Unit) {
 }
 
 @Composable
-private fun ShippingPage(api: EnveliqApi, onBack: () -> Unit) {
+internal fun ShippingPage(api: EnveliqApi, onBack: () -> Unit) {
     var link by remember { mutableStateOf<String?>(null) }
+    var reload by remember { mutableStateOf(0) }
+    var recvOpen by remember { mutableStateOf(false) }
+    var noting by remember { mutableStateOf<Order?>(null) }
+    var askNot by remember { mutableStateOf<Order?>(null) }
+    val scope = rememberCoroutineScope()
+    val snack = androidx.compose.runtime.remember { androidx.compose.material3.SnackbarHostState() }
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    fun act(id: String, action: String) {
+        scope.launch {
+            try { withContext(Dispatchers.IO) { api.shippingAct(id, action) } } catch (e: Exception) { snack.showSnackbar((e as? ApiException)?.message ?: "That did not work. Please try again.") }
+            reload++
+        }
+    }
     SubPage("Shipping", onBack = onBack) {
-        Loader(0, { api.shipping() }) { sec ->
+        Loader(reload, { api.shipping() }) { sec ->
             if (!sec.enabled) Empty("Shipping is switched off. You can turn it on in Settings on the website.")
-            else LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (sec.items.isEmpty()) item { Empty("No parcels yet. Order confirmations and shipping emails are picked up here.") }
-                items(sec.items, key = { it.id }) { o ->
-                    Card {
-                        Text(o.shop.ifBlank { "Order" }, color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-                        if (o.items.isNotBlank()) Text(o.items, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 2.dp))
-                        val status = when {
-                            o.needsConfirm -> "Delivered. Did it arrive?"
-                            o.delivered -> "Delivered"
-                            o.delayed -> "Delayed" + if (o.expected.isNotBlank()) ", now " + o.expected else ""
-                            else -> o.status.replaceFirstChar { it.uppercase() } + if (o.expected.isNotBlank()) ", expected " + o.expected else ""
+            else {
+                val got = sec.items.filter { it.delivered && it.acked }
+                val active = sec.items.filter { !(it.delivered && it.acked) }
+                LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (sec.items.isEmpty()) item { Empty("No parcels yet. Order confirmations and shipping emails are picked up here.") }
+                    else if (active.isEmpty()) item { Empty("Nothing on its way. Parcels you have not marked as received show here.") }
+                    items(active, key = { it.id }) { o ->
+                        var menu by remember { mutableStateOf(false) }
+                        Card {
+                            Text(o.shop.ifBlank { "Order" }, color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                            if (o.items.isNotBlank()) Text(o.items, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 2.dp))
+                            val status = when {
+                                o.needsConfirm -> "Delivered. Did it arrive?"
+                                o.delivered -> "Delivered"
+                                o.delayed -> "Delayed" + if (o.expected.isNotBlank()) ", now " + o.expected else ""
+                                else -> o.status.replaceFirstChar { it.uppercase() } + if (o.expected.isNotBlank()) ", expected " + o.expected else ""
+                            }
+                            Text(status, color = if (o.delayed) Amber else if (o.delivered) Green else Ink, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
+                            if (o.note.isNotBlank()) Text(o.note, color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (o.needsConfirm) {
+                                    TextButton(onClick = { act(o.id, "confirm") }) { Text("Yes, I've got it", color = Green) }
+                                    TextButton(onClick = { act(o.id, "not_yet") }) { Text("Not yet", color = Muted) }
+                                } else if (o.trackUrl.startsWith("https://")) TextButton(onClick = { link = o.trackUrl }) { Text("Track it", color = Blue) }
+                                Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+                                    TextButton(onClick = { menu = true }) { Text("⋮", color = Muted, fontSize = 20.sp) }
+                                    androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = Panel) {
+                                        if (o.needsConfirm && o.trackUrl.startsWith("https://")) androidx.compose.material3.DropdownMenuItem(text = { Text("Track it", color = Ink) }, onClick = { menu = false; link = o.trackUrl })
+                                        if (o.tracking.isNotBlank()) androidx.compose.material3.DropdownMenuItem(text = { Text("Copy tracking number", color = Ink) }, onClick = { menu = false; clipboard.setText(androidx.compose.ui.text.AnnotatedString(o.tracking)) })
+                                        androidx.compose.material3.DropdownMenuItem(text = { Text(if (o.note.isBlank()) "Add a note" else "Edit note", color = Ink) }, onClick = { menu = false; noting = o })
+                                        if (o.manual) androidx.compose.material3.DropdownMenuItem(text = { Text("Remove", color = Red) }, onClick = { menu = false; act(o.id, "remove") })
+                                        else androidx.compose.material3.DropdownMenuItem(text = { Text("Not an order", color = Red) }, onClick = { menu = false; askNot = o })
+                                    }
+                                }
+                            }
                         }
-                        Text(status, color = if (o.delayed) Amber else if (o.delivered) Green else Ink, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
-                        if (o.trackUrl.startsWith("https://")) TextButton(onClick = { link = o.trackUrl }) { Text("Track it", color = Blue) }
+                    }
+                    if (got.isNotEmpty()) {
+                        item {
+                            Row(Modifier.fillMaxWidth().clickable { recvOpen = !recvOpen }.padding(vertical = 12.dp, horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text("Received · " + got.size, color = Muted, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                                Text(if (recvOpen) "⌃" else "⌄", color = Muted, fontSize = 18.sp)
+                            }
+                        }
+                        if (recvOpen) {
+                            items(got, key = { "r" + it.id }) { o ->
+                                Surface(color = Panel, shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line), modifier = Modifier.fillMaxWidth()) {
+                                    Row(Modifier.padding(start = 14.dp, top = 6.dp, bottom = 6.dp, end = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Column(Modifier.weight(1f)) {
+                                            Text(o.shop.ifBlank { "Order" }, color = Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                                            if (o.items.isNotBlank()) Text(o.items, color = Muted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        }
+                                        TextButton(onClick = { act(o.id, "undo") }) { Text("Undo", color = Blue) }
+                                    }
+                                }
+                            }
+                            item { Text("Received orders stay here for 14 days, then are forgotten.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(4.dp)) }
+                        }
                     }
                 }
             }
         }
+        androidx.compose.material3.SnackbarHost(snack)
     }
     link?.let { LinkConfirm(it) { link = null } }
+    askNot?.let { o ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { askNot = null }, title = { Text("This is not an order?") },
+            text = { Text("It is taken off your list and Enveliq will not pick it up again.") },
+            confirmButton = { TextButton(onClick = { askNot = null; act(o.id, "not_order") }) { Text("Not an order", color = Red) } },
+            dismissButton = { TextButton(onClick = { askNot = null }) { Text("Cancel", color = Muted) } },
+        )
+    }
+    noting?.let { o ->
+        var text by remember(o.id) { mutableStateOf(o.note) }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { noting = null }, title = { Text("Note") },
+            text = { OutlinedTextField(value = text, onValueChange = { text = it.take(500) }, modifier = Modifier.fillMaxWidth(), maxLines = 5) },
+            confirmButton = { TextButton(onClick = { noting = null; scope.launch { try { withContext(Dispatchers.IO) { api.shippingNote(o.id, text) } } catch (e: Exception) { snack.showSnackbar("That did not work. Please try again.") }; reload++ } }) { Text("Save", color = Blue) } },
+            dismissButton = { TextButton(onClick = { noting = null }) { Text("Cancel", color = Muted) } },
+        )
+    }
 }
 
 @Composable

@@ -96,7 +96,8 @@ data class DeviceInfo(val id: String, val name: String, val signedIn: Long, val 
 
 data class MyTask(val id: String, val accountId: String, val messageId: String, val title: String, val sender: String, val priority: String, val due: String, val days: Int, val state: String, val manual: Boolean, val detail: String = "", val remindAt: Long = 0L)
 data class BellNote(val id: String, val title: String, val message: String, val source: String, val at: Long, val unread: Boolean)
-data class Order(val id: String, val shop: String, val items: String, val status: String, val expected: String, val delayed: Boolean, val delivered: Boolean, val needsConfirm: Boolean, val trackUrl: String)
+data class Order(val id: String, val shop: String, val items: String, val status: String, val expected: String, val delayed: Boolean, val delivered: Boolean, val needsConfirm: Boolean, val trackUrl: String,
+    val acked: Boolean = false, val manual: Boolean = false, val note: String = "", val tracking: String = "", val deliveredAt: Long = 0L)
 data class Booking(val kind: String, val provider: String, val detail: String, val from: String, val to: String, val start: String, val startTime: String, val reference: String, val cancelled: Boolean)
 data class Trip(val title: String, val start: String, val end: String, val state: String, val cancelled: Boolean, val bookings: List<Booking>)
 data class FeedItem(val title: String, val text: String, val link: String, val at: Long, val isNew: Boolean)
