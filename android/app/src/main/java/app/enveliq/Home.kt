@@ -109,6 +109,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -123,14 +124,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private enum class Stage { Opening, SignIn, Welcome, Home }
-@Composable
-private fun RowScope.ReplyAction(label: String, onClick: () -> Unit, icon: @Composable () -> Unit) {
-    OutlinedButton(
-        onClick = onClick, modifier = Modifier.weight(1f).height(44.dp).semantics { contentDescription = label },
-        shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line), contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-    ) { icon() }
-}
-
 /** Quick ways to add a task for this email: the date is one tap. */
 @Composable
 private fun AddTaskPopup(mail: Mail, api: EnveliqApi, onClose: () -> Unit, onDone: (String) -> Unit) {
@@ -1219,15 +1212,21 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
     }
     fun tell(words: String) = android.widget.Toast.makeText(context, words, android.widget.Toast.LENGTH_LONG).show()
 
+    val scroll = rememberScrollState()
+    var titleBottom by remember(mail.id) { mutableStateOf(Int.MAX_VALUE) }
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = Ink) }
+            // Once the big subject has scrolled out of sight, its first words stay up here.
+            if (scroll.value > titleBottom) Text(mail.subject, color = Ink, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(start = 4.dp, end = 12.dp))
         }
         // Everything in the email can be selected and copied: press and hold, then drag.
         androidx.compose.foundation.text.selection.SelectionContainer(Modifier.weight(1f)) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
-            Text(mail.subject, color = Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 30.sp)
-            Text(mail.sender + if (mail.whenText.isNotEmpty()) " · " + mail.whenText else "", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 6.dp))
+        Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(horizontal = 20.dp)) {
+            Text(mail.subject, color = Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 30.sp, modifier = Modifier.onSizeChanged { titleBottom = it.height })
+            Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.Top) {
+                Column(Modifier.weight(1f)) {
+            Text(mail.sender + if (mail.whenText.isNotEmpty()) " · " + mail.whenText else "", color = Muted, fontSize = 14.sp)
             if (mail.address.isNotEmpty()) Box {
                 // Tapping the address offers Copy. (Press and hold still selects it like any other text.)
                 Text(mail.address, color = Blue, fontSize = 13.sp, modifier = Modifier.clickable { addressMenu = true })
@@ -1240,74 +1239,23 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
                     })
                 }
             }
-            // Tags: one slim line, only when there are some, with no heading.
-            if (tags.isNotEmpty()) Row(Modifier.fillMaxWidth().padding(top = 4.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                tags.forEach { name ->
-                    Surface(color = PanelHigh, shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Line)) {
-                        Text("# " + name, color = Ink, fontSize = 12.sp, maxLines = 1, modifier = Modifier.padding(horizontal = 8.dp, vertical = 1.dp))
-                    }
                 }
-            }
-
-            if (mail.scamReasons.isNotEmpty()) {
-                Surface(
-                    color = Panel, shape = RoundedCornerShape(16.dp), border = BorderStroke(2.dp, Amber),
-                    modifier = Modifier.fillMaxWidth().padding(top = 18.dp),
-                ) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text("Take care with this one", color = Amber, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                        mail.scamReasons.forEach { Text("• " + it, color = Ink, fontSize = 15.sp, modifier = Modifier.padding(top = 4.dp)) }
-                        Text("Do not open links or send money or details unless you are sure it is real.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp))
-                    }
+                Box(Modifier.padding(start = 8.dp)) {
+                    OutlinedButton(
+                        onClick = { onCompose("reply") }, modifier = Modifier.size(44.dp).semantics { contentDescription = "Reply" },
+                        shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line), contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                    ) { ReplyIcon(Ink) }
                 }
-            }
-
-            // A calendar invitation (Accept, Maybe, Decline, Propose new time). Shown only when the email carries one.
-            InviteCard(mail, api)
-
-            Surface(
-                color = Panel, shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Line),
-                modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
-            ) {
-                Column(Modifier.padding(16.dp)) {
-                    Text("✦ AI summary", color = Blue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                    if (mail.ungenerated) {
-                        Text(if (summaryAsked) "Writing the summary\u2026 it will appear here when it is ready." else "Summary not generated", color = Ink, fontSize = 17.sp, lineHeight = 26.sp, modifier = Modifier.padding(top = 6.dp))
-                        if (!summaryAsked) {
-                            OutlinedButton(
-                                onClick = {
-                                    scope.launch {
-                                        try {
-                                            withContext(Dispatchers.IO) { api.askSummary(mail) }
-                                            summaryAsked = true
-                                            onAskedSummary()
-                                        } catch (e: ApiException) { tell(e.message ?: "Could not ask for the summary.") }
-                                        catch (_: Exception) { tell("Could not ask for the summary. Check your connection.") }
-                                    }
-                                },
-                                modifier = Modifier.padding(top = 10.dp).height(38.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
-                            ) { Text("Generate summary", color = Ink, fontSize = 13.sp) }
-                            Text("Pressing the button sends this email\u2019s text to your AI model.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
-                        }
-                    } else Text(
-                        mail.summary.ifBlank { "No summary yet." },
-                        color = Ink, fontSize = 17.sp, lineHeight = 26.sp, modifier = Modifier.padding(top = 6.dp),
-                    )
-                }
-            }
-
-            // Reply, Reply all, Forward, and the less used actions behind the three dots, all on one line under the summary.
-            Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                val shape = RoundedCornerShape(12.dp)
-                ReplyAction("Reply", { onCompose("reply") }) { ReplyIcon(Ink) }
-                if (mail.replyCc.isNotEmpty()) ReplyAction("Reply all", { onCompose("reply_all") }) { ReplyAllIcon(Ink) }
-                ReplyAction("Forward", { onCompose("forward") }) { ForwardIcon(Ink) }
+                Spacer(Modifier.size(8.dp))
                 Box {
                     OutlinedButton(
                         onClick = { moreMenu = true }, modifier = Modifier.size(44.dp).semantics { contentDescription = "More actions" },
-                        shape = shape, border = BorderStroke(1.dp, Line), contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                        shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line), contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                     ) { Icon(Icons.Filled.MoreVert, contentDescription = null, tint = Ink) }
                     DropdownMenu(expanded = moreMenu, onDismissRequest = { moreMenu = false }, containerColor = Panel) {
+                        if (mail.replyCc.isNotEmpty()) DropdownMenuItem(text = { Text("Reply all", color = Ink) }, onClick = { moreMenu = false; onCompose("reply_all") })
+                        DropdownMenuItem(text = { Text("Forward", color = Ink) }, onClick = { moreMenu = false; onCompose("forward") })
+                        HorizontalDivider(color = Line)
                         if (onMarkRead != null) DropdownMenuItem(text = { Text("Mark as read", color = Ink) }, onClick = { moreMenu = false; onMarkRead() })
                         if (onUnread != null) DropdownMenuItem(text = { Text("Mark as unread", color = Ink) }, onClick = { moreMenu = false; onUnread() })
                         if (mail.address.isNotBlank() && important != null) DropdownMenuItem(
@@ -1374,6 +1322,61 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
                             } catch (e: Exception) { }
                         })
                     }
+                }
+            }
+            // Tags: one slim line, only when there are some, with no heading.
+            if (tags.isNotEmpty()) Row(Modifier.fillMaxWidth().padding(top = 4.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                tags.forEach { name ->
+                    Surface(color = PanelHigh, shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Line)) {
+                        Text("# " + name, color = Ink, fontSize = 12.sp, maxLines = 1, modifier = Modifier.padding(horizontal = 8.dp, vertical = 1.dp))
+                    }
+                }
+            }
+
+            if (mail.scamReasons.isNotEmpty()) {
+                Surface(
+                    color = Panel, shape = RoundedCornerShape(16.dp), border = BorderStroke(2.dp, Amber),
+                    modifier = Modifier.fillMaxWidth().padding(top = 18.dp),
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("Take care with this one", color = Amber, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        mail.scamReasons.forEach { Text("• " + it, color = Ink, fontSize = 15.sp, modifier = Modifier.padding(top = 4.dp)) }
+                        Text("Do not open links or send money or details unless you are sure it is real.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp))
+                    }
+                }
+            }
+
+            // A calendar invitation (Accept, Maybe, Decline, Propose new time). Shown only when the email carries one.
+            InviteCard(mail, api)
+
+            Surface(
+                color = Panel, shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Line),
+                modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("✦ AI summary", color = Blue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    if (mail.ungenerated) {
+                        Text(if (summaryAsked) "Writing the summary\u2026 it will appear here when it is ready." else "Summary not generated", color = Ink, fontSize = 17.sp, lineHeight = 26.sp, modifier = Modifier.padding(top = 6.dp))
+                        if (!summaryAsked) {
+                            OutlinedButton(
+                                onClick = {
+                                    scope.launch {
+                                        try {
+                                            withContext(Dispatchers.IO) { api.askSummary(mail) }
+                                            summaryAsked = true
+                                            onAskedSummary()
+                                        } catch (e: ApiException) { tell(e.message ?: "Could not ask for the summary.") }
+                                        catch (_: Exception) { tell("Could not ask for the summary. Check your connection.") }
+                                    }
+                                },
+                                modifier = Modifier.padding(top = 10.dp).height(38.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
+                            ) { Text("Generate summary", color = Ink, fontSize = 13.sp) }
+                            Text("Pressing the button sends this email\u2019s text to your AI model.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+                        }
+                    } else Text(
+                        mail.summary.ifBlank { "No summary yet." },
+                        color = Ink, fontSize = 17.sp, lineHeight = 26.sp, modifier = Modifier.padding(top = 6.dp),
+                    )
                 }
             }
 
