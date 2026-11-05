@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**The folder box closes when you click outside it.** Same as pressing Close. Touches `prototype/index.html`, `docs/INBOX.md`, `scripts/check_stage3.mjs`.
+
 **Folders button beside Tags, and "always move this sender".** A Folders button now sits next to Tags on the row, the side rail and the bar under an open email. The folder box has a tick box to always file that sender's new email in the chosen folder; it becomes a new "moved to a folder" Mail rule, listed (and removable) in Settings. The Mail rules item is shown on every email with every rule, including for Important people: rules you make for an Important person now apply to their new email (a mute still never hides them). A folder keeps the email out of the Inbox; use a Tag to keep it in both. The Android folder box has the same tick box, and its three-dot menu has Always move to a folder…. Touches `backend/mail/rules.py`, `rules_routes.py`, `backend/app.py`, `prototype/index.html`, `web/static/auth.js`, the Android app.
 
 **Android: Folders.** A folder button in the open-email bar and the several-selected bar opens a full-screen picker (search, recent first, make a new folder) and moves with Undo. **Folders** in the main menu shows a mailbox's folders and what is in them. Touches `android/`.

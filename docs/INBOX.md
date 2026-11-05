@@ -33,6 +33,7 @@ A star marks an email you want to find again. It is the mailbox's own Flagged ma
 ## Folders
 
 - **Move to folder:** the three-dot menu on an email has **Move to folder…**. A box lists your own folders (the ones you made, not Archive, Bin or Junk, which have their own buttons). Type to narrow the list; folders you used lately come first. On a phone the box fills the screen with Close at the top.
+- **Click outside to close:** on a computer, clicking anywhere outside the folder box closes it, the same as Close (or Escape).
 - **Make a new folder:** type a name under "Or make a new folder" and press **Make it**. The folder is made in your mailbox and the email goes into it. Names are short, with no slashes. On Proton the folder is made under Folders, so it shows in Proton too.
 - **Move several:** tick emails, then press the folder button in the bar of buttons.
 - **Undo:** like Archive, the move waits a few seconds. The bar says "Moved to Bills" and **Undo** puts it back; nothing has been sent to the mailbox yet.

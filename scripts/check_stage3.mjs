@@ -106,6 +106,17 @@ for (const width of [1200, 390]) {
   await page.locator("#undoBar button", { hasText: "Undo" }).click();
   await page.waitForTimeout(200);
   check(tag + "Undo brings it back and nothing was sent to the server", posts.every((x) => x[0] !== "move") && (await page.locator("article.mail", { hasText: "Trip plans" }).count()) >= 1);
+  if (width >= 600) {      // clicking outside the box closes it; clicking inside does not
+    await pick(page, "Trip plans");
+    await page.locator(".qmore").first().click();
+    await page.locator("#moreMenu [data-move-folder]").click();
+    await page.waitForSelector("#folderPick .fpick-item");
+    await page.fill("#fpFind", "x");
+    check(tag + "a click inside the box keeps it open", (await page.locator("#folderPick").count()) === 1);
+    await page.mouse.click(5, 5);
+    await page.waitForTimeout(200);
+    check(tag + "a click outside the box closes it", (await page.locator("#folderPick").count()) === 0);
+  }
   // Move for real and make a new folder from the picker
   await pick(page, "Trip plans");
   await page.locator(".qmore").first().click();

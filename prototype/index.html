@@ -8048,8 +8048,9 @@ async function openFolderPicker(list,forceAlways){
   const box=document.createElement("div");box.id="folderPick";box.className="sheetform popcard";box.setAttribute("role","dialog");box.setAttribute("aria-modal","true");box.setAttribute("aria-label","Move to a folder");
   box.innerHTML=`<div class="sf-top"><strong>Move ${ms.length===1?"this email":ms.length+" emails"} to…</strong><button type="button" class="sf-close" data-fp-close>Close</button></div><div class="sf-body"><label>Find a folder<input type="text" id="fpFind" autocomplete="off" placeholder="Start typing a folder name"></label><div class="fpick-list" id="fpList" role="list"><p class="sp-sub">Reading your folders…</p></div><div class="fpick-new"><input type="text" id="fpNew" maxlength="80" placeholder="Or make a new folder" aria-label="Name of a new folder"><button type="button" class="btn" id="fpMake">Make it</button></div>${one&&!isImp(ms[0])?`<label class="fp-always"><input type="checkbox" id="fpAlways"${forceAlways?" checked":""}> <span>Always move new email from ${esc(ms[0].address)} into the folder I pick</span></label><p class="sp-sub">The email leaves your inbox. To keep it in your inbox and group it, use Tags instead.</p>`:""}<p class="sp-sub" id="fpNote" role="status"></p></div>`;
   document.body.appendChild(box);
-  const close=()=>{box.remove();document.removeEventListener("keydown",onKey)},onKey=ev=>{if(ev.key==="Escape")close()};
-  document.addEventListener("keydown",onKey);box.querySelector("[data-fp-close]").onclick=close;
+  const close=()=>{box.remove();document.removeEventListener("keydown",onKey);document.removeEventListener("pointerdown",onOut,true)},onKey=ev=>{if(ev.key==="Escape")close()},
+    onOut=ev=>{if(!box.contains(ev.target))close()};                                   // a click anywhere outside the box closes it, like Close
+  document.addEventListener("keydown",onKey);box.querySelector("[data-fp-close]").onclick=close;setTimeout(()=>document.addEventListener("pointerdown",onOut,true),0);
   let rows=[];
   const choose=async f=>{
     const always=!!(box.querySelector("#fpAlways")&&box.querySelector("#fpAlways").checked);
