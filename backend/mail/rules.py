@@ -18,13 +18,15 @@ from .contacts import clean_address
 RECORD_PREFIX = "rules:"
 MAX_RULES = 50
 MAX_SUBJECT = 80
-ACTIONS = {"archived": "Archive it", "reviewed": "Mark it as read", "junked": "Send it to Junk", "notasks": "Never make tasks", "tag": "Always apply tags"}
+ACTIONS = {"archived": "Archive it", "reviewed": "Mark it as read", "junked": "Send it to Junk", "notasks": "Never make tasks", "tag": "Always apply tags", "moved": "Move it to a folder"}
 # "Never make tasks" does nothing to the email itself: it only stops Enveliq from turning mail from that sender into a task.
 # It sits beside the other rules, so a sender can have both (for example archive it, and never make tasks).
 NO_TASKS = "notasks"
 TAG = "tag"
 MAX_TAGS = 10
 MAX_TAG_NAME = 40
+MOVED = "moved"          # "Move it to a folder": one rule per sender; the folder is looked up in each mailbox when mail arrives
+MAX_FOLDER = 300
 # These two rules do not move or mark the email, so they sit beside an archive, reviewed or Junk rule instead of replacing it.
 SIDE_ACTIONS = {NO_TASKS, TAG}
 _LOCK = threading.Lock()
@@ -57,6 +59,14 @@ def clean_tags(value: Any) -> list[str]:
     return names[:MAX_TAGS]
 
 
+def clean_folder(name: Any, label: Any) -> tuple[str, str]:
+    folder = _CTRL.sub("", str(name or "")).strip()[:MAX_FOLDER]
+    shown = " ".join(_CTRL.sub(" ", str(label or folder)).split())[:80] or folder
+    if not folder:
+        raise RuleError("Choose which folder the email should go to.")
+    return folder, shown
+
+
 def clean_subject(value: Any) -> str:
     return re.sub(r"\s+", " ", _CTRL.sub(" ", str(value or ""))).strip()[:MAX_SUBJECT]
 
@@ -81,9 +91,10 @@ class Rules:
 
     def listing(self, user_id: str) -> list[dict[str, Any]]:
         return [{"id": r["id"], "sender": r["sender"], "subject": r.get("subject", ""), "action": r["action"],
-                 **({"tags": list(r.get("tags") or [])} if r["action"] == TAG else {})} for r in self._load(user_id)]
+                 **({"tags": list(r.get("tags") or [])} if r["action"] == TAG else {}),
+                 **({"folder": r.get("folder", ""), "folder_label": r.get("folder_label") or r.get("folder", "")} if r["action"] == MOVED else {})} for r in self._load(user_id)]
 
-    def add(self, user_id: str, sender: Any, subject: Any, action: Any, tags: Any = None) -> list[dict[str, Any]]:
+    def add(self, user_id: str, sender: Any, subject: Any, action: Any, tags: Any = None, folder: Any = None, folder_label: Any = None) -> list[dict[str, Any]]:
         who, words = clean_sender(sender), clean_subject(subject)
         if action not in ACTIONS:
             raise RuleError("Choose what to do with the email: archive it, mark it reviewed, or send it to Junk.")
@@ -96,6 +107,16 @@ class Rules:
                     if len(rules) >= MAX_RULES:
                         raise RuleError(f"You can keep up to {MAX_RULES} rules. Remove one first.")
                     rules.append({"id": "u" + secrets.token_hex(8), "sender": who, "subject": words, "action": TAG, "tags": names})
+                self._save(user_id, rules)
+            return self.listing(user_id)
+        if action == MOVED:
+            # One "move it to a folder" rule per sender and subject: saving it again changes the folder.
+            where, shown = clean_folder(folder, folder_label)
+            with _LOCK:
+                rules = [r for r in self._load(user_id) if not (r["action"] == MOVED and r["sender"] == who and r.get("subject", "").lower() == words.lower())]
+                if len(rules) >= MAX_RULES:
+                    raise RuleError(f"You can keep up to {MAX_RULES} rules. Remove one first.")
+                rules.append({"id": "u" + secrets.token_hex(8), "sender": who, "subject": words, "action": MOVED, "folder": where, "folder_label": shown})
                 self._save(user_id, rules)
             return self.listing(user_id)
         with _LOCK:

@@ -551,7 +551,7 @@ body.in-folders .folderview{display:block}
 .fdr-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 12px}.fdr-chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
 .fchip{border:1px solid var(--line,#2a3a57);background:transparent;color:var(--text);border-radius:999px;padding:7px 14px;font:inherit;cursor:pointer}.fchip.on{background:var(--c-173056,#173056);border-color:var(--blue,#2f7bff)}
 .fmore{display:block;margin:12px auto}.frow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;width:100%;text-align:left;border:1px solid var(--line,#2a3a57);border-radius:12px;padding:10px 12px;margin:0 0 8px;background:transparent;color:var(--text);font:inherit;cursor:pointer}.frow b,.frow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.frow .fsub{grid-column:1/-1;opacity:.8}
-.fpick-new{align-items:center}#folderPick label{display:grid;gap:6px}.fpick-list{display:flex;flex-direction:column;gap:6px;margin:10px 0}.fpick-item{text-align:left;border:1px solid var(--line,#2a3a57);background:transparent;color:var(--text);border-radius:10px;padding:11px 12px;font:inherit;cursor:pointer}.fpick-item:hover,.fpick-item:focus-visible{background:var(--c-173056,#173056)}.fpick-new{display:flex;gap:8px;margin-top:8px}.fpick-new input{flex:1}
+.fpick-new{align-items:center}.fp-always{display:flex!important;gap:10px;align-items:flex-start;margin-top:6px}.menu-note{margin:6px 12px;font-size:12px;color:var(--muted);line-height:1.4}#folderPick label{display:grid;gap:6px}.fpick-list{display:flex;flex-direction:column;gap:6px;margin:10px 0}.fpick-item{text-align:left;border:1px solid var(--line,#2a3a57);background:transparent;color:var(--text);border-radius:10px;padding:11px 12px;font:inherit;cursor:pointer}.fpick-item:hover,.fpick-item:focus-visible{background:var(--c-173056,#173056)}.fpick-new{display:flex;gap:8px;margin-top:8px}.fpick-new input{flex:1}
 body.in-sent .filters,body.in-sent #list,body.in-sent .sample-banner,body.in-sent #dueBars,body.in-sent #shipBars,body.in-sent #subBars,body.in-sent #tripBars,body.in-sent #waitBars,body.in-sent #mTitleSub,body.in-sent #peek{display:none!important}
 .sent-top{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin:0 0 12px}
 .sent-tools{display:flex;gap:8px;align-items:center}
@@ -4508,7 +4508,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
     const quick=m.kept?`<span class="qpair"><button class="action trash qic" data-id="${esc(m.id)}" data-status="expired" aria-label="Remove from this list" title="Remove from this list">${ICON_BIN}</button></span>`:`<span class="qpair">${canStar(m)?`<button class="action star qic${m.starred?" on":""}" data-star="${esc(m.id)}" aria-label="${m.starred?"Remove star":"Star"}" title="${m.starred?"Remove star":"Star"}">${m.starred?ICON_STAR_ON:ICON_STAR}</button>`:""}${rdSwap(m,`<button class="action reviewed qic" data-id="${esc(m.id)}" data-status="reviewed" aria-label="Mark as read" title="Mark as read">${ICON_OK}</button>`)}<button class="action archive qic" data-id="${esc(m.id)}" data-status="archived" aria-label="Archive" title="Archive">${ICON_ARCH}</button><button class="action trash qic" data-id="${esc(m.id)}" data-status="trashed" aria-label="Bin" title="Bin">${ICON_BIN}</button></span>`;
     const category=m.action?"Needs action":m.priority==="high"?"High priority":"Information";
     const attCount=fileN(m)?`${fileN(m)} ${fileN(m)===1?"file":"files"}`:"None";
-    const replyBtn=(m.replyTo?`<button class="subtle" data-reply="${esc(m.id)}">${ICON_REPLY}Reply</button>`:"")+moreReplyBtns(m)+(m.kept?"":isSnoozed(m)?`<button class="subtle" data-unsnooze="${esc(m.id)}">${ICON_SNOOZE}Wake now</button>`:`<button class="subtle" data-snooze="${esc(m.id)}" aria-haspopup="menu">${ICON_SNOOZE}Snooze</button>`)+`<button class="subtle" data-task-add="${esc(m.id)}" aria-haspopup="dialog">Task</button>`+(tagsOn(m)?`<button class="subtle" data-tag-open="${esc(m.id)}" aria-haspopup="dialog">Tags</button>`:"");
+    const replyBtn=(m.replyTo?`<button class="subtle" data-reply="${esc(m.id)}">${ICON_REPLY}Reply</button>`:"")+moreReplyBtns(m)+(m.kept?"":isSnoozed(m)?`<button class="subtle" data-unsnooze="${esc(m.id)}">${ICON_SNOOZE}Wake now</button>`:`<button class="subtle" data-snooze="${esc(m.id)}" aria-haspopup="menu">${ICON_SNOOZE}Snooze</button>`)+`<button class="subtle" data-task-add="${esc(m.id)}" aria-haspopup="dialog">Task</button>`+(tagsOn(m)?`<button class="subtle" data-tag-open="${esc(m.id)}" aria-haspopup="dialog">Tags</button>`:"")+(canStar(m)?`<button class="subtle" data-move-folder="${esc(m.id)}" aria-haspopup="dialog">Folders</button>`:"");
     const OR=!m.kept&&origOn(m);
     const detail=m.kept
       ?`<div class="qdetail"><div class="qfrom">${boxChip(m)}<span class="addr">&lt;${esc(m.address)}&gt;</span></div>${tagChips(m)}<div class="qsummary"><span class="qsummary-label">✦ AI summary</span><span class="qsummary-copy">${esc(m.summary)}</span></div>${taskHtml}${attachmentsBlock(m)}<div class="kept-note">Archived in your mailbox. Kept here until ${esc(m.keptUntil)}.${m.replied?` You replied ${esc(m.repliedAt||"just now")}.`:""}</div><div class="actions">${m.replyTo?`<button class="action reply" data-reply="${esc(m.id)}">↩ Reply</button>`:""}${moreReplyBtns(m,"action reply")}<button class="action reply" data-task-add="${esc(m.id)}" aria-haspopup="dialog">Task</button><button class="action trash" data-id="${esc(m.id)}" data-status="expired">Remove from this list</button>${starBtn(m)}${navBtns()}${moreBtn(m)}</div></div>`
@@ -4520,7 +4520,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
       const id=esc(m.id),ph=isPhone();
       const rb=(attr,icon,label,extra="")=>`<button type="button" class="rl-btn" ${attr}="${id}" ${extra} aria-label="${label}" title="${label}">${icon}<span>${label}</span></button>`;
       const tools=(m.replyTo?rb("data-reply",ICON_REPLY,"Reply"):"")+(m.replyTo&&m.replyCc&&m.replyCc.length?rb("data-reply-all",ICON_REPLY,"Reply all"):"")+(m.real&&realMail?rb("data-forward",ICON_FWD,"Forward"):"")
-        +(isSnoozed(m)?rb("data-unsnooze",ICON_SNOOZE,"Wake now"):rb("data-snooze",ICON_SNOOZE,"Snooze",'aria-haspopup="menu"'))+rb("data-task-add",ICON_RTASK,"Task",'aria-haspopup="dialog"')+(tagsOn(m)?rb("data-tag-open",ICON_RTAG,"Tags",'aria-haspopup="dialog"'):"");
+        +(isSnoozed(m)?rb("data-unsnooze",ICON_SNOOZE,"Wake now"):rb("data-snooze",ICON_SNOOZE,"Snooze",'aria-haspopup="menu"'))+rb("data-task-add",ICON_RTASK,"Task",'aria-haspopup="dialog"')+(tagsOn(m)?rb("data-tag-open",ICON_RTAG,"Tags",'aria-haspopup="dialog"'):"")+(canStar(m)?rb("data-move-folder",ICON_RFOLDER,"Folders",'aria-haspopup="dialog"'):"");
       const act=(cls,st,icon,label)=>`<button type="button" class="action ${cls} rl-btn" data-id="${id}" data-status="${st}" aria-label="${label}" title="${label}">${icon}<span>${label}</span></button>`;
       const acts=rdSwap(m,act("reviewed","reviewed",ICON_OK,"Mark as read"))+act("archive","archived",ICON_ARCH,"Archive")+act("trash","trashed",ICON_BIN,"Bin");
       const copyInner=copyMailButtons(m).replace(/^<span[^>]*>|<\/span>$/g,"");
@@ -4576,7 +4576,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
         const act=cur.kept?"":`<div class="ract">${rdSwap(cur,`<button class="action reviewed" data-id="${esc(cur.id)}" data-status="reviewed">${ICON_OK}Mark as read</button>`)}<button class="action archive" data-id="${esc(cur.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(cur.id)}" data-status="trashed">${ICON_BIN}Bin</button></div>`;
         if(view.style==="rail"&&isPhone()&&!cur.kept){          // Side rail on a phone: a small X at the top, the buttons as square icons along the bottom
           const id=esc(cur.id),sq=(cls,attrs,icon,label)=>`<button type="button" class="${cls}" ${attrs} aria-label="${label}" title="${label}">${icon}</button>`;
-          const bar=`<div class="ract rl-bar">${rdSwap(cur,sq("action reviewed",`data-id="${id}" data-status="reviewed"`,ICON_OK,"Mark as read"))}${sq("action archive",`data-id="${id}" data-status="archived"`,ICON_ARCH,"Archive")}${sq("action trash",`data-id="${id}" data-status="trashed"`,ICON_BIN,"Bin")}${isSnoozed(cur)?sq("rl-sq",`data-unsnooze="${id}"`,ICON_SNOOZE,"Wake now"):sq("rl-sq",`data-snooze="${id}" aria-haspopup="menu"`,ICON_SNOOZE,"Snooze")}${tagsOn(cur)?sq("rl-sq",`data-tag-open="${id}" aria-haspopup="dialog"`,ICON_RTAG,"Tags"):""}</div>`;
+          const bar=`<div class="ract rl-bar">${rdSwap(cur,sq("action reviewed",`data-id="${id}" data-status="reviewed"`,ICON_OK,"Mark as read"))}${sq("action archive",`data-id="${id}" data-status="archived"`,ICON_ARCH,"Archive")}${sq("action trash",`data-id="${id}" data-status="trashed"`,ICON_BIN,"Bin")}${isSnoozed(cur)?sq("rl-sq",`data-unsnooze="${id}"`,ICON_SNOOZE,"Wake now"):sq("rl-sq",`data-snooze="${id}" aria-haspopup="menu"`,ICON_SNOOZE,"Snooze")}${tagsOn(cur)?sq("rl-sq",`data-tag-open="${id}" aria-haspopup="dialog"`,ICON_RTAG,"Tags"):""}${canStar(cur)?sq("rl-sq",`data-move-folder="${id}" aria-haspopup="dialog"`,ICON_RFOLDER,"Folders"):""}</div>`;
           listHtml+=`<div class="reader rail" role="dialog" aria-modal="true" aria-label="${esc(cur.subject)}"><div class="rtop"><button class="rbtn rclose" type="button" data-reader-close aria-label="Close this email">✕</button></div><div class="rbody">${quiet(cur,"rail")}</div>${bar}</div>`;
         }else listHtml+=`<div class="reader" role="dialog" aria-modal="true" aria-label="${esc(cur.subject)}"><div class="rtop">${isPhone()?`<button class="rbtn rclose" type="button" data-reader-close aria-label="Close this email">✕ Close</button>`:`<button class="rbtn" type="button" data-reader-close aria-label="Back to the list">‹</button><b>${idx+1} of ${rows.length}</b><span class="sp"></span><button class="rbtn" type="button" ${prev?`data-pick="${esc(prev.id)}"`:"disabled"} aria-label="Previous email">↑</button><button class="rbtn" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">↓</button>`}</div><div class="rbody"><div class="rfrom"><span class="dcav" aria-hidden="true">${esc(String(cur.sender||"?").trim().charAt(0).toUpperCase())}</span><div><div class="dcfrom">${esc(cur.sender)}</div><div class="dcsub">${esc(cur.address)} · ${esc(cur.time)}</div>${copyMailButtons(cur,true)}</div></div><h3>${esc(cur.subject)}</h3>${quiet(cur,"detail")}</div>${act}</div>`;
       }
@@ -4723,6 +4723,7 @@ function accountFor(m){
 const ICON_MORE=`<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>`;
 // The three-dot menu at the far right of an email's action row. Reply, Forward and Snooze stay in the row too; Important person, Always archive,
 // Send to Junk, Block sender, Mute, Mark unread, Print and Save as PDF live only here. Items keep their usual data-* names so the same handlers run.
+const ICON_RFOLDER=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>`;
 const ICON_RTASK=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>`,ICON_RTAG=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="8" cy="8" r="1.2"/></svg>`;
 function navBtns(){
   // Previous / Next email: only where one email is open beside or over a list (not when rows open in place).
@@ -4747,10 +4748,12 @@ const moreBtn=m=>`<button type="button" class="subtle qmore" data-more="${esc(m.
 function ruleItemsFor(m,back){
   const id=esc(m.id),out=[],item=(attr,label)=>out.push(`<button type="button" role="menuitem" ${attr}="${id}">${label}</button>`);
   if(back)out.push(`<button type="button" role="menuitem" data-rules-back="${id}">&lsaquo; Back</button><hr>`);
-  if(realMail&&!m.found){item("data-rule","Always archive these");item("data-rule-reviewed","Always mark these as read")}
+  if(realMail&&!m.found&&!isImp(m)){item("data-rule","Always archive these");item("data-rule-reviewed","Always mark these as read")}
   item("data-notask","Never make tasks from this sender");
+  if(canStar(m)&&!isImp(m))item("data-rule-folder","Always move to a folder&hellip;");
   if(realMail&&!m.found&&tagsOn(m))item("data-tag-open","Always apply a tag&hellip;");
-  if(realMail&&!m.found)item("data-block-sender","Block sender (new email goes to Junk)");
+  if(realMail&&!m.found&&!isImp(m))item("data-block-sender","Block sender (new email goes to Junk)");
+  if(isImp(m))out.push(`<p class="menu-note" role="note">${esc(m.sender||"This person")} is on your Important list, so archive, mark as read, folder and Junk rules never touch their email.</p>`);
   out.push("<hr>");
   out.push(`<button type="button" role="menuitem" data-open-rules="1">See all my mail rules</button>`);
   return out.join("");
@@ -4774,7 +4777,7 @@ function menuItemsFor(m,viewer){
     sep();
   }
   if(!m.kept&&m.address)item("data-important",isImp(m)?"Not important":"Important person");
-  if(!m.kept&&m.address&&!isImp(m)&&!m.found)item("data-rules-open","Mail rules for this sender &rsaquo;");
+  if(!m.kept&&m.address)item("data-rules-open","Mail rules for this sender &rsaquo;");
   if(!m.kept&&m.real&&!m.found)item("data-junk-this","Send to Junk");
   if(!m.kept&&m.real&&realMail&&!m.found)item("data-mute","Mute conversation");
   sep();
@@ -6511,6 +6514,8 @@ document.addEventListener("click",e=>{
   const lt=e.target.closest("[data-later-toggle]");if(lt){if(splitNow()){goTasks();return}calmLaterOpen=!calmLaterOpen;render();return}
   const stb=e.target.closest("[data-star]");
   if(stb){e.stopPropagation();closeMoreMenu();const m=data.find(x=>x.id===+stb.dataset.star&&x.owner===currentUser.id);if(m&&canStar(m))toggleStar(m);return}
+  const rf=e.target.closest("[data-rule-folder]");
+  if(rf){e.stopPropagation();closeMoreMenu();const m=data.find(x=>x.id===+rf.dataset.ruleFolder&&x.owner===currentUser.id);if(m&&canStar(m))openFolderPicker([m],true);return}
   const mvf=e.target.closest("[data-move-folder]");
   if(mvf){e.stopPropagation();closeMoreMenu();const m=data.find(x=>x.id===+mvf.dataset.moveFolder&&x.owner===currentUser.id);if(m&&canStar(m))openFolderPicker([m]);return}
   if(e.target.closest("[data-bulk-move]")){openFolderPicker([...selected].map(id=>data.find(x=>x.id===id&&x.owner===currentUser.id)).filter(m=>m&&canStar(m)));return}
@@ -8035,19 +8040,25 @@ async function moveRealOne(m,folder){
     selected.delete(m.id);if(currentViewerMessageId===m.id)closeAttachmentViewer();refreshTasks();return true;
   }catch(er){toast(er.message||"Could not move this email.",6000,"error");return false}
 }
-async function openFolderPicker(list){
+async function openFolderPicker(list,forceAlways){
   const ms=list.filter(m=>m&&m.real&&!m._pending);
   if(!ms.length)return;
-  const aid=ms[0].real.accountId;
+  const aid=ms[0].real.accountId,one=ms.length===1&&!!ms[0].address;
   if(ms.some(m=>m.real.accountId!==aid)){toast("Pick emails from one mailbox at a time to move them.",4500);return}
   document.getElementById("folderPick")?.remove();
   const box=document.createElement("div");box.id="folderPick";box.className="sheetform popcard";box.setAttribute("role","dialog");box.setAttribute("aria-modal","true");box.setAttribute("aria-label","Move to a folder");
-  box.innerHTML=`<div class="sf-top"><strong>Move ${ms.length===1?"this email":ms.length+" emails"} to…</strong><button type="button" class="sf-close" data-fp-close>Close</button></div><div class="sf-body"><label>Find a folder<input type="text" id="fpFind" autocomplete="off" placeholder="Start typing a folder name"></label><div class="fpick-list" id="fpList" role="list"><p class="sp-sub">Reading your folders…</p></div><div class="fpick-new"><input type="text" id="fpNew" maxlength="80" placeholder="Or make a new folder" aria-label="Name of a new folder"><button type="button" class="btn" id="fpMake">Make it</button></div><p class="sp-sub" id="fpNote" role="status"></p></div>`;
+  box.innerHTML=`<div class="sf-top"><strong>Move ${ms.length===1?"this email":ms.length+" emails"} to…</strong><button type="button" class="sf-close" data-fp-close>Close</button></div><div class="sf-body"><label>Find a folder<input type="text" id="fpFind" autocomplete="off" placeholder="Start typing a folder name"></label><div class="fpick-list" id="fpList" role="list"><p class="sp-sub">Reading your folders…</p></div><div class="fpick-new"><input type="text" id="fpNew" maxlength="80" placeholder="Or make a new folder" aria-label="Name of a new folder"><button type="button" class="btn" id="fpMake">Make it</button></div>${one&&!isImp(ms[0])?`<label class="fp-always"><input type="checkbox" id="fpAlways"${forceAlways?" checked":""}> <span>Always move new email from ${esc(ms[0].address)} into the folder I pick</span></label><p class="sp-sub">The email leaves your inbox. To keep it in your inbox and group it, use Tags instead.</p>`:""}<p class="sp-sub" id="fpNote" role="status"></p></div>`;
   document.body.appendChild(box);
   const close=()=>{box.remove();document.removeEventListener("keydown",onKey)},onKey=ev=>{if(ev.key==="Escape")close()};
   document.addEventListener("keydown",onKey);box.querySelector("[data-fp-close]").onclick=close;
   let rows=[];
-  const choose=f=>{close();rememberFolder(aid,f.name);queueAction(ms,"moved",{folder:f.name,folderLabel:f.label});selMode=false};
+  const choose=async f=>{
+    const always=!!(box.querySelector("#fpAlways")&&box.querySelector("#fpAlways").checked);
+    if(always){
+      try{await secureBackendRequest("/api/v1/me/rules",{method:"POST",body:JSON.stringify({sender:ms[0].address,subject:"",action:"moved",folder:f.name,folder_label:f.label})});toast("Rule saved: new email from "+ms[0].address+" goes to "+f.label,3500,"success")}
+      catch(er){$("fpNote").textContent=er.message||"The rule could not be saved.";return}
+    }
+    close();rememberFolder(aid,f.name);queueAction(ms,"moved",{folder:f.name,folderLabel:f.label});selMode=false};
   const paint=()=>{
     const q=$("fpFind").value.trim().toLowerCase(),rec=recentFolders(aid),mine=rows.filter(r=>r.target&&(!q||r.label.toLowerCase().includes(q)));
     mine.sort((a,b)=>{const ra=rec.indexOf(a.name),rb=rec.indexOf(b.name);return (ra<0?99:ra)-(rb<0?99:rb)||a.label.localeCompare(b.label)});

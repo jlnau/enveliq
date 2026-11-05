@@ -36,6 +36,9 @@ A star marks an email you want to find again. It is the mailbox's own Flagged ma
 - **Make a new folder:** type a name under "Or make a new folder" and press **Make it**. The folder is made in your mailbox and the email goes into it. Names are short, with no slashes. On Proton the folder is made under Folders, so it shows in Proton too.
 - **Move several:** tick emails, then press the folder button in the bar of buttons.
 - **Undo:** like Archive, the move waits a few seconds. The bar says "Moved to Bills" and **Undo** puts it back; nothing has been sent to the mailbox yet.
+- **Folders button beside Tags:** wherever the Tags button is (an email's row, the side rail of the reading view, the bar under an open email) there is now a Folders button next to it.
+- **Always use this folder:** the folder box has a tick box, "Always move new email from this sender into this folder". With it ticked, the email moves now and later email from that sender is filed there as it arrives. It is a mail rule (see Mail rules), so you can remove it any time. Rules never touch email from Important people. If you want an email in a folder but still in the Inbox, use a Tag: a folder holds an email in one place only, while a tag is a label that can sit alongside the Inbox.
+- **Mail rules for this sender:** the item is in the three-dot menu of every email. For an Important person it explains that rules do not apply to them, rather than disappearing.
 - **Open any folder:** **Folders** in the left menu lists the mailbox's folders (and a mailbox choice when you have more than one). Pick one to see its newest emails, 25 at a time, and open any of them. They are read from the mailbox when you look and are never saved in Enveliq, like Sent. A folder's emails cannot be moved from here yet.
 - Only Inbox emails can be moved. Emails already read stay readable and keep their read or unread mark.
 

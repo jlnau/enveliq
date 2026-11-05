@@ -783,6 +783,15 @@ def apply_rules(account: dict, arrived: list) -> None:
         if not rule:
             _away_reply(account, item, user)
             continue
+        if rule["action"] == "moved":
+            try:
+                move_message_now(account["id"], item["id"], user, rule.get("folder", ""), by="rule")
+            except BridgeError as err:
+                if err.code != "not_found":
+                    break                      # the mailbox cannot be changed right now: leave the rest where they are
+            except KeyError:
+                pass
+            continue
         try:
             resolve_message(account["id"], item["id"], rule["action"], user, by="rule")
         except BridgeError:
@@ -1228,6 +1237,17 @@ def resolve_message_endpoint(
     return Response(status_code=204)
 
 
+def move_message_now(account_id: str, message_id: str, user_id: str, folder: str, *, by: str | None = None) -> None:
+    """Moves an Inbox email into a folder at the mailbox (the name must be one the mailbox listed), then forgets it here as Bin does.
+    Raises BridgeError when the mailbox cannot do it and KeyError when the message is gone."""
+    stored = vault.get_message(account_id, message_id)
+    mail_service.move_to_folder(mail_ctx.folders, vault.get_account(account_id), stored, folder)
+    preview_leases.purge_message(account_id, message_id)
+    taskbook.close_message(user_id, account_id, message_id, "handled")
+    vault.delete_message(account_id, message_id)
+    vault.audit({"event": "message_moved", "actor_user_id": user_id, "account_id": account_id, "message_id": message_id, "at": time.time(), **({"by": by} if by else {})})
+
+
 class MoveMessageRequest(StrictModel):
     folder: str = Field(min_length=1, max_length=300)
 
@@ -1243,14 +1263,10 @@ def move_message_to_folder(body: MoveMessageRequest, account_id: AccountId, mess
     if stored.get("found_until") or stored.get("state") != "unread" or not stored.get("source_locator"):
         raise HTTPException(status_code=409, detail="This email cannot be moved from here.")
     try:
-        mail_service.move_to_folder(mail_ctx.folders, vault.get_account(account_id), stored, body.folder)
+        move_message_now(account_id, message_id, session.principal.user_id, body.folder)
     except BridgeError as err:
         raise HTTPException(status_code=BRIDGE_HTTP_STATUS.get(err.code, 502),
                             detail={"code": err.code, "message": err.message}) from None
-    preview_leases.purge_message(account_id, message_id)
-    taskbook.close_message(session.principal.user_id, account_id, message_id, "handled")
-    vault.delete_message(account_id, message_id)
-    vault.audit({"event": "message_moved", "actor_user_id": session.principal.user_id, "account_id": account_id, "message_id": message_id, "at": time.time()})
     return Response(status_code=204)
 
 

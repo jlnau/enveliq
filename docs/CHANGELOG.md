@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Folders button beside Tags, and "always move this sender".** A Folders button now sits next to Tags on the row, the side rail and the bar under an open email. The folder box has a tick box to always file that sender's new email in the chosen folder; it becomes a new "moved to a folder" Mail rule, listed (and removable) in Settings. The Mail rules item is shown on every email, including those from Important people, where it explains that rules do not apply to them. A folder keeps the email out of the Inbox; use a Tag to keep it in both. Touches `backend/mail/rules.py`, `rules_routes.py`, `backend/app.py`, `prototype/index.html`, `web/static/auth.js`.
+
 **Android: Folders.** A folder button in the open-email bar and the several-selected bar opens a full-screen picker (search, recent first, make a new folder) and moves with Undo. **Folders** in the main menu shows a mailbox's folders and what is in them. Touches `android/`.
 
 **Folders.** **Move to folder…** in an email's three-dot menu opens a picker (search box, recent folders first, and a box to make a new folder). Tick several emails and use the folder button to move them together. A move has Undo, like Archive. A new **Folders** page in the left menu lists a mailbox's folders and shows what is in each (newest first, 25 at a time; read live, never saved). Works with Proton Bridge and ordinary IMAP mailboxes. Touches `prototype/index.html`, `backend/mail/`.

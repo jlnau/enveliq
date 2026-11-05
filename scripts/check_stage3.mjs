@@ -53,6 +53,9 @@ const handler = async (route) => {
   if (/\/messages\/[^/]+\/move$/.test(p) && m === "POST") { posts.push(["move", p.split("/")[6], JSON.parse(req.postData() || "{}")]); messages = messages.filter((x) => x.id !== p.split("/")[6]); return route.fulfill({ status: 204 }); }
   if (p === "/api/v1/accounts/a1/folder-mail") return json(200, { rows: [{ token: "tok1.mac", from_name: "Power Co", from_address: "bills@example.invalid", subject: "March bill", date: now - 86400, has_files: false }, { token: "tok2.mac", from_name: "Water Co", from_address: "water@example.invalid", subject: "Water notice", date: now - 172800, has_files: false }], total: 2, more: false, now });
   if (/\/folder-mail\/[^/]+\/original$/.test(p)) { posts.push(["open", p.split("/")[4], {}]); return json(200, { from: { name: "Power Co", address: "bills@example.invalid" }, to: [{ address: "me@example.invalid" }], date: "Today", subject: "March bill", text: "Plain words of the bill.", links: [], has_html: false, attachments: [] }); }
+  if (p === "/api/v1/me/important" && m === "GET") return json(200, { items: [{ address: "bills@example.invalid", name: "Northside Power" }] });
+  if (p === "/api/v1/me/rules" && m === "POST") { posts.push(["rule", "", JSON.parse(req.postData() || "{}")]); return json(200, { rules: [], actions: {}, max: 50 }); }
+  if (p === "/api/v1/me/rules") return json(200, { rules: [], actions: {}, max: 50 });
   if (p === "/api/v1/me/drafts" && m === "POST") { posts.push(["draft", "", JSON.parse(req.postData() || "{}")]); return json(200, { id: "d0123456789abcdef", items: [] }); }
   if (p === "/api/v1/me/drafts") return json(200, { items: [] });
   if (/\/original\/headers$/.test(p)) return json(200, { headers: "From: Alice <alice@example.invalid>\nSubject: Trip plans\nReceived: from mx.example.invalid" });
@@ -149,6 +152,35 @@ for (const width of [1200, 390]) {
   check("several are one Undo bar", /Moved to Bills · 2 emails/.test(await page.locator("#undoBar").innerText()));
   check("no page errors", errors.length === 0);
   await context.close();
+}
+{
+  const { page, errors, context } = await open(1200);
+  await pick(page, "Trip plans");
+  check("the side bar has a Folders button beside Tags", (await page.locator("[data-move-folder]:visible").count()) >= 1);
+  await page.locator("[data-move-folder]:visible").first().click();
+  await page.waitForSelector("#folderPick .fpick-item");
+  check("the picker offers Always move this sender's email", (await page.locator("#fpAlways").count()) === 1 && !(await page.locator("#fpAlways").isChecked()));
+  await page.locator("#fpAlways").check();
+  await page.locator("#folderPick .fpick-item", { hasText: "Bills" }).click();
+  await page.waitForSelector("#undoBar .undobar");
+  check("ticking it saves a move rule for that sender", posts.some((x) => x[0] === "rule" && x[2].action === "moved" && x[2].sender === "alice@example.invalid" && x[2].folder === "Folders/Bills"));
+  check("no page errors", errors.length === 0);
+  await context.close();
+}
+{
+  // Mail rules for this sender shows for everyone, important or not
+  for (const [title, important] of [["Trip plans", false], ["Electricity bill", true]]) {
+    const { page, errors, context } = await open(1200);
+    await pick(page, title);
+    await page.locator(".qmore").first().click();
+    check(`Mail rules for this sender is in the menu: ${title}`, (await menuTexts(page)).some((t) => /Mail rules for this sender/.test(t)));
+    await page.locator("#moreMenu [data-rules-open]").click();
+    const items = await menuTexts(page);
+    check(`${title}: ${important ? "important people only get the rules that can apply" : "all the rules are there, with Always move to a folder"}`,
+      important ? !items.some((t) => /Always archive|Block sender|Always move/.test(t)) && items.some((t) => /Never make tasks/.test(t)) : items.some((t) => /Always move to a folder/.test(t)) && items.some((t) => /Always archive/.test(t)));
+    check(`${title}: no page errors`, errors.length === 0);
+    await context.close();
+  }
 }
 await browser.close();
 if (failed) process.exit(1);

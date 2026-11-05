@@ -20,7 +20,7 @@ def test_a_new_person_has_no_rules_and_it_is_never_cached(env):
     _, client, _, _ = env
     r = client.get("/api/v1/me/rules")
     assert r.status_code == 200 and r.headers["cache-control"] == "no-store"
-    assert r.json()["rules"] == [] and set(r.json()["actions"]) == {"archived", "reviewed", "junked", "notasks", "tag"}
+    assert r.json()["rules"] == [] and set(r.json()["actions"]) == {"archived", "reviewed", "junked", "notasks", "tag", "moved"}
 
 
 def test_adding_listing_and_removing_a_rule(env):

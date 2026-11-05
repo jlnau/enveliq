@@ -2429,7 +2429,7 @@ async function awayPage(me) {
 
 // ---------- mail rules: "archive (or mark reviewed) new mail from this sender" ----------
 async function rulesPage(me) {
-  let state = { rules: [], actions: { archived: "Archive it", reviewed: "Mark it reviewed", junked: "Send it to Junk", notasks: "Never make tasks", tag: "Always apply tags" }, max: 50 };
+  let state = { rules: [], actions: { archived: "Archive it", reviewed: "Mark it reviewed", junked: "Send it to Junk", notasks: "Never make tasks", tag: "Always apply tags", moved: "Move it to a folder" }, max: 50 };
   const title = "Mail rules";
   const help = "Enveliq can tidy new email for you. Choose who it is from and what to do with it. A rule acts only on new email as it arrives, never on what is already in your inbox, and never on email from your important people. \u201cNever make tasks\u201d leaves the email alone and only stops tasks being made from it. No rule can delete email. Archived email is kept in Enveliq for a few days, as usual, and stays in your mailbox\u2019s Archive folder.";
   const sender = h("input", { id: "ru_sender", type: "text", class: "wide", placeholder: "name@example.com or @example.com", "aria-label": "Mail from", autocomplete: "off", maxlength: 320 });
@@ -2444,12 +2444,12 @@ async function rulesPage(me) {
   }
   for (const el of [sender, words]) el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
   const draw = drill => {
-    action.replaceChildren(...Object.entries(state.actions).filter(([k]) => k !== "tag").map(([k, v]) => h("option", { value: k, text: v })));
+    action.replaceChildren(...Object.entries(state.actions).filter(([k]) => k !== "tag" && k !== "moved").map(([k, v]) => h("option", { value: k, text: v })));
     redraw(title, () => [
       { label: state.rules.length ? "Your rules" : "", items: state.rules.length ? state.rules.map(r => itemRow({
-        title: state.actions[r.action] || r.action, sub: `${r.action === "notasks" ? "Mail from" : "New mail from"} ${who(r)}${r.subject ? ` with \u201c${r.subject}\u201d in the subject` : ""}${r.action === "notasks" ? " no longer makes tasks. The email still arrives." : ""}${r.action === "tag" ? ` gets the ${(r.tags || []).length === 1 ? "tag" : "tags"}: ${(r.tags || []).join(", ")}` : ""}`,
+        title: r.action === "moved" ? `Move it to \u201c${r.folder_label || r.folder}\u201d` : (state.actions[r.action] || r.action), sub: `${r.action === "notasks" ? "Mail from" : "New mail from"} ${who(r)}${r.subject ? ` with \u201c${r.subject}\u201d in the subject` : ""}${r.action === "notasks" ? " no longer makes tasks. The email still arrives." : ""}${r.action === "moved" ? " goes straight into that folder, and leaves your inbox." : ""}${r.action === "tag" ? ` gets the ${(r.tags || []).length === 1 ? "tag" : "tags"}: ${(r.tags || []).join(", ")}` : ""}`,
         buttons: xBtn(`Remove the rule for ${who(r)}`, async () => { try { state = await api(`/me/rules/${r.id}`, { method: "DELETE" }); draw(); toast("Rule removed"); } catch (er) { toast(er.message); } }) }))
-        : [noteRow("No rules yet. Add one, or open an email and press Always archive these or Block sender.")] },
+        : [noteRow("No rules yet. Add one, or open an email and press Always archive these, Always move to a folder or Block sender.")] },
       { label: "", items: [{ title: "Add a rule", center: true, key: "add", content: [
         grp("When new mail is from", fieldRow("From", sender, "An address, or @example.com for a whole website"), fieldRow("Subject has", words)),
         grp("Then", fieldRow("Do this", action)),

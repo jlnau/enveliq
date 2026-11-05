@@ -35,3 +35,6 @@ The same page lists your rules and lets you remove any of them with the **×**.
 - If your mail service cannot be reached at that moment, the email just stays in your inbox.
 - To stop a rule, remove it. Email that was already archived stays archived.
 - Your rules are kept encrypted, are part of **Export my data**, and nobody else can see them, not even an administrator.
+
+## Move to a folder
+**Always move new email from this sender into a folder** is made from an email: open the folder box (three-dot menu, **Move to folder…**, or the Folders button) and tick "Always move new email from this sender into this folder", or use **Mail rules for this sender, Always move to a folder…**. The email moves now and later email from that sender is filed in that folder as it arrives. It is listed in Settings, Mail rules, where it can be removed (it cannot be added there, because folder names must match your mailbox exactly). One sender has one such rule; choosing another folder replaces it. It never applies to Important people, and a folder that no longer exists is skipped. A folder takes the email out of the Inbox; for "in both", use an always-apply Tag rule instead.
