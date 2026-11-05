@@ -59,6 +59,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Delete
@@ -185,7 +186,7 @@ private fun AddTaskPopup(mail: Mail, api: EnveliqApi, onClose: () -> Unit, onDon
     )
 }
 
-private enum class Tab { Inbox, Tasks, Shipping, Drafts, More, Settings }
+private enum class Tab { Inbox, Tasks, Shipping, Folders, Drafts, More, Settings }
 
 @Composable
 fun EnveliqApp(activity: MainActivity) {
@@ -586,6 +587,29 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         }
     }
 
+    // Move to a folder: the emails leave the list at once, and are moved at the mailbox when the Undo time has passed.
+    var pickFor by remember { mutableStateOf<List<Mail>?>(null) }
+    fun moveAll(items: List<Mail>, folder: FolderInfo) {
+        if (items.isEmpty()) return
+        val placed = items.map { it to mails.indexOf(it).coerceAtLeast(0) }
+        items.forEach { mails.remove(it); Notifier.clearOne(activity, it.id) }
+        selected.clear()
+        opened = null
+        scope.launch {
+            val label = "Moved to " + folder.label + (if (items.size > 1) " (" + items.size + ")" else "")
+            val result = snack.showSnackbar(message = label, actionLabel = "Undo", duration = SnackbarDuration.Short)
+            fun putBack(list: List<Pair<Mail, Int>>) { list.sortedBy { it.second }.forEach { (m, at) -> mails.add(at.coerceAtMost(mails.size), m) } }
+            if (result == SnackbarResult.ActionPerformed) putBack(placed)
+            else {
+                val failed = ArrayList<Pair<Mail, Int>>()
+                for (p in placed) {
+                    try { withContext(Dispatchers.IO) { api.moveToFolder(p.first, folder.name) } } catch (e: Exception) { failed.add(p) }
+                }
+                if (failed.isNotEmpty()) { putBack(failed); snack.showSnackbar("That did not work for " + failed.size + ". They are back in your list.") }
+            }
+        }
+    }
+
     fun resolve(mail: Mail, outcome: Outcome) = resolveAll(listOf(mail), outcome)
 
     // Junk: the email goes to the mailbox's Junk folder. "Block" also sends everything from that sender there from now on.
@@ -712,6 +736,12 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     LaunchedEffect(tab, moreKey) {
         bellUnread = try { withContext(Dispatchers.IO) { api.bell() }.any { it.unread } } catch (_: Exception) { false }
     }
+    pickFor?.let { list ->
+        val acct = list.firstOrNull()?.accountId
+        if (acct != null && list.all { it.accountId == acct }) {
+            FolderPicker(api, acct, list.size, prefs, onPick = { f -> pickFor = null; moveAll(list, f) }, onClose = { pickFor = null })
+        } else { pickFor = null; scope.launch { snack.showSnackbar("Pick emails from one mailbox at a time to move them.") } }
+    }
     var shipDue by remember { mutableStateOf(0) }
     LaunchedEffect(tab, drawer.isOpen) {
         shipDue = try { withContext(Dispatchers.IO) { api.shipping() }.items.count { it.needsConfirm } } catch (_: Exception) { 0 }
@@ -731,7 +761,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                     selectedTextColor = Blue, unselectedTextColor = Ink, selectedIconColor = Blue, unselectedIconColor = Muted,
                 )
                 listOf(
-                    Triple(Tab.Inbox, "Inbox", Icons.Filled.Email), Triple(Tab.Tasks, "Tasks", Icons.Filled.CheckCircle), Triple(Tab.Shipping, "Shipping", Icons.Filled.ShoppingCart),
+                    Triple(Tab.Inbox, "Inbox", Icons.Filled.Email), Triple(Tab.Tasks, "Tasks", Icons.Filled.CheckCircle), Triple(Tab.Shipping, "Shipping", Icons.Filled.ShoppingCart), Triple(Tab.Folders, "Folders", Icons.Filled.List),
                     Triple(Tab.Drafts, "Drafts", Icons.Filled.Edit), Triple(Tab.More, "More", Icons.Filled.Menu),
                     Triple(Tab.Settings, "Settings", Icons.Filled.Settings),
                 ).forEach { (t, label, icon) ->
@@ -758,13 +788,13 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         bottomBar = {
             if (current != null) {
                 ActionBar(
-                    read = current.quiet, starred = current.starred, onStar = { toggleStar(current) }, onRead = { markRead(current) }, onUnread = { markUnread(current) },
+                    read = current.quiet, onMove = { pickFor = listOf(current) }, starred = current.starred, onStar = { toggleStar(current) }, onRead = { markRead(current) }, onUnread = { markUnread(current) },
                     onResolve = { outcome -> resolve(current, outcome) }, onSnooze = { askSnooze = true },
                     onTag = { openTags(current) }, onTask = { askTask = true },
                 )
             } else if (selected.isNotEmpty() && tab == Tab.Inbox) {
                 val chosen = mails.filter { selected.contains(keyOf(it)) }
-                SelectionBar(chosen.size, onResolve = { outcome -> if (outcome == Outcome.Reviewed) { chosen.forEach { markRead(it) }; selected.clear() } else resolveAll(chosen, outcome) }, onCancel = { selected.clear() })
+                SelectionBar(chosen.size, onMove = { pickFor = chosen }, onResolve = { outcome -> if (outcome == Outcome.Reviewed) { chosen.forEach { markRead(it) }; selected.clear() } else resolveAll(chosen, outcome) }, onCancel = { selected.clear() })
             }
         },
     ) { inner ->
@@ -824,6 +854,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                     Tab.Inbox -> inboxPane()
                     Tab.Tasks -> TasksScreen(api, mails, onOpen = { opened = it })
                     Tab.Shipping -> ShippingPage(api, onBack = { tab = Tab.Inbox })
+                    Tab.Folders -> FoldersPage(api, mails.map { it.accountId }.distinct(), onBack = { tab = Tab.Inbox })
                     Tab.More -> androidx.compose.runtime.key(moreKey) { MoreTab(api, moreStart) }
                     Tab.Drafts -> DraftsTab(api, onOpen = { d -> composing = ComposeTarget(d.kind, mailForDraft(d), d) })
                     Tab.Settings -> SettingsTab(activity, prefs, server, api, onLeave)
@@ -1332,12 +1363,13 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
 
 /** Always visible at the bottom of an open email. Symbols only: bin, archive, tag, remind me later, add a task. */
 @Composable
-private fun ActionBar(read: Boolean, starred: Boolean, onStar: () -> Unit, onRead: () -> Unit, onUnread: () -> Unit, onResolve: (Outcome) -> Unit, onSnooze: () -> Unit, onTag: () -> Unit, onTask: () -> Unit) {
+private fun ActionBar(read: Boolean, onMove: () -> Unit, starred: Boolean, onStar: () -> Unit, onRead: () -> Unit, onUnread: () -> Unit, onResolve: (Outcome) -> Unit, onSnooze: () -> Unit, onTag: () -> Unit, onTask: () -> Unit) {
     Row(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 10.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         // One button: green "Mark as read", or red "Mark as unread" once the email is read.
         if (read) BarIcon("Mark as unread", Red, Color(0xFF3A1D22), onUnread) { Icon(Icons.Filled.Check, contentDescription = null, tint = Red) }
         else BarIcon("Mark as read", Green, Color(0xFF16382B), onRead) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
         BarIcon(if (starred) "Remove star" else "Star", Color(0xFFE6C36A), PanelHigh, onStar) { Icon(Icons.Filled.Star, contentDescription = null, tint = if (starred) Color(0xFFE6C36A) else Color(0xFF6B6A63)) }
+        BarIcon("Move to a folder", Color(0xFF8DB8FF), Color(0xFF173056), onMove) { FolderIcon(Color(0xFF8DB8FF)) }
         BarIcon("Bin", Red, Color(0xFF3A1D22), { onResolve(Outcome.Binned) }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Red) }
         BarIcon("Archive", Color(0xFF8DB8FF), Color(0xFF173056), { onResolve(Outcome.Archived) }) { ArchiveIcon(Color(0xFF8DB8FF)) }
         BarIcon("Tags", Ink, PanelHigh, onTag) { TagIcon(Ink) }
@@ -1348,11 +1380,12 @@ private fun ActionBar(read: Boolean, starred: Boolean, onStar: () -> Unit, onRea
 
 /** The bar shown while several emails are ticked. */
 @Composable
-private fun SelectionBar(count: Int, onResolve: (Outcome) -> Unit, onCancel: () -> Unit) {
+private fun SelectionBar(count: Int, onMove: () -> Unit, onResolve: (Outcome) -> Unit, onCancel: () -> Unit) {
     Column(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(if (count == 1) "1 email selected" else "$count emails selected", color = Ink, fontSize = 15.sp, modifier = Modifier.padding(bottom = 8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             BarIcon("Mark as read", Green, Color(0xFF16382B), { onResolve(Outcome.Reviewed) }) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
+            BarIcon("Move to a folder", Color(0xFF8DB8FF), Color(0xFF173056), onMove) { FolderIcon(Color(0xFF8DB8FF)) }
             BarIcon("Archive", Color(0xFF8DB8FF), Color(0xFF173056), { onResolve(Outcome.Archived) }) { ArchiveIcon(Color(0xFF8DB8FF)) }
             BarIcon("Bin", Red, Color(0xFF3A1D22), { onResolve(Outcome.Binned) }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Red) }
         }

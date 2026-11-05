@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Android: Folders.** A folder button in the open-email bar and the several-selected bar opens a full-screen picker (search, recent first, make a new folder) and moves with Undo. **Folders** in the main menu shows a mailbox's folders and what is in them. Touches `android/`.
+
 **Folders.** **Move to folder…** in an email's three-dot menu opens a picker (search box, recent folders first, and a box to make a new folder). Tick several emails and use the folder button to move them together. A move has Undo, like Archive. A new **Folders** page in the left menu lists a mailbox's folders and shows what is in each (newest first, 25 at a time; read live, never saved). Works with Proton Bridge and ordinary IMAP mailboxes. Touches `prototype/index.html`, `backend/mail/`.
 
 **Android: Shipping moves to the main menu and can be acted on.** Shipping now sits beside Tasks (not under More), with a count of parcels waiting for you. Delivered parcels have **Yes, I've got it** and **Not yet**; a three-dot button gives Copy tracking number, Add a note and Not an order (Remove for hand-made orders). Received parcels fold away under **Received · N**, with Undo. No server change. Touches `android/`.

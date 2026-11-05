@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -595,6 +596,128 @@ private fun WaitingPage(api: EnveliqApi, onBack: () -> Unit) {
                         }) { Text(if (w.state == "failed") "Remove" else "Take it back", color = Blue) }
                     }
                 }
+            }
+        }
+    }
+}
+
+// ---------- Folders ----------
+
+/** Full-screen box to pick a folder to move [count] emails into, or to make a new one. */
+@Composable
+internal fun FolderPicker(api: EnveliqApi, accountId: String, count: Int, prefs: android.content.SharedPreferences, onPick: (FolderInfo) -> Unit, onClose: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var rows by remember { mutableStateOf<List<FolderInfo>?>(null) }
+    var err by remember { mutableStateOf("") }
+    var find by remember { mutableStateOf("") }
+    var fresh by remember { mutableStateOf("") }
+    var making by remember { mutableStateOf(false) }
+    val key = "recent_folders_" + accountId
+    val recent = (prefs.getString(key, "") ?: "").split("\n").filter { it.isNotBlank() }
+    LaunchedEffect(accountId) {
+        try { rows = withContext(Dispatchers.IO) { api.folders(accountId) } }
+        catch (e: ApiException) { err = e.message ?: "Could not read your folders." }
+        catch (e: Exception) { err = "Could not read your folders. Check your connection." }
+    }
+    fun choose(f: FolderInfo) {
+        prefs.edit().putString(key, (listOf(f.name) + recent.filter { it != f.name }).take(6).joinToString("\n")).apply()
+        onPick(f)
+    }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(color = androidx.compose.ui.graphics.Color.Unspecified.let { Navy }, modifier = Modifier.fillMaxSize()) {
+            Column(Modifier.fillMaxSize().imePadding()) {
+                Row(Modifier.fillMaxWidth().background(Panel).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(if (count == 1) "Move this email to…" else "Move $count emails to…", color = Ink, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                    TextButton(onClick = onClose) { Text("Close", color = Blue, fontSize = 16.sp) }
+                }
+                OutlinedTextField(value = find, onValueChange = { find = it }, singleLine = true, placeholder = { Text("Find a folder") }, modifier = Modifier.fillMaxWidth().padding(16.dp, 12.dp, 16.dp, 4.dp))
+                val shown = (rows ?: emptyList()).filter { it.target && (find.isBlank() || it.label.contains(find.trim(), ignoreCase = true)) }
+                    .sortedWith(compareBy({ val i = recent.indexOf(it.name); if (i < 0) 99 else i }, { it.label.lowercase() }))
+                LazyColumn(Modifier.weight(1f).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (err.isNotEmpty()) item { Text(err, color = Red, fontSize = 15.sp, modifier = Modifier.padding(8.dp)) }
+                    else if (rows == null) item { Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Blue) } }
+                    else if (shown.isEmpty()) item { Text(if (rows!!.any { it.target }) "No folder matches that." else "You have no folders of your own yet. Make one below.", color = Muted, fontSize = 15.sp, modifier = Modifier.padding(8.dp)) }
+                    items(shown, key = { it.name }) { f -> Card(onClick = { choose(f) }) { Text(f.label, color = Ink, fontSize = 17.sp) } }
+                }
+                Row(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = fresh, onValueChange = { fresh = it.take(80) }, singleLine = true, placeholder = { Text("Or make a new folder") }, modifier = Modifier.weight(1f))
+                    Button(enabled = fresh.isNotBlank() && !making, onClick = {
+                        making = true
+                        scope.launch {
+                            try { choose(withContext(Dispatchers.IO) { api.makeFolder(accountId, fresh.trim()) }) }
+                            catch (e: ApiException) { err = e.message ?: "That folder could not be made." }
+                            catch (e: Exception) { err = "That folder could not be made. Check your connection." }
+                            making = false
+                        }
+                    }) { Text("Make it") }
+                }
+            }
+        }
+    }
+}
+
+/** Folders: the mailbox's folders as chips, and the newest emails in the chosen one. Read live, never kept. */
+@Composable
+internal fun FoldersPage(api: EnveliqApi, accountIds: List<String>, onBack: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var acct by remember { mutableStateOf(accountIds.firstOrNull() ?: "") }
+    var chosen by remember { mutableStateOf<FolderInfo?>(null) }
+    val rows = remember { androidx.compose.runtime.mutableStateListOf<FolderMail>() }
+    var total by remember { mutableStateOf(0) }
+    var more by remember { mutableStateOf(false) }
+    var note by remember { mutableStateOf("") }
+    var reading by remember { mutableStateOf<FolderMail?>(null) }
+    var text by remember { mutableStateOf("") }
+    val row = reading
+    if (row != null) {
+        SubPage(row.subject, row.from, onBack = { reading = null }) {
+            LaunchedEffect(row.token) {
+                text = ""
+                try { text = withContext(Dispatchers.IO) { api.folderOriginal(row.token) } }
+                catch (e: ApiException) { text = e.message ?: "Could not open this email." }
+                catch (e: Exception) { text = "Could not open this email. Check your connection." }
+            }
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+                if (text.isEmpty()) CircularProgressIndicator(color = Blue) else Text(text, color = Ink, fontSize = 16.sp, lineHeight = 24.sp)
+            }
+        }
+        return
+    }
+    fun open(f: FolderInfo, offset: Int) {
+        if (offset == 0) { rows.clear(); chosen = f }
+        note = "Reading " + f.label + "…"
+        scope.launch {
+            try {
+                val p = withContext(Dispatchers.IO) { api.folderMail(acct, f.name, offset) }
+                rows.addAll(p.rows); total = p.total; more = p.more
+                note = if (p.total == 0) f.label + " is empty." else f.label + ": " + p.total + (if (p.total == 1) " email" else " emails") + ", newest first."
+            } catch (e: ApiException) { note = e.message ?: "Could not open that folder." }
+            catch (e: Exception) { note = "Could not open that folder. Check your connection." }
+        }
+    }
+    SubPage("Folders", onBack = onBack) {
+        Loader(0, { api.folders(acct) }) { folders ->
+            LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (folders.isEmpty()) item { Empty("This mailbox has no other folders.") }
+                item {
+                    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        for (f in folders) {
+                            val on = chosen?.name == f.name
+                            Surface(color = if (on) androidx.compose.ui.graphics.Color(0xFF173056) else PanelHigh, shape = RoundedCornerShape(20.dp), modifier = Modifier.clickable { open(f, 0) }) {
+                                Text(f.label, color = if (on) androidx.compose.ui.graphics.Color(0xFF8DB8FF) else Ink, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp))
+                            }
+                        }
+                    }
+                }
+                if (note.isNotEmpty()) item { Text(note, color = Muted, fontSize = 13.sp) }
+                items(rows.toList(), key = { it.token }) { r ->
+                    Card(onClick = { reading = r }) {
+                        Text(r.from, color = Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(r.subject, color = Muted, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
+                    }
+                }
+                if (more) item { TextButton(onClick = { chosen?.let { open(it, rows.size) } }) { Text("Show more", color = Blue) } }
+                item { Text("Read from your mailbox when you look. Nothing is saved in Enveliq.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(vertical = 8.dp)) }
             }
         }
     }

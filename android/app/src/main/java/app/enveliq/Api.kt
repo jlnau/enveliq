@@ -497,6 +497,34 @@ class EnveliqApi(address: String) {
         return (0 until items.length()).map { items.getJSONObject(it).str("address").lowercase() }.filter { it.isNotBlank() }.toSet()
     }
 
+    /** The mailbox's folders (names are read live, never kept). */
+    fun folders(accountId: String): List<FolderInfo> =
+        JSONObject(call("GET", "/api/v1/accounts/" + enc(accountId) + "/folders")).list("folders").map {
+            FolderInfo(it.str("name"), it.str("label"), it.optBoolean("special", false), it.optBoolean("target", false))
+        }
+
+    fun makeFolder(accountId: String, name: String): FolderInfo {
+        val it = JSONObject(call("POST", "/api/v1/accounts/" + enc(accountId) + "/folders", JSONObject().put("name", name)))
+        return FolderInfo(it.str("name"), it.str("label"), it.optBoolean("special", false), true)
+    }
+
+    /** Moves an Inbox email into one of the mailbox's folders. */
+    fun moveToFolder(mail: Mail, folder: String) {
+        call("POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/move", JSONObject().put("folder", folder))
+    }
+
+    /** Newest emails in a folder, 25 at a time, read live. */
+    fun folderMail(accountId: String, folder: String, offset: Int): FolderPage {
+        val r = JSONObject(call("GET", "/api/v1/accounts/" + enc(accountId) + "/folder-mail?folder=" + enc(folder) + "&offset=" + offset))
+        return FolderPage(r.list("rows").map {
+            val from = it.str("from_name").ifBlank { it.str("from_address") }.ifBlank { "(no sender)" }
+            FolderMail(it.str("token"), from, it.str("subject"), it.optDouble("date", 0.0).toLong())
+        }, r.optInt("total", 0), r.optBoolean("more", false))
+    }
+
+    fun folderOriginal(token: String): String =
+        JSONObject(call("GET", "/api/v1/folder-mail/" + enc(token) + "/original")).str("text").ifBlank { "(no text content)" }
+
     /** Stars or un-stars an email at the person's mailbox (its own Flagged mark). */
     fun star(mail: Mail, on: Boolean) {
         call("POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/star", JSONObject().put("starred", on))
