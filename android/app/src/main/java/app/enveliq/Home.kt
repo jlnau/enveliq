@@ -589,7 +589,8 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
 
     // Move to a folder: the emails leave the list at once, and are moved at the mailbox when the Undo time has passed.
     var pickFor by remember { mutableStateOf<List<Mail>?>(null) }
-    fun moveAll(items: List<Mail>, folder: FolderInfo) {
+    var pickAlways by remember { mutableStateOf(false) }
+    fun moveAll(items: List<Mail>, folder: FolderInfo, always: Boolean = false) {
         if (items.isEmpty()) return
         val placed = items.map { it to mails.indexOf(it).coerceAtLeast(0) }
         items.forEach { mails.remove(it); Notifier.clearOne(activity, it.id) }
@@ -606,6 +607,12 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                     try { withContext(Dispatchers.IO) { api.moveToFolder(p.first, folder.name) } } catch (e: Exception) { failed.add(p) }
                 }
                 if (failed.isNotEmpty()) { putBack(failed); snack.showSnackbar("That did not work for " + failed.size + ". They are back in your list.") }
+                // "Always move new email from this sender": the rule is only made once the Undo time has passed and the move worked.
+                val one = items.singleOrNull()
+                if (always && failed.isEmpty() && one != null && one.address.isNotBlank()) {
+                    try { withContext(Dispatchers.IO) { api.moveFrom(one.address, folder.name, folder.label) }; snack.showSnackbar("From now on, new email from " + one.sender.ifBlank { one.address } + " goes to " + folder.label + ". Change this in Mail rules on the website.") }
+                    catch (e: Exception) { snack.showSnackbar("The email moved, but the rule could not be saved.") }
+                }
             }
         }
     }
@@ -739,7 +746,8 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     pickFor?.let { list ->
         val acct = list.firstOrNull()?.accountId
         if (acct != null && list.all { it.accountId == acct }) {
-            FolderPicker(api, acct, list.size, prefs, onPick = { f -> pickFor = null; moveAll(list, f) }, onClose = { pickFor = null })
+            val who = list.singleOrNull()?.takeIf { it.address.isNotBlank() }?.let { it.sender.ifBlank { it.address } }
+            FolderPicker(api, acct, list.size, prefs, senderName = who, startAlways = pickAlways, onPick = { f, always -> pickFor = null; pickAlways = false; moveAll(list, f, always) }, onClose = { pickFor = null; pickAlways = false })
         } else { pickFor = null; scope.launch { snack.showSnackbar("Pick emails from one mailbox at a time to move them.") } }
     }
     var shipDue by remember { mutableStateOf(0) }
@@ -843,12 +851,12 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 Row(Modifier.fillMaxSize()) {
                     Box(Modifier.weight(0.42f).fillMaxHeight()) { inboxPane() }
                     Box(Modifier.weight(0.58f).fillMaxHeight()) {
-                        if (current != null) DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion, onMute = { mute(current) }, onMarkRead = if (current.state == "inbox" && !current.quiet) ({ markRead(current) }) else null, onUnread = if (current.quiet) ({ markUnread(current) }) else null)
+                        if (current != null) DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion, onMute = { mute(current) }, onAlwaysMove = { pickAlways = true; pickFor = listOf(current) }, onMarkRead = if (current.state == "inbox" && !current.quiet) ({ markRead(current) }) else null, onUnread = if (current.quiet) ({ markUnread(current) }) else null)
                         else Text("Choose an email to read it here.", color = Muted, fontSize = 16.sp, modifier = Modifier.padding(32.dp))
                     }
                 }
             } else if (current != null) {
-                DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion, onMute = { mute(current) }, onMarkRead = if (current.state == "inbox" && !current.quiet) ({ markRead(current) }) else null, onUnread = if (current.quiet) ({ markUnread(current) }) else null)
+                DetailBody(current, tagMap[keyOf(current)] ?: current.tags, api, onBack = { opened = null }, onCompose = { kind -> composing = ComposeTarget(kind, current) }, onJunk = { block -> junk(current, block) }, onAskedSummary = { watchSummary(current) }, taskVersion = taskVersion, onMute = { mute(current) }, onAlwaysMove = { pickAlways = true; pickFor = listOf(current) }, onMarkRead = if (current.state == "inbox" && !current.quiet) ({ markRead(current) }) else null, onUnread = if (current.quiet) ({ markUnread(current) }) else null)
             } else {
                 when (tab) {
                     Tab.Inbox -> inboxPane()
@@ -1179,7 +1187,7 @@ private fun MailRow(mail: Mail, picked: Boolean, fresh: Boolean, tags: List<Stri
 }
 
 @Composable
-private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit, onJunk: (Boolean) -> Unit, onAskedSummary: () -> Unit = {}, taskVersion: Int = 0, onMute: () -> Unit = {}, onMarkRead: (() -> Unit)? = null, onUnread: (() -> Unit)? = null) {
+private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: () -> Unit, onCompose: (String) -> Unit, onJunk: (Boolean) -> Unit, onAskedSummary: () -> Unit = {}, taskVersion: Int = 0, onMute: () -> Unit = {}, onMarkRead: (() -> Unit)? = null, onUnread: (() -> Unit)? = null, onAlwaysMove: () -> Unit = {}) {
     var summaryAsked by remember(mail.id) { mutableStateOf(false) }
     var showOriginal by remember(mail.id) { mutableStateOf(false) }
     var unsubLink by remember(mail.id) { mutableStateOf<String?>(null) }
@@ -1319,6 +1327,7 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
                                 }
                             },
                         )
+                        if (mail.address.isNotBlank()) DropdownMenuItem(text = { Text("Always move to a folder\u2026", color = Ink) }, onClick = { moreMenu = false; onAlwaysMove() })
                         DropdownMenuItem(text = { Text("Send to Junk", color = Ink) }, onClick = { moreMenu = false; onJunk(false) })
                         if (mail.address.isNotBlank()) DropdownMenuItem(text = { Text("Block sender", color = Ink) }, onClick = { moreMenu = false; askBlock = true })
                         DropdownMenuItem(text = { Text("Mute conversation", color = Ink) }, onClick = { moreMenu = false; onMute() })

@@ -927,6 +927,11 @@ class EnveliqApi(address: String) {
         call("POST", "/api/v1/me/rules", JSONObject().put("sender", address).put("subject", "").put("action", "archived"))
     }
 
+    /** Always file new email from this sender in a folder (a "moved" rule; one per sender). */
+    fun moveFrom(address: String, folder: String, label: String) {
+        call("POST", "/api/v1/me/rules", JSONObject().put("sender", address).put("subject", "").put("action", "moved").put("folder", folder).put("folder_label", label))
+    }
+
     fun blockSender(address: String) {
         call("POST", "/api/v1/me/rules", JSONObject().put("sender", address).put("subject", "").put("action", "junked"))
     }

@@ -605,13 +605,14 @@ private fun WaitingPage(api: EnveliqApi, onBack: () -> Unit) {
 
 /** Full-screen box to pick a folder to move [count] emails into, or to make a new one. */
 @Composable
-internal fun FolderPicker(api: EnveliqApi, accountId: String, count: Int, prefs: android.content.SharedPreferences, onPick: (FolderInfo) -> Unit, onClose: () -> Unit) {
+internal fun FolderPicker(api: EnveliqApi, accountId: String, count: Int, prefs: android.content.SharedPreferences, senderName: String? = null, startAlways: Boolean = false, onPick: (FolderInfo, Boolean) -> Unit, onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
     var rows by remember { mutableStateOf<List<FolderInfo>?>(null) }
     var err by remember { mutableStateOf("") }
     var find by remember { mutableStateOf("") }
     var fresh by remember { mutableStateOf("") }
     var making by remember { mutableStateOf(false) }
+    var always by remember { mutableStateOf(startAlways) }
     val key = "recent_folders_" + accountId
     val recent = (prefs.getString(key, "") ?: "").split("\n").filter { it.isNotBlank() }
     LaunchedEffect(accountId) {
@@ -621,7 +622,7 @@ internal fun FolderPicker(api: EnveliqApi, accountId: String, count: Int, prefs:
     }
     fun choose(f: FolderInfo) {
         prefs.edit().putString(key, (listOf(f.name) + recent.filter { it != f.name }).take(6).joinToString("\n")).apply()
-        onPick(f)
+        onPick(f, always && senderName != null)
     }
     androidx.compose.ui.window.Dialog(onDismissRequest = onClose, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(color = androidx.compose.ui.graphics.Color.Unspecified.let { Navy }, modifier = Modifier.fillMaxSize()) {
@@ -638,6 +639,13 @@ internal fun FolderPicker(api: EnveliqApi, accountId: String, count: Int, prefs:
                     else if (rows == null) item { Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Blue) } }
                     else if (shown.isEmpty()) item { Text(if (rows!!.any { it.target }) "No folder matches that." else "You have no folders of your own yet. Make one below.", color = Muted, fontSize = 15.sp, modifier = Modifier.padding(8.dp)) }
                     items(shown, key = { it.name }) { f -> Card(onClick = { choose(f) }) { Text(f.label, color = Ink, fontSize = 17.sp) } }
+                }
+                if (senderName != null) Row(Modifier.fillMaxWidth().background(Panel).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.Top) {
+                    androidx.compose.material3.Checkbox(checked = always, onCheckedChange = { always = it })
+                    Column(Modifier.padding(start = 6.dp, top = 12.dp)) {
+                        Text("Always move new email from " + senderName + " into the folder I pick", color = Ink, fontSize = 15.sp)
+                        Text("It leaves the Inbox. To keep it in the Inbox too, use Tags.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp))
+                    }
                 }
                 Row(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(value = fresh, onValueChange = { fresh = it.take(80) }, singleLine = true, placeholder = { Text("Or make a new folder") }, modifier = Modifier.weight(1f))
