@@ -323,6 +323,11 @@ class RetainedMessageCreate(StrictModel):
     # Whether the email has attached files, for the paperclip in the list. Only a yes/no and a number: never a name or any content.
     # `attachment_count` stays None until the whole email has been read once (when its summary is made); before that it is a guess from the headers.
     has_attachments: bool = False
+    # For mail rules only: the mailing list it came from (the List-Id address), who it was sent to (addresses only) and how big it is.
+    # No names, no text. Older emails have none of these, so a rule that asks for them does not match them.
+    list_id: str | None = Field(default=None, max_length=200)
+    recipients: list[Annotated[str, Field(max_length=320)]] = Field(default_factory=list, max_length=40)
+    size_bytes: int | None = Field(default=None, ge=0, le=2_000_000_000)
     # A new email is kept out of the inbox list until its summary (and the summaries of its files) are ready. Cleared when that is done,
     # or when it has failed for good. Only ever true for unread mail that is waiting in the AI queue.
     ai_pending: bool = False

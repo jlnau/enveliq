@@ -242,12 +242,13 @@ class FakeBridge:
                             continue
                         seq = inbox.index(uid) + 1
                         raw = m["raw"]
-                        if "RFC822.SIZE" in items:
+                        if "HEADER.FIELDS" in items:
+                            head = raw.split(b"\r\n\r\n", 1)[0] + b"\r\n\r\n"
+                            size_part = f"RFC822.SIZE {bridge.report_size or len(raw)} " if "RFC822.SIZE" in items else ""
+                            w(f"* {seq} FETCH (UID {uid} {size_part}BODY[HEADER.FIELDS (X)] {{{len(head)}}}\r\n".encode() + head + b")\r\n")
+                        elif "RFC822.SIZE" in items:
                             size = bridge.report_size or len(raw)
                             w(f"* {seq} FETCH (UID {uid} RFC822.SIZE {size})\r\n".encode())
-                        elif "HEADER.FIELDS" in items:
-                            head = raw.split(b"\r\n\r\n", 1)[0] + b"\r\n\r\n"
-                            w(f"* {seq} FETCH (UID {uid} BODY[HEADER.FIELDS (X)] {{{len(head)}}}\r\n".encode() + head + b")\r\n")
                         elif "BODY.PEEK[]" in items:
                             w(f"* {seq} FETCH (UID {uid} BODY[] {{{len(raw)}}}\r\n".encode() + raw + b")\r\n")
                     w(f"{tag} OK done\r\n".encode())

@@ -4333,6 +4333,16 @@ async function addRuleFor(m,btn,action){
     btn.textContent="Rule saved";
   }catch(er){toast(er.message,6000);btn.disabled=false}
 }
+// "Never send to Junk": a safe-sender rule. New email from them skips every later rule and stays in the inbox.
+async function safeSender(m,btn){
+  const who=m.sender||m.address;
+  if(btn)btn.disabled=true;
+  try{
+    await secureBackendRequest("/api/v1/me/rules",{method:"POST",body:JSON.stringify({sender:m.address,subject:"",action:"safe"})});
+    toast(`From now on, email from ${who} is never sent to Junk by a rule. You can change this in Settings, Mail rules.`,7000,"success");
+    closeMoreMenu();
+  }catch(er){toast(er.message,6000);if(btn)btn.disabled=false}
+}
 // "Never make tasks": new email from this sender no longer turns into a task. The email itself is not touched. An open task for this email is removed.
 const noTaskSenders=new Set();
 async function neverTasksFor(m,taskId,btn){
@@ -4853,6 +4863,7 @@ function ruleItemsFor(m,back){
   if(canStar(m))item("data-rule-folder","Always move to a folder&hellip;");
   if(realMail&&!m.found&&tagsOn(m))item("data-tag-open","Always apply a tag&hellip;");
   if(realMail&&!m.found)item("data-block-sender","Block sender (new email goes to Junk)");
+  if(realMail&&!m.found)item("data-safe-sender","Never send to Junk");
   out.push("<hr>");
   out.push(`<button type="button" role="menuitem" data-open-rules="1">See all my mail rules</button>`);
   return out.join("");
@@ -6646,6 +6657,7 @@ document.addEventListener("click",e=>{
     closeMoreMenu();if(m){if(k==="mute")muteConversation(m);else if(k==="unread")markUnreadWeb(m);else{if(k==="pdf")toast("In the print window, choose Save as PDF as the printer.",5000);printEmail(m)}}return}
   const cv=e.target.closest("[data-conv]");if(cv){const k=cv.dataset.conv,wasOpen=cv.getAttribute("aria-expanded")==="true";if(wasOpen){expanded.delete(k);convHidden.set(k,paneId)}else{expanded.add(k);convHidden.delete(k)}render();return}
   const jb=e.target.closest("[data-junk-this],[data-block-sender]");if(jb){const m=data.find(x=>x.id===Number(jb.dataset.junkThis||jb.dataset.blockSender)&&x.owner===currentUser.id);if(m)junkThis(m,jb,jb.hasAttribute("data-block-sender"));return}
+  const sfBtn=e.target.closest("[data-safe-sender]");if(sfBtn){const m=data.find(x=>x.id===Number(sfBtn.dataset.safeSender)&&x.owner===currentUser.id);if(m)safeSender(m,sfBtn);return}
   const orBtn=e.target.closest("[data-open-rules]");if(orBtn){openSettings("settings");const b=document.querySelector('[data-settings-tab~="rules"]');if(b)b.click();return}
   const rvBtn=e.target.closest("[data-rule-reviewed]");if(rvBtn){const m=data.find(x=>x.id===Number(rvBtn.dataset.ruleReviewed)&&x.owner===currentUser.id);if(m)addRuleFor(m,rvBtn,"reviewed");return}
   const ntBtn=e.target.closest("[data-notask]");if(ntBtn){const m=data.find(x=>x.id===Number(ntBtn.dataset.notask)&&x.owner===currentUser.id);if(m)neverTasksFor(m,ntBtn.dataset.taskId||"",ntBtn);return}

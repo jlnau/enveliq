@@ -526,6 +526,7 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
             }
             if (note.isNotEmpty()) Footnote(note, Amber)
         }
+        "rules" -> RulesPage(api, back("home"))
         "muted" -> Page("Muted conversations", back("home")) {
             var items by remember { mutableStateOf<List<MutedConversation>?>(null) }
             var note by remember { mutableStateOf("") }
@@ -674,6 +675,8 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                     openNext = it
                     prefs.edit().putBoolean("open_next", it).apply()
                 }
+                HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                NavRow("🧹", tintSwipe, "Mail rules", note = "Archive, star, snooze or file new email for you.") { page = "rules" }
                 HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
                 NavRow("🚫", tintAlerts, "Blocked senders") { page = "blocked" }
                 HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))

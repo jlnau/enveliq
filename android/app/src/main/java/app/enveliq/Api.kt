@@ -973,8 +973,55 @@ class EnveliqApi(address: String) {
         val arr = JSONObject(call("GET", "/api/v1/me/rules")).optJSONArray("rules") ?: return emptyList()
         return (0 until arr.length()).mapNotNull { i ->
             val r = arr.optJSONObject(i) ?: return@mapNotNull null
-            Rule(r.str("id"), r.str("sender"), r.str("subject"), r.str("action"))
+            val tags = r.optJSONArray("tags")
+            Rule(
+                r.str("id"), r.str("sender"), r.str("subject"), r.str("action"),
+                notSubject = r.str("not_subject"), to = r.str("to"), list = r.str("list"), files = r.optBoolean("files", false),
+                largerMb = r.optInt("larger_mb", 0), hours = r.optInt("hours", 0), folderLabel = r.str("folder_label"),
+                tags = if (tags == null) emptyList() else (0 until tags.length()).map { tags.optString(it) },
+            )
         }
+    }
+
+    private fun specJson(s: RuleSpec) = JSONObject().put("sender", s.sender).put("subject", s.subject).put("not_subject", s.notSubject)
+        .put("to", s.to).put("mailing_list", s.list).put("files", s.files).put("larger_mb", s.largerMb).put("action", s.action)
+        .put("hours", if (s.action == "snoozed") s.hours else 0).put("advanced", true)
+
+    /** Makes a rule (id empty) or changes one in place. */
+    fun saveRule(id: String, spec: RuleSpec) {
+        if (id.isBlank()) call("POST", "/api/v1/me/rules", specJson(spec))
+        else call("PUT", "/api/v1/me/rules/" + enc(id), specJson(spec))
+    }
+
+    fun moveRule(id: String, up: Boolean) {
+        call("POST", "/api/v1/me/rules/" + enc(id) + "/move", JSONObject().put("direction", if (up) "up" else "down"))
+    }
+
+    /** How many of the recent emails a rule would have fitted, and how many were looked at. Nothing is changed. */
+    fun previewRule(spec: RuleSpec): Pair<Int, Int> {
+        val r = JSONObject(call("POST", "/api/v1/me/rules/preview", specJson(spec)))
+        return Pair(r.optInt("matches", 0), r.optInt("checked", 0))
+    }
+
+    /** Counts what the rules would do to mail already in the inbox. Changes nothing. */
+    fun rulesPlan(): RunPlan {
+        val r = JSONObject(call("POST", "/api/v1/me/rules/run", JSONObject().put("confirm", false)))
+        val c = r.optJSONObject("counts")
+        val counts = HashMap<String, Int>()
+        c?.keys()?.forEach { counts[it] = c.optInt(it, 0) }
+        return RunPlan(r.optInt("total", 0), counts, r.optInt("limit", 500))
+    }
+
+    /** Does it. Returns how many emails were tidied. */
+    fun runRules(): Int {
+        val r = JSONObject(call("POST", "/api/v1/me/rules/run", JSONObject().put("confirm", true)))
+        val d = r.optJSONObject("done") ?: return 0
+        return d.keys().asSequence().sumOf { d.optInt(it, 0) }
+    }
+
+    /** "Never send to Junk": a safe-sender rule. */
+    fun safeSender(address: String) {
+        call("POST", "/api/v1/me/rules", JSONObject().put("sender", address).put("subject", "").put("action", "safe"))
     }
 
     /** Mutes the conversation this email belongs to: it is archived now, and later replies go to Archive without an alert. */

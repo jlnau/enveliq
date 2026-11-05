@@ -1347,6 +1347,22 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
                         if (mail.address.isNotBlank()) DropdownMenuItem(text = { Text("Always move to a folder\u2026", color = Ink) }, onClick = { moreMenu = false; onAlwaysMove() })
                         DropdownMenuItem(text = { Text("Send to Junk", color = Ink) }, onClick = { moreMenu = false; onJunk(false) })
                         if (mail.address.isNotBlank()) DropdownMenuItem(text = { Text("Block sender", color = Ink) }, onClick = { moreMenu = false; askBlock = true })
+                        if (mail.address.isNotBlank()) DropdownMenuItem(
+                            text = { Text("Never send to Junk", color = Ink) },
+                            onClick = {
+                                moreMenu = false
+                                scope.launch {
+                                    try {
+                                        withContext(Dispatchers.IO) { api.safeSender(mail.address) }
+                                        tell("From now on, email from " + (mail.sender.ifBlank { mail.address }) + " is never sent to Junk by a rule. You can change this under Settings, Mail rules.")
+                                    } catch (e: ApiException) {
+                                        tell(e.message ?: "That did not work.")
+                                    } catch (e: Exception) {
+                                        tell("That did not work. Please try again.")
+                                    }
+                                }
+                            },
+                        )
                         DropdownMenuItem(text = { Text("Mute conversation", color = Ink) }, onClick = { moreMenu = false; onMute() })
                         if (mail.unsubUrl != null || mail.unsubMailto != null) DropdownMenuItem(text = { Text("Unsubscribe from this sender", color = Ink) }, onClick = {
                             moreMenu = false

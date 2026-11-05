@@ -283,6 +283,8 @@ jobs:
         run: node scripts/check_stage3.mjs
       - name: Search filters, recent and saved searches check
         run: node scripts/check_stage4.mjs
+      - name: Smarter mail rules check
+        run: node scripts/check_stage5.mjs
       - name: Trips page and Home card (simulated server)
         run: node scripts/check_trips.mjs
       - name: Subscriptions page and Home card (simulated server)

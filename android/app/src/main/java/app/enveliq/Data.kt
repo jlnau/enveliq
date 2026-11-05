@@ -112,7 +112,20 @@ data class ChatMessage(val id: String, val name: String, val mine: Boolean, val 
 data class Section<T>(val enabled: Boolean, val items: List<T>)
 
 /** A rule: email from [sender] (and, when set, with [subject] words) gets [action] ("archived", "reviewed" or "junked"). */
-data class Rule(val id: String, val sender: String, val subject: String, val action: String)
+data class Rule(
+    val id: String, val sender: String, val subject: String, val action: String,
+    val notSubject: String = "", val to: String = "", val list: String = "", val files: Boolean = false, val largerMb: Int = 0,
+    val hours: Int = 0, val folderLabel: String = "", val tags: List<String> = emptyList(),
+)
+
+/** What the Mail rules form sends: the conditions and what to do. */
+data class RuleSpec(
+    val sender: String = "", val subject: String = "", val notSubject: String = "", val to: String = "", val list: String = "",
+    val files: Boolean = false, val largerMb: Int = 0, val action: String = "archived", val hours: Int = 24,
+)
+
+/** What "Run on existing mail" would do (counts only), or has done. */
+data class RunPlan(val total: Int, val counts: Map<String, Int>, val limit: Int)
 
 /** A conversation the person muted: later replies go to Archive without an alert. */
 data class MutedConversation(val id: String, val subject: String, val count: Int)

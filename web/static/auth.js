@@ -2429,32 +2429,83 @@ async function awayPage(me) {
 
 // ---------- mail rules: "archive (or mark reviewed) new mail from this sender" ----------
 async function rulesPage(me) {
-  let state = { rules: [], actions: { archived: "Archive it", reviewed: "Mark it reviewed", junked: "Send it to Junk", notasks: "Never make tasks", tag: "Always apply tags", moved: "Move it to a folder" }, max: 50 };
+  let state = { rules: [], actions: {}, max: 50 };
   const title = "Mail rules";
-  const help = "Enveliq can tidy new email for you. Choose who it is from and what to do with it. A rule acts only on new email as it arrives, never on what is already in your inbox, and never on email from your important people. \u201cNever make tasks\u201d leaves the email alone and only stops tasks being made from it. No rule can delete email. Archived email is kept in Enveliq for a few days, as usual, and stays in your mailbox\u2019s Archive folder.";
-  const sender = h("input", { id: "ru_sender", type: "text", class: "wide", placeholder: "name@example.com or @example.com", "aria-label": "Mail from", autocomplete: "off", maxlength: 320 });
-  const words = h("input", { id: "ru_subject", type: "text", placeholder: "Optional", "aria-label": "Subject contains", autocomplete: "off", maxlength: 80 });
+  const help = "Enveliq can tidy new email for you. Pick what the email looks like and what to do with it. Rules are tried from the top, and the first one that fits and does something is used. A rule acts only on new email as it arrives, unless you press Run on existing mail. “Never send to Junk” leaves the email alone and stops the rules below it. No rule can delete email.";
+  const text = (id, label, ph, max = 320) => h("input", { id, type: "text", class: "wide", placeholder: ph || "Optional", "aria-label": label, autocomplete: "off", maxlength: max });
+  const sender = text("ru_sender", "Mail from", "name@example.com or @example.com");
+  const words = text("ru_subject", "Subject has", "Optional", 80);
+  const notWords = text("ru_not_subject", "Subject does not have", "Optional", 80);
+  const toBox = text("ru_to", "Sent to", "Optional: an address in To or Cc", 200);
+  const listBox = text("ru_list", "Mailing list", "Optional: part of the list name", 200);
+  const filesBox = h("input", { id: "ru_files", type: "checkbox" });
+  const bigBox = h("input", { id: "ru_larger", type: "number", min: "0", max: "1000", placeholder: "Optional", "aria-label": "Bigger than (MB)" });
+  const hoursBox = h("select", { id: "ru_hours", class: "dd", "aria-label": "Snooze for" }, ...[[1, "1 hour"], [4, "4 hours"], [24, "1 day"], [72, "3 days"], [168, "1 week"]].map(([v, t]) => h("option", { value: String(v), text: t })));
   const action = h("select", { id: "ru_action", class: "dd", "aria-label": "What to do" });
-  const who = r => r.sender.startsWith("@") ? `everyone at ${r.sender.slice(1)}` : r.sender;
+  const result = h("p", { class: "pg-note", id: "ru_result", role: "status" });
+  let editing = null, runInfo = null;
+  const who = r => !r.sender ? "anyone" : r.sender.startsWith("@") ? `everyone at ${r.sender.slice(1)}` : r.sender;
   try { state = await api("/me/rules"); } catch (er) { show(listPage(title, () => [alertBox("bad", er.message)], { help })); return; }
-  async function add() {
-    if (!sender.value.trim()) { toast("Type who the email is from first"); sender.focus(); return; }
-    try { state = await api("/me/rules", { method: "POST", body: { sender: sender.value, subject: words.value, action: action.value } }); sender.value = ""; words.value = ""; draw(); toast("Rule added"); }
+  const spec = () => ({ sender: sender.value, subject: words.value, not_subject: notWords.value, to: toBox.value, mailing_list: listBox.value, files: filesBox.checked, larger_mb: Number(bigBox.value) || 0, action: action.value, hours: action.value === "snoozed" ? Number(hoursBox.value) : 0, advanced: true });
+  const clear = () => { for (const el of [sender, words, notWords, toBox, listBox, bigBox]) el.value = ""; filesBox.checked = false; result.textContent = ""; editing = null; };
+  const fill = r => { sender.value = r.sender || ""; words.value = r.subject || ""; notWords.value = r.not_subject || ""; toBox.value = r.to || ""; listBox.value = r.mailing_list || r.list || ""; filesBox.checked = !!r.files; bigBox.value = r.larger_mb || ""; action.value = r.action; if (r.hours) hoursBox.value = String(r.hours); result.textContent = ""; };
+  async function check() {
+    try { const r = await api("/me/rules/preview", { method: "POST", body: spec() }); result.textContent = `This would have matched ${r.matches} of your ${r.checked} recent emails. Nothing was changed.`; }
+    catch (er) { result.textContent = er.message; }
+  }
+  async function save() {
+    const x = spec();
+    if (!x.sender.trim() && !x.subject.trim() && !x.not_subject.trim() && !x.to.trim() && !x.mailing_list.trim() && !x.files && !x.larger_mb && action.value !== "safe") { toast("Fill in at least one thing to look for first"); sender.focus(); return; }
+    try {
+      state = editing ? await api(`/me/rules/${editing}`, { method: "PUT", body: spec() }) : await api("/me/rules", { method: "POST", body: spec() });
+      const was = editing; clear(); draw(); toast(was ? "Rule saved" : "Rule added");
+    } catch (er) { toast(er.message); }
+  }
+  async function move(r, direction) { try { state = await api(`/me/rules/${r.id}/move`, { method: "POST", body: { direction } }); draw(); } catch (er) { toast(er.message); } }
+  async function countRun() { try { runInfo = await api("/me/rules/run", { method: "POST", body: { confirm: false } }); draw("run"); } catch (er) { toast(er.message); } }
+  async function doRun() {
+    try { const r = await api("/me/rules/run", { method: "POST", body: { confirm: true } }); const n = Object.values(r.done).reduce((a, b) => a + b, 0); runInfo = null; draw("run"); toast(`Done. ${n} email${n === 1 ? "" : "s"} tidied${r.failed ? `, ${r.failed} could not be changed` : ""}.`); }
     catch (er) { toast(er.message); }
   }
-  for (const el of [sender, words]) el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); add(); } });
+  for (const el of [sender, words, notWords, toBox, listBox]) el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); save(); } });
+  action.addEventListener("change", () => { hoursBox.closest(".fld").hidden = action.value !== "snoozed"; });
+  const sentence = r => {
+    const bits = [];
+    if (r.sender) bits.push(`is from ${who(r)}`);
+    if (r.subject) bits.push(`has “${r.subject}” in the subject`);
+    if (r.not_subject) bits.push(`does not have “${r.not_subject}” in the subject`);
+    if (r.to) bits.push(`was sent to ${r.to}`);
+    if (r.mailing_list) bits.push(`comes from the list “${r.mailing_list}”`);
+    if (r.files) bits.push("has a file");
+    if (r.larger_mb) bits.push(`is bigger than ${r.larger_mb} MB`);
+    return bits.length ? `New mail that ${bits.join(" and ")}` : "All new mail";
+  };
+  const doing = r => r.action === "moved" ? `Move it to “${r.folder_label || r.folder}”` : r.action === "snoozed" ? `Snooze it for ${r.hours >= 24 ? `${Math.round(r.hours / 24)} day${r.hours >= 48 ? "s" : ""}` : `${r.hours} hour${r.hours === 1 ? "" : "s"}`}` : (state.actions[r.action] || r.action);
   const draw = drill => {
     action.replaceChildren(...Object.entries(state.actions).filter(([k]) => k !== "tag" && k !== "moved").map(([k, v]) => h("option", { value: k, text: v })));
+    const rows = state.rules.map((r, i) => itemRow({
+      title: doing(r), sub: `${sentence(r)}.${r.action === "notasks" ? " The email still arrives." : ""}${r.action === "tag" ? ` Tags: ${(r.tags || []).join(", ")}.` : ""}`,
+      buttons: [
+        r.action === "moved" || r.action === "tag" ? null : pillBtn("Edit", () => { editing = r.id; fill(r); draw("add"); }, `Edit the rule for ${who(r)}`),
+        i > 0 ? pillBtn("↑", () => move(r, "up"), "Move this rule up") : null,
+        i < state.rules.length - 1 ? pillBtn("↓", () => move(r, "down"), "Move this rule down") : null,
+        xBtn(`Remove the rule for ${who(r)}`, async () => { try { state = await api(`/me/rules/${r.id}`, { method: "DELETE" }); draw(); toast("Rule removed"); } catch (er) { toast(er.message); } })] }));
+    const runPane = runInfo === null
+      ? [grp("", row({ title: "Count what it would do", center: true, go: countRun })), noteRow("Rules only touch new mail. This tidies the email Enveliq already holds in your inbox, up to 500 at a time. Nothing happens until you confirm.")]
+      : runInfo.total === 0 ? [noteRow("None of your email in the inbox fits a rule that does something."), grp("", row({ title: "Done", center: true, go: () => { runInfo = null; draw("run"); } }))]
+      : [noteRow(`${runInfo.total} email${runInfo.total === 1 ? "" : "s"} in your inbox fit a rule: ${Object.entries(runInfo.counts).map(([k, n]) => `${n} to ${(state.actions[k] || k).toLowerCase()}`).join(", ")}.${runInfo.total > runInfo.limit ? ` Only the first ${runInfo.limit} are done each time.` : ""}`),
+        grp("", row({ title: `Yes, tidy ${Math.min(runInfo.total, runInfo.limit)} email${runInfo.total === 1 ? "" : "s"}`, center: true, go: doRun }), row({ title: "Not now", center: true, go: () => { runInfo = null; draw("run"); } }))];
     redraw(title, () => [
-      { label: state.rules.length ? "Your rules" : "", items: state.rules.length ? state.rules.map(r => itemRow({
-        title: r.action === "moved" ? `Move it to \u201c${r.folder_label || r.folder}\u201d` : (state.actions[r.action] || r.action), sub: `${r.action === "notasks" ? "Mail from" : "New mail from"} ${who(r)}${r.subject ? ` with \u201c${r.subject}\u201d in the subject` : ""}${r.action === "notasks" ? " no longer makes tasks. The email still arrives." : ""}${r.action === "moved" ? " goes straight into that folder, and leaves your inbox." : ""}${r.action === "tag" ? ` gets the ${(r.tags || []).length === 1 ? "tag" : "tags"}: ${(r.tags || []).join(", ")}` : ""}`,
-        buttons: xBtn(`Remove the rule for ${who(r)}`, async () => { try { state = await api(`/me/rules/${r.id}`, { method: "DELETE" }); draw(); toast("Rule removed"); } catch (er) { toast(er.message); } }) }))
-        : [noteRow("No rules yet. Add one, or open an email and press Always archive these, Always move to a folder or Block sender.")] },
-      { label: "", items: [{ title: "Add a rule", center: true, key: "add", content: [
-        grp("When new mail is from", fieldRow("From", sender, "An address, or @example.com for a whole website"), fieldRow("Subject has", words)),
-        grp("Then", fieldRow("Do this", action)),
-        grp("", row({ title: "Add rule", center: true, go: add }))] }] },
+      { label: state.rules.length ? "Your rules, in order" : "", items: state.rules.length ? rows : [noteRow("No rules yet. Add one, or open an email and use its Mail rules menu.")] },
+      { label: "", items: [
+        { title: editing ? "Change this rule" : "Add a rule", center: true, key: "add", content: [
+          grp("When new mail", fieldRow("From", sender, "An address, or @example.com for a whole website"), fieldRow("Subject has", words), fieldRow("Subject does not have", notWords), fieldRow("Sent to", toBox, "To or Cc"), fieldRow("Mailing list", listBox), fieldRow("Has a file", filesBox, "A guess from the email’s headers"), fieldRow("Bigger than (MB)", bigBox)),
+          grp("Then", fieldRow("Do this", action), fieldRow("Snooze for", hoursBox)),
+          result,
+          grp("", row({ title: "Check", center: true, go: check }), row({ title: editing ? "Save" : "Add rule", center: true, go: save }), editing ? row({ title: "Cancel", center: true, go: () => { clear(); draw(); } }) : null)] },
+        { title: "Run on existing mail", center: true, key: "run", content: runPane }] },
     ], { help }, drill);
+    hoursBox.closest(".fld").hidden = action.value !== "snoozed";
   };
   draw();
 }

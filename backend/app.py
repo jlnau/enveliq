@@ -39,6 +39,7 @@ from .mail.inbound import InboundBook
 from .mail.inbound_routes import WEBHOOK_PATH as INBOUND_WEBHOOK_PATH, WS_PATH as INBOUND_WS_PATH, build_inbound_router
 from .mail.rss import RssBook, RssRefresher
 from .mail import features
+from .mail.rules import fits as fits_rule
 from .mail.tags import TagService
 from .mail.tag_routes import build_tag_router
 from .mail.rss_routes import build_rss_router
@@ -779,32 +780,107 @@ def apply_rules(account: dict, arrived: list) -> None:
             except KeyError:
                 pass
             continue
-        _apply_tag_rules(account, item, user)
-        rule = rulebook.match(user, item["sender_address"], item["subject"])
-        if not rule:
+        facts = _facts_of(item)
+        _apply_tag_rules(account, item, user, facts)
+        rule = rulebook.match(user, item["sender_address"], item["subject"], facts)
+        if not rule or rule["action"] == "safe":          # a safe sender is left exactly as it is, and no later rule touches it
             _away_reply(account, item, user)
             continue
-        if rule["action"] == "moved":
-            try:
-                move_message_now(account["id"], item["id"], user, rule.get("folder", ""), by="rule")
-            except BridgeError as err:
-                if err.code != "not_found":
-                    break                      # the mailbox cannot be changed right now: leave the rest where they are
-            except KeyError:
-                pass
-            continue
         try:
-            resolve_message(account["id"], item["id"], rule["action"], user, by="rule")
-        except BridgeError:
-            break                              # the mailbox cannot be changed right now: leave the rest where they are
+            _apply_rule(account, item["id"], user, rule)
+        except BridgeError as err:
+            if rule["action"] in ("moved", "starred") and err.code == "not_found":
+                continue
+            break                                         # the mailbox cannot be changed right now: leave the rest where they are
         except KeyError:
             continue
 
 
-def _apply_tag_rules(account: dict, item: dict, user: str) -> None:
+def _facts_of(item: dict) -> dict:
+    """What a rule may look at besides the sender and subject: who it was sent to, the mailing list, files and size. Nothing else is read."""
+    ctx = item.get("reply_context") or {}
+    recipients = item.get("recipients") or [*(ctx.get("cc") or []), *(ctx.get("also_to") or [])]
+    return {"recipients": recipients, "list_id": item.get("list_id"), "files": item.get("files", item.get("has_attachments")), "size": item.get("size", item.get("size_bytes"))}
+
+
+def _apply_rule(account: dict, message_id: str, user: str, rule: dict, by: str = "rule") -> None:
+    """One acting rule on one inbox email. Raises BridgeError when the mailbox cannot be changed and KeyError when the email is gone."""
+    action = rule["action"]
+    if action == "safe":
+        return
+    if action == "moved":
+        move_message_now(account["id"], message_id, user, rule.get("folder", ""), by=by)
+    elif action == "starred":
+        stored = vault.get_message(account["id"], message_id)
+        mail_service.set_starred(account, stored, True)
+        mail_service.mark_starred(vault, account["id"], message_id, True)
+        vault.audit({"event": "message_starred", "actor_user_id": user, "account_id": account["id"], "message_id": message_id, "at": time.time(), "by": by})
+    elif action == "snoozed":
+        mail_service.mark_snoozed(vault, account["id"], message_id, time.time() + int(rule.get("hours") or 1) * 3600)
+        vault.audit({"event": "message_snoozed", "actor_user_id": user, "account_id": account["id"], "message_id": message_id, "at": time.time(), "by": by})
+    else:
+        resolve_message(account["id"], message_id, action, user, by=by)
+
+
+def _existing_inbox(user: str):
+    """The emails Enveliq already holds in this person's inbox (unread, still in the mailbox, not snoozed). Nothing is fetched from the mailbox."""
+    for acct in vault.list_accounts():
+        if acct.get("owner_user_id") != user or acct.get("auth_method") not in ("proton_bridge", "imap", "gmail", "microsoft"):
+            continue
+        for m in vault.list_messages(acct["id"]):
+            if m.get("state", "unread") != "unread" or m.get("found_until") or not m.get("source_locator") or m.get("snoozed_until"):
+                continue
+            yield acct, m
+
+
+class _RuleTools:
+    """What the Mail rules page needs from the rest of the app: a count before a rule is saved, and a run over mail that is already here."""
+    MAX_RUN = 500
+
+    def preview(self, user: str, rule: dict) -> dict:
+        total = fit = 0
+        for _acct, m in _existing_inbox(user):
+            total += 1
+            if fits_rule(rule, m.get("sender_address"), m.get("subject"), _facts_of(m)):
+                fit += 1
+        return {"matches": fit, "checked": total}
+
+    def plan(self, user: str) -> list:
+        out = []
+        for acct, m in _existing_inbox(user):
+            rule = rulebook.match(user, m.get("sender_address"), m.get("subject"), _facts_of(m))
+            if rule and rule["action"] != "safe":
+                out.append((acct, m, rule))
+        return out
+
+    def run(self, user: str, confirm: bool) -> dict:
+        plan = self.plan(user)
+        counts: dict = {}
+        for _a, _m, rule in plan:
+            counts[rule["action"]] = counts.get(rule["action"], 0) + 1
+        if not confirm:
+            return {"total": len(plan), "counts": counts, "limit": self.MAX_RUN}
+        done: dict = {}
+        failed = 0
+        for acct, m, rule in plan[: self.MAX_RUN]:
+            try:
+                _apply_rule(acct, m["id"], user, rule, by="rule_run")
+                done[rule["action"]] = done.get(rule["action"], 0) + 1
+            except BridgeError:
+                failed += 1
+            except KeyError:
+                continue
+        vault.audit({"event": "rules_run_on_existing", "actor_user_id": user, "at": time.time(), "done": sum(done.values()), "failed": failed})
+        return {"done": done, "failed": failed, "left": max(0, len(plan) - self.MAX_RUN)}
+
+
+mail_ctx.rule_tools = _RuleTools()
+
+
+def _apply_tag_rules(account: dict, item: dict, user: str, facts: dict | None = None) -> None:
     """"Always apply tags" rules: put the chosen tags on the email that has just arrived. A tag that cannot be put on (the mailbox does not keep tags,
     the tag was deleted, the mail service is busy) is skipped without a word: it never holds up a sync or another rule."""
-    names = rulebook.tags_for(user, item["sender_address"], item["subject"])
+    names = rulebook.tags_for(user, item["sender_address"], item["subject"], facts)
     if not names or not features.effective(vault, user)["tags"]:
         return
     for name in names:

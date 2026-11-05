@@ -646,14 +646,20 @@ class _ImapSession:
         label = {"archive": "Archive", "trash": "Bin (Trash)", "sent": "Sent"}[which]
         raise BridgeError("not_found", f"Enveliq could not find this mailbox's {label} folder." + ("" if which == "sent" else " Create one in your mail service first."))
 
-    def header_blocks(self, uids: list[int], fields: str = HEADER_FIELDS) -> Iterator[tuple[int, bytes]]:
+    def header_blocks(self, uids: list[int], fields: str = HEADER_FIELDS, sizes: dict[int, int] | None = None) -> Iterator[tuple[int, bytes]]:
+        """The header lines of these emails. When `sizes` is given it is filled with each email's size in bytes (for "bigger than" rules)."""
+        wanted = "UID RFC822.SIZE" if sizes is not None else "UID"
         for start in range(0, len(uids), 50):
             chunk = ",".join(str(u) for u in uids[start:start + 50])
-            data = self._call("fetch", self.imap.uid, "FETCH", chunk, f"(UID BODY.PEEK[HEADER.FIELDS ({fields})])")
+            data = self._call("fetch", self.imap.uid, "FETCH", chunk, f"({wanted} BODY.PEEK[HEADER.FIELDS ({fields})])")
             for item in data:
                 if isinstance(item, tuple) and len(item) == 2:
                     found = re.search(rb"UID (\d+)", item[0])
                     if found:
+                        if sizes is not None:
+                            big = re.search(rb"RFC822\.SIZE (\d+)", item[0])
+                            if big:
+                                sizes[int(found.group(1))] = int(big.group(1))
                         yield int(found.group(1)), bytes(item[1])
 
     def original(self, uid: int) -> bytes:

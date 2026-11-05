@@ -310,12 +310,14 @@ class MailService:
                 uids = s.unseen_uids(since_days, limit)
                 added = skipped = 0
                 fresh = [u for u in uids if locator(validity, u) not in known_locators]
-                for uid, raw in s.header_blocks(fresh):
+                sizes: dict[int, int] = {}
+                for uid, raw in s.header_blocks(fresh, sizes=sizes):
                     info = summarise_headers(raw, identities)
                     if info is None or (info["message_id"] and info["message_id"] in known_ids) or marks.ours(vault, info["message_id"], info.get("reminder_mark")):
                         skipped += 1
                         continue
                     body = RetainedMessageCreate(
+                        list_id=info["list_id"], recipients=info["recipients"], size_bytes=sizes.get(uid),
                         subject=info["subject"],
                         sender_display=info["sender_display"],
                         sender_address=info["sender_address"],
@@ -330,7 +332,8 @@ class MailService:
                     )
                     new_id = vault.create_message(account_id, body.model_dump(mode="python"))
                     arrived.append({"id": new_id, "sender_address": info["sender_address"], "subject": info["subject"], "automated": info["automated"],
-                                    "ids": thread_ids(info["reply_context"])})
+                                    "ids": thread_ids(info["reply_context"]), "recipients": info["recipients"], "list_id": info["list_id"],
+                                    "files": info["has_attachments"], "size": sizes.get(uid)})
                     people.append((info["sender_display"], info["sender_address"]))
                     if info["message_id"]:
                         known_ids.add(info["message_id"])
