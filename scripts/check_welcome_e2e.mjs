@@ -404,6 +404,11 @@ await aiHost.locator("#ai_provider").selectOption("openai");
 check("choosing a cloud service shows the privacy warning, its fixed address, a key field and a confirmation box", (await aiHost.locator("text=sends the text of your email to OpenAI").count()) >= 1 && (await aiHost.locator("text=https://api.openai.com/v1/chat/completions").count()) >= 1 && (await aiHost.locator("#ai_consent").count()) === 1 && (await aiHost.locator("#ai_key").count()) === 1 && (await aiHost.locator("#ai_url").count()) === 0);
 await aiHost.locator("#ai_provider").selectOption("custom");
 check("choosing a server on my network shows the address box and no confirmation", (await aiHost.locator("#ai_url").count()) === 1 && (await aiHost.locator("#ai_consent").count()) === 0);
+// Tapping a model from "Find models" in Administration saves it by itself (it used to fill the box but never save, so the old name came back).
+await aiHost.locator("button:has-text('Find models')").click();
+await aiHost.locator(".ai-models-list .chip").first().waitFor();
+await Promise.all([page.waitForResponse((r) => r.url().includes("/ai/config") && r.request().method() === "PUT" && r.status() === 200), aiHost.locator(".ai-models-list .chip:has-text('alpha-3b')").click()]);
+check("Administration > AI: tapping a model from Find models saves it", (await api("/ai/status")).model === "alpha-3b");
 await page.click("[data-settings-tab~=adminreport]");
 await openPage("adminreport", "adminbackup");
 await page.waitForSelector("#settings .embed-host >> #rp_prom");
