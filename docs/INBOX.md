@@ -47,6 +47,14 @@ A star marks an email you want to find again. It is the mailbox's own Flagged ma
 
 A read email has a red **Mark as unread** button (an unread email has a green **Mark as read** button in the same place), and the same item in its three-dot menu. It puts the unread mark back on the email in your mailbox (Proton, IMAP and Microsoft alike) and the email is highlighted as new again. Mark as read and Mark as unread only change the read mark on your mail service (Proton, IMAP or Microsoft). Enveliq's own blue "new" shine is not touched by them: it goes when you open an email, as before. The email is not moved or hidden. Read email shows in the inbox only while **Include read mail** is on; otherwise it is simply no longer in your list of unread mail, as for any read email. Emails you archived are in your mailbox's Archive folder, so open them there if you want them unread again.
 
+## Top of the inbox: counts and Today
+
+In the View panel (the tab on the right edge, or **Customise**), **Top of the inbox** has two switches, both on to begin with:
+- **Counts across the top** shows or hides the four boxes (Needs action, Today, Packages and Waiting). Calm mode already hides them.
+- **Today and coming up** shows or hides the section that lists what is due today and what is coming up next. In **Calm mode** the same section is the "Start here" card, and the same switch hides it there too.
+
+Each is remembered for you (on the server, with your other View choices) and **Reset to default** brings both back. Hiding them does not delete any task or change any count; **Tasks** in the left menu still has everything.
+
 ## Conversation View
 
 **Customise, Conversations, Conversation View** (off by default) groups emails of the same conversation, among the emails in the list you are looking at, under the newest one. A line such as "3 emails in this conversation" shows the others when you press **Show**. Grouping uses the emails' own reply markers, and nothing about reviewing changes: each email keeps its own buttons, and Reviewed, Archive and Bin still act on that one email. Select all, keyboard moves and the counts work as before, and the Focus deck always shows one email at a time. The choice is saved for your own account and applies on all your devices. **Hide** always hides the others, even when one of them is the open email.

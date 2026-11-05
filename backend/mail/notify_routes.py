@@ -70,6 +70,8 @@ class MailViewBody(StrictModel):
     show_original: bool = False
     conversations: bool = False
     style: str = Field(default="classic", pattern=r"^(classic|rail)$")
+    show_counts: bool = True              # the four boxes across the top of the inbox
+    show_today: bool = True               # the Today and Coming up section (also in Calm mode)
 
 
 class MailContextBody(StrictModel):

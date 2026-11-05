@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Hide the counts and the Today section.** The View panel has a new **Top of the inbox** group with two switches: **Counts across the top** (the four boxes) and **Today and coming up** (the Today and Coming up lists, also the "Start here" card in Calm mode). Both are on to begin with, saved with your other View choices and put back by Reset to default. Touches `prototype/index.html`, `backend/mail/notify_routes.py`, `docs/INBOX.md`, `tests/test_notify.py`, `scripts/check_home_sections.mjs`.
+
 **Android: a tidier menu on Shipping cards.** The three-dot menu now opens right under the dots, raised above the cards, with small icons, instead of appearing under the card at the left. Touches `android/`.
 
 **Android: Reply moves up beside the sender, and the subject stays at the top.** In an open email, Reply and the three-dot button now sit on the sender line and scroll with it; Reply all and Forward are at the top of the three dots. Once the big subject scrolls off, its first words show beside the back arrow. Touches `android/`, `docs/ANDROID.md`.

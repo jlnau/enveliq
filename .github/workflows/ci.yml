@@ -285,6 +285,8 @@ jobs:
         run: node scripts/check_stage4.mjs
       - name: Smarter mail rules check
         run: node scripts/check_stage5.mjs
+      - name: Hide counts and Today section check
+        run: node scripts/check_home_sections.mjs
       - name: Trips page and Home card (simulated server)
         run: node scripts/check_trips.mjs
       - name: Subscriptions page and Home card (simulated server)

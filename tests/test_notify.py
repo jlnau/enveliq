@@ -488,6 +488,14 @@ def test_mail_view_preferences_stored_per_user_in_vault(env):
     assert client.put("/api/v1/me/mail-view", json={**chosen, "style": "rail"}).status_code == 200
     assert client.get("/api/v1/me/mail-view").json()["view"]["style"] == "rail"
     assert client.put("/api/v1/me/mail-view", json={**chosen, "style": "neon"}).status_code == 422
+    # The four boxes and the Today / Coming up section can each be hidden; both are shown to begin with.
+    assert client.put("/api/v1/me/mail-view", json=chosen).status_code == 200
+    assert client.get("/api/v1/me/mail-view").json()["view"].get("show_counts", True) is True
+    hidden = {**chosen, "show_counts": False, "show_today": False}
+    assert client.put("/api/v1/me/mail-view", json=hidden).status_code == 200
+    got = client.get("/api/v1/me/mail-view").json()["view"]
+    assert got["show_counts"] is False and got["show_today"] is False
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "show_today": "maybe"}).status_code == 422
     # An older browser that does not know about the style must not reset it.
     assert client.put("/api/v1/me/mail-view", json=chosen).status_code == 200
     assert client.get("/api/v1/me/mail-view").json()["view"]["style"] == "rail"

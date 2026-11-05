@@ -1892,6 +1892,9 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
     <label class="vcheck" id="vPeekL"><input type="checkbox" id="vPeek"><span><b>Preview on hover</b><small>Rest on a subject to peek at the summary</small></span></label></div>
   <div class="vsec"><div class="vlabel">Reading</div>
     <label class="vcheck"><input type="checkbox" id="vOrig"><span><b>Show the original email</b><small>Open every email as it was sent, under the Reply buttons. Links, pictures from the internet and attachments stay switched off.</small></span></label></div>
+  <div class="vsec"><div class="vlabel">Top of the inbox</div>
+    <label class="vcheck"><input type="checkbox" id="vCounts"><span><b>Counts across the top</b><small>The four boxes: Needs action, Today, Packages and Waiting. Calm mode already hides them.</small></span></label>
+    <label class="vcheck"><input type="checkbox" id="vToday"><span><b>Today and coming up</b><small>The list of what is due today, and what is coming up next. Hidden in Calm mode too when this is off.</small></span></label></div>
   <div class="vsec"><div class="vlabel">Conversations</div>
     <label class="vcheck"><input type="checkbox" id="vConv"><span><b>Conversation View</b><small>Group emails that belong to the same conversation under the newest one. Off by default. Each email still has its own buttons.</small></span></label></div>
   <div class="vsec"><div class="vlabel">Feedback</div>
@@ -2713,12 +2716,12 @@ const clipWords=m=>{const n=fileN(m),sure=m.attachments.length||m.fileCount!=nul
 function userMessages(){return data.filter(m=>m.owner===currentUser.id&&!m._pending)}
 let sortMode="newest",mailboxSel="";
 // ---- View options (saved in this browser) ----
-const VIEW_DEFAULT={layout:"right",density:"standard",width:"centered",rows:"collapsed",peek:true,action_feedback:true,show_original:false,conversations:false,style:"classic"};
+const VIEW_DEFAULT={layout:"right",density:"standard",width:"centered",rows:"collapsed",peek:true,action_feedback:true,show_original:false,conversations:false,style:"classic",show_counts:true,show_today:true};
 const VIEW_ALLOWED={layout:["list","right","bottom","screen","deck"],density:["compact","standard","roomy"],width:["centered","full"],rows:["collapsed","open"],style:["classic","rail"]};
 function loadView(){
   const v={...VIEW_DEFAULT};
   try{const raw=JSON.parse(localStorage.getItem("enveliq-view")||"null");
-    if(raw&&typeof raw==="object"){for(const k in VIEW_ALLOWED)if(VIEW_ALLOWED[k].includes(raw[k]))v[k]=raw[k];if(typeof raw.peek==="boolean")v.peek=raw.peek;if(typeof raw.action_feedback==="boolean")v.action_feedback=raw.action_feedback;if(typeof raw.show_original==="boolean")v.show_original=raw.show_original;if(typeof raw.conversations==="boolean")v.conversations=raw.conversations}}catch{}
+    if(raw&&typeof raw==="object"){for(const k in VIEW_ALLOWED)if(VIEW_ALLOWED[k].includes(raw[k]))v[k]=raw[k];if(typeof raw.peek==="boolean")v.peek=raw.peek;if(typeof raw.action_feedback==="boolean")v.action_feedback=raw.action_feedback;if(typeof raw.show_original==="boolean")v.show_original=raw.show_original;if(typeof raw.conversations==="boolean")v.conversations=raw.conversations;if(typeof raw.show_counts==="boolean")v.show_counts=raw.show_counts;if(typeof raw.show_today==="boolean")v.show_today=raw.show_today}}catch{}
   return v;
 }
 let lastListHtml="",lastDockHtml="";const origCache=new Map(),origBusy=new Map();   // the original email, kept in this page only for a moment and never saved
@@ -2809,6 +2812,8 @@ async function loadServerView(){
     if(typeof saved.view.action_feedback==="boolean")v.action_feedback=saved.view.action_feedback;
     if(typeof saved.view.show_original==="boolean")v.show_original=saved.view.show_original;
     if(typeof saved.view.conversations==="boolean")v.conversations=saved.view.conversations;
+    if(typeof saved.view.show_counts==="boolean")v.show_counts=saved.view.show_counts;
+    if(typeof saved.view.show_today==="boolean")v.show_today=saved.view.show_today;
     view=v;
   }else{
     // First sign-in has no server preference: never inherit a different user's browser choice.
@@ -2827,7 +2832,7 @@ function applyView(){
   c.toggle("style-rail",view.style==="rail");c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");
   document.querySelectorAll("#viewPanel [data-view]").forEach(b=>{const on=view[b.dataset.view]===b.dataset.val;b.classList.toggle("on",on);b.setAttribute("aria-checked",String(on))});
   const classic=view.layout==="list";
-  $("vOpen").checked=view.rows==="open";$("vPeek").checked=view.peek;$("vActionFeedback").checked=view.action_feedback!==false;$("vOrig").checked=!!view.show_original;$("vConv").checked=!!view.conversations;
+  $("vOpen").checked=view.rows==="open";$("vPeek").checked=view.peek;$("vActionFeedback").checked=view.action_feedback!==false;$("vOrig").checked=!!view.show_original;$("vConv").checked=!!view.conversations;$("vCounts").checked=view.show_counts!==false;$("vToday").checked=view.show_today!==false;
   $("vOpen").disabled=$("vPeek").disabled=!classic;$("vOpenL").classList.toggle("off",!classic);$("vPeekL").classList.toggle("off",!classic);
 }
 function visible(m){
@@ -3136,7 +3141,7 @@ const splitNow=()=>document.body.classList.contains("split-read")&&window.matchM
 const goTasks=()=>{filter="tasks";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="tasks"));render()};
 function renderToday(){
   const box=$("dueBars"),open=openTasks(),now=open.filter(t=>t.days<=0);
-  if(!now.length||filter==="tasks"||filter==="sent"||filter==="folders"){box.hidden=true;box.replaceChildren();return}
+  if(!now.length||view.show_today===false||filter==="tasks"||filter==="sent"||filter==="folders"){box.hidden=true;box.replaceChildren();return}
   const calm=calmOn(),shown=now.slice(0,calm?1:3),important=calm?now.slice(1):[],rest=open.filter(t=>t.days>0);
   const mobile=window.matchMedia("(max-width:760px)").matches;
   const title=calm?"Start here":'Today · '+now.length+' '+(now.length===1?"thing":"things");
@@ -7027,7 +7032,7 @@ document.getElementById("previewInboxOptions").onclick=()=>{
 };
 function previewRenderOverview(inbox,need){
   const box=document.getElementById("previewOverview");
-  if(filter!=="all"||calmOn()){box.hidden=true;box.replaceChildren();return}
+  if(filter!=="all"||calmOn()||view.show_counts===false){box.hidden=true;box.replaceChildren();return}
   const due=openTasks().filter(t=>t.days<=0).length;
   const shipping=shipOn()?(shipData.orders||[]).filter(o=>!(o.delivered_at&&o.ack)).length:0;
   const waiting=waitOn()?(waitData.notes||[]).filter(n=>n.state==="waiting").length:0;
@@ -9038,6 +9043,8 @@ $("vOpen").onchange=e=>{view.rows=e.target.checked?"open":"collapsed";saveView()
 $("vPeek").onchange=e=>{view.peek=e.target.checked;saveView();applyView()};
 $("vOrig").onchange=e=>{view.show_original=e.target.checked;if(!e.target.checked)origClear();saveView();render()};
 $("vConv").onchange=e=>{view.conversations=e.target.checked;saveView();render()};
+$("vCounts").onchange=e=>{view.show_counts=e.target.checked;saveView();render()};
+$("vToday").onchange=e=>{view.show_today=e.target.checked;saveView();render()};
 $("vActionFeedback").onchange=e=>{view.action_feedback=e.target.checked;saveView()};
 $("viewReset").onclick=()=>{view={...VIEW_DEFAULT};saveView();applyView();render()};
 document.addEventListener("keydown",e=>{
