@@ -37,6 +37,7 @@ Writing help is the same on the phone: under the message there is **Write a repl
 ## How it works
 
 - `backend/mail/writehelp.py` holds the record, the fixed rules, the prompt and the answer parsing. `backend/mail/writehelp_routes.py` has the four routes.
+- In a reply the model is told plainly who is who: the writer (the signed-in person and the mailbox address) and the sender it is replying to. It writes as the writer, to the sender, and must not greet the writer or sign with the sender's name. (Smaller models used to mix this up and answer as the sender.)
 - The model gets the email being answered and the draft as data, no tools, and rules that it must not follow instructions inside them, must not invent facts, and must leave a [bracket] where only the person can answer.
 - Nothing is stored or logged except a small per-person record (on or off, your instructions). The audit log says only that it was used.
 - Rate limit: 12 requests a minute per person. Time limit: 90 seconds.

@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Fix: writing help now replies as you, to the sender.** "Write a reply for me" and "Check my reply" could write as if they were the sender, greeting you by name and signing with the sender's name. The AI is now told who is writing (you and your mailbox address) and who the reply goes to, and the standard instructions say "the person I am writing to". This helps with every model, and most with small ones. Touches `backend/mail/writehelp.py`, `backend/mail/writehelp_routes.py`, `docs/WRITING_HELP.md`, `tests/test_writehelp.py`.
+
 **Fix: choosing a model from "Find models" in Administration now saves it.** Tapping a model filled in the Model name box but did not save it, so the old name came back when you left and returned to the page. It now saves (after the usual test) as soon as you tap it. Touches `web/static/welcome.js`, `scripts/check_welcome_e2e.mjs`.
 
 **A calmer top of every page.** The page title is smaller (18px) and sits in the same place under the search box on every page. The "32 emails to look at, 14 need you" line is removed, and so is the "Back to My inbox" button (use My inbox in the left menu). Short explanations that some pages show under their title stay. Touches `prototype/index.html`, `docs/INBOX.md`, `scripts/check_back_to_inbox.mjs`, `scripts/check_drafts.mjs`, `scripts/check_all_mail.mjs`, `scripts/check_inbox_real_mail.mjs`.
