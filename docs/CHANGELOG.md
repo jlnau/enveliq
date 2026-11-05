@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Android: a tidier menu on Shipping cards.** The three-dot menu now opens right under the dots, raised above the cards, with small icons, instead of appearing under the card at the left. Touches `android/`.
+
 **Android: Reply moves up beside the sender, and the subject stays at the top.** In an open email, Reply and the three-dot button now sit on the sender line and scroll with it; Reply all and Forward are at the top of the three dots. Once the big subject scrolls off, its first words show beside the back arrow. Touches `android/`, `docs/ANDROID.md`.
 
 **Android: a tidier bar under an open email.** The row of eight buttons is now one slightly floating bar with five: Mark as read / unread, Bin, Folder, Tag and a three-dot button. The three dots hold Star, Archive, Remind me later and Add a task. Touches `android/`, `docs/ANDROID.md`.

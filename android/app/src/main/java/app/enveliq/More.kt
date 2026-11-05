@@ -283,14 +283,17 @@ internal fun ShippingPage(api: EnveliqApi, onBack: () -> Unit) {
                                     TextButton(onClick = { act(o.id, "not_yet") }) { Text("Not yet", color = Muted) }
                                 } else if (o.trackUrl.startsWith("https://")) TextButton(onClick = { link = o.trackUrl }) { Text("Track it", color = Blue) }
                                 Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+                                  // The menu hangs from the three dots themselves, so it opens right under them and raised above the cards.
+                                  Box {
                                     TextButton(onClick = { menu = true }) { Text("⋮", color = Muted, fontSize = 20.sp) }
-                                    androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = Panel) {
+                                    androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = PanelHigh, shape = RoundedCornerShape(14.dp), shadowElevation = 8.dp) {
                                         if (o.needsConfirm && o.trackUrl.startsWith("https://")) androidx.compose.material3.DropdownMenuItem(text = { Text("Track it", color = Ink) }, onClick = { menu = false; link = o.trackUrl })
                                         if (o.tracking.isNotBlank()) androidx.compose.material3.DropdownMenuItem(text = { Text("Copy tracking number", color = Ink) }, onClick = { menu = false; clipboard.setText(androidx.compose.ui.text.AnnotatedString(o.tracking)) })
-                                        androidx.compose.material3.DropdownMenuItem(text = { Text(if (o.note.isBlank()) "Add a note" else "Edit note", color = Ink) }, onClick = { menu = false; noting = o })
-                                        if (o.manual) androidx.compose.material3.DropdownMenuItem(text = { Text("Remove", color = Red) }, onClick = { menu = false; act(o.id, "remove") })
-                                        else androidx.compose.material3.DropdownMenuItem(text = { Text("Not an order", color = Red) }, onClick = { menu = false; askNot = o })
+                                        androidx.compose.material3.DropdownMenuItem(text = { Text((if (o.note.isBlank()) "\u270E  Add a note" else "\u270E  Edit note"), color = Ink) }, onClick = { menu = false; noting = o })
+                                        if (o.manual) androidx.compose.material3.DropdownMenuItem(text = { Text("\u2298  Remove", color = Red) }, onClick = { menu = false; act(o.id, "remove") })
+                                        else androidx.compose.material3.DropdownMenuItem(text = { Text("\u2298  Not an order", color = Red) }, onClick = { menu = false; askNot = o })
                                     }
+                                  }
                                 }
                             }
                         }
