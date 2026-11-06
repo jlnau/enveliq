@@ -1755,7 +1755,8 @@ html[data-theme="light"] .fs-head{background:#e3eeff;color:#1c4fa8}
 .fdr-cols{display:block}.fdr-pane{display:none}
 .fdr-inline{margin:-4px 0 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:6px 4px}.fdr-inline.busy,.fdr-pane.busy{opacity:.55}
 .fdr-empty{color:var(--muted);text-align:center;margin:40px 20px}
-.fdr-pane .email-doc,.fdr-inline .email-doc{padding:14px 16px}
+.fdr-pane .email-doc,.fdr-inline .email-doc{padding:14px 16px;width:100%;max-width:none;box-sizing:border-box;margin:0;border-radius:10px;box-shadow:none}
+.fdr-pane .attachment-viewer,.fdr-pane{align-items:stretch}
 @media(min-width:761px){
   .fdr-cols[data-lay="right"]{display:grid;grid-template-columns:minmax(300px,2fr) minmax(0,3fr);gap:16px;align-items:start}
   .fdr-cols[data-lay="right"] .fdr-pane,.fdr-cols[data-lay="bottom"] .fdr-pane{display:block;border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:6px 4px;min-height:160px}
@@ -1799,9 +1800,14 @@ body.dragging-mail .sidebar>*:not(.drag-folders){display:none!important}
 body.dragging-mail .drag-folders{display:flex;flex-direction:column;min-height:0;flex:1;padding:6px 0 0}
 .df-head{font-size:13px;font-weight:700;color:#8fbfff;padding:12px 8px 8px}
 .df-list{overflow-y:auto;flex:1;min-height:0;scrollbar-width:none;display:grid;gap:6px;align-content:start;padding-bottom:20px}.df-list::-webkit-scrollbar{display:none}
-.df-item{display:flex;align-items:center;gap:10px;min-height:46px;padding:9px 12px;border:1.5px dashed #2f5aa5;border-radius:12px;background:rgba(30,90,200,.10);color:var(--text);font-size:14px;text-align:left;cursor:copy}
+.df-item{display:flex;align-items:center;gap:10px;min-height:46px;padding:9px 12px;border:1.5px dashed #2f5aa5;border-radius:12px;background:rgba(30,90,200,.10);color:var(--text);font-size:14px;text-align:left;cursor:default}
 .df-item svg{width:20px;height:20px;flex:none}.df-item span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.df-item.over{background:#1b4ba3;border:1.5px solid #8fbfff;color:#fff;transform:scale(1.02)}
+.df-item.over{background:#1b4ba3;border:1.5px solid #8fbfff;color:#fff}
+.df-item *{pointer-events:none}
+.df-item,.df-list{transition:none}
+/* while dragging, switch off the glows, blurs and animations that make the page repaint under the pointer */
+body.dragging-mail *,body.dragging-mail *::before,body.dragging-mail *::after{transition:none!important;animation:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+body.dragging-mail article.mail,body.dragging-mail .qsummary,body.dragging-mail .preview-list-heading{box-shadow:none!important}
 .df-note{color:var(--muted);font-size:13px;padding:6px 8px}
 body.dragging-mail .app.collapsed .drag-folders{position:fixed;left:72px;top:70px;width:250px;max-height:80vh;z-index:70;background:#0b1e3a;border:1px solid #2b5db3;border-radius:12px;padding:6px 10px 10px}
 body.dragging-mail .app.collapsed .sidebar>*:not(.drag-folders){display:none!important}
@@ -4681,7 +4687,9 @@ function enEmptyReading(){return `<div class="enveliq-empty-wrap"><h2 class="env
 </div></div>`}
 document.addEventListener("click",e=>{const btn=e.target.closest("[data-en-action]");if(!btn)return;const type=btn.dataset.enAction;if(type==="read"){document.querySelector("#paneList article.mail .qmain")?.click();return}const target={tasks:"tasks",draft:"drafts",subscriptions:"subscriptions"}[type];if(target)document.querySelector('.nav[data-filter="'+target+'"]')?.click()});
 let lastScrolledTo="";
+var dragMailOn=false,dragRenderLater=false;
 function render(){
+  if(dragMailOn){dragRenderLater=true;return}
   window.__hidePeek&&window.__hidePeek();
   if(findUi.open&&!findUi.manual&&String(query||"").trim().length<2)findReset();
   if(selMode&&(!selected.size||!isPhone()))selMode=false;
@@ -7139,42 +7147,49 @@ function previewFitToolbar(){
 previewFitToolbar();window.addEventListener("resize",previewFitToolbar);
 // ---------- Drag an email onto a folder (computer): the left menu turns into the folder list while you drag ----------
 {
-  let panel=null,dragList=[],folderCache={};
+  let panel=null,dragList=[],folderCache={},overEl=null;
   const icon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
-  const stop=()=>{document.body.classList.remove("dragging-mail");if(panel){panel.remove();panel=null}dragList=[]};
+  const stop=()=>{
+    document.body.classList.remove("dragging-mail");if(panel){panel.remove();panel=null}dragList=[];overEl=null;
+    if(dragMailOn){dragMailOn=false;if(dragRenderLater){dragRenderLater=false;try{render()}catch{}}}
+  };
   async function foldersFor(aid){
     const c=folderCache[aid];if(c&&Date.now()-c.at<60000)return c.rows;
     const r=await secureBackendRequest(foldersUrl(aid),{method:"GET",headers:{}});folderCache[aid]={at:Date.now(),rows:r.folders||[]};return folderCache[aid].rows;
   }
+  const setOver=el=>{if(el===overEl)return;if(overEl)overEl.classList.remove("over");overEl=el;if(el)el.classList.add("over")};
   document.addEventListener("dragstart",e=>{
     const row=e.target.closest&&e.target.closest("article.mail[data-mid]");if(!row||phoneQuery.matches)return;
     const m=data.find(x=>String(x.id)===row.dataset.mid);if(!m||!m.real||m.owner!==currentUser.id)return;
     const group=selected.has(m.id)&&selected.size>1?[...selected].map(id=>data.find(x=>x.id===id)).filter(x=>x&&x.real&&x.owner===currentUser.id&&!x._pending):[m];
     const aid=m.real.accountId;
     if(group.some(x=>x.real.accountId!==aid)){e.preventDefault();toast("Drag emails from one mailbox at a time.",3500);return}
-    dragList=group;
+    dragList=group;dragMailOn=true;
     try{e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",group.length===1?m.subject:group.length+" emails")}catch{}
     setTimeout(async()=>{                                   // after the drag has begun, so changing the page cannot cancel it
       if(!dragList.length)return;
       panel=document.createElement("div");panel.className="drag-folders";panel.id="dragFolders";
       panel.innerHTML=`<div class="df-head">Drop ${group.length===1?"this email":group.length+" emails"} on a folder</div><div class="df-list" id="dfList"><p class="df-note">Reading your folders…</p></div>`;
+      // One set of listeners for the whole list (not one set per folder), so moving the pointer over a folder's icon or words does no extra work
+      panel.addEventListener("drop",ev=>{ev.preventDefault();const it=ev.target.closest&&ev.target.closest(".df-item");if(!it)return;const ms=dragList.slice(),f=it._folder;stop();if(!ms.length||!f)return;rememberFolder(aid,f.name);queueAction(ms,"moved",{folder:f.name,folderLabel:f.label});selMode=false});
       $("sidebar").append(panel);document.body.classList.add("dragging-mail");
       try{
         const rows=(await foldersFor(aid)).filter(r=>r.target),rec=recentFolders(aid);
         rows.sort((a,b)=>{const ra=rec.indexOf(a.name),rb=rec.indexOf(b.name);return (ra<0?99:ra)-(rb<0?99:rb)||a.label.localeCompare(b.label)});
-        const L=panel&&panel.querySelector("#dfList");if(!L)return;L.replaceChildren();
+        const L=panel&&panel.querySelector("#dfList");if(!L)return;
         if(!rows.length){L.innerHTML='<p class="df-note">You have no folders of your own yet. Make one from an email\'s Folders button.</p>';return}
-        for(const f of rows){
-          const b=document.createElement("div");b.className="df-item";b.innerHTML=icon+"<span></span>";b.lastChild.textContent=f.label;
-          b.addEventListener("dragenter",ev=>{ev.preventDefault();b.classList.add("over")});
-          b.addEventListener("dragover",ev=>{ev.preventDefault();try{ev.dataTransfer.dropEffect="move"}catch{}b.classList.add("over")});
-          b.addEventListener("dragleave",()=>b.classList.remove("over"));
-          b.addEventListener("drop",ev=>{ev.preventDefault();const ms=dragList.slice();stop();if(!ms.length)return;rememberFolder(aid,f.name);queueAction(ms,"moved",{folder:f.name,folderLabel:f.label});selMode=false});
-          L.append(b);
-        }
-      }catch(er){const L=panel&&panel.querySelector("#dfList");if(L)L.innerHTML='<p class="df-note"></p>',L.firstChild.textContent=er.message||"Could not read your folders."}
+        const frag=document.createDocumentFragment();
+        for(const f of rows){const b=document.createElement("div");b.className="df-item";b.innerHTML=icon+"<span></span>";b.lastChild.textContent=f.label;b._folder=f;frag.append(b)}
+        L.replaceChildren(frag);
+      }catch(er){const L=panel&&panel.querySelector("#dfList");if(L){L.innerHTML='<p class="df-note"></p>';L.firstChild.textContent=er.message||"Could not read your folders."}}
     },0);
   });
+  document.addEventListener("dragover",ev=>{                // one listener: light up the folder under the pointer, and nothing else
+    if(!dragMailOn)return;const it=ev.target.closest&&ev.target.closest(".df-item");
+    ev.preventDefault();try{ev.dataTransfer.dropEffect=it?"move":"none"}catch{}
+    setOver(it||null);
+  });
+  document.addEventListener("drop",ev=>{if(dragMailOn&&!(ev.target.closest&&ev.target.closest(".df-item"))){ev.preventDefault();stop()}});   // let go anywhere else: cancel
   document.addEventListener("dragend",stop);
   document.addEventListener("keydown",e=>{if(e.key==="Escape")stop()});
 }

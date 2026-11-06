@@ -149,6 +149,7 @@ for (const width of [1200, 390]) {
   check("the page says which folder you are in", /Folders\s+›\s+Bills/.test(await page.locator("#fdrTitle").innerText()));
   await page.locator(".frow").first().click();
   await page.waitForTimeout(500);
+  check("the email fills the whole reading pane width", await page.evaluate(() => { const p = document.querySelector("#fdrPane"), d = p && p.querySelector(".email-doc"); return !!d && d.getBoundingClientRect().width > p.getBoundingClientRect().width - 40; }));
   check("in the Reading pane layout the email shows beside the list", (await page.locator("#fdrPane .email-doc").count()) === 1);
   await shot(page, "stage3-folders-open-1200");
   await page.evaluate(() => document.querySelector('.nav[data-filter="all"]').click());
@@ -174,7 +175,13 @@ for (const width of [1200, 390]) {
   const target = page.locator(".df-item", { hasText: "Bills" }).first();
   const tb = await target.boundingBox();
   await page.mouse.move(tb.x + 40, tb.y + 15, { steps: 8 });
-  check("the folder under the pointer lights up", (await page.locator(".df-item.over").count()) === 1);
+  await page.waitForTimeout(150);
+  await page.evaluate(() => { const it = [...document.querySelectorAll(".df-item")].find((x) => /Bills/.test(x.textContent)); it.dispatchEvent(new DragEvent("dragover", { bubbles: true, cancelable: true })); });
+  check("the folder under the pointer lights up (and only that one)", (await page.locator(".df-item.over").count()) === 1 && /Bills/.test(await page.locator(".df-item.over").innerText()));
+  await page.evaluate(() => document.querySelector(".side-nav, #dragFolders .df-head").dispatchEvent(new DragEvent("dragover", { bubbles: true, cancelable: true })));
+  check("it goes out again when the pointer leaves the folders", (await page.locator(".df-item.over").count()) === 0);
+  await page.evaluate(() => { const it = [...document.querySelectorAll(".df-item")].find((x) => /Bills/.test(x.textContent)); it.dispatchEvent(new DragEvent("dragover", { bubbles: true, cancelable: true })); });
+  check("a refresh of the list while dragging waits until the drop (the dragged row is not swapped out)", await page.evaluate(() => { const row = document.querySelector("article.mail[data-mid]"); render(); return document.body.contains(row); }));
   await page.mouse.up();
   await page.waitForSelector("#undoBar .undobar");
   check("letting go moves the email (with Undo) and the menu returns", /Moved to Bills/.test(await page.locator("#undoBar").innerText()) && (await page.locator("body.dragging-mail").count()) === 0 && (await page.locator(".side-nav").isVisible()));
