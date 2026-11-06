@@ -190,7 +190,7 @@ The **Include read mail** button (before it was called **All emails**) opens a s
 
 The **Recent emails** section lists your mail. **Options** starts closed on computers and phones. Press it to show the mailbox filter, sorting, **Include read mail**, **Expand all**, and the other available inbox controls; press it again to hide them. On phones, **Recent emails** can also be expanded or collapsed.
 
-The left menu leads to **My inbox**, **Needs action**, **Tasks**, **Shipping**, **Waiting for reply**, and **Attachments**. The **More** section contains other views, including Sent and Archived where available. Collapsing the desktop menu keeps the icons; the compact Calm mode control remains available.
+The left menu leads to **My inbox**, **Needs action**, **Tasks**, **Starred**, **Messages**, **Waiting for reply** and **Shipping**, most used first. The **More** section contains other views, including Sent and Archived where available. Collapsing the desktop menu keeps the icons; the compact Calm mode control remains available.
 
 ## Bigger windows for emails and attachments
 
@@ -206,7 +206,7 @@ Web addresses in the text of an email can be clicked, but they never open by the
 - With **Open full screen**, on a computer the email sits beside the left menu and below the top bar, and **Archive** and **Bin** are normal buttons centred along the bottom (they used to be stretched across the screen and partly hidden).
 
 ## The top stays in view while you scroll
-- On a computer, the bar with the search box, Sync mail, the help button and your name stays at the top of the page when you scroll down a long list. The "Recent emails" bar with **Options** (and the buttons for ticked emails) stays right under it. Only the emails move.
+- On a computer, the bar with the search box, the round Sync, Agent, notification and help buttons, and your name stays at the top of the page when you scroll down a long list. The "Recent emails" bar with **Options** (and the buttons for ticked emails) stays right under it. Only the emails move.
 - The title, the four count tiles and the picture behind them scroll away as before, so you get more room for the emails.
 - The top bar is never a solid block. It stays see-through the whole time, so the picture behind it always shows. Emails, tiles and titles that scroll up to it fade out softly just below its lower edge (no hard cut-off line), so no text is ever seen through it. The Recent emails bar itself is never faded.
 - Phones are unchanged. They already have their own bar at the top of the screen.
@@ -225,7 +225,7 @@ While the page starts up, only the background shows. Nothing else is drawn (no m
 
 ## Calm mode
 
-Calm mode is on by default in a browser that has never chosen a mode. Each browser remembers the choice, and you can turn Calm mode off from the bottom of the left menu or from the account menu.
+Calm mode is on by default in a browser that has never chosen a mode. Each browser remembers the choice, and you can turn Calm mode on or off from the account menu (click your name at the top right). The switch is no longer in the left menu.
 
 When Calm mode is on:
 
@@ -310,3 +310,14 @@ Moving to another section (Sent, Archived, Tasks and so on) adds a step to the b
 ## Reading pane on the right (computer)
 
 Choose **Reading pane on the right** in the View panel (the tab on the right edge). The open email fills the whole right side of the screen, from just under the search bar to the bottom of the window, and **Archive** and **Bin** stay along its bottom edge. The left column holds the page title, the four counts in one slim row, **Today** and **Coming up** side by side, the **Recent emails** bar and the list. **Today** shows its first two things; **Coming up** shows the soonest two, in a box the same height and shade (neither box has the round tick buttons in this view; use the Tasks page to mark things done), and **Coming up · N more** is a link to the Tasks page (in the other layouts it still folds open and closed). In Calm mode this view has no Calm mode bar on top and no icon in Start here, the cards are shorter, and Also important today sits under Later on the right. The left column scrolls by itself; the page does not. This applies to every page that lists emails. On a phone, or a window narrower than 900 pixels, the email appears under the list as before. The other layouts are unchanged. Browser check: `scripts/check_split_reading.mjs`.
+
+## Top bar and left menu tidy-up
+
+- The Enveliq logo is smaller and sits in the same row as the search box.
+- **Sync mail** and **Agent** are round icon buttons beside the notification bell, the news feeds button and the help button. Point at either to see its name. While mail is syncing the Sync icon turns. On a phone, Sync and Agent are in the top bar.
+- The Calm mode switch and the Agent entry are gone from the bottom of the left menu. Calm mode is in the account menu.
+- Less used views (Snoozed, Drafts, Sent, Archived, Folders, Attachments, Subscriptions, Trips, Junk mail, Clean up, Found emails) are under **More**, which starts closed and remembers how you leave it.
+- **Filters** and **Ask the agent** beside the search box are see-through buttons that match the rest of the bar.
+- Scroll bars in the left menu, the email list and the reading area are thin and see-through. They show only while the pointer is over that area, and take no room from the list.
+- **Mark as unread** is a soft slate blue; **Mark as read** stays green.
+- The AI summary box has a stronger blue glow around its edge so it is the first thing you see.

@@ -289,6 +289,8 @@ jobs:
         run: node scripts/check_home_sections.mjs
       - name: Ask the agent from the search box check
         run: node scripts/check_ask_agent.mjs
+      - name: Top bar and left menu tidy-up check
+        run: node scripts/check_top_bar_tidy.mjs
       - name: Trips page and Home card (simulated server)
         run: node scripts/check_trips.mjs
       - name: Subscriptions page and Home card (simulated server)
