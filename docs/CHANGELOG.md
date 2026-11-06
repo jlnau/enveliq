@@ -4,6 +4,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Sent now looks and works like your inbox.** The Sent page uses the same email view as the inbox and Folders: the list with who each email went to, the reading pane, the same buttons (Move, Archive, Bin, Star) and the same search. The "Follow for a reply" button is in the More menu of a sent email, and emails waiting to go out still show at the top with "Take it back". Files on a sent email are not opened here yet; the email says to open it in your mail app.
+
+**Forward for several emails now works like writing a new email.** The To box suggests people from your address book and turns them into chips, you can pick which address it is sent From, and you can add Cc and Bcc.
+
 **Forward, Tag and Rules for several emails at once.** Tick two or more emails and the bar now has Forward, Tag and Rules next to Move. Forward sends each ticked email on its own, with its attachments, to the address you type (with an optional note). Tag adds the tags you pick to every ticked email, and Rules makes an always-archive, mark-as-read, move or tag rule for each sender. Move now also offers "Always move" when you tick several emails.
 
 **The buttons that appear when you hover an email look the same everywhere.** In Folders and in search results, the Move, Archive and Bin buttons that show when you point at an email now have the same boxed, coloured look and size as the buttons on inbox emails.

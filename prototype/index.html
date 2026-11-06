@@ -555,7 +555,7 @@ body.in-folders .folderview{display:block}
 .fdr-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 12px}.fdr-chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
 .fchip{border:1px solid var(--line,#2a3a57);background:transparent;color:var(--text);border-radius:999px;padding:7px 14px;font:inherit;cursor:pointer}.fchip.on{background:var(--c-173056,#173056);border-color:var(--blue,#2f7bff)}
 .fmore{display:block;margin:12px auto}.frow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;width:100%;text-align:left;border:1px solid var(--line,#2a3a57);border-radius:12px;padding:10px 12px;margin:0 0 8px;background:transparent;color:var(--text);font:inherit;cursor:pointer}.frow b,.frow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.frow .fsub{grid-column:1/-1;opacity:.8}
-.bs-list{display:grid;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:6px}.bs-list div{padding:7px 12px;font-size:13px;border-top:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bs-list div:first-child{border-top:0}.bs-more{color:var(--muted)}.bs-head{font-size:13px}.bs-choices{display:grid;gap:8px}.bs-choices .btn{text-align:left;min-height:42px}.bulksheet label{display:grid;gap:6px}.bulksheet textarea,.bulksheet input[type=text]{width:100%;font:inherit;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px}.bulksheet .tagrow,.bulksheet .tag-always{display:flex;gap:10px;align-items:center}.fpick-new{align-items:center}.fp-always{display:flex!important;gap:10px;align-items:flex-start;margin-top:6px}.menu-note{margin:6px 12px;font-size:12px;color:var(--muted);line-height:1.4}#folderPick label{display:grid;gap:6px}.fpick-list{display:flex;flex-direction:column;gap:6px;margin:10px 0}.fpick-item{text-align:left;border:1px solid var(--line,#2a3a57);background:transparent;color:var(--text);border-radius:10px;padding:11px 12px;font:inherit;cursor:pointer}.fpick-item:hover,.fpick-item:focus-visible{background:var(--c-173056,#173056)}.fpick-new{display:flex;gap:8px;margin-top:8px}.fpick-new input{flex:1}
+.bs-list{display:grid;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:6px}.bs-list div{padding:7px 12px;font-size:13px;border-top:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bs-list div:first-child{border-top:0}.bs-more{color:var(--muted)}.bs-head{font-size:13px}.bs-choices{display:grid;gap:8px}.bs-choices .btn{text-align:left;min-height:42px}.bulksheet label{display:grid;gap:6px}.bulksheet textarea,.bulksheet input[type=text]{width:100%;font:inherit;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px}.bulksheet .chips input{border:0!important;background:transparent!important;padding:2px 4px!important;min-width:8em;flex:1;outline:0!important;box-shadow:none!important;width:auto!important}.bulksheet select{width:100%;font:inherit;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px}.bulksheet label:has(.ccsw){display:flex;justify-content:space-between;align-items:center}.bulksheet .ccsw{display:inline-flex;gap:12px}.bulksheet .ccsw button{border:0;background:transparent;color:var(--muted);font:inherit;cursor:pointer}.bulksheet .ccsw button:hover{color:var(--text)}.bulksheet .tagrow,.bulksheet .tag-always{display:flex;gap:10px;align-items:center}.fpick-new{align-items:center}.fp-always{display:flex!important;gap:10px;align-items:flex-start;margin-top:6px}.menu-note{margin:6px 12px;font-size:12px;color:var(--muted);line-height:1.4}#folderPick label{display:grid;gap:6px}.fpick-list{display:flex;flex-direction:column;gap:6px;margin:10px 0}.fpick-item{text-align:left;border:1px solid var(--line,#2a3a57);background:transparent;color:var(--text);border-radius:10px;padding:11px 12px;font:inherit;cursor:pointer}.fpick-item:hover,.fpick-item:focus-visible{background:var(--c-173056,#173056)}.fpick-new{display:flex;gap:8px;margin-top:8px}.fpick-new input{flex:1}
 body.in-sent .filters,body.in-sent #list,body.in-sent .sample-banner,body.in-sent #dueBars,body.in-sent #shipBars,body.in-sent #subBars,body.in-sent #tripBars,body.in-sent #waitBars,body.in-sent #mTitleSub,body.in-sent #peek{display:none!important}
 .sent-top{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin:0 0 12px}
 .sent-tools{display:flex;gap:8px;align-items:center}
@@ -1980,13 +1980,13 @@ body.dragging-mail{user-select:none;-webkit-user-select:none;cursor:grabbing}
     <div class="sent-top"><span class="sent-tools"><select id="sentBox" aria-label="Mailbox" hidden></select><button class="btn" id="sentRefresh" type="button">Refresh</button></span></div>
     <div class="sent-note" role="note">Read from your mailbox when you open this page. Nothing is saved in Enveliq.</div>
     <div id="sentStatus" class="sent-status" role="status" aria-live="polite"></div>
-    <div id="sentWaiting" class="sent-list" hidden></div>
     <div id="sentList" class="sent-list"></div>
     <p id="sentFoot" class="sent-foot" hidden>Limited to the last 4 months.</p>
   </section>
   <section id="folderView" class="folderview" aria-label="Folders">
     <div class="fdr-head"><h3 id="fdrTitle" class="fdr-title">Folders</h3><span class="sp"></span><select id="fdrBox" aria-label="Mailbox" hidden></select><button class="btn small" id="fdrRefresh" type="button">Refresh</button></div>
     <div id="fdrStatus" class="fdr-line" role="status" aria-live="polite"></div>
+    <div id="sentWaiting" class="sent-list" hidden></div>
     <div class="fdr-line fdr-note">Read from your mailbox when you open a folder. Nothing is saved in Enveliq unless you tag an email.</div>
     <div id="fdrChips" class="fdr-chips" hidden></div>
     <div class="fdr-cols" id="fdrCols"><div id="fdrList"></div><div id="fdrPane" class="fdr-pane" aria-live="polite"><p class="fdr-empty">Choose an email to read it here.</p></div></div>
@@ -2604,6 +2604,7 @@ const previewVault={initialized:false,unlocked:false,salt:null,verifier:null};
 const expanded=new Set();
 const convHidden=new Map(); // conversation key -> the open email when the person pressed Hide, so Hide works even while one of its emails is open
 // A refresh keeps you where you are: the page (in the address bar after #/) and which emails are open (this tab only).
+const folderPage=()=>filter==="folders"||filter==="sent";      // Sent is the Folders page opened on your Sent folder: the same list and reading view
 const PAGES=["found","all","action","starred","tasks","attachments","archived","sent","folders","drafts","shipping","subscriptions","trips","waiting","junk","cleanup"];
 let stateReady=false,navPopping=false;
 const rowKeyOf=id=>{const m=data.find(x=>String(x.id)===String(id));return m&&m.real?m.real.accountId+":"+m.real.messageId:null};
@@ -3074,7 +3075,7 @@ function searchKeyPaint(){
 function clearSearch(){
   query="";$("search").value="";searchPin=null;autoDismissed="";findUi.pend="";document.body.classList.remove("msearch");
   findReset();render();$("search").focus();
-  if(filter==="folders"&&fdrCur)openFolder(fdrCur.aid,fdrCur.f,0);
+  if(folderPage()&&fdrCur)openFolder(fdrCur.aid,fdrCur.f,0);
 }
 function searchBannerHtml(){
   const q=String(query||"").trim();
@@ -4657,7 +4658,7 @@ function render(){
   if(findUi.open&&!findUi.manual&&String(query||"").trim().length<2)findReset();
   if(selMode&&(!selected.size||!isPhone()))selMode=false;
   document.body.classList.toggle("selecting",selMode);
-  document.body.classList.toggle("in-sent",filter==="sent"||filter==="folders");document.body.classList.toggle("in-folders",filter==="folders");document.body.classList.toggle("fdr-split",filter==="folders"&&!phoneQuery.matches&&lay()==="right"&&window.matchMedia("(min-width:901px)").matches);document.body.classList.toggle("in-found",filter==="found");document.body.classList.toggle("on-draft",filter==="drafts");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="folders"?"Folders":filter==="sent"?"Sent":filter==="drafts"?"Drafts":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="junk"?"Junk Mail":filter==="cleanup"?"Clean up":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
+  document.body.classList.toggle("in-sent",filter==="sent"||filter==="folders");document.body.classList.toggle("in-folders",folderPage());document.body.classList.toggle("fdr-split",folderPage()&&!phoneQuery.matches&&lay()==="right"&&window.matchMedia("(min-width:901px)").matches);document.body.classList.toggle("in-found",filter==="found");document.body.classList.toggle("on-draft",filter==="drafts");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="folders"?"Folders":filter==="sent"?"Sent":filter==="drafts"?"Drafts":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="junk"?"Junk Mail":filter==="cleanup"?"Clean up":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
   const mine=userMessages().filter(m=>!m.extra);          // the quiet "All emails" entries are never counted
   if(!realMail)syncDemoTasks();else settleTasks();
   document.body.classList.toggle("on-tasks",filter==="tasks");
@@ -8409,32 +8410,34 @@ const bulkNeedMail=()=>toast("These buttons work on emails from your mailbox.",4
 const bulkList=(ms,n)=>`<div class="bs-list" role="list">${ms.slice(0,n||6).map(m=>`<div role="listitem">${esc(m.subject||"(no subject)")}</div>`).join("")}${ms.length>(n||6)?`<div role="listitem" class="bs-more">and ${ms.length-(n||6)} more</div>`:""}</div>`;
 function openBulkForward(){
   const ms=bulkReal();if(!ms.length){bulkNeedMail();return}
-  let todo=ms.slice();const many=ms.length>1;
+  let todo=ms.slice();const many=ms.length>1,oneBox=ms.every(m=>m.real.accountId===ms[0].real.accountId),plan0=planReply(ms[0]);
   const {box,close}=bulkSheet("bulkFwd",many?`Forward ${ms.length} emails`:"Forward this email",
-    `<label>To<input type="text" id="bfTo" autocomplete="off" spellcheck="false" placeholder="name@example.com"></label><p class="sp-sub">More than one person? Put a comma between the addresses.</p>
+    `${oneBox?`<div><label for="bfFrom">From</label><select id="bfFrom">${plan0.identities.map(a=>`<option value="${esc(a)}"${a===plan0.from?" selected":""}>${esc(a)}</option>`).join("")}</select></div>`:""}<div><label>To <span class="ccsw"><button type="button" id="bfCcBtn">Cc</button><button type="button" id="bfBccBtn">Bcc</button></span></label><div class="chips" id="bfTo" data-label="To"></div></div><div id="bfCcRow" hidden><label>Cc</label><div class="chips" id="bfCc" data-label="Cc"></div></div><div id="bfBccRow" hidden><label>Bcc</label><div class="chips" id="bfBcc" data-label="Bcc"></div></div><p class="sp-sub">Start typing a name or an address. People from your address book are suggested.${oneBox?"":" Each email is sent from the address of its own mailbox."}</p>
      <label>Add a note (optional${many?", sent with each email":""})<textarea id="bfNote" rows="3" maxlength="5000"></textarea></label>
      <div><b class="bs-head">${many?`These ${ms.length} emails will be sent`:"This email will be sent"}</b>${bulkList(ms)}</div>
      <p class="sp-sub">${many?"Each email is sent on its own, with its attachments.":"It is sent with its attachments."} They are fetched from your mailbox now and are not stored.</p><p class="sa-err" id="bfErr" role="alert"></p>`,
     `<button type="button" class="btn" data-bs-close>Cancel</button><button type="button" class="btn primary" id="bfSend">${many?`Forward ${ms.length} emails`:"Forward"}</button>`);
-  const to=box.querySelector("#bfTo"),err=box.querySelector("#bfErr"),send=box.querySelector("#bfSend");to.focus();
+  const toBox=chipField(box.querySelector("#bfTo")),ccBox=chipField(box.querySelector("#bfCc")),bccBox=chipField(box.querySelector("#bfBcc")),err=box.querySelector("#bfErr"),send=box.querySelector("#bfSend");toBox.input.focus();
+  for(const [btn,row,f] of [["#bfCcBtn","#bfCcRow",ccBox],["#bfBccBtn","#bfBccRow",bccBox]])box.querySelector(btn).onclick=()=>{const r=box.querySelector(row);r.hidden=false;f.input.focus()};
   send.onclick=async()=>{
-    const list=[...new Set(to.value.split(/[\s,;]+/).map(x=>x.replace(/^[<"']+|[>"']+$/g,"")).filter(Boolean))];
-    if(!list.length||list.some(a=>!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(a))){err.textContent=list.length?"One of those addresses does not look right.":"Add the address to send these to.";to.focus();return}
-    if(list.length>50){err.textContent="A message can go to at most 50 people.";return}
-    err.textContent="";send.disabled=true;to.readOnly=true;const label=send.textContent,note=box.querySelector("#bfNote").value.trim();
+    if(!toBox.commit(true)||!ccBox.commit(true)||!bccBox.commit(true)){err.textContent="One of those addresses does not look right.";return}
+    const list=toBox.items.map(x=>x.address),ccList=ccBox.items.map(x=>x.address),bccList=bccBox.items.map(x=>x.address);
+    if(!list.length){err.textContent="Add the address to send these to.";toBox.input.focus();return}
+    if(new Set([...list,...ccList,...bccList]).size>50){err.textContent="A message can go to at most 50 people.";return}
+    err.textContent="";send.disabled=true;toBox.input.readOnly=true;const label=send.textContent,note=box.querySelector("#bfNote").value.trim();
     const failed=[];let sent=0,n=0;
     for(const m of todo){
       n++;if(todo.length>1)send.textContent=`Sending ${n} of ${todo.length}…`;else send.textContent="Sending…";
       try{
         const plan=planReply(m);
-        const r=await secureBackendRequest(`/api/v1/accounts/${m.real.accountId}/messages/${m.real.messageId}/forward`,{method:"POST",body:JSON.stringify({body:note,from_address:plan.from,to:list})});
+        const r=await secureBackendRequest(`/api/v1/accounts/${m.real.accountId}/messages/${m.real.messageId}/forward`,{method:"POST",body:JSON.stringify({body:note,from_address:oneBox?box.querySelector("#bfFrom").value:plan.from,to:list,cc:ccList,bcc:bccList})});
         if(r&&r.queued)noteQueuedReply(r,m,"forward");
         sent++;
       }catch(er){failed.push([m,er.message||"It did not send."])}
     }
     const who=peopleText(list);
     if(!failed.length){close();selected.clear();selMode=false;render();toast(`${sent===1?"1 email":sent+" emails"} forwarded to ${who}`,5000,"success");return}
-    todo=failed.map(f=>f[0]);send.disabled=false;to.readOnly=false;send.textContent=todo.length>1?`Try the other ${todo.length} again`:"Try again";
+    todo=failed.map(f=>f[0]);send.disabled=false;toBox.input.readOnly=false;send.textContent=todo.length>1?`Try the other ${todo.length} again`:"Try again";
     err.innerHTML="";err.append(`${sent?sent+" sent. ":""}${failed.length===1?"1 did not send":failed.length+" did not send"}: ${failed[0][1]}`);
     toast(`${sent} sent, ${failed.length} did not send`,6000,"error");
   };
@@ -8498,7 +8501,7 @@ let fdrAcct="",fdrFolder="",fdrRows=[],fdrToken=0,fdrKnown=[];
 // A slow pulsing arrow under the last visible folder says there are more below; it goes when you reach the end.
 function fsMoreSync(){const side=$("folderSide"),m=side&&side.querySelector(".fs-more");if(!m)return;m.classList.toggle("on",side.scrollHeight>side.clientHeight+4&&side.scrollTop+side.clientHeight<side.scrollHeight-6)}
 $("folderSide").addEventListener("scroll",fsMoreSync,{passive:true});addEventListener("resize",fsMoreSync);
-async function loadFolders(){
+async function loadFolders(){{const sw=$("sentWaiting");if(sw&&filter!=="sent")sw.hidden=true}
   if(!accounts.length)return;
   const box=$("fdrBox");
   if(accounts.length>1){
@@ -8510,15 +8513,17 @@ async function loadFolders(){
   $("fdrList").replaceChildren();chips.replaceChildren();status.textContent="Reading your folders…";$("fdrRefresh").disabled=true;
   try{
     const r=await secureBackendRequest(foldersUrl(aid),{method:"GET",headers:{}});
-    if(aid!==fdrAcct||filter!=="folders")return;
-    status.textContent=r.folders.length?(fdrFolder?"":"Pick a folder from the left menu to see what is in it."):"This mailbox has no other folders.";
+    if(aid!==fdrAcct||!folderPage())return;
+    const sentF=filter==="sent"?r.folders.find(x=>x.special&&x.label==="Sent"):null;
+    status.textContent=filter==="sent"?(sentF?"":"This mailbox has no Sent folder."):r.folders.length?(fdrFolder?"":"Pick a folder from the left menu to see what is in it."):"This mailbox has no other folders.";
     fdrKnown=r.folders;
     const side=$("folderSide"),icon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
-    side.hidden=false;
+    side.hidden=filter==="sent";
     const head=document.createElement("div");head.className="fs-head";head.textContent="Folders";const more=document.createElement("div");more.className="fs-more";more.setAttribute("aria-hidden","true");more.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
     side.replaceChildren(head,...r.folders.map(f=>{const b=document.createElement("button");b.type="button";b.className="nav fchip"+(f.name===fdrFolder?" active":"");b.title=f.label;b.innerHTML=icon+'<span class="nav-label"></span>';b.lastChild.textContent=f.label;b.onclick=()=>{fdrFolder=f.name;side.querySelectorAll(".fchip").forEach(x=>x.classList.toggle("active",x===b));openFolder(aid,f,0)};return b}));
     side.append(more);fsMoreSync();
-    if(fdrFolder){const f=r.folders.find(x=>x.name===fdrFolder);if(f)openFolder(aid,f,0);else fdrFolder=""}
+    if(filter==="sent"){if(sentF)openFolder(aid,sentF,0)}
+    else if(fdrFolder){const f=r.folders.find(x=>x.name===fdrFolder);if(f)openFolder(aid,f,0);else fdrFolder=""}
   }catch(er){status.textContent=er.message||"Could not read your folders."}
   finally{$("fdrRefresh").disabled=false}
 }
@@ -8650,7 +8655,7 @@ function liveFrags(it,ctx){
   const acts=act("archive","archive",ICON_ARCH,"Archive")+act("trash","bin",ICON_BIN,"Bin");
   const star=`<button type="button" class="subtle rl-icon starbtn${it.starred?" on":""}" data-live-act="star" aria-pressed="${it.starred?"true":"false"}" aria-label="${it.starred?"Remove star":"Star this email"}" title="${it.starred?"Remove star":"Star this email"}">${it.starred?ICON_STAR_ON:ICON_STAR}</button>`;
   const inInbox=String(it.folder).toUpperCase()==="INBOX";
-  const items=[inInbox?"":["inbox","Move to Inbox"],["important","Mark the sender as an important person"],["rule","Always move this sender's email to a folder…"],["popup","View original email"]].filter(Boolean).map(([a,t])=>`<button type="button" role="menuitem" data-live-act="${a}">${t}</button>`).join("");
+  const items=[it.sent?["follow","Follow for a reply"]:null,inInbox?"":["inbox","Move to Inbox"],["important","Mark the sender as an important person"],["rule","Always move this sender's email to a folder…"],["popup","View original email"]].filter(Boolean).map(([a,t])=>`<button type="button" role="menuitem" data-live-act="${a}">${t}</button>`).join("");
   const more=`<span class="lmore"><button type="button" class="subtle qmore" data-live-act="more" aria-haspopup="menu" aria-expanded="false" aria-label="More actions" title="More actions">${ICON_MORE}</button><div class="fmenu" role="menu" hidden>${items}</div></span>`;
   const copyBtns=[["address","Copy sender address"],["subject","Copy subject"],["all","Copy email details"]].map(([f,l])=>`<button type="button" class="subtle mail-copy-action" data-live-copy="${f}">${l}</button>`).join("");
   const where=ctx.where?`<div class="live-where"><span>${esc(ctx.where)}</span>${ctx.closeAttr?`<button type="button" class="obtn" ${ctx.closeAttr}>Close</button>`:""}</div>`:"";
@@ -8724,6 +8729,14 @@ document.addEventListener("click",async e=>{
   if(act==="archive"){if(ctx.overlay)host.remove();liveDo([it],"archive",{},"Archived.");return}
   if(act==="bin"){if(ctx.overlay)host.remove();liveDo([it],"bin",{},"Moved to Bin.");return}
   if(act==="inbox"){if(ctx.overlay)host.remove();liveDo([it],"move",{},liveSay("your Inbox"));return}
+  if(act==="follow"){
+    const go=async force=>{try{const r=await secureBackendRequest(liveUrl(it,"follow"),{method:"POST",body:JSON.stringify({force:!!force})});
+      if(r.result==="added"){toast("Done. Enveliq will tell you if nobody replies. See Waiting for reply.",6000,"success");refreshWaiting()}
+      else if(r.result==="already"){toast("Already on your Waiting for reply list.",4000)}
+      else if(r.result==="not_waiting"){it._followForce=true;toast("Enveliq did not find a question or request in this email. Press Follow for a reply again to follow it anyway.",8000)}
+      else toast(r.result==="no_recipient"?"This email has no one to wait on (it was sent to yourself).":"This email has no message ID, so a reply cannot be matched.",5000)}
+    catch(er){toast(er.message,6000)}};
+    go(!!it._followForce);return}
   if(act==="move"){livePicker([it]);return}
   if(act==="rule"){livePicker([it],true);return}
   if(act==="important"){liveImportant(it);return}
@@ -8779,19 +8792,19 @@ async function openFolder(aid,f,offset){
   const words="";      // the search box never searches inside one folder: it searches the same places on every page
   if(!offset){list.replaceChildren();fdrRows=[];fdrSel=new Set();list.append(fdrSelHead())}
   list.querySelectorAll(".fmore").forEach(x=>x.remove());
-  $("fdrTitle").textContent="Folders  ›  "+f.label;$("fdrCols").dataset.lay=lay();$("fdrPane").innerHTML='<p class="fdr-empty">Choose an email to read it here.</p>';
+  $("fdrTitle").textContent=filter==="sent"?"Sent":"Folders  ›  "+f.label;$("fdrCols").dataset.lay=lay();$("fdrPane").innerHTML='<p class="fdr-empty">Choose an email to read it here.</p>';
   status.textContent="Reading "+f.label+"…";
   try{
     const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/folder-mail?folder=${encodeURIComponent(f.name)}&offset=${offset}${words?"&q="+encodeURIComponent(words):""}`,{method:"GET",headers:{}});
-    if(mine!==fdrToken||filter!=="folders")return;
+    if(mine!==fdrToken||!folderPage())return;
     fdrInfo={label:f.label,total:r.total};
     status.textContent=words?(r.total?`${f.label}: ${r.total} ${r.total===1?"email matches":"emails match"} "${words}".`:`Nothing in ${f.label} matches "${words}".`):(r.total?`${f.label}: ${r.total} ${r.total===1?"email":"emails"}, newest first.`:`${f.label} is empty.`);
     for(const raw of r.rows){
-      const it={...raw,kind:"folder",address:raw.from_address,name:raw.from_name,account:aid,folder:f.name,starred:false};
+      const sentPage=filter==="sent",it={...raw,kind:"folder",sent:sentPage,address:sentPage?raw.to_address:raw.from_address,name:sentPage?(raw.to_name||raw.to_address)+(raw.to_more?` +${raw.to_more}`:""):raw.from_name,account:aid,folder:f.name,starred:false};
       const row=document.createElement("div");row.className="frow";row.setAttribute("role","button");row.tabIndex=0;row._it=it;it._row=row;
       const chk=document.createElement("input");chk.type="checkbox";chk.className="check fcheck";chk.setAttribute("aria-label","Select "+it.subject);
       chk.onclick=e=>e.stopPropagation();chk.onchange=()=>{if(chk.checked)fdrSel.add(it);else fdrSel.delete(it);fdrBulkPaint()};
-      const who=document.createElement("b");who.textContent=it.from_name||it.from_address||"(no sender)";
+      const who=document.createElement("b");who.textContent=it.sent?(it.name||"(no recipient)"):(it.from_name||it.from_address||"(no sender)");
       const when=document.createElement("span");when.textContent=it.date?realTime(it.date):"";
       const sub=document.createElement("span");sub.className="fsub";sub.textContent=it.subject;
       row.append(chk,who,when,sub);
@@ -8819,29 +8832,7 @@ async function openFolder(aid,f,offset){
 }
 // ---- Sent: the last 4 months, read from the mailbox when opened, never stored ----
 let sentAcct="";
-async function loadSent(){
-  if(!accounts.length)return;
-  const box=$("sentBox");
-  if(accounts.length>1){
-    if(box.options.length!==accounts.length){box.replaceChildren(...accounts.map(a=>new Option(a.name,a.id)))}
-    if(!sentAcct||!accounts.some(a=>a.id===sentAcct))sentAcct=accounts[0].id;
-    box.value=sentAcct;box.hidden=false;
-  }else{sentAcct=accounts[0].id;box.hidden=true}
-  loadWaiting();
-  const aid=sentAcct,list=$("sentList"),status=$("sentStatus"),foot=$("sentFoot");
-  list.replaceChildren();foot.hidden=true;status.textContent="Reading your Sent folder…";$("sentRefresh").disabled=true;
-  try{
-    const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/sent`,{method:"GET",headers:{}});
-    if(aid!==sentAcct||filter!=="sent")return;
-    status.textContent=r.items.length?"":"Nothing sent in the last 4 months.";
-    list.replaceChildren(...r.items.map(it=>sentRow(it,r,aid)));
-    foot.textContent=r.more?"Showing the newest 300. Limited to the last 4 months.":"Limited to the last 4 months.";foot.hidden=false;
-  }catch(er){
-    status.textContent="";
-    const msg=document.createElement("div");msg.className="sent-note";msg.textContent=er.message+" ";
-    const retry=document.createElement("button");retry.type="button";retry.className="btn";retry.textContent="Try again";retry.onclick=loadSent;msg.append(retry);list.replaceChildren(msg);
-  }finally{$("sentRefresh").disabled=false}
-}
+async function loadSent(){loadWaiting();return loadFolders()}
 function sentRow(it,r,aid){const r0=r;
   const row=document.createElement("div");row.className="srow";
   const first=it.to[0],who=first?(first.name||first.address):"(no recipient)",more=it.to.length>1?` +${it.to.length-1}`:"";

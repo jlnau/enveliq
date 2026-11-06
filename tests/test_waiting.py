@@ -478,3 +478,15 @@ def test_a_reply_closes_a_note_that_was_made_by_hand_even_if_the_mailbox_switch_
     client.patch(f"/api/v1/accounts/{aid}", json={"settings": {**acct["settings"], "waiting": False}})
     bridge.add(701, b"From: Dana <dana@example.invalid>\r\nTo: me@example.invalid\r\nSubject: Re: Quote for the fence\r\nMessage-ID: <r1@example.invalid>\r\nIn-Reply-To: <q1@example.invalid>\r\n\r\nHere.\r\n")
     assert check(client)["notes"][0]["state"] == "replied"
+
+
+def test_the_sent_folder_lists_who_it_went_to_and_an_email_there_can_be_followed(env):
+    appm, client, bridge, model = env
+    aid = turn_on(client, bridge)
+    add_sent(bridge)
+    rows = client.get(f"/api/v1/accounts/{aid}/folder-mail", params={"folder": "Sent"}).json()["rows"]
+    quote = next(r for r in rows if r["subject"] == "Quote for the fence")
+    assert quote["to_address"] == "dana@example.invalid" and quote["to_name"] == "Dana" and quote["to_more"] == 0
+    followed = client.post(f"/api/v1/folder-mail/{quote['token']}/follow", json={})
+    assert followed.status_code == 200, followed.text
+    assert client.post(f"/api/v1/folder-mail/{quote['token'][:-3]}abc/follow", json={}).status_code == 404

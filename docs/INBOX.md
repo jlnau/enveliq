@@ -138,7 +138,7 @@ In a reply or forward window, the **Subject** box can be edited; what you type i
 
 When you tick two or more emails, the bar over the list also has **Forward**, **Tag** and **Rules**, next to Move.
 
-- **Forward** asks for an address (or several, with commas) and an optional note. Each ticked email is forwarded on its own, with its attachments, so the person gets one email for each. The originals are fetched from your mailbox when you press the button and are not stored. If one fails, the form stays open, says how many did not send and lets you try just those again.
+- **Forward** is laid out like New email: the **To** box suggests people from your address book and makes chips, **From** picks the address it is sent from (when all ticked emails are in one mailbox), and **Cc** and **Bcc** can be added. There is also an optional note. Each ticked email is forwarded on its own, with its attachments, so the person gets one email for each. The originals are fetched from your mailbox when you press the button and are not stored. If one fails, the form stays open, says how many did not send and lets you try just those again.
 - **Tag** lists your tags (and lets you make a new one) and adds the ones you tick to every ticked email. Tags already on an email stay. Tick "Always apply these tags" to also make a rule for each different sender. Pick emails from one mailbox at a time.
 - **Rules** makes one rule for each different sender among the ticked emails: always archive, always mark as read, always move to a folder, or always get a tag. The same "Always move" choice is in Move when you tick several emails. Rules can be changed in Settings, Mail rules.
 - On a phone each of these opens full screen, with the title and Close at the top and the buttons at the bottom.
@@ -370,7 +370,9 @@ Choose **Reading pane on the right** in the View panel (the tab on the right edg
 
 ## The search box works everywhere
 
-- The search box does the same thing on every page (Folders, Tasks, Sent, Needs action, Starred, Archived and the rest): typing takes you to your inbox and searches it and all your mail. It never searches only inside one folder. In Settings the box still searches the settings.
+- **Sent** is the Folders view opened on your mailbox's Sent folder, so it looks and works like the inbox: rows show who the email went to ("Name +2" when there are more people), you read it in the same reading pane, and Move, Archive, Bin and Star are the same buttons. **Follow for a reply** is in the More menu of a sent email. Emails waiting to be sent appear above the list. Files on a sent email are not opened here; the email tells you to use your mail app. The sent email is read from the mailbox when you open it and never saved. Checks: `scripts/check_waiting.mjs`, `scripts/check_email_features.mjs`.
+
+The search box does the same thing on every page (Folders, Tasks, Sent, Needs action, Starred, Archived and the rest): typing takes you to your inbox and searches it and all your mail. It never searches only inside one folder. In Settings the box still searches the settings.
 - A found email lights up the moment you click it, shows "Opening this email…" in the reading pane, and has a **Generate summary** button above it.
 
 ## One reading view for every email

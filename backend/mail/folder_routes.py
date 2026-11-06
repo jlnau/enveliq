@@ -30,6 +30,10 @@ class StarBody(StrictModel):
     starred: bool
 
 
+class FollowBody(StrictModel):
+    force: bool = False
+
+
 class FolderMoveBody(StrictModel):
     folder: str | None = None   # a listed folder name; left out means the Inbox
 
@@ -180,6 +184,24 @@ def build_folder_router(ctx: Any) -> APIRouter:
                 pass
         vault.audit({"event": "folder_mail_kept", "actor_user_id": user, "account_id": account_id, "message_id": message_id, "at": time.time()})
         return {"already": False, "account_id": account_id, "message_id": message_id}
+
+    follow_limit = SlidingWindowLimiter(max_events=30, window=60)
+
+    @router.post("/folder-mail/{token}/follow")
+    def follow_folder_mail(token: str, body: FollowBody, response: Response, session: Session = Depends(session_dep)):
+        """Follow one email in the Sent folder for a reply (the same as the old Sent page's button). Other folders answer "not found"."""
+        user = session.principal.user_id
+        allow(session, follow_limit)
+        response.headers["Cache-Control"] = "no-store"
+        try:
+            account_id, folder, validity, uid = folders.open_token(user, token)
+            account = mailbox(account_id, session, "follow sent emails")
+            sent = next((r["name"] for r in folders.list(account) if r["special"] and r["label"] == "Sent"), None)
+            if folder != sent:
+                raise BridgeError("not_found", "Not found.")
+            return service.follow_sent(vault, account, validity, uid, body.force)
+        except BridgeError as err:
+            raise (HTTPException(status_code=404, detail="Not found.") if err.code == "not_found" else fail(err)) from None
 
     ask_limit = SlidingWindowLimiter(max_events=20, window=60)
 

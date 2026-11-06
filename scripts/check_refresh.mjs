@@ -43,6 +43,8 @@ function makeServer(opts = {}) {
     if (p === "/api/v1/sync/status") return json(200, { enabled: true, minutes: 10, now: Date.now() / 1000, accounts: { a1: { ok: true, at: now } } });
     if (p === "/api/v1/me/outbox") return json(200, { now: Date.now() / 1000, items: [] });
     if (p === "/api/v1/me/shipping") return json(200, { enabled: false, orders: [], now });
+    if (p === "/api/v1/accounts/a1/folders") return json(200, { folders: [{ name: "Sent", label: "Sent", special: true, target: false }] });
+    if (p === "/api/v1/accounts/a1/folder-mail") return json(200, { rows: [{ token: "t1", subject: "Quote for the fence", to_name: "Dana", to_address: "dana@example.invalid", to_more: 0, date: now - 3 * day, from_name: "Me", from_address: "me@example.invalid" }], more: false, offset: 0 });
     if (p === "/api/v1/accounts/a1/sent") {
       return json(200, { validity: 1, days: 14, more: false, items: [
         { uid: 5, to: [{ name: "Dana", address: "dana@example.invalid" }], subject: "Quote for the fence", date: now - 3 * day, follow: null },
@@ -131,14 +133,14 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("an email closed before the refresh stays closed", (await page.locator("article.mail.open").count()) === 0);
 
   // The page you were on
-  for (const [nav, sel, hash, what] of [["#shipNav", "#shipPage", "#/shipping", "Shipping"], ["#waitNav", "#waitPage", "#/waiting", "Waiting for reply"], ['.nav[data-filter="tasks"]', "#tasksPage", "#/tasks", "Tasks"], ['.nav[data-filter="archived"]', "#list", "#/archived", "Archived"], ["#sentNav", "#sentList", "#/sent", "Sent"]]) {
+  for (const [nav, sel, hash, what] of [["#shipNav", "#shipPage", "#/shipping", "Shipping"], ["#waitNav", "#waitPage", "#/waiting", "Waiting for reply"], ['.nav[data-filter="tasks"]', "#tasksPage", "#/tasks", "Tasks"], ['.nav[data-filter="archived"]', "#list", "#/archived", "Archived"], ["#sentNav", ".frow", "#/sent", "Sent"]]) {
     if (hash === "#/shipping" || hash === "#/waiting") continue;                     // those switches are off in this mock; covered in their own checks
     await page.click(nav);
     check(`${what}: the address shows where you are`, (await page.evaluate(() => location.hash)) === hash);
     await page.reload();
     await page.waitForSelector(".nav.active");
     await page.waitForTimeout(400);
-    check(`${what}: after a refresh you are still there`, (await page.evaluate(() => location.hash)) === hash && (await page.locator(`.nav.active`).getAttribute("data-filter")) === hash.slice(2) && (hash !== "#/sent" ? true : await page.locator(".srow").first().isVisible()));
+    check(`${what}: after a refresh you are still there`, (await page.evaluate(() => location.hash)) === hash && (await page.locator(`.nav.active`).getAttribute("data-filter")) === hash.slice(2) && (hash !== "#/sent" ? true : await page.locator(".frow").first().isVisible()));
   }
   await page.click('.nav[data-filter="all"]');
   check("the inbox has no hash", (await page.evaluate(() => location.hash)) === "");

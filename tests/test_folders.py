@@ -241,3 +241,10 @@ def test_the_words_search_inside_one_folder_only(env):
     page = client.get(f"/api/v1/accounts/{aid}/folder-mail", params={"folder": "Bills", "q": "power"}).json()
     assert [r["subject"] for r in page["rows"]] == ["Power bill"] and page["total"] == 1
     assert client.get(f"/api/v1/accounts/{aid}/folder-mail", params={"folder": "Bills", "q": ""}).json()["total"] == 2
+
+
+def test_only_an_email_in_the_sent_folder_can_be_followed_for_a_reply(env):
+    _, client, bridge, _ = env
+    aid, _ = synced(client, bridge)
+    token = _token_in(client, aid, bridge)
+    assert client.post(f"/api/v1/folder-mail/{token}/follow", json={}).status_code == 404

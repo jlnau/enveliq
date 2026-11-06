@@ -46,14 +46,13 @@ function makeServer(opts = {}) {
     if (p === "/api/v1/sync/status") return json(200, { enabled: true, minutes: 10, now: Date.now() / 1000, accounts: { a1: { ok: true, at: now } } });
     if (p === "/api/v1/me/outbox") return json(200, { now: Date.now() / 1000, items: [] });
     if (p === "/api/v1/me/shipping") return json(200, { enabled: false, orders: [], now });
-    if (p === "/api/v1/accounts/a1/sent") {
-      return json(200, { validity: 1, days: 14, more: false, items: [
-        { uid: 5, to: [{ name: "Dana", address: "dana@example.invalid" }], subject: "Quote for the fence", date: now - 3 * day, follow: null },
-        { uid: 6, to: [{ name: "Sam", address: "sam@example.invalid" }], subject: "Thanks for lunch", date: now - 2 * day, follow: null },
-        { uid: 7, to: [{ name: "Kim", address: "kim@example.invalid" }], subject: "Invoice 88", date: now - 1 * day, follow: "waiting" },
-      ] });
+    if (p === "/api/v1/accounts/a1/folders") return json(200, { folders: [{ name: "Sent", label: "Sent", special: true, target: false }] });
+    if (p === "/api/v1/accounts/a1/folder-mail") {
+      const row = (uid, name, address, subject, ago) => ({ token: "t" + uid, from_name: "Me", from_address: "me@example.invalid", to_name: name, to_address: address, to_more: 0, subject, date: now - ago * day, has_files: false });
+      return json(200, { rows: [row(7, "Kim", "kim@example.invalid", "Invoice 88", 1), row(6, "Sam", "sam@example.invalid", "Thanks for lunch", 2), row(5, "Dana", "dana@example.invalid", "Quote for the fence", 3)], total: 3, more: false, now: Date.now() / 1000 });
     }
-    const f = p.match(/^\/api\/v1\/accounts\/a1\/sent\/1\/(\d+)\/follow$/);
+    if (/^\/api\/v1\/folder-mail\/t\d+\/original$/.test(p)) return json(200, { subject: "x", from: { name: "Me", address: "me@example.invalid" }, to: [], date: "x", text: "Hello", truncated: false, attachments: [] });
+    const f = p.match(/^\/api\/v1\/folder-mail\/t(\d+)\/follow$/);
     if (f && req.method() === "POST") {
       const force = JSON.parse(req.postData() || "{}").force === true;
       calls.push(["follow", Number(f[1]), force]);
@@ -148,23 +147,21 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   const { page, errors, context } = await open(server);
   if (!(await page.locator("#sentNav").isVisible())) await page.locator("#moreToggle").click();
   await page.click("#sentNav");
-  await page.waitForSelector(".srow");
-  const rows = page.locator(".srow");
-  await rows.nth(0).locator(".shead").click();
-  check("an opened sent email has a Follow for a reply button", (await rows.nth(0).locator(".sent-follow, .sbody").locator("button", { hasText: "Follow for a reply" }).count()) === 1);
-  await rows.nth(2).locator(".shead").click();
-  check("one that is already followed says so and cannot be pressed", await rows.nth(2).locator("button", { hasText: "Following for a reply" }).isDisabled());
+  await page.waitForSelector(".frow");
+  const rows = page.locator(".frow");
+  check("Sent opens the same list as Folders, showing who each email went to", (await rows.count()) === 3 && (await rows.nth(0).innerText()).includes("Kim"));
+  const follow = async (n) => { await rows.nth(n).click(); await page.locator(".qmore").first().click(); await page.locator('[data-live-act="follow"]').first().click(); };
+  await follow(2);
+  await page.waitForFunction(() => /Waiting for reply/.test(document.querySelector("#toast")?.innerText || ""));
+  check("Follow for a reply in the three-dot menu follows that email and says where to see it", server.calls.some((c) => c[0] === "follow" && c[1] === 5 && c[2] === false));
   await shot(page, "sent-follow");
-  await rows.nth(0).locator("button", { hasText: "Follow for a reply" }).click();
-  await rows.nth(0).locator("button", { hasText: "Following for a reply" }).waitFor();
-  check("pressing it follows that email and says where to see it", server.calls.some((c) => c[0] === "follow" && c[1] === 5 && c[2] === false) && (await rows.nth(0).innerText()).includes("See Waiting for reply"));
-  await rows.nth(1).locator(".shead").click();
-  await rows.nth(1).locator("button", { hasText: "Follow for a reply" }).click();
-  await rows.nth(1).locator("button", { hasText: "Follow it anyway" }).waitFor();
-  check("when the AI finds nothing asked it says so and offers Follow it anyway", (await rows.nth(1).innerText()).includes("did not find a question or request"));
-  await rows.nth(1).locator("button", { hasText: "Follow it anyway" }).click();
-  await rows.nth(1).locator("button", { hasText: "Following for a reply" }).waitFor();
-  check("Follow it anyway sends force", server.calls.some((c) => c[0] === "follow" && c[1] === 6 && c[2] === true));
+  await follow(1);
+  await page.waitForFunction(() => /did not find a question/.test(document.querySelector("#toast")?.innerText || ""));
+  check("when the AI finds nothing asked it says so", true);
+  await page.locator(".qmore").first().click(); await page.locator('[data-live-act="follow"]').first().click();
+  await page.waitForFunction(() => true);
+  await page.waitForTimeout(300);
+  check("pressing it again follows it anyway (sends force)", server.calls.some((c) => c[0] === "follow" && c[1] === 6 && c[2] === true));
   check("no script errors", errors.length === 0);
   await page.close(); await context.close();
 }

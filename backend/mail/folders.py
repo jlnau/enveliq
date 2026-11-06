@@ -173,8 +173,10 @@ class Folders:
             for uid, raw in s.header_blocks(chunk):
                 msg = parse_headers(raw)
                 name, address = (_addresses(msg, "From") or [("", "")])[0]
+                to_name, to_address = (_addresses(msg, "To") or [("", "")])[0]
                 rows.append({"token": self._token(user, account["id"], folder, validity, uid), "uid": uid,
                              "from_name": clean(name, 200), "from_address": clean(address, 320),
+                             "to_name": clean(to_name, 200), "to_address": clean(to_address, 320), "to_more": max(0, len(_addresses(msg, "To")) - 1),
                              "subject": clean(msg.get("Subject"), 300) or "(no subject)", "date": received_at_of(raw), "has_files": likely_has_files(msg)})
         rows.sort(key=lambda r: -r["uid"])
         for r in rows:
