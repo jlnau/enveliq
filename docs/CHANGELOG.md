@@ -6,7 +6,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 **A Tags page, just like Folders.** Under **Folders** in the left menu there is now **Tags**. It opens the same kind of page: your tags in the left menu, and when you pick one, the emails that carry it in the same list and reading view as your inbox, with the same buttons (Move, Archive, Bin, Star, Reply, Forward and so on) and ticking several emails at once.
 
-**Drag emails onto a folder.** In Folders, Sent and Tags, drag an email (or several ticked emails) onto a folder in the left menu to move it there. On the Tags page your folders are listed in the left menu too, so there is somewhere to drop.
+**Dragging emails works the same everywhere.** In the inbox, Folders, Sent, Tags and search results, press and drag an email (or several ticked emails): the left menu turns into your folders, and letting go on one moves the email there.
 
 **Adding a tag to several emails has a search box.** The "Add a tag" window now has a "Search your tags" box, so a long list is quick to narrow down.
 

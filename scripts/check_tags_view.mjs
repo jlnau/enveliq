@@ -68,7 +68,8 @@ check("the Tags link sits below the Folders link", order);
 await page.click("#tagNav"); 
 await page.waitForSelector("#tagSide .tagchip");
 check("the tags are listed in the left menu", (await page.locator("#tagSide .tagchip").count()) === TAGS.length);
-check("your folders are listed too, as places to drop emails", (await page.locator("#folderSide .fchip").count()) === 2);
+check("only the tags show in the left menu, not the folders too", (await page.locator("#folderSide").isVisible()) === false && (await page.locator("#tagSide").isVisible()));
+check("the page is titled Tags", (await page.locator("#fdrTitle").innerText()) === "Tags");
 await page.locator("#tagSide .tagchip", { hasText: "Amazon" }).click();
 await page.waitForSelector(".frow");
 check("a tag opens the emails that have it, in the same list as Folders", (await page.locator(".frow").count()) === 3 && calls.some((c) => c[0] === "tag-mail" && c[1] === "Amazon"));
@@ -79,14 +80,21 @@ check("an email opens in the same reading view as the inbox", (await page.locato
 await shot("tags");
 
 // dragging
-const src = page.locator(".frow").nth(1), dst = page.locator("#folderSide .fchip", { hasText: "Bills" });
-await src.dragTo(dst);
+const drag = async (src, name) => {
+  const b = await src.boundingBox();
+  await page.mouse.move(b.x + 120, b.y + 20); await page.mouse.down(); await page.mouse.move(b.x + 140, b.y + 40, { steps: 4 });
+  await page.waitForSelector("#dragFolders .df-item", { state: "visible" });
+  const d = await page.locator("#dragFolders .df-item", { hasText: name }).boundingBox();
+  await page.mouse.move(d.x + 30, d.y + 10, { steps: 6 }); await page.mouse.up();
+};
+await drag(page.locator(".frow").nth(1), "Bills");
 await page.waitForTimeout(300);
 check("dragging an email onto a folder moves it there", calls.some((c) => c[0] === "move" && c[1] === "g2" && c[2] === "Bills"));
 check("the moved email leaves the list", (await page.locator(".frow").count()) === 2);
-await page.locator(".frow .fcheck").nth(0).check();
-await page.locator(".frow .fcheck").nth(1).check();
-await page.locator(".frow").first().dragTo(page.locator("#folderSide .fchip", { hasText: "Travel" }));
+await page.waitForTimeout(800);
+await page.locator(".frow .fcheck").nth(0).click(); await page.waitForTimeout(150);
+await page.evaluate(() => document.querySelectorAll(".frow .fcheck")[1].click()); await page.waitForTimeout(150);
+await drag(page.locator(".frow").first(), "Travel");
 await page.waitForTimeout(400);
 check("dragging one of several ticked emails moves them all", calls.filter((c) => c[0] === "move" && c[2] === "Travel").length === 2);
 

@@ -1831,14 +1831,11 @@ body.dragging-mail .app.collapsed .sidebar>*:not(.drag-folders){display:none!imp
 article.mail[data-dragmail]{cursor:grab}
 body.dragging-mail{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .drag-ghost{position:fixed;left:0;top:0;z-index:300;pointer-events:none;will-change:transform;max-width:280px;padding:9px 14px;border-radius:12px;background:#1b4ba3;color:#fff;font-size:14px;font-weight:650;box-shadow:0 8px 24px rgba(0,0,0,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.95}
-.tag-side{border-color:#3a6a9a}
-body.in-tags .tag-side:not([hidden]){display:block}
-body.in-tags .folder-side:not([hidden]){display:block;max-height:min(30vh,260px)}
 body:not(.in-tags) .tag-side{display:none}
 #tagNav.active{background:#173c80;color:#7bbaff}
-.fchip.drop{outline:2px dashed #7bbaff;outline-offset:-2px;background:#1b4ba3}
-.frow[draggable=true]{cursor:grab}body.dragging-mail .folder-side{box-shadow:0 0 0 2px rgba(123,186,255,.45)}
-.drag-ghost{position:fixed;top:-100px;left:-100px;padding:6px 12px;border-radius:10px;background:#1544ad;color:#fff;font:600 13px system-ui}
+.tag-side{border-color:#3a6a9a}
+body.in-tags .tag-side:not([hidden]){display:block}
+body.in-tags .folder-side{display:none}
 @media(min-width:861px){.app:not(.collapsed) .sidebar{padding-inline:10px}.sidebar .nav{font-size:13.5px;gap:8px;padding:9px 8px}.sidebar .nav-label{letter-spacing:-.005em}.sidebar .nav .count,.sidebar .nav .badge,.sidebar .nav>b,.sidebar .nav>em{font-size:12px;min-width:0;padding-inline:7px}}
 .tagrow[hidden]{display:none}
 </style>
@@ -8515,14 +8512,6 @@ let fdrAcct="",fdrFolder="",fdrRows=[],fdrToken=0,fdrKnown=[];
 // A slow pulsing arrow under the last visible folder says there are more below; it goes when you reach the end.
 function fsMoreSync(){const side=$("folderSide"),m=side&&side.querySelector(".fs-more");if(!m)return;m.classList.toggle("on",side.scrollHeight>side.clientHeight+4&&side.scrollTop+side.clientHeight<side.scrollHeight-6)}
 $("folderSide").addEventListener("scroll",fsMoreSync,{passive:true});addEventListener("resize",fsMoreSync);
-let dragItems=[];
-// Dropping dragged emails on a folder in the left menu moves them there (the same move as the Move button).
-function dropOnFolder(b,aid,f){
-  if(!f.target)return;
-  b.addEventListener("dragover",e=>{if(!dragItems.length||dragItems[0].account!==aid)return;e.preventDefault();e.dataTransfer.dropEffect="move";b.classList.add("drop")});
-  b.addEventListener("dragleave",()=>b.classList.remove("drop"));
-  b.addEventListener("drop",e=>{e.preventDefault();b.classList.remove("drop");const items=dragItems.slice();dragItems=[];document.body.classList.remove("dragging-mail");if(items.length&&items[0].account===aid)liveDo(items,"move",{folder:f.name},liveSay(f.label))});
-}
 const TAG_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/></svg>';
 let fdrTag="";
 // The Tags page: the same page as Folders, with your tags in the left menu. A tag's emails open in the same email view.
@@ -8535,23 +8524,16 @@ async function loadTags(){
     box.value=fdrAcct;box.hidden=false;
   }else{fdrAcct=accounts[0].id;box.hidden=true}
   const aid=fdrAcct,status=$("fdrStatus");
-  $("fdrList").replaceChildren();$("fdrChips").replaceChildren();status.textContent="Reading your tags…";$("fdrRefresh").disabled=true;
+  $("fdrList").replaceChildren();$("fdrChips").replaceChildren();$("fdrTitle").textContent="Tags";status.textContent="Reading your tags…";$("fdrRefresh").disabled=true;
   $("folderSide").hidden=true;
   try{
-    const [t,fr]=await Promise.all([secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/tags`,{method:"GET",headers:{}}),secureBackendRequest(foldersUrl(aid),{method:"GET",headers:{}}).catch(()=>({folders:[]}))]);
+    const t=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/tags`,{method:"GET",headers:{}});
     if(aid!==fdrAcct||filter!=="tags")return;
     const names=t.supported===false?[]:(t.names||[]);
     status.textContent=t.supported===false?"This mailbox does not keep tags that Enveliq can reach.":names.length?(fdrTag?"":"Pick a tag from the left menu to see its emails."):"You have no tags yet. Add one to an email with the Tags button.";
     const side=$("tagSide"),head=document.createElement("div");head.className="fs-head";head.textContent="Tags";
     side.hidden=false;
     side.replaceChildren(head,...names.map(n=>{const b=document.createElement("button");b.type="button";b.className="nav fchip tagchip"+(n===fdrTag?" active":"");b.title=n;b.innerHTML=TAG_ICON+'<span class="nav-label"></span>';b.lastChild.textContent=n;b.onclick=()=>{fdrTag=n;side.querySelectorAll(".fchip").forEach(x=>x.classList.toggle("active",x===b));openFolder(aid,{name:n,label:n},0)};return b}));
-    // your folders sit below the tags, so emails can be dragged onto one (a click takes you to that folder)
-    const fs=$("folderSide");
-    if(fr.folders&&fr.folders.length){
-      const fh=document.createElement("div");fh.className="fs-head";fh.textContent="Drop on a folder";
-      fs.hidden=false;
-      fs.replaceChildren(fh,...fr.folders.map(f=>{const b=document.createElement("button");b.type="button";b.className="nav fchip";b.title=f.label;b.innerHTML=TAG_ICON.replace(/<path[^>]*\/><circle[^>]*\/>/,'<path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>')+'<span class="nav-label"></span>';b.lastChild.textContent=f.label;b.onclick=()=>{fdrFolder=f.name;location.hash="#/folders"};dropOnFolder(b,aid,f);return b}));
-    }
     if(fdrTag&&names.includes(fdrTag))openFolder(aid,{name:fdrTag,label:fdrTag},0);else fdrTag="";
   }catch(er){status.textContent=er.message||"Could not read your tags."}
   finally{$("fdrRefresh").disabled=false}
@@ -8575,7 +8557,7 @@ async function loadFolders(){{const sw=$("sentWaiting");if(sw&&filter!=="sent")s
     const side=$("folderSide"),icon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
     side.hidden=filter==="sent";
     const head=document.createElement("div");head.className="fs-head";head.textContent="Folders";const more=document.createElement("div");more.className="fs-more";more.setAttribute("aria-hidden","true");more.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
-    side.replaceChildren(head,...r.folders.map(f=>{const b=document.createElement("button");b.type="button";b.className="nav fchip"+(f.name===fdrFolder?" active":"");b.title=f.label;b.innerHTML=icon+'<span class="nav-label"></span>';b.lastChild.textContent=f.label;b.onclick=()=>{fdrFolder=f.name;side.querySelectorAll(".fchip").forEach(x=>x.classList.toggle("active",x===b));openFolder(aid,f,0)};dropOnFolder(b,aid,f);return b}));
+    side.replaceChildren(head,...r.folders.map(f=>{const b=document.createElement("button");b.type="button";b.className="nav fchip"+(f.name===fdrFolder?" active":"");b.title=f.label;b.innerHTML=icon+'<span class="nav-label"></span>';b.lastChild.textContent=f.label;b.onclick=()=>{fdrFolder=f.name;side.querySelectorAll(".fchip").forEach(x=>x.classList.toggle("active",x===b));openFolder(aid,f,0)};return b}));
     side.append(more);fsMoreSync();
     if(filter==="sent"){if(sentF)openFolder(aid,sentF,0)}
     else if(fdrFolder){const f=r.folders.find(x=>x.name===fdrFolder);if(f)openFolder(aid,f,0);else fdrFolder=""}
@@ -8868,8 +8850,6 @@ async function openFolder(aid,f,offset){
         const a=document.createElement("span");a.className="fra-b "+cls;a.setAttribute("role","button");a.tabIndex=0;a.title=lab;a.setAttribute("aria-label",lab);a.innerHTML=ic;
         a.onclick=e=>{e.stopPropagation();e.preventDefault();fn()};a.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.stopPropagation();e.preventDefault();fn()}};fra.append(a)}
       row.append(fra);
-      row.draggable=true;row.ondragstart=e=>{dragItems=fdrSel.has(it)&&fdrSel.size?[...fdrSel]:[it];e.dataTransfer.setData("text/plain",it.subject||"email");e.dataTransfer.effectAllowed="move";document.body.classList.add("dragging-mail");const n=dragItems.length;if(n>1&&e.dataTransfer.setDragImage){const g=document.createElement("div");g.className="drag-ghost";g.textContent=n+" emails";document.body.append(g);e.dataTransfer.setDragImage(g,10,10);setTimeout(()=>g.remove(),0)}};
-      row.ondragend=()=>{dragItems=[];document.body.classList.remove("dragging-mail");document.querySelectorAll(".fchip.drop").forEach(x=>x.classList.remove("drop"))};
       row.onclick=e=>{if(e.target.closest&&e.target.closest(".fra,.fcheck"))return;row._open()};
       row.onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&e.target===row){e.preventDefault();row._open()}};
       row._open=()=>{
