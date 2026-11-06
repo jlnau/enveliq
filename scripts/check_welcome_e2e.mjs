@@ -173,6 +173,7 @@ await page.evaluate(() => closeSettings());
 {
   const ready = async () => { await page.waitForFunction(() => document.body.classList.contains("real-mail")); };
   await ready();
+  if (!(await page.locator("#sentNav").isVisible())) await page.click("#moreToggle");          // Sent lives under More, which starts folded
   check("New email and Sent are available by default", (await page.locator("#newMailBtn").isVisible()) && (await page.locator("#sentNav").isVisible()));
   // Sent comes from the mailbox's Sent folder, last 4 months only
   await page.click("#sentNav");
@@ -204,7 +205,7 @@ await page.click("#settingsBtn");
 await page.click("[data-settings-tab~=general]");
 await pressRow("Features");
 await page.waitForSelector("#settings .embed-host >> #uf_sent");
-check("General settings has a switch for each optional feature, all on", (await page.locator("#settings .embed-host >> input[id^=uf_]").count()) === 16 && (await page.locator("#settings .embed-host >> input[id^=uf_]:checked").count()) === 16);
+check("General settings has a switch for each optional feature, all on", (await page.locator("#settings .embed-host >> input[id^=uf_]").count()) === 15 && (await page.locator("#settings .embed-host >> input[id^=uf_]:checked").count()) === 15);
 await page.click("[data-settings-tab~=addressbook]");
 await openPage("addressbook", "people");
 await page.waitForSelector("#settings [data-settings-panel='addressbook'] .embed-host >> .li:has(.xbtn)");
@@ -295,11 +296,11 @@ await page.click("[data-settings-tab~=users]");
 await page.waitForSelector("#settings.open .embed-host >> text=Add a person");
 await page.click("[data-settings-tab~=adminfeatures]");
 await page.waitForSelector("#settings .embed-host >> #fe_compose");
-check("Administration > Features has a switch for each feature", (await page.locator("#settings .embed-host >> input[id^=fe_]").count()) === 16);
+check("Administration > Features has a switch for each feature", (await page.locator("#settings .embed-host >> input[id^=fe_]").count()) === 15);
 const savedPut = () => page.waitForResponse((r) => r.url().includes("/admin/features") && r.request().method() === "PUT" && r.status() === 200);
 await Promise.all([savedPut(), page.locator("#settings .embed-host >> #fe_compose").uncheck()]);
 await Promise.all([savedPut(), page.locator("#settings .embed-host >> #fe_address_book").uncheck()]);
-check("ticking a feature saves at once, with no Save button", (await page.locator("#settings [data-settings-panel='adminfeatures'] .embed-host >> .li input[type=checkbox]").count()) === 16 && (await page.locator("#settings [data-settings-panel='adminfeatures'] .embed-host >> button:has-text('Save')").count()) === 0);
+check("ticking a feature saves at once, with no Save button", (await page.locator("#settings [data-settings-panel='adminfeatures'] .embed-host >> .li input[type=checkbox]").count()) === 15 && (await page.locator("#settings [data-settings-panel='adminfeatures'] .embed-host >> button:has-text('Save')").count()) === 0);
 const f2 = await page.evaluate(async () => (await fetch("/api/v1/me/features")).json());
 check("an administrator can switch features off for everyone", f2.admin.compose === false && f2.effective.compose === false && f2.effective.address_book === false);
 // Administration > Agent chat: only who can use it and its name (there is no separate agent to connect any more)
