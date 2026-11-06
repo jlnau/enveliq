@@ -4,7 +4,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-**The email you have selected is easier to see.** In your inbox, folders and search results, the selected email now has a thick blue bar down its left edge and a soft blue tint, so you can always tell which one is open. It is the same in every list.
+**The email you have selected is easier to see.** In your inbox, folders and search results, the selected email now has a thick blue bar down its left edge and a soft blue tint, so you can always tell which one is open. It is the same in every list. This also shows on emails you have not read yet.
 
 **Messages (the household chat) is removed.** The Messages page, its menu item and count, the Messages switch in Features you see, the chat line in the bell, the Messages part of the Android app and the server routes behind it are gone. Anything people had written is deleted from this server the next time it starts, and it is no longer part of "Download my data". The bell now shows only notes from other services.
 
