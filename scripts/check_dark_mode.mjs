@@ -54,7 +54,9 @@ const page = await context.newPage();
 await context.route(`${ORIGIN}/**`, handler);
 await page.goto(`${ORIGIN}/`);
 await page.waitForSelector("article.mail");
+
 const rgb = (sel, prop) => page.evaluate(([s, p]) => getComputedStyle(document.querySelector(s))[p], [sel, prop]);
+const statBg = async () => page.evaluate(() => [...document.querySelectorAll(".preview-stat")].map((e) => getComputedStyle(e).backgroundColor));
 const isGrey = (c) => { const m = c.match(/\d+/g).map(Number); return Math.abs(m[0] - m[2]) <= 6; };
 await page.evaluate(() => document.getElementById("customiseBtn").click());
 await page.waitForSelector('#viewPanel [data-view="scheme"]');
@@ -77,6 +79,8 @@ for (const lay of ["screen", "deck", "bottom", "list", "right"]) {
   const bad = await page.evaluate(() => [...document.querySelectorAll("body *")].filter((e) => { if (e.closest("#viewPanel,.sidebar,article.mail.current,.nav,.btn.primary,.vtab")) return false; const r = e.getBoundingClientRect(); if (r.width * r.height < 6000) return false; const m = (getComputedStyle(e).backgroundColor.match(/[\d.]+/g) || []).map(Number); return m.length >= 3 && (m[3] === undefined || m[3] > 0.3) && m[2] - m[0] > 14; }).map((e) => e.tagName + "." + String(e.className).slice(0, 30)));
   check(`no large blue areas in the ${lay} layout (${bad.join(", ")})`, bad.length === 0);
 }
+await page.evaluate(() => { const box = document.getElementById("previewOverview"); box.hidden = false; box.replaceChildren(); for (const [t, n, c] of [["action", "Needs action", 17], ["tasks", "Today", 8], ["shipping", "Packages", 4], ["waiting", "Waiting", 5]]) { const b = document.createElement("button"); b.className = "preview-stat " + t; b.innerHTML = '<span class="preview-stat-icon">!</span><span class="preview-stat-copy"><strong>' + n + '</strong><b>' + c + '</b><small>x</small></span>'; box.append(b); } });
+check("the four cards at the top of the inbox are neutral grey in Dark", (await statBg()).length === 4 && (await statBg()).every(isGrey));
 await page.screenshot({ path: (process.env.SHOTS || "/tmp") + "/dark.png" });
 await page.reload();
 await page.waitForSelector("article.mail");
