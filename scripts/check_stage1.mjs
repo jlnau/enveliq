@@ -111,7 +111,7 @@ for (const width of [1200, 390]) {
   check("a read email offers Mark as unread (and not Mark as read) in the menu", items.includes("Mark as unread") && !items.includes("Mark as read"));
   await page.keyboard.press("Escape");
   const red = page.locator(".action.unread:not(.qic)").first();
-  check("a read email has a red Mark as unread button", (await red.count()) === 1 && /Mark as unread/.test(await red.innerText()) && (await red.evaluate((e) => getComputedStyle(e).color)) === "rgb(255, 127, 135)");
+  check("a read email has a soft blue Mark as unread button", (await red.count()) === 1 && /Mark as unread/.test(await red.innerText()) && (await red.evaluate((e) => getComputedStyle(e).color)) === "rgb(180, 194, 232)");
   await page.locator(".qmore").first().click();
   await page.locator("#moreMenu [data-unread]").click();
   await page.waitForFunction(() => /Marked as unread/.test(document.getElementById("toast").innerText));

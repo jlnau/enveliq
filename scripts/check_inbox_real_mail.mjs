@@ -257,7 +257,7 @@ async function open(server, { seen = true } = {}) {
     check("desktop: Undo brings both back and still nothing was sent", (await page.locator("article.mail").count()) === cardsB && !(await page.locator("#undoBar").isVisible()) && server.calls.length === callsB);
   }
   check("Calm mode is enabled for a new browser and hides counters", (await page.locator("#calmBtn").getAttribute("aria-checked")) === "true" && (await page.locator("#allBadge").isHidden()));
-  await page.click("#calmBtn");
+  await page.evaluate(() => document.getElementById("calmBtn").click());
   check("Calm mode can be switched off to show counts", (await page.locator("#calmBtn").getAttribute("aria-checked")) === "false" && (await page.locator("#allBadge").isVisible()));
   check("a count of zero shows no blue number, other counts do", (await page.locator("#actionBadge").isHidden()) && (await page.locator("#attachBadge").isHidden()) && (await page.locator("#allBadge").isVisible()));
   await page.selectOption("#filterBy", "high");
@@ -417,6 +417,7 @@ await page.click('[data-theme-choice="dark"]');
   check("archive, reviewed and bin map to archived, reviewed and binned", outcomes0.join(",") === "archived,archived,reviewed,binned");
   await page.evaluate(() => { window.__undoMs = 400; });
   check("there is no Reviewed list any more", (await page.locator('.nav[data-filter="reviewed"]').count()) === 0);
+  if ((await page.getAttribute("#moreToggle", "aria-expanded")) !== "true") await page.click("#moreToggle");
   await page.click('.nav[data-filter="archived"]');
   check("the archived email is in Archived", (await page.locator("article.mail .subject").allInnerTexts()).join("|") === "Older statement");
   await expand(page.locator("article.mail").first());

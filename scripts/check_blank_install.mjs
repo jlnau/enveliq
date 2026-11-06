@@ -50,7 +50,7 @@ function makeServer(mode, meDelay = 0) {
 const browser = await chromium.launch();
 for (const [name, vp] of [["desktop", { width: 1200, height: 900 }], ["phone", { width: 390, height: 800 }]]) {
   const context = await browser.newContext({ viewport: vp });
-  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); } catch (e) {} });
+  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-more-open", "1"); } catch (e) {} });
   const page = await context.newPage(); const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
   await context.route("**/*", makeServer("real", 0));
@@ -81,7 +81,7 @@ for (const [name, vp] of [["desktop", { width: 1200, height: 900 }], ["phone", {
 {
   // The hosted demo and the preview (no server) keep their made-up mail, and say it is made up.
   const context = await browser.newContext({ viewport: { width: 1200, height: 900 } });
-  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); } catch (e) {} });
+  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-more-open", "1"); } catch (e) {} });
   const page = await context.newPage();
   await context.route("**/*", makeServer("preview", 0));
   await page.goto(`${ORIGIN}/`, { waitUntil: "domcontentloaded" });
