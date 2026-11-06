@@ -1804,6 +1804,12 @@ html[data-theme="light"] .fs-more{background:linear-gradient(180deg,rgba(233,241
 .fra{position:absolute;right:8px;top:6px;display:none;gap:4px;padding:2px;border-radius:999px;background:var(--panel2)}
 .frow:hover .fra,.frow:focus-within .fra{display:flex}.frow:hover>span:not(.fsub):not(.fra),.frow:focus-within>span:not(.fsub):not(.fra){visibility:hidden}
 .fra-b{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;cursor:pointer;color:var(--text)}.fra-b svg{width:16px;height:16px}.fra-b:hover,.fra-b:focus-visible{background:var(--line)}
+#clearSearchBtn{background:#2f7bff;border:1px solid #6aa8ff;color:#fff;font-weight:700;height:39px;white-space:nowrap}#clearSearchBtn:hover{background:#4a8fff;color:#fff}
+.search input.searching{border-color:#6aa8ff!important;box-shadow:0 0 0 3px rgba(80,150,255,.35)}
+.search-banner{position:sticky;top:0;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 10px;padding:9px 10px 9px 14px;border-radius:12px;background:#1b4ba3;color:#fff;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.search-banner b{overflow-wrap:anywhere}.search-banner button{flex:none;border:0;border-radius:999px;padding:8px 16px;background:#fff;color:#12306b;font:inherit;font-weight:700;cursor:pointer}.search-banner button:hover{background:#e6f0ff}
+html[data-theme="light"] .search-banner{background:#2f6fe0}
+@media(max-width:760px){#clearSearchBtn{display:none}}
 .drag-folders{display:none}
 body.dragging-mail .sidebar>*:not(.drag-folders){display:none!important}
 body.dragging-mail .drag-folders{display:flex;flex-direction:column;min-height:0;flex:1;padding:6px 0 0}
@@ -1905,7 +1911,7 @@ body.dragging-mail{user-select:none;-webkit-user-select:none;cursor:grabbing}
   <div class="preview-calm-notice" id="previewCalmNotice" hidden><strong>Calm mode is on</strong><span>One thing at a time. Counts are hidden.</span><button type="button" id="previewCalmOff">Turn off</button></div>
   <div class="top-inner">
     <div class="top-left"><div class="greet"><h2>Inbox</h2><span class="today" id="todayDate"></span></div><p id="inboxSubtitle">Private mail for the signed-in person</p></div><div class="enveliq-landscape" aria-hidden="true"><span class="landscape-sun"></span><span class="landscape-mountain landscape-back"></span><span class="landscape-mountain landscape-front"></span></div>
-    <div class="search-col"><div class="search"><input id="search" type="search" placeholder="Search inbox" aria-label="Search inbox"><button class="attachment-view sync-btn" id="findFiltersBtn" type="button" hidden title="Search with filters">Filters</button><button class="attachment-view sync-btn" id="askAgentBtn" type="button" hidden title="Ask the agent what you typed, instead of searching">Ask the agent</button></div><div class="syncago" id="syncAgo" role="status" aria-live="off" hidden></div></div>
+    <div class="search-col"><div class="search"><input id="search" type="search" placeholder="Search inbox" aria-label="Search inbox"><button class="attachment-view sync-btn" id="clearSearchBtn" type="button" hidden>Clear search</button><button class="attachment-view sync-btn" id="findFiltersBtn" type="button" hidden title="Search with filters">Filters</button><button class="attachment-view sync-btn" id="askAgentBtn" type="button" hidden title="Ask the agent what you typed, instead of searching">Ask the agent</button></div><div class="syncago" id="syncAgo" role="status" aria-live="off" hidden></div></div>
   </div>
 </header>
 
@@ -3048,14 +3054,28 @@ function searchMore(rows){
 document.addEventListener("click",e=>{
   const b=e.target.closest&&e.target.closest("[data-search-open],[data-search-go]");
   if(!b)return;
-  query="";$("search").value="";document.body.classList.remove("msearch");
   const m=b.dataset.searchOpen?data.find(x=>x.id===+b.dataset.searchOpen&&x.owner===currentUser.id):null;
+  if(m){          // an email found by the search opens right here and the search stays exactly as it was until it is cleared
+    searchPin=m.id;expanded.add(`row-${m.id}`);paneId=m.id;if(lay()==="screen")readerOpen=true;
+    render();
+    const el=document.querySelector(`[data-expand="row-${m.id}"],[data-pick="${m.id}"]`);if(el&&el.scrollIntoView)el.scrollIntoView({block:"nearest"});
+    return;
+  }
+  query="";$("search").value="";document.body.classList.remove("msearch");
   filter=m?(isSnoozed(m)?"snoozed":isHeld(m)?"held":m.status==="inbox"?"all":m.status):b.dataset.searchGo;
   document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));
-  if(m){expanded.add(`row-${m.id}`);paneId=m.id;if(lay()==="screen")readerOpen=true}
   render();
-  if(m){const el=document.querySelector(`[data-expand="row-${m.id}"],[data-pick="${m.id}"]`);if(el&&el.scrollIntoView)el.scrollIntoView({block:"center"})}
 });
+let searchPin=null;                // the id of an email opened from "Also found elsewhere"; it is added to the list while the search lasts
+function clearSearch(){
+  query="";$("search").value="";searchPin=null;autoDismissed="";document.body.classList.remove("msearch");
+  findReset();render();$("search").focus();
+}
+function searchBannerHtml(){
+  const q=String(query||"").trim();
+  if(!q&&!findUi.open)return "";
+  return `<div class="search-banner" role="status"><span>Searching for <b>${esc(q||findUi.query||"your filters")}</b>. Only emails that match are shown.</span><button type="button" data-clear-search>Clear search</button></div>`;
+}
 let snoozeFor=null,wakeTimer=0;
 function closeSnoozeMenu(){const m=$("snoozeMenu");if(m)m.hidden=true;snoozeFor=null}
 function openSnoozeMenu(btn,id){
@@ -3813,6 +3833,7 @@ document.addEventListener("click",e=>{
   const t=e.target.closest?e.target:null;if(!t)return;
   if(t.matches("[data-find-sel]"))findUi.shift=e.shiftKey;
   if(t.closest("[data-find-open]")){findOpen();return}
+  if(t.closest("#clearSearchBtn,[data-clear-search]")){clearSearch();return}
   if(t.closest("#askAgentBtn,[data-ask-agent]")){askAgentFromSearch();return}
   if(t.closest("#findFiltersBtn,[data-find-filters]")){findShowFilters();return}
   if(t.closest("[data-find-go]")){if(findCan())findStart();return}
@@ -4721,6 +4742,7 @@ function render(){
   bellPaint();
   hydrateInvites();
   {const ns=waitOn()?(waitData.notes||[]).filter(n=>n.state==="waiting"):[];const wb=$("waitBadge");if(wb){wb.textContent=ns.length;wb.hidden=!ns.length;wb.classList.toggle("hot",ns.some(n=>n.due))}}
+  {const cb=$("clearSearchBtn"),on=!!(String($("search").value||"").trim()||findUi.open)&&!inSettingsScreen();if(cb)cb.hidden=!on;$("search").classList.toggle("searching",on)}
   {const fb2=$("findFiltersBtn");if(fb2)fb2.hidden=!findOn()}
   {const ab=$("askAgentBtn");if(ab)ab.hidden=!(String($("search").value||"").trim().length>=2&&!(document.getElementById("settings")&&document.getElementById("settings").classList.contains("open")))}
   {const fl=findOn()?userMessages().filter(m=>m.found):[];const fn=$("foundNav"),fb=$("foundBadge");if(fn){fn.hidden=!fl.length&&filter!=="found";fb.textContent=fl.length;fb.hidden=!fl.length}}
@@ -4745,12 +4767,15 @@ function render(){
 
   previewRenderOverview(inbox,needN);dgPaint();
   const rows=data.filter(visible);
+  if(!String(query||"").trim())searchPin=null;
   const rank={high:0,normal:1,low:2};
   const eff=m=>wokeBack(m)?m.snoozeUntil/1000:(m.received||0);          // an email that woke up from a snooze sits at the top
   const cmp={newest:(a,b)=>eff(b)-eff(a)||a.id-b.id,oldest:(a,b)=>(a.received||0)-(b.received||0)||b.id-a.id,
     priority:(a,b)=>(rank[a.priority]??1)-(rank[b.priority]??1)||(b.received||0)-(a.received||0)||a.id-b.id,
     sender:(a,b)=>String(a.sender).localeCompare(String(b.sender),undefined,{sensitivity:"base"})||(b.received||0)-(a.received||0)}[sortMode];
   if(cmp)rows.sort(cmp);
+  const baseRows=rows.slice();
+  if(searchPin!=null&&!rows.some(m=>m.id===searchPin)){const pm=data.find(x=>x.id===searchPin&&x.owner===currentUser.id);if(pm)rows.unshift(pm)}
   if(impSet.size)rows.sort((a,b)=>isImp(b)-isImp(a));          // a stable sort: important people first, the chosen order kept inside each group
   scheduleWake();
   {const b=$("expandAll"),can=lay()==="list"&&!["tasks","sent","folders","drafts","shipping","subscriptions","trips","waiting","messages","junk","cleanup"].includes(filter)&&rows.length>0;
@@ -4869,7 +4894,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
   // leave the list exactly where the person scrolled it to (it used to pull the list back up to the highlighted email after a few seconds).
   const currentChanged=lastScrolledTo!==`${filter}|${paneId}`;lastScrolledTo=`${filter}|${paneId}`;
   const leftBox=document.querySelector(".main>.content"),leftTop=leftBox?leftBox.scrollTop:0;
-  const nextHtml=findInlineHtml()+searchMore(rows)+listHtml;
+  const nextHtml=searchBannerHtml()+findInlineHtml()+searchMore(baseRows)+listHtml;
   // With the original email showing, a redraw that changes nothing leaves the page alone, so the email does not reload and lose its place.
   if(!(nextHtml===lastListHtml&&document.querySelector("#list .qorig.live, #readDock .qorig.live")&&!document.querySelector("#list .busy, #list .working, #readDock .busy, #readDock .working"))){$("list").innerHTML=nextHtml;lastListHtml=nextHtml}
   syncSelectAll();

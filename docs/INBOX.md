@@ -337,3 +337,8 @@ Choose **Reading pane on the right** in the View panel (the tab on the right edg
 - **Move to…** lists the Inbox and your other folders (not the one you are in). After a move or Bin the email leaves the list and the next one opens.
 - **Dragging** works in a folder too. The left menu is swapped for the **Inbox** (first) and your other folders; drop the email on one to move it.
 - Moves out of a folder cannot be undone with an Undo bar; the email can be moved back from where it went. Reply and Forward are not available on folder emails, because Enveliq does not keep them.
+
+## Searching stays put until you clear it
+
+- Opening an email from the search results (including "Also found elsewhere") keeps the search and its results; the email opens next to them.
+- While a search is on, the search bar shows a bright **Clear search** button and the box glows, and a bar over the list says "Searching for …" with its own **Clear search** button. The bar stays at the top as you scroll. Clearing empties the box and brings back the normal list.
