@@ -96,8 +96,11 @@ for (const [mode, tab, width, height] of TABS.flatMap((t) => [[...t, 1200, 900],
     }
     const panel = document.querySelector("#settings");
     sideways = panel.scrollWidth > panel.clientWidth + 2;
-    return { hosts: hosts.length, saveButtons, sideways };
+    let badOption = false;
+    for (const h of hosts) { const r = h.shadowRoot; if (!r) continue; for (const o of r.querySelectorAll("select option")) { const cs = getComputedStyle(o); if (cs.backgroundColor === "rgba(0, 0, 0, 0)" || cs.backgroundColor === cs.color) badOption = true; } }
+    return { hosts: hosts.length, saveButtons, sideways, badOption };
   }, tab);
+  check(`${label}: the open list of every drop-down has a solid background and readable text`, !info.badOption);
   check(`${label}: nothing sideways, no plain Save button`, info.saveButtons === 0 && !info.sideways);
   await shot(page, `look-${mode}-${tab}-${width}`);
   await context.close();

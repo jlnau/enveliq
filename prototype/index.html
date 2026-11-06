@@ -1735,6 +1735,12 @@ html[data-theme="light"] .action.unread,html[data-theme="light"] .qic.unread{col
 html[data-theme="light"] .qsummary:has(.qsummary-copy){border-color:#8db6f5;box-shadow:0 0 0 1px rgba(60,120,230,.18),0 0 14px rgba(60,130,240,.28),0 0 30px rgba(60,130,240,.12)}
 .mail.quiet:not(.open) .qsummary:has(.qsummary-copy){box-shadow:none}
 body.calm .qsummary:has(.qsummary-copy){box-shadow:0 0 0 1px rgba(100,165,255,.18),0 0 12px rgba(80,150,255,.22)}
+
+/* Drop-down lists (the open list of a select) must follow the theme: solid background, readable text, in dark and in light */
+select option,select optgroup{background-color:var(--panel);color:var(--text)}
+select optgroup{font-weight:700}
+select option:disabled{color:var(--faint)}
+select option:checked{background-color:var(--panel2)}
 </style>
 </head>
 <body class="booting">

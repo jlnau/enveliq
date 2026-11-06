@@ -460,3 +460,9 @@ html[data-theme="light"]{--i-bg:#f2f2f7;--i-card:#ffffff;--i-line:#efeff3;--i-te
 
 /* On a phone, the buttons that finish a form (Save, Add, Send) stay in reach at the bottom while the middle scrolls. */
 @media(max-width:760px){.ios .ios-pane > .grp-wrap.act{position:sticky;bottom:0;z-index:5;margin:0 -12px;padding:12px 12px calc(12px + env(safe-area-inset-bottom));background:var(--i-bg);box-shadow:0 -1px 0 var(--i-line)}}
+
+/* Drop-down lists (the open list of a select) must follow the theme: solid background, readable text, in dark and in light */
+select option,select optgroup{background-color:var(--panel);color:var(--text)}
+select optgroup{font-weight:700}
+select option:disabled{color:var(--faint)}
+select option:checked{background-color:var(--panel2)}
