@@ -40,7 +40,7 @@ A star marks an email you want to find again. It is the mailbox's own Flagged ma
 - **Folders button beside Tags:** wherever the Tags button is (an email's row, the side rail of the reading view, the bar under an open email) there is now a Folders button next to it.
 - **Always use this folder:** the folder box has a tick box, "Always move new email from this sender into this folder". With it ticked, the email moves now and later email from that sender is filed there as it arrives. It is a mail rule (see Mail rules), so you can remove it any time. If you want an email in a folder but still in the Inbox, use a Tag: a folder holds an email in one place only, while a tag is a label that can sit alongside the Inbox.
 - **Mail rules for this sender:** the item is in the three-dot menu of every email. It has every rule, including for Important people: rules you make for them do apply.
-- **Open any folder:** **Folders** in the left menu lists the mailbox's folders (and a mailbox choice when you have more than one). Pick one to see its newest emails, 25 at a time, and open any of them. They are read from the mailbox when you look and are never saved in Enveliq, like Sent. A folder's emails cannot be moved from here yet.
+- **Open any folder:** **Folders** sits just below the line above **More**. Pressing it swaps More for the list of your mailbox's folders (a box that scrolls when there are many, headed **Folders**), and it stays there while you are in Folders, with the open folder marked and the page titled **Folders › name**. The emails of the folder show in your own email view (reading pane on the right or below, opening in place, or full screen) and More comes back when you leave Folders. The left menu is the same width in Settings as in the inbox. It lists the mailbox's folders (and a mailbox choice when you have more than one). Pick one to see its newest emails, 25 at a time, and open any of them. They are read from the mailbox when you look and are never saved in Enveliq, like Sent. A folder's emails cannot be moved from here yet.
 - Only Inbox emails can be moved. Emails already read stay readable and keep their read or unread mark.
 
 ## Mark unread
@@ -317,7 +317,7 @@ Choose **Reading pane on the right** in the View panel (the tab on the right edg
 - The left menu is narrower (about 206 pixels instead of 242), giving the emails more room.
 - **Sync mail** and **Agent** are round icon buttons beside the notification bell, the news feeds button and the help button. Point at either to see its name. While mail is syncing the Sync icon turns. On a phone, Sync and Agent are in the top bar.
 - The Calm mode switch and the Agent entry are gone from the bottom of the left menu. Calm mode is in the account menu.
-- Less used views (Snoozed, Drafts, Sent, Archived, Folders, Attachments, Subscriptions, Trips, Junk mail, Clean up, Found emails) are under **More**, which starts closed and remembers how you leave it.
+- Less used views (Snoozed, Drafts, Sent, Archived, Attachments, Subscriptions, Trips, Junk mail, Clean up, Found emails) are under **More**, which starts closed and remembers how you leave it.
 - **Filters** and **Ask the agent** beside the search box are see-through buttons that match the rest of the bar.
 - Scroll bars in the left menu, the email list and the reading area are thin and see-through. They show only while the pointer is over that area, and take no room from the list.
 - **Mark as unread** is a soft slate blue; **Mark as read** stays green.

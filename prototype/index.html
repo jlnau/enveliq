@@ -139,8 +139,8 @@ body.allmail .mail.quiet.extra .subject{font-weight:400;color:var(--muted)}body.
 /* Settings is a full screen: its menu takes the place of the sidebar, the top bar stays, and the page fills the rest. */
 .settings{position:fixed;inset:0;z-index:10;display:none;pointer-events:none}
 .settings.open{display:block}
-.app.settings-open,.app.collapsed.settings-open{--side-w:242px}
-.settings>.settings-nav{pointer-events:auto;position:fixed;left:0;top:0;bottom:0;width:242px;overflow:auto;padding:22px 14px 16px;background:linear-gradient(160deg,#0b1e3a,#08162e);border-right:1px solid #263c61;display:flex;flex-direction:column;gap:1px}
+.app.settings-open,.app.collapsed.settings-open{--side-w:206px}
+.settings>.settings-nav{pointer-events:auto;position:fixed;left:0;top:0;bottom:0;width:206px;overflow:auto;padding:22px 14px 16px;background:linear-gradient(160deg,#0b1e3a,#08162e);border-right:1px solid #263c61;display:flex;flex-direction:column;gap:1px}
 html[data-theme="light"] .settings>.settings-nav{background:linear-gradient(170deg,#e9f1ff,#f8fbff);border-color:var(--line)}
 .sn-brand{display:none}
 /* On a computer the Settings menu lives inside the real sidebar (same brand, buttons, footer and spacing as the inbox); only the middle list changes. */
@@ -157,7 +157,7 @@ html[data-theme="light"] .settings>.settings-nav{background:linear-gradient(170d
 .settings>.settings-nav button[data-settings-tab] svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .settings>.settings-nav button[data-settings-tab]:hover{background:rgba(120,160,255,.08);color:var(--text)}
 .settings>.settings-nav button[data-settings-tab].active{background:var(--c-0c1c38);color:var(--text)}
-.settings-main{pointer-events:auto;position:fixed;left:242px;right:0;top:var(--tb-h,72px);bottom:0;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--c-11161f);border-top:1px solid var(--line)}
+.settings-main{pointer-events:auto;position:fixed;left:206px;right:0;top:var(--tb-h,72px);bottom:0;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--c-11161f);border-top:1px solid var(--line)}
 html[data-theme="light"] .settings-main{background:#f2f2f7}
 .settings-results{overflow:auto;padding:20px 26px;flex:1}.settings-results[hidden]{display:none}
 .sres-list{display:grid;gap:4px;max-width:780px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px}
@@ -1741,6 +1741,30 @@ select option,select optgroup{background-color:var(--panel);color:var(--text)}
 select optgroup{font-weight:700}
 select option:disabled{color:var(--faint)}
 select option:checked{background-color:var(--panel2)}
+
+/* Folders: the folder list stands in for More while you pick, then the folder's emails show with a reading pane, like the inbox */
+.side-sep{height:1px;background:#294363;margin:14px 0 10px}
+.more-nav{border-top:0;margin-top:2px;padding-top:0}
+body.in-folders .more-nav{display:none}
+.folder-side{display:none;margin:2px 0 6px;border:1px solid #2b5db3;border-radius:12px;background:rgba(30,90,200,.10);padding:4px 4px 6px;max-height:min(46vh,430px);overflow-y:auto;overflow-x:hidden}
+body.in-folders .folder-side:not([hidden]){display:block}
+.fs-head{position:sticky;top:0;z-index:1;padding:7px 10px 6px;font-size:12px;font-weight:700;letter-spacing:.04em;color:#8fbfff;background:#0d2347;border-radius:8px;margin-bottom:3px}
+html[data-theme="light"] .fs-head{background:#e3eeff;color:#1c4fa8}
+.folder-side .nav{min-height:36px;font-size:14px;padding:7px 10px;margin:1px 0}
+.folder-side .nav.active{background:#1b4ba3;color:#fff;font-weight:650}
+#folderNav.active{background:#173c80;color:#7bbaff}
+.fdr-title{margin:0 0 6px;font-size:20px}
+.fdr-cols{display:block}.fdr-pane{display:none}
+.fdr-inline{margin:-4px 0 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:6px 4px}.fdr-inline.busy,.fdr-pane.busy{opacity:.55}
+.fdr-empty{color:var(--muted);text-align:center;margin:40px 20px}
+.fdr-pane .email-doc,.fdr-inline .email-doc{padding:14px 16px}
+@media(min-width:761px){
+  .fdr-cols[data-lay="right"]{display:grid;grid-template-columns:minmax(300px,2fr) minmax(0,3fr);gap:16px;align-items:start}
+  .fdr-cols[data-lay="right"] .fdr-pane,.fdr-cols[data-lay="bottom"] .fdr-pane{display:block;border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:6px 4px;min-height:160px}
+  .fdr-cols[data-lay="right"] .fdr-pane{position:sticky;top:90px;max-height:calc(100vh - 120px);overflow:auto}
+  .fdr-cols[data-lay="bottom"] .fdr-pane{margin-top:12px;max-height:70vh;overflow:auto}
+}
+.frow{background:var(--panel);border-color:var(--line)}.frow:hover{background:var(--panel2)}.frow.on{border-color:var(--blue,#2f7bff);box-shadow:0 0 0 1px var(--blue,#2f7bff) inset}.frow b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.frow .fsub{grid-column:1/-1;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 </head>
 <body class="booting">
@@ -1776,6 +1800,8 @@ select option:checked{background-color:var(--panel2)}
     <button class="nav" data-filter="cleanup" id="cleanNav" title="Clean up" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h9M4 17h6"/><path d="m15 14 5 5m0-5-5 5"/></svg><span class="nav-label">Clean up</span></button>
     <button class="nav" data-filter="found" id="foundNav" title="Found emails" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><span>Found emails</span><span class="badge" id="foundBadge" hidden>0</span></button>
     <div id="savedNav" role="group" aria-label="Saved searches" hidden><p class="nav-sub">Saved searches</p><div id="savedItems"></div></div>
+    <div class="side-sep" aria-hidden="true"></div>
+    <div id="folderSide" class="folder-side" role="group" aria-label="Folders" hidden></div>
     <div class="more-nav" id="moreNav">
       <button class="nav more-toggle" id="moreToggle" type="button" aria-expanded="false" aria-controls="moreItems" title="More mailbox views"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3zM3 9h18"/><path class="more-chev" d="m9.5 13.2 2.5 2.4 2.5-2.4"/></svg><span class="nav-label">More</span><span class="more-arrow" aria-hidden="true">⌄</span></button>
       <div class="more-items" id="moreItems"></div>
@@ -1899,9 +1925,10 @@ select option:checked{background-color:var(--panel2)}
   <section id="folderView" class="folderview" aria-label="Folders">
     <div class="fdr-bar"><select id="fdrBox" aria-label="Mailbox" hidden></select><button class="btn" id="fdrRefresh" type="button">Refresh</button></div>
     <div class="sent-note" role="note">Read from your mailbox when you open a folder. Nothing is saved in Enveliq.</div>
-    <div id="fdrChips" class="fdr-chips"></div>
+    <div id="fdrChips" class="fdr-chips" hidden></div>
+    <h3 id="fdrTitle" class="fdr-title">Folders</h3>
     <div id="fdrStatus" class="sent-status" role="status" aria-live="polite"></div>
-    <div id="fdrList"></div>
+    <div class="fdr-cols" id="fdrCols"><div id="fdrList"></div><div id="fdrPane" class="fdr-pane" aria-live="polite"><p class="fdr-empty">Choose an email to read it here.</p></div></div>
   </section>
   <div id="peek" class="peek" role="tooltip" hidden><div class="peek-in" id="peekIn"></div></div>
 </section>
@@ -6771,7 +6798,7 @@ document.addEventListener("click",e=>{
      if(t.matches("[data-msg-mute]")&&msgS.cur){msgReq(`/threads/${encodeURIComponent(msgS.cur.id)}/mute`,"PUT",{muted:!msgS.cur.muted}).then(async()=>{await loadMsgs();await fetchMsgSummary();render()}).catch(er=>toast(er.message,5000));return}
      if(t.matches("[data-msg-unsend]")&&msgS.cur){msgReq(`/threads/${encodeURIComponent(msgS.cur.id)}/messages/${encodeURIComponent(t.dataset.msgUnsend)}`,"DELETE").then(async()=>{await loadMsgs();render()}).catch(er=>toast(er.message,5000));return}
    }}
-  const n=e.target.closest("[data-filter]");if(n){filter=n.dataset.filter;if(filter==="all")paneId=null;if(n.classList.contains("nav")&&query){query="";$("search").value="";document.body.classList.remove("msearch")}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="folders")loadFolders();if(filter==="drafts")loadDrafts();if(filter==="messages")openMsgPage();if(filter==="junk")openJunkPage();if(filter==="cleanup")openCleanPage();return}
+  const n=e.target.closest("[data-filter]");if(n){const was=filter;filter=n.dataset.filter;if(n.id==="folderNav")void was;if(filter==="all")paneId=null;if(n.classList.contains("nav")&&query){query="";$("search").value="";document.body.classList.remove("msearch")}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="folders")loadFolders();if(filter==="drafts")loadDrafts();if(filter==="messages")openMsgPage();if(filter==="junk")openJunkPage();if(filter==="cleanup")openCleanPage();return}
   const c=e.target.closest("[data-chip]");if(c){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();return}
   const wa=e.target.closest("[data-wait]");if(wa){waitAct(wa.dataset.waitId,wa.dataset.wait);return}
   const wn=e.target.closest("[data-wait-nudge]");if(wn){waitNudge(wn.dataset.waitNudge);return}
@@ -7043,8 +7070,8 @@ const moreItems=document.getElementById("moreItems"),moreToggle=document.getElem
 const sideNav=document.querySelector(".side-nav");
 // Left panel order, most used first. What people reach for less often sits under "More".
 {const nv=f=>sideNav.querySelector(`[data-filter="${f}"]`),id=x=>document.getElementById(x);
- for(const el of [id("snoozeNav"),id("draftNav"),id("sentNav"),nv("archived"),id("folderNav"),nv("attachments"),id("subNav"),id("tripNav"),id("junkNav"),id("cleanNav"),id("foundNav")])if(el)moreItems.append(el);
- for(const el of [nv("all"),id("heldNav"),nv("action"),nv("tasks"),nv("starred"),id("msgNav"),id("waitNav"),id("shipNav"),id("savedNav"),id("moreNav"),id("sideRss"),id("sideSettings")])if(el)sideNav.append(el)}
+ for(const el of [id("snoozeNav"),id("draftNav"),id("sentNav"),nv("archived"),nv("attachments"),id("subNav"),id("tripNav"),id("junkNav"),id("cleanNav"),id("foundNav")])if(el)moreItems.append(el);
+ for(const el of [nv("all"),id("heldNav"),nv("action"),nv("tasks"),nv("starred"),id("msgNav"),id("waitNav"),id("shipNav"),id("savedNav"),sideNav.querySelector(".side-sep"),id("folderNav"),id("folderSide"),id("moreNav"),id("sideRss"),id("sideSettings")])if(el)sideNav.append(el)}
 let moreChoice;try{moreChoice=localStorage.getItem("enveliq-more-open")}catch{}
 function previewSyncMore(){
   const open=!!moreItems.querySelector(".nav.active")||moreChoice==="1";
@@ -8266,7 +8293,7 @@ async function openFolderPicker(list,forceAlways){
     catch(er){$("fpNote").textContent=er.message||"That folder could not be made.";$("fpMake").disabled=false}
   };
 }
-let fdrAcct="",fdrFolder="",fdrRows=[],fdrToken=0;
+let fdrAcct="",fdrFolder="",fdrRows=[],fdrToken=0,fdrKnown=[];
 async function loadFolders(){
   if(!accounts.length)return;
   const box=$("fdrBox");
@@ -8280,8 +8307,12 @@ async function loadFolders(){
   try{
     const r=await secureBackendRequest(foldersUrl(aid),{method:"GET",headers:{}});
     if(aid!==fdrAcct||filter!=="folders")return;
-    status.textContent=r.folders.length?"Pick a folder to see what is in it.":"This mailbox has no other folders.";
-    chips.replaceChildren(...r.folders.map(f=>{const b=document.createElement("button");b.type="button";b.className="fchip"+(f.name===fdrFolder?" on":"");b.textContent=f.label;b.onclick=()=>{fdrFolder=f.name;chips.querySelectorAll(".fchip").forEach(x=>x.classList.toggle("on",x===b));openFolder(aid,f,0)};return b}));
+    status.textContent=r.folders.length?(fdrFolder?"":"Pick a folder from the left menu to see what is in it."):"This mailbox has no other folders.";
+    fdrKnown=r.folders;
+    const side=$("folderSide"),icon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+    side.hidden=false;
+    const head=document.createElement("div");head.className="fs-head";head.textContent="Folders";
+    side.replaceChildren(head,...r.folders.map(f=>{const b=document.createElement("button");b.type="button";b.className="nav fchip"+(f.name===fdrFolder?" active":"");b.title=f.label;b.innerHTML=icon+'<span class="nav-label"></span>';b.lastChild.textContent=f.label;b.onclick=()=>{fdrFolder=f.name;side.querySelectorAll(".fchip").forEach(x=>x.classList.toggle("active",x===b));openFolder(aid,f,0)};return b}));
     if(fdrFolder){const f=r.folders.find(x=>x.name===fdrFolder);if(f)openFolder(aid,f,0);else fdrFolder=""}
   }catch(er){status.textContent=er.message||"Could not read your folders."}
   finally{$("fdrRefresh").disabled=false}
@@ -8290,6 +8321,7 @@ async function openFolder(aid,f,offset){
   const list=$("fdrList"),status=$("fdrStatus"),mine=++fdrToken;
   if(!offset){list.replaceChildren();fdrRows=[]}
   list.querySelectorAll(".fmore").forEach(x=>x.remove());
+  $("fdrTitle").textContent="Folders  ›  "+f.label;$("fdrCols").dataset.lay=lay();$("fdrPane").innerHTML='<p class="fdr-empty">Choose an email to read it here.</p>';
   status.textContent="Reading "+f.label+"…";
   try{
     const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/folder-mail?folder=${encodeURIComponent(f.name)}&offset=${offset}`,{method:"GET",headers:{}});
@@ -8302,10 +8334,17 @@ async function openFolder(aid,f,offset){
       const sub=document.createElement("span");sub.className="fsub";sub.textContent=it.subject;
       row.append(who,when,sub);
       row.onclick=async()=>{
-        toast("Fetching the email from your mailbox…");
+        const L=lay();$("fdrCols").dataset.lay=L;
+        list.querySelectorAll(".frow.on").forEach(x=>x.classList.remove("on"));row.classList.add("on");
+        let host=null;
+        if(L==="right"||L==="bottom")host=$("fdrPane");
+        else if(L==="list"){const had=row.nextElementSibling&&row.nextElementSibling.classList.contains("fdr-inline");list.querySelectorAll(".fdr-inline").forEach(x=>x.remove());if(had){row.classList.remove("on");return}host=document.createElement("div");host.className="fdr-inline";row.after(host)}
+        if(host)host.classList.add("busy");else toast("Fetching the email from your mailbox…");
         try{const o=await secureBackendRequest(`/api/v1/folder-mail/${encodeURIComponent(it.token)}/original`,{method:"GET",headers:{}});
-          presentOriginal({...o,attachments:[]},{title:it.subject,context:`${it.from_name||it.from_address} · ${f.label}${(o.attachments||[]).length?" · Open it in your mail app for its files":""}`,fallbackDate:it.date?realTime(it.date):""});
-        }catch(er){toast(er.message,6000)}
+          const c={title:it.subject,context:`${it.from_name||it.from_address} · ${f.label}${(o.attachments||[]).length?" · Open it in your mail app for its files":""}`,fallbackDate:it.date?realTime(it.date):""};
+          if(host){revokeViewerUrls();host.classList.remove("busy");fillOriginal(host,{...o,attachments:[]},c);host.scrollTop=0;if(L==="bottom")host.scrollIntoView({block:"nearest"})}
+          else presentOriginal({...o,attachments:[]},c);
+        }catch(er){if(host)host.classList.remove("busy");toast(er.message,6000)}
       };
       list.append(row);
     }
@@ -8678,6 +8717,24 @@ window.addEventListener("message",e=>{
     askLinkTo(url,!!fr._careful||!!(hit&&hit.flagged));
   }
 });
+function fillOriginal(host,o,c){
+  const from=`${o.from.name?o.from.name+" ":""}<${o.from.address}>`;
+  const sc=(!c.sent&&o.sender_check)||{};
+  const senderRow=sc.result==="confirmed"?["Sender","Your email provider confirmed this came from that address.","ok"]:sc.result==="not_confirmed"?["Sender","Your email provider could not confirm this came from that address.","warn"]:null;
+  const rows=[["From",from],senderRow,c.replyTo&&c.replyTo!==o.from.address?["Reply-To",c.replyTo+(sc.reply_differs===true?" (a different website from the sender)":"")]:null,["To",(o.to||[]).map(t=>t.address).join(", ")||c.account||""],["Date",o.date||c.fallbackDate||""],["Subject",o.subject||c.title]].filter(Boolean);
+  const remote=o.remote_images>0?`<div class="mail-notice">${o.remote_images} ${o.remote_images===1?"picture":"pictures"} from the internet ${o.remote_images===1?"is":"are"} not shown. They can tell the sender you opened this email.</div>`:"";
+  const hasInline=feat.media&&(o.attachments||[]).some(a=>a.inline&&a.previewable);
+  const fmt=!c.sent&&!!o.has_html&&!!c.htmlUrl;          // the sender's own formatting is offered when the email has some
+  host.innerHTML=`<article class="email-doc${fmt?" fmt":""}">
+    <dl class="email-head">${rows.map(([k,v,t])=>`<dt>${esc(k)}</dt><dd${t==="ok"||t==="warn"?` class="${t}"`:""}>${esc(v)}</dd>`).join("")}</dl>
+    <h4>${esc(o.subject||c.title)}</h4>${scamHtml(o.warning||c.scam)}${fmt?"":remote}${hasInline&&!fmt?'<div class="pics" data-inline></div>':""}
+    ${fmt?`<div class="fmt-tabs" role="group" aria-label="How to show this email"><button type="button" class="fmt-tab on" data-fmt="html" aria-pressed="true">As the sender made it</button><button type="button" class="fmt-tab" data-fmt="text" aria-pressed="false">Plain text</button></div>
+    <div class="fmt-pane" data-fmt-pane="html">${o.remote_images>0?`<div class="mail-notice fmt-pics"><span>${o.remote_images} ${o.remote_images===1?"picture":"pictures"} from the internet ${o.remote_images===1?"is":"are"} not shown. They can tell the sender you opened this email.</span> <button type="button" class="linkbtn" data-fmt-pics>Show pictures</button></div>`:""}<iframe class="email-frame" title="This email as its sender formatted it" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe><p class="hint fmt-wait" role="status">Opening the email…</p></div>
+    <div class="fmt-pane" data-fmt-pane="text" hidden>${remote}`:""}<pre class="email-text">${emailTextHtml(o.text||"(no text content)",c.sent?[]:o.links,!!(o.warning||c.scam))}</pre>${o.truncated?'<p class="hint">Shortened for display.</p>':""}${fmt?"</div>":""}${c.sent?"":linksHtml(o.links,!!(o.warning||c.scam))}${attachmentsHtml(o,c)}
+  </article>`;
+  if(fmt)wireFormatted(host,o,c);
+  wireAttachments(host,o,c);
+}
 function presentOriginal(o,c){
   revokeViewerUrls();
   $("linkAsk").hidden=true;
@@ -8688,22 +8745,7 @@ function presentOriginal(o,c){
   $("viewerStrip").innerHTML="<span>Fetched from your mailbox on demand</span><span>Not stored by Enveliq</span><span>Scripts removed</span><span>Pictures from the internet not loaded</span><span>Links open only when you choose</span>";
   currentJunkId=c.junk||null;
   if(c.junk)$("viewerStrip").innerHTML="<span>Junk email: fetched from your mailbox on demand</span><span>Not stored by Enveliq</span><span>Links are switched off</span><span>Pictures from the internet are switched off</span><span>Scripts and files are switched off</span>";
-  const from=`${o.from.name?o.from.name+" ":""}<${o.from.address}>`;
-  const sc=(!c.sent&&o.sender_check)||{};
-  const senderRow=sc.result==="confirmed"?["Sender","Your email provider confirmed this came from that address.","ok"]:sc.result==="not_confirmed"?["Sender","Your email provider could not confirm this came from that address.","warn"]:null;
-  const rows=[["From",from],senderRow,c.replyTo&&c.replyTo!==o.from.address?["Reply-To",c.replyTo+(sc.reply_differs===true?" (a different website from the sender)":"")]:null,["To",(o.to||[]).map(t=>t.address).join(", ")||c.account||""],["Date",o.date||c.fallbackDate||""],["Subject",o.subject||c.title]].filter(Boolean);
-  const remote=o.remote_images>0?`<div class="mail-notice">${o.remote_images} ${o.remote_images===1?"picture":"pictures"} from the internet ${o.remote_images===1?"is":"are"} not shown. They can tell the sender you opened this email.</div>`:"";
-  const hasInline=feat.media&&(o.attachments||[]).some(a=>a.inline&&a.previewable);
-  const fmt=!c.sent&&!!o.has_html&&!!c.htmlUrl;          // the sender's own formatting is offered when the email has some
-  $("attachmentViewer").innerHTML=`<article class="email-doc${fmt?" fmt":""}">
-    <dl class="email-head">${rows.map(([k,v,t])=>`<dt>${esc(k)}</dt><dd${t==="ok"||t==="warn"?` class="${t}"`:""}>${esc(v)}</dd>`).join("")}</dl>
-    <h4>${esc(o.subject||c.title)}</h4>${scamHtml(o.warning||c.scam)}${fmt?"":remote}${hasInline&&!fmt?'<div class="pics" data-inline></div>':""}
-    ${fmt?`<div class="fmt-tabs" role="group" aria-label="How to show this email"><button type="button" class="fmt-tab on" data-fmt="html" aria-pressed="true">As the sender made it</button><button type="button" class="fmt-tab" data-fmt="text" aria-pressed="false">Plain text</button></div>
-    <div class="fmt-pane" data-fmt-pane="html">${o.remote_images>0?`<div class="mail-notice fmt-pics"><span>${o.remote_images} ${o.remote_images===1?"picture":"pictures"} from the internet ${o.remote_images===1?"is":"are"} not shown. They can tell the sender you opened this email.</span> <button type="button" class="linkbtn" data-fmt-pics>Show pictures</button></div>`:""}<iframe class="email-frame" title="This email as its sender formatted it" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe><p class="hint fmt-wait" role="status">Opening the email…</p></div>
-    <div class="fmt-pane" data-fmt-pane="text" hidden>${remote}`:""}<pre class="email-text">${emailTextHtml(o.text||"(no text content)",c.sent?[]:o.links,!!(o.warning||c.scam))}</pre>${o.truncated?'<p class="hint">Shortened for display.</p>':""}${fmt?"</div>":""}${c.sent?"":linksHtml(o.links,!!(o.warning||c.scam))}${attachmentsHtml(o,c)}
-  </article>`;
-  if(fmt)wireFormatted($("attachmentViewer"),o,c);
-  wireAttachments($("attachmentViewer"),o,c);
+  fillOriginal($("attachmentViewer"),o,c);
   $("attachmentViewer").scrollTop=0;
   $("attachmentModalSummary").textContent="";
   $("viewerNote").textContent=c.junk?"This email is in your Junk folder. Do not trust it. Press Not Junk only if it is mail you want, and it moves back to your Inbox.":c.sent?"This is a read-only copy from your Sent folder. Enveliq does not keep it.":"Enveliq keeps only the encrypted summary. The full email stays in your mailbox and is shown here without saving it.";
