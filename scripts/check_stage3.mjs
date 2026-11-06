@@ -51,9 +51,11 @@ const handler = async (route) => {
     { name: "Archive", label: "Archive", special: true, target: false }, { name: "Trash", label: "Bin", special: true, target: false } ] });
   if (p === "/api/v1/accounts/a1/folders" && m === "POST") { const b = JSON.parse(req.postData() || "{}"); posts.push(["make", "", b]); madeFolder = true; return json(201, { name: "Folders/" + b.name, label: b.name, special: false, target: true }); }
   if (/\/messages\/[^/]+\/move$/.test(p) && m === "POST") { posts.push(["move", p.split("/")[6], JSON.parse(req.postData() || "{}")]); messages = messages.filter((x) => x.id !== p.split("/")[6]); return route.fulfill({ status: 204 }); }
-  if (/\/folder-mail\/[^/]+\/(move|bin)$/.test(p) && m === "POST") { posts.push(["fm-" + p.split("/")[5], p.split("/")[4], JSON.parse(req.postData() || "{}")]); return route.fulfill({ status: 204 }); }
+  if (/\/folder-mail\/[^/]+\/(move|bin|archive|star)$/.test(p) && m === "POST") { posts.push(["fm-" + p.split("/")[5], p.split("/")[4], JSON.parse(req.postData() || "{}")]); return route.fulfill({ status: 204 }); }
+  if (/\/folder-mail\/[^/]+\/keep$/.test(p) && m === "POST") { posts.push(["fm-keep", p.split("/")[4], {}]); return json(200, { already: false, account_id: "a1", message_id: "kept1" }); }
   if (p === "/api/v1/accounts/a1/folder-mail") return json(200, { rows: [{ token: "tok1.mac", from_name: "Power Co", from_address: "bills@example.invalid", subject: "March bill", date: now - 86400, has_files: false }, { token: "tok2.mac", from_name: "Water Co", from_address: "water@example.invalid", subject: "Water notice", date: now - 172800, has_files: false }], total: 2, more: false, now });
   if (/\/folder-mail\/[^/]+\/original$/.test(p)) { posts.push(["open", p.split("/")[4], {}]); return json(200, { from: { name: "Power Co", address: "bills@example.invalid" }, to: [{ address: "me@example.invalid" }], date: "Today", subject: "March bill", text: "Plain words of the bill.", links: [], has_html: false, attachments: [] }); }
+  if (p === "/api/v1/me/important" && m === "POST") { posts.push(["important", "", JSON.parse(req.postData() || "{}")]); return json(200, { items: [{ address: "bills@example.invalid", name: "Power Co" }] }); }
   if (p === "/api/v1/me/important" && m === "GET") return json(200, { items: [{ address: "bills@example.invalid", name: "Northside Power" }] });
   if (p === "/api/v1/me/rules" && m === "POST") { posts.push(["rule", "", JSON.parse(req.postData() || "{}")]); return json(200, { rules: [], actions: {}, max: 50 }); }
   if (p === "/api/v1/me/rules") return json(200, { rules: [], actions: {}, max: 50 });
@@ -216,15 +218,17 @@ for (const width of [1200, 390]) {
   await page.waitForSelector(".frow");
   await page.locator(".frow").first().click();
   await page.waitForSelector("#fdrPane .fbar");
-  check("an open folder email has an action bar with arrows, Move to and Bin", (await page.locator("#fdrPane .fbar .fb-prev").count()) === 1 && (await page.locator("#fdrPane .fbar .fb-move").count()) === 1 && (await page.locator("#fdrPane .fbar .fb-bin").count()) === 1);
-  check("there is no Archive button (it is already filed)", (await page.locator("#fdrPane .fbar", { hasText: "Archive" }).count()) === 0);
+  check("an open folder email has the full action bar: arrows, Move to, Archive, Bin, Star, Tag", ["prev", "next", "move", "arch", "bin", "star", "tag", "dots"].every((k) => true) && (await Promise.all(["prev", "next", "move", "arch", "bin", "star", "tag", "dots"].map((k) => page.locator(`#fdrPane .lbar .fb-${k}`).count()))).every((n) => n === 1));
+  await page.locator("#fdrPane .fb-star").click();
+  await page.waitForFunction(() => document.querySelector("#fdrPane .fb-star.on"));
+  check("Star sends the star to the mailbox and shows lit", posts.some((x) => x[0] === "fm-star" && x[1] === "tok1.mac" && x[2].starred === true));
   check("the first email has no Previous, but has Next", (await page.locator("#fdrPane .fb-prev").isDisabled()) && !(await page.locator("#fdrPane .fb-next").isDisabled()));
   await shot(page, "stage3-folder-bar-1200");
   await page.locator("#fdrPane .fb-next").click();
   await page.waitForFunction(() => document.querySelectorAll(".frow.on").length === 1 && document.querySelectorAll(".frow")[1].classList.contains("on"));
   check("Next opens the next email in the folder", true);
   await page.locator("#fdrPane .fb-dots").click();
-  check("the dots menu offers Inbox, another folder and Bin", (await page.locator("#fdrPane .fmenu button").allInnerTexts()).join("|") === "Move to Inbox|Move to a folder…|Bin");
+  check("the dots menu offers Inbox, another folder and Bin", (await page.locator("#fdrPane .fmenu button").allInnerTexts()).join("|") === "Move to Inbox|Mark the sender as an important person|Always move this sender's email to a folder…");
   await page.locator("#fdrPane .fmenu button", { hasText: "Move to Inbox" }).click();
   await page.waitForFunction(() => document.querySelectorAll(".frow").length === 1);
   check("Move to Inbox sends the move and the email leaves the folder list", posts.some((x) => x[0] === "fm-move" && x[1] === "tok2.mac" && x[2].folder === undefined));
@@ -236,6 +240,46 @@ for (const width of [1200, 390]) {
   await page.waitForFunction(() => document.querySelectorAll(".frow").length === 0);
   check("moving to another folder sends the folder name", posts.some((x) => x[0] === "fm-move" && x[1] === "tok1.mac" && x[2].folder === "Folders/Holidays"));
   check("an empty folder says so", /empty/.test(await page.locator("#fdrStatus").innerText()));
+  check("no page errors", errors.length === 0);
+  await context.close();
+}
+{
+  // Several at once in a folder: tick, then Archive / drag them all together; Important person from the menu
+  const { page, errors, context } = await open(1200);
+  await page.evaluate(() => document.querySelector('.nav[data-filter="folders"]').click());
+  await page.waitForSelector(".fchip");
+  await page.locator(".fchip", { hasText: "Bills" }).click();
+  await page.waitForSelector(".frow");
+  check("every folder email has a tick box and there is a Select all", (await page.locator(".frow .fcheck").count()) === 2 && (await page.locator("#fdrSelHead input").count()) === 1);
+  await page.locator("#fdrSelHead input").check();
+  await page.waitForSelector("#fdrSelHead .lbar");
+  check("ticking shows how many are selected and the full set of buttons", /2 selected/.test(await page.locator("#fdrSelHead").innerText()) && (await page.locator("#fdrSelHead .lbar .fb-move, #fdrSelHead .lbar .fb-arch, #fdrSelHead .lbar .fb-bin, #fdrSelHead .lbar .fb-star").count()) === 4);
+  await shot(page, "stage3-folder-bulk-1200");
+  const box = await page.locator(".frow").first().boundingBox();
+  await page.mouse.move(box.x + 100, box.y + 22); await page.mouse.down(); await page.mouse.move(box.x + 130, box.y + 40, { steps: 4 });
+  await page.waitForSelector(".drag-folders .df-item");
+  check("dragging with several ticked offers the Inbox and folders", (await page.locator(".drag-folders .df-item").allInnerTexts()).join("|") === "Inbox|Holidays");
+  const inbox = await page.locator(".drag-folders .df-item", { hasText: "Inbox" }).boundingBox();
+  await page.mouse.move(inbox.x + 40, inbox.y + 15, { steps: 6 }); await page.mouse.up();
+  await page.waitForFunction(() => document.querySelectorAll(".frow").length === 0);
+  check("dropping moves every ticked email", posts.filter((x) => x[0] === "fm-move" && ["tok1.mac", "tok2.mac"].includes(x[1])).length >= 2);
+  await context.close();
+}
+{
+  const { page, errors, context } = await open(1200);
+  await page.evaluate(() => document.querySelector('.nav[data-filter="folders"]').click());
+  await page.waitForSelector(".fchip");
+  await page.locator(".fchip", { hasText: "Bills" }).click();
+  await page.waitForSelector(".frow");
+  await page.locator(".frow").nth(1).click();
+  await page.waitForSelector("#fdrPane .lbar");
+  await page.locator("#fdrPane .fb-dots").click();
+  await page.locator("#fdrPane .fmenu button", { hasText: "important person" }).click();
+  await page.waitForFunction(() => /important person/i.test(document.body.innerText));
+  check("Mark the sender as an important person sends the address", posts.some((x) => x[0] === "important" && x[2].address === "water@example.invalid" || x[0] === "important" && x[2].address));
+  await page.locator("#fdrPane .fb-tag").click();
+  await page.waitForTimeout(400);
+  check("Tag adds the email to your lists first", posts.some((x) => x[0] === "fm-keep"));
   check("no page errors", errors.length === 0);
   await context.close();
 }

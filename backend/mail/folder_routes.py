@@ -24,6 +24,10 @@ class MoveBody(StrictModel):
     folder: str
 
 
+class StarBody(StrictModel):
+    starred: bool
+
+
 class FolderMoveBody(StrictModel):
     folder: str | None = None   # a listed folder name; left out means the Inbox
 
@@ -115,6 +119,50 @@ def build_folder_router(ctx: Any) -> APIRouter:
     @router.post("/folder-mail/{token}/bin", status_code=204)
     def bin_folder_mail(token: str, session: Session = Depends(session_dep)):
         return relocate(token, session, "\\trash", "folder_mail_binned")
+
+    @router.post("/folder-mail/{token}/archive", status_code=204)
+    def archive_folder_mail(token: str, session: Session = Depends(session_dep)):
+        return relocate(token, session, "\\archive", "folder_mail_archived")
+
+    @router.post("/folder-mail/{token}/star", status_code=204)
+    def star_folder_mail(token: str, body: StarBody, session: Session = Depends(session_dep)):
+        user = session.principal.user_id
+        allow(session)
+        try:
+            account_id, folder, validity, uid = folders.open_token(user, token)
+            account = mailbox(account_id, session, "star an email")
+            folders.flag_in_folder(account, folder, validity, uid, body.starred)
+        except BridgeError as err:
+            raise (HTTPException(status_code=404, detail="Not found.") if err.code == "not_found" else fail(err)) from None
+        return Response(status_code=204, headers={"Cache-Control": "no-store"})
+
+    @router.post("/folder-mail/{token}/keep")
+    def keep_folder_mail(token: str, response: Response, session: Session = Depends(session_dep)):
+        """Add one folder email to the person's lists quietly (headers and an encrypted summary only, for 60 days) so it can be tagged, snoozed and so on."""
+        user = session.principal.user_id
+        allow(session)
+        response.headers["Cache-Control"] = "no-store"
+        try:
+            account_id, folder, validity, uid = folders.open_token(user, token)
+            account = mailbox(account_id, session, "keep an email")
+            raw = folders.headers(account, folder, validity, uid)
+            try:
+                message_id = service.keep_found(vault, account, raw, folder, validity, uid)
+            except BridgeError as err:
+                if err.code == "already_listed":
+                    return {"already": True, "message": err.message, "account_id": account_id, "message_id": service.stored_id_at(vault, account_id, folder, validity, uid)}
+                raise
+        except BridgeError as err:
+            raise (HTTPException(status_code=404, detail="Not found.") if err.code == "not_found" else fail(err)) from None
+        queue = getattr(ctx, "summary_queue", None)
+        service.refresh_ai(vault)
+        if queue is not None and service.summariser.enabled:
+            try:
+                queue.add(user, account_id, message_id)
+            except BridgeError:
+                pass
+        vault.audit({"event": "folder_mail_kept", "actor_user_id": user, "account_id": account_id, "message_id": message_id, "at": time.time()})
+        return {"already": False, "account_id": account_id, "message_id": message_id}
 
     ask_limit = SlidingWindowLimiter(max_events=20, window=60)
 

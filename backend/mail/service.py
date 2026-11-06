@@ -626,6 +626,14 @@ class MailService:
                                      found_until=time.time() + self.FOUND_DAYS * 86400)
         return vault.create_message(account_id, body.model_dump(mode="python"))
 
+    def stored_id_at(self, vault: Any, account_id: str, folder: str, validity: int, uid: int) -> str | None:
+        """The id of the entry already kept for this email, if there is one."""
+        where = locator(validity, uid, folder)
+        for stored in vault.list_messages(account_id):
+            if stored.get("source_locator") == where:
+                return stored["id"]
+        return None
+
     def drop_expired_found(self, vault: Any, account: dict[str, Any]) -> int:
         removed = 0
         now = time.time()

@@ -436,3 +436,32 @@ def test_switching_find_any_email_off_deletes_the_word_list_too(env):
     assert path.exists()
     client.put("/api/v1/me/features", json={"find_mail": False})
     assert not path.exists() and appm.mail_ctx.find_index.enabled(user) == {}
+
+
+def test_a_found_email_can_be_moved_binned_archived_and_starred_where_it_sits(env):
+    _, client, bridge, _ = env
+    account(client, bridge)
+    bridge.folders.append(("\\HasNoChildren", "Bills"))
+    _, page = run_search(client, "canvases")
+    tok = page["rows"][0]["token"]
+    assert client.post(f"/api/v1/find/results/{tok}/star", json={"starred": True}).status_code == 204
+    assert "\\Flagged" in bridge.messages[701]["flags"]
+    assert client.post(f"/api/v1/find/results/{tok}/move", json={"folder": "Bills"}).status_code == 204
+    assert bridge.messages[701]["folder"] == "Bills"
+    _, page = run_search(client, "notes")
+    assert client.post(f"/api/v1/find/results/{page['rows'][0]['token']}/move", json={}).status_code == 204
+    assert bridge.messages[702]["folder"].upper() == "INBOX"
+
+
+def test_a_found_email_move_refuses_other_peoples_tokens_and_bad_folders(env):
+    _, client, bridge, _ = env
+    account(client, bridge)
+    _, page = run_search(client, "canvases")
+    tok = page["rows"][0]["token"]
+    assert client.post(f"/api/v1/find/results/{tok}/move", json={"folder": "Nowhere"}).status_code == 404
+    assert client.post(f"/api/v1/find/results/{tok[:-3]}abc/move", json={}).status_code == 404
+    assert client.post(f"/api/v1/find/results/{tok[:-3]}abc/bin").status_code == 404
+    assert client.post(f"/api/v1/find/results/{tok[:-3]}abc/archive").status_code == 404
+    assert bridge.messages[701]["folder"] == "Archive"
+    assert client.post(f"/api/v1/find/results/{tok}/bin").status_code == 204
+    assert bridge.messages[701]["folder"] != "Archive"

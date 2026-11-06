@@ -52,6 +52,7 @@ function makeServer(opts = {}) {
     if (p === "/api/v1/find/searches/AAAAAAAAAAAA" && req.method() === "DELETE") { calls.push(["cancel"]); return route.fulfill({ status: 204 }); }
     if (/\/api\/v1\/find\/results\/[^/]+\/original$/.test(p)) { calls.push(["view"]); return json(200, { subject: "Canvas order", from: { name: "Dana", address: "dana@example.invalid" }, to: [{ name: "", address: "me@example.invalid" }], date: "Mon, 5 Oct 2026 10:00:00 +0000", text: "Your canvases are on the way.", truncated: false, attachments: [], file_count: 0, remote_images: 0, unsubscribe: null, links: [], warning: null, sender_check: null }); }
     if (p === "/api/v1/find/results/keep" && req.method() === "POST") { const b = JSON.parse(req.postData() || "{}"); calls.push(["keepmany", b.tokens]); state.kept = true; return json(200, { results: Object.fromEntries(b.tokens.map((t) => [t, { ok: true, already: false, account_id: "a1", message_id: "f1", summary_queued: true }])) }); }
+    if (/\/api\/v1\/find\/results\/[^/]+\/(move|bin|archive|star)$/.test(p) && req.method() === "POST") { calls.push(["live-" + p.split("/")[6], p.split("/")[5], JSON.parse(req.postData() || "{}")]); return route.fulfill({ status: 204 }); }
     if (/\/api\/v1\/find\/results\/[^/]+\/keep$/.test(p)) { calls.push(["keep"]); state.kept = true; return json(200, { already: false, account_id: "a1", message_id: "f1", found_until: now + 60 * 86400, summary_queued: true }); }
     if (p === "/api/v1/accounts/a1/messages/f1/resolve") { calls.push(["resolve", JSON.parse(req.postData() || "{}").outcome]); state.kept = false; return route.fulfill({ status: 204 }); }
     if (p === "/api/v1/me/summary-queue") return json(200, { items: [], waiting: 0, writing: 0 });
@@ -93,6 +94,20 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("the results open in the main list area (not a pop-up) with the search words shown", (await page.locator("#list #findInline").innerText()).includes("canvas") && (await page.locator("#findPop").count()) === 0);
   await page.waitForFunction(() => /^2 emails/.test(document.querySelector("#findInline .find-total")?.innerText || ""));
   check("the total and each mailbox are shown", (await page.locator("#findInline .find-mbx").innerText()).includes("2 found"));
+  await page.locator(".find-row").first().hover();
+  check("hovering a found email shows Move, Archive and Bin buttons", (await page.locator(".find-row").first().locator('[data-live-act="bin"]').isVisible()) && (await page.locator(".find-row").first().locator('[data-live-act="move"]').isVisible()) && (await page.locator(".find-row").first().locator('[data-live-act="archive"]').isVisible()));
+  await page.locator(".find-row [data-find-sel]").nth(0).check();
+  await page.locator(".find-row [data-find-sel]").nth(1).check();
+  await page.waitForSelector("[data-find-bulk] .lbar");
+  check("ticking found emails shows the full set of buttons above the results", (await page.locator("[data-find-bulk] .lbar .fb-move, [data-find-bulk] .lbar .fb-arch, [data-find-bulk] .lbar .fb-bin, [data-find-bulk] .lbar .fb-star, [data-find-bulk] .lbar .fb-tag").count()) === 5);
+  await page.locator("[data-find-bulk] .fb-star").click();
+  await page.waitForFunction(() => document.querySelector("[data-find-bulk] .fb-star.on"));
+  check("Star on two sends one star to each", server.calls.filter((c) => c[0] === "live-star").length === 2);
+  await page.locator("[data-find-bulk] .fb-bin").click();
+  await page.waitForFunction(() => document.querySelectorAll(".find-row").length === 0);
+  check("Bin on two sends one to each and they leave the list", server.calls.filter((c) => c[0] === "live-bin").length === 2);
+  await page.click("[data-find-again]");
+  await page.waitForFunction(() => document.querySelectorAll(".find-row").length === 2);
   check("two rows, newest first, with folder and date", (await page.locator(".find-row").count()) === 2 && (await page.locator(".find-row .fr-sub").first().innerText()) === "Canvas order" && (await page.locator(".find-row .fr-where").first().innerText()).includes("Archive"));
   check("a row with files says so", (await page.locator(".find-row .fr-where").nth(1).innerText()).includes("📎"));
   check("each result is one tight clickable row, with no big buttons", (await page.locator(".find-row[data-find-view]").count()) === 2 && (await page.locator(".find-row [data-find-keep]").count()) === 0 && (await page.locator(".find-row button").count()) === 0 && (await page.locator(".find-row").first().boundingBox()).height < 80);

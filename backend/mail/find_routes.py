@@ -50,6 +50,14 @@ class SaveBody(StartBody):
     name: str = Field(max_length=100)
 
 
+class FoundStarBody(StrictModel):
+    starred: bool
+
+
+class FoundMoveBody(StrictModel):
+    folder: str | None = None   # a listed folder name; left out means the Inbox
+
+
 class KeepManyBody(StrictModel):
     tokens: list[str]
 
@@ -227,7 +235,7 @@ def build_find_router(ctx: Any) -> APIRouter:
                 message_id = service.keep_found(vault, account, raw, ref.folder, ref.validity, ref.uid)
             except BridgeError as err:
                 if err.code == "already_listed":
-                    return {"already": True, "message": err.message}
+                    return {"already": True, "message": err.message, "account_id": ref.account_id, "message_id": service.stored_id_at(vault, ref.account_id, ref.folder, ref.validity, ref.uid)}
                 raise
         except FindError as err:
             raise HTTPException(status_code=err.status, detail=err.message) from None
@@ -245,6 +253,57 @@ def build_find_router(ctx: Any) -> APIRouter:
         stored = vault.get_message(ref.account_id, message_id)
         vault.audit({"event": "found_email_kept", "actor_user_id": user, "account_id": ref.account_id, "message_id": message_id, "at": time.time()})
         return {"already": False, "account_id": ref.account_id, "message_id": message_id, "found_until": stored.get("found_until"), "summary_queued": queued}
+
+    move_limit = SlidingWindowLimiter(max_events=120, window=60)
+
+    def relocate(token: str, session: Session, dest: str | None, event: str) -> Response:
+        """Move one found email (wherever it sits in the mailbox) to a folder, the Inbox or the Bin. Nothing is stored."""
+        user = need(session)
+        if not move_limit.allow(f"findmove:{user}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        try:
+            _job, ref = jobs.resolve(user, token)
+            account = vault.get_account(ref.account_id)
+            if account.get("owner_user_id") != user:
+                raise HTTPException(status_code=404, detail="Not found.")
+            if dest is None and ref.folder.upper() == "INBOX":
+                raise HTTPException(status_code=409, detail="That email is already in your Inbox.")
+            ctx.folders.move_from_folder(account, ref.folder, ref.validity, ref.uid, dest)
+        except FindError as err:
+            raise HTTPException(status_code=err.status, detail=err.message) from None
+        except BridgeError as err:
+            raise (HTTPException(status_code=404, detail="Not found.") if err.code == "not_found" else fail(err)) from None
+        vault.audit({"event": event, "actor_user_id": user, "account_id": ref.account_id, "at": time.time()})
+        return Response(status_code=204, headers={"Cache-Control": "no-store"})
+
+    @router.post("/results/{token}/move", status_code=204)
+    def move_found(token: Token, body: FoundMoveBody, session: Session = Depends(session_dep)):
+        return relocate(token, session, body.folder, "found_email_moved")
+
+    @router.post("/results/{token}/bin", status_code=204)
+    def bin_found(token: Token, session: Session = Depends(session_dep)):
+        return relocate(token, session, "\\trash", "found_email_binned")
+
+    @router.post("/results/{token}/archive", status_code=204)
+    def archive_found(token: Token, session: Session = Depends(session_dep)):
+        return relocate(token, session, "\\archive", "found_email_archived")
+
+    @router.post("/results/{token}/star", status_code=204)
+    def star_found(token: Token, body: FoundStarBody, session: Session = Depends(session_dep)):
+        user = need(session)
+        if not move_limit.allow(f"findmove:{user}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        try:
+            _job, ref = jobs.resolve(user, token)
+            account = vault.get_account(ref.account_id)
+            if account.get("owner_user_id") != user:
+                raise HTTPException(status_code=404, detail="Not found.")
+            ctx.folders.flag_in_folder(account, ref.folder, ref.validity, ref.uid, body.starred)
+        except FindError as err:
+            raise HTTPException(status_code=err.status, detail=err.message) from None
+        except BridgeError as err:
+            raise (HTTPException(status_code=404, detail="Not found.") if err.code == "not_found" else fail(err)) from None
+        return Response(status_code=204, headers={"Cache-Control": "no-store"})
 
     @router.post("/results/{token}/keep")
     def keep(token: Token, response: Response, session: Session = Depends(session_dep)):

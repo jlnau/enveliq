@@ -186,3 +186,18 @@ def test_a_folder_move_refuses_unknown_folders_and_bad_tokens(env):
     assert client.post(f"/api/v1/folder-mail/{token[:-3]}abc/move", json={}).status_code == 404
     assert client.post(f"/api/v1/folder-mail/{token[:-3]}abc/bin").status_code == 404
     assert where(bridge, token) == "Bills"
+
+
+def test_a_folder_email_can_be_starred_archived_and_kept_for_tagging(env):
+    _, client, bridge, _ = env
+    aid, _ = synced(client, bridge)
+    token = _token_in(client, aid, bridge)
+    assert client.post(f"/api/v1/folder-mail/{token}/star", json={"starred": True}).status_code == 204
+    uid = __import__("json").loads(__import__("base64").urlsafe_b64decode(token.split(".")[0] + "=="))[3]
+    assert "\\Flagged" in bridge.messages[uid]["flags"]
+    kept = client.post(f"/api/v1/folder-mail/{token}/keep")
+    assert kept.status_code == 200 and kept.json()["already"] is False and kept.json()["message_id"]
+    assert client.post(f"/api/v1/folder-mail/{token[:-3]}abc/keep").status_code == 404
+    assert client.post(f"/api/v1/folder-mail/{token[:-3]}abc/star", json={"starred": True}).status_code == 404
+    assert client.post(f"/api/v1/folder-mail/{token}/archive").status_code == 204
+    assert bridge.messages[uid]["folder"] != "Bills"

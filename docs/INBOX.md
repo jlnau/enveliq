@@ -351,3 +351,10 @@ Choose **Reading pane on the right** in the View panel (the tab on the right edg
 - Results are small rows: tick box, sender, date, subject, and the folder (with a paperclip if it has files). Click a row to read the email. To summarise, tick one or more and press **Summarise Emails**.
 
 - In the side-by-side layouts, clicking a found email shows it in the reading pane (with a Close button), and the row stays marked. In the list-only layout and on a phone it opens in the pop-up viewer. The blue Searching bar pins just under the Recent emails bar as the list scrolls.
+
+## Folder emails and search results: the full set of actions
+
+- Both lists have a tick box on every email and a **Select all**. One bar of buttons works on the open email or on everything ticked: **Move to…** (the Inbox and your folders), **Archive**, **Bin**, **Star**, **Tag** (one email at a time) and the three-dot menu (**Move to Inbox**, **Mark the sender as an important person**, **Always move this sender's email to a folder…** for one email). The arrows go to the previous or next email.
+- Hovering a row shows Move, Archive and Bin. **Dragging** one email, or several ticked ones, shows the Inbox and your folders on the left; drop to move.
+- Move, Archive, Bin and Star act on the email where it sits in the mailbox and Enveliq keeps nothing. **Tag** first adds the email quietly to your lists (headers and an encrypted summary only, for 60 days, like Found emails) and then opens the tag box.
+- Not available for these emails: Snooze, Tasks, Reply and Forward (they need the email in your lists), and the other mail rules beyond Always move.

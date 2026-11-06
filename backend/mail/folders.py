@@ -100,6 +100,10 @@ class Folders:
             s.set_timeout(30)
             if dest == "\\trash":
                 where = s.folder_for("trash")
+            elif dest == "\\archive":
+                where = s.folder_for("archive")
+                if where == folder:
+                    raise BridgeError("not_found", "That email is already in the Archive.")
             elif dest is None:
                 where = "INBOX"
             else:
@@ -110,6 +114,24 @@ class Folders:
             if s.select_folder(folder, False) != validity:
                 raise BridgeError("not_found", "The mailbox was reset on the server. Open the folder again.")
             s.move(uid, where)
+
+    def flag_in_folder(self, account: dict[str, Any], folder: str, validity: int, uid: int, starred: bool) -> None:
+        """Star or unstar one email where it sits (the mailbox's own Flagged mark)."""
+        with self.bridge.session(self._target(account)) as s:
+            s.set_timeout(30)
+            if s.select_folder(folder, False) != validity:
+                raise BridgeError("not_found", "The mailbox was reset on the server. Open the folder again.")
+            s.set_flagged(uid, starred)
+
+    def headers(self, account: dict[str, Any], folder: str, validity: int, uid: int) -> bytes:
+        """The header lines of one email where it sits (read only)."""
+        with self.bridge.session(self._target(account)) as s:
+            s.set_timeout(60)
+            if s.select_folder(folder, True) != validity:
+                raise BridgeError("not_found", "The mailbox was reset on the server. Open the folder again.")
+            for _uid, raw in s.header_blocks([uid]):
+                return raw
+        raise BridgeError("not_found", "This email can no longer be found in the mailbox.")
 
     # ---------- looking inside a folder ----------
 
