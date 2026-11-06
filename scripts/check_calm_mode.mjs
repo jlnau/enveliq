@@ -33,7 +33,7 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
     check("phone: recent emails remain visible", await p.locator("#previewListHeading").isVisible() && await p.locator("#list").isVisible());
   }
   const sw = p.locator("#calmBtn");
-  check(name + ": the Calm mode switch is just above Agent, in the footer of the menu", await p.evaluate(() => { const a = document.getElementById("agentBtn"), c = document.getElementById("calmBtn"); return !!c && c.nextElementSibling === a && a.parentElement.classList.contains("side-foot"); }));
+  check(name + ": the Calm mode switch is no longer shown in the left menu (the account menu has it)", await p.evaluate(() => { const c = document.getElementById("calmBtn"); return !!c && c.hidden && !!document.getElementById("previewCalmBtn"); }));
   check(name + ": Calm mode starts enabled and announces its state", (await sw.getAttribute("role")) === "switch" && (await sw.getAttribute("aria-checked")) === "true");
   check(name + ": the original Enveliq wordmark remains in the sidebar", await p.locator(".brand-wordmark").getAttribute("alt") === "Enveliq" && (await p.locator(".brand-wordmark").getAttribute("src")).startsWith("data:image/webp;base64,"));
   if (name === "desktop") {

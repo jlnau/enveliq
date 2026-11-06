@@ -77,7 +77,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   const server = makeServer();
   const { page, errors, csp } = await open(server);
   const labels = await page.locator(".side-foot .nav .nav-label").allInnerTexts();
-  check("Calm mode and Agent are in the sidebar footer; Light mode and Settings live in the user menu", labels.join("|") === "Calm mode|Agent" && (await page.locator("#userMenu #themeBtn, #userMenu #settingsBtn").count()) === 2 && (await page.locator("#adminBtn").count()) === 0);
+  check("Agent is a round button in the top bar, not in the sidebar; Light mode and Settings live in the user menu", labels.join("|") === "Calm mode" && (await page.locator(".preview-toolbar-actions #agentBtn").count()) === 1 && (await page.locator("#userMenu #themeBtn, #userMenu #settingsBtn").count()) === 2 && (await page.locator("#adminBtn").count()) === 0);
   check("the popup is closed to begin with", await page.locator("#agentPop").isHidden());
   await page.click("#agentBtn");
   await page.waitForSelector("#agentPop:not([hidden])");

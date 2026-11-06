@@ -314,6 +314,7 @@ Choose **Reading pane on the right** in the View panel (the tab on the right edg
 ## Top bar and left menu tidy-up
 
 - The Enveliq logo is smaller and sits in the same row as the search box.
+- The left menu is narrower (about 206 pixels instead of 242), giving the emails more room.
 - **Sync mail** and **Agent** are round icon buttons beside the notification bell, the news feeds button and the help button. Point at either to see its name. While mail is syncing the Sync icon turns. On a phone, Sync and Agent are in the top bar.
 - The Calm mode switch and the Agent entry are gone from the bottom of the left menu. Calm mode is in the account menu.
 - Less used views (Snoozed, Drafts, Sent, Archived, Folders, Attachments, Subscriptions, Trips, Junk mail, Clean up, Found emails) are under **More**, which starts closed and remembers how you leave it.
