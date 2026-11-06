@@ -150,6 +150,14 @@ for (const width of [1200, 390]) {
   await page.locator(".frow").first().click();
   await page.waitForTimeout(500);
   check("the email fills the whole reading pane width", await page.evaluate(() => { const p = document.querySelector("#fdrPane"), d = p && p.querySelector(".email-doc"); return !!d && d.getBoundingClientRect().width > p.getBoundingClientRect().width - 40; }));
+  const scrolled = await page.evaluate(async () => {
+    const list = document.querySelector("#fdrList");
+    for (let i = 0; i < 40; i++) { const r = document.createElement("button"); r.className = "frow"; r.innerHTML = "<b>Sender</b><span>Today</span><span class=fsub>A long list of emails " + i + "</span>"; list.append(r); }
+    const fits = list.clientHeight < window.innerHeight && list.scrollHeight > list.clientHeight;
+    list.scrollTop = 400;
+    return { fits, moved: list.scrollTop > 0 };
+  });
+  check("a long folder list scrolls inside its own column (the page itself stays put)", scrolled.fits && scrolled.moved);
   check("in the Reading pane layout the email shows beside the list", (await page.locator("#fdrPane .email-doc").count()) === 1);
   await shot(page, "stage3-folders-open-1200");
   await page.evaluate(() => document.querySelector('.nav[data-filter="all"]').click());
