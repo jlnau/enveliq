@@ -1423,45 +1423,15 @@ async function adminPage(me, only) {
       h("span", {}, h("strong", { text: fe.labels[k] }), h("div", { class: "hint", text: FEATURE_HINTS[k] })))))) : null;
   const ag = (!only || only === "agent") ? await api("/admin/agent").catch(() => null) : null;
   const agForm = ag ? h("form", {},
-    h("p", { class: "lead", text: "The Agent button opens a chat with the AI at the address set under AI model. Choose how it is used." }),
-    h("label", { class: "check", for: "ag_plain" }, h("input", { id: "ag_plain", type: "radio", name: "ag_mode", value: "plain", checked: ag.mode === "plain" }),
-      h("span", {}, h("strong", { text: "Enveliq's helper (recommended to start)" }), h("div", { class: "hint", text: "Enveliq gives the AI short instructions: be a friendly helper, keep answers short, and say plainly that it cannot see email or change anything. Good for a plain model." }))),
-    h("label", { class: "check", for: "ag_own" }, h("input", { id: "ag_own", type: "radio", name: "ag_mode", value: "own", checked: ag.mode === "own" }),
-      h("span", {}, h("strong", { text: "My own agent, with its own instructions and tools" }), h("div", { class: "hint", text: "Enveliq sends only what the person types and adds no instructions, so an agent such as Hermes answers as itself and can use whatever it has been given (your lights, your calendar, anything). Enveliq never sends it email, tasks or settings, but it cannot limit what the agent itself is able to do. Everyone allowed below acts through that same agent." }))),
+    h("p", { class: "lead", text: "The Agent button opens a chat with the AI model set under AI model. It only talks: it cannot reach anything outside Enveliq, and it cannot change anything." }),
     h("div", { class: "grid2" },
       field("Who can use it", h("select", { id: "ag_who" }, h("option", { value: "all", text: "Everyone with an Enveliq account", selected: ag.who === "all" }), h("option", { value: "admins", text: "Administrators only", selected: ag.who === "admins" })),
-        "If the agent can control your home or reach private things, you may want administrators only."),
+        "Choose whether everyone on this server can open the chat, or only administrators."),
       field("Name shown in the chat", input("ag_name", { value: ag.name, maxlength: "40" }))),
-    h("h3", { text: "Use a different agent for this chat (optional)" }),
-    h("p", { class: "lead", text: "Summaries keep using the AI model above. Fill these in to send the Agent chat somewhere else, for example your main Hermes agent that has your Home Assistant, network and Grafana tools. Leave them empty to use the AI model above. Only used with \"My own agent\"." }),
-    h("div", { class: "grid2" },
-      field("Agent address", input("ag_url", { value: ag.url || "", maxlength: "300", spellcheck: "false", autocomplete: "off", placeholder: "http://192.168.1.69:8642/v1/chat/completions" }),
-        "Hermes: the address of its API server on your network, ending in /v1/chat/completions."),
-      field("Model name", input("ag_model", { value: ag.model || "", maxlength: "80", spellcheck: "false", autocomplete: "off", placeholder: "hermes-agent" }),
-        "For the main Hermes agent this is usually hermes-agent. A named profile uses its profile name.")),
-    field("Access key", input("ag_key", { type: "password", maxlength: "300", autocomplete: "off", placeholder: ag.has_key ? "A key is saved. Leave empty to keep it." : "The API server key (API_SERVER_KEY in Hermes)" }),
-      "Stored encrypted and never shown again."),
-    h("label", { class: "check", for: "ag_clearkey" }, h("input", { id: "ag_clearkey", type: "checkbox" }), h("span", {}, h("strong", { text: "Remove the saved key" }))),
-    h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" }), " ",
-      h("button", { class: "btn", type: "button", id: "ag_test", text: "Test the agent" }))) : null;
+    h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Save" }))) : null;
   if (agForm) onSubmit(agForm, async () => {
-    const mode = agForm.querySelector("input[name=ag_mode]:checked").value;
-    const key = agForm.querySelector("#ag_key").value;
-    await api("/admin/agent", { method: "PUT", body: { mode, who: agForm.querySelector("#ag_who").value, name: agForm.querySelector("#ag_name").value.trim(),
-      url: agForm.querySelector("#ag_url").value.trim(), model: agForm.querySelector("#ag_model").value.trim(), ...(key ? { key } : {}), clear_key: agForm.querySelector("#ag_clearkey").checked } });
+    await api("/admin/agent", { method: "PUT", body: { who: agForm.querySelector("#ag_who").value, name: agForm.querySelector("#ag_name").value.trim() } });
     toast("Saved. It applies the next time the chat is used.");
-    agForm.querySelector("#ag_key").value = ""; agForm.querySelector("#ag_clearkey").checked = false;
-  });
-  if (agForm) agForm.querySelector("#ag_test").addEventListener("click", async e => {
-    const btn = e.currentTarget, show = (cls, text) => { const old = agForm.querySelector(".ag-result"); if (old) old.remove(); agForm.append(h("div", { class: `alert ${cls} ag-result`, role: cls === "bad" ? "alert" : "status", text })); };
-    btn.disabled = true; btn.textContent = "Asking the agent…"; show("good", "Asking the agent. A slow agent can take a minute or two, so this keeps checking.");
-    try {
-      let r = await api("/admin/agent/test", { method: "POST" });
-      for (let i = 0; i < 100 && r.state === "running"; i++) { await new Promise(ok => setTimeout(ok, 3000)); r = await api("/admin/agent/test"); }
-      if (r.state === "ok") show("good", "The agent answered: " + r.reply);
-      else show("bad", r.error || "The agent did not answer in time.");
-    } catch (err) { show("bad", err.message); }
-    finally { btn.disabled = false; btn.textContent = "Test the agent"; }
   });
   const rmN = (!only || only === "reminders") ? await api("/admin/notifications").catch(() => null) : null;
   const remForm = rmN ? h("form", {},
@@ -1648,7 +1618,7 @@ async function adminPage(me, only) {
     keep: keepForm ? h("section", { class: "section" }, h("h2", { text: "Reviewed and Archived" }), keepForm) : null,
     microsoft: msConf ? h("section", { class: "section" }, h("h2", { text: "Microsoft sign-in (Outlook, Hotmail, Microsoft 365)" }), guideNote("MICROSOFT.md", "A longer guide with pictures of each step is on the Enveliq website.", "Open the Microsoft guide"), microsoftSection(msConf, () => adminPage(me, only))) : null,
     features: featForm ? h("section", { class: "section" }, h("h2", { text: "Features" }), featForm) : null,
-    agent: agForm ? h("section", { class: "section" }, h("h2", { text: "Agent chat" }), guideNote("AGENT.md", "", "How to connect a Hermes agent"), agForm) : null,
+    agent: agForm ? h("section", { class: "section" }, h("h2", { text: "Agent chat" }), agForm) : null,
     reminders: remForm ? h("section", { class: "section" }, h("h2", { text: "Reminders" }), guideNote("NOTIFICATIONS.md", "", "How to set up reminders"), remForm, gForm ? h("h2", { text: "Google Calendar" }) : null, gForm ? guideNote("CALENDAR.md", "Every click, step by step:", "Google Calendar guide") : null, gForm) : null,
     check: ckForm ? h("section", { class: "section" }, h("h2", { text: "Forward to check" }), guideNote("SCAM_WARNING.md#forward-to-check", "", "How Forward to check works"), ckForm) : null,
     backup: bkSection ? h("section", { class: "section" }, h("h2", { text: "Backup and restore" }), guideNote("BACKUP.md", "", "How backup and restore work"), ...bkSection) : null,

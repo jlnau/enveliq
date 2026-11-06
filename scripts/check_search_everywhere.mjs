@@ -101,7 +101,7 @@ const more = (page) => page.locator(".srch-more");
   await type(page, "e");
   check("one letter does not start a search everywhere", (await more(page).count()) === 0);
   await type(page, "zzzz");
-  check("when nothing matches nothing extra is shown", (await more(page).count()) === 0);
+  check("when nothing matches there is no list of results, only the Ask the agent button", (await more(page).locator(".srch-hit").count()) === 0 && (await more(page).locator("[data-ask-agent]").count()) === 1);
   await type(page, "onerror");
   const hostile = await more(page).innerText();
   check("hostile text from an email is shown as plain text, never run", /<img src=x onerror=window.__pwned=1>Offer/.test(hostile) && (await more(page).locator("img").count()) === 0 && (await page.evaluate(() => window.__pwned)) === undefined);

@@ -31,7 +31,7 @@ def say(client, text, chat=None):
 def test_nothing_saved_yet(env):
     _, client, _, _ = env
     r = client.get("/api/v1/me/agent")
-    assert r.status_code == 200 and r.json() == {"name": "Hermes", "mode": "plain", "ready": True, "chats": [], "chat": None}
+    assert r.status_code == 200 and r.json() == {"name": "Hermes", "ready": True, "chats": [], "chat": None}
     assert "no-store" in r.headers["cache-control"]
 
 
@@ -161,17 +161,12 @@ def test_the_models_words_are_text_only(tmp_path):
         model.close()
 
 
-def test_own_mode_sends_no_enveliq_instructions(env):
+def test_the_chat_always_uses_enveliqs_own_instructions_and_the_chosen_name(env):
     _, client, _, model = env
     say(client, "hello")
-    assert model.requests[-1]["messages"][0]["role"] == "system"                       # plain chat: Enveliq's own instructions
-    r = client.put("/api/v1/admin/agent", json={"mode": "own", "who": "all", "name": "Hermes"})
-    assert r.status_code == 200 and r.json() == {"mode": "own", "who": "all", "name": "Hermes", "url": "", "model": "", "has_key": False}
-    out = say(client, "What lights are on?")
-    assert out["mode"] == "own"
-    sent = model.requests[-1]["messages"]
-    assert all(m["role"] != "system" for m in sent) and sent[-1] == {"role": "user", "content": "What lights are on?"}
-    client.put("/api/v1/admin/agent", json={"mode": "plain", "who": "all", "name": "Robin"})
+    assert model.requests[-1]["messages"][0]["role"] == "system"
+    r = client.put("/api/v1/admin/agent", json={"who": "all", "name": "Robin"})
+    assert r.status_code == 200 and r.json() == {"who": "all", "name": "Robin"}
     say(client, "and now?")
     assert "You are Robin," in model.requests[-1]["messages"][0]["content"]
 
@@ -181,7 +176,7 @@ def test_the_administrator_can_keep_it_to_administrators(env):
     create_user(client, "sam")
     sam = sign_in(appm, "sam")
     assert sam.get("/api/v1/me/agent").status_code == 200
-    client.put("/api/v1/admin/agent", json={"mode": "own", "who": "admins", "name": "Hermes"})
+    client.put("/api/v1/admin/agent", json={"who": "admins", "name": "Hermes"})
     for call in (lambda: sam.get("/api/v1/me/agent"), lambda: sam.post("/api/v1/me/agent/messages", json={"text": "hi"}),
                  lambda: sam.patch("/api/v1/me/agent/chats/c000000000000", json={"title": "x"}), lambda: sam.delete("/api/v1/me/agent/chats/c000000000000")):
         assert call().status_code == 403
@@ -193,44 +188,28 @@ def test_only_an_administrator_changes_the_settings(env):
     create_user(client, "sam")
     sam = sign_in(appm, "sam")
     assert sam.get("/api/v1/admin/agent").status_code == 403
-    assert sam.put("/api/v1/admin/agent", json={"mode": "own", "who": "all", "name": "x"}).status_code == 403
-    assert client.put("/api/v1/admin/agent", json={"mode": "root", "who": "all", "name": "x"}).status_code == 422
-    assert client.put("/api/v1/admin/agent", json={"mode": "own", "who": "everyone", "name": "x"}).status_code == 422
-    assert client.get("/api/v1/admin/agent").json() == {"mode": "plain", "who": "all", "name": "Hermes", "url": "", "model": "", "has_key": False}      # plain chat unless chosen
+    assert sam.put("/api/v1/admin/agent", json={"who": "all", "name": "x"}).status_code == 403
+    assert client.put("/api/v1/admin/agent", json={"who": "everyone", "name": "x"}).status_code == 422
+    assert client.get("/api/v1/admin/agent").json() == {"who": "all", "name": "Hermes"}
+    # the separate-agent choices are gone: they are refused, not quietly ignored
+    for extra in ({"mode": "own"}, {"url": "http://192.168.1.5:8642/v1/chat/completions"}, {"model": "hermes-agent"}, {"key": "k"}, {"clear_key": True}):
+        assert client.put("/api/v1/admin/agent", json={"who": "all", "name": "x", **extra}).status_code == 422
+    assert client.post("/api/v1/admin/agent/test").status_code in (404, 405) and client.get("/api/v1/admin/agent/test").status_code in (404, 405)
 
 
-def test_the_chat_can_talk_to_a_separate_agent_while_summaries_keep_the_plain_model(env):
-    _, client, _, model = env
-    main = FakeModel(reply=lambda body: "Your network looks fine.")
-    try:
-        r = client.put("/api/v1/admin/agent", json={"mode": "own", "who": "all", "name": "Hermes", "url": main.url, "model": "hermes-agent", "key": "secret-key"})
-        assert r.status_code == 200 and r.json()["url"] == main.url and r.json()["model"] == "hermes-agent" and r.json()["has_key"] is True
-        assert "secret-key" not in r.text and "secret-key" not in client.get("/api/v1/admin/agent").text      # the key is never shown again
-        before = len(model.requests)
-        out = say(client, "Is pfSense up?")
-        assert out["chat"]["messages"][-1]["text"] == "Your network looks fine."
-        assert len(model.requests) == before and main.requests[-1]["model"] == "hermes-agent" and main.auth[-1] == "Bearer secret-key"
-        assert all(m["role"] != "system" for m in main.requests[-1]["messages"])
-        # saving again without a key keeps the key; an empty address goes back to the plain model
-        again = client.put("/api/v1/admin/agent", json={"mode": "own", "who": "all", "name": "Hermes"}).json()
-        assert again["has_key"] is True and again["url"] == main.url
-        t = client.post("/api/v1/admin/agent/test").json()
-        assert t["state"] == "ok" and t["reply"] == "Your network looks fine." and client.get("/api/v1/admin/agent/test").json()["state"] == "ok"
-        gone = client.put("/api/v1/admin/agent", json={"mode": "own", "who": "all", "name": "Hermes", "url": "", "model": ""}).json()
-        assert gone["url"] == "" and gone["has_key"] is False
-        say(client, "back to the plain one")
-        assert len(model.requests) == before + 1
-    finally:
-        main.close()
-
-
-def test_the_separate_agent_address_is_checked(env):
-    _, client, _, _ = env
-    bad = client.put("/api/v1/admin/agent", json={"mode": "own", "who": "all", "name": "x", "url": "https://example.com/v1/chat/completions", "model": "m"})
-    assert bad.status_code == 422                                                         # not on the owner's network
-    half = client.put("/api/v1/admin/agent", json={"mode": "own", "who": "all", "name": "x", "url": "http://192.168.1.5:8642/v1/chat/completions"})
-    assert client.get("/api/v1/admin/agent").json()["url"] == "" and half.status_code == 422      # an address needs a model name
-    assert client.post("/api/v1/admin/agent/test").status_code == 422                      # nothing saved to test
+def test_an_address_and_key_saved_by_an_older_version_are_forgotten(env):
+    appm, client, _, model = env
+    vault = appm.vault
+    vault.set_global("agent_settings", {"mode": "own", "who": "admins", "name": "Old", "url": "http://192.168.1.5:8642/v1/chat/completions",
+                                        "model": "hermes-agent", "key": "secret-key"})
+    assert client.get("/api/v1/admin/agent").json() == {"who": "admins", "name": "Old"}
+    kept = vault.get_global("agent_settings")
+    assert kept == {"who": "admins", "name": "Old"} and "secret-key" not in str(kept)
+    # and the chat uses the plain AI model with Enveliq's own instructions, never the old address
+    client.put("/api/v1/admin/agent", json={"who": "all", "name": "Old"})
+    before = len(model.requests)
+    say(client, "hello")
+    assert len(model.requests) == before + 1 and model.requests[-1]["messages"][0]["role"] == "system"
 
 
 def _poll(client, chat, seconds=8.0):

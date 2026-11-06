@@ -302,18 +302,16 @@ await Promise.all([savedPut(), page.locator("#settings .embed-host >> #fe_addres
 check("ticking a feature saves at once, with no Save button", (await page.locator("#settings [data-settings-panel='adminfeatures'] .embed-host >> .li input[type=checkbox]").count()) === 16 && (await page.locator("#settings [data-settings-panel='adminfeatures'] .embed-host >> button:has-text('Save')").count()) === 0);
 const f2 = await page.evaluate(async () => (await fetch("/api/v1/me/features")).json());
 check("an administrator can switch features off for everyone", f2.admin.compose === false && f2.effective.compose === false && f2.effective.address_book === false);
-// Administration > Agent chat: plain helper by default, or the person's own agent
+// Administration > Agent chat: only who can use it and its name (there is no separate agent to connect any more)
 await page.click("[data-settings-tab~=adminagent]");
 await openPage("adminagent", "llm");
-await page.waitForSelector("#settings .embed-host >> #ag_plain", { state: "attached" });
-check("Agent chat starts on Enveliq's helper, open to everyone", (await page.locator("#settings .embed-host >> #ag_plain").isChecked()) && (await page.locator("#settings .embed-host >> #ag_who").inputValue()) === "all");
-check("it warns that Enveliq cannot limit what the agent itself can do", (await page.locator("#settings .embed-host >> text=cannot limit what the agent itself is able to do").count()) === 1);
+await page.waitForSelector("#settings .embed-host >> #ag_who", { state: "attached" });
+check("Agent chat starts open to everyone, with a name box", (await page.locator("#settings .embed-host >> #ag_who").inputValue()) === "all" && (await page.locator("#settings .embed-host >> #ag_name").count()) === 1);
+check("there is no way to connect a separate agent", (await page.locator("#settings .embed-host >> #ag_url, #settings .embed-host >> #ag_key, #settings .embed-host >> #ag_own, #settings .embed-host >> #ag_test").count()) === 0 && (await page.locator("#settings .embed-host >> text=My own agent").count()) === 0);
 await shot("admin-agent");
-await page.locator("#settings .embed-host >> label.pick:has-text('My own agent')").click();
 await Promise.all([page.waitForResponse((r) => r.url().includes("/admin/agent") && r.request().method() === "PUT" && r.status() === 200), page.locator("#settings .embed-host >> #ag_who").selectOption("admins")]);
 const ag2 = await page.evaluate(async () => (await fetch("/api/v1/admin/agent")).json());
-check("choosing the agent's own mode for administrators is saved", ag2.mode === "own" && ag2.who === "admins");
-await page.locator("#settings .embed-host >> label.pick:has-text('helper')").click();
+check("choosing administrators only is saved", ag2.who === "admins" && !("mode" in ag2) && !("url" in ag2) && !("has_key" in ag2));
 await Promise.all([page.waitForResponse((r) => r.url().includes("/admin/agent") && r.request().method() === "PUT" && r.status() === 200), page.locator("#settings .embed-host >> #ag_who").selectOption("all")]);
 const sendBlocked = await page.evaluate(async () => { const a = (await (await fetch("/api/v1/accounts")).json())[0].id; const r = await fetch(`/api/v1/accounts/${a}/send`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: ["x@example.invalid"], body: "x" }) }); return r.status; });
 check("the server then refuses to send a new email", sendBlocked === 403);

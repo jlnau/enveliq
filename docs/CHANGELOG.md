@@ -4,6 +4,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Ask the agent from the search box.** When you type in the search box, an **Ask the agent** button appears beside it and under the search results. It opens the Agent chat and sends what you typed as a new question instead of searching. Nothing is sent just by typing. Touches `prototype/index.html`, `docs/INBOX.md`, `docs/AGENT.md`, `scripts/check_ask_agent.mjs`, `scripts/check_search_everywhere.mjs`, `.github/workflows/ci.yml`.
+
+**The Agent chat is only Enveliq's own chat now.** The administrator option to send the chat to a separate agent (such as the main Hermes agent) is removed, with its address, model name, access key and Test button. Administration, Agent chat keeps **Who can use it** and **Name shown in the chat**. An address or key saved by an older version is deleted. Touches `backend/mail/agent.py`, `backend/mail/agent_routes.py`, `web/static/auth.js`, `prototype/index.html`, `docs/AGENT.md`, `SECURITY.md`, `tests/test_agent.py`, `scripts/check_welcome_e2e.mjs`, `scripts/check_guide_links.mjs`.
+
 **Fix: writing help now replies as you, to the sender.** "Write a reply for me" and "Check my reply" could write as if they were the sender, greeting you by name and signing with the sender's name. The AI is now told who is writing (you and your mailbox address) and who the reply goes to, and the standard instructions say "the person I am writing to". This helps with every model, and most with small ones. Touches `backend/mail/writehelp.py`, `backend/mail/writehelp_routes.py`, `docs/WRITING_HELP.md`, `tests/test_writehelp.py`.
 
 **Fix: choosing a model from "Find models" in Administration now saves it.** Tapping a model filled in the Model name box but did not save it, so the old name came back when you left and returned to the page. It now saves (after the usual test) as soon as you tap it. Touches `web/static/welcome.js`, `scripts/check_welcome_e2e.mjs`.

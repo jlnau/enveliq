@@ -1767,7 +1767,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
   <div class="preview-calm-notice" id="previewCalmNotice" hidden><strong>Calm mode is on</strong><span>One thing at a time. Counts are hidden.</span><button type="button" id="previewCalmOff">Turn off</button></div>
   <div class="top-inner">
     <div class="top-left"><div class="greet"><h2>Inbox</h2><span class="today" id="todayDate"></span></div><p id="inboxSubtitle">Private mail for the signed-in person</p></div><div class="enveliq-landscape" aria-hidden="true"><span class="landscape-sun"></span><span class="landscape-mountain landscape-back"></span><span class="landscape-mountain landscape-front"></span></div>
-    <div class="search-col"><div class="search"><input id="search" type="search" placeholder="Search inbox" aria-label="Search inbox"><button class="attachment-view sync-btn" id="findFiltersBtn" type="button" hidden title="Search with filters">Filters</button><button class="attachment-view sync-btn" id="syncBtn" type="button" hidden>Sync mail</button></div><div class="syncago" id="syncAgo" role="status" aria-live="off" hidden></div></div>
+    <div class="search-col"><div class="search"><input id="search" type="search" placeholder="Search inbox" aria-label="Search inbox"><button class="attachment-view sync-btn" id="findFiltersBtn" type="button" hidden title="Search with filters">Filters</button><button class="attachment-view sync-btn" id="askAgentBtn" type="button" hidden title="Ask the agent what you typed, instead of searching">Ask the agent</button><button class="attachment-view sync-btn" id="syncBtn" type="button" hidden>Sync mail</button></div><div class="syncago" id="syncAgo" role="status" aria-live="off" hidden></div></div>
   </div>
 </header>
 
@@ -2880,6 +2880,14 @@ function snoozeOptions(now){
 // Reviewed, Archived and Snoozed emails, tasks, orders and waiting notes. It uses only what this page already holds for the signed-in person
 // (kept summaries and results): nothing new is stored and nothing extra is asked of the server. Matches are shown as text, a few at a time.
 const SEARCH_PAGES=["tasks","sent","folders","shipping","subscriptions","trips","waiting","messages"],SEARCH_EACH=4;
+// "Ask the agent": what is typed in the search box is sent to the Agent chat as a new question, instead of searching for it.
+function askAgentFromSearch(){
+  const text=String($("search").value||"").trim();
+  if(!text||typeof window.askAgent!=="function")return;
+  query="";$("search").value="";document.body.classList.remove("msearch");
+  render();
+  window.askAgent(text);
+}
 function searchMore(rows){
   const q=String(query||"").trim().toLowerCase();
   if(q.length<2||SEARCH_PAGES.includes(filter))return "";
@@ -2894,10 +2902,10 @@ function searchMore(rows){
   const notes=waitOn()?(waitData.notes||[]).filter(n=>has(`${waitTo(n)} ${n.subject||""} ${n.ask||""}`)):[];
   if(notes.length)groups.push(["Waiting for a reply",notes.map(n=>['data-search-go="waiting"',n.subject||"(no subject)","To "+waitTo(n)])]);
   const canFind=findOn();
-  if(!groups.length&&(!canFind||findUi.open))return "";
+  const askBtn=`<button type="button" class="srch-all" data-ask-agent>Ask the agent</button>`;
   const total=groups.reduce((a,[,l])=>a+l.length,0);
   const findBtn=canFind&&!findUi.open?`<button type="button" class="srch-all" data-find-open>Search all my mail</button><button type="button" class="srch-all" data-find-filters>Search with filters</button>`:"";
-  return `<section class="srch-more" aria-label="Also found elsewhere"><b>${groups.length?`Also found elsewhere <span>${total}</span>`:"Not in your lists?"}</b>${groups.map(([name,list])=>`<div class="srch-group"><h4>${esc(name)}</h4>${list.slice(0,SEARCH_EACH).map(([attr,title,sub])=>`<button type="button" class="srch-hit" ${attr}><span class="srch-t">${esc(String(title).slice(0,120))}</span><span class="srch-w">${esc(String(sub).slice(0,120))}</span></button>`).join("")}${list.length>SEARCH_EACH?`<div class="srch-more-n">and ${list.length-SEARCH_EACH} more</div>`:""}</div>`).join("")}${findBtn}</section>`;
+  return `<section class="srch-more" aria-label="Also found elsewhere"><b>${groups.length?`Also found elsewhere <span>${total}</span>`:"Not in your lists?"}</b>${groups.map(([name,list])=>`<div class="srch-group"><h4>${esc(name)}</h4>${list.slice(0,SEARCH_EACH).map(([attr,title,sub])=>`<button type="button" class="srch-hit" ${attr}><span class="srch-t">${esc(String(title).slice(0,120))}</span><span class="srch-w">${esc(String(sub).slice(0,120))}</span></button>`).join("")}${list.length>SEARCH_EACH?`<div class="srch-more-n">and ${list.length-SEARCH_EACH} more</div>`:""}</div>`).join("")}${findBtn}${askBtn}</section>`;
 }
 document.addEventListener("click",e=>{
   const b=e.target.closest&&e.target.closest("[data-search-open],[data-search-go]");
@@ -3667,6 +3675,7 @@ document.addEventListener("click",e=>{
   const t=e.target.closest?e.target:null;if(!t)return;
   if(t.matches("[data-find-sel]"))findUi.shift=e.shiftKey;
   if(t.closest("[data-find-open]")){findOpen();return}
+  if(t.closest("#askAgentBtn,[data-ask-agent]")){askAgentFromSearch();return}
   if(t.closest("#findFiltersBtn,[data-find-filters]")){findShowFilters();return}
   if(t.closest("[data-find-go]")){if(findCan())findStart();return}
   if(t.closest("[data-find-reset-filters]")){findUi.f={...FIND_NONE};findUi.query="";findUi.naming=false;findUi.saveNote="";findPaint();return}
@@ -4573,6 +4582,7 @@ function render(){
   hydrateInvites();
   {const ns=waitOn()?(waitData.notes||[]).filter(n=>n.state==="waiting"):[];const wb=$("waitBadge");if(wb){wb.textContent=ns.length;wb.hidden=!ns.length;wb.classList.toggle("hot",ns.some(n=>n.due))}}
   {const fb2=$("findFiltersBtn");if(fb2)fb2.hidden=!findOn()}
+  {const ab=$("askAgentBtn");if(ab)ab.hidden=!(String($("search").value||"").trim().length>=2&&!(document.getElementById("settings")&&document.getElementById("settings").classList.contains("open")))}
   {const fl=findOn()?userMessages().filter(m=>m.found):[];const fn=$("foundNav"),fb=$("foundBadge");if(fn){fn.hidden=!fl.length&&filter!=="found";fb.textContent=fl.length;fb.hidden=!fl.length}}
   {const hd=mine.filter(isHeld),hn=$("heldNav"),hb=$("heldBadge");if(hn){hn.hidden=!hd.length&&filter!=="held";hb.textContent=hd.length;hb.hidden=!hd.length}}
   const asleep=mine.filter(isSnoozed);{const sn=$("snoozeNav"),sb=$("snoozeBadge");sn.hidden=!asleep.length&&filter!=="snoozed";sb.textContent=asleep.length;sb.hidden=!asleep.length}
@@ -8668,18 +8678,18 @@ setTimeout(()=>document.body.classList.remove("booting"),6000);   // never leave
 // behind the page (a preview) it keeps a few sample chats in this page only and answers with a fixed sentence.
 (function(){
   const pop=$("agentPop"),btn=$("agentBtn"),log=$("agentLog"),box=$("agentText"),form=$("agentForm"),send=$("agentSend"),list=$("agentChats"),chatsBtn=$("agentChatsBtn");
-  let chats=[],cur=null,turns=[],pend=false,errText=null,loaded=false,busy=false,ready=true,showList=false,renaming=null,sure=null,sureTimer=0,own=false;
+  let chats=[],cur=null,turns=[],pend=false,errText=null,loaded=false,busy=false,ready=true,showList=false,renaming=null,sure=null,sureTimer=0;
   const local={chats:[]};          // preview only
   const stamp=at=>{const d=new Date(at*1000),n=new Date();return d.toDateString()===n.toDateString()?d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}):d.toLocaleDateString([],{day:"numeric",month:"short"})};
   const say=(cls,text)=>{const d=document.createElement("div");d.className="agent-msg "+cls;d.textContent=text;log.appendChild(d);log.scrollTop=log.scrollHeight;return d};
   const title=()=>{const c=chats.find(x=>x.id===cur);return c?c.title:""};
   const paint=()=>{
-    $("agentSub").textContent=cur&&!showList?title():showList?"Your saved chats":(own?"Your agent. Enveliq doesn't send it your email.":"Your AI helper. It can't see your email.");
+    $("agentSub").textContent=cur&&!showList?title():showList?"Your saved chats":"Your AI helper. It can't see your email.";
     chatsBtn.setAttribute("aria-expanded",String(showList));chatsBtn.textContent=showList?"Back":"Chats";
     log.hidden=showList;list.hidden=!showList;form.hidden=showList;
     if(showList){paintList();return}
     log.textContent="";
-    if(!turns.length){const h=document.createElement("div");h.className="agent-hello";h.innerHTML=own?"<strong>"+esc($("agentName").textContent)+"</strong>Talk to your agent here. Enveliq doesn't share your email, tasks or settings with it.":"<strong>Hi, I'm "+esc($("agentName").textContent)+".</strong>Ask me anything, like how to plan your day or how to word a tricky message. I can't see your email or change anything in Enveliq.";log.appendChild(h)}
+    if(!turns.length){const h=document.createElement("div");h.className="agent-hello";h.innerHTML="<strong>Hi, I'm "+esc($("agentName").textContent)+".</strong>Ask me anything, like how to plan your day or how to word a tricky message. I can't see your email or change anything in Enveliq.";log.appendChild(h)}
     for(const m of turns)say(m.role==="user"?"me":"bot",m.text);
     if(pend)say("bot wait","Thinking… an agent that uses its tools can take a minute or two.");
     if(errText)say("err",errText);
@@ -8714,7 +8724,7 @@ setTimeout(()=>document.body.classList.remove("booting"),6000);   // never leave
   // keepOpen: the open chat stays as it is (only the list changed)
   const take=(d,keepOpen)=>{
     if(d&&typeof d.name==="string")$("agentName").textContent=d.name.slice(0,40);
-    chats=Array.isArray(d&&d.chats)?d.chats:[];ready=!d||d.ready!==false;own=!!d&&d.mode==="own";
+    chats=Array.isArray(d&&d.chats)?d.chats:[];ready=!d||d.ready!==false;
     if(!keepOpen){cur=d&&d.chat?d.chat.id:null;turns=d&&d.chat?d.chat.messages:[];pend=!!(d&&d.chat&&d.chat.pending);errText=d&&d.chat&&d.chat.error||null}
     else if(cur&&!chats.some(c=>c.id===cur)){cur=null;turns=[];pend=false;errText=null}
     if(!showList)paint();
@@ -8731,13 +8741,24 @@ setTimeout(()=>document.body.classList.remove("booting"),6000);   // never leave
     if(method==="DELETE"&&m){local.chats=local.chats.filter(x=>x.id!==m[1]);return view()}
     throw new Error("Not available in a preview.");
   }
-  async function load(){
+  let loadP=null;
+  function load(){if(!loadP){loadP=loadNow();loadP.then(()=>{if(!loaded)loadP=null})}return loadP}
+  async function loadNow(){
     if(loaded)return;loaded=true;
     try{take(await call("GET","/api/v1/me/agent"));if(pend)watch()}catch(e){loaded=false;log.textContent="";say("err",e.message||"Hermes could not be reached. Try again in a moment.")}
   }
   function open(){if(typeof setMenu==="function")setMenu(false);pop.hidden=false;btn.setAttribute("aria-expanded","true");load();setTimeout(()=>box.focus(),30)}
   function close(){pop.hidden=true;btn.setAttribute("aria-expanded","false");btn.focus()}
   btn.onclick=()=>pop.hidden?open():close();
+  // The search box's "Ask the agent": open the chat, start a new one and send what was typed. It is only ever sent when the person presses the button.
+  window.askAgent=async text=>{
+    text=String(text||"").trim().slice(0,2000);if(!text)return;
+    if(pop.hidden)open();
+    await load();
+    if(busy)return;                       // still answering the last question: the chat is open, nothing is added
+    cur=null;turns=[];showList=false;renaming=null;sure=null;paint();
+    box.value=text;grow();form.requestSubmit();
+  };
   $("agentClose").onclick=close;
   chatsBtn.onclick=()=>{showList=!showList;renaming=null;sure=null;paint();if(!showList)box.focus()};
   $("agentNew").onclick=()=>{if(busy)return;cur=null;turns=[];showList=false;paint();box.focus()};

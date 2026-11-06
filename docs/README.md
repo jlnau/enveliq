@@ -52,7 +52,7 @@ Find the guide you need, by what you want to do. New here? Start with [**Install
 - [Junk Mail](JUNK_MAIL.md) (the AI checks your Junk and Spam folders; Not Junk moves an email back to the Inbox)
 - [Trips](TRIPS.md) (flights, stays and hire cars, put together and added to your calendar)
 - [Messages between people](MESSAGES.md)
-- [Chat with a Hermes agent](AGENT.md)
+- [The Agent chat](AGENT.md)
 - [Unlock by itself after a restart (vault key)](VAULT_KEY.md)
 - [Open Enveliq on a home network without https](NETWORK_ACCESS.md)
 

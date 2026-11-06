@@ -13,7 +13,7 @@ import threading
 import time
 from typing import Any
 
-from .llm import BridgeError, LlmConfig, Summariser
+from .llm import BridgeError, Summariser
 
 RECORD_PREFIX = "agent:"
 NAME = "Hermes"
@@ -22,10 +22,8 @@ KEEP = 100               # messages kept in one chat
 SEND = 20                # most recent messages the model is shown
 MAX_CHATS = 40
 SETTINGS_RECORD = "agent_settings"
-MODES = ("plain", "own")
 WHO = ("all", "admins")
-OWN_TIMEOUT = 180       # an agent may use tools before it answers
-GIVE_UP = OWN_TIMEOUT + 60   # a question still unanswered after this long is shown as failed
+GIVE_UP = 240           # a question still unanswered after this long is shown as failed
 WAIT_HERE = 20.0        # how long the request that sends a message waits for a quick answer before the page starts checking back
 TITLE_MAX = 60
 CHAT_ID = re.compile(r"^c[0-9a-f]{12}$")
@@ -60,7 +58,6 @@ class Agent:
         self.vault, self.summariser = vault, summariser
         self._lock = threading.Lock()
         self._user_locks: dict[str, threading.Lock] = {}
-        self._test: dict[str, Any] = {}
 
     def _user_lock(self, user_id: str) -> threading.Lock:
         with self._lock:
@@ -69,85 +66,28 @@ class Agent:
     # ---------- settings (the administrator's) ----------
 
     def _raw(self) -> dict[str, Any]:
-        return self.vault.get_global(SETTINGS_RECORD) or {}
+        raw = self.vault.get_global(SETTINGS_RECORD) or {}
+        if any(k in raw for k in ("mode", "url", "model", "key")):
+            # An older version could send the chat to a separate agent address. That option is gone, so the saved address,
+            # model name and access key are forgotten here instead of being kept for nothing.
+            raw = {"who": raw.get("who"), "name": raw.get("name")}
+            try:
+                self.vault.set_global(SETTINGS_RECORD, raw)
+            except Exception:
+                pass
+        return raw
 
     def settings(self) -> dict[str, Any]:
-        """What the chat uses and what the administrator sees. The access key is never part of this."""
+        """What the administrator sees and the chat uses."""
         raw = self._raw()
-        mode = raw.get("mode") if raw.get("mode") in MODES else "plain"
         who = raw.get("who") if raw.get("who") in WHO else "all"
-        return {"mode": mode, "who": who, "name": one_line(raw.get("name"), 40) or NAME,
-                "url": one_line(raw.get("url"), 300), "model": one_line(raw.get("model"), 80), "has_key": bool(raw.get("key"))}
+        return {"who": who, "name": one_line(raw.get("name"), 40) or NAME}
 
-    def own_connection(self) -> Summariser | None:
-        """A separate address for the agent (e.g. the main Hermes agent), when the administrator gave one."""
-        raw = self._raw()
-        url, model = one_line(raw.get("url"), 300), one_line(raw.get("model"), 80)
-        if not url or not model:
-            return None
-        return Summariser(LlmConfig(url=url, model=model, api_key=str(raw.get("key") or ""), allowed_hosts=self.summariser.config.allowed_hosts,
-                                    provider="", timeout=OWN_TIMEOUT))
-
-    def save_settings(self, mode: str, who: str, name: str, url: str | None = None, model: str | None = None,
-                      key: str | None = None, clear_key: bool = False) -> dict[str, Any]:
-        """`url`, `model` and `key` left as None are kept as they were; an empty url or model removes the separate address."""
-        if mode not in MODES or who not in WHO:
+    def save_settings(self, who: str, name: str) -> dict[str, Any]:
+        if who not in WHO:
             raise ChatError("Unknown choice.")
-        raw = self._raw()
-        rec = {"mode": mode, "who": who, "name": one_line(name, 40) or NAME,
-               "url": one_line(raw.get("url"), 300), "model": one_line(raw.get("model"), 80), "key": str(raw.get("key") or "")}
-        if url is not None:
-            rec["url"] = one_line(url, 300)
-        if model is not None:
-            rec["model"] = one_line(model, 80)
-        if bool(rec["url"]) != bool(rec["model"]):
-            raise ChatError("Fill in both the agent's address and its model name, or leave both empty.")
-        if clear_key or not rec["url"]:
-            rec["key"] = ""
-        elif key is not None and key.strip():
-            rec["key"] = key.strip()[:300]
-        if rec["url"]:
-            try:
-                Summariser(LlmConfig(url=rec["url"], model=rec["model"], allowed_hosts=self.summariser.config.allowed_hosts, provider="")).check_url()
-            except BridgeError as err:
-                raise ChatError(str(err)) from None
-        self.vault.set_global(SETTINGS_RECORD, rec)
+        self.vault.set_global(SETTINGS_RECORD, {"who": who, "name": one_line(name, 40) or NAME})
         return self.settings()
-
-    def test(self, wait: float | None = None) -> dict[str, Any]:
-        """Ask the separate agent address for a short hello, to prove the address, model name and key. A slow agent is
-        finished in the background (see `send`); `test_state` is then asked for the result."""
-        conn = self.own_connection()
-        if conn is None:
-            raise ChatError("Fill in the agent's address and model name and save first.")
-        with self._lock:
-            if self._test.get("state") == "running" and time.time() - self._test.get("at", 0) < GIVE_UP:
-                return dict(self._test)
-            self._test = {"state": "running", "at": time.time()}
-        done = threading.Event()
-
-        def work() -> None:
-            try:
-                reply = conn.chat("", [{"role": "user", "content": "Reply with one short sentence saying you are ready."}], max_tokens=200, timeout=OWN_TIMEOUT)
-                result: dict[str, Any] = {"state": "ok", "reply": one_line(reply, 300)}
-            except BridgeError as err:
-                result = {"state": "bad", "error": one_line(err.message, 300), "code": err.code}
-            except Exception:
-                result = {"state": "bad", "error": "The agent could not be reached or took too long to answer.", "code": "ai_unreachable"}
-            with self._lock:
-                self._test = {**result, "at": time.time()}
-            done.set()
-
-        threading.Thread(target=work, name="agent-test", daemon=True).start()
-        done.wait(max(0.0, WAIT_HERE if wait is None else wait))
-        return self.test_state()
-
-    def test_state(self) -> dict[str, Any]:
-        with self._lock:
-            t = dict(self._test)
-        if t.get("state") == "running" and time.time() - t.get("at", 0) > GIVE_UP:
-            return {"state": "bad", "error": "The agent did not answer in time.", "code": "ai_unreachable"}
-        return {k: v for k, v in t.items() if k != "at"} or {"state": "none"}
 
     # ---------- storage ----------
 
@@ -239,10 +179,7 @@ class Agent:
 
         def work() -> None:
             try:
-                if conf["mode"] == "own":        # the agent keeps its own instructions, tools and manner; Enveliq adds nothing
-                    outcome["text"] = (self.own_connection() or self.summariser).chat("", turns, max_tokens=2000, timeout=OWN_TIMEOUT)
-                else:
-                    outcome["text"] = self.summariser.chat(SYSTEM.replace(NAME, conf["name"], 1), turns)
+                outcome["text"] = self.summariser.chat(SYSTEM.replace(NAME, conf["name"], 1), turns)
             except BridgeError as err:
                 outcome["error"] = err
             except Exception:                                    # never leave a chat stuck on "thinking"

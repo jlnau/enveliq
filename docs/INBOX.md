@@ -293,6 +293,8 @@ When you scroll down an open email on a phone, it now stays where you scrolled w
 
 The search box clears by itself when you choose something from the menu (My inbox, Needs action, Tasks and so on), so the next page is never left filtered by words you typed earlier. Pressing the X in the box still clears it too.
 
+**Ask the agent from the search box.** Once two or more letters are typed in the search box, an **Ask the agent** button appears beside it (and again under the search results, which is the one a phone shows). Pressing it opens the Agent chat, starts a new chat and sends what you typed as the question, and clears the search box. Nothing is sent just by typing. The chat is the plain AI model with no access to your email (see [AGENT.md](AGENT.md)). Touches `prototype/index.html`, `scripts/check_ask_agent.mjs`.
+
 ## Searching your tasks
 
 The Tasks page opens on the **List** view the first time (Focus and Calendar are one tap away, and Enveliq remembers the one you choose on that device). The Tasks page has a **Search your tasks** box under its title. Type part of a task's words (its title, its details or who it is from; capital letters do not matter) and the page lists only the tasks that have them, open ones under **To do** and finished ones under **Done**, with a line saying how many match. Clear the box to get your usual view back. It works in the Focus, List and Calendar views. Browser check: `scripts/check_task_search.mjs`.

@@ -217,15 +217,11 @@ Users should review important information against the original email.
 
 ### Agent chat
 
-Enveliq also supports a separate agent chat feature.
+Enveliq has a separate agent chat.
 
-The standard chat does not receive access to a user's email, tasks or private settings.
+The chat talks to the plain AI model the administrator set up. That model has no tools and does not receive a user's email, tasks or private settings.
 
-Administrators can optionally connect an external agent through Own agent mode.
-
-**Own agent mode has a different security boundary.** An external agent may have tools or permissions configured outside Enveliq. Enveliq does not automatically provide it with mailbox data, but cannot control what that external agent can do in its own environment.
-
-Operators should connect only agents they trust and understand.
+The chat cannot be connected to an external agent. An address, model name or access key saved by an older version for that purpose is deleted from the vault the first time the Agent chat settings are read or saved.
 
 ## Attachment security
 
@@ -430,7 +426,6 @@ Important limitations include:
 * A malicious or inaccurate email may influence an AI summary despite prompt and output controls.
 * Cloud AI providers receive the content required for enabled AI processing.
 * External notification and integration services receive information explicitly sent to them.
-* Connected external agents may have capabilities outside Enveliq's control.
 * Application security relies partly on the host system, container configuration and network environment.
 * Some browser security policies can be strengthened further.
 * Independent penetration testing and broader security assessments remain valuable.
