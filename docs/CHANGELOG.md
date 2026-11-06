@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**The email you have selected is easier to see.** In your inbox, folders and search results, the selected email now has a thick blue bar down its left edge and a soft blue tint, so you can always tell which one is open. It is the same in every list.
+
 **Messages (the household chat) is removed.** The Messages page, its menu item and count, the Messages switch in Features you see, the chat line in the bell, the Messages part of the Android app and the server routes behind it are gone. Anything people had written is deleted from this server the next time it starts, and it is no longer part of "Download my data". The bell now shows only notes from other services.
 
 **One reading view for every email.** A search result and an email opened from a folder now use exactly the same reading view as your inbox: the side rail (Reply, Forward, Snooze, Task, Tags, Folders, Archive, Bin), the title with star, arrows and the three dots, the AI summary box, and the email shown "As the sender made it" or as "Plain text". It is the same code, so the choices in Customise (Side rail or Classic, density and so on) change all of them together. On a phone it opens full screen with the buttons along the bottom, like any email. Reply, Forward, Snooze, Task and Tags keep a small encrypted summary of the email for 60 days first (the same as Tag did), so it can be used in your lists. The page for folder emails and search results also now gets the formatted version of an email, which was plain text only before. Mark as read is not shown for these, because they are read straight from your mailbox.
