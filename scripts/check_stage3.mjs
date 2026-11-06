@@ -145,14 +145,14 @@ for (const width of [1200, 390]) {
   await page.waitForSelector(".frow");
   check("opening a folder lists its emails, newest first", (await page.locator(".frow .fsub").allInnerTexts()).join("|") === "March bill|Water notice");
   await shot(page, "stage3-folders-1200");
-  check("the folder list stays in the left menu in place of More, with the open folder marked", (await page.locator("#moreNav").isHidden()) && (await page.locator("#folderSide").isVisible()) && /Bills/.test(await page.locator("#folderSide .fchip.active").innerText()));
+  check("the folder list shows above More (which stays, lower down), with the open folder marked", (await page.locator("#moreNav").isVisible()) && (await page.locator("#folderSide").isVisible()) && /Bills/.test(await page.locator("#folderSide .fchip.active").innerText()));
   check("the page says which folder you are in", /Folders\s+›\s+Bills/.test(await page.locator("#fdrTitle").innerText()));
   await page.locator(".frow").first().click();
   await page.waitForTimeout(500);
   check("in the Reading pane layout the email shows beside the list", (await page.locator("#fdrPane .email-doc").count()) === 1);
   await shot(page, "stage3-folders-open-1200");
   await page.evaluate(() => document.querySelector('.nav[data-filter="all"]').click());
-  check("leaving Folders brings More back", (await page.locator("#moreNav").isVisible()) && (await page.locator("#folderSide").isHidden()));
+  check("leaving Folders hides the folder list and More is still there", (await page.locator("#moreNav").isVisible()) && (await page.locator("#folderSide").isHidden()));
   await page.evaluate(() => document.querySelector('.nav[data-filter="folders"]').click());
   await page.waitForTimeout(300);
   check("opening one fetches it by its token", posts.some((x) => x[0] === "open" && x[1] === "tok1.mac"));

@@ -4,7 +4,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-**Folders moved and made clearer.** **Folders** is now just above More. Pressing it replaces More with the list of folders (it scrolls when long), which stays while you are in a folder, with the open folder marked and the page titled "Folders › name". A folder's emails now show in your own email view (reading pane on the right or below, in place, or full screen). The left menu is also the same width in Settings and the inbox. It touches `prototype/index.html`.
+**Folders moved and made clearer.** **Folders** is now just above More. Pressing it opens the list of folders just above More (it scrolls when long), which stays while you are in a folder (More stays below it), with the open folder marked and the page titled "Folders › name". A folder's emails now show in your own email view (reading pane on the right or below, in place, or full screen). The left menu is also the same width in Settings and the inbox. It touches `prototype/index.html`.
 
 **Fix: drop-down lists in Settings and Administration are readable.** The open list of a drop-down (for example AI service) showed light text on a white box in dark mode. It now has a solid background and readable text in both dark and light mode. It touches `web/static/auth.css` and `prototype/index.html`.
 
