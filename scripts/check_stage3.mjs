@@ -161,6 +161,15 @@ for (const width of [1200, 390]) {
   await context.close();
 }
 {
+  // A plain click on an email is not a drag and still opens it
+  const { page, context } = await open(1200);
+  await page.waitForSelector("article.mail");
+  await page.locator("article.mail", { hasText: "Trip plans" }).first().click();
+  await page.waitForTimeout(300);
+  check("a plain click still opens the email (no drag started)", (await page.locator("body.dragging-mail").count()) === 0 && /Trip plans/.test(await page.locator("#readDock").innerText()));
+  await context.close();
+}
+{
   // Drag an email onto a folder: the left menu is swapped for the folders while dragging, and everything returns afterwards
   const { page, errors, context } = await open(1200);
   await page.waitForSelector("article.mail");
@@ -174,13 +183,14 @@ for (const width of [1200, 390]) {
   await shot(page, "stage3-drag-1200");
   const target = page.locator(".df-item", { hasText: "Bills" }).first();
   const tb = await target.boundingBox();
-  await page.mouse.move(tb.x + 40, tb.y + 15, { steps: 8 });
   await page.waitForTimeout(150);
-  await page.evaluate(() => { const it = [...document.querySelectorAll(".df-item")].find((x) => /Bills/.test(x.textContent)); it.dispatchEvent(new DragEvent("dragover", { bubbles: true, cancelable: true })); });
+  await page.mouse.move(tb.x + 40, tb.y + 15, { steps: 8 });
   check("the folder under the pointer lights up (and only that one)", (await page.locator(".df-item.over").count()) === 1 && /Bills/.test(await page.locator(".df-item.over").innerText()));
-  await page.evaluate(() => document.querySelector(".side-nav, #dragFolders .df-head").dispatchEvent(new DragEvent("dragover", { bubbles: true, cancelable: true })));
+  check("a small label follows the pointer", (await page.locator(".drag-ghost").count()) === 1);
+  await page.mouse.move(tb.x + 600, tb.y + 300, { steps: 4 });
   check("it goes out again when the pointer leaves the folders", (await page.locator(".df-item.over").count()) === 0);
-  await page.evaluate(() => { const it = [...document.querySelectorAll(".df-item")].find((x) => /Bills/.test(x.textContent)); it.dispatchEvent(new DragEvent("dragover", { bubbles: true, cancelable: true })); });
+  await page.mouse.move(tb.x + 40, tb.y + 15, { steps: 6 });
+  await page.waitForTimeout(80);
   check("a refresh of the list while dragging waits until the drop (the dragged row is not swapped out)", await page.evaluate(() => { const row = document.querySelector("article.mail[data-mid]"); render(); return document.body.contains(row); }));
   await page.mouse.up();
   await page.waitForSelector("#undoBar .undobar");

@@ -1805,13 +1805,13 @@ body.dragging-mail .drag-folders{display:flex;flex-direction:column;min-height:0
 .df-item.over{background:#1b4ba3;border:1.5px solid #8fbfff;color:#fff}
 .df-item *{pointer-events:none}
 .df-item,.df-list{transition:none}
-/* while dragging, switch off the glows, blurs and animations that make the page repaint under the pointer */
-body.dragging-mail *,body.dragging-mail *::before,body.dragging-mail *::after{transition:none!important;animation:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 body.dragging-mail article.mail,body.dragging-mail .qsummary,body.dragging-mail .preview-list-heading{box-shadow:none!important}
 .df-note{color:var(--muted);font-size:13px;padding:6px 8px}
 body.dragging-mail .app.collapsed .drag-folders{position:fixed;left:72px;top:70px;width:250px;max-height:80vh;z-index:70;background:#0b1e3a;border:1px solid #2b5db3;border-radius:12px;padding:6px 10px 10px}
 body.dragging-mail .app.collapsed .sidebar>*:not(.drag-folders){display:none!important}
-article.mail[draggable="true"]{cursor:grab}
+article.mail[data-dragmail]{cursor:grab}
+body.dragging-mail{user-select:none;-webkit-user-select:none;cursor:grabbing}
+.drag-ghost{position:fixed;left:0;top:0;z-index:300;pointer-events:none;will-change:transform;max-width:280px;padding:9px 14px;border-radius:12px;background:#1b4ba3;color:#fff;font-size:14px;font-weight:650;box-shadow:0 8px 24px rgba(0,0,0,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.95}
 </style>
 </head>
 <body class="booting">
@@ -4789,7 +4789,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
     }
     if(mode==="detail")return detail;
     const tog=mode==="pane"?`<button class="qtoggle" data-pick="${esc(m.id)}" aria-label="Show this email">Show email</button>`:view.rows==="open"?"":`<button class="qtoggle" data-expand="row-${esc(m.id)}" aria-expanded="${esc(open)}" aria-label="${open?"Hide":"Show"} the full email summary and actions">${open?"Hide":"Show"} details</button>`;
-    return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(m._pending?"leaving to-"+m._pending:"")} ${esc(mode==="pane"&&lay()!=="screen"&&m.id===paneId?"current":"")} ${!isSeen(m)?"enveliq-new":""}"${leaveStyle(m)} data-mid="${esc(m.id)}"${m.real&&m.owner===currentUser.id&&!m._pending&&!open&&!m.found?' draggable="true"':""}><div class="qrow">
+    return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(m._pending?"leaving to-"+m._pending:"")} ${esc(mode==="pane"&&lay()!=="screen"&&m.id===paneId?"current":"")} ${!isSeen(m)?"enveliq-new":""}"${leaveStyle(m)} data-mid="${esc(m.id)}"${m.real&&m.owner===currentUser.id&&!m._pending&&!open&&!m.found?' data-dragmail="1"':""}><div class="qrow">
       ${lead}
       <div class="sender">${flag}${esc(m.sender)}${m.starred?`<span class="starmark" role="img" aria-label="Starred" title="Starred">★</span>`:""}</div>
       <div class="qmain">${boxChip(m)}${isImp(m)?'<span class="imp-pill" title="You marked this person as important">&#9733; Important</span>':""}${m.scam?'<span class="scam-pill" title="Something about this email looks odd. Open it to see what.">Be careful</span>':""}<span class="subject">${esc(m.subject)}</span>${tagChips(m,2)}</div>
@@ -7145,53 +7145,72 @@ function previewFitToolbar(){
   }
 }
 previewFitToolbar();window.addEventListener("resize",previewFitToolbar);
-// ---------- Drag an email onto a folder (computer): the left menu turns into the folder list while you drag ----------
+// ---------- Drag an email onto a folder (computer) ----------
+// Drawn by the page itself instead of the browser's own drag picture, so the small label follows the pointer smoothly (it only moves with a transform).
+// While you drag, the left menu turns into the folder list. Let go on a folder to move the email; let go anywhere else (or press Esc) to cancel.
 {
-  let panel=null,dragList=[],folderCache={},overEl=null;
+  let panel=null,dragList=[],folderCache={},overEl=null,down=null,ghost=null,px=0,py=0,raf=0,swallow=0;
   const icon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
-  const stop=()=>{
-    document.body.classList.remove("dragging-mail");if(panel){panel.remove();panel=null}dragList=[];overEl=null;
+  const setOver=el=>{if(el===overEl)return;if(overEl)overEl.classList.remove("over");overEl=el;if(el)el.classList.add("over")};
+  function frame(){
+    raf=0;if(!ghost)return;
+    ghost.style.transform=`translate3d(${px+14}px,${py+14}px,0)`;
+    const t=document.elementFromPoint(px,py);setOver(t&&t.closest?t.closest(".df-item"):null);
+  }
+  const ask=()=>{if(!raf)raf=requestAnimationFrame(frame)};
+  function end(drop){
+    const f=drop&&overEl?overEl._folder:null,ms=dragList.slice(),aid=ms[0]&&ms[0].real.accountId;
+    document.removeEventListener("pointermove",onMove,true);document.removeEventListener("pointerup",onUp,true);document.removeEventListener("pointercancel",onCancel,true);
+    document.body.classList.remove("dragging-mail");if(panel){panel.remove();panel=null}if(ghost){ghost.remove();ghost=null}
+    if(raf){cancelAnimationFrame(raf);raf=0}overEl=null;dragList=[];down=null;
     if(dragMailOn){dragMailOn=false;if(dragRenderLater){dragRenderLater=false;try{render()}catch{}}}
-  };
+    swallow=Date.now()+350;                                  // the click that follows letting go is not a click on the email
+    if(f&&ms.length){rememberFolder(aid,f.name);queueAction(ms,"moved",{folder:f.name,folderLabel:f.label});selMode=false}
+  }
+  const idle=()=>{document.removeEventListener("pointermove",onMove,true);document.removeEventListener("pointerup",onUp,true);document.removeEventListener("pointercancel",onCancel,true);down=null};
+  const onUp=()=>{if(dragMailOn)end(true);else idle()},onCancel=()=>{if(dragMailOn)end(false);else idle()};
+  function onMove(e){
+    px=e.clientX;py=e.clientY;
+    if(down&&!dragMailOn){
+      if(Math.abs(px-down.x)+Math.abs(py-down.y)<8)return;
+      begin();
+    }
+    if(dragMailOn)ask();
+  }
+  async function begin(){
+    const {group,aid}=down;dragList=group;dragMailOn=true;try{getSelection().removeAllRanges()}catch{}
+    ghost=document.createElement("div");ghost.className="drag-ghost";ghost.textContent=group.length===1?group[0].subject:group.length+" emails";document.body.append(ghost);
+    panel=document.createElement("div");panel.className="drag-folders";panel.id="dragFolders";
+    panel.innerHTML=`<div class="df-head">Drop ${group.length===1?"this email":group.length+" emails"} on a folder</div><div class="df-list" id="dfList"><p class="df-note">Reading your folders…</p></div>`;
+    $("sidebar").append(panel);document.body.classList.add("dragging-mail");ask();
+    try{
+      const rows=(await foldersFor(aid)).filter(r=>r.target),rec=recentFolders(aid);
+      rows.sort((a,b)=>{const ra=rec.indexOf(a.name),rb=rec.indexOf(b.name);return (ra<0?99:ra)-(rb<0?99:rb)||a.label.localeCompare(b.label)});
+      const L=panel&&panel.querySelector("#dfList");if(!L)return;
+      if(!rows.length){L.innerHTML='<p class="df-note">You have no folders of your own yet. Make one from an email\'s Folders button.</p>';return}
+      const frag=document.createDocumentFragment();
+      for(const f of rows){const b=document.createElement("div");b.className="df-item";b.innerHTML=icon+"<span></span>";b.lastChild.textContent=f.label;b._folder=f;frag.append(b)}
+      L.replaceChildren(frag);
+    }catch(er){const L=panel&&panel.querySelector("#dfList");if(L){L.innerHTML='<p class="df-note"></p>';L.firstChild.textContent=er.message||"Could not read your folders."}}
+  }
   async function foldersFor(aid){
     const c=folderCache[aid];if(c&&Date.now()-c.at<60000)return c.rows;
     const r=await secureBackendRequest(foldersUrl(aid),{method:"GET",headers:{}});folderCache[aid]={at:Date.now(),rows:r.folders||[]};return folderCache[aid].rows;
   }
-  const setOver=el=>{if(el===overEl)return;if(overEl)overEl.classList.remove("over");overEl=el;if(el)el.classList.add("over")};
-  document.addEventListener("dragstart",e=>{
-    const row=e.target.closest&&e.target.closest("article.mail[data-mid]");if(!row||phoneQuery.matches)return;
+  document.addEventListener("pointerdown",e=>{
+    if(e.button!==0||e.pointerType==="touch"||phoneQuery.matches||dragMailOn)return;
+    const row=e.target.closest&&e.target.closest("article.mail[data-dragmail]");if(!row)return;
+    if(e.target.closest("button,a,input,select,textarea,label,summary,.qic,[contenteditable]"))return;
     const m=data.find(x=>String(x.id)===row.dataset.mid);if(!m||!m.real||m.owner!==currentUser.id)return;
     const group=selected.has(m.id)&&selected.size>1?[...selected].map(id=>data.find(x=>x.id===id)).filter(x=>x&&x.real&&x.owner===currentUser.id&&!x._pending):[m];
     const aid=m.real.accountId;
-    if(group.some(x=>x.real.accountId!==aid)){e.preventDefault();toast("Drag emails from one mailbox at a time.",3500);return}
-    dragList=group;dragMailOn=true;
-    try{e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",group.length===1?m.subject:group.length+" emails")}catch{}
-    setTimeout(async()=>{                                   // after the drag has begun, so changing the page cannot cancel it
-      if(!dragList.length)return;
-      panel=document.createElement("div");panel.className="drag-folders";panel.id="dragFolders";
-      panel.innerHTML=`<div class="df-head">Drop ${group.length===1?"this email":group.length+" emails"} on a folder</div><div class="df-list" id="dfList"><p class="df-note">Reading your folders…</p></div>`;
-      // One set of listeners for the whole list (not one set per folder), so moving the pointer over a folder's icon or words does no extra work
-      panel.addEventListener("drop",ev=>{ev.preventDefault();const it=ev.target.closest&&ev.target.closest(".df-item");if(!it)return;const ms=dragList.slice(),f=it._folder;stop();if(!ms.length||!f)return;rememberFolder(aid,f.name);queueAction(ms,"moved",{folder:f.name,folderLabel:f.label});selMode=false});
-      $("sidebar").append(panel);document.body.classList.add("dragging-mail");
-      try{
-        const rows=(await foldersFor(aid)).filter(r=>r.target),rec=recentFolders(aid);
-        rows.sort((a,b)=>{const ra=rec.indexOf(a.name),rb=rec.indexOf(b.name);return (ra<0?99:ra)-(rb<0?99:rb)||a.label.localeCompare(b.label)});
-        const L=panel&&panel.querySelector("#dfList");if(!L)return;
-        if(!rows.length){L.innerHTML='<p class="df-note">You have no folders of your own yet. Make one from an email\'s Folders button.</p>';return}
-        const frag=document.createDocumentFragment();
-        for(const f of rows){const b=document.createElement("div");b.className="df-item";b.innerHTML=icon+"<span></span>";b.lastChild.textContent=f.label;b._folder=f;frag.append(b)}
-        L.replaceChildren(frag);
-      }catch(er){const L=panel&&panel.querySelector("#dfList");if(L){L.innerHTML='<p class="df-note"></p>';L.firstChild.textContent=er.message||"Could not read your folders."}}
-    },0);
-  });
-  document.addEventListener("dragover",ev=>{                // one listener: light up the folder under the pointer, and nothing else
-    if(!dragMailOn)return;const it=ev.target.closest&&ev.target.closest(".df-item");
-    ev.preventDefault();try{ev.dataTransfer.dropEffect=it?"move":"none"}catch{}
-    setOver(it||null);
-  });
-  document.addEventListener("drop",ev=>{if(dragMailOn&&!(ev.target.closest&&ev.target.closest(".df-item"))){ev.preventDefault();stop()}});   // let go anywhere else: cancel
-  document.addEventListener("dragend",stop);
-  document.addEventListener("keydown",e=>{if(e.key==="Escape")stop()});
+    if(group.some(x=>x.real.accountId!==aid))return;
+    down={x:e.clientX,y:e.clientY,group,aid};px=e.clientX;py=e.clientY;
+    document.addEventListener("pointermove",onMove,true);document.addEventListener("pointerup",onUp,true);document.addEventListener("pointercancel",onCancel,true);
+  },true);
+  document.addEventListener("selectstart",e=>{if(dragMailOn)e.preventDefault()},true);
+  document.addEventListener("click",e=>{if(Date.now()<swallow){e.stopPropagation();e.preventDefault()}},true);
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&dragMailOn)end(false)});
 }
 
 // The page scrollbar is see-through; it shows while you scroll or when the pointer is at the right edge.
