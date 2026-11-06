@@ -1826,6 +1826,12 @@ html[data-theme="light"] .search-banner{background:#2f6fe0}
 .find-row.compact .fr-where{grid-column:3;grid-row:2;font-size:12px;color:var(--faint,var(--muted));white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis}
 .find-row.compact .fr-note{grid-column:2/-1}
 .find-row.compact:hover{background:var(--panel2)}.find-row.compact:focus-visible{outline:2px solid var(--accent,#6aa8ff)}
+.livepane{display:contents}
+.fdr-pane:has(.livepane),.fdr-inline:has(.livepane){padding:0}.fdr-cols[data-lay="right"] .fdr-pane .rl-rail{position:sticky;top:0;align-self:flex-start}.fdr-pane .reading.rail,.read-dock .reading.rail{height:100%}
+.lmore{position:relative;display:inline-flex}
+.live-where{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--muted);font-size:13px;padding:8px 14px}
+.rl-task:has(>.live-where){background:none;border-bottom:1px solid var(--line);padding:0}
+.reader.live .rbody{overflow:auto}
 .fdoc{display:flex;flex-direction:column;gap:8px;padding:10px 6px}.fdoc-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 8px;color:var(--muted);font-size:13px}.fdoc-top .obtn{flex:none}
 .fdoc .email-doc{padding:14px 16px;width:100%;max-width:none;box-sizing:border-box;margin:0;border-radius:10px;box-shadow:none}
 .find-row.compact.on{border-color:var(--blue,#2f7bff);box-shadow:0 0 0 1px var(--blue,#2f7bff) inset}
@@ -3837,34 +3843,15 @@ function findClose(){
   findUi={...findUi,open:false,openTok:"",manual:false,viewing:false,id:"",prog:null,rows:[],more:false,err:"",notes:{},sel:new Set(),anchor:null,sumNote:"",summing:false};
   render();
 }
-async function findView(token){
+function findView(token){
   const row=findUi.rows.find(r=>r.token===token);if(!row)return;
-  // Beside the list (reading pane layouts) the email opens in the reading pane like any other; otherwise in the pop-up viewer.
+  const it=liveFind(row);
+  const nav=(d,probe)=>{const i=findUi.rows.findIndex(x=>x.token===token),t=findUi.rows[i+d];if(probe)return !!t;if(t)findView(t.token)};
+  // Beside the list (reading pane layouts) the email opens in the reading pane like any other; otherwise over the page. It is drawn at once.
   const dock=document.body.classList.contains("split-read")&&(lay()==="right"||lay()==="bottom")?$("readDock"):null;
-  if(dock){      // the row lights up and the pane answers at once; the email itself follows when the mailbox hands it over
-    findUi.openTok=token;findPaint();
-    const wait=document.createElement("p");wait.className="fdr-empty";wait.textContent="Opening this email from your mailbox…";dock.replaceChildren(wait);dock.classList.add("busy");
-  }else toast("Fetching the email from your mailbox…");
-  try{
-    const o=await secureBackendRequest(`/api/v1/find/results/${encodeURIComponent(token)}/original`,{method:"GET",headers:{}});
-    const hadFiles=(o.attachments||[]).length;
-    if(dock&&findUi.openTok!==token)return;      // another email was chosen while this one was coming
-    if(dock){
-      const c={title:row.subject,fallbackDate:findShortDate(row.date),account:row.account};
-      const wrap=document.createElement("div");wrap.className="fdoc";
-      const top=document.createElement("div");top.className="fdoc-top";
-      const nav=(d,probe)=>{const i=findUi.rows.findIndex(x=>x.token===token),t=findUi.rows[i+d];if(probe)return !!t;if(t)findView(t.token)};
-      const where=document.createElement("span");where.textContent=`Found by search · ${row.folder||""}${hadFiles?" · Open it in your mail app for its files":""}`;
-      const close=document.createElement("button");close.type="button";close.className="obtn";close.setAttribute("data-find-pane-close","");close.textContent="Close";
-      top.append(where,close);
-      const doc=document.createElement("div");revokeViewerUrls();fillOriginal(doc,{...o,attachments:[]},c);
-      wrap.append(top,liveBar(()=>[liveFind(row)],{nav}),doc);doc.prepend(folderSummaryBox(token,"/api/v1/find/results/"));dock.classList.remove("busy");dock.replaceChildren(wrap);dock.scrollTop=0;
-      findUi.openTok=token;findPaint();
-      return;
-    }
-    findUi.viewing=true;
-    presentOriginal({...o,attachments:[]},{title:row.subject,context:`${row.from_name||row.from_address} · ${findShortDate(row.date)} · ${row.folder}${hadFiles?" · Open it in your mail app for its files":""}`,account:row.account,fallbackDate:findShortDate(row.date)});
-  }catch(er){if(dock)dock.classList.remove("busy");toast(er.message,6000)}
+  const ctx={nav,where:`Found by search · ${row.folder||""}`,closeAttr:"data-find-pane-close",folderLabel:row.folder};
+  if(dock){findUi.openTok=token;findPaint();liveShow(it,{...ctx,host:dock});dock.scrollTop=0}
+  else liveShow(it,{...ctx,overlay:true,where:"",closeAttr:""});
 }
 function findBack(){if(findUi.open&&findUi.viewing){findUi.viewing=false}}
 async function findKeep(token){
@@ -4795,6 +4782,7 @@ function enEmptyReading(){return `<div class="enveliq-empty-wrap"><h2 class="env
 document.addEventListener("click",e=>{const btn=e.target.closest("[data-en-action]");if(!btn)return;const type=btn.dataset.enAction;if(type==="read"){document.querySelector("#paneList article.mail .qmain")?.click();return}const target={tasks:"tasks",draft:"drafts",subscriptions:"subscriptions"}[type];if(target)document.querySelector('.nav[data-filter="'+target+'"]')?.click()});
 let lastScrolledTo="";
 var dragMailOn=false,dragRenderLater=false;
+const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5l-7.6 7.6a5 5 0 0 1-7-7l8-8a3.4 3.4 0 0 1 4.8 4.8l-8 8a1.8 1.8 0 0 1-2.5-2.5L14 7.2"/></svg>`,ICON_SNOOZE=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`,ICON_OK=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,ICON_ARCH=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg>`,ICON_BIN=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>`,ICON_REPLY=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 6 6v3"/></svg>`;
 function render(){
   if(dragMailOn){dragRenderLater=true;return}
   window.__hidePeek&&window.__hidePeek();
@@ -4864,7 +4852,6 @@ function render(){
     const buttons=actions.map(([field,label])=>`<button type="button" class="subtle mail-copy-action" data-copy-mail="${id}" data-copy-field="${field}">${label}</button>`).join("");
     return mobile?`<details class="mail-copy-menu"><summary aria-label="Sender details and copy options">Sender details</summary><div class="mail-copy-options">${buttons}</div></details>`:`<span class="mail-copy-controls" aria-label="Copy email details">${buttons}</span>`;
   };
-const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5l-7.6 7.6a5 5 0 0 1-7-7l8-8a3.4 3.4 0 0 1 4.8 4.8l-8 8a1.8 1.8 0 0 1-2.5-2.5L14 7.2"/></svg>`,ICON_SNOOZE=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`,ICON_OK=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,ICON_ARCH=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg>`,ICON_BIN=`<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>`,ICON_REPLY=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 6 6v3"/></svg>`;
   const leaveStyle=m=>{          // an email waiting out its Undo: the line along its bottom runs for the time that is left
     if(!m._pending)return "";const e=pendingActs.find(x=>x.ms.includes(m));if(!e)return "";
     return ` style="--leave-ms:${e.total}ms;--leave-delay:-${Math.max(0,e.total-Math.max(0,e.end-Date.now()))}ms"`;
@@ -4880,11 +4867,13 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
     const attCount=fileN(m)?`${fileN(m)} ${fileN(m)===1?"file":"files"}`:"None";
     const replyBtn=(m.replyTo?`<button class="subtle" data-reply="${esc(m.id)}">${ICON_REPLY}Reply</button>`:"")+moreReplyBtns(m)+(m.kept?"":isSnoozed(m)?`<button class="subtle" data-unsnooze="${esc(m.id)}">${ICON_SNOOZE}Wake now</button>`:`<button class="subtle" data-snooze="${esc(m.id)}" aria-haspopup="menu">${ICON_SNOOZE}Snooze</button>`)+`<button class="subtle" data-task-add="${esc(m.id)}" aria-haspopup="dialog">Task</button>`+(tagsOn(m)?`<button class="subtle" data-tag-open="${esc(m.id)}" aria-haspopup="dialog">Tags</button>`:"")+(canStar(m)?`<button class="subtle" data-move-folder="${esc(m.id)}" aria-haspopup="dialog">Folders</button>`:"");
     const OR=!m.kept&&origOn(m);
+    const summaryOf=m=>m.ungen&&m.real?genBlock(m):`<div class="qsummary"><span class="qsummary-head"><span class="qsummary-label">✦ AI summary</span><button type="button" class="linkbtn view-email summary-original-link" data-open-email="${esc(m.id)}">View original email</button></span><span class="qsummary-copy">${esc(m.summary)}</span></div>`;
     const detail=m.kept
       ?`<div class="qdetail"><div class="qfrom">${boxChip(m)}<span class="addr">&lt;${esc(m.address)}&gt;</span></div>${tagChips(m)}<div class="qsummary"><span class="qsummary-label">✦ AI summary</span><span class="qsummary-copy">${esc(m.summary)}</span></div>${taskHtml}${attachmentsBlock(m)}<div class="kept-note">Archived in your mailbox. Kept here until ${esc(m.keptUntil)}.${m.replied?` You replied ${esc(m.repliedAt||"just now")}.`:""}</div><div class="actions">${m.replyTo?`<button class="action reply" data-reply="${esc(m.id)}">↩ Reply</button>`:""}${moreReplyBtns(m,"action reply")}<button class="action reply" data-task-add="${esc(m.id)}" aria-haspopup="dialog">Task</button><button class="action trash" data-id="${esc(m.id)}" data-status="expired">Remove from this list</button>${starBtn(m)}${navBtns()}${moreBtn(m)}</div></div>`
-      :`<div class="qdetail split${OR?" has-orig":""}"><div class="qmainc">${scamHtml(m.scam)}${tagChips(m)}${m.ungen&&m.real?genBlock(m):`<div class="qsummary"><span class="qsummary-head"><span class="qsummary-label">✦ AI summary</span><button type="button" class="linkbtn view-email summary-original-link" data-open-email="${esc(m.id)}">View original email</button></span><span class="qsummary-copy">${esc(m.summary)}</span></div>`}${attachmentsBlock(m)}${taskHtml}${OR?"":`<div class="qfill"></div>`}<div class="qfoot"><span class="qleft">${replyBtn}${unsubHtml(m.unsub,!!m.scam)}</span>${starBtn(m)}${navBtns()}${moreBtn(m)}</div>${OR?origBox(m):""}</div>
-        <aside class="qside" aria-label="Email details"><div class="qkv"><span>From</span><span class="addr">${esc(m.address)}</span></div>${multiBox()&&m.real?`<div class="qkv"><span>Mailbox</span><span>${boxChip(m)}</span></div>`:""}<div class="qkv"><span>Received</span><span>${esc(m.time)}</span></div>${m.replied?`<div class="qkv replied-kv"><span>Replied</span><span>${esc(m.repliedAt||"Just now")}</span></div>`:""}<div class="qkv"><span>Category</span><span>${esc(category)}</span></div><div class="qkv"><span>Attachments</span><span>${esc(attCount)}</span></div>
-        <div class="qbtns">${rdSwap(m,`<button class="action reviewed" data-id="${esc(m.id)}" data-status="reviewed">${ICON_OK}Mark as read</button>`)}<div class="two"><button class="action archive" data-id="${esc(m.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(m.id)}" data-status="trashed">${ICON_BIN}Bin</button></div></div></aside></div>`;
+      :detailPane({OR,scam:scamHtml(m.scam),chips:tagChips(m),summary:summaryOf(m),attach:attachmentsBlock(m),task:taskHtml,replyBtn,unsub:unsubHtml(m.unsub,!!m.scam),star:starBtn(m),nav:navBtns(),more:moreBtn(m),orig:OR?origBox(m):"",
+        kv:`<div class="qkv"><span>From</span><span class="addr">${esc(m.address)}</span></div>${multiBox()&&m.real?`<div class="qkv"><span>Mailbox</span><span>${boxChip(m)}</span></div>`:""}<div class="qkv"><span>Received</span><span>${esc(m.time)}</span></div>${m.replied?`<div class="qkv replied-kv"><span>Replied</span><span>${esc(m.repliedAt||"Just now")}</span></div>`:""}<div class="qkv"><span>Category</span><span>${esc(category)}</span></div><div class="qkv"><span>Attachments</span><span>${esc(attCount)}</span></div>
+        `,
+        qbtns:`<div class="qbtns">${rdSwap(m,`<button class="action reviewed" data-id="${esc(m.id)}" data-status="reviewed">${ICON_OK}Mark as read</button>`)}<div class="two"><button class="action archive" data-id="${esc(m.id)}" data-status="archived">${ICON_ARCH}Archive</button><button class="action trash" data-id="${esc(m.id)}" data-status="trashed">${ICON_BIN}Bin</button></div></div>`});
     if(mode==="rail"){          // the "Side rail" email style: buttons in a bar down the left (along the bottom on a phone), the task along the top
       if(m.kept)return detail;
       const id=esc(m.id),ph=isPhone();
@@ -4894,10 +4883,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
       const act=(cls,st,icon,label)=>`<button type="button" class="action ${cls} rl-btn" data-id="${id}" data-status="${st}" aria-label="${label}" title="${label}">${icon}<span>${label}</span></button>`;
       const acts=rdSwap(m,act("reviewed","reviewed",ICON_OK,"Mark as read"))+act("archive","archived",ICON_ARCH,"Archive")+act("trash","trashed",ICON_BIN,"Bin");
       const copyInner=copyMailButtons(m).replace(/^<span[^>]*>|<\/span>$/g,"");
-      const addr=ph?`<details class="mail-copy-menu rl-addr"><summary aria-label="Copy options for ${esc(m.address)}">${esc(m.address)}</summary><div class="mail-copy-options">${copyInner}</div></details>`:`<span class="rl-addr">${esc(m.address)}</span>`;
-      const summary=m.ungen&&m.real?genBlock(m):`<div class="qsummary"><span class="qsummary-head"><span class="qsummary-label">✦ AI summary</span><button type="button" class="linkbtn view-email summary-original-link" data-open-email="${esc(m.id)}">View original email</button></span><span class="qsummary-copy">${esc(m.summary)}</span></div>`;
-      const head=`<header class="rl-head"><div class="rl-titlerow"><h3>${esc(m.subject)}</h3><div class="rl-tools">${starBtn(m)}${navBtns()}${ph&&m.replyTo?`<button type="button" class="subtle rl-icon" data-reply="${id}" aria-label="Reply" title="Reply">${ICON_REPLY}</button>`:""}${moreBtn(m)}</div></div><div class="rl-sub">${addr}<span class="rl-dot"> · </span><span>${esc(m.sender)}</span><span class="rl-dot"> · </span><span>${esc(m.time)}</span></div>${tagChips(m)}${ph?"":`<div class="rl-copy">${copyMailButtons(m)}</div>`}</header>`;
-      return `<div class="rl${ph?" rl-phone":""}">${ph?"":`<nav class="rl-rail" aria-label="Email actions">${tools}<span class="rl-gap"></span>${acts}</nav>`}<div class="rl-main">${taskHtml?`<div class="rl-task">${taskHtml}</div>`:""}<div class="rl-body">${head}${scamHtml(m.scam)}${summary}${attachmentsBlock(m)}${unsubHtml(m.unsub,!!m.scam)}${OR&&!ph?origBox(m):""}</div></div></div>`;
+      return railPane({subject:m.subject,address:m.address,sender:m.sender,time:m.time,star:starBtn(m),nav:navBtns(),phoneReply:m.replyTo?`<button type="button" class="subtle rl-icon" data-reply="${id}" aria-label="Reply" title="Reply">${ICON_REPLY}</button>`:"",more:moreBtn(m),chips:tagChips(m),copy:copyMailButtons(m),copyInner,tools,acts,task:taskHtml,scam:scamHtml(m.scam),summary:summaryOf(m),attach:attachmentsBlock(m),unsub:unsubHtml(m.unsub,!!m.scam),orig:OR?origBox(m):""});
     }
     if(mode==="detail")return detail;
     const tog=mode==="pane"?`<button class="qtoggle" data-pick="${esc(m.id)}" aria-label="Show this email">Show email</button>`:view.rows==="open"?"":`<button class="qtoggle" data-expand="row-${esc(m.id)}" aria-expanded="${esc(open)}" aria-label="${open?"Hide":"Show"} the full email summary and actions">${open?"Hide":"Show"} details</button>`;
@@ -4976,7 +4962,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
   // With the original email showing, a redraw that changes nothing leaves the page alone, so the email does not reload and lose its place.
   if(!(nextHtml===lastListHtml&&document.querySelector("#list .qorig.live, #readDock .qorig.live")&&!document.querySelector("#list .busy, #list .working, #readDock .busy, #readDock .working"))){$("list").innerHTML=nextHtml;lastListHtml=nextHtml}
   syncSelectAll();bannerStick();liveHydrate();
-  if(!(dockHtml===lastDockHtml&&(document.querySelector("#readDock .qorig.live")||(findUi.open&&document.querySelector("#readDock .fdoc")))&&!document.querySelector("#readDock .busy, #readDock .working"))){$("readDock").innerHTML=dockHtml;lastDockHtml=dockHtml}
+  if(!(dockHtml===lastDockHtml&&(document.querySelector("#readDock .qorig.live")||document.querySelector("#readDock .livepane"))&&!document.querySelector("#readDock .busy, #readDock .working"))){$("readDock").innerHTML=dockHtml;lastDockHtml=dockHtml}
   document.body.classList.toggle("split-read",!!dockHtml);
   if(leftBox&&dockHtml){leftBox.scrollTop=leftTop;const c=currentChanged?document.querySelector("#paneList .current"):null;if(c){const a=c.getBoundingClientRect(),b=leftBox.getBoundingClientRect(),hh=(document.getElementById("previewListHeading")||{offsetHeight:0}).offsetHeight;if(a.top<b.top+hh)leftBox.scrollTop+=a.top-b.top-hh-6;else if(a.bottom>b.bottom)leftBox.scrollTop+=a.bottom-b.bottom+6}}
   document.body.classList.toggle("reader-open",lay()==="screen"&&readerOpen&&rows.length>0);
@@ -5095,9 +5081,24 @@ const ICON_MORE=`<svg viewBox="0 0 24 24" width="18" height="18" fill="currentCo
 // Send to Junk, Block sender, Mute, Mark unread, Print and Save as PDF live only here. Items keep their usual data-* names so the same handlers run.
 const ICON_RFOLDER=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>`;
 const ICON_RTASK=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>`,ICON_RTAG=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="8" cy="8" r="1.2"/></svg>`;
-function navBtns(){
+// ---- One reading view for every email ----
+// Stored mail, folder mail and search results all draw the reading view with these two functions, so the "Side rail" choice (and every other
+// setting in Customise) shows the same everywhere. Each caller hands over the pieces it has; the layout is never written twice.
+function railPane(f){
+  const ph=isPhone();
+  const addr=ph?`<details class="mail-copy-menu rl-addr"><summary aria-label="Copy options for ${esc(f.address)}">${esc(f.address)}</summary><div class="mail-copy-options">${f.copyInner}</div></details>`:`<span class="rl-addr">${esc(f.address)}</span>`;
+  const head=`<header class="rl-head"><div class="rl-titlerow"><h3>${esc(f.subject)}</h3><div class="rl-tools">${f.star}${f.nav}${ph?f.phoneReply:""}${f.more}</div></div><div class="rl-sub">${addr}<span class="rl-dot"> · </span><span>${esc(f.sender)}</span><span class="rl-dot"> · </span><span>${esc(f.time)}</span></div>${f.chips}${ph?"":`<div class="rl-copy">${f.copy}</div>`}</header>`;
+  return `<div class="rl${ph?" rl-phone":""}">${ph?"":`<nav class="rl-rail" aria-label="Email actions">${f.tools}<span class="rl-gap"></span>${f.acts}</nav>`}<div class="rl-main">${f.task?`<div class="rl-task">${f.task}</div>`:""}<div class="rl-body">${head}${f.scam}${f.summary}${f.attach}${f.unsub}${ph&&!f.origPhone?"":f.orig}</div></div></div>`;
+}
+function detailPane(f){
+  return `<div class="qdetail split${f.OR?" has-orig":""}"><div class="qmainc">${f.scam}${f.chips}${f.summary}${f.attach}${f.task}${f.OR?"":`<div class="qfill"></div>`}<div class="qfoot"><span class="qleft">${f.replyBtn}${f.unsub}</span>${f.star}${f.nav}${f.more}</div>${f.OR?f.orig:""}</div>
+        <aside class="qside" aria-label="Email details">${f.kv}${f.qbtns}</aside></div>`;
+}
+function readingHead(f){return `<header class="rhead"><h3>${esc(f.subject)}</h3><div class="rmeta">${esc(f.sender)} · ${esc(f.time)}</div>${f.copy}</header>`}
+function navBtns(live){
   // Previous / Next email: only where one email is open beside or over a list (not when rows open in place).
   if(lay()==="list")return "";
+  if(live)return navBtns().replace(/data-nav-mail="(-?1)"/g,(_x,d)=>`data-live-nav="${d}"${live(+d)?"":" disabled"}`);
   return `<button type="button" class="subtle rl-icon" data-nav-mail="-1" aria-label="Previous email" title="Previous email"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button><button type="button" class="subtle rl-icon" data-nav-mail="1" aria-label="Next email" title="Next email"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>`;
 }
 const ICON_STAR=`<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9 6.8 19.7l1-5.9L3.5 9.7l5.9-.8z"/></svg>`;
@@ -8568,9 +8569,9 @@ async function loadFolders(){
   finally{$("fdrRefresh").disabled=false}
 }
 // A summary of one folder email, written only when the person presses the button. The email text goes to the AI model for that moment and nothing is kept.
-function folderSummaryBox(token,base){
+function folderSummaryBox(token,base,link){
   const box=document.createElement("div");box.className="qsummary fdr-sum";
-  const head='<div class="qsummary-head"><span class="qsummary-label">✦ AI summary</span></div>';
+  const head='<div class="qsummary-head"><span class="qsummary-label">✦ AI summary</span>'+(link?'<button type="button" class="linkbtn view-email summary-original-link" data-live-act="popup">View original email</button>':"")+'</div>';
   const ask=()=>{box.innerHTML=head+'<div class="nosum"><span class="nsdot" aria-hidden="true"></span><span>Summary not generated</span><button type="button" class="gen">Generate summary</button></div><p class="nosum-note">Pressing the button sends this email\'s text to your AI model. Nothing is saved.</p>';box.querySelector(".gen").onclick=run};
   const run=async()=>{
     box.innerHTML=head+'<div class="nosum"><span class="nsdot busy" aria-hidden="true"></span><span>Writing the summary…</span><span class="gprog"><i></i></span></div>';
@@ -8668,17 +8669,118 @@ async function liveImportant(it){
   catch(er){toast(er.message||"That did not work. Try again.",5000)}
 }
 // Tagging, snoozing and the rest need the email in your lists, so it is added quietly first (a small encrypted summary, 60 days).
-async function liveTag(it){
-  toast("Adding it to your lists so it can be tagged…",2500);
+async function liveStore(it,say){
+  toast(say||"Adding it to your lists first…",2500);
   try{
     const r=await secureBackendRequest(liveUrl(it,"keep"),{method:"POST",body:"{}"});
     await loadRealMail(currentUser);render();pollSummaries(false);
     const m=r.message_id?data.find(x=>x.real&&x.real.accountId===r.account_id&&x.real.messageId===r.message_id&&x.owner===currentUser.id):null;
-    if(!m){toast("Could not find it in your lists yet. Try again in a moment.",5000);return}
-    if(!tagsOn(m)){toast("Tags are not available for this mailbox.",4500);return}
-    tagOpen(m.id);
-  }catch(er){toast(er.message||"That did not work. Try again.",5000)}
+    if(!m){toast("Could not find it in your lists yet. Try again in a moment.",5000);return null}
+    return m;
+  }catch(er){toast(er.message||"That did not work. Try again.",5000);return null}
 }
+async function liveTag(it){
+  const m=await liveStore(it,"Adding it to your lists so it can be tagged…");if(!m)return;
+  if(!tagsOn(m)){toast("Tags are not available for this mailbox.",4500);return}
+  tagOpen(m.id);
+}
+// ---- Folder emails and search results in the one shared reading view ----
+// They are drawn by railPane()/detailPane() (the same code stored mail uses), so the Side rail choice and every Customise setting apply here too.
+const liveOrig=new Map();
+const liveBaseUrl=it=>liveUrl(it,"").replace(/\/$/,"");
+function liveFrags(it,ctx){
+  const ph=isPhone();
+  const rb=(act,icon,label,extra="")=>`<button type="button" class="rl-btn" data-live-act="${act}" ${extra} aria-label="${label}" title="${label}">${icon}<span>${label}</span></button>`;
+  const tools=rb("reply",ICON_REPLY,"Reply")+rb("forward",ICON_FWD,"Forward")+rb("snooze",ICON_SNOOZE,"Snooze",'aria-haspopup="menu"')+rb("task",ICON_RTASK,"Task",'aria-haspopup="dialog"')+(realMail&&feat.tags?rb("tag",ICON_RTAG,"Tags",'aria-haspopup="dialog"'):"")+rb("move",ICON_RFOLDER,"Folders",'aria-haspopup="dialog"');
+  const act=(cls,a,icon,label)=>`<button type="button" class="action ${cls} rl-btn" data-live-act="${a}" aria-label="${label}" title="${label}">${icon}<span>${label}</span></button>`;
+  const acts=act("archive","archive",ICON_ARCH,"Archive")+act("trash","bin",ICON_BIN,"Bin");
+  const star=`<button type="button" class="subtle rl-icon starbtn${it.starred?" on":""}" data-live-act="star" aria-pressed="${it.starred?"true":"false"}" aria-label="${it.starred?"Remove star":"Star this email"}" title="${it.starred?"Remove star":"Star this email"}">${it.starred?ICON_STAR_ON:ICON_STAR}</button>`;
+  const inInbox=String(it.folder).toUpperCase()==="INBOX";
+  const items=[inInbox?"":["inbox","Move to Inbox"],["important","Mark the sender as an important person"],["rule","Always move this sender's email to a folder…"],["popup","View original email"]].filter(Boolean).map(([a,t])=>`<button type="button" role="menuitem" data-live-act="${a}">${t}</button>`).join("");
+  const more=`<span class="lmore"><button type="button" class="subtle qmore" data-live-act="more" aria-haspopup="menu" aria-expanded="false" aria-label="More actions" title="More actions">${ICON_MORE}</button><div class="fmenu" role="menu" hidden>${items}</div></span>`;
+  const copyBtns=[["address","Copy sender address"],["subject","Copy subject"],["all","Copy email details"]].map(([f,l])=>`<button type="button" class="subtle mail-copy-action" data-live-copy="${f}">${l}</button>`).join("");
+  const where=ctx.where?`<div class="live-where"><span>${esc(ctx.where)}</span>${ctx.closeAttr?`<button type="button" class="obtn" ${ctx.closeAttr}>Close</button>`:""}</div>`:"";
+  const OR=true;          // a folder email or search result has no stored summary, so its own text is always shown
+  return {OR,origPhone:true,subject:it.subject||"(no subject)",address:it.address||"",sender:it.name||it.address||"(no sender)",time:it.date?realTime(it.date):"",
+    star,nav:navBtns(ctx.nav?d=>ctx.nav(d,true):()=>false),phoneReply:`<button type="button" class="subtle rl-icon" data-live-act="reply" aria-label="Reply" title="Reply">${ICON_REPLY}</button>`,more,chips:"",
+    copy:`<span class="mail-copy-controls" aria-label="Copy email details">${copyBtns}</span>`,copyInner:copyBtns,tools,acts,task:where,scam:"",
+    summary:'<div data-live-slot="sum"></div>',attach:"",unsub:"",orig:'<section class="qorig" data-live-orig aria-label="Original email" tabindex="0"><p class="hint qorig-wait" role="status">Opening the original email…</p></section>',
+    replyBtn:["reply:Reply","forward:Forward","snooze:Snooze","task:Task",(realMail&&feat.tags)?"tag:Tags":"","move:Folders"].filter(Boolean).map(x=>{const [a,l]=x.split(":");return `<button class="subtle" data-live-act="${a}">${l}</button>`}).join(""),
+    kv:`<div class="qkv"><span>From</span><span class="addr">${esc(it.address||"")}</span></div><div class="qkv"><span>Received</span><span>${esc(it.date?realTime(it.date):"")}</span></div><div class="qkv"><span>Folder</span><span>${esc(ctx.folderLabel||it.folder||"")}</span></div>`,
+    qbtns:`<div class="qbtns"><div class="two">${act("archive","archive",ICON_ARCH,"Archive")}${act("trash","bin",ICON_BIN,"Bin")}</div></div>`};
+}
+function liveHtml(f,overlay){
+  if(view.style==="rail")return overlay?railPane(f):`<section class="reading rail" aria-label="Selected email">${railPane(f)}</section>`;
+  return overlay?readingHead(f)+detailPane(f):`<section class="reading" aria-label="Selected email">${readingHead(f)}${detailPane(f)}</section>`;
+}
+function liveShow(it,ctx){
+  let host=ctx.host;
+  if(ctx.overlay){
+    document.querySelectorAll(".reader.live").forEach(x=>x.remove());
+    host=document.createElement("div");host.className="reader live"+(view.style==="rail"?" rail":"");host.setAttribute("role","dialog");host.setAttribute("aria-modal","true");host.setAttribute("aria-label",it.subject||"Email");
+    host.innerHTML=`<div class="rtop">${isPhone()?'<button class="rbtn rclose" type="button" data-live-act="close" aria-label="Close this email">✕ Close</button>':'<button class="rbtn" type="button" data-live-act="close" aria-label="Back to the list">‹</button><span class="sp"></span>'}</div><div class="rbody"></div>`;
+    document.body.appendChild(host);
+  }
+  const f=liveFrags(it,ctx);
+  const body=ctx.overlay?host.querySelector(".rbody"):host;
+  const phoneBar=ctx.overlay&&isPhone()&&view.style==="rail"?(()=>{const sq=(a,icon,l)=>`<button type="button" class="rl-sq" data-live-act="${a}" aria-label="${l}" title="${l}">${icon}</button>`;return `<div class="ract rl-bar">${sq("archive",ICON_ARCH,"Archive")}${sq("bin",ICON_BIN,"Bin")}${sq("snooze",ICON_SNOOZE,"Snooze")}${realMail&&feat.tags?sq("tag",ICON_RTAG,"Tags"):""}${sq("move",ICON_RFOLDER,"Folders")}</div>`})():"";
+  body.innerHTML=`<div class="livepane">${liveHtml(f,ctx.overlay)}</div>`;
+  if(phoneBar)host.insertAdjacentHTML("beforeend",phoneBar);
+  host.dataset.liveHost="1";host._live={it,ctx,host};host.classList.remove("busy");
+  // the AI summary: written only when asked; the original: fetched from the mailbox now and shown the way every other email is
+  const slot=body.querySelector('[data-live-slot="sum"]');if(slot)slot.replaceWith(folderSummaryBox(it.token,it.kind==="find"?"/api/v1/find/results/":"/api/v1/folder-mail/",true));
+  const box=body.querySelector("[data-live-orig]");
+  if(box&&!f.OR){box.remove()}
+  else if(box){
+    const key=it.kind+":"+it.token,fresh=()=>{const o=liveOrig.get(key);return o?Promise.resolve(o):secureBackendRequest(liveUrl(it,"original"),{method:"GET",headers:{}}).then(o=>{while(liveOrig.size>=3)liveOrig.delete(liveOrig.keys().next().value);liveOrig.set(key,o);return o})};
+    fresh().then(o=>{
+      if(!box.isConnected)return;
+      origPaint(box,{scam:null,liveBase:liveBaseUrl(it)},{...o,attachments:[]});
+      const n=(o.attachments||[]).length;if(n){const p=document.createElement("p");p.className="hint";p.textContent=`This email has ${n===1?"a file":n+" files"}. Open it in your mail app to get ${n===1?"it":"them"}.`;box.append(p)}
+    }).catch(er=>{const p=box.querySelector(".qorig-wait");if(p)p.textContent=(er&&er.message)||"The original email could not be opened."});
+  }
+  body.scrollTop=0;if(!ctx.overlay)host.scrollTop=0;
+  if(host.id==="fdrPane"&&lay()==="right"){const h=Math.max(260,innerHeight-Math.max(0,host.getBoundingClientRect().top)-16);host.style.maxHeight=h+"px";const r=host.querySelector(".rl-rail");if(r)r.style.height=(h-14)+"px"}
+  return host;
+}
+async function liveOpenPopup(it,ctx){
+  try{
+    const o=await secureBackendRequest(liveUrl(it,"original"),{method:"GET",headers:{}});
+    presentOriginal({...o,attachments:[]},{title:it.subject,context:`${it.name||it.address} · ${ctx&&ctx.folderLabel||it.folder||""}`,account:it.account,fallbackDate:it.date?realTime(it.date):"",htmlUrl:liveBaseUrl(it)+"/original/html"});
+  }catch(er){toast(er.message,6000)}
+}
+document.addEventListener("click",async e=>{
+  const t=e.target&&e.target.closest?e.target:null;if(!t)return;
+  document.querySelectorAll(".lmore .fmenu:not([hidden])").forEach(m=>{if(!m.parentElement.contains(t))m.hidden=true});
+  const b=t.closest("[data-live-act],[data-live-nav],[data-live-copy]");if(!b)return;
+  const host=b.closest("[data-live-host]"),L=host&&host._live;if(!L)return;
+  const {it,ctx}=L;e.stopPropagation();
+  if(b.dataset.liveNav){if(ctx.nav)ctx.nav(+b.dataset.liveNav);return}
+  if(b.dataset.liveCopy){
+    const v={address:it.address||"",subject:it.subject||"",all:[it.address?"Sender: "+it.address:"",it.subject?"Subject: "+it.subject:""].filter(Boolean).join("\n")}[b.dataset.liveCopy];
+    if(!v){toast("This detail is not available",3000,"error");return}
+    copyText(v).then(ok=>toast(ok?"Copied to clipboard":"Could not copy. Check clipboard permissions.",2200,ok?"info":"error"));return;
+  }
+  const act=b.dataset.liveAct;
+  if(act==="more"){const m=b.parentElement.querySelector(".fmenu");m.hidden=!m.hidden;b.setAttribute("aria-expanded",String(!m.hidden));return}
+  const menu=b.closest(".fmenu");if(menu)menu.hidden=true;
+  if(act==="close"){if(ctx.overlay)host.remove();return}
+  if(act==="popup"){liveOpenPopup(it,ctx);return}
+  if(act==="star"){const on=!it.starred;await liveDo([it],"star",{starred:on});host.querySelectorAll('[data-live-act="star"]').forEach(x=>{x.classList.toggle("on",!!it.starred);x.setAttribute("aria-pressed",String(!!it.starred));x.innerHTML=it.starred?ICON_STAR_ON:ICON_STAR});return}
+  if(act==="archive"){if(ctx.overlay)host.remove();liveDo([it],"archive",{},"Archived.");return}
+  if(act==="bin"){if(ctx.overlay)host.remove();liveDo([it],"bin",{},"Moved to Bin.");return}
+  if(act==="inbox"){if(ctx.overlay)host.remove();liveDo([it],"move",{},liveSay("your Inbox"));return}
+  if(act==="move"){livePicker([it]);return}
+  if(act==="rule"){livePicker([it],true);return}
+  if(act==="important"){liveImportant(it);return}
+  if(act==="tag"){liveTag(it);return}
+  if(["reply","forward","snooze","task"].includes(act)){
+    const m=await liveStore(it,act==="reply"?"Opening your reply…":act==="forward"?"Opening your forward…":"Adding it to your lists first…");if(!m)return;
+    const anchor=host.isConnected&&host.contains(b)?b:(host.querySelector(`[data-live-act="${act}"]`)||host);
+    if(act==="reply")openComposer(m.id);else if(act==="forward")openComposer(m.id,"forward");
+    else if(act==="snooze")openSnoozeMenu(anchor,m.id);else openTaskAdd(anchor,m.id);
+  }
+});
 // One bar of actions for one email (with arrows) or for the ticked ones. getItems() is read when a button is pressed.
 function liveBar(getItems,opts={}){
   const bar=document.createElement("div");bar.className="lbar fbar";
@@ -8746,19 +8848,14 @@ async function openFolder(aid,f,offset){
       row.append(fra);
       row.onclick=e=>{if(e.target.closest&&e.target.closest(".fra,.fcheck"))return;row._open()};
       row.onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&e.target===row){e.preventDefault();row._open()}};
-      row._open=async()=>{
+      row._open=()=>{
         const L=lay();$("fdrCols").dataset.lay=L;
         list.querySelectorAll(".frow.on").forEach(x=>x.classList.remove("on"));row.classList.add("on");
-        let host=null;
-        if(L==="right"||L==="bottom")host=$("fdrPane");
-        else if(L==="list"){const had=row.nextElementSibling&&row.nextElementSibling.classList.contains("fdr-inline");list.querySelectorAll(".fdr-inline").forEach(x=>x.remove());if(had){row.classList.remove("on");return}host=document.createElement("div");host.className="fdr-inline";row.after(host)}
-        if(host)host.classList.add("busy");else toast("Fetching the email from your mailbox…");
         const nav=(d,probe)=>{const rs=fdrRowsNow(),t=rs[rs.indexOf(row)+d];if(probe)return !!t;if(t&&t._open){t._open();t.scrollIntoView({block:"nearest"})}};
-        try{const o=await secureBackendRequest(`/api/v1/folder-mail/${encodeURIComponent(it.token)}/original`,{method:"GET",headers:{}});
-          const c={title:it.subject,context:`${it.from_name||it.from_address} · ${f.label}${(o.attachments||[]).length?" · Open it in your mail app for its files":""}`,fallbackDate:it.date?realTime(it.date):""};
-          if(host){revokeViewerUrls();host.classList.remove("busy");fillOriginal(host,{...o,attachments:[]},c);host.prepend(folderSummaryBox(it.token));host.prepend(liveBar(()=>[it],{nav}));host.scrollTop=0;if(L==="bottom")host.scrollIntoView({block:"nearest"})}
-          else{presentOriginal({...o,attachments:[]},c);$("attachmentViewer").prepend(folderSummaryBox(it.token));$("attachmentViewer").prepend(liveBar(()=>[it],{nav}))}
-        }catch(er){if(host)host.classList.remove("busy");toast(er.message,6000)}
+        const ctx={nav,folderLabel:f.label};
+        if(L==="right"||L==="bottom"){liveShow(it,{...ctx,host:$("fdrPane")});if(L==="bottom")$("fdrPane").scrollIntoView({block:"nearest"})}
+        else if(L==="list"){const had=row.nextElementSibling&&row.nextElementSibling.classList.contains("fdr-inline");list.querySelectorAll(".fdr-inline").forEach(x=>x.remove());if(had){row.classList.remove("on");return}const host=document.createElement("div");host.className="fdr-inline";row.after(host);liveShow(it,{...ctx,host,nav:null})}
+        else liveShow(it,{...ctx,overlay:true});
       };
       list.append(row);
     }
@@ -9077,7 +9174,7 @@ function origPaint(box,m,o){
   const careful=!!(o.warning||m.scam),fmt=!!o.has_html;
   const remote=o.remote_images>0?`<div class="mail-notice">${o.remote_images} ${o.remote_images===1?"picture":"pictures"} from the internet ${o.remote_images===1?"is":"are"} not shown. They can tell the sender you opened this email.</div>`:"";
   const text=`<pre class="email-text">${emailTextHtml(o.text||"(no text content)",o.links,careful)}</pre>${o.truncated?'<p class="hint">Shortened for display.</p>':""}`;
-  const base=`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}`;
+  const base=m.liveBase||`/api/v1/accounts/${encodeURIComponent(m.real.accountId)}/messages/${encodeURIComponent(m.real.messageId)}`;
   box.innerHTML=`<article class="email-doc${fmt?" fmt":""}">${scamHtml(o.warning||m.scam)}${fmt?`<div class="fmt-tabs" role="group" aria-label="How to show this email"><button type="button" class="fmt-tab on" data-fmt="html" aria-pressed="true">As the sender made it</button><button type="button" class="fmt-tab" data-fmt="text" aria-pressed="false">Plain text</button></div>
     <div class="fmt-pane" data-fmt-pane="html">${o.remote_images>0?`<div class="mail-notice fmt-pics"><span>${o.remote_images} ${o.remote_images===1?"picture":"pictures"} from the internet ${o.remote_images===1?"is":"are"} not shown. They can tell the sender you opened this email.</span> <button type="button" class="linkbtn" data-fmt-pics>Show pictures</button></div>`:""}<iframe class="email-frame" title="This email as its sender formatted it" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe><p class="hint fmt-wait" role="status">Opening the email…</p></div>
     <div class="fmt-pane" data-fmt-pane="text" hidden>${remote}${text}</div>`:remote+text}</article>`;

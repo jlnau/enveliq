@@ -364,3 +364,9 @@ Choose **Reading pane on the right** in the View panel (the tab on the right edg
 - In **Folders** the box says "Search this folder" and searches inside the open folder (the same words and rules as Search all my mail). Choosing another folder keeps the words. **Clear search** shows the whole folder again.
 - On any other page (Tasks, Sent, Shipping and so on) typing in the box takes you to your inbox and searches it and all your mail. In Settings the box still searches the settings.
 - A found email lights up the moment you click it, shows "Opening this email…" in the reading pane, and has a **Generate summary** button above it.
+
+## One reading view for every email
+
+- Stored mail, emails opened from a folder and search results are all drawn by the same two functions in `prototype/index.html` (`railPane` and `detailPane`). The side rail or Classic style, and every other Customise choice, therefore apply everywhere. Do not write a second layout for an email: give these functions the pieces.
+- For a folder email or a search result, the original email is always shown (it has no stored summary), the **Generate summary** button writes a summary only when pressed and keeps nothing, and the pieces that need the email in your lists (Reply, Forward, Snooze, Task, Tags) first keep a small encrypted summary for 60 days, as Tag already did.
+- The formatted ("As the sender made it") copy of a folder email or a search result comes from `GET /api/v1/folder-mail/{token}/original/html` and `GET /api/v1/find/results/{token}/original/html`. They use the same safe rebuild as every other email (`htmlview`): scripts, trackers and outside pictures removed, a strict policy of their own, never stored.

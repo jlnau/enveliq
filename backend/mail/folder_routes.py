@@ -10,6 +10,7 @@ from ..models import StrictModel
 from ..security import Session
 from .errors import BridgeError
 from .find import FindError
+from .find_routes import formatted_page
 from .folders import Folders
 from .limits import SlidingWindowLimiter
 from .parse import render_original
@@ -101,6 +102,19 @@ def build_folder_router(ctx: Any) -> APIRouter:
             raise (HTTPException(status_code=404, detail="Not found.") if err.code == "not_found" else fail(err)) from None
         response.headers["Cache-Control"] = "no-store"
         return render_original(raw)
+
+    @router.get("/folder-mail/{token}/original/html")
+    def original_html(token: str, images: bool = False, session: Session = Depends(session_dep)):
+        """The folder email as its sender formatted it (the same safe rebuild as every other email). Fetched now, never kept."""
+        user = session.principal.user_id
+        allow(session)
+        try:
+            account_id, folder, validity, uid = folders.open_token(user, token)
+            account = mailbox(account_id, session, "open an email")
+            raw = folders.original(account, folder, validity, uid)
+        except BridgeError as err:
+            raise (HTTPException(status_code=404, detail="Not found.") if err.code == "not_found" else fail(err)) from None
+        return formatted_page(raw, images)
 
     def relocate(token: str, session: Session, dest: str | None, event: str) -> Response:
         user = session.principal.user_id

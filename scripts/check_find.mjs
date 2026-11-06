@@ -77,6 +77,7 @@ async function open(server, { width = 1200, height = 900 } = {}) {
   await page.goto(`${ORIGIN}/`);
   await page.waitForSelector("article.mail");
   await page.evaluate(() => { view.layout = "list"; applyView(); render(); });
+  if (process.env.EMAIL_STYLE) await page.evaluate((st) => { view.style = st; applyView(); render(); }, process.env.EMAIL_STYLE);
   return { page, errors, csp, context };
 }
 const shot = async (page, name) => { if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, name + ".png") }); };
@@ -150,9 +151,9 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.click("[data-find-again]");
   await page.waitForFunction(() => document.querySelectorAll(".find-row").length === 2 && !/added to Found/.test(document.querySelector("#findInline")?.innerText || ""));
   await page.locator(".find-row").first().click();
-  await page.waitForSelector("#attachmentModal.open");
-  check("View original email shows the email", (await page.locator("#attachmentModal").innerText()).includes("canvases are on the way"));
-  await page.evaluate(() => closeAttachmentViewer());
+  await page.waitForSelector(".reader.live .qorig.live, #readDock .livepane .qorig.live");
+  check("opening a found email shows it in the shared reading view", ((await page.locator(".reader.live, #readDock .livepane").first().innerText()).includes("canvases are on the way")));
+  await page.evaluate(() => { document.querySelectorAll(".reader.live").forEach((x) => x.remove()); });
   await page.waitForSelector("#findInline .find-row");
   check("closing the email leaves the results where they were", (await page.locator(".find-row").count()) === 2);
 
@@ -199,17 +200,18 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
     return { top: b.getBoundingClientRect().top, colTop: document.querySelector(".main>.content").getBoundingClientRect().top, chain };
   });
   await page.evaluate(() => { for (let el = document.querySelector("#list"); el; el = el.parentElement) el.scrollTop = 0; window.scrollTo(0, 0); });
+  await page.evaluate(() => { feat.tags = true; });
   await page.locator(".find-row").first().click();
-  await page.waitForSelector("#readDock .fdoc .email-doc");
-  check("clicking a found email shows it in the reading pane, not in a pop-up", (await page.locator("#attachmentModal.open").count()) === 0 && (await page.locator("#readDock .fdoc").innerText()).includes("canvases are on the way"));
+  await page.waitForSelector("#readDock .livepane .email-doc");
+  check("clicking a found email shows it in the reading pane, not in a pop-up", (await page.locator("#attachmentModal.open").count()) === 0 && (await page.locator("#readDock .livepane").innerText()).includes("canvases are on the way"));
   check("the found email's row is marked and the results stay where they were", (await page.locator(".find-row.on").count()) === 1 && (await page.locator(".find-row").count()) === 2 && (await page.locator("#findInline").count()) === 1);
   await page.locator(".find-row").nth(1).click();
   await page.waitForFunction(() => document.querySelectorAll(".find-row.on").length === 1 && document.querySelectorAll(".find-row")[1].classList.contains("on"));
-  check("the found email has a Generate summary button and the full action bar", (await page.locator("#readDock .fdr-sum .gen").count()) === 1 && (await page.locator("#readDock .lbar .fb-tag").count()) === 1 && (await page.locator("#readDock .lbar .fb-prev").count()) === 1);
-  check("choosing another one replaces it in the pane", (await page.locator("#readDock .fdoc").count()) === 1);
+  check("the found email has a Generate summary button and the full action bar", (await page.locator("#readDock .fdr-sum .gen").count()) === 1 && (await page.locator("#readDock [data-live-act=\"tag\"]").count()) >= 1 && (await page.locator("#readDock [data-live-nav=\"-1\"]").count()) === 1);
+  check("choosing another one replaces it in the pane", (await page.locator("#readDock .livepane").count()) === 1);
   await shot(page, "find-in-pane");
   await page.locator("[data-find-pane-close]").click();
-  check("Close in the pane puts the placeholder back", (await page.locator("#readDock .fdoc").count()) === 0);
+  check("Close in the pane puts the placeholder back", (await page.locator("#readDock .livepane").count()) === 0);
   check("reading-pane layout: the search bar stays pinned at the top of the list column, just under the Recent emails bar, while it scrolls", await page.evaluate(() => { const b = document.querySelector(".search-banner").getBoundingClientRect(), h = document.getElementById("previewListHeading").getBoundingClientRect(); return b.top >= h.bottom - 1 && b.top - h.bottom < 16 && b.top < 200; }));
   await context.close();
 }
@@ -278,6 +280,47 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("Summarise Emails is easy to press on a phone", (await page.locator("[data-find-sum]").boundingBox()).height >= 44);
   await shot(page, "phone-results");
   check("no sideways scrolling on the phone", await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  check("no errors on the phone", errors.length === 0 && csp.length === 0);
+  await context.close();
+}
+
+{
+  // One reading view for every email: the choices in Customise change the found email too, and on a phone it opens full screen like any email
+  const server = makeServer({ fast: "ready" });
+  const { page, errors, csp, context } = await open(server, { width: 1200, height: 800 });
+  await page.evaluate(() => { feat.tags = true; view.layout = "right"; view.style = "rail"; applyView(); render(); });
+  const subj = await page.evaluate(() => { const m = data.find((x) => x.owner === currentUser.id); paneId = m.id; render(); return m.subject; });
+  await page.waitForTimeout(300);
+  await page.fill("#search", subj.split(" ")[0]);
+  await page.waitForSelector("#findInline .find-row", { timeout: 5000 });
+  await page.locator(".find-row").first().click();
+  await page.waitForSelector("#readDock .livepane .rl-rail");
+  check("Side rail: a found email shows the same rail of buttons a normal email does", (await page.locator("#readDock .rl-rail .rl-btn").count()) >= 8);
+  const same = await page.evaluate(() => { const norm = ["Reply", "Forward", "Snooze", "Task", "Tags", "Folders"]; return norm.every((t) => [...document.querySelectorAll("#readDock .rl-rail .rl-btn")].some((b) => b.textContent.trim() === t)); });
+  check("the rail has Reply, Forward, Snooze, Task, Tags and Folders, like any email", same);
+  await page.evaluate(() => { view.style = "classic"; applyView(); render(); });
+  await page.locator(".find-row").nth(1).click();
+  await page.waitForSelector("#readDock .livepane .qside");
+  check("choosing the Classic style changes the found email too (no side rail)", (await page.locator("#readDock .rl-rail").count()) === 0 && (await page.locator("#readDock .livepane .qfoot").count()) === 1);
+  check("no errors", errors.length === 0 && csp.length === 0);
+  await context.close();
+}
+{
+  const server = makeServer({ fast: "ready" });
+  const { page, errors, csp, context } = await open(server, { width: 390, height: 780 });
+  await page.evaluate(() => { feat.tags = true; view.style = "rail"; applyView(); render(); });
+  await page.evaluate(() => { document.body.classList.add("msearch"); });
+  await page.fill("#search", "canvas");
+  await page.click("[data-find-open]");
+  await page.waitForSelector("#findInline .find-row");
+  await page.locator(".find-row").first().click();
+  await page.waitForSelector(".reader.live.rail .rl-bar");
+  check("phone: a found email opens full screen with a small X at the top", (await page.locator(".reader.live .rtop .rclose").count()) === 1);
+  check("phone: the buttons sit in a bar along the bottom, as for any email", (await page.locator(".reader.live .rl-bar .rl-sq").count()) >= 4 && (await page.locator(".reader.live .rl-rail").count()) === 0);
+  await shot(page, "phone-found-email");
+  check("phone: nothing sticks out sideways", await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  await page.locator(".reader.live .rclose").click();
+  check("phone: the X closes it", (await page.locator(".reader.live").count()) === 0);
   check("no errors on the phone", errors.length === 0 && csp.length === 0);
   await context.close();
 }

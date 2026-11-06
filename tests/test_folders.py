@@ -68,6 +68,22 @@ def test_looking_inside_a_folder_lists_newest_first_and_opens_one_email(env):
     assert client.get(f"/api/v1/folder-mail/{page['rows'][0]['token'][:-3]}abc/original").status_code == 404
 
 
+def test_a_folder_email_can_be_shown_as_its_sender_made_it(env):
+    _, client, bridge, _ = env
+    aid, _ = synced(client, bridge)
+    bridge.folders.append(("\\HasNoChildren", "Bills"))
+    html = raw_email("Styled bill", "Power Co <bills@example.invalid>", MAILBOX, message_id="<h1@example.invalid>",
+                     body="<html><body><h1>Pay now</h1><script>alert(1)</script></body></html>\n", extra="MIME-Version: 1.0\r\nContent-Type: text/html; charset=utf-8\r\n")
+    bridge.add(30, html)
+    bridge.messages[30]["folder"] = "Bills"
+    page = client.get(f"/api/v1/accounts/{aid}/folder-mail", params={"folder": "Bills"}).json()
+    token = page["rows"][0]["token"]
+    r = client.get(f"/api/v1/folder-mail/{token}/original/html")
+    assert r.status_code == 200 and "Pay now" in r.text and "alert(1)" not in r.text
+    assert "default-src" in r.headers["content-security-policy"] and r.headers["cache-control"] == "no-store"
+    assert client.get(f"/api/v1/folder-mail/{token[:-3]}abc/original/html").status_code == 404
+
+
 def test_a_move_rule_files_new_mail_from_a_sender_into_the_folder(env):
     appm, client, bridge, _ = env
     aid, m = synced(client, bridge)

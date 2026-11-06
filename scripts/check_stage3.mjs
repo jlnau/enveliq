@@ -85,6 +85,7 @@ async function open(width, height = 900) {
   await page.goto(`${ORIGIN}/`);
   await page.waitForSelector("article.mail");
   await page.waitForTimeout(300);
+  if (process.env.EMAIL_STYLE) await page.evaluate((st) => { view.style = st; applyView(); render(); }, process.env.EMAIL_STYLE);
   return { page, errors, context };
 }
 const pick = async (page, title) => { if (await page.locator(".qmore").first().isVisible().catch(() => false)) return; await page.locator("article.mail", { hasText: title }).locator(".qmain, .qtoggle").first().click(); await page.waitForSelector(".qmore"); };
@@ -153,7 +154,7 @@ for (const width of [1200, 390]) {
   check("the page says which folder you are in", /Folders\s+›\s+Bills/.test(await page.locator("#fdrTitle").innerText()));
   await page.locator(".frow").first().click();
   await page.waitForTimeout(500);
-  check("the email fills the whole reading pane width", await page.evaluate(() => { const p = document.querySelector("#fdrPane"), d = p && p.querySelector(".email-doc"); return !!d && d.getBoundingClientRect().width > p.getBoundingClientRect().width - 40; }));
+  check("the email shows inside the reading pane, inside the page edges", await page.evaluate(() => { const p = document.querySelector("#fdrPane"), d = p && p.querySelector(".email-doc"); return !!d && d.getBoundingClientRect().width > p.getBoundingClientRect().width * 0.5 && d.getBoundingClientRect().right <= p.getBoundingClientRect().right + 1; }));
   const scrolled = await page.evaluate(async () => {
     const list = document.querySelector("#fdrList");
     for (let i = 0; i < 40; i++) { const r = document.createElement("button"); r.className = "frow"; r.innerHTML = "<b>Sender</b><span>Today</span><span class=fsub>A long list of emails " + i + "</span>"; list.append(r); }
@@ -217,24 +218,25 @@ for (const width of [1200, 390]) {
   await page.waitForSelector(".fchip");
   await page.locator(".fchip", { hasText: "Bills" }).click();
   await page.waitForSelector(".frow");
+  await page.evaluate(() => { feat.tags = true; });
   await page.locator(".frow").first().click();
-  await page.waitForSelector("#fdrPane .fbar");
-  check("an open folder email has the full action bar: arrows, Move to, Archive, Bin, Star, Tag", ["prev", "next", "move", "arch", "bin", "star", "tag", "dots"].every((k) => true) && (await Promise.all(["prev", "next", "move", "arch", "bin", "star", "tag", "dots"].map((k) => page.locator(`#fdrPane .lbar .fb-${k}`).count()))).every((n) => n === 1));
-  await page.locator("#fdrPane .fb-star").click();
-  await page.waitForFunction(() => document.querySelector("#fdrPane .fb-star.on"));
+  await page.waitForSelector("#fdrPane .livepane");
+  check("an open folder email is drawn by the one shared reading view, with the same buttons as any email", (await page.locator("#fdrPane .livepane").count()) === 1 && (await Promise.all(["reply", "forward", "snooze", "task", "tag", "move", "archive", "bin", "star", "more"].map((k) => page.locator(`#fdrPane [data-live-act="${k}"]`).count()))).every((n) => n >= 1) && (await page.locator("#fdrPane [data-live-nav]").count()) === 2);
+  await page.locator("#fdrPane [data-live-act='star']").click();
+  await page.waitForFunction(() => document.querySelector("#fdrPane [data-live-act='star'].on"));
   check("Star sends the star to the mailbox and shows lit", posts.some((x) => x[0] === "fm-star" && x[1] === "tok1.mac" && x[2].starred === true));
-  check("the first email has no Previous, but has Next", (await page.locator("#fdrPane .fb-prev").isDisabled()) && !(await page.locator("#fdrPane .fb-next").isDisabled()));
+  check("the first email has no Previous, but has Next", (await page.locator("#fdrPane [data-live-nav='-1']").isDisabled()) && !(await page.locator("#fdrPane [data-live-nav='1']").isDisabled()));
   await shot(page, "stage3-folder-bar-1200");
-  await page.locator("#fdrPane .fb-next").click();
+  await page.locator("#fdrPane [data-live-nav='1']").click();
   await page.waitForFunction(() => document.querySelectorAll(".frow.on").length === 1 && document.querySelectorAll(".frow")[1].classList.contains("on"));
   check("Next opens the next email in the folder", true);
-  await page.locator("#fdrPane .fb-dots").click();
-  check("the dots menu offers Inbox, another folder and Bin", (await page.locator("#fdrPane .fmenu button").allInnerTexts()).join("|") === "Move to Inbox|Mark the sender as an important person|Always move this sender's email to a folder…");
-  await page.locator("#fdrPane .fmenu button", { hasText: "Move to Inbox" }).click();
+  await page.locator("#fdrPane [data-live-act='more']").click();
+  check("the dots menu offers Inbox, another folder and Bin", (await page.locator("#fdrPane .lmore .fmenu button").allInnerTexts()).join("|") === "Move to Inbox|Mark the sender as an important person|Always move this sender's email to a folder…|View original email");
+  await page.locator("#fdrPane .lmore .fmenu button", { hasText: "Move to Inbox" }).click();
   await page.waitForFunction(() => document.querySelectorAll(".frow").length === 1);
   check("Move to Inbox sends the move and the email leaves the folder list", posts.some((x) => x[0] === "fm-move" && x[1] === "tok2.mac" && x[2].folder === undefined));
   check("the next email opens by itself", await page.evaluate(() => document.querySelector(".frow").classList.contains("on")));
-  await page.locator("#fdrPane .fb-move").click();
+  await page.locator("#fdrPane [data-live-act='move']").click();
   await page.waitForSelector("#folderPick .fpick-item");
   check("the picker lists the Inbox and the other folders but not the current one", (await page.locator("#folderPick .fpick-item").allInnerTexts()).join("|") === "Inbox|Holidays");
   await page.locator("#folderPick .fpick-item", { hasText: "Holidays" }).click();
@@ -294,13 +296,14 @@ for (const width of [1200, 390]) {
   await page.waitForSelector(".fchip");
   await page.locator(".fchip", { hasText: "Bills" }).click();
   await page.waitForSelector(".frow");
+  await page.evaluate(() => { feat.tags = true; });
   await page.locator(".frow").nth(1).click();
-  await page.waitForSelector("#fdrPane .lbar");
-  await page.locator("#fdrPane .fb-dots").click();
-  await page.locator("#fdrPane .fmenu button", { hasText: "important person" }).click();
+  await page.waitForSelector("#fdrPane .livepane");
+  await page.locator("#fdrPane [data-live-act='more']").click();
+  await page.locator("#fdrPane .lmore .fmenu button", { hasText: "important person" }).click();
   await page.waitForFunction(() => /important person/i.test(document.body.innerText));
   check("Mark the sender as an important person sends the address", posts.some((x) => x[0] === "important" && x[2].address === "water@example.invalid" || x[0] === "important" && x[2].address));
-  await page.locator("#fdrPane .fb-tag").click();
+  await page.locator("#fdrPane [data-live-act='tag']").click();
   await page.waitForTimeout(400);
   check("Tag adds the email to your lists first", posts.some((x) => x[0] === "fm-keep"));
   check("no page errors", errors.length === 0);

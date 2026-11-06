@@ -145,6 +145,16 @@ def test_open_the_original_of_a_result(env):
     assert r.headers["cache-control"] == "no-store"
 
 
+def test_a_result_can_be_shown_as_its_sender_made_it(env):
+    _, client, bridge, _ = env
+    account(client, bridge)
+    _, page = run_search(client, "canvases")
+    token = page["rows"][0]["token"]
+    plain = client.get(f"/api/v1/find/results/{token}/original/html")
+    assert plain.status_code == 404                                  # this test email has no formatted version
+    assert client.get(f"/api/v1/find/results/{token[:-3]}abc/original/html").status_code in (404, 422)
+
+
 def test_no_mailbox_means_a_kind_message(tmp_path):
     appm, client, bridge = start(tmp_path, None)
     r = client.post("/api/v1/find/searches", json={"query": "anything"})

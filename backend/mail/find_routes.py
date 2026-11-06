@@ -11,7 +11,7 @@ from pydantic import Field
 
 from ..security import Session
 from ..models import StrictModel
-from . import features
+from . import features, htmlview
 from .errors import BridgeError
 from .find import FindError, FindJobs, make_filters, parse_query
 from .find_index import FindIndex
@@ -25,6 +25,15 @@ JobId = Annotated[str, PathParam(pattern=r"^[A-Za-z0-9_-]{8,16}$")]
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{8,16}\.\d{1,6}\.[0-9a-f]{24}$")
 Token = Annotated[str, PathParam(pattern=TOKEN_RE.pattern)]
 MAX_KEEP_MANY = 100
+
+
+def formatted_page(raw: bytes, images: bool) -> Response:
+    built = htmlview.render(raw, images)
+    if built is None:
+        raise HTTPException(status_code=404, detail="This email has no formatted version.")
+    return Response(built.page, media_type="text/html; charset=utf-8",
+                    headers={"Content-Security-Policy": htmlview.policy_header(images), "Cache-Control": "no-store",
+                             "X-Frame-Options": "SAMEORIGIN", "Referrer-Policy": "no-referrer"})
 
 
 class FastBody(StrictModel):
@@ -223,6 +232,20 @@ def build_find_router(ctx: Any) -> APIRouter:
             raise fail(err) from None
         no_store(response)
         return render_original(raw)
+
+    @router.get("/results/{token}/original/html")
+    def original_html(token: Token, images: bool = False, session: Session = Depends(session_dep)):
+        """The found email as its sender formatted it: the same safe rebuild every other email gets (see htmlview). Fetched now, never kept."""
+        user = need(session)
+        if not view_limit.allow(f"findview:{user}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        try:
+            raw, _ref = jobs.original(user, token)
+        except FindError as err:
+            raise HTTPException(status_code=err.status, detail=err.message) from None
+        except BridgeError as err:
+            raise fail(err) from None
+        return formatted_page(raw, images)
 
     def keep_one(user: str, token: str) -> dict[str, Any]:
         """Keep one found email in Found emails and queue its summary. Raises HTTPException on a problem."""
