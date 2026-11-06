@@ -1812,6 +1812,20 @@ html[data-theme="light"] .search-banner{background:#2f6fe0}
 @media(max-width:760px){#clearSearchBtn{display:none}}
 .search{position:relative}.search-key{position:absolute;top:50%;transform:translateY(-50%);min-width:22px;height:22px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;padding:0 6px;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;background:rgba(255,255,255,.07);color:var(--muted);font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;pointer-events:none}
 .search-key[hidden]{display:none}
+.sprog{position:relative;height:5px;border-radius:99px;background:rgba(255,255,255,.18);overflow:hidden;margin-top:8px}
+.sprog i{position:absolute;top:0;bottom:0;width:38%;border-radius:99px;background:linear-gradient(90deg,#6aa8ff,#bcd8ff);animation:sprogmove 1.5s ease-in-out infinite}
+@keyframes sprogmove{0%{left:-40%}100%{left:102%}}
+@media(prefers-reduced-motion:reduce){.sprog i{animation:none;left:0;width:100%;opacity:.7}}
+.search-banner.busy{display:block}.search-banner .sb-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.search-banner .sprog{background:rgba(255,255,255,.25)}.search-banner .sprog i{background:linear-gradient(90deg,#fff,#cfe3ff)}
+.find-box .sprog{margin:6px 0 2px}
+.find-row.compact{grid-template-columns:auto minmax(0,1fr) auto;gap:2px 12px;padding:10px 12px;border-radius:10px;cursor:pointer;align-items:center}
+.find-row.compact>*:not(.check){grid-column:auto}.find-row.compact>.check{grid-row:1/span 2;align-self:center;margin:0}
+.find-row.compact .fr-from{grid-column:2;grid-row:1;font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.find-row.compact .fr-when{grid-column:3;grid-row:1;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.find-row.compact .fr-sub{grid-column:2;grid-row:2;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.find-row.compact .fr-where{grid-column:3;grid-row:2;font-size:12px;color:var(--faint,var(--muted));white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis}
+.find-row.compact .fr-note{grid-column:2/-1}
+.find-row.compact:hover{background:var(--panel2)}.find-row.compact:focus-visible{outline:2px solid var(--accent,#6aa8ff)}
 .drag-folders{display:none}
 body.dragging-mail .sidebar>*:not(.drag-folders){display:none!important}
 body.dragging-mail .drag-folders{display:flex;flex-direction:column;min-height:0;flex:1;padding:6px 0 0}
@@ -3076,13 +3090,14 @@ function searchKeyPaint(){
   k.hidden=!on;if(on)k.style.left=(i.offsetLeft+i.offsetWidth-k.offsetWidth-10)+"px";
 }
 function clearSearch(){
-  query="";$("search").value="";searchPin=null;autoDismissed="";document.body.classList.remove("msearch");
+  query="";$("search").value="";searchPin=null;autoDismissed="";findUi.pend="";document.body.classList.remove("msearch");
   findReset();render();$("search").focus();
 }
 function searchBannerHtml(){
   const q=String(query||"").trim();
-  if(!q&&!findUi.open)return "";
-  return `<div class="search-banner" role="status"><span>Searching for <b>${esc(q||findUi.query||"your filters")}</b>. Only emails that match are shown.</span><button type="button" data-clear-search>Clear search</button></div>`;
+  if(!q&&!findUi.open&&!findUi.pend)return "";
+  const busy=searchingNow(),what=esc(q||findUi.query||"your filters");
+  return `<div class="search-banner${busy?" busy":""}" role="status"><div class="sb-row"><span>${busy?`Searching all your mail for <b>${what}</b>…`:`Searching for <b>${what}</b>. Only emails that match are shown.`}</span><button type="button" data-clear-search>Clear search</button></div>${busy?PROG:""}</div>`;
 }
 let snoozeFor=null,wakeTimer=0;
 function closeSnoozeMenu(){const m=$("snoozeMenu");if(m)m.hidden=true;snoozeFor=null}
@@ -3661,8 +3676,17 @@ function findFiltersHtml(){
 }
 // The search results sit in the main list area, above the ordinary search results, and look and behave like the inbox list:
 // a tick box on the left of each email (Shift ticks a run), Select all, and a Summarise Emails button once two or more are ticked.
+const PROG='<div class="sprog" role="progressbar" aria-label="Searching all your mail" aria-busy="true"><i></i></div>';
+function searchingNow(){
+  const q=String(query||"").trim();
+  if(findUi.open)return !findUi.err&&!(findUi.prog&&findUi.prog.done);
+  return !!findUi.pend&&findUi.pend===q;
+}
+function findPendingHtml(){      // shown the moment you type, before the search has started, so nothing jumps in later
+  return `<section class="find-inline" id="findPending" aria-label="Search all my mail"><div class="fi-head"><b>Search all my mail</b></div><div class="find-box"><p class="find-q">Searching all your mail…</p>${PROG}</div></section>`;
+}
 function findInlineHtml(){
-  if(!findUi.open)return "";
+  if(!findUi.open)return searchingNow()?findPendingHtml():"";
   const p=findUi.prog,running=!!(p&&!p.done);
   const mbx=p?p.mailboxes.map(b=>{
     const t=b.state==="done"||b.state==="searching"?`${findN(b.found)} found`:b.state==="cancelled"?"Stopped":b.state==="failed"?"":"Waiting";
@@ -3670,20 +3694,24 @@ function findInlineHtml(){
   const total=p?`<p class="find-total" aria-live="polite">${running?`So far: ${findN(p.total)} ${p.total===1?"email":"emails"}`:p.cancelled?`Stopped. ${findN(p.total)} ${p.total===1?"email":"emails"} found`:`${findN(p.total)} ${p.total===1?"email":"emails"}`}${p.listed&&p.total>p.listed?` (the newest ${findN(p.listed)} can be listed. Add a word to narrow it down.)`:""}</p>`:"";
   const rows=findUi.rows.map(r=>{
     const note=findUi.notes[r.token],on=findUi.sel.has(r.token);
-    const who=r.from_name?`${esc(r.from_name)} <${esc(r.from_address)}>`:esc(r.from_address||"Unknown sender");
+    const who=esc(r.from_name||r.from_address||"Unknown sender");
     const where=[findUi.prog&&findUi.prog.mailboxes.length>1?r.account:"",r.folder].filter(Boolean).map(esc).join(" · ");
-    return `<article class="find-row${on?" picked":""}"><input class="check" type="checkbox" data-find-sel="${esc(r.token)}" aria-label="Select ${esc(r.subject)}"${on?" checked":""}><b>${esc(r.subject)}</b><span class="fr-from">${who}</span><span class="fr-meta">${esc(findShortDate(r.date))}${where?" · "+where:""}${r.has_files?" · 📎 has files":""}</span>
-      <div class="fr-btns"><button class="obtn" type="button" data-find-view="${esc(r.token)}">View original email</button><button class="obtn blue" type="button" data-find-keep="${esc(r.token)}"${note&&note.done?" disabled":""}>Summarise</button></div>
-      ${note?`<p class="fr-note" role="status">${esc(note.text)}</p>`:""}</article>`}).join("");
+    return `<article class="find-row compact${on?" picked":""}" data-find-view="${esc(r.token)}" tabindex="0" role="button" aria-label="Open ${esc(r.subject)}"><input class="check" type="checkbox" data-find-sel="${esc(r.token)}" aria-label="Select ${esc(r.subject)}"${on?" checked":""}><span class="fr-from">${who}</span><span class="fr-when">${esc(findShortDate(r.date))}</span><b class="fr-sub">${esc(r.subject)}</b>${where||r.has_files?`<span class="fr-where">${r.has_files?"📎 ":""}${where}</span>`:""}${note?`<p class="fr-note" role="status">${esc(note.text)}</p>`:""}</article>`}).join("");
   const none=p&&p.done&&!findUi.rows.length&&!p.cancelled?`<p class="pop-note">Nothing matched. Try fewer or different words, or <label class="find-opt" style="display:inline-flex"><input type="checkbox" data-find-junk${findUi.junk?" checked":""}> include Spam and Bin</label>.</p>`:"";
   const n=findUi.sel.size,allOn=findUi.rows.length>0&&findUi.rows.every(r=>findUi.sel.has(r.token));
-  const tools=findUi.rows.length?`<div class="fi-tools"><label class="selall"><input class="check" type="checkbox" id="findSelectAll" data-find-all${allOn?" checked":""} aria-label="Select all the emails listed"><span>Select all</span></label>${n?`<span class="fi-count" aria-live="polite">${n} selected</span><button class="linkbtn" type="button" data-find-clear>Clear</button>`:""}${n>=2?`<button class="obtn blue" type="button" data-find-sum${findUi.summing?" disabled":""}>${findUi.summing?"Adding…":"Summarise Emails"}</button>`:""}</div>`:"";
+  const tools=findUi.rows.length?`<div class="fi-tools"><label class="selall"><input class="check" type="checkbox" id="findSelectAll" data-find-all${allOn?" checked":""} aria-label="Select all the emails listed"><span>Select all</span></label>${n?`<span class="fi-count" aria-live="polite">${n} selected</span><button class="linkbtn" type="button" data-find-clear>Clear</button>`:""}${n>=1?`<button class="obtn blue" type="button" data-find-sum${findUi.summing?" disabled":""}>${findUi.summing?"Adding…":"Summarise Emails"}</button>`:""}</div>`:"";
   return `<section class="find-inline" id="findInline" aria-label="Search all my mail"><div class="fi-head"><b>Search all my mail</b><div class="fi-btns">${running?`<button class="obtn" type="button" data-find-cancel>Cancel search</button>`:`${p?`<button class="obtn blue" type="button" data-find-again>Search again</button>`:""}`}<button class="obtn" type="button" data-find-close>Close</button></div></div>
-    ${findFiltersHtml()}<div class="find-box">${p||findUi.err?`<p class="find-q">Searching for <b>${esc(findDescribe(findUi.shown||findSpec()))}</b></p>`:`<p class="find-q">Set a filter or type some words, then press Search.</p>`}${mbx?`<ul class="find-mbx">${mbx}</ul>`:""}${total}${findUi.err?`<p class="sa-err" role="alert">${esc(findUi.err)}</p>`:""}
+    ${findFiltersHtml()}<div class="find-box">${running||(!p&&!findUi.err&&findUi.shown)?`<p class="find-q">Searching all your mail for <b>${esc(findDescribe(findUi.shown||findSpec()))}</b>…</p>${PROG}`:p||findUi.err?`<p class="find-q">Searched for <b>${esc(findDescribe(findUi.shown||findSpec()))}</b></p>`:`<p class="find-q">Set a filter or type some words, then press Search.</p>`}${mbx?`<ul class="find-mbx">${mbx}</ul>`:""}${total}${findUi.err?`<p class="sa-err" role="alert">${esc(findUi.err)}</p>`:""}
       <label class="find-opt"><input type="checkbox" data-find-junk${findUi.junk?" checked":""}> Include Spam and Bin</label></div>
     ${findUi.sumNote?`<p class="fr-note" role="status">${esc(findUi.sumNote)}</p>`:""}${tools}${rows}${none}${findUi.more?`<button class="obtn" type="button" data-find-more${findUi.busy?" disabled":""}>Show more</button>`:""}</section>`;
 }
+function bannerPaint(){          // the bar over the list follows the search: busy while it runs, quiet when it is done
+  const b=document.querySelector(".search-banner");if(!b)return;
+  const t=document.createElement("div");t.innerHTML=searchBannerHtml();
+  if(t.firstElementChild)b.replaceWith(t.firstElementChild);else b.remove();
+}
 function findPaint(){
+  bannerPaint();
   const box=$("findInline");
   if(!findUi.open){if(box)box.remove();return}
   if(!box){render();return}                      // the list is drawn again and takes the panel with it
@@ -3733,13 +3761,14 @@ async function fastCheck(){
 function findAuto(){
   clearTimeout(autoTimer);
   const q=String(query||"").trim();
-  if(!findOn()||q.length<2){autoDismissed="";return}
+  if(!findOn()||q.length<2){autoDismissed="";findUi.pend="";return}
+  findUi.pend=(autoDismissed!==q&&(fastAll!==false||Date.now()-fastAt>=60000)&&!(findUi.open&&findUi.query===q))?q:"";
   autoTimer=setTimeout(async()=>{
     if(String(query||"").trim()!==q||autoDismissed===q||(findUi.open&&findUi.query===q))return;
-    if(!(await fastCheck()))return;
+    if(!(await fastCheck())){if(findUi.pend===q){findUi.pend="";render()}return}
     if(String(query||"").trim()!==q||autoDismissed===q)return;
     if(findUi.open)findReset();
-    findUi={...findUi,open:true,manual:false,viewing:false,query:q,sel:new Set(),anchor:null,sumNote:"",summing:false};
+    findUi={...findUi,pend:"",open:true,manual:false,viewing:false,query:q,sel:new Set(),anchor:null,sumNote:"",summing:false};
     render();findStart();
   },450);
 }
@@ -3815,7 +3844,7 @@ async function findKeep(token){
 // Summarise Emails: every ticked email is kept in Found emails and joins the same AI summary line a single Summarise uses.
 async function findKeepMany(){
   const tokens=[...findUi.sel].filter(t=>findUi.rows.some(r=>r.token===t));
-  if(tokens.length<2||findUi.summing)return;
+  if(tokens.length<1||findUi.summing)return;
   findUi.summing=true;findUi.sumNote="";findPaint();
   let added=0,already=0,failed=0,waiting=false;
   try{
@@ -3859,7 +3888,7 @@ document.addEventListener("click",e=>{
   if(t.closest("[data-find-more]")){findMore();return}
   if(t.closest("[data-find-clear]")){findUi.sel=new Set();findUi.anchor=null;findPaint();return}
   if(t.closest("[data-find-sum]")){findKeepMany();return}
-  const v=t.closest("[data-find-view]");if(v){findView(v.dataset.findView);return}
+  const v=t.closest("[data-find-view]");if(v&&!t.closest("[data-find-sel]")){findView(v.dataset.findView);return}
   const k=t.closest("[data-find-keep]");if(k){findKeep(k.dataset.findKeep);return}
 });
 document.addEventListener("change",e=>{
@@ -3883,6 +3912,7 @@ document.addEventListener("change",e=>{
 document.addEventListener("toggle",e=>{if(e.target&&e.target.matches&&e.target.matches("[data-find-fold]"))findUi.fopen=e.target.open},true);
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target&&e.target.matches&&e.target.matches("#findInline [data-ff]:not([type=checkbox]):not(select)")){e.preventDefault();e.target.dispatchEvent(new Event("change",{bubbles:true}));if(findCan())findStart();return}
   if(e.key==="Enter"&&e.target&&e.target.matches&&e.target.matches("[data-find-name]")){e.preventDefault();findSaveNow();return}},true);
+document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target&&e.target.matches&&e.target.matches("article.find-row[data-find-view]")){e.preventDefault();findView(e.target.dataset.findView)}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&findUi.open&&e.target&&e.target.closest&&e.target.closest("#findInline")){e.stopPropagation();findClose()}},true);
 
 // ---------- News feeds (RSS and Atom) ----------
@@ -7078,7 +7108,7 @@ document.addEventListener("click",e=>{
 });
 for(const ev of ["focus","blur","input"])$("search").addEventListener(ev,searchKeyPaint);
 addEventListener("resize",searchKeyPaint);new ResizeObserver(searchKeyPaint).observe($("search"));
-$("search").addEventListener("input",e=>{if(inSettingsScreen()){settingsSearchRun(e.target.value);return}query=e.target.value;render();findAuto()});
+$("search").addEventListener("input",e=>{if(inSettingsScreen()){settingsSearchRun(e.target.value);return}query=e.target.value;findAuto();render()});
 $("search").addEventListener("keydown",e=>{
   if(!inSettingsScreen())return;
   if(e.key==="Escape"){settingsSearchClear()}

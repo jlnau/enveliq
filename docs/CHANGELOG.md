@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Search all my mail shows at once, with a progress bar, and results are a tight list.** When you type, the Search all my mail panel appears straight away saying it is searching, with a moving progress bar, instead of popping in half a minute later above the other results. The bar over the list, which stays in view as you scroll, shows the same progress bar and the Clear search button until the search finishes. The results are now one small row each (sender, date, subject, folder), like the rest of the list, with a tick box. Clicking a row shows the email. The big View original email and Summarise buttons on every row are gone; tick emails and press Summarise Emails (now offered from one tick) to add them.
+
 **A / key hint in the search box.** The empty search box shows a small **/** key at its right end, to say that pressing / starts typing in it without the mouse. It hides while you type or on a phone, and when keyboard shortcuts are switched off in Settings.
 
 **Search stays put, with an obvious Clear search.** Opening an email from "Also found elsewhere" no longer ends the search: the results stay, the email opens beside them, and the search stays until you clear it. While you search, a bright **Clear search** button shows in the search bar, the box glows, and a bar over the list (which stays in view as you scroll) says what you are searching for with its own Clear search button.

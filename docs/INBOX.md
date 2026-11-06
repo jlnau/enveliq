@@ -344,3 +344,8 @@ Choose **Reading pane on the right** in the View panel (the tab on the right edg
 - While a search is on, the search bar shows a bright **Clear search** button and the box glows, and a bar over the list says "Searching for …" with its own **Clear search** button. The bar stays at the top as you scroll. Clearing empties the box and brings back the normal list.
 
 - The empty search box shows a small **/** key at its right end: press **/** to start typing in the search without the mouse. The hint hides while the box is in use, on a phone, and when **Enable keyboard shortcuts** is off.
+
+## Search all my mail: shows at once, tight list
+
+- Typing shows the **Search all my mail** panel immediately ("Searching all your mail…" with a moving progress bar). The bar over the list (always in view) has the same progress bar and the Clear search button; both bars go quiet when the search ends.
+- Results are small rows: tick box, sender, date, subject, and the folder (with a paperclip if it has files). Click a row to read the email. To summarise, tick one or more and press **Summarise Emails**.
