@@ -1689,6 +1689,8 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
 #inboxSubtitle:empty{display:none}
 
 .app{--side-w:206px}
+/* The full-screen reader covers the list, so the sticky Recent emails bar must not float over it */
+body.reader-open .content>.preview-list-heading{visibility:hidden}
 @media(max-width:380px){.mtop{gap:2px;padding:0 4px}.mtop .mbtn{width:36px}}
 /* ---- v0.104 tidy-up: logo in the search row, round Sync and Agent buttons, quiet scrollbars, softer unread, glowing summary ---- */
 @media(min-width:761px){

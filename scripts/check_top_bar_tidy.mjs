@@ -101,6 +101,7 @@ messages = make(); views = []; chats = []; asked = [];
     await page.evaluate(() => { const b = [...document.querySelectorAll("button")].find((x) => x.textContent.trim() === "Mark as read" && x.offsetParent); if (b) { b.classList.remove("reviewed"); b.classList.add("unread"); for (const n of b.childNodes) if (n.nodeType === 3 || n.tagName === "SPAN") n.textContent = n.textContent.replace("Mark as read", "Mark as unread"); } });
     await page.screenshot({ path: path.join(process.env.SHOTS, "top-bar-unread.png"), clip: { x: 668, y: 760, width: 600, height: 120 } });
   }
+  check("the Recent emails bar is hidden while a full-screen email is open", await page.evaluate(() => { document.body.classList.add("reader-open"); const v = getComputedStyle(document.querySelector("#previewListHeading")).visibility; document.body.classList.remove("reader-open"); return v === "hidden"; }));
   check("no script errors", errors.length === 0);
 }
 {
