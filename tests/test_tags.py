@@ -496,3 +496,18 @@ def test_a_long_list_of_tags_in_the_mailbox_is_shown_whole():
     assert len(service(gm, MemVault()).overview(GMAIL)["names"]) == 60
     kw = MemImap([("\\HasNoChildren", "INBOX")], [], permanent="(\\Seen " + " ".join(f"K{i}" for i in range(40)) + " \\*)")
     assert len(service(kw, MemVault()).overview(OTHER)["names"]) == 40
+
+
+def test_the_emails_with_one_tag_are_listed_like_a_folder_and_open_the_same_way(env):
+    appm, client, bridge = env
+    aid = synced_one(client, bridge)
+    client.post(f"/api/v1/accounts/{aid}/tags", json={"name": "Work"})
+    mid = next(m["id"] for m in listed(client, aid) if m["subject"] == "Quarterly update")
+    client.put(f"/api/v1/accounts/{aid}/messages/{mid}/tags", json={"name": "Work", "on": True})
+    r = client.get(f"/api/v1/accounts/{aid}/tag-mail", params={"tag": "Work"})
+    assert r.status_code == 200 and r.headers["cache-control"] == "no-store"
+    rows = r.json()["rows"]
+    assert [x["subject"] for x in rows] == ["Quarterly update"]
+    assert client.get(f"/api/v1/folder-mail/{rows[0]['token']}/original").status_code == 200
+    assert client.get(f"/api/v1/accounts/{aid}/tag-mail", params={"tag": "Nope"}).status_code == 404
+    assert client.get(f"/api/v1/accounts/{aid}/tag-mail", params={"tag": "../x"}).status_code == 404

@@ -1831,6 +1831,16 @@ body.dragging-mail .app.collapsed .sidebar>*:not(.drag-folders){display:none!imp
 article.mail[data-dragmail]{cursor:grab}
 body.dragging-mail{user-select:none;-webkit-user-select:none;cursor:grabbing}
 .drag-ghost{position:fixed;left:0;top:0;z-index:300;pointer-events:none;will-change:transform;max-width:280px;padding:9px 14px;border-radius:12px;background:#1b4ba3;color:#fff;font-size:14px;font-weight:650;box-shadow:0 8px 24px rgba(0,0,0,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.95}
+.tag-side{border-color:#3a6a9a}
+body.in-tags .tag-side:not([hidden]){display:block}
+body.in-tags .folder-side:not([hidden]){display:block;max-height:min(30vh,260px)}
+body:not(.in-tags) .tag-side{display:none}
+#tagNav.active{background:#173c80;color:#7bbaff}
+.fchip.drop{outline:2px dashed #7bbaff;outline-offset:-2px;background:#1b4ba3}
+.frow[draggable=true]{cursor:grab}body.dragging-mail .folder-side{box-shadow:0 0 0 2px rgba(123,186,255,.45)}
+.drag-ghost{position:fixed;top:-100px;left:-100px;padding:6px 12px;border-radius:10px;background:#1544ad;color:#fff;font:600 13px system-ui}
+@media(min-width:861px){.app:not(.collapsed) .sidebar{padding-inline:10px}.sidebar .nav{font-size:13.5px;gap:8px;padding:9px 8px}.sidebar .nav-label{letter-spacing:-.005em}.sidebar .nav .count,.sidebar .nav .badge,.sidebar .nav>b,.sidebar .nav>em{font-size:12px;min-width:0;padding-inline:7px}}
+.tagrow[hidden]{display:none}
 </style>
 </head>
 <body class="booting">
@@ -1866,6 +1876,8 @@ body.dragging-mail{user-select:none;-webkit-user-select:none;cursor:grabbing}
     <div id="savedNav" role="group" aria-label="Saved searches" hidden><p class="nav-sub">Saved searches</p><div id="savedItems"></div></div>
     <div class="side-sep" aria-hidden="true"></div>
     <div id="folderSide" class="folder-side" role="group" aria-label="Folders" hidden></div>
+    <button class="nav" data-filter="tags" id="tagNav" title="Tags" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/></svg><span class="nav-label">Tags</span></button>
+    <div id="tagSide" class="folder-side tag-side" role="group" aria-label="Tags" hidden></div>
     <div class="more-nav" id="moreNav">
       <button class="nav more-toggle" id="moreToggle" type="button" aria-expanded="false" aria-controls="moreItems" title="More mailbox views"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3zM3 9h18"/><path class="more-chev" d="m9.5 13.2 2.5 2.4 2.5-2.4"/></svg><span class="nav-label">More</span><span class="more-arrow" aria-hidden="true">⌄</span></button>
       <div class="more-items" id="moreItems"></div>
@@ -2604,8 +2616,8 @@ const previewVault={initialized:false,unlocked:false,salt:null,verifier:null};
 const expanded=new Set();
 const convHidden=new Map(); // conversation key -> the open email when the person pressed Hide, so Hide works even while one of its emails is open
 // A refresh keeps you where you are: the page (in the address bar after #/) and which emails are open (this tab only).
-const folderPage=()=>filter==="folders"||filter==="sent";      // Sent is the Folders page opened on your Sent folder: the same list and reading view
-const PAGES=["found","all","action","starred","tasks","attachments","archived","sent","folders","drafts","shipping","subscriptions","trips","waiting","junk","cleanup"];
+const folderPage=()=>filter==="folders"||filter==="sent"||filter==="tags";      // Sent is the Folders page opened on your Sent folder: the same list and reading view
+const PAGES=["found","all","action","starred","tasks","attachments","archived","sent","folders","tags","tags","drafts","shipping","subscriptions","trips","waiting","junk","cleanup"];
 let stateReady=false,navPopping=false;
 const rowKeyOf=id=>{const m=data.find(x=>String(x.id)===String(id));return m&&m.real?m.real.accountId+":"+m.real.messageId:null};
 function saveOpen(){
@@ -2643,11 +2655,11 @@ function applyHashNav(){
     }
     if(isOpen)closeSettings();
     const pm=/^#\/([a-z]+)$/.exec(h);let want=pm&&PAGES.includes(pm[1])?pm[1]:"all";
-    const ok={folders:realMail,sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,junk:feat.junk_mail,cleanup:feat.clean_up}[want];
+    const ok={folders:realMail,tags:realMail&&feat.tags,sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,junk:feat.junk_mail,cleanup:feat.clean_up}[want];
     if(want!=="all"&&ok===false)want="all";
     filter=want;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===want));
     closeSnoozeMenu();readerOpen=false;if(want==="all")paneId=null;render();
-    if(want==="sent")loadSent();if(want==="folders")loadFolders();
+    if(want==="sent")loadSent();if(want==="folders")loadFolders();if(want==="tags")loadTags();
     if(want==="drafts")loadDrafts();
     if(want==="junk")openJunkPage();if(want==="cleanup")openCleanPage();
     window.scrollTo({top:0});
@@ -2723,7 +2735,7 @@ function restorePage(){
     const want=p[1],ok={sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,junk:feat.junk_mail,cleanup:feat.clean_up}[want];
     if(want!=="all"&&ok!==false){
       filter=want;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===want));
-      if(want==="sent")loadSent();if(want==="folders")loadFolders();
+      if(want==="sent")loadSent();if(want==="folders")loadFolders();if(want==="tags")loadTags();
       if(want==="drafts")loadDrafts();
         if(want==="junk")openJunkPage();if(want==="cleanup")openCleanPage();
     }
@@ -2982,7 +2994,7 @@ function applyView(){
   $("vOpen").disabled=$("vPeek").disabled=!classic;$("vOpenL").classList.toggle("off",!classic);$("vPeekL").classList.toggle("off",!classic);
 }
 function visible(m){
-  if(m.owner!==currentUser.id||filter==="sent"||filter==="folders"||filter==="drafts"||filter==="tasks")return false;
+  if(m.owner!==currentUser.id||filter==="sent"||filter==="folders"||filter==="tags"||filter==="drafts"||filter==="tasks")return false;
   if(mailboxSel&&m.account!==mailboxSel)return false;
   if(filter==="snoozed"){if(!isSnoozed(m))return false}else if(isSnoozed(m))return false;      // a snoozed email waits out of sight until its time
   if(filter==="held"){if(!isHeld(m))return false}else if(isHeld(m))return false;                  // email held for the daily summary waits in its own list
@@ -3022,7 +3034,7 @@ function snoozeOptions(now){
 // ---- Search everywhere: the one search box also looks in the other places Enveliq keeps things for this person ----
 // Reviewed, Archived and Snoozed emails, tasks, orders and waiting notes. It uses only what this page already holds for the signed-in person
 // (kept summaries and results): nothing new is stored and nothing extra is asked of the server. Matches are shown as text, a few at a time.
-const SEARCH_PAGES=["tasks","sent","folders","shipping","subscriptions","trips","waiting"],SEARCH_EACH=4;
+const SEARCH_PAGES=["tasks","sent","folders","tags","shipping","subscriptions","trips","waiting"],SEARCH_EACH=4;
 // "Ask the agent": what is typed in the search box is sent to the Agent chat as a new question, instead of searching for it.
 function askAgentFromSearch(){
   const text=String($("search").value||"").trim();
@@ -3317,7 +3329,7 @@ const splitNow=()=>document.body.classList.contains("split-read")&&window.matchM
 const goTasks=()=>{filter="tasks";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="tasks"));render()};
 function renderToday(){
   const box=$("dueBars"),open=openTasks(),now=open.filter(t=>t.days<=0);
-  if(!now.length||view.show_today===false||filter==="tasks"||filter==="sent"||filter==="folders"){box.hidden=true;box.replaceChildren();return}
+  if(!now.length||view.show_today===false||filter==="tasks"||filter==="sent"||filter==="folders"||filter==="tags"){box.hidden=true;box.replaceChildren();return}
   const calm=calmOn(),shown=now.slice(0,calm?1:3),important=calm?now.slice(1):[],rest=open.filter(t=>t.days>0);
   const mobile=window.matchMedia("(max-width:760px)").matches;
   const title=calm?"Start here":'Today · '+now.length+' '+(now.length===1?"thing":"things");
@@ -4106,7 +4118,7 @@ function renderShipPage(){
 }
 function renderShipHome(){
   const box=$("shipBars"),due=shipOn()?(shipData.orders||[]).filter(o=>o.needs_confirm):[];
-  if(!due.length||filter==="shipping"||filter==="sent"||filter==="folders"){box.hidden=true;box.replaceChildren();return}
+  if(!due.length||filter==="shipping"||filter==="sent"||filter==="folders"||filter==="tags"){box.hidden=true;box.replaceChildren();return}
   box.innerHTML=`<div class="shipcard"><div class="thead"><b>Delivered · did it arrive?</b><button class="linkbtn" type="button" data-ship-go>Open Shipping</button></div>${due.slice(0,3).map(o=>`<div class="shiprow"><div class="who"><b>${esc(o.shop||"An order")}${o.order_number?" · "+esc(o.order_number):""}</b><span>${esc(o.items||"")}${o.delivered_at?(o.items?" · ":"")+esc(shipWhen(o.delivered_at)):""}</span></div><button class="obtn teal" type="button" data-ship="confirm" data-ship-id="${esc(o.id)}">Yes, I've got it</button><button class="obtn" type="button" data-ship="not_yet" data-ship-id="${esc(o.id)}">Not yet</button></div>`).join("")}${due.length>3?`<button class="tmore" type="button" data-ship-go>+${due.length-3} more</button>`:""}</div>`;
   box.hidden=false;
 }
@@ -4156,7 +4168,7 @@ function renderSubPage(){
 }
 function renderSubHome(){
   const box=$("subBars"),due=subOn()?(subData.items||[]).filter(s=>s.soon&&s.next):[];
-  if(!due.length||filter==="subscriptions"||filter==="sent"||filter==="folders"){box.hidden=true;box.replaceChildren();return}
+  if(!due.length||filter==="subscriptions"||filter==="sent"||filter==="folders"||filter==="tags"){box.hidden=true;box.replaceChildren();return}
   box.innerHTML=`<div class="subcard"><div class="thead"><b>Coming up</b><button class="linkbtn" type="button" data-sub-go>Open Subscriptions</button></div>${due.slice(0,3).map(s=>`<div class="subrow"><div class="who"><b>${esc(s.service||"A subscription")} ${s.next.kind==="trial_ends"?"free trial ends":s.estimated?"probably renews":"renews"} ${esc(subWhenText(s))}</b><span>${esc([subMoney(s),subDayLong(s.next.on)].filter(Boolean).join(" · "))}</span></div></div>`).join("")}${due.length>3?`<button class="tmore" type="button" data-sub-go>+${due.length-3} more</button>`:""}</div>`;
   box.hidden=false;
 }
@@ -4379,7 +4391,7 @@ function renderTripPage(){
 }
 function renderTripHome(){
   const box=$("tripBars"),near=tripOn()?(tripData.trips||[]).filter(t=>!t.cancelled&&(t.state==="now"||(t.state==="soon"&&t.days_to_start<=7))):[];
-  if(!near.length||filter==="trips"||filter==="sent"||filter==="folders"){box.hidden=true;box.replaceChildren();return}
+  if(!near.length||filter==="trips"||filter==="sent"||filter==="folders"||filter==="tags"){box.hidden=true;box.replaceChildren();return}
   box.innerHTML=`<div class="tripcard"><div class="thead"><b>Trips</b><button class="linkbtn" type="button" data-trip-go>Open Trips</button></div>${near.slice(0,3).map(t=>`<div class="triprow"><div class="who"><b>${esc(t.title)}</b><span>${esc(t.state==="now"?`Under way · until ${tripDay(t.end)}`:`Starts ${tripIn(t.days_to_start)} · ${tripDay(t.start)}`)}</span></div></div>`).join("")}${near.length>3?`<button class="tmore" type="button" data-trip-go>+${near.length-3} more</button>`:""}</div>`;
   box.hidden=false;
 }
@@ -4517,7 +4529,7 @@ function renderWaitPage(){
 }
 function renderWaitHome(){
   const box=$("waitBars"),due=waitOn()?(waitData.notes||[]).filter(n=>n.due):[];
-  if(!due.length||filter==="waiting"||filter==="sent"||filter==="folders"||filter==="shipping"||filter==="subscriptions"||filter==="trips"){box.hidden=true;box.replaceChildren();return}
+  if(!due.length||filter==="waiting"||filter==="sent"||filter==="folders"||filter==="tags"||filter==="shipping"||filter==="subscriptions"||filter==="trips"){box.hidden=true;box.replaceChildren();return}
   const btn=(n,a,t)=>`<button class="wbtn" type="button" data-wait="${a}" data-wait-id="${esc(n.id)}">${t}</button>`;
   box.innerHTML=`<div class="waitcard"><div class="thead"><b>Waiting on others · ${due.length}</b><button class="linkbtn" type="button" data-wait-go>Open</button></div>${due.slice(0,3).map(n=>`<div class="waitrow"><div><span class="wto">${esc(waitTo(n))}</span> <span class="wsub">· ${esc(n.subject||"")}</span></div><div class="wage">${esc(waitAge(n))}. No reply yet.${n.ask?" "+esc(n.ask):""}</div><div class="wb"><button class="wbtn amber" type="button" data-wait-nudge="${esc(n.id)}">Write a nudge</button>${btn(n,"got_reply","Got a reply")}${btn(n,"later","Ask again in "+waitData.days+(waitData.days===1?" day":" days"))}${btn(n,"not_needed","Not needed")}</div></div>`).join("")}${due.length>3?`<button class="tmore" type="button" data-wait-go>+${due.length-3} more</button>`:""}</div>`;
   box.hidden=false;
@@ -4658,7 +4670,7 @@ function render(){
   if(findUi.open&&!findUi.manual&&String(query||"").trim().length<2)findReset();
   if(selMode&&(!selected.size||!isPhone()))selMode=false;
   document.body.classList.toggle("selecting",selMode);
-  document.body.classList.toggle("in-sent",filter==="sent"||filter==="folders");document.body.classList.toggle("in-folders",folderPage());document.body.classList.toggle("fdr-split",folderPage()&&!phoneQuery.matches&&lay()==="right"&&window.matchMedia("(min-width:901px)").matches);document.body.classList.toggle("in-found",filter==="found");document.body.classList.toggle("on-draft",filter==="drafts");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="folders"?"Folders":filter==="sent"?"Sent":filter==="drafts"?"Drafts":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="junk"?"Junk Mail":filter==="cleanup"?"Clean up":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
+  document.body.classList.toggle("in-sent",filter==="sent"||filter==="folders"||filter==="tags");document.body.classList.toggle("in-folders",folderPage());document.body.classList.toggle("in-tags",filter==="tags");document.body.classList.toggle("fdr-split",folderPage()&&!phoneQuery.matches&&lay()==="right"&&window.matchMedia("(min-width:901px)").matches);document.body.classList.toggle("in-found",filter==="found");document.body.classList.toggle("on-draft",filter==="drafts");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="folders"?"Folders":filter==="sent"?"Sent":filter==="drafts"?"Drafts":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="junk"?"Junk Mail":filter==="cleanup"?"Clean up":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
   const mine=userMessages().filter(m=>!m.extra);          // the quiet "All emails" entries are never counted
   if(!realMail)syncDemoTasks();else settleTasks();
   document.body.classList.toggle("on-tasks",filter==="tasks");
@@ -4682,7 +4694,7 @@ function render(){
   {const hd=mine.filter(isHeld),hn=$("heldNav"),hb=$("heldBadge");if(hn){hn.hidden=!hd.length&&filter!=="held";hb.textContent=hd.length;hb.hidden=!hd.length}}
   const asleep=mine.filter(isSnoozed);{const sn=$("snoozeNav"),sb=$("snoozeBadge");sn.hidden=!asleep.length&&filter!=="snoozed";sb.textContent=asleep.length;sb.hidden=!asleep.length}
   for(const [id,n] of [["allBadge",mine.filter(m=>m.status==="inbox"&&!isAside(m)).length],["actionBadge",mine.filter(m=>m.status==="inbox"&&!isAside(m)&&m.action).length],["attachBadge",mine.filter(m=>m.status==="inbox"&&!isAside(m)&&fileN(m)).length],["taskBadge",openTasks().length]]){const el=$(id);el.textContent=n;el.hidden=n===0}
-  $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent"&&filter!=="folders"&&filter!=="drafts");
+  $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent"&&filter!=="folders"&&filter!=="tags"&&filter!=="drafts");
   document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",filter==="all"));{const fb=$("filterBy");tagFilterOptions(fb);const pick=["action","need","high","attachments","starred"].includes(filter)||[...fb.options].some(o=>o.value===filter)?filter:"";fb.value=pick;fb.classList.toggle("active",!!pick)}
   $("selectedCount").textContent=selected.size;$("bulk").classList.toggle("show",selected.size>1||selMode);$("previewBulk").classList.toggle("show",selected.size>1||selMode);$("previewSelCount").textContent=selected.size;
   $("userName").textContent=currentUser.name;$("userRole").textContent=currentUser.is_admin?"Administrator":"User";paintAvatar();previewSyncAccount();
@@ -4692,7 +4704,7 @@ function render(){
   const VIEW_NAMES={held:"Held for summary",starred:"Starred",action:"Needs action",need:"Needs action",high:"Important",attachments:"Attachments",tasks:"Tasks",shipping:"Shipping",waiting:"Waiting for reply",found:"Found emails",archived:"Archived",subscriptions:"Subscriptions",trips:"Trips",junk:"Junk Mail",cleanup:"Clean up",sent:"Sent",drafts:"Drafts"};
   document.querySelector(".top-left h2").textContent=VIEW_NAMES[filter]||(filter==="all"&&calmOn()?"One thing at a time":filter==="all"?"My inbox":greeting);
   $("previewCalmNotice").hidden=!(filter==="all"&&calmOn());
-  $("previewListHeading").hidden=["sent","folders","drafts","tasks","shipping","waiting","subscriptions","trips","junk","cleanup"].includes(filter);
+  $("previewListHeading").hidden=["sent","folders","tags","drafts","tasks","shipping","waiting","subscriptions","trips","junk","cleanup"].includes(filter);
   previewSyncMenu();
   $("todayDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"});
   {const sub=(calmOn()?(inbox.length?"One thing at a time. Important deadlines stay visible.":"Nothing waiting. Enjoy the quiet."):inbox.length?"":(document.body.classList.contains("backend")&&!realMail?"No mailbox is connected yet":"All caught up"));$("inboxSubtitle").innerHTML=sub?`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+esc(sub):""}
@@ -4711,7 +4723,7 @@ function render(){
   if(searchPin!=null&&!rows.some(m=>m.id===searchPin)){const pm=data.find(x=>x.id===searchPin&&x.owner===currentUser.id);if(pm)rows.unshift(pm)}
   if(impSet.size)rows.sort((a,b)=>isImp(b)-isImp(a));          // a stable sort: important people first, the chosen order kept inside each group
   scheduleWake();
-  {const b=$("expandAll"),can=lay()==="list"&&!["tasks","sent","folders","drafts","shipping","subscriptions","trips","waiting","junk","cleanup"].includes(filter)&&rows.length>0;
+  {const b=$("expandAll"),can=lay()==="list"&&!["tasks","sent","folders","tags","drafts","shipping","subscriptions","trips","waiting","junk","cleanup"].includes(filter)&&rows.length>0;
    b.hidden=!can||selected.size>1;if(can){const all=view.rows==="open"||rows.every(m=>expanded.has(`row-${m.id}`));b.textContent=all?"Collapse all":"Expand all";b.dataset.mode=all?"collapse":"expand"}}
   const copyMailButtons=(m,mobile=false)=>{
     const id=esc(m.id);
@@ -4815,7 +4827,7 @@ function render(){
         ${act}<div class="deckdots" aria-hidden="true">${dots}</div></div>`;
     }else{
       const readingHtml=cur?(view.style==="rail"?`<section class="reading rail" aria-label="Selected email">${quiet(cur,"rail")}</section>`:`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div>${copyMailButtons(cur)}</header>${quiet(cur,"detail")}</section>`):`<section class="reading enveliq-empty" aria-label="No email selected">${enEmptyReading()}</section>`;
-      if(lay()==="right"&&!["sent","folders","drafts","tasks","shipping","waiting","subscriptions","trips","junk","cleanup"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
+      if(lay()==="right"&&!["sent","folders","tags","drafts","tasks","shipping","waiting","subscriptions","trips","junk","cleanup"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
         dockHtml=readingHtml;
         listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rowsHtml(rows,"pane")}</div></div>`;
       }else listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rowsHtml(rows,"pane")}</div>${readingHtml}</div>`;
@@ -6816,7 +6828,7 @@ document.addEventListener("click",e=>{
   const a=e.target.closest("[data-status]");if(a){deckDir="act";const m=data.find(x=>x.id===+a.dataset.id&&x.owner===currentUser.id);if(m&&["reviewed","archived","trashed"].includes(a.dataset.status)){if(readerOpen&&lay()==="screen")readerOpen=false;   // on a phone the email closes at once; the Undo bar still shows
     queueAction([m],a.dataset.status);return}if(m&&m.real){resolveRealOne(m,a.dataset.status,a);return}if(m){m.status=a.dataset.status;m.attachments=[];m.attachmentsPurged=true;closeAttachmentViewer();selected.delete(m.id);render();toast(m.status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${m.status} · attachment data purged`,2000,"success")}return}
   const b=e.target.closest("[data-bulk]");if(b){queueAction([...selected].map(id=>data.find(x=>x.id===id&&x.owner===currentUser.id)),b.dataset.bulk);selMode=false;closeAttachmentViewer();return}
-  const n=e.target.closest("[data-filter]");if(n){const was=filter;filter=n.dataset.filter;if(n.id==="folderNav")void was;if(filter==="all")paneId=null;if(n.classList.contains("nav")&&query){query="";$("search").value="";document.body.classList.remove("msearch")}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="folders")loadFolders();if(filter==="drafts")loadDrafts();if(filter==="junk")openJunkPage();if(filter==="cleanup")openCleanPage();return}
+  const n=e.target.closest("[data-filter]");if(n){const was=filter;filter=n.dataset.filter;if(n.id==="folderNav")void was;if(filter==="all")paneId=null;if(n.classList.contains("nav")&&query){query="";$("search").value="";document.body.classList.remove("msearch")}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="folders")loadFolders();if(filter==="tags")loadTags();if(filter==="drafts")loadDrafts();if(filter==="junk")openJunkPage();if(filter==="cleanup")openCleanPage();return}
   const c=e.target.closest("[data-chip]");if(c){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();return}
   const wa=e.target.closest("[data-wait]");if(wa){waitAct(wa.dataset.waitId,wa.dataset.wait);return}
   const wn=e.target.closest("[data-wait-nudge]");if(wn){waitNudge(wn.dataset.waitNudge);return}
@@ -7093,7 +7105,7 @@ const sideNav=document.querySelector(".side-nav");
 // Left panel order, most used first. What people reach for less often sits under "More".
 {const nv=f=>sideNav.querySelector(`[data-filter="${f}"]`),id=x=>document.getElementById(x);
  for(const el of [id("snoozeNav"),id("draftNav"),id("sentNav"),nv("archived"),nv("attachments"),id("subNav"),id("tripNav"),id("junkNav"),id("cleanNav"),id("foundNav")])if(el)moreItems.append(el);
- for(const el of [nv("all"),id("heldNav"),nv("action"),nv("tasks"),nv("starred"),id("waitNav"),id("shipNav"),id("savedNav"),sideNav.querySelector(".side-sep"),id("folderNav"),id("folderSide"),id("moreNav"),id("sideRss"),id("sideSettings")])if(el)sideNav.append(el)}
+ for(const el of [nv("all"),id("heldNav"),nv("action"),nv("tasks"),nv("starred"),id("waitNav"),id("shipNav"),id("savedNav"),sideNav.querySelector(".side-sep"),id("folderNav"),id("folderSide"),id("tagNav"),id("tagSide"),id("moreNav"),id("sideRss"),id("sideSettings")])if(el)sideNav.append(el)}
 let moreChoice;try{moreChoice=localStorage.getItem("enveliq-more-open")}catch{}
 function previewSyncMore(){
   const open=!!moreItems.querySelector(".nav.active")||moreChoice==="1";
@@ -7576,7 +7588,7 @@ async function pollOutbox(){
 function applyFeatures(){
   const on=realMail&&accounts.length>0;rssPaint();
   $("newMailBtn").hidden=!(on&&feat.compose);
-  $("sentNav").hidden=!(on&&feat.sent);$("folderNav").hidden=!on;$("draftNav").hidden=!on;if(on&&!draftData.loaded)loadDrafts();
+  $("sentNav").hidden=!(on&&feat.sent);$("folderNav").hidden=!on;$("tagNav").hidden=!(on&&feat.tags);$("draftNav").hidden=!on;if(on&&!draftData.loaded)loadDrafts();
   if(filter==="drafts"&&!on){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   $("shipNav").hidden=!(on&&feat.shipping);$("waitNav").hidden=!(on&&feat.waiting);subNavSync();
   if(filter==="waiting"&&!(on&&feat.waiting)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
@@ -8449,7 +8461,7 @@ async function openBulkTag(always){
   if(all.some(m=>m.real.accountId!==aid)){toast("Pick emails from one mailbox at a time to tag them.",4500);return}
   const ms=all,senders=bulkSenders(ms),many=ms.length>1;
   const {box,close}=bulkSheet("bulkTag",many?`Add a tag to ${ms.length} emails`:"Add a tag",
-    `<p class="pop-note" id="btNote" role="status">Looking at your tags…</p><div id="btRows"></div><div id="btNewBox" hidden><label for="btNew"><b>Make a new tag</b></label><div class="tag-new"><input id="btNew" type="text" maxlength="40" autocomplete="off" placeholder="For example: Taxes"></div></div>
+    `<p class="pop-note" id="btNote" role="status">Looking at your tags…</p><div class="tag-find" id="btFindBox" hidden><input type="search" id="btFind" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Search your tags" aria-label="Search your tags by typing part of a name"></div><p class="pop-note" id="btNone" hidden>No tag matches that.</p><div id="btRows"></div><div id="btNewBox" hidden><label for="btNew"><b>Make a new tag</b></label><div class="tag-new"><input id="btNew" type="text" maxlength="40" autocomplete="off" placeholder="For example: Taxes"></div></div>
      ${senders.length?`<label class="tag-always"><input type="checkbox" id="btAlways"${always?" checked":""}><span>${senders.length===1?"Always apply these tags to new email from this sender":`Always apply these tags to new email from these ${senders.length} senders`}</span></label>`:""}<p class="sa-err" id="btErr" role="alert"></p>`,
     `<button type="button" class="btn" data-bs-close>Cancel</button><button type="button" class="btn primary" id="btGo" disabled>Add the tags</button>`);
   const rows=box.querySelector("#btRows"),note=box.querySelector("#btNote"),err=box.querySelector("#btErr"),go=box.querySelector("#btGo");
@@ -8460,6 +8472,8 @@ async function openBulkTag(always){
     names=r.names||[];canCreate=!!r.can_create;note.textContent=names.length?"Tick the tags to add. Tags already on an email stay.":"You have no tags yet."+(canCreate?" Make one below.":"")}
   catch(er){note.textContent=er.message||"Could not read your tags. Try again.";return}
   rows.innerHTML=names.map((n,i)=>`<label class="tagrow" for="bt${i}"><input id="bt${i}" type="checkbox" data-bt-name="${esc(n)}"><span>${esc(n)}</span></label>`).join("");
+  if(names.length)box.querySelector("#btFindBox").hidden=false;
+  box.querySelector("#btFind").addEventListener("input",e=>{const q=e.target.value.trim().toLowerCase();let n=0;rows.querySelectorAll(".tagrow").forEach(l=>{const hit=!q||l.textContent.toLowerCase().includes(q);l.hidden=!hit;if(hit)n++});box.querySelector("#btNone").hidden=!!n||!q});
   if(canCreate)box.querySelector("#btNewBox").hidden=false;go.disabled=false;
   go.onclick=async()=>{
     const chosen=[...rows.querySelectorAll("[data-bt-name]:checked")].map(x=>x.dataset.btName),fresh=box.querySelector("#btNew").value.replace(/\s+/g," ").trim();
@@ -8501,7 +8515,48 @@ let fdrAcct="",fdrFolder="",fdrRows=[],fdrToken=0,fdrKnown=[];
 // A slow pulsing arrow under the last visible folder says there are more below; it goes when you reach the end.
 function fsMoreSync(){const side=$("folderSide"),m=side&&side.querySelector(".fs-more");if(!m)return;m.classList.toggle("on",side.scrollHeight>side.clientHeight+4&&side.scrollTop+side.clientHeight<side.scrollHeight-6)}
 $("folderSide").addEventListener("scroll",fsMoreSync,{passive:true});addEventListener("resize",fsMoreSync);
-async function loadFolders(){{const sw=$("sentWaiting");if(sw&&filter!=="sent")sw.hidden=true}
+let dragItems=[];
+// Dropping dragged emails on a folder in the left menu moves them there (the same move as the Move button).
+function dropOnFolder(b,aid,f){
+  if(!f.target)return;
+  b.addEventListener("dragover",e=>{if(!dragItems.length||dragItems[0].account!==aid)return;e.preventDefault();e.dataTransfer.dropEffect="move";b.classList.add("drop")});
+  b.addEventListener("dragleave",()=>b.classList.remove("drop"));
+  b.addEventListener("drop",e=>{e.preventDefault();b.classList.remove("drop");const items=dragItems.slice();dragItems=[];document.body.classList.remove("dragging-mail");if(items.length&&items[0].account===aid)liveDo(items,"move",{folder:f.name},liveSay(f.label))});
+}
+const TAG_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/></svg>';
+let fdrTag="";
+// The Tags page: the same page as Folders, with your tags in the left menu. A tag's emails open in the same email view.
+async function loadTags(){
+  if(!accounts.length)return;
+  const box=$("fdrBox");
+  if(accounts.length>1){
+    if(box.options.length!==accounts.length)box.replaceChildren(...accounts.map(a=>new Option(a.name,a.id)));
+    if(!fdrAcct||!accounts.some(a=>a.id===fdrAcct))fdrAcct=accounts[0].id;
+    box.value=fdrAcct;box.hidden=false;
+  }else{fdrAcct=accounts[0].id;box.hidden=true}
+  const aid=fdrAcct,status=$("fdrStatus");
+  $("fdrList").replaceChildren();$("fdrChips").replaceChildren();status.textContent="Reading your tags…";$("fdrRefresh").disabled=true;
+  $("folderSide").hidden=true;
+  try{
+    const [t,fr]=await Promise.all([secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/tags`,{method:"GET",headers:{}}),secureBackendRequest(foldersUrl(aid),{method:"GET",headers:{}}).catch(()=>({folders:[]}))]);
+    if(aid!==fdrAcct||filter!=="tags")return;
+    const names=t.supported===false?[]:(t.names||[]);
+    status.textContent=t.supported===false?"This mailbox does not keep tags that Enveliq can reach.":names.length?(fdrTag?"":"Pick a tag from the left menu to see its emails."):"You have no tags yet. Add one to an email with the Tags button.";
+    const side=$("tagSide"),head=document.createElement("div");head.className="fs-head";head.textContent="Tags";
+    side.hidden=false;
+    side.replaceChildren(head,...names.map(n=>{const b=document.createElement("button");b.type="button";b.className="nav fchip tagchip"+(n===fdrTag?" active":"");b.title=n;b.innerHTML=TAG_ICON+'<span class="nav-label"></span>';b.lastChild.textContent=n;b.onclick=()=>{fdrTag=n;side.querySelectorAll(".fchip").forEach(x=>x.classList.toggle("active",x===b));openFolder(aid,{name:n,label:n},0)};return b}));
+    // your folders sit below the tags, so emails can be dragged onto one (a click takes you to that folder)
+    const fs=$("folderSide");
+    if(fr.folders&&fr.folders.length){
+      const fh=document.createElement("div");fh.className="fs-head";fh.textContent="Drop on a folder";
+      fs.hidden=false;
+      fs.replaceChildren(fh,...fr.folders.map(f=>{const b=document.createElement("button");b.type="button";b.className="nav fchip";b.title=f.label;b.innerHTML=TAG_ICON.replace(/<path[^>]*\/><circle[^>]*\/>/,'<path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>')+'<span class="nav-label"></span>';b.lastChild.textContent=f.label;b.onclick=()=>{fdrFolder=f.name;location.hash="#/folders"};dropOnFolder(b,aid,f);return b}));
+    }
+    if(fdrTag&&names.includes(fdrTag))openFolder(aid,{name:fdrTag,label:fdrTag},0);else fdrTag="";
+  }catch(er){status.textContent=er.message||"Could not read your tags."}
+  finally{$("fdrRefresh").disabled=false}
+}
+async function loadFolders(){{const sw=$("sentWaiting");if(sw&&filter!=="sent")sw.hidden=true;$("tagSide").hidden=true}
   if(!accounts.length)return;
   const box=$("fdrBox");
   if(accounts.length>1){
@@ -8520,7 +8575,7 @@ async function loadFolders(){{const sw=$("sentWaiting");if(sw&&filter!=="sent")s
     const side=$("folderSide"),icon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
     side.hidden=filter==="sent";
     const head=document.createElement("div");head.className="fs-head";head.textContent="Folders";const more=document.createElement("div");more.className="fs-more";more.setAttribute("aria-hidden","true");more.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
-    side.replaceChildren(head,...r.folders.map(f=>{const b=document.createElement("button");b.type="button";b.className="nav fchip"+(f.name===fdrFolder?" active":"");b.title=f.label;b.innerHTML=icon+'<span class="nav-label"></span>';b.lastChild.textContent=f.label;b.onclick=()=>{fdrFolder=f.name;side.querySelectorAll(".fchip").forEach(x=>x.classList.toggle("active",x===b));openFolder(aid,f,0)};return b}));
+    side.replaceChildren(head,...r.folders.map(f=>{const b=document.createElement("button");b.type="button";b.className="nav fchip"+(f.name===fdrFolder?" active":"");b.title=f.label;b.innerHTML=icon+'<span class="nav-label"></span>';b.lastChild.textContent=f.label;b.onclick=()=>{fdrFolder=f.name;side.querySelectorAll(".fchip").forEach(x=>x.classList.toggle("active",x===b));openFolder(aid,f,0)};dropOnFolder(b,aid,f);return b}));
     side.append(more);fsMoreSync();
     if(filter==="sent"){if(sentF)openFolder(aid,sentF,0)}
     else if(fdrFolder){const f=r.folders.find(x=>x.name===fdrFolder);if(f)openFolder(aid,f,0);else fdrFolder=""}
@@ -8792,10 +8847,10 @@ async function openFolder(aid,f,offset){
   const words="";      // the search box never searches inside one folder: it searches the same places on every page
   if(!offset){list.replaceChildren();fdrRows=[];fdrSel=new Set();list.append(fdrSelHead())}
   list.querySelectorAll(".fmore").forEach(x=>x.remove());
-  $("fdrTitle").textContent=filter==="sent"?"Sent":"Folders  ›  "+f.label;$("fdrCols").dataset.lay=lay();$("fdrPane").innerHTML='<p class="fdr-empty">Choose an email to read it here.</p>';
+  $("fdrTitle").textContent=filter==="sent"?"Sent":filter==="tags"?"Tags  ›  "+f.label:"Folders  ›  "+f.label;$("fdrCols").dataset.lay=lay();$("fdrPane").innerHTML='<p class="fdr-empty">Choose an email to read it here.</p>';
   status.textContent="Reading "+f.label+"…";
   try{
-    const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/folder-mail?folder=${encodeURIComponent(f.name)}&offset=${offset}${words?"&q="+encodeURIComponent(words):""}`,{method:"GET",headers:{}});
+    const r=await secureBackendRequest((filter==="tags"?`/api/v1/accounts/${encodeURIComponent(aid)}/tag-mail?tag=${encodeURIComponent(f.name)}&offset=${offset}`:`/api/v1/accounts/${encodeURIComponent(aid)}/folder-mail?folder=${encodeURIComponent(f.name)}&offset=${offset}${words?"&q="+encodeURIComponent(words):""}`),{method:"GET",headers:{}});
     if(mine!==fdrToken||!folderPage())return;
     fdrInfo={label:f.label,total:r.total};
     status.textContent=words?(r.total?`${f.label}: ${r.total} ${r.total===1?"email matches":"emails match"} "${words}".`:`Nothing in ${f.label} matches "${words}".`):(r.total?`${f.label}: ${r.total} ${r.total===1?"email":"emails"}, newest first.`:`${f.label} is empty.`);
@@ -8813,6 +8868,8 @@ async function openFolder(aid,f,offset){
         const a=document.createElement("span");a.className="fra-b "+cls;a.setAttribute("role","button");a.tabIndex=0;a.title=lab;a.setAttribute("aria-label",lab);a.innerHTML=ic;
         a.onclick=e=>{e.stopPropagation();e.preventDefault();fn()};a.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.stopPropagation();e.preventDefault();fn()}};fra.append(a)}
       row.append(fra);
+      row.draggable=true;row.ondragstart=e=>{dragItems=fdrSel.has(it)&&fdrSel.size?[...fdrSel]:[it];e.dataTransfer.setData("text/plain",it.subject||"email");e.dataTransfer.effectAllowed="move";document.body.classList.add("dragging-mail");const n=dragItems.length;if(n>1&&e.dataTransfer.setDragImage){const g=document.createElement("div");g.className="drag-ghost";g.textContent=n+" emails";document.body.append(g);e.dataTransfer.setDragImage(g,10,10);setTimeout(()=>g.remove(),0)}};
+      row.ondragend=()=>{dragItems=[];document.body.classList.remove("dragging-mail");document.querySelectorAll(".fchip.drop").forEach(x=>x.classList.remove("drop"))};
       row.onclick=e=>{if(e.target.closest&&e.target.closest(".fra,.fcheck"))return;row._open()};
       row.onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&e.target===row){e.preventDefault();row._open()}};
       row._open=()=>{
@@ -9229,7 +9286,7 @@ $("nmCcBtn").onclick=()=>{$("nmCcRow").hidden=false;nmFields().cc.input.focus()}
 $("nmBccBtn").onclick=()=>{$("nmBccRow").hidden=false;nmFields().bcc.input.focus()};
 $("cmCcBtn").onclick=()=>{$("cmCcRow").hidden=false;cmFields().cc.input.focus()};
 $("cmBccBtn").onclick=()=>{$("cmBccRow").hidden=false;cmFields().bcc.input.focus()};
-$("fdrRefresh").onclick=loadFolders;$("fdrBox").onchange=e=>{fdrAcct=e.target.value;fdrFolder="";loadFolders()};
+$("fdrRefresh").onclick=()=>filter==="tags"?loadTags():loadFolders();$("fdrBox").onchange=e=>{fdrAcct=e.target.value;fdrFolder="";fdrTag="";filter==="tags"?loadTags():loadFolders()};
 $("sentRefresh").onclick=loadSent;
 $("sentBox").onchange=e=>{sentAcct=e.target.value;loadSent()};
 bootBackendMode().finally(()=>document.body.classList.remove("booting"));

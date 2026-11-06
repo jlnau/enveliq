@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from ..models import StrictModel
 from ..security import Session
+from . import features
 from .errors import BridgeError
 from .find import FindError
 from .find_routes import formatted_page
@@ -93,6 +94,20 @@ def build_folder_router(ctx: Any) -> APIRouter:
             raise HTTPException(status_code=422, detail=err.message) from None
         except BridgeError as err:
             raise fail(err) from None
+
+    @router.get("/accounts/{account_id}/tag-mail")
+    def tagged(account_id: AccountId, response: Response, tag: str = Query(min_length=1, max_length=80), offset: int = Query(default=0, ge=0, le=1_000_000),
+               session: Session = Depends(session_dep)):
+        """The emails that carry one tag, in the same shape as a folder's emails (so every button on them works the same)."""
+        account = mailbox(account_id, session, "open a tag")
+        if not features.effective(vault, session.principal.user_id)["tags"]:
+            raise HTTPException(status_code=403, detail="Tags are switched off.")
+        allow(session)
+        response.headers["Cache-Control"] = "no-store"
+        try:
+            return folders.page(session.principal.user_id, account, "", offset, "", tag)
+        except BridgeError as err:
+            raise (HTTPException(status_code=404, detail="Not found.") if err.code == "not_found" else fail(err)) from None
 
     @router.get("/folder-mail/{token}/original")
     def original(token: str, response: Response, session: Session = Depends(session_dep)):

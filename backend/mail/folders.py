@@ -14,6 +14,7 @@ import time
 from typing import Any, Callable
 
 from .bridge import Bridge, Target
+from . import tags as tags_mod
 from .errors import BridgeError
 from .find import FindError, criteria, parse_query
 from .parse import _addresses, clean, likely_has_files, parse_headers, received_at_of
@@ -155,15 +156,27 @@ class Folders:
         except (ValueError, TypeError):
             raise BridgeError("not_found", "Not found.") from None
 
-    def page(self, user: str, account: dict[str, Any], folder: str, offset: int, words: str = "") -> dict[str, Any]:
+    def page(self, user: str, account: dict[str, Any], folder: str, offset: int, words: str = "", tag: str = "") -> dict[str, Any]:
+        """One page of a folder, or (with ``tag``) of the emails that carry one tag. A tag is read where the mailbox keeps it:
+        Proton's ``Labels/<name>`` folder, a Gmail label folder, or the keyword on the Inbox's emails. The tag must be one the mailbox listed."""
         target = self._target(account)
         with self.bridge.session(target) as s:
             s.set_timeout(60)
-            names = {r["name"] for r in folder_rows(s.list_folders(), target.kind)}
-            if folder not in names:
-                raise BridgeError("not_found", "That folder is not in this mailbox.")
+            by_keyword = False
+            if tag:
+                dialect = tags_mod.dialect_of(account)
+                if dialect is None or tag not in tags_mod.read_tags(s, dialect)["names"]:
+                    raise BridgeError("not_found", "That tag is not in this mailbox.")
+                folder = tags_mod.PROTON_PREFIX + tag if dialect == "proton" else tag if dialect == "gmail" else "INBOX"
+                by_keyword = dialect == "keywords"
+            else:
+                names = {r["name"] for r in folder_rows(s.list_folders(), target.kind)}
+                if folder not in names:
+                    raise BridgeError("not_found", "That folder is not in this mailbox.")
             validity = s.select_folder(folder, True)
-            if words.strip():
+            if by_keyword:
+                uids = s.search(["KEYWORD", tag])
+            elif words.strip():
                 crit, utf8 = criteria(parse_query(words), target)      # the same words and rules as Search all my mail, inside this one folder
                 uids = s.search(crit, utf8)
             else:

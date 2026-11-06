@@ -82,7 +82,7 @@ messages = make(); views = []; chats = []; asked = [];
   const order = await page.evaluate(() => [...document.querySelectorAll(".side-nav > .nav:not([hidden])")].map((e) => e.textContent.trim().replace(/\d+$/, "").trim()));
   check("the main list starts with My inbox, Needs action, Tasks, Starred", order.slice(0, 4).join("|") === "My inbox|Needs action|Tasks|Starred");
   const inMore = await page.evaluate(() => [...document.querySelectorAll("#moreItems [data-filter]")].map((e) => e.dataset.filter));
-  check("Archived, Drafts, Sent and Attachments are under More, and Folders sits just above More", ["archived", "drafts", "sent", "attachments"].every((f) => inMore.includes(f)) && !inMore.includes("folders") && (await page.evaluate(() => document.querySelector("#folderNav").nextElementSibling.nextElementSibling.id === "moreNav")));
+  check("Archived, Drafts, Sent and Attachments are under More, and Folders and then Tags sit just above More", ["archived", "drafts", "sent", "attachments"].every((f) => inMore.includes(f)) && !inMore.includes("folders") && (await page.evaluate(() => document.querySelector("#folderNav").nextElementSibling.nextElementSibling.id === "tagNav" && document.querySelector("#tagNav").nextElementSibling.nextElementSibling.id === "moreNav")));
   check("More starts closed", (await page.getAttribute("#moreToggle", "aria-expanded")) === "false");
   await page.click("#agentBtn");
   check("the round Agent button opens the chat", await page.evaluate(() => !document.querySelector("#agentPop").hidden));

@@ -4,6 +4,14 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**A Tags page, just like Folders.** Under **Folders** in the left menu there is now **Tags**. It opens the same kind of page: your tags in the left menu, and when you pick one, the emails that carry it in the same list and reading view as your inbox, with the same buttons (Move, Archive, Bin, Star, Reply, Forward and so on) and ticking several emails at once.
+
+**Drag emails onto a folder.** In Folders, Sent and Tags, drag an email (or several ticked emails) onto a folder in the left menu to move it there. On the Tags page your folders are listed in the left menu too, so there is somewhere to drop.
+
+**Adding a tag to several emails has a search box.** The "Add a tag" window now has a "Search your tags" box, so a long list is quick to narrow down.
+
+**"Needs action" and "Waiting for reply" fit in the left menu.** The words in the left menu are slightly smaller and the spacing tighter, so the long names are no longer cut off when the number badges are showing.
+
 **Sent now looks and works like your inbox.** The Sent page uses the same email view as the inbox and Folders: the list with who each email went to, the reading pane, the same buttons (Move, Archive, Bin, Star) and the same search. The "Follow for a reply" button is in the More menu of a sent email, and emails waiting to go out still show at the top with "Take it back". Files on a sent email are not opened here yet; the email says to open it in your mail app.
 
 **Forward for several emails now works like writing a new email.** The To box suggests people from your address book and turns them into chips, you can pick which address it is sent From, and you can add Cc and Bcc.
