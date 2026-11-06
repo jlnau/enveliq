@@ -4,7 +4,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-**The email you have selected is easier to see.** In your inbox, folders and search results, the selected email now fills with a deeper Enveliq blue, with white writing and clearly outlined buttons so it stays easy to read, so you can always tell which one is open. It is the same in every list and every layout (in the Classic list the open email's title bar fills blue), and also on emails you have not read yet.
+**The email you have selected is easier to see.** In your inbox, folders and search results, the selected email now fills with a deeper Enveliq blue, with white writing and clearly outlined buttons so it stays easy to read, so you can always tell which one is open. It is the same in every list and every layout (in the Classic list the open email's title bar fills blue), and also on emails you have not read yet, including when your list shows all your mail.
 
 **Messages (the household chat) is removed.** The Messages page, its menu item and count, the Messages switch in Features you see, the chat line in the bell, the Messages part of the Android app and the server routes behind it are gone. Anything people had written is deleted from this server the next time it starts, and it is no longer part of "Download my data". The bell now shows only notes from other services.
 
