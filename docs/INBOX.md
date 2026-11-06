@@ -361,8 +361,7 @@ Choose **Reading pane on the right** in the View panel (the tab on the right edg
 
 ## The search box works everywhere
 
-- In **Folders** the box says "Search this folder" and searches inside the open folder (the same words and rules as Search all my mail). Choosing another folder keeps the words. **Clear search** shows the whole folder again.
-- On any other page (Tasks, Sent, Shipping and so on) typing in the box takes you to your inbox and searches it and all your mail. In Settings the box still searches the settings.
+- The search box does the same thing on every page (Folders, Tasks, Sent, Needs action, Starred, Archived and the rest): typing takes you to your inbox and searches it and all your mail. It never searches only inside one folder. In Settings the box still searches the settings.
 - A found email lights up the moment you click it, shows "Opening this email…" in the reading pane, and has a **Generate summary** button above it.
 
 ## One reading view for every email

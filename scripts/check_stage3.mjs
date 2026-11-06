@@ -247,24 +247,24 @@ for (const width of [1200, 390]) {
   await context.close();
 }
 {
-  // The search box works in Folders (inside the open folder) and from other pages (it searches your inbox)
+  // The search box does the same thing on every page: it takes you to your inbox and searches it and all your mail
   const { page, errors, context } = await open(1200);
   await page.evaluate(() => document.querySelector('.nav[data-filter="folders"]').click());
   await page.waitForSelector(".fchip");
   await page.locator(".fchip", { hasText: "Bills" }).click();
   await page.waitForSelector(".frow");
-  check("in Folders the search box says it searches this folder", (await page.locator("#search").getAttribute("placeholder")) === "Search this folder");
+  check("in Folders the search box says the same as everywhere", (await page.locator("#search").getAttribute("placeholder")) === "Search inbox");
   await page.fill("#search", "march");
-  await page.waitForFunction(() => document.querySelectorAll(".frow").length === 1, null, { timeout: 5000 });
-  check("typing searches inside the open folder and lists only the matches", posts.some((x) => x[0] === "folder-q" && x[1] === "march") && /match/.test(await page.locator("#fdrStatus").innerText()));
-  check("there is a Clear search button while searching a folder", await page.locator("#clearSearchBtn").isVisible());
+  await page.waitForTimeout(500);
+  check("in Folders, typing searches the inbox and all mail, not just the folder", (await page.evaluate(() => filter)) === "all" && !posts.some((x) => x[0] === "folder-q"));
   await page.locator("#clearSearchBtn").click();
-  await page.waitForFunction(() => document.querySelectorAll(".frow").length === 2, null, { timeout: 5000 });
-  check("Clear search brings back the whole folder", (await page.locator("#search").inputValue()) === "");
-  await page.evaluate(() => document.querySelector('.nav[data-filter="tasks"]').click());
-  await page.fill("#search", "dentist");
-  await page.waitForTimeout(300);
-  check("from another page, typing in the search box searches the inbox", (await page.evaluate(() => filter)) === "all");
+  for (const f of ["tasks", "sent", "starred", "action", "archived", "waiting"]) {
+    await page.evaluate((n) => document.querySelector(`.nav[data-filter="${n}"]`)?.click(), f);
+    await page.fill("#search", "dentist");
+    await page.waitForTimeout(250);
+    check(`from ${f}, typing in the search box searches the inbox`, (await page.evaluate(() => filter)) === "all");
+    await page.fill("#search", "");
+  }
   check("no page errors", errors.length === 0);
   await context.close();
 }

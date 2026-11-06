@@ -4673,7 +4673,7 @@ function render(){
   bellPaint();
   hydrateInvites();
   {const ns=waitOn()?(waitData.notes||[]).filter(n=>n.state==="waiting"):[];const wb=$("waitBadge");if(wb){wb.textContent=ns.length;wb.hidden=!ns.length;wb.classList.toggle("hot",ns.some(n=>n.due))}}
-  searchKeyPaint();$("search").placeholder=filter==="folders"?"Search this folder":"Search inbox";
+  searchKeyPaint();$("search").placeholder="Search inbox";
   {const cb=$("clearSearchBtn"),on=!!(String($("search").value||"").trim()||findUi.open)&&!inSettingsScreen();if(cb)cb.hidden=!on;$("search").classList.toggle("searching",on)}
   {const fb2=$("findFiltersBtn");if(fb2)fb2.hidden=!findOn()}
   {const ab=$("askAgentBtn");if(ab)ab.hidden=!(String($("search").value||"").trim().length>=2&&!(document.getElementById("settings")&&document.getElementById("settings").classList.contains("open")))}
@@ -7005,8 +7005,7 @@ document.addEventListener("click",e=>{
 for(const ev of ["focus","blur","input"])$("search").addEventListener(ev,searchKeyPaint);
 addEventListener("resize",searchKeyPaint);new ResizeObserver(searchKeyPaint).observe($("search"));
 $("search").addEventListener("input",e=>{if(inSettingsScreen()){settingsSearchRun(e.target.value);return}query=e.target.value;
-  if(filter==="folders"){clearTimeout(fdrQT);fdrQT=setTimeout(()=>{if(filter==="folders"&&fdrCur)openFolder(fdrCur.aid,fdrCur.f,0)},400);render();return}      // in Folders the words search inside the folder you are looking at
-  if(query.trim()&&SEARCH_PAGES.includes(filter)){filter="all";paneId=null;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"))}      // on any other page the search box searches your inbox and all your mail
+  if(query.trim()&&filter!=="all"){filter="all";paneId=null;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"))}      // on every page the search box does the same thing: it searches your inbox and all your mail
   findAuto();render()});
 $("search").addEventListener("keydown",e=>{
   if(!inSettingsScreen())return;
@@ -8675,7 +8674,7 @@ function fdrSelHead(){
 }
 async function openFolder(aid,f,offset){
   const list=$("fdrList"),status=$("fdrStatus"),mine=++fdrToken;fdrCur={aid,f};
-  const words=String(query||"").trim();
+  const words="";      // the search box never searches inside one folder: it searches the same places on every page
   if(!offset){list.replaceChildren();fdrRows=[];fdrSel=new Set();list.append(fdrSelHead())}
   list.querySelectorAll(".fmore").forEach(x=>x.remove());
   $("fdrTitle").textContent="Folders  ›  "+f.label;$("fdrCols").dataset.lay=lay();$("fdrPane").innerHTML='<p class="fdr-empty">Choose an email to read it here.</p>';
