@@ -8689,7 +8689,7 @@ setTimeout(()=>document.body.classList.remove("booting"),6000);   // never leave
     log.hidden=showList;list.hidden=!showList;form.hidden=showList;
     if(showList){paintList();return}
     log.textContent="";
-    if(!turns.length){const h=document.createElement("div");h.className="agent-hello";h.innerHTML="<strong>Hi, I'm "+esc($("agentName").textContent)+".</strong>Ask me about your email, trips, orders and tasks, like “Do I have a flight booked?” or “What was the newest email?” I only look at what Enveliq has kept, and I can't change anything. I'll tell you if I can't find something.";log.appendChild(h)}
+    if(!turns.length){const h=document.createElement("div");h.className="agent-hello";h.innerHTML="<strong>Hi, I'm "+esc($("agentName").textContent)+".</strong>Ask me about your email, trips, orders and tasks, like “Do I have a flight booked?” or “What was the newest email?” I can search your whole mailbox (when Fast search is on) and look at what Enveliq has kept. I can't change anything, and I'll tell you if I can't find something.";log.appendChild(h)}
     for(const m of turns)say(m.role==="user"?"me":"bot",m.text);
     if(pend)say("bot wait","Thinking… an agent that uses its tools can take a minute or two.");
     if(errText)say("err",errText);

@@ -323,3 +323,28 @@ def test_when_the_data_cannot_be_read_the_model_is_told_so_instead_of_being_left
     monkeypatch.setattr(agent_mod2, "build_context", boom)
     say(client, "whats the newest email")
     assert "could not read the person's data" in model.requests[-1]["messages"][-1]["content"]
+
+
+def test_the_whole_mailbox_is_searched_with_fast_search_and_the_text_is_read_for_that_moment_only(env):
+    from test_find import fast_on, mail as raw_mail
+    appm, client, bridge, model = env
+    bridge.add(801, raw_mail("Your flight to Perth", "Flight EX12 leaves Sydney at 2:05 PM on Thursday. Check-in closes 60 minutes before departure.", 400, "Example Air <bookings@example.invalid>"), "Archive")
+    bridge.add(802, raw_mail("Garden club newsletter", "Roses and tulips this spring.", 300), "Archive")
+    aid = make_account(client, bridge, ai=False)
+    fast_on(client, appm, aid)
+    out = say(client, "Do I have any flights booked?")
+    last = model.requests[-1]["messages"][-1]["content"]
+    assert "SEARCHING THE WHOLE MAILBOX" in last and "Your flight to Perth" in last and "Flight EX12 leaves Sydney at 2:05 PM on Thursday." in last
+    assert "Garden club" not in last.split("EMAILS FOUND BY SEARCHING")[1].split("EMAILS ENVELIQ HAS KEPT")[0]
+    assert "EX12" not in str(client.get("/api/v1/me/agent").json())                       # the email's text is not kept in the chat
+    assert "EX12" not in str(out["chat"]["messages"])
+    user = appm.vault.get_account(aid)["owner_user_id"]
+    assert appm.vault.plaintext_scan(["EX12 leaves Sydney"]) == {"EX12 leaves Sydney": False}
+
+
+def test_a_mailbox_with_fast_search_off_is_said_to_be_skipped(env):
+    appm, client, bridge, model = env
+    make_account(client, bridge, ai=False)
+    say(client, "Do I have any flights booked?")
+    last = model.requests[-1]["messages"][-1]["content"]
+    assert "Fast search is off" in last
