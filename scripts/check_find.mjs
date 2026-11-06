@@ -167,6 +167,26 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 }
 
 {
+  // The reading-pane layout: the bar over the list stays in view while the list scrolls
+  const server = makeServer({ fast: "ready" });
+  const { page, errors, csp, context } = await open(server, { width: 1200, height: 700 });
+  await page.evaluate(() => { view.layout = "right"; applyView(); render(); });
+  const subj = await page.evaluate(() => { const m = data.find((x) => x.owner === currentUser.id); paneId = m.id; render(); return m.subject; });
+  await page.waitForTimeout(300);
+  await page.fill("#search", subj.split(" ")[0]);
+  await page.waitForSelector("#findInline .find-row", { timeout: 5000 });
+  check("the list sits in its own scrolling column beside the email", await page.evaluate(() => document.body.classList.contains("split-read")));
+  const info = await page.evaluate(async () => {
+    const b = document.querySelector(".search-banner"); const sp = document.createElement("div"); sp.style.height = "4000px"; b.parentElement.append(sp);
+    const chain = []; for (let el = b.parentElement; el && el !== document.documentElement; el = el.parentElement) { const cs = getComputedStyle(el); chain.push(`${el.id || el.className}:${cs.overflowY}:${el.scrollHeight}/${el.clientHeight}`); }
+    for (let el = b.parentElement; el; el = el.parentElement) el.scrollTop = 900;
+    window.scrollTo(0, 900); await new Promise((r) => setTimeout(r, 150));
+    return { top: b.getBoundingClientRect().top, colTop: document.querySelector(".main>.content").getBoundingClientRect().top, chain };
+  });
+  check("reading-pane layout: the search bar stays pinned at the top of the list column while it scrolls", Math.abs(info.top - info.colTop) < 4);
+  await context.close();
+}
+{
   // With Fast search ready on every mailbox, typing searches all mail by itself.
   const server = makeServer({ fast: "ready" });
   const { page, errors, csp, context } = await open(server);
