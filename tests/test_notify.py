@@ -506,6 +506,10 @@ def test_mail_view_preferences_stored_per_user_in_vault(env):
     assert client.put("/api/v1/me/mail-view", json={**chosen, "scheme": "dark"}).status_code == 200
     assert client.get("/api/v1/me/mail-view").json()["view"]["scheme"] == "dark"
     assert client.put("/api/v1/me/mail-view", json={**chosen, "scheme": "neon"}).status_code == 422
+    assert client.get("/api/v1/me/mail-view").json()["view"].get("highlight", "blue") == "blue"
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "highlight": "green"}).status_code == 200
+    assert client.get("/api/v1/me/mail-view").json()["view"]["highlight"] == "green"
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "highlight": "#ff0000"}).status_code == 422
     # An older browser that does not know about the style must not reset it.
     assert client.put("/api/v1/me/mail-view", json=chosen).status_code == 200
     assert client.get("/api/v1/me/mail-view").json()["view"]["style"] == "rail"

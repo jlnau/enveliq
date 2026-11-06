@@ -81,6 +81,34 @@ for (const lay of ["screen", "deck", "bottom", "list", "right"]) {
 }
 await page.evaluate(() => { const box = document.getElementById("previewOverview"); box.hidden = false; box.replaceChildren(); for (const [t, n, c] of [["action", "Needs action", 17], ["tasks", "Today", 8], ["shipping", "Packages", 4], ["waiting", "Waiting", 5]]) { const b = document.createElement("button"); b.className = "preview-stat " + t; b.innerHTML = '<span class="preview-stat-icon">!</span><span class="preview-stat-copy"><strong>' + n + '</strong><b>' + c + '</b><small>x</small></span>'; box.append(b); } });
 check("the four cards at the top of the inbox are neutral grey in Dark", (await statBg()).length === 4 && (await statBg()).every(isGrey));
+
+await page.evaluate(() => document.getElementById("customiseBtn").click());
+await page.waitForSelector('#viewPanel [data-view="highlight"]');
+check("Customise has a Highlight colour choice with six colours, Blue chosen at first", (await page.locator('#viewPanel [data-view="highlight"]').count()) === 6 && (await page.locator('#viewPanel [data-view="highlight"][data-val="blue"]').getAttribute("aria-checked")) === "true");
+const pickHl = (v) => page.evaluate((v) => document.querySelector(`#viewPanel [data-view="highlight"][data-val="${v}"]`).click(), v);
+await pickHl("green");
+await page.waitForTimeout(300);
+await page.locator("article.mail").first().click({ force: true });
+await page.waitForTimeout(400);
+check("Green: the email you are on turns green (dark)", (await rgb("article.mail.current", "backgroundImage")).includes("rgb(20, 107, 58)"));
+check("Green: the open menu item turns green (dark)", (await rgb(".sidebar .nav.active", "backgroundColor")) === "rgb(23, 77, 46)");
+check("Green: the New email button turns green", (await rgb(".sidebar .nav.newmail", "backgroundImage")).includes("rgb(11, 138, 74)"));
+await page.screenshot({ path: (process.env.SHOTS || "/tmp") + "/dark-green.png" });
+await page.evaluate(() => { document.documentElement.setAttribute("data-theme", "light"); });
+await page.waitForTimeout(300);
+check("Green also works in the light look (open menu item)", (await rgb(".sidebar .nav.active", "backgroundColor")) === "rgb(216, 243, 227)");
+check("Green also works in the light look (email you are on)", (await rgb("article.mail.current", "backgroundImage")).includes("rgb(20, 107, 58)"));
+await page.screenshot({ path: (process.env.SHOTS || "/tmp") + "/light-green.png" });
+await page.evaluate(() => { document.documentElement.removeAttribute("data-theme"); });
+await pickHl("blue");
+await page.waitForTimeout(300);
+await page.locator("article.mail").first().click({ force: true });
+await page.waitForTimeout(400);
+check("Blue is the normal look again", (await page.evaluate(() => document.documentElement.dataset.hl)) === undefined && (await rgb("article.mail.current", "backgroundImage")).includes("rgb(21, 68, 173)"));
+await pickHl("purple");
+await page.reload();
+await page.waitForSelector("article.mail");
+check("The highlight colour is remembered after a reload", (await page.evaluate(() => document.documentElement.dataset.hl)) === "purple");
 await page.screenshot({ path: (process.env.SHOTS || "/tmp") + "/dark.png" });
 await page.reload();
 await page.waitForSelector("article.mail");
