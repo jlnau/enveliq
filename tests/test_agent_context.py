@@ -113,3 +113,16 @@ def test_a_broken_part_does_not_stop_the_rest():
 
 def test_question_words_ignore_filler():
     assert terms("Do I have any flights booked") == {"flight", "booked"}
+
+
+def test_a_question_about_the_newest_email_points_at_the_newest_one_only():
+    from backend.mail.agent_context import asks_for_newest
+    for q in ("whats the newest email", "what's the latest email?", "Tell me my most recent message", "what was the last mail I got"):
+        assert asks_for_newest(q), q
+    for q in ("do I have a flight booked", "when is my last flight", "email from Sam"):
+        assert not asks_for_newest(q), q
+    src = sources({"a1": [mail(i, f"Subject {i}", "Sam", f"Summary {i}.", i) for i in range(1, 6)]})
+    text = build(src, "u1", "whats the latest email", now=NOW)
+    assert "ASKING FOR THEIR NEWEST EMAIL. It is [E1]" in text
+    first = text.split("[E1] Received", 1)[1].split("[E2] Received", 1)[0]
+    assert "Subject 5" in first and "[E4] Received" not in text

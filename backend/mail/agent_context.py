@@ -284,6 +284,14 @@ def mailbox_search(src: Sources, user_id: str, question: str, tz: Any, now: floa
     return out, notes
 
 
+_NEWEST = re.compile(r"\b(newest|latest|most recent|last|just (?:got|came|arrived|received)|recent)\b[^.?!]{0,30}\b(e-?mails?|mails?|messages?)\b|\b(e-?mails?|mails?|messages?)\b[^.?!]{0,20}\b(just (?:came|arrived)|i (?:just )?(?:got|received))\b", re.I)
+
+
+def asks_for_newest(question: str) -> bool:
+    """'Whats the newest email' is answered by plain code picking the newest one, not left to a small model to find in a list."""
+    return bool(_NEWEST.search(question or ""))
+
+
 def build(src: Sources, user_id: str, question: str, earlier: str = "", now: float | None = None) -> str:
     """The data block for one question. `earlier` is the person's previous question, so a follow-up like "and the second one?" still finds its email."""
     now = time.time() if now is None else now
@@ -298,10 +306,11 @@ def build(src: Sources, user_id: str, question: str, earlier: str = "", now: flo
     for title, rows in (("TRIPS AND BOOKINGS (from the person's email)", _trips(src, user_id)), ("OPEN TASKS", _tasks(src, user_id)),
                         ("ORDERS (from the person's email)", _orders(src, user_id)), ("WAITING FOR A REPLY", _waiting(src, user_id, tz))):
         parts.append(f"{title}:\n" + ("\n".join(rows) if rows else "- none"))
+    newest = asks_for_newest(question)
     found, notes = [], []
     try:
-        found, notes = mailbox_search(src, user_id, question, tz)
-        if not found and earlier and not terms(question):
+        found, notes = ([], []) if newest else mailbox_search(src, user_id, question, tz)
+        if not newest and not found and earlier and not terms(question):
             found, notes = mailbox_search(src, user_id, earlier, tz)
     except Exception:
         found, notes = [], []
@@ -320,7 +329,9 @@ def build(src: Sources, user_id: str, question: str, earlier: str = "", now: flo
     if found and notes:
         parts.append("NOT SEARCHED:\n" + "\n".join(notes))
     head = "\n\n".join(parts)
-    emails = _emails(src, user_id, f"{question} {earlier}")
+    emails = _emails(src, user_id, "" if newest else f"{question} {earlier}")
+    if newest:
+        emails = sorted(emails, key=lambda m: float(m.get("received_at") or 0), reverse=True)[:3]
     # Newest first; the number is only a label so the answer can say which email it used.
     blocks: list[str] = []
     used = len(head) + 200
@@ -330,8 +341,10 @@ def build(src: Sources, user_id: str, question: str, earlier: str = "", now: flo
             break
         blocks.append(text)
         used += len(text) + 1
-    mail = ("EMAILS ENVELIQ HAS KEPT, newest first (a short AI-written summary of each, not the email itself; a few recent ones and the ones that "
+    mail = ("EMAILS ENVELIQ HAS KEPT, newest first ([E1] is the newest; the higher the number, the older) (a short AI-written summary of each, not the email itself; a few recent ones and the ones that "
             "match the question, not the whole mailbox):\n" + "\n".join(blocks)) if blocks else "EMAILS ENVELIQ HAS KEPT: none."
+    if newest and blocks:
+        mail = "THE PERSON IS ASKING FOR THEIR NEWEST EMAIL. It is [E1] below. Answer with [E1] only: who it is from, the subject, when it arrived and what it says.\n\n" + mail
     return head + "\n\n" + mail
 
 
