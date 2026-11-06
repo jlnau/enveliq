@@ -1810,6 +1810,8 @@ html[data-theme="light"] .fs-more{background:linear-gradient(180deg,rgba(233,241
 .search-banner b{overflow-wrap:anywhere}.search-banner button{flex:none;border:0;border-radius:999px;padding:8px 16px;background:#fff;color:#12306b;font:inherit;font-weight:700;cursor:pointer}.search-banner button:hover{background:#e6f0ff}
 html[data-theme="light"] .search-banner{background:#2f6fe0}
 @media(max-width:760px){#clearSearchBtn{display:none}}
+.search{position:relative}.search-key{position:absolute;top:50%;transform:translateY(-50%);min-width:22px;height:22px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;padding:0 6px;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;background:rgba(255,255,255,.07);color:var(--muted);font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;pointer-events:none}
+.search-key[hidden]{display:none}
 .drag-folders{display:none}
 body.dragging-mail .sidebar>*:not(.drag-folders){display:none!important}
 body.dragging-mail .drag-folders{display:flex;flex-direction:column;min-height:0;flex:1;padding:6px 0 0}
@@ -1911,7 +1913,7 @@ body.dragging-mail{user-select:none;-webkit-user-select:none;cursor:grabbing}
   <div class="preview-calm-notice" id="previewCalmNotice" hidden><strong>Calm mode is on</strong><span>One thing at a time. Counts are hidden.</span><button type="button" id="previewCalmOff">Turn off</button></div>
   <div class="top-inner">
     <div class="top-left"><div class="greet"><h2>Inbox</h2><span class="today" id="todayDate"></span></div><p id="inboxSubtitle">Private mail for the signed-in person</p></div><div class="enveliq-landscape" aria-hidden="true"><span class="landscape-sun"></span><span class="landscape-mountain landscape-back"></span><span class="landscape-mountain landscape-front"></span></div>
-    <div class="search-col"><div class="search"><input id="search" type="search" placeholder="Search inbox" aria-label="Search inbox"><button class="attachment-view sync-btn" id="clearSearchBtn" type="button" hidden>Clear search</button><button class="attachment-view sync-btn" id="findFiltersBtn" type="button" hidden title="Search with filters">Filters</button><button class="attachment-view sync-btn" id="askAgentBtn" type="button" hidden title="Ask the agent what you typed, instead of searching">Ask the agent</button></div><div class="syncago" id="syncAgo" role="status" aria-live="off" hidden></div></div>
+    <div class="search-col"><div class="search"><input id="search" type="search" placeholder="Search inbox" aria-label="Search inbox" aria-keyshortcuts="/"><kbd class="search-key" id="searchKey" hidden title="Press / to start searching" aria-hidden="true">/</kbd><button class="attachment-view sync-btn" id="clearSearchBtn" type="button" hidden>Clear search</button><button class="attachment-view sync-btn" id="findFiltersBtn" type="button" hidden title="Search with filters">Filters</button><button class="attachment-view sync-btn" id="askAgentBtn" type="button" hidden title="Ask the agent what you typed, instead of searching">Ask the agent</button></div><div class="syncago" id="syncAgo" role="status" aria-live="off" hidden></div></div>
   </div>
 </header>
 
@@ -3067,6 +3069,12 @@ document.addEventListener("click",e=>{
   render();
 });
 let searchPin=null;                // the id of an email opened from "Also found elsewhere"; it is added to the list while the search lasts
+// A small "/" key hint at the right end of the search box tells people the keyboard shortcut. It shows only while the box is empty and not in use, and only where the shortcut works.
+function searchKeyPaint(){
+  const k=$("searchKey"),i=$("search");if(!k||!i)return;
+  const on=!i.value&&document.activeElement!==i&&keyboardShortcutsEnabled()&&!window.matchMedia("(max-width:760px)").matches&&!inSettingsScreen()&&i.offsetWidth>0;
+  k.hidden=!on;if(on)k.style.left=(i.offsetLeft+i.offsetWidth-k.offsetWidth-10)+"px";
+}
 function clearSearch(){
   query="";$("search").value="";searchPin=null;autoDismissed="";document.body.classList.remove("msearch");
   findReset();render();$("search").focus();
@@ -4742,6 +4750,7 @@ function render(){
   bellPaint();
   hydrateInvites();
   {const ns=waitOn()?(waitData.notes||[]).filter(n=>n.state==="waiting"):[];const wb=$("waitBadge");if(wb){wb.textContent=ns.length;wb.hidden=!ns.length;wb.classList.toggle("hot",ns.some(n=>n.due))}}
+  searchKeyPaint();
   {const cb=$("clearSearchBtn"),on=!!(String($("search").value||"").trim()||findUi.open)&&!inSettingsScreen();if(cb)cb.hidden=!on;$("search").classList.toggle("searching",on)}
   {const fb2=$("findFiltersBtn");if(fb2)fb2.hidden=!findOn()}
   {const ab=$("askAgentBtn");if(ab)ab.hidden=!(String($("search").value||"").trim().length>=2&&!(document.getElementById("settings")&&document.getElementById("settings").classList.contains("open")))}
@@ -7067,6 +7076,8 @@ document.addEventListener("click",e=>{
     return;
   }
 });
+for(const ev of ["focus","blur","input"])$("search").addEventListener(ev,searchKeyPaint);
+addEventListener("resize",searchKeyPaint);new ResizeObserver(searchKeyPaint).observe($("search"));
 $("search").addEventListener("input",e=>{if(inSettingsScreen()){settingsSearchRun(e.target.value);return}query=e.target.value;render();findAuto()});
 $("search").addEventListener("keydown",e=>{
   if(!inSettingsScreen())return;

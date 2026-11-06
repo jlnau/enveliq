@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**A / key hint in the search box.** The empty search box shows a small **/** key at its right end, to say that pressing / starts typing in it without the mouse. It hides while you type or on a phone, and when keyboard shortcuts are switched off in Settings.
+
 **Search stays put, with an obvious Clear search.** Opening an email from "Also found elsewhere" no longer ends the search: the results stay, the email opens beside them, and the search stays until you clear it. While you search, a bright **Clear search** button shows in the search bar, the box glows, and a bar over the list (which stays in view as you scroll) says what you are searching for with its own Clear search button.
 
 **Emails in a folder can now be moved, binned and browsed.** An email opened from a folder has previous and next arrows, Move to…, Bin and a three-dot menu (with Move to Inbox), and each row shows Move and Bin buttons when you hover it. You can also drag an email from one folder to another, or to the Inbox, which now appears with the folders while you drag. New server routes: `POST /api/v1/folder-mail/{token}/move` and `.../bin`; `backend/mail/folders.py`, `backend/mail/folder_routes.py`.

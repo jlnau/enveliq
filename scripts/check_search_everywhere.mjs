@@ -84,7 +84,13 @@ const more = (page) => page.locator(".srch-more");
 
 {
   const { page, errors, context } = await open(1200, 900);
+  check("the empty search box shows a small / key hint at its right end", (await page.locator("#searchKey").isVisible()) && (await page.evaluate(() => { const k = document.getElementById("searchKey").getBoundingClientRect(), i = document.getElementById("search").getBoundingClientRect(); return k.right <= i.right && k.left > i.left + i.width / 2; })));
+  await shot(page, "search-key-hint-1200");
+  await page.keyboard.press("/");
+  check("pressing / starts typing in the search box (and the hint steps aside)", (await page.evaluate(() => document.activeElement.id)) === "search" && (await page.locator("#searchKey").isHidden()));
+  await page.locator("#search").evaluate((e) => e.blur());
   await type(page, "electricity");
+  check("the hint is gone once there are words in the box", await page.locator("#searchKey").isHidden());
   let t = await more(page).innerText();
   check("an Archived email is found from the inbox, and says where it is", /Your electricity bill/.test(t) && /Archived · Northside Power/.test(t));
   await type(page, "check-up");

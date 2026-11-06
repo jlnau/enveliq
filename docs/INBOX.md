@@ -342,3 +342,5 @@ Choose **Reading pane on the right** in the View panel (the tab on the right edg
 
 - Opening an email from the search results (including "Also found elsewhere") keeps the search and its results; the email opens next to them.
 - While a search is on, the search bar shows a bright **Clear search** button and the box glows, and a bar over the list says "Searching for …" with its own **Clear search** button. The bar stays at the top as you scroll. Clearing empties the box and brings back the normal list.
+
+- The empty search box shows a small **/** key at its right end: press **/** to start typing in the search without the mouse. The hint hides while the box is in use, on a phone, and when **Enable keyboard shortcuts** is off.
