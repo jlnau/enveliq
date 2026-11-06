@@ -15,6 +15,7 @@ from typing import Any, Callable
 
 from .bridge import Bridge, Target
 from .errors import BridgeError
+from .find import FindError, criteria, parse_query
 from .parse import _addresses, clean, likely_has_files, parse_headers, received_at_of
 
 PAGE = 25
@@ -154,7 +155,7 @@ class Folders:
         except (ValueError, TypeError):
             raise BridgeError("not_found", "Not found.") from None
 
-    def page(self, user: str, account: dict[str, Any], folder: str, offset: int) -> dict[str, Any]:
+    def page(self, user: str, account: dict[str, Any], folder: str, offset: int, words: str = "") -> dict[str, Any]:
         target = self._target(account)
         with self.bridge.session(target) as s:
             s.set_timeout(60)
@@ -162,7 +163,11 @@ class Folders:
             if folder not in names:
                 raise BridgeError("not_found", "That folder is not in this mailbox.")
             validity = s.select_folder(folder, True)
-            uids = s.search(["ALL"])
+            if words.strip():
+                crit, utf8 = criteria(parse_query(words), target)      # the same words and rules as Search all my mail, inside this one folder
+                uids = s.search(crit, utf8)
+            else:
+                uids = s.search(["ALL"])
             chunk = uids[offset:offset + PAGE]
             rows = []
             for uid, raw in s.header_blocks(chunk):

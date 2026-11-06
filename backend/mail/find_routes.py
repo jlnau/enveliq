@@ -284,6 +284,87 @@ def build_find_router(ctx: Any) -> APIRouter:
     def bin_found(token: Token, session: Session = Depends(session_dep)):
         return relocate(token, session, "\\trash", "found_email_binned")
 
+    summary_limit = SlidingWindowLimiter(max_events=20, window=60)
+
+    @router.post("/results/{token}/summary")
+    def summary_found(token: Token, response: Response, session: Session = Depends(session_dep)):
+        """A short summary of one found email, written when the person presses the button. Nothing is kept."""
+        user = need(session)
+        if not summary_limit.allow(f"findsum:{user}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        no_store(response)
+        try:
+            raw, ref = jobs.original(user, token)
+        except FindError as err:
+            raise HTTPException(status_code=err.status, detail=err.message) from None
+        except BridgeError as err:
+            raise (HTTPException(status_code=404, detail="Not found.") if err.code == "not_found" else fail(err)) from None
+        service.refresh_ai(vault)
+        if not service.summariser.enabled:
+            raise HTTPException(status_code=409, detail={"code": "ai_not_configured", "message": "No AI model is set up yet. An administrator can add one under Administration, AI model."})
+        mail = render_original(raw)
+        sender = f"{mail['from']['name']} <{mail['from']['address']}>".strip()
+        try:
+            out = service.summariser.summarise(mail["subject"], sender, mail["text"])
+        except BridgeError as err:
+            raise fail(err) from None
+        vault.audit({"event": "found_mail_summarised", "actor_user_id": user, "account_id": ref.account_id, "at": time.time()})
+        return {"summary": out["summary"]}
+
+    summary_limit = SlidingWindowLimiter(max_events=20, window=60)
+
+    @router.post("/results/{token}/summary")
+    def summary_found(token: Token, response: Response, session: Session = Depends(session_dep)):
+        """A short summary of one found email, written when the person presses the button. Nothing is kept."""
+        user = need(session)
+        if not summary_limit.allow(f"findsum:{user}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        no_store(response)
+        try:
+            raw, ref = jobs.original(user, token)
+        except FindError as err:
+            raise HTTPException(status_code=err.status, detail=err.message) from None
+        except BridgeError as err:
+            raise fail(err) from None
+        service.refresh_ai(vault)
+        if not service.summariser.enabled:
+            raise HTTPException(status_code=409, detail={"code": "ai_not_configured", "message": "No AI model is set up yet. An administrator can add one under Administration, AI model."})
+        mail = render_original(raw)
+        sender = f"{mail['from']['name']} <{mail['from']['address']}>".strip()
+        try:
+            out = service.summariser.summarise(mail["subject"], sender, mail["text"])
+        except BridgeError as err:
+            raise fail(err) from None
+        vault.audit({"event": "found_email_summarised", "actor_user_id": user, "account_id": ref.account_id, "at": time.time()})
+        return {"summary": out["summary"]}
+
+    summary_limit = SlidingWindowLimiter(max_events=20, window=60)
+
+    @router.post("/results/{token}/summary")
+    def summary_found(token: Token, response: Response, session: Session = Depends(session_dep)):
+        """A short summary of one found email, written when the person presses the button. Nothing is kept."""
+        user = need(session)
+        if not summary_limit.allow(f"findsum:{user}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        no_store(response)
+        try:
+            raw, ref = jobs.original(user, token)
+        except FindError as err:
+            raise HTTPException(status_code=err.status, detail=err.message) from None
+        except BridgeError as err:
+            raise fail(err) from None
+        service.refresh_ai(vault)
+        if not service.summariser.enabled:
+            raise HTTPException(status_code=409, detail={"code": "ai_not_configured", "message": "No AI model is set up yet. An administrator can add one under Administration, AI model."})
+        mail = render_original(raw)
+        sender = f"{mail['from']['name']} <{mail['from']['address']}>".strip()
+        try:
+            out = service.summariser.summarise(mail["subject"], sender, mail["text"])
+        except BridgeError as err:
+            raise fail(err) from None
+        vault.audit({"event": "found_email_summarised", "actor_user_id": user, "account_id": ref.account_id, "at": time.time()})
+        return {"summary": out["summary"]}
+
     @router.post("/results/{token}/archive", status_code=204)
     def archive_found(token: Token, session: Session = Depends(session_dep)):
         return relocate(token, session, "\\archive", "found_email_archived")

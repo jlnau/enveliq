@@ -201,3 +201,27 @@ def test_a_folder_email_can_be_starred_archived_and_kept_for_tagging(env):
     assert client.post(f"/api/v1/folder-mail/{token[:-3]}abc/star", json={"starred": True}).status_code == 404
     assert client.post(f"/api/v1/folder-mail/{token}/archive").status_code == 204
     assert bridge.messages[uid]["folder"] != "Bills"
+
+
+def test_a_folder_can_be_searched_by_words(env):
+    _, client, bridge, _ = env
+    aid, _ = synced(client, bridge)
+    bridge.folders.append(("\\HasNoChildren", "Bills"))
+    for uid, subject, body in ((30, "Power bill", "Pay the electricity bill.\n"), (31, "Water notice", "Pipes.\n")):
+        bridge.add(uid, raw_email(subject, "Co <bills@example.invalid>", MAILBOX, message_id=f"<s{uid}@example.invalid>", body=body))
+        bridge.messages[uid]["folder"] = "Bills"
+    page = client.get(f"/api/v1/accounts/{aid}/folder-mail", params={"folder": "Bills", "q": "electricity"}).json()
+    assert [r["subject"] for r in page["rows"]] == ["Power bill"] and page["total"] == 1
+    assert client.get(f"/api/v1/accounts/{aid}/folder-mail", params={"folder": "Bills", "q": "x"}).status_code == 422
+
+
+def test_the_words_search_inside_one_folder_only(env):
+    _, client, bridge, _ = env
+    aid, _ = synced(client, bridge)
+    bridge.folders.append(("\\HasNoChildren", "Bills"))
+    for uid, subject in ((20, "Power bill"), (21, "Water notice")):
+        bridge.add(uid, raw_email(subject, "Co <bills@example.invalid>", MAILBOX, message_id=f"<s{uid}@example.invalid>", body="Pay this.\n"))
+        bridge.messages[uid]["folder"] = "Bills"
+    page = client.get(f"/api/v1/accounts/{aid}/folder-mail", params={"folder": "Bills", "q": "power"}).json()
+    assert [r["subject"] for r in page["rows"]] == ["Power bill"] and page["total"] == 1
+    assert client.get(f"/api/v1/accounts/{aid}/folder-mail", params={"folder": "Bills", "q": ""}).json()["total"] == 2

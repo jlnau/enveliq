@@ -205,6 +205,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("the found email's row is marked and the results stay where they were", (await page.locator(".find-row.on").count()) === 1 && (await page.locator(".find-row").count()) === 2 && (await page.locator("#findInline").count()) === 1);
   await page.locator(".find-row").nth(1).click();
   await page.waitForFunction(() => document.querySelectorAll(".find-row.on").length === 1 && document.querySelectorAll(".find-row")[1].classList.contains("on"));
+  check("the found email has a Generate summary button and the full action bar", (await page.locator("#readDock .fdr-sum .gen").count()) === 1 && (await page.locator("#readDock .lbar .fb-tag").count()) === 1 && (await page.locator("#readDock .lbar .fb-prev").count()) === 1);
   check("choosing another one replaces it in the pane", (await page.locator("#readDock .fdoc").count()) === 1);
   await shot(page, "find-in-pane");
   await page.locator("[data-find-pane-close]").click();

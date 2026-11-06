@@ -3101,6 +3101,7 @@ function searchKeyPaint(){
 function clearSearch(){
   query="";$("search").value="";searchPin=null;autoDismissed="";findUi.pend="";document.body.classList.remove("msearch");
   findReset();render();$("search").focus();
+  if(filter==="folders"&&fdrCur)openFolder(fdrCur.aid,fdrCur.f,0);
 }
 function searchBannerHtml(){
   const q=String(query||"").trim();
@@ -3840,10 +3841,14 @@ async function findView(token){
   const row=findUi.rows.find(r=>r.token===token);if(!row)return;
   // Beside the list (reading pane layouts) the email opens in the reading pane like any other; otherwise in the pop-up viewer.
   const dock=document.body.classList.contains("split-read")&&(lay()==="right"||lay()==="bottom")?$("readDock"):null;
-  if(dock)dock.classList.add("busy");else toast("Fetching the email from your mailbox…");
+  if(dock){      // the row lights up and the pane answers at once; the email itself follows when the mailbox hands it over
+    findUi.openTok=token;findPaint();
+    const wait=document.createElement("p");wait.className="fdr-empty";wait.textContent="Opening this email from your mailbox…";dock.replaceChildren(wait);dock.classList.add("busy");
+  }else toast("Fetching the email from your mailbox…");
   try{
     const o=await secureBackendRequest(`/api/v1/find/results/${encodeURIComponent(token)}/original`,{method:"GET",headers:{}});
     const hadFiles=(o.attachments||[]).length;
+    if(dock&&findUi.openTok!==token)return;      // another email was chosen while this one was coming
     if(dock){
       const c={title:row.subject,fallbackDate:findShortDate(row.date),account:row.account};
       const wrap=document.createElement("div");wrap.className="fdoc";
@@ -3853,7 +3858,7 @@ async function findView(token){
       const close=document.createElement("button");close.type="button";close.className="obtn";close.setAttribute("data-find-pane-close","");close.textContent="Close";
       top.append(where,close);
       const doc=document.createElement("div");revokeViewerUrls();fillOriginal(doc,{...o,attachments:[]},c);
-      wrap.append(top,liveBar(()=>[liveFind(row)],{nav}),doc);dock.classList.remove("busy");dock.replaceChildren(wrap);dock.scrollTop=0;
+      wrap.append(top,liveBar(()=>[liveFind(row)],{nav}),doc);doc.prepend(folderSummaryBox(token,"/api/v1/find/results/"));dock.classList.remove("busy");dock.replaceChildren(wrap);dock.scrollTop=0;
       findUi.openTok=token;findPaint();
       return;
     }
@@ -4814,7 +4819,7 @@ function render(){
   bellPaint();
   hydrateInvites();
   {const ns=waitOn()?(waitData.notes||[]).filter(n=>n.state==="waiting"):[];const wb=$("waitBadge");if(wb){wb.textContent=ns.length;wb.hidden=!ns.length;wb.classList.toggle("hot",ns.some(n=>n.due))}}
-  searchKeyPaint();
+  searchKeyPaint();$("search").placeholder=filter==="folders"?"Search this folder":"Search inbox";
   {const cb=$("clearSearchBtn"),on=!!(String($("search").value||"").trim()||findUi.open)&&!inSettingsScreen();if(cb)cb.hidden=!on;$("search").classList.toggle("searching",on)}
   {const fb2=$("findFiltersBtn");if(fb2)fb2.hidden=!findOn()}
   {const ab=$("askAgentBtn");if(ab)ab.hidden=!(String($("search").value||"").trim().length>=2&&!(document.getElementById("settings")&&document.getElementById("settings").classList.contains("open")))}
@@ -7142,7 +7147,10 @@ document.addEventListener("click",e=>{
 });
 for(const ev of ["focus","blur","input"])$("search").addEventListener(ev,searchKeyPaint);
 addEventListener("resize",searchKeyPaint);new ResizeObserver(searchKeyPaint).observe($("search"));
-$("search").addEventListener("input",e=>{if(inSettingsScreen()){settingsSearchRun(e.target.value);return}query=e.target.value;findAuto();render()});
+$("search").addEventListener("input",e=>{if(inSettingsScreen()){settingsSearchRun(e.target.value);return}query=e.target.value;
+  if(filter==="folders"){clearTimeout(fdrQT);fdrQT=setTimeout(()=>{if(filter==="folders"&&fdrCur)openFolder(fdrCur.aid,fdrCur.f,0)},400);render();return}      // in Folders the words search inside the folder you are looking at
+  if(query.trim()&&SEARCH_PAGES.includes(filter)){filter="all";paneId=null;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"))}      // on any other page the search box searches your inbox and all your mail
+  findAuto();render()});
 $("search").addEventListener("keydown",e=>{
   if(!inSettingsScreen())return;
   if(e.key==="Escape"){settingsSearchClear()}
@@ -8560,13 +8568,13 @@ async function loadFolders(){
   finally{$("fdrRefresh").disabled=false}
 }
 // A summary of one folder email, written only when the person presses the button. The email text goes to the AI model for that moment and nothing is kept.
-function folderSummaryBox(token){
+function folderSummaryBox(token,base){
   const box=document.createElement("div");box.className="qsummary fdr-sum";
   const head='<div class="qsummary-head"><span class="qsummary-label">✦ AI summary</span></div>';
   const ask=()=>{box.innerHTML=head+'<div class="nosum"><span class="nsdot" aria-hidden="true"></span><span>Summary not generated</span><button type="button" class="gen">Generate summary</button></div><p class="nosum-note">Pressing the button sends this email\'s text to your AI model. Nothing is saved.</p>';box.querySelector(".gen").onclick=run};
   const run=async()=>{
     box.innerHTML=head+'<div class="nosum"><span class="nsdot busy" aria-hidden="true"></span><span>Writing the summary…</span><span class="gprog"><i></i></span></div>';
-    try{const r=await secureBackendRequest(`/api/v1/folder-mail/${encodeURIComponent(token)}/summary`,{method:"POST",body:"{}"});
+    try{const r=await secureBackendRequest(`${base||"/api/v1/folder-mail/"}${encodeURIComponent(token)}/summary`,{method:"POST",body:"{}"});
       box.innerHTML=head+'<span class="qsummary-copy"></span><p class="nosum-note">Written by AI for you just now. Not saved.</p>';box.querySelector(".qsummary-copy").textContent=r.summary}
     catch(er){ask();box.querySelector(".nosum span:nth-child(2)").textContent="Could not summarise ("+(er.message||"try again")+")"}
   };
@@ -8574,7 +8582,7 @@ function folderSummaryBox(token){
 }
 // ---- Live mail: emails inside a folder and search results. They stay in the mailbox; these actions work on them where they sit ----
 // An item is { kind: "folder" | "find", token, address, name, subject, account (id), folder, starred }.
-let fdrInfo={label:"",total:0},fdrSel=new Set();
+let fdrInfo={label:"",total:0},fdrSel=new Set(),fdrQT=0,fdrCur=null;
 const fdrIcons={bin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
   folder:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
   inbox:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13l3-8h12l3 8v6H3zM3 13h5l1 3h6l1-3h5"/></svg>',
@@ -8587,7 +8595,7 @@ function fdrTakeOut(row){
   const rows=fdrRowsNow(),i=rows.indexOf(row),next=rows[i+1]||rows[i-1]||null,wasOpen=row.classList.contains("on");
   const inl=row.nextElementSibling;if(inl&&inl.classList.contains("fdr-inline"))inl.remove();
   fdrSel.delete(row._it);row.remove();fdrInfo.total=Math.max(0,fdrInfo.total-1);
-  $("fdrStatus").textContent=fdrInfo.total?`${fdrInfo.label}: ${fdrInfo.total} ${fdrInfo.total===1?"email":"emails"}, newest first.`:`${fdrInfo.label} is empty.`;
+  $("fdrStatus").textContent=fdrInfo.total?`${fdrInfo.label}: ${fdrInfo.total} ${fdrInfo.total===1?"email":"emails"}${String(query||"").trim()?" match":", newest first"}.`:`${fdrInfo.label} is empty.`;
   if(!wasOpen)return;
   if(next&&next._open)next._open();
   else{$("fdrPane").innerHTML='<p class="fdr-empty">Choose an email to read it here.</p>';if($("attachmentModal").classList.contains("open"))closeAttachmentViewer()}
@@ -8711,16 +8719,17 @@ function fdrSelHead(){
   return h;
 }
 async function openFolder(aid,f,offset){
-  const list=$("fdrList"),status=$("fdrStatus"),mine=++fdrToken;
+  const list=$("fdrList"),status=$("fdrStatus"),mine=++fdrToken;fdrCur={aid,f};
+  const words=String(query||"").trim();
   if(!offset){list.replaceChildren();fdrRows=[];fdrSel=new Set();list.append(fdrSelHead())}
   list.querySelectorAll(".fmore").forEach(x=>x.remove());
   $("fdrTitle").textContent="Folders  ›  "+f.label;$("fdrCols").dataset.lay=lay();$("fdrPane").innerHTML='<p class="fdr-empty">Choose an email to read it here.</p>';
   status.textContent="Reading "+f.label+"…";
   try{
-    const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/folder-mail?folder=${encodeURIComponent(f.name)}&offset=${offset}`,{method:"GET",headers:{}});
+    const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/folder-mail?folder=${encodeURIComponent(f.name)}&offset=${offset}${words?"&q="+encodeURIComponent(words):""}`,{method:"GET",headers:{}});
     if(mine!==fdrToken||filter!=="folders")return;
     fdrInfo={label:f.label,total:r.total};
-    status.textContent=r.total?`${f.label}: ${r.total} ${r.total===1?"email":"emails"}, newest first.`:`${f.label} is empty.`;
+    status.textContent=words?(r.total?`${f.label}: ${r.total} ${r.total===1?"email matches":"emails match"} "${words}".`:`Nothing in ${f.label} matches "${words}".`):(r.total?`${f.label}: ${r.total} ${r.total===1?"email":"emails"}, newest first.`:`${f.label} is empty.`);
     for(const raw of r.rows){
       const it={...raw,kind:"folder",address:raw.from_address,name:raw.from_name,account:aid,folder:f.name,starred:false};
       const row=document.createElement("div");row.className="frow";row.setAttribute("role","button");row.tabIndex=0;row._it=it;it._row=row;

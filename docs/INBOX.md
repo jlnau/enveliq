@@ -358,3 +358,9 @@ Choose **Reading pane on the right** in the View panel (the tab on the right edg
 - Hovering a row shows Move, Archive and Bin. **Dragging** one email, or several ticked ones, shows the Inbox and your folders on the left; drop to move.
 - Move, Archive, Bin and Star act on the email where it sits in the mailbox and Enveliq keeps nothing. **Tag** first adds the email quietly to your lists (headers and an encrypted summary only, for 60 days, like Found emails) and then opens the tag box.
 - Not available for these emails: Snooze, Tasks, Reply and Forward (they need the email in your lists), and the other mail rules beyond Always move.
+
+## The search box works everywhere
+
+- In **Folders** the box says "Search this folder" and searches inside the open folder (the same words and rules as Search all my mail). Choosing another folder keeps the words. **Clear search** shows the whole folder again.
+- On any other page (Tasks, Sent, Shipping and so on) typing in the box takes you to your inbox and searches it and all your mail. In Settings the box still searches the settings.
+- A found email lights up the moment you click it, shows "Opening this email…" in the reading pane, and has a **Generate summary** button above it.

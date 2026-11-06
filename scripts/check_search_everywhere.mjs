@@ -134,7 +134,7 @@ const more = (page) => page.locator(".srch-more");
   await page.waitForTimeout(200);
   check("choosing a waiting note opens that page", (await page.locator('.nav[data-filter="waiting"].active').count()) === 1 && /Quote for the fence/.test(await page.locator("#waitPage").innerText()));
   await type(page, "trip");
-  check("on that page the extra panel is not shown", (await more(page).count()) === 0);
+  check("typing on another page takes you to your inbox, where the search shows (the search box works from any page)", (await page.evaluate(() => filter)) === "all" && (await page.locator('.nav[data-filter="all"].active').count()) === 1);
   await type(page, "dentist");
   await page.locator('.side-nav .nav[data-filter="action"]').click();
   check("choosing a menu item clears the search box", (await page.locator("#search").inputValue()) === "");

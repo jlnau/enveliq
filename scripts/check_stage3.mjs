@@ -53,6 +53,7 @@ const handler = async (route) => {
   if (/\/messages\/[^/]+\/move$/.test(p) && m === "POST") { posts.push(["move", p.split("/")[6], JSON.parse(req.postData() || "{}")]); messages = messages.filter((x) => x.id !== p.split("/")[6]); return route.fulfill({ status: 204 }); }
   if (/\/folder-mail\/[^/]+\/(move|bin|archive|star)$/.test(p) && m === "POST") { posts.push(["fm-" + p.split("/")[5], p.split("/")[4], JSON.parse(req.postData() || "{}")]); return route.fulfill({ status: 204 }); }
   if (/\/folder-mail\/[^/]+\/keep$/.test(p) && m === "POST") { posts.push(["fm-keep", p.split("/")[4], {}]); return json(200, { already: false, account_id: "a1", message_id: "kept1" }); }
+  if (p === "/api/v1/accounts/a1/folder-mail" && new URL(req.url()).searchParams.get("q")) { posts.push(["folder-q", new URL(req.url()).searchParams.get("q"), {}]); return json(200, { rows: [{ token: "tok1.mac", from_name: "Power Co", from_address: "bills@example.invalid", subject: "March bill", date: now - 86400, has_files: false }], total: 1, more: false, now }); }
   if (p === "/api/v1/accounts/a1/folder-mail") return json(200, { rows: [{ token: "tok1.mac", from_name: "Power Co", from_address: "bills@example.invalid", subject: "March bill", date: now - 86400, has_files: false }, { token: "tok2.mac", from_name: "Water Co", from_address: "water@example.invalid", subject: "Water notice", date: now - 172800, has_files: false }], total: 2, more: false, now });
   if (/\/folder-mail\/[^/]+\/original$/.test(p)) { posts.push(["open", p.split("/")[4], {}]); return json(200, { from: { name: "Power Co", address: "bills@example.invalid" }, to: [{ address: "me@example.invalid" }], date: "Today", subject: "March bill", text: "Plain words of the bill.", links: [], has_html: false, attachments: [] }); }
   if (p === "/api/v1/me/important" && m === "POST") { posts.push(["important", "", JSON.parse(req.postData() || "{}")]); return json(200, { items: [{ address: "bills@example.invalid", name: "Power Co" }] }); }
@@ -240,6 +241,28 @@ for (const width of [1200, 390]) {
   await page.waitForFunction(() => document.querySelectorAll(".frow").length === 0);
   check("moving to another folder sends the folder name", posts.some((x) => x[0] === "fm-move" && x[1] === "tok1.mac" && x[2].folder === "Folders/Holidays"));
   check("an empty folder says so", /empty/.test(await page.locator("#fdrStatus").innerText()));
+  check("no page errors", errors.length === 0);
+  await context.close();
+}
+{
+  // The search box works in Folders (inside the open folder) and from other pages (it searches your inbox)
+  const { page, errors, context } = await open(1200);
+  await page.evaluate(() => document.querySelector('.nav[data-filter="folders"]').click());
+  await page.waitForSelector(".fchip");
+  await page.locator(".fchip", { hasText: "Bills" }).click();
+  await page.waitForSelector(".frow");
+  check("in Folders the search box says it searches this folder", (await page.locator("#search").getAttribute("placeholder")) === "Search this folder");
+  await page.fill("#search", "march");
+  await page.waitForFunction(() => document.querySelectorAll(".frow").length === 1, null, { timeout: 5000 });
+  check("typing searches inside the open folder and lists only the matches", posts.some((x) => x[0] === "folder-q" && x[1] === "march") && /match/.test(await page.locator("#fdrStatus").innerText()));
+  check("there is a Clear search button while searching a folder", await page.locator("#clearSearchBtn").isVisible());
+  await page.locator("#clearSearchBtn").click();
+  await page.waitForFunction(() => document.querySelectorAll(".frow").length === 2, null, { timeout: 5000 });
+  check("Clear search brings back the whole folder", (await page.locator("#search").inputValue()) === "");
+  await page.evaluate(() => document.querySelector('.nav[data-filter="tasks"]').click());
+  await page.fill("#search", "dentist");
+  await page.waitForTimeout(300);
+  check("from another page, typing in the search box searches the inbox", (await page.evaluate(() => filter)) === "all");
   check("no page errors", errors.length === 0);
   await context.close();
 }

@@ -465,3 +465,35 @@ def test_a_found_email_move_refuses_other_peoples_tokens_and_bad_folders(env):
     assert bridge.messages[701]["folder"] == "Archive"
     assert client.post(f"/api/v1/find/results/{tok}/bin").status_code == 204
     assert bridge.messages[701]["folder"] != "Archive"
+
+
+def test_a_found_email_can_be_summarised_on_request_and_nothing_is_kept(env):
+    _, client, bridge, _ = env
+    aid = account(client, bridge)
+    _, page = run_search(client, "canvases")
+    tok = page["rows"][0]["token"]
+    r = client.post(f"/api/v1/find/results/{tok}/summary")
+    assert r.status_code == 200 and r.json()["summary"] and "no-store" in r.headers["cache-control"]
+    assert client.post(f"/api/v1/find/results/{tok[:-3]}abc/summary").status_code == 404
+    assert client.get(f"/api/v1/accounts/{aid}/messages").json() == [] or all(not m.get("found") for m in client.get(f"/api/v1/accounts/{aid}/messages").json())
+
+
+def test_a_found_email_can_be_summarised_on_request_and_nothing_is_kept(env):
+    _, client, bridge, model = env
+    account(client, bridge)
+    _, page = run_search(client, "canvases")
+    tok = page["rows"][0]["token"]
+    r = client.post(f"/api/v1/find/results/{tok}/summary")
+    assert r.status_code in (200, 409), r.text
+    assert client.post(f"/api/v1/find/results/{tok[:-3]}abc/summary").status_code == 404
+
+
+def test_a_found_email_can_be_summarised_on_request_and_nothing_is_kept(env):
+    _, client, bridge, _ = env
+    aid = account(client, bridge)
+    _, page = run_search(client, "canvases")
+    tok = page["rows"][0]["token"]
+    r = client.post(f"/api/v1/find/results/{tok}/summary")
+    assert r.status_code == 200 and r.json()["summary"] and "no-store" in r.headers["cache-control"]
+    assert "Canvas order" not in messages(client, aid)
+    assert client.post(f"/api/v1/find/results/{tok[:-3]}abc/summary").status_code == 404

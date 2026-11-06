@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from ..models import StrictModel
 from ..security import Session
 from .errors import BridgeError
+from .find import FindError
 from .folders import Folders
 from .limits import SlidingWindowLimiter
 from .parse import render_original
@@ -77,12 +78,14 @@ def build_folder_router(ctx: Any) -> APIRouter:
 
     @router.get("/accounts/{account_id}/folder-mail")
     def inside(account_id: AccountId, response: Response, folder: str = Query(min_length=1, max_length=300), offset: int = Query(default=0, ge=0, le=1_000_000),
-               session: Session = Depends(session_dep)):
+               q: str = Query(default="", max_length=200), session: Session = Depends(session_dep)):
         account = mailbox(account_id, session, "open a folder")
         allow(session)
         response.headers["Cache-Control"] = "no-store"
         try:
-            return folders.page(session.principal.user_id, account, folder, offset)
+            return folders.page(session.principal.user_id, account, folder, offset, q)
+        except FindError as err:
+            raise HTTPException(status_code=422, detail=err.message) from None
         except BridgeError as err:
             raise fail(err) from None
 
