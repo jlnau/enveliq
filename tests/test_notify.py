@@ -496,6 +496,11 @@ def test_mail_view_preferences_stored_per_user_in_vault(env):
     got = client.get("/api/v1/me/mail-view").json()["view"]
     assert got["show_counts"] is False and got["show_today"] is False
     assert client.put("/api/v1/me/mail-view", json={**chosen, "show_today": "maybe"}).status_code == 422
+    # The background behind an original email: a very slight tint to begin with, or plain white; nothing else is accepted.
+    assert client.get("/api/v1/me/mail-view").json()["view"].get("paper", "soft") == "soft"
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "paper": "white"}).status_code == 200
+    assert client.get("/api/v1/me/mail-view").json()["view"]["paper"] == "white"
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "paper": "#ff0000"}).status_code == 422
     # An older browser that does not know about the style must not reset it.
     assert client.put("/api/v1/me/mail-view", json=chosen).status_code == 200
     assert client.get("/api/v1/me/mail-view").json()["view"]["style"] == "rail"

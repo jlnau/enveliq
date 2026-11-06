@@ -1843,6 +1843,10 @@ body.in-tags .folder-side{display:none}
 @media(max-width:760px){.wrow .wact{display:flex}}
 .wait-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px;margin:0 0 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.wait-bar>span{flex:1 1 220px;font-size:14px}
 .wait-bar .btn{min-height:44px}
+/* Original email "paper": white, or a very slight warm tint so a white email is not blinding. The email itself is multiplied onto it, so white becomes the paper colour. */
+:root{--paper:#fff}html[data-paper="soft"]{--paper:#f6f3ec}html[data-paper="softer"]{--paper:#ece7da}
+.email-doc,.qorig{background:var(--paper)}.email-doc .fmt-pane{background:var(--paper)}
+.email-frame{background:transparent;mix-blend-mode:multiply}
 </style>
 </head>
 <body class="booting">
@@ -2046,6 +2050,7 @@ body.in-tags .folder-side{display:none}
       <button class="vl" type="button" role="radio" data-view="layout" data-val="deck"><svg viewBox="0 0 40 30" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="8" y="3" width="24" height="20" rx="3"/><path d="M11 26h18" stroke-linecap="round"/></svg><span><b>Focus deck<span class="new">New</span></b><small>One email at a time. Clear them like a stack of cards.</small></span></button>
     </div></div>
   <div class="vsec"><div class="vlabel">Row spacing</div><div class="seg" role="radiogroup" aria-label="Row spacing"><button type="button" role="radio" data-view="density" data-val="compact">Compact</button><button type="button" role="radio" data-view="density" data-val="standard">Standard</button><button type="button" role="radio" data-view="density" data-val="roomy">Roomy</button></div></div>
+  <div class="vsec"><div class="vlabel">Original email background</div><div class="seg" role="radiogroup" aria-label="Original email background"><button type="button" role="radio" data-view="paper" data-val="white">White</button><button type="button" role="radio" data-view="paper" data-val="soft">Soft</button><button type="button" role="radio" data-view="paper" data-val="softer">Softer</button></div><p class="vhint">The paper colour behind an email shown as the sender made it. It never changes the email itself.</p></div>
   <div class="vsec"><div class="vlabel">Width</div><div class="seg" role="radiogroup" aria-label="Width"><button type="button" role="radio" data-view="width" data-val="centered">Centred</button><button type="button" role="radio" data-view="width" data-val="full">Full width</button></div></div>
   <div class="vsec"><div class="vlabel">Email style</div><div class="seg" role="radiogroup" aria-label="Email style"><button type="button" role="radio" data-view="style" data-val="classic">Classic</button><button type="button" role="radio" data-view="style" data-val="rail">Side rail</button></div><p class="vhint">How an opened email looks. Side rail puts the buttons in a bar down the left and the task along the top. On a phone, the buttons sit along the bottom.</p></div>
   <div class="vsec"><div class="vlabel">Classic list options</div>
@@ -2876,8 +2881,8 @@ const clipWords=m=>{const n=fileN(m),sure=m.attachments.length||m.fileCount!=nul
 function userMessages(){return data.filter(m=>m.owner===currentUser.id&&!m._pending)}
 let sortMode="newest",mailboxSel="";
 // ---- View options (saved in this browser) ----
-const VIEW_DEFAULT={layout:"right",density:"standard",width:"centered",rows:"collapsed",peek:true,action_feedback:true,show_original:false,conversations:false,style:"classic",show_counts:true,show_today:true};
-const VIEW_ALLOWED={layout:["list","right","bottom","screen","deck"],density:["compact","standard","roomy"],width:["centered","full"],rows:["collapsed","open"],style:["classic","rail"]};
+const VIEW_DEFAULT={layout:"right",density:"standard",width:"centered",rows:"collapsed",peek:true,action_feedback:true,show_original:false,conversations:false,style:"classic",show_counts:true,show_today:true,paper:"soft"};
+const VIEW_ALLOWED={layout:["list","right","bottom","screen","deck"],density:["compact","standard","roomy"],width:["centered","full"],rows:["collapsed","open"],style:["classic","rail"],paper:["white","soft","softer"]};
 function loadView(){
   const v={...VIEW_DEFAULT};
   try{const raw=JSON.parse(localStorage.getItem("enveliq-view")||"null");
@@ -2989,7 +2994,7 @@ function applyView(){
   paneId=null;lastReadId=null;
   const c=document.body.classList;
   for(const l of VIEW_ALLOWED.layout)c.toggle("layout-"+l,lay()===l);
-  c.toggle("style-rail",view.style==="rail");c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");
+  c.toggle("style-rail",view.style==="rail");c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");document.documentElement.dataset.paper=view.paper||"soft";
   document.querySelectorAll("#viewPanel [data-view]").forEach(b=>{const on=view[b.dataset.view]===b.dataset.val;b.classList.toggle("on",on);b.setAttribute("aria-checked",String(on))});
   const classic=view.layout==="list";
   $("vOpen").checked=view.rows==="open";$("vPeek").checked=view.peek;$("vActionFeedback").checked=view.action_feedback!==false;$("vOrig").checked=!!view.show_original;$("vConv").checked=!!view.conversations;$("vCounts").checked=view.show_counts!==false;$("vToday").checked=view.show_today!==false;
@@ -3078,6 +3083,7 @@ document.addEventListener("click",e=>{
   filter=m?(isSnoozed(m)?"snoozed":isHeld(m)?"held":m.status==="inbox"?"all":m.status):b.dataset.searchGo;
   document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===filter));
   render();
+  if(filter==="waiting")loadWaitingPage();else if(filter==="sent")loadSent();else if(filter==="folders")loadFolders();else if(filter==="tags")loadTags();
 });
 let searchPin=null;                // the id of an email opened from "Also found elsewhere"; it is added to the list while the search lasts
 // A small "/" key hint at the right end of the search box tells people the keyboard shortcut. It shows only while the box is empty and not in use, and only where the shortcut works.

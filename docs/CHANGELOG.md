@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**A softer background for original emails.** White emails were glaring. The "View original email" window and the email shown as the sender made it now sit on very slightly warm paper instead of pure white, everywhere an original email is shown. In Customise there is a new **Original email background** choice: **White**, **Soft** (the default) or **Softer**. It only changes the colour behind the email; the email's own text, pictures and colours are not touched, and printing stays white.
+
 **A Tags page, just like Folders.** Under **Folders** in the left menu there is now **Tags**. It opens the same kind of page: your tags in the left menu, and when you pick one, the emails that carry it in the same list and reading view as your inbox, with the same buttons (Move, Archive, Bin, Star, Reply, Forward and so on) and ticking several emails at once.
 
 **Dragging emails works the same everywhere.** In the inbox, Folders, Sent, Tags and search results, press and drag an email (or several ticked emails): the left menu turns into your folders, and letting go on one moves the email there.
