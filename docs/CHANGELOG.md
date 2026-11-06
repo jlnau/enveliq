@@ -10,7 +10,9 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 **Adding a tag to several emails has a search box.** The "Add a tag" window now has a "Search your tags" box, so a long list is quick to narrow down.
 
-**"Needs action" and "Waiting for reply" fit in the left menu.** The words in the left menu are slightly smaller and the spacing tighter, so the long names are no longer cut off when the number badges are showing.
+**The left menu words fit.** The words are slightly smaller with tighter spacing, and "Waiting for reply" is shortened to "Waiting" in the left menu (the page keeps its full name), so nothing is cut off when the number badges and scroll bar are showing.
+
+**The Waiting page looks like the rest of Enveliq.** It is now the same page as Folders: your sent emails you are waiting on are the list, and an email opens in the same reading view as the inbox. **Got a reply**, **Not needed**, **Write a nudge** and **Ask again** are in a bar above the open email, and as small hover buttons on each row (as words on a phone). Closed notes are still folded away under "Closed".
 
 **Sent now looks and works like your inbox.** The Sent page uses the same email view as the inbox and Folders: the list with who each email went to, the reading pane, the same buttons (Move, Archive, Bin, Star) and the same search. The "Follow for a reply" button is in the More menu of a sent email, and emails waiting to go out still show at the top with "Take it back". Files on a sent email are not opened here yet; the email says to open it in your mail app.
 

@@ -109,6 +109,18 @@ def build_folder_router(ctx: Any) -> APIRouter:
         except BridgeError as err:
             raise (HTTPException(status_code=404, detail="Not found.") if err.code == "not_found" else fail(err)) from None
 
+    @router.get("/accounts/{account_id}/waiting-mail")
+    def waiting_mail(account_id: AccountId, response: Response, session: Session = Depends(session_dep)):
+        """The sent emails on this person's Waiting list, found again in the Sent folder, keyed by note id (so they open like any folder email)."""
+        account = mailbox(account_id, session, "open the waiting list")
+        allow(session)
+        response.headers["Cache-Control"] = "no-store"
+        wanted = ctx.waiting.msgids_of(session.principal.user_id, account_id)
+        try:
+            return {"rows": folders.sent_by_message_id(session.principal.user_id, account, wanted)}
+        except BridgeError as err:
+            raise fail(err) from None
+
     @router.get("/folder-mail/{token}/original")
     def original(token: str, response: Response, session: Session = Depends(session_dep)):
         user = session.principal.user_id

@@ -133,7 +133,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("an email closed before the refresh stays closed", (await page.locator("article.mail.open").count()) === 0);
 
   // The page you were on
-  for (const [nav, sel, hash, what] of [["#shipNav", "#shipPage", "#/shipping", "Shipping"], ["#waitNav", "#waitPage", "#/waiting", "Waiting for reply"], ['.nav[data-filter="tasks"]', "#tasksPage", "#/tasks", "Tasks"], ['.nav[data-filter="archived"]', "#list", "#/archived", "Archived"], ["#sentNav", ".frow", "#/sent", "Sent"]]) {
+  for (const [nav, sel, hash, what] of [["#shipNav", "#shipPage", "#/shipping", "Shipping"], ["#waitNav", "#fdrList", "#/waiting", "Waiting for reply"], ['.nav[data-filter="tasks"]', "#tasksPage", "#/tasks", "Tasks"], ['.nav[data-filter="archived"]', "#list", "#/archived", "Archived"], ["#sentNav", ".frow", "#/sent", "Sent"]]) {
     if (hash === "#/shipping" || hash === "#/waiting") continue;                     // those switches are off in this mock; covered in their own checks
     await page.click(nav);
     check(`${what}: the address shows where you are`, (await page.evaluate(() => location.hash)) === hash);
@@ -170,7 +170,7 @@ await page.click("#settingsBtn");
   await page.reload();
   await page.waitForSelector(".nav.active");
   await page.waitForTimeout(400);
-  check("Waiting for reply: after a refresh you are still there", (await page.evaluate(() => location.hash)) === "#/waiting" && await page.locator("#waitPage").isVisible());
+  check("Waiting for reply: after a refresh you are still there", (await page.evaluate(() => location.hash)) === "#/waiting" && await page.locator("#fdrList").isVisible() && (await page.locator("#fdrTitle").innerText()) === "Waiting for reply");
   await page.close(); await context.close();
 }
 

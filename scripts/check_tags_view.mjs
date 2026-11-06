@@ -59,8 +59,8 @@ const shot = async (n) => { if (SHOTS) await page.screenshot({ path: path.join(S
 
 // the left menu (with the number badges showing, as they do for a busy inbox)
 await page.evaluate(() => { document.body.classList.remove("calm"); for (const [id, n] of [["actionBadge", "17"], ["waitBadge", "5"]]) { const b = document.getElementById(id); if (b) { b.textContent = n; b.hidden = false; } } });
-const fits = await page.evaluate(() => [...document.querySelectorAll(".sidebar .nav-label")].filter((e) => e.offsetParent && /Needs action|Waiting for reply/.test(e.textContent)).map((e) => [e.textContent, e.scrollWidth <= e.clientWidth + 1]));
-check("'Needs action' and 'Waiting for reply' fit in the left menu without being cut", fits.length === 2 && fits.every((f) => f[1]));
+const fits = await page.evaluate(() => [...document.querySelectorAll(".sidebar .nav-label")].filter((e) => e.offsetParent && /^(Needs action|Waiting)$/.test(e.textContent)).map((e) => [e.textContent, e.scrollWidth <= e.clientWidth + 1]));
+check("'Needs action' and 'Waiting' fit in the left menu without being cut", fits.length === 2 && fits.every((f) => f[1]));
 const order = await page.evaluate(() => { const a = document.getElementById("folderNav"), b = document.getElementById("tagNav"); return !b.hidden && !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING); });
 check("the Tags link sits below the Folders link", order);
 

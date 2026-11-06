@@ -1838,6 +1838,11 @@ body.in-tags .tag-side:not([hidden]){display:block}
 body.in-tags .folder-side{display:none}
 @media(min-width:861px){.app:not(.collapsed) .sidebar{padding-inline:10px}.sidebar .nav{font-size:13.5px;gap:8px;padding:9px 8px}.sidebar .nav-label{letter-spacing:-.005em}.sidebar .nav .count,.sidebar .nav .badge,.sidebar .nav>b,.sidebar .nav>em{font-size:12px;min-width:0;padding-inline:7px}}
 .tagrow[hidden]{display:none}
+.wrow .wgap{display:none}.wrow{grid-template-columns:minmax(0,1fr) auto!important}.wrow .wact{display:none;grid-column:1/-1;gap:8px;margin-top:6px}.wrow.wdone{opacity:.75}
+.wrow>b{grid-column:1}.wrow .fsub{grid-column:1/-1!important}
+@media(max-width:760px){.wrow .wact{display:flex}}
+.wait-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px;margin:0 0 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.wait-bar>span{flex:1 1 220px;font-size:14px}
+.wait-bar .btn{min-height:44px}
 </style>
 </head>
 <body class="booting">
@@ -1857,7 +1862,7 @@ body.in-tags .folder-side{display:none}
     <button class="nav" data-filter="attachments" title="Attachments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5 12.4 19.6a5 5 0 0 1-7.1-7.1L13.6 4.2a3.4 3.4 0 0 1 4.8 4.8l-8.2 8.2a1.8 1.8 0 0 1-2.6-2.6L15 7.2"/></svg><span class="nav-label">Attachments</span><span class="badge" id="attachBadge"></span></button>
     <button class="nav" data-filter="snoozed" id="snoozeNav" title="Snoozed" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span class="nav-label">Snoozed</span><span class="badge" id="snoozeBadge"></span></button>
     <div class="label" id="trackLabel" hidden>Tracking</div>
-    <button class="nav" data-filter="waiting" id="waitNav" title="Waiting for reply" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="nav-label">Waiting for reply</span><span class="badge" id="waitBadge"></span></button>
+    <button class="nav" data-filter="waiting" id="waitNav" title="Waiting for reply" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="nav-label">Waiting</span><span class="badge" id="waitBadge"></span></button>
     <button class="nav" data-filter="shipping" id="shipNav" title="Shipping" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg><span class="nav-label">Shipping</span><span class="badge" id="shipBadge"></span></button>
     <button class="nav" data-filter="subscriptions" id="subNav" title="Subscriptions" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3l3 3-3 3"/><path d="M4 11V9a3 3 0 0 1 3-3h13"/><path d="M7 21l-3-3 3-3"/><path d="M20 13v2a3 3 0 0 1-3 3H4"/></svg><span class="nav-label">Subscriptions</span><span class="badge" id="subBadge"></span></button>
     <button class="nav" data-filter="trips" id="tripNav" title="Trips" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5a2 2 0 0 0-2.8-2.8L13.2 8.2 5 6.4 3.6 7.8l6.4 3.7-3.2 3.2-2.7-.5L3 15.2l3.5 1.4 1.4 3.5 1.2-1.1-.5-2.7 3.2-3.2 3.7 6.4z"/></svg><span class="nav-label">Trips</span><span class="badge" id="tripBadge"></span></button>
@@ -2613,7 +2618,7 @@ const previewVault={initialized:false,unlocked:false,salt:null,verifier:null};
 const expanded=new Set();
 const convHidden=new Map(); // conversation key -> the open email when the person pressed Hide, so Hide works even while one of its emails is open
 // A refresh keeps you where you are: the page (in the address bar after #/) and which emails are open (this tab only).
-const folderPage=()=>filter==="folders"||filter==="sent"||filter==="tags";      // Sent is the Folders page opened on your Sent folder: the same list and reading view
+const folderPage=()=>filter==="folders"||filter==="sent"||filter==="tags"||filter==="waiting";      // Sent is the Folders page opened on your Sent folder: the same list and reading view
 const PAGES=["found","all","action","starred","tasks","attachments","archived","sent","folders","tags","tags","drafts","shipping","subscriptions","trips","waiting","junk","cleanup"];
 let stateReady=false,navPopping=false;
 const rowKeyOf=id=>{const m=data.find(x=>String(x.id)===String(id));return m&&m.real?m.real.accountId+":"+m.real.messageId:null};
@@ -2656,7 +2661,7 @@ function applyHashNav(){
     if(want!=="all"&&ok===false)want="all";
     filter=want;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===want));
     closeSnoozeMenu();readerOpen=false;if(want==="all")paneId=null;render();
-    if(want==="sent")loadSent();if(want==="folders")loadFolders();if(want==="tags")loadTags();
+    if(want==="sent")loadSent();if(want==="folders")loadFolders();if(want==="tags")loadTags();if(want==="waiting")loadWaitingPage();
     if(want==="drafts")loadDrafts();
     if(want==="junk")openJunkPage();if(want==="cleanup")openCleanPage();
     window.scrollTo({top:0});
@@ -2732,7 +2737,7 @@ function restorePage(){
     const want=p[1],ok={sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,junk:feat.junk_mail,cleanup:feat.clean_up}[want];
     if(want!=="all"&&ok!==false){
       filter=want;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===want));
-      if(want==="sent")loadSent();if(want==="folders")loadFolders();if(want==="tags")loadTags();
+      if(want==="sent")loadSent();if(want==="folders")loadFolders();if(want==="tags")loadTags();if(want==="waiting")loadWaitingPage();
       if(want==="drafts")loadDrafts();
         if(want==="junk")openJunkPage();if(want==="cleanup")openCleanPage();
     }
@@ -2991,7 +2996,7 @@ function applyView(){
   $("vOpen").disabled=$("vPeek").disabled=!classic;$("vOpenL").classList.toggle("off",!classic);$("vPeekL").classList.toggle("off",!classic);
 }
 function visible(m){
-  if(m.owner!==currentUser.id||filter==="sent"||filter==="folders"||filter==="tags"||filter==="drafts"||filter==="tasks")return false;
+  if(m.owner!==currentUser.id||filter==="sent"||filter==="folders"||filter==="tags"||filter==="waiting"||filter==="drafts"||filter==="tasks")return false;
   if(mailboxSel&&m.account!==mailboxSel)return false;
   if(filter==="snoozed"){if(!isSnoozed(m))return false}else if(isSnoozed(m))return false;      // a snoozed email waits out of sight until its time
   if(filter==="held"){if(!isHeld(m))return false}else if(isHeld(m))return false;                  // email held for the daily summary waits in its own list
@@ -3326,7 +3331,7 @@ const splitNow=()=>document.body.classList.contains("split-read")&&window.matchM
 const goTasks=()=>{filter="tasks";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="tasks"));render()};
 function renderToday(){
   const box=$("dueBars"),open=openTasks(),now=open.filter(t=>t.days<=0);
-  if(!now.length||view.show_today===false||filter==="tasks"||filter==="sent"||filter==="folders"||filter==="tags"){box.hidden=true;box.replaceChildren();return}
+  if(!now.length||view.show_today===false||filter==="tasks"||filter==="sent"||filter==="folders"||filter==="tags"||filter==="waiting"){box.hidden=true;box.replaceChildren();return}
   const calm=calmOn(),shown=now.slice(0,calm?1:3),important=calm?now.slice(1):[],rest=open.filter(t=>t.days>0);
   const mobile=window.matchMedia("(max-width:760px)").matches;
   const title=calm?"Start here":'Today · '+now.length+' '+(now.length===1?"thing":"things");
@@ -4115,7 +4120,7 @@ function renderShipPage(){
 }
 function renderShipHome(){
   const box=$("shipBars"),due=shipOn()?(shipData.orders||[]).filter(o=>o.needs_confirm):[];
-  if(!due.length||filter==="shipping"||filter==="sent"||filter==="folders"||filter==="tags"){box.hidden=true;box.replaceChildren();return}
+  if(!due.length||filter==="shipping"||filter==="sent"||filter==="folders"||filter==="tags"||filter==="waiting"){box.hidden=true;box.replaceChildren();return}
   box.innerHTML=`<div class="shipcard"><div class="thead"><b>Delivered · did it arrive?</b><button class="linkbtn" type="button" data-ship-go>Open Shipping</button></div>${due.slice(0,3).map(o=>`<div class="shiprow"><div class="who"><b>${esc(o.shop||"An order")}${o.order_number?" · "+esc(o.order_number):""}</b><span>${esc(o.items||"")}${o.delivered_at?(o.items?" · ":"")+esc(shipWhen(o.delivered_at)):""}</span></div><button class="obtn teal" type="button" data-ship="confirm" data-ship-id="${esc(o.id)}">Yes, I've got it</button><button class="obtn" type="button" data-ship="not_yet" data-ship-id="${esc(o.id)}">Not yet</button></div>`).join("")}${due.length>3?`<button class="tmore" type="button" data-ship-go>+${due.length-3} more</button>`:""}</div>`;
   box.hidden=false;
 }
@@ -4165,7 +4170,7 @@ function renderSubPage(){
 }
 function renderSubHome(){
   const box=$("subBars"),due=subOn()?(subData.items||[]).filter(s=>s.soon&&s.next):[];
-  if(!due.length||filter==="subscriptions"||filter==="sent"||filter==="folders"||filter==="tags"){box.hidden=true;box.replaceChildren();return}
+  if(!due.length||filter==="subscriptions"||filter==="sent"||filter==="folders"||filter==="tags"||filter==="waiting"){box.hidden=true;box.replaceChildren();return}
   box.innerHTML=`<div class="subcard"><div class="thead"><b>Coming up</b><button class="linkbtn" type="button" data-sub-go>Open Subscriptions</button></div>${due.slice(0,3).map(s=>`<div class="subrow"><div class="who"><b>${esc(s.service||"A subscription")} ${s.next.kind==="trial_ends"?"free trial ends":s.estimated?"probably renews":"renews"} ${esc(subWhenText(s))}</b><span>${esc([subMoney(s),subDayLong(s.next.on)].filter(Boolean).join(" · "))}</span></div></div>`).join("")}${due.length>3?`<button class="tmore" type="button" data-sub-go>+${due.length-3} more</button>`:""}</div>`;
   box.hidden=false;
 }
@@ -4388,7 +4393,7 @@ function renderTripPage(){
 }
 function renderTripHome(){
   const box=$("tripBars"),near=tripOn()?(tripData.trips||[]).filter(t=>!t.cancelled&&(t.state==="now"||(t.state==="soon"&&t.days_to_start<=7))):[];
-  if(!near.length||filter==="trips"||filter==="sent"||filter==="folders"||filter==="tags"){box.hidden=true;box.replaceChildren();return}
+  if(!near.length||filter==="trips"||filter==="sent"||filter==="folders"||filter==="tags"||filter==="waiting"){box.hidden=true;box.replaceChildren();return}
   box.innerHTML=`<div class="tripcard"><div class="thead"><b>Trips</b><button class="linkbtn" type="button" data-trip-go>Open Trips</button></div>${near.slice(0,3).map(t=>`<div class="triprow"><div class="who"><b>${esc(t.title)}</b><span>${esc(t.state==="now"?`Under way · until ${tripDay(t.end)}`:`Starts ${tripIn(t.days_to_start)} · ${tripDay(t.start)}`)}</span></div></div>`).join("")}${near.length>3?`<button class="tmore" type="button" data-trip-go>+${near.length-3} more</button>`:""}</div>`;
   box.hidden=false;
 }
@@ -4667,7 +4672,7 @@ function render(){
   if(findUi.open&&!findUi.manual&&String(query||"").trim().length<2)findReset();
   if(selMode&&(!selected.size||!isPhone()))selMode=false;
   document.body.classList.toggle("selecting",selMode);
-  document.body.classList.toggle("in-sent",filter==="sent"||filter==="folders"||filter==="tags");document.body.classList.toggle("in-folders",folderPage());document.body.classList.toggle("in-tags",filter==="tags");document.body.classList.toggle("fdr-split",folderPage()&&!phoneQuery.matches&&lay()==="right"&&window.matchMedia("(min-width:901px)").matches);document.body.classList.toggle("in-found",filter==="found");document.body.classList.toggle("on-draft",filter==="drafts");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="folders"?"Folders":filter==="sent"?"Sent":filter==="drafts"?"Drafts":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="junk"?"Junk Mail":filter==="cleanup"?"Clean up":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
+  document.body.classList.toggle("in-sent",filter==="sent"||filter==="folders"||filter==="tags"||filter==="waiting");document.body.classList.toggle("in-folders",folderPage());document.body.classList.toggle("in-tags",filter==="tags");document.body.classList.toggle("fdr-split",folderPage()&&!phoneQuery.matches&&lay()==="right"&&window.matchMedia("(min-width:901px)").matches);document.body.classList.toggle("in-found",filter==="found");document.body.classList.toggle("on-draft",filter==="drafts");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="folders"?"Folders":filter==="sent"?"Sent":filter==="drafts"?"Drafts":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="junk"?"Junk Mail":filter==="cleanup"?"Clean up":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
   const mine=userMessages().filter(m=>!m.extra);          // the quiet "All emails" entries are never counted
   if(!realMail)syncDemoTasks();else settleTasks();
   document.body.classList.toggle("on-tasks",filter==="tasks");
@@ -4675,9 +4680,9 @@ function render(){
   document.body.classList.toggle("on-sub",filter==="subscriptions");
   document.body.classList.toggle("on-trip",filter==="trips");
   document.body.classList.toggle("on-junk",filter==="junk");document.body.classList.toggle("on-clean",filter==="cleanup");
-  document.body.classList.toggle("on-wait",filter==="waiting");
+  
   saveOpen();syncHash();
-  renderToday();renderShipHome();renderSubHome();renderTripHome();renderWaitHome();if(filter==="waiting")renderWaitPage();if(filter==="drafts")renderDraftPage();if(filter==="tasks")renderTasksPage();if(filter==="shipping")renderShipPage();if(filter==="subscriptions")renderSubPage();if(filter==="trips")renderTripPage();if(filter==="junk")renderJunkPage();if(filter==="cleanup")renderCleanPage();subNavSync();
+  renderToday();renderShipHome();renderSubHome();renderTripHome();renderWaitHome();if(filter==="waiting")paintWaitingPage();if(filter==="drafts")renderDraftPage();if(filter==="tasks")renderTasksPage();if(filter==="shipping")renderShipPage();if(filter==="subscriptions")renderSubPage();if(filter==="trips")renderTripPage();if(filter==="junk")renderJunkPage();if(filter==="cleanup")renderCleanPage();subNavSync();
   // The number is how many are being followed; it turns blue when one needs you (an order to confirm, a reply nobody has sent).
   {const os=shipOn()?(shipData.orders||[]).filter(o=>!(o.delivered_at&&o.ack)):[];const sb=$("shipBadge");if(sb){sb.textContent=os.length;sb.hidden=!os.length;sb.classList.toggle("hot",os.some(o=>o.needs_confirm||o.unsure))}}
   bellPaint();
@@ -4691,7 +4696,7 @@ function render(){
   {const hd=mine.filter(isHeld),hn=$("heldNav"),hb=$("heldBadge");if(hn){hn.hidden=!hd.length&&filter!=="held";hb.textContent=hd.length;hb.hidden=!hd.length}}
   const asleep=mine.filter(isSnoozed);{const sn=$("snoozeNav"),sb=$("snoozeBadge");sn.hidden=!asleep.length&&filter!=="snoozed";sb.textContent=asleep.length;sb.hidden=!asleep.length}
   for(const [id,n] of [["allBadge",mine.filter(m=>m.status==="inbox"&&!isAside(m)).length],["actionBadge",mine.filter(m=>m.status==="inbox"&&!isAside(m)&&m.action).length],["attachBadge",mine.filter(m=>m.status==="inbox"&&!isAside(m)&&fileN(m)).length],["taskBadge",openTasks().length]]){const el=$(id);el.textContent=n;el.hidden=n===0}
-  $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent"&&filter!=="folders"&&filter!=="tags"&&filter!=="drafts");
+  $("allFoot").hidden=!(realMail&&feat.all_mail&&allMail&&filter!=="sent"&&filter!=="folders"&&filter!=="tags"&&filter!=="waiting"&&filter!=="drafts");
   document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",filter==="all"));{const fb=$("filterBy");tagFilterOptions(fb);const pick=["action","need","high","attachments","starred"].includes(filter)||[...fb.options].some(o=>o.value===filter)?filter:"";fb.value=pick;fb.classList.toggle("active",!!pick)}
   $("selectedCount").textContent=selected.size;$("bulk").classList.toggle("show",selected.size>1||selMode);$("previewBulk").classList.toggle("show",selected.size>1||selMode);$("previewSelCount").textContent=selected.size;
   $("userName").textContent=currentUser.name;$("userRole").textContent=currentUser.is_admin?"Administrator":"User";paintAvatar();previewSyncAccount();
@@ -6757,7 +6762,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest("[data-reader-close]")){readerOpen=false;render();return}
   const dt=e.target.closest("[data-due-toggle]");if(dt){if(splitNow()){goTasks();return}dueOpen=!dueOpen;render();return}
   const srt=e.target.closest("[data-ship-recv-toggle]");if(srt){shipRecvOpen=!shipRecvOpen;renderShipPage();return}
-  const wct=e.target.closest("[data-wait-closed-toggle]");if(wct){waitClosedOpen=!waitClosedOpen;renderWaitPage();return}
+  const wct=e.target.closest("[data-wait-closed-toggle]");if(wct){waitClosedOpen=!waitClosedOpen;paintWaitingPage(true);return}
   const lt=e.target.closest("[data-later-toggle]");if(lt){if(splitNow()){goTasks();return}calmLaterOpen=!calmLaterOpen;render();return}
   const stb=e.target.closest("[data-star]");
   if(stb){e.stopPropagation();closeMoreMenu();const m=data.find(x=>x.id===+stb.dataset.star&&x.owner===currentUser.id);if(m&&canStar(m))toggleStar(m);return}
@@ -6825,11 +6830,11 @@ document.addEventListener("click",e=>{
   const a=e.target.closest("[data-status]");if(a){deckDir="act";const m=data.find(x=>x.id===+a.dataset.id&&x.owner===currentUser.id);if(m&&["reviewed","archived","trashed"].includes(a.dataset.status)){if(readerOpen&&lay()==="screen")readerOpen=false;   // on a phone the email closes at once; the Undo bar still shows
     queueAction([m],a.dataset.status);return}if(m&&m.real){resolveRealOne(m,a.dataset.status,a);return}if(m){m.status=a.dataset.status;m.attachments=[];m.attachmentsPurged=true;closeAttachmentViewer();selected.delete(m.id);render();toast(m.status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${m.status} · attachment data purged`,2000,"success")}return}
   const b=e.target.closest("[data-bulk]");if(b){queueAction([...selected].map(id=>data.find(x=>x.id===id&&x.owner===currentUser.id)),b.dataset.bulk);selMode=false;closeAttachmentViewer();return}
-  const n=e.target.closest("[data-filter]");if(n){const was=filter;filter=n.dataset.filter;if(n.id==="folderNav")void was;if(filter==="all")paneId=null;if(n.classList.contains("nav")&&query){query="";$("search").value="";document.body.classList.remove("msearch")}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="folders")loadFolders();if(filter==="tags")loadTags();if(filter==="drafts")loadDrafts();if(filter==="junk")openJunkPage();if(filter==="cleanup")openCleanPage();return}
+  const n=e.target.closest("[data-filter]");if(n){const was=filter;filter=n.dataset.filter;if(n.id==="folderNav")void was;if(filter==="all")paneId=null;if(n.classList.contains("nav")&&query){query="";$("search").value="";document.body.classList.remove("msearch")}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="folders")loadFolders();if(filter==="tags")loadTags();if(filter==="waiting")loadWaitingPage();if(filter==="drafts")loadDrafts();if(filter==="junk")openJunkPage();if(filter==="cleanup")openCleanPage();return}
   const c=e.target.closest("[data-chip]");if(c){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();return}
   const wa=e.target.closest("[data-wait]");if(wa){waitAct(wa.dataset.waitId,wa.dataset.wait);return}
   const wn=e.target.closest("[data-wait-nudge]");if(wn){waitNudge(wn.dataset.waitNudge);return}
-  if(e.target.closest("[data-wait-go]")){filter="waiting";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="waiting"));render();return}
+  if(e.target.closest("[data-wait-go]")){filter="waiting";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="waiting"));render();loadWaitingPage();return}
   const wc=e.target.closest("[data-wait-check]");if(wc){wc.disabled=true;wc.textContent="Checking…";secureBackendRequest("/api/v1/me/waiting/check",{method:"POST",body:"{}"}).then(r=>{if(r&&Array.isArray(r.notes))waitData=r}).catch(er=>toast(er.message,6000)).finally(render);return}
   const tr=e.target.closest("[data-trip-remove]");if(tr){tripRemove(tr.dataset.tripRemove);return}
   if(e.target.closest("[data-trip-go]")){filter="trips";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="trips"));render();return}
@@ -8867,6 +8872,81 @@ async function openFolder(aid,f,offset){
     fdrBulkPaint();
   }catch(er){status.textContent=er.message||"Could not open that folder."}
 }
+// ---- Waiting for reply: the Folders page again. Your sent emails you are waiting on are the list; the email opens in the same reading view. ----
+let waitMail={},waitSig="",waitOpen="",waitToken=0;
+async function loadWaitingPage(){
+  const mine=++waitToken,status=$("fdrStatus");
+  $("fdrBox").hidden=true;$("folderSide").hidden=true;$("tagSide").hidden=true;
+  $("fdrList").replaceChildren();$("fdrChips").replaceChildren();$("fdrChips").hidden=false;$("fdrTitle").textContent="Waiting for reply";$("fdrCols").dataset.lay=lay();$("fdrPane").innerHTML='<p class="fdr-empty">Choose an email to read it here.</p>';
+  status.textContent="Looking at your sent emails…";$("fdrRefresh").disabled=true;waitSig="";
+  try{
+    await fetchWaiting();
+    const ids=[...new Set((waitData.notes||[]).map(n=>n.account_id).filter(Boolean))];
+    const got=await Promise.all(ids.map(a=>secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(a)}/waiting-mail`,{method:"GET",headers:{}}).then(r=>[a,r.rows||{}]).catch(()=>[a,{}])));
+    if(mine!==waitToken||filter!=="waiting")return;
+    waitMail={};for(const [a,rows] of got)for(const [id,row] of Object.entries(rows))waitMail[id]={...row,account:a};
+  }catch(er){status.textContent=er.message||"Could not read your waiting list.";$("fdrRefresh").disabled=false;return}
+  $("fdrRefresh").disabled=false;paintWaitingPage(true);
+}
+function paintWaitingPage(force){
+  if(filter!=="waiting")return;
+  const ns=waitData.notes||[],sig=JSON.stringify([ns.map(n=>[n.id,n.state,n.due]),waitData.days,waitClosedOpen]);
+  if(!force&&sig===waitSig)return;waitSig=sig;
+  const list=$("fdrList"),status=$("fdrStatus");
+  list.replaceChildren();
+  const opts=Array.from({length:14},(_,i)=>`<option value="${i+1}"${i+1===waitData.days?" selected":""}>${i+1}</option>`).join("");
+  $("fdrChips").innerHTML=`<label class="wset">Remind me after <select id="waitDays" aria-label="Days before a reminder">${opts}</select> days</label>`;
+  const due=ns.filter(n=>n.due),soon=ns.filter(n=>n.state==="waiting"&&!n.due),closed=ns.filter(n=>n.state!=="waiting");
+  if(!ns.length){status.textContent="Nobody owes you an answer. Emails you send that ask for something show up here by themselves. To follow an older email, open Sent and press Follow for a reply in its More menu.";return}
+  const open=ns.length-closed.length;
+  status.textContent=open?`${open} ${open===1?"email is":"emails are"} waiting for a reply. Enveliq tells you when nobody has answered.`:"Nothing is waiting for a reply right now.";
+  const head=t=>{const h=document.createElement("h4");h.className="wgroup";h.textContent=t;list.append(h)};
+  const rowFor=n=>{
+    const raw=waitMail[n.id],closedNote=n.state!=="waiting";
+    const it=raw?{...raw,kind:"folder",sent:true,address:raw.to_address,name:(raw.to_name||raw.to_address)+(raw.to_more?` +${raw.to_more}`:""),account:raw.account,folder:raw.folder,starred:false}:null;
+    const row=document.createElement("div");row.className="frow wrow"+(closedNote?" wdone":"");row.setAttribute("role","button");row.tabIndex=0;row.dataset.waitRow=n.id;if(it){row._it=it;it._row=row}
+    const gap=document.createElement("span");gap.className="wgap";gap.setAttribute("aria-hidden","true");
+    const who=document.createElement("b");who.textContent=waitTo(n);
+    const when=document.createElement("span");when.textContent=closedNote?(WAIT_REASON[n.reason]||"Closed"):n.due?"No reply yet":waitAge(n).replace("Sent ","");
+    const sub=document.createElement("span");sub.className="fsub";sub.textContent=(n.subject||"")+(n.ask&&!closedNote?"  ·  waiting for "+n.ask:"");
+    row.append(gap,who,when,sub);
+    const fra=document.createElement("span");fra.className="fra";
+    const acts=closedNote?[["fra-move",fdrIcons.inbox,"Undo","undo"]]:[["fra-arch",'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',"Got a reply","got_reply"],["fra-bin",'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',"Not needed","not_needed"]];
+    for(const [cls,ic,lab,act] of acts){const a=document.createElement("span");a.className="fra-b "+cls;a.setAttribute("role","button");a.tabIndex=0;a.title=lab;a.setAttribute("aria-label",lab);a.innerHTML=ic;a.onclick=e=>{e.stopPropagation();e.preventDefault();waitAct(n.id,act)};a.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.stopPropagation();e.preventDefault();waitAct(n.id,act)}};fra.append(a)}
+    row.append(fra);
+    // the same buttons as words, for a phone (no hover there)
+    const wb=document.createElement("div");wb.className="wact";
+    for(const [,,lab,act] of acts){const b=document.createElement("button");b.type="button";b.className="btn";b.textContent=lab;b.onclick=e=>{e.stopPropagation();waitAct(n.id,act)};wb.append(b)}
+    row.append(wb);
+    const bar=()=>{
+      const d=document.createElement("div");d.className="wait-bar";
+      const t=document.createElement("span");t.textContent=(closedNote?(WAIT_REASON[n.reason]||"Closed"):n.ask?"Waiting: "+String(n.ask).replace(/[.\s]+$/,""):"Waiting for a reply")+". "+waitAge(n)+(closedNote?"":n.due?". No reply yet.":`. Reminder after ${waitData.days} ${waitData.days===1?"day":"days"}.`);
+      d.append(t);
+      const mk=(lab,fn,c)=>{const b=document.createElement("button");b.type="button";b.className="btn"+(c?" "+c:"");b.textContent=lab;b.onclick=fn;d.append(b)};
+      if(closedNote)mk("Undo",()=>waitAct(n.id,"undo"));
+      else{if(n.due)mk("Write a nudge",()=>waitNudge(n.id),"primary");mk("Got a reply",()=>waitAct(n.id,"got_reply"));if(n.due)mk(`Ask again in ${waitData.days} ${waitData.days===1?"day":"days"}`,()=>waitAct(n.id,"later"));mk("Not needed",()=>waitAct(n.id,"not_needed"))}
+      return d;
+    };
+    row.onclick=e=>{if(e.target.closest&&e.target.closest(".fra,.wact"))return;row._open()};
+    row.onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&e.target===row){e.preventDefault();row._open()}};
+    row._open=()=>{
+      waitOpen=n.id;
+      const L=lay();$("fdrCols").dataset.lay=L;
+      list.querySelectorAll(".frow.on").forEach(x=>x.classList.remove("on"));row.classList.add("on");
+      const nav=(d,probe)=>{const rs=fdrRowsNow(),t=rs[rs.indexOf(row)+d];if(probe)return !!t;if(t&&t._open){t._open();t.scrollIntoView({block:"nearest"})}};
+      const ctx={nav,folderLabel:"Sent"};
+      if(!it){const h=$("fdrPane");h.replaceChildren(bar());const p=document.createElement("p");p.className="fdr-empty";p.textContent="This email is no longer in your Sent folder, so it cannot be shown here.";h.append(p);return}
+      if(L==="right"||L==="bottom"){const h=$("fdrPane");h.replaceChildren(bar());const inner=document.createElement("div");h.append(inner);liveShow(it,{...ctx,host:inner});if(L==="bottom")h.scrollIntoView({block:"nearest"})}
+      else if(L==="list"){const had=row.nextElementSibling&&row.nextElementSibling.classList.contains("fdr-inline");list.querySelectorAll(".fdr-inline").forEach(x=>x.remove());if(had){row.classList.remove("on");return}const host=document.createElement("div");host.className="fdr-inline";host.append(bar());const inner=document.createElement("div");host.append(inner);row.after(host);liveShow(it,{...ctx,host:inner,nav:null})}
+      else liveShow(it,{...ctx,overlay:true});
+    };
+    list.append(row);
+  };
+  if(due.length){head(`No reply yet · ${due.length}`);due.forEach(rowFor)}
+  if(soon.length){head("Still within the time");soon.forEach(rowFor)}
+  if(closed.length){const h=document.createElement("h4");h.className="wgroup wclosed-head";h.innerHTML=`<button class="wclosed-toggle" type="button" data-wait-closed-toggle aria-expanded="${waitClosedOpen}">Closed · ${closed.length}<span class="wclosed-arrow" aria-hidden="true">${ICON_FOLD}</span></button>`;list.append(h);if(waitClosedOpen)closed.forEach(rowFor)}
+  const again=waitOpen&&list.querySelector(`[data-wait-row="${waitOpen}"]`);if(again&&lay()!=="list"&&again._open)again._open();
+}
 // ---- Sent: the last 4 months, read from the mailbox when opened, never stored ----
 let sentAcct="";
 async function loadSent(){loadWaiting();return loadFolders()}
@@ -9266,7 +9346,7 @@ $("nmCcBtn").onclick=()=>{$("nmCcRow").hidden=false;nmFields().cc.input.focus()}
 $("nmBccBtn").onclick=()=>{$("nmBccRow").hidden=false;nmFields().bcc.input.focus()};
 $("cmCcBtn").onclick=()=>{$("cmCcRow").hidden=false;cmFields().cc.input.focus()};
 $("cmBccBtn").onclick=()=>{$("cmBccRow").hidden=false;cmFields().bcc.input.focus()};
-$("fdrRefresh").onclick=()=>filter==="tags"?loadTags():loadFolders();$("fdrBox").onchange=e=>{fdrAcct=e.target.value;fdrFolder="";fdrTag="";filter==="tags"?loadTags():loadFolders()};
+$("fdrRefresh").onclick=()=>filter==="waiting"?loadWaitingPage():filter==="tags"?loadTags():loadFolders();$("fdrBox").onchange=e=>{fdrAcct=e.target.value;fdrFolder="";fdrTag="";filter==="tags"?loadTags():loadFolders()};
 $("sentRefresh").onclick=loadSent;
 $("sentBox").onchange=e=>{sentAcct=e.target.value;loadSent()};
 bootBackendMode().finally(()=>document.body.classList.remove("booting"));

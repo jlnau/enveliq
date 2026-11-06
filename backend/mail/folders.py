@@ -196,6 +196,31 @@ class Folders:
             r.pop("uid")
         return {"rows": rows, "total": len(uids), "more": offset + PAGE < len(uids), "now": time.time()}
 
+    def sent_by_message_id(self, user: str, account: dict[str, Any], wanted: dict[str, str]) -> dict[str, dict[str, Any]]:
+        """For each ``key -> Message-ID`` find that email in the Sent folder, as a row shaped like a folder row. Emails no longer there are left out."""
+        target = self._target(account)
+        found: dict[str, dict[str, Any]] = {}
+        with self.bridge.session(target) as s:
+            s.set_timeout(60)
+            sent = next((r["name"] for r in folder_rows(s.list_folders(), target.kind) if r["special"] and r["label"] == "Sent"), None)
+            if not sent or not wanted:
+                return found
+            validity = s.select_folder(sent, True)
+            for key, mid in list(wanted.items())[:60]:
+                if not mid or any(c in mid for c in '"\\\r\n'):
+                    continue
+                uids = s.search(["HEADER", "Message-ID", f'"{mid}"'])
+                if not uids:
+                    continue
+                for uid, raw in s.header_blocks(uids[-1:]):
+                    msg = parse_headers(raw)
+                    to_name, to_address = (_addresses(msg, "To") or [("", "")])[0]
+                    found[key] = {"token": self._token(user, account["id"], sent, validity, uid),
+                                  "from_name": "", "from_address": "", "to_name": clean(to_name, 200), "to_address": clean(to_address, 320),
+                                  "to_more": max(0, len(_addresses(msg, "To")) - 1), "subject": clean(msg.get("Subject"), 300) or "(no subject)",
+                                  "date": received_at_of(raw), "has_files": likely_has_files(msg), "folder": sent}
+        return found
+
     def original(self, account: dict[str, Any], folder: str, validity: int, uid: int) -> bytes:
         with self.bridge.session(self._target(account)) as s:
             s.set_timeout(60)

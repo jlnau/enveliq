@@ -490,3 +490,17 @@ def test_the_sent_folder_lists_who_it_went_to_and_an_email_there_can_be_followed
     followed = client.post(f"/api/v1/folder-mail/{quote['token']}/follow", json={})
     assert followed.status_code == 200, followed.text
     assert client.post(f"/api/v1/folder-mail/{quote['token'][:-3]}abc/follow", json={}).status_code == 404
+
+
+def test_the_waiting_list_finds_its_sent_emails_so_they_open_like_folder_emails(env):
+    appm, client, bridge, model = env
+    add_sent(bridge)
+    aid = start_watching(client, bridge)
+    validity, item = sent_item(client, aid, "Quote for the fence")
+    assert client.post(f"/api/v1/accounts/{aid}/sent/{validity}/{item['uid']}/follow", json={}).json()["result"] == "added"
+    note = client.get("/api/v1/me/waiting").json()["notes"][0]
+    r = client.get(f"/api/v1/accounts/{aid}/waiting-mail")
+    assert r.status_code == 200 and r.headers["cache-control"] == "no-store"
+    row = r.json()["rows"][note["id"]]
+    assert row["subject"] == "Quote for the fence" and row["to_address"] == "dana@example.invalid"
+    assert client.get(f"/api/v1/folder-mail/{row['token']}/original").status_code == 200
