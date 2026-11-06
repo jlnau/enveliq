@@ -64,8 +64,6 @@ from .mail.subscriptions import SubBook
 from .mail.subscriptions_routes import build_subscriptions_router
 from .mail.trips import TripBook
 from .mail.trips_routes import build_trips_router
-from .mail.messages import MessageBook
-from .mail.messages_routes import build_messages_router
 from .mail.writehelp import WriteHelpBook
 from .mail.writehelp_routes import build_writehelp_router
 from .mail.style import StyleBook
@@ -218,6 +216,8 @@ def read_configured_key() -> str | None:
     return VAULT_KEY_ENV
 
 vault = SecureVault(DB_PATH, idle_lock_seconds=(10 ** 9 if AUTO_UNLOCK else IDLE_LOCK_SECONDS))
+for _gone in ("msg:thread:", "msg:index:"):          # the removed Messages feature: anything it stored is cleared
+    vault.purge_global_prefix(_gone)
 sessions = SessionManager(vault, ttl_seconds=SESSION_TTL_SECONDS)
 flows = FlowStore()
 users = UserService(vault)
@@ -538,7 +538,6 @@ def remember_seconds() -> int:
 
 def delete_user_data(user_id: str) -> None:
     """Remove every mailbox a user owns, with its messages and previews, and the person's own messages to other people."""
-    messagebook.forget_user(user_id)
     inboundbook.forget_user(user_id)
     writehelpbook.forget_user(user_id)
     stylebook.forget_user(user_id)
@@ -678,7 +677,6 @@ mutebook = MutedBook(vault)
 searchbook = SearchBook(vault)
 awaybook = AwayBook(vault, taskbook.timezone_of)
 tripbook = TripBook(vault, taskbook.timezone_of)
-messagebook = MessageBook(vault, users)
 writehelpbook = WriteHelpBook(vault)
 stylebook = StyleBook(vault, mail_service)
 mail_service.shipments = shipbook
@@ -736,7 +734,7 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser, AgentSources(vault, taskbook, tripbook, shipbook, waitbook, finder=lambda: getattr(mail_ctx, "find_index", None), bridge=lambda: mail_service.bridge, target=mail_service.target)), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, senders=senderbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, scheduled=scheduledbook, rules=rulebook, muted=mutebook, searches=searchbook, away=awaybook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, style=stylebook, digest=digestbook, waiting=waitbook, summary=dailysummary, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser, AgentSources(vault, taskbook, tripbook, shipbook, waitbook, finder=lambda: getattr(mail_ctx, "find_index", None), bridge=lambda: mail_service.bridge, target=mail_service.target)), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, senders=senderbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, scheduled=scheduledbook, rules=rulebook, muted=mutebook, searches=searchbook, away=awaybook, trips=tripbook, writehelp=writehelpbook, style=stylebook, digest=digestbook, waiting=waitbook, summary=dailysummary, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))
@@ -922,22 +920,13 @@ exporter = build_exporter(
     vault, users, public_account=public_account, public_message=public_message, principal_of=users.principal,
     prefs=lambda uid: review.user_prefs(vault, uid),
     contacts_of=lambda uid: [contacts_mod._public(a, p) for a, p in contacts_mod._load(vault, uid).items()],
-    threads_of=lambda uid: [t for t in (_thread_or_none(uid, tid) for tid in messagebook._index(uid)) if t],
     notify_state=lambda uid: {"settings": notifier.settings(uid), "channels_on": notifier.enabled_channels(uid)},
     sync_state=lambda uid: sync.overview(uid))
-
-
-def _thread_or_none(uid: str, tid: str):
-    try:
-        return messagebook._thread(tid, uid)
-    except KeyError:
-        return None
 
 
 app.include_router(build_backup_router(SimpleNamespace(
     vault=vault, users=users, sessions=sessions, backups=backups, login_limiter=login_limiter, exporter=exporter,
     admin_session=admin_session, full_session=full_session)))
-app.include_router(build_messages_router(mail_ctx))
 app.include_router(build_inbound_router(mail_ctx))
 app.include_router(build_writehelp_router(mail_ctx))
 app.include_router(build_style_router(mail_ctx))

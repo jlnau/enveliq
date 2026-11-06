@@ -188,7 +188,6 @@ internal fun MoreTab(api: EnveliqApi, start: String = "home", findStart: FindSpe
         page == "bell" -> BellPage(api, back)
         page == "trips" -> TripsPage(api, back)
         page == "news" -> NewsPage(api, back)
-        page == "chat" -> ChatsPage(api, back)
         page == "find" -> FindPage(api, findStart, back)
         page == "later" -> WaitingPage(api, back)
         page == "cleanup" -> CleanUpPage(api, back)
@@ -200,7 +199,6 @@ internal fun MoreTab(api: EnveliqApi, start: String = "home", findStart: FindSpe
                     Triple("find", "Find any email", "Search everything in your mailboxes, old email too."),
                     Triple("later", "Waiting to send", "Emails you set to go later, and any that could not go."),
                     Triple("bell", "Notes and alerts", "Things your other services told Enveliq."),
-                    Triple("chat", "Messages", "Chat with the people in your household."),
                     Triple("trips", "Trips and calendar", "Flights, stays and bookings from your email."),
                     Triple("news", "News feeds", "The sites you follow."),
                 ).filter { it.first != "cleanup" || cleanOn }) { (id, title, note) ->
@@ -412,78 +410,6 @@ private fun NewsPage(api: EnveliqApi, onBack: () -> Unit) {
     }
     LaunchedEffect(open) { if (open != null) try { withContext(Dispatchers.IO) { api.newsSeen() } } catch (e: Exception) { } }
     link?.let { LinkConfirm(it) { link = null } }
-}
-
-@Composable
-private fun ChatsPage(api: EnveliqApi, onBack: () -> Unit) {
-    var open by remember { mutableStateOf<Chat?>(null) }
-    val chat = open
-    if (chat != null) { ChatThread(api, chat) { open = null }; return }
-    SubPage("Messages", onBack = onBack) {
-        Loader(0, { api.threads() }) { threads ->
-            LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (threads.isEmpty()) item { Empty("No conversations yet. Start one on the website.") }
-                items(threads, key = { it.id }) { t ->
-                    Card(onClick = { open = t }) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(t.title, color = Ink, fontSize = 17.sp, fontWeight = if (t.unread > 0) FontWeight.Bold else FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                            if (t.unread > 0) Text("${t.unread}", color = Blue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                        }
-                        if (t.last.isNotBlank()) Text(t.last, color = Muted, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ChatThread(api: EnveliqApi, chat: Chat, onBack: () -> Unit) {
-    var reload by remember { mutableStateOf(0) }
-    var text by remember { mutableStateOf("") }
-    var note by remember { mutableStateOf("") }
-    val scope = rememberCoroutineScope()
-    SubPage(chat.title, onBack = onBack) {
-        Column(Modifier.fillMaxSize().imePadding()) {
-            Box(Modifier.weight(1f)) {
-                Loader(reload, { api.thread(chat.id) }) { msgs ->
-                    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp), reverseLayout = true) {
-                        items(msgs.reversed(), key = { it.id }) { m ->
-                            Column(Modifier.fillMaxWidth(), horizontalAlignment = if (m.mine) Alignment.End else Alignment.Start) {
-                                Surface(color = if (m.mine) Blue else PanelHigh, shape = RoundedCornerShape(16.dp)) {
-                                    Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
-                                        if (!m.mine) Text(m.name, color = Muted, fontSize = 12.sp)
-                                        Text(if (m.deleted) "Message removed" else m.text, color = if (m.mine) androidx.compose.ui.graphics.Color.White else Ink, fontSize = 16.sp)
-                                    }
-                                }
-                                Text(whenText(m.at), color = Muted, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 6.dp))
-                            }
-                        }
-                    }
-                }
-            }
-            if (note.isNotEmpty()) Text(note, color = Red, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 16.dp))
-            Row(Modifier.fillMaxWidth().background(Panel).padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(value = text, onValueChange = { text = it }, modifier = Modifier.weight(1f), placeholder = { Text("Write a message") }, maxLines = 4)
-                Box(Modifier.size(8.dp))
-                Button(enabled = text.isNotBlank(), onClick = {
-                    val sending = text
-                    scope.launch {
-                        try {
-                            withContext(Dispatchers.IO) { api.sendChat(chat.id, sending) }
-                            text = ""
-                            note = ""
-                            reload++
-                        } catch (e: ApiException) {
-                            note = e.message ?: "Could not send that."
-                        } catch (e: Exception) {
-                            note = "Could not send that. Check your connection."
-                        }
-                    }
-                }) { Text("Send") }
-            }
-        }
-    }
 }
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)

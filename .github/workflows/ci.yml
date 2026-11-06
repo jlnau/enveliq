@@ -311,8 +311,6 @@ jobs:
         run: node scripts/check_settings_list.mjs
       - name: User menu, Profile settings and tidied Settings (simulated server)
         run: node scripts/check_user_menu.mjs
-      - name: Messages page, sidebar count and Home card (simulated server)
-        run: node scripts/check_messages.mjs
       - name: Writing help in the reply and New email boxes (simulated server)
         run: node scripts/check_writehelp.mjs
       - name: Daily summary item in the inbox (simulated server)

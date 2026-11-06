@@ -1,5 +1,5 @@
 // Browser check for the notification bell: the icon next to the news-feed icon, its badge, the drop-down (notes from Home Assistant and other
-// services, and your chat messages), making and removing the key, and the full-screen phone version.
+// services), making and removing the key, and the full-screen phone version.
 // The page is loaded from a pretend Enveliq server (Playwright intercepts the requests), so this needs no Python.
 //   node scripts/check_bell.mjs [path/to/prototype/index.html]     (SHOTS=<dir> saves screenshots)
 import { chromium } from "playwright";
@@ -24,7 +24,7 @@ let notes = [
 ];
 let keyMade = null;
 let chatUnread = 2;
-const features = { compose: true, address_book: true, sent: true, media: false, all_mail: false, shipping: false, rss: true, tags: false, subscriptions: false, travel: false, waiting: false, messages: true, write_help: false };
+const features = { compose: true, address_book: true, sent: true, media: false, all_mail: false, shipping: false, rss: true, tags: false, subscriptions: false, travel: false, waiting: false, write_help: false };
 const mk = (id, subject, name, n) => ({ id, subject, sender_display: name, sender_address: name.toLowerCase() + "@example.invalid", summary: "A summary.", priority: "normal", category: null, action_required: false, received_at: now - n,
   reply_context: { reply_to: name.toLowerCase() + "@example.invalid", delivered_to: null, via_alias: null, message_id: "<" + id + "@x>", references: [], cc: [], also_to: [] } });
 const base = [mk("m-plain", "Just you", "Bob", 120), mk("m-other", "Another one", "Cara", 180)];
@@ -40,9 +40,6 @@ const handler = async (route) => {
   if (p === "/api/v1/accounts/a1/messages") return json(200, base);
   if (p === "/api/v1/me/features") return json(200, { effective: features, admin: features, user: { ...features, address_book_auto: true } });
   if (p === "/api/v1/me/rss") return json(200, { enabled: true, new: 0, feeds: [], max_feeds: 20 });
-  if (p === "/api/v1/messages/summary") return json(200, { enabled: true, unread: chatUnread, conversations: 1, latest: [{ from: { id: "u2", name: "Cara" }, text: "Dinner at 7?", at: now - 60 }] });
-  if (p === "/api/v1/messages/threads") return json(200, { threads: [] });
-  if (p === "/api/v1/messages/people") return json(200, { people: [] });
   if (p === "/api/v1/me/bell" && req.method() === "GET") { calls.push(["list"]); return json(200, view()); }
   if (p === "/api/v1/me/bell" && req.method() === "DELETE") { calls.push(["clear"]); notes = []; return route.fulfill({ status: 204 }); }
   if (p === "/api/v1/me/bell/read") { calls.push(["read"]); notes = notes.map((n) => ({ ...n, unread: false })); return route.fulfill({ status: 204 }); }
@@ -79,14 +76,14 @@ const run = async (width, height) => {
   const bell = await page.locator("#bellBtn").boundingBox(), rss = await page.locator("#rssBtn").boundingBox();
   check("the bell sits at the top right, next to the news-feed icon", Math.abs(bell.y - rss.y) < 3 && bell.x < rss.x && rss.x - (bell.x + bell.width) < 20);
   const badge = await page.locator("#bellBtn .rssbadge").innerText();
-  check("the badge counts unread notes and unread chat messages together (2 notes + 2 messages)", badge.trim() === "4");
+  check("the badge counts the unread notes", badge.trim() === "2");
   await page.locator("#bellBtn").click();
   await page.waitForSelector("#bellPop:not([hidden]) .rss-item");
   const text = await page.locator("#bellPop").innerText();
-  check("the drop-down shows the chat messages", /2 unread messages from Cara/.test(text) && (await page.locator("#bellPop [data-msg-go]").count()) === 1);
+  check("the drop-down no longer mentions chat messages", !/unread messages/.test(text) && (await page.locator("#bellPop [data-msg-go]").count()) === 0);
   check("it shows notes from other services, with where they came from", /Washer finished/.test(text) && /Empty it before it creases/.test(text) && /From Home Assistant/.test(text));
   check("a note with no source says it came from a service on the network", /From a service on your network/.test(text));
-  check("unread notes are marked", (await page.locator("#bellPop .rss-item.new").count()) === 3);
+  check("unread notes are marked", (await page.locator("#bellPop .rss-item.new").count()) === 2);
   check("the connecting steps are folded away", (await page.locator("#bellPop details").evaluate((d) => d.open)) === false);
   if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "bell_desktop.png") });
   await page.locator("#bellPop [data-bell-dismiss='n0000000000000002']").click();
@@ -104,8 +101,8 @@ const run = async (width, height) => {
   await page.locator("[data-bell-close]").first().click();
   for (let i = 0; i < 40 && !calls.some((c) => c[0] === "read"); i++) await page.waitForTimeout(50);      // the request is sent a moment after the click
   check("closing the drop-down marks the notes as read", calls.some((c) => c[0] === "read"));
-  await page.waitForFunction(() => document.querySelector("#bellBtn .rssbadge").textContent.trim() === "2");
-  check("the badge keeps only the unread chat messages", true);
+  await page.waitForFunction(() => { const b = document.querySelector("#bellBtn .rssbadge"); return b.hidden || !b.textContent.trim(); });
+  check("once the notes are read the badge goes away", true);
   await page.locator("#bellBtn").click();
   await page.waitForSelector("#bellPop:not([hidden])");
   check("the key is never shown again once the drop-down was closed", (await page.locator("#bellKey").count()) === 0);

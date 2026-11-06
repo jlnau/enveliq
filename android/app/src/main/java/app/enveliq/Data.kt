@@ -105,8 +105,6 @@ data class Booking(val kind: String, val provider: String, val detail: String, v
 data class Trip(val title: String, val start: String, val end: String, val state: String, val cancelled: Boolean, val bookings: List<Booking>)
 data class FeedItem(val title: String, val text: String, val link: String, val at: Long, val isNew: Boolean)
 data class Feed(val id: String, val title: String, val error: String, val newCount: Int, val items: List<FeedItem>)
-data class Chat(val id: String, val title: String, val unread: Int, val last: String, val updated: Long, val muted: Boolean)
-data class ChatMessage(val id: String, val name: String, val mine: Boolean, val at: Long, val text: String, val deleted: Boolean)
 
 /** A list from a feature that an administrator or the person may have switched off. */
 data class Section<T>(val enabled: Boolean, val items: List<T>)

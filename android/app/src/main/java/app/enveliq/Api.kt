@@ -793,22 +793,6 @@ class EnveliqApi(address: String) {
     fun newsRefresh(): Section<Feed> = feedsOf(JSONObject(call("POST", "/api/v1/me/rss/refresh")))
     fun newsSeen() { call("POST", "/api/v1/me/rss/seen") }
 
-    fun threads(): List<Chat> = JSONObject(call("GET", "/api/v1/messages/threads")).list("threads").map {
-        val last = it.optJSONObject("last")
-        Chat(it.str("id"), it.str("title"), it.optInt("unread", 0), if (last == null) "" else (if (last.optBoolean("mine", false)) "You: " else "") + last.str("text"),
-            it.optDouble("updated", 0.0).toLong(), it.optBoolean("muted", false))
-    }
-
-    fun thread(id: String): List<ChatMessage> {
-        val msgs = JSONObject(call("GET", "/api/v1/messages/threads/" + enc(id))).list("messages").map {
-            ChatMessage(it.str("id"), it.str("name"), it.optBoolean("mine", false), it.optDouble("at", 0.0).toLong(), it.str("text"), it.optBoolean("deleted", false))
-        }
-        try { call("POST", "/api/v1/messages/threads/" + enc(id) + "/read") } catch (e: ApiException) { /* not worth failing the page */ }
-        return msgs
-    }
-
-    fun sendChat(id: String, text: String) { call("POST", "/api/v1/messages/threads/" + enc(id) + "/messages", JSONObject().put("text", text)) }
-
     /** Asks the address whether it is an Enveliq that answers. Throws a plain-words [ApiException] when it does not. */
     fun checkConnection() {
         val r = JSONObject(call("GET", "/api/v1/health"))

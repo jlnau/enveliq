@@ -73,7 +73,6 @@ const NAV = [
     ["docs/SETTINGS.md", "Settings and Administration"],
     ["docs/SUBSCRIPTIONS.md", "Subscriptions"],
     ["docs/TRIPS.md", "Trips"],
-    ["docs/MESSAGES.md", "Messages between people"],
     ["docs/AGENT.md", "Hermes agent chat"],
   ] },
   { title: "Privacy and security", items: [

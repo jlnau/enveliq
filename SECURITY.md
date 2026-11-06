@@ -67,7 +67,7 @@ This includes:
 * Contacts and saved replies
 * Shipping and subscription information
 * Trips and reminders
-* Private messages and agent chats
+* Agent chats
 * Notification settings
 * Saved preferences and viewing state
 
@@ -520,6 +520,8 @@ The daily summary (Settings, Notifications) is counted by Enveliq from lists the
 **Held for the daily summary (v0.101).** The AI's "needs you today" judgement (`act_today`, `today_reason`) is two more fields in the same structured answer as the summary; it is validated (a flag and a text of at most 140 characters) and only ever decides what Enveliq shows or alerts about, never what is done to an email. The AI still gets no tools and treats the email as untrusted data. A hostile email cannot hide mail from the person for long: holding is only two fields on Enveliq's own stored record (`held_for_summary`, `held_at`), the held email is still an ordinary unread email in the mailbox, it returns to the inbox when the person presses Done with summary, takes it out, switches the feature off, or after 7 days, and urgent mail and mail from important people are never held. The summary (`/api/v1/me/held-summary`) is computed from the person's own held records and keeps only a small per-person record (`digest:<user id>`: which mail was already considered, when the person last looked, when the last daily alert went); it holds no email text of its own. Every summary route needs the person's own full session and answers "not found" for anyone else's mail; the record is included in the person's export and removed when the person is deleted, and everything is shown as text only. Reviewed, Archive and Bin use the normal action route. The one daily alert contains only a count and a link, never a subject, sender or summary, and nothing in the summary is stored in any mailbox.
 
 ## Mute, away reply and signatures (v0.102)
+
+**Messages removed.** The household chat feature is gone: no routes, no page, not part of "Download my data". The encrypted records it kept (`msg:thread:` and `msg:index:`) are deleted from the vault every time the server starts, so nothing from it is left behind.
 
 **Mute conversation.** A muted conversation is remembered as a list of message identifiers (Message-ID and References) plus the subject line and a count, in one encrypted vault record per person (`muted:<user id>`). It holds no email text and no addresses. New mail whose identifiers match is archived in the person's own mailbox by the same code path as a mail rule (before any alert, and never for the person's important people); nothing is deleted. The routes need the person's own full session and answer "not found" for anything that is not theirs. The record is included in the person's export and removed with the person.
 

@@ -101,11 +101,10 @@ object Notifier {
         context.getSystemService(NotificationManager::class.java).notify(id, note)
     }
 
-    /** A plain note for messages, notes, tasks or parcels. The words are the same on and off the lock screen: they say nothing private. */
+    /** A plain note for notes, tasks or parcels. The words are the same on and off the lock screen: they say nothing private. */
     fun other(context: Context, kind: String, text: String, quiet: Boolean) {
         if (!canNotify(context)) return
         val title = when (kind) {
-            "messages" -> "New message"
             "tasks" -> "A task is due"
             "shipping" -> "A parcel needs you"
             "summary" -> "Your day"

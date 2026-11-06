@@ -123,11 +123,6 @@ def other_counts(ctx: Any, user_id: str) -> dict[str, int]:
     """How many things of each other kind are waiting for this person. Only numbers, never any text."""
     out: dict[str, int] = {}
     try:
-        if ctx.messages.enabled(user_id):
-            out["messages"] = int(ctx.messages.summary(user_id).get("unread") or 0)
-    except Exception:
-        pass
-    try:
         out["bell"] = int(ctx.inbound.unread(user_id))
     except Exception:
         pass

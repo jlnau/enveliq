@@ -920,33 +920,6 @@ body.calm .today-card{border-color:transparent;background:var(--panel)}
 .olinkmail{border:0;background:transparent;color:var(--accent);font:inherit;font-weight:600;text-decoration:underline;text-underline-offset:3px;padding:0;text-align:left;cursor:pointer}.olinkmail:hover{filter:brightness(1.2)}
 .oevents{margin:0;padding:0;list-style:none;border-top:1px solid var(--line)}.oevents li{padding:8px 0;border-bottom:1px solid var(--line);color:var(--muted);font-size:13px}.oevents b{color:var(--text);font-weight:600}
 
-#msgPage{display:none;padding-top:14px}body.on-msg #msgPage{display:block}body.on-msg .filters,body.on-msg #list,body.on-msg .sample-banner,body.on-msg #dueBars,body.on-msg #shipBars,body.on-msg #subBars,body.on-msg #tripBars,body.on-msg #waitBars,body.on-msg #msgBars{display:none!important}
-body.booting #msgBars,body.backend:not(.mail-ready) #msgBars,body.in-sent #msgBars{display:none!important}
-.mg{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden;min-height:480px;height:calc(100dvh - 250px);max-height:760px}
-.mgl{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}.mgr{display:flex;flex-direction:column;min-width:0;min-height:0}
-.mgh{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}.mgh h3{margin:0;font-size:18px;flex:1}
-.mglist{overflow:auto;padding:8px;display:grid;gap:4px;align-content:start}
-.mgrow{display:flex;align-items:center;gap:12px;text-align:left;border:1px solid transparent;background:transparent;color:var(--text);border-radius:12px;padding:10px;min-height:56px;font:inherit;cursor:pointer;width:100%}
-.mgrow:hover{background:var(--panel2)}.mgrow.on{background:var(--panel2);border-color:var(--accent)}
-.mgmid{flex:1;min-width:0;display:grid;gap:2px}.mgtop{display:flex;gap:8px}.mgtop b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mgtop i{font-style:normal;font-size:11px;color:var(--muted)}
-.mgprev{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mgprev.new{color:var(--text)}
-.mgav{width:40px;height:40px;border-radius:50%;flex:none;display:inline-grid;place-items:center;font-weight:800;font-size:14px;color:#fff;overflow:hidden}.mgav img{width:100%;height:100%;object-fit:cover;display:block}.mgav.sm{width:30px;height:30px;font-size:12px}
-.mgbtn{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:10px;padding:9px 14px;min-height:44px;font:inherit;cursor:pointer}.mgbtn.pri{background:#2f6bff;border-color:#2f6bff;color:#fff;font-weight:700}
-.mgback{display:none}
-.mgmsgs{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:6px;min-height:0}
-.mgday{align-self:center;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted);margin:10px 0 4px;text-transform:uppercase}
-.mgmsg{display:flex;flex-direction:column;max-width:78%;gap:2px}.mgmsg.me{align-self:flex-end;align-items:flex-end}.mgmsg.them{align-self:flex-start}
-.mgb{padding:10px 14px;border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.45}.mgmsg.them .mgb{background:var(--panel2);border:1px solid var(--line);border-bottom-left-radius:4px}.mgmsg.me .mgb{background:var(--brand-deep);color:#fff;border-bottom-right-radius:4px}
-.mgmsg.del .mgb{background:transparent;border:1px dashed var(--line);color:var(--muted);font-style:italic}.mgwho{font-size:12px;color:var(--muted);padding-left:4px}.mgmeta{font-size:11px;color:var(--muted);padding:0 4px}
-.mglink{border:0;background:transparent;color:var(--muted);text-decoration:underline;font:inherit;font-size:11px;padding:6px 2px;min-height:28px;cursor:pointer}
-.mgcomp{border-top:1px solid var(--line);padding:12px 16px;display:flex;gap:10px;align-items:flex-end}.mgcomp textarea{flex:1;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px;font:inherit;resize:none;min-height:46px;max-height:140px}
-.mgtip{padding:0 16px 12px;font-size:12px;color:var(--muted)}
-.mgempty{margin:auto;max-width:360px;text-align:center;color:var(--muted);padding:24px}
-.mgpick{overflow:auto;padding:12px 16px;display:grid;gap:6px;align-content:start}.mgpick label{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:12px;padding:8px 12px;min-height:48px;cursor:pointer}.mgpick input{width:20px;height:20px}
-.msgcard{border:1px solid var(--accent);background:linear-gradient(180deg,rgba(10,123,255,.14),rgba(10,123,255,.06));border-radius:16px;padding:14px 18px;margin-bottom:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
-.msgcard .mgstack{display:flex;flex:none}.msgcard .mgstack .mgav{border:2px solid var(--bg);margin-left:-10px}.msgcard .mgstack .mgav:first-child{margin-left:0}
-.msgcard .mtx{flex:1 1 220px;min-width:0}.msgcard .mtx b{display:block;font-size:16px}.msgcard .mtx span{display:block;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media(max-width:760px){.mg{grid-template-columns:1fr;height:calc(100dvh - 150px)}.mg.thread .mgl,.mg.new .mgl{display:none}.mg:not(.thread):not(.new) .mgr{display:none}.mgback{display:inline-flex}.mgmsg{max-width:90%}.mgl{border-right:0}}
 .carbox{margin-top:18px;border-top:1px solid var(--line);padding-top:8px}.carchips{display:flex;flex-wrap:wrap;gap:8px}.carchip{border:1px solid var(--line);border-radius:20px;padding:4px 6px 4px 12px;background:var(--panel);display:inline-flex;align-items:center;gap:4px}
 .carform{display:grid;gap:10px;max-width:560px}.carform label{display:grid;gap:4px;color:var(--muted);font-size:13px}.carform input{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:10px;font:inherit;min-height:44px;box-sizing:border-box;width:100%}.carerr{color:var(--amber);margin:0}
 .shipcard{border:1px solid #1f5560;background:#0f2429;border-radius:14px;padding:12px 14px;margin-bottom:12px}
@@ -1459,7 +1432,7 @@ html .main>.preview-toolbar,html[data-theme] .main>.preview-toolbar{position:sti
   /* One even gap (12px) between all the boxes on the main screen: the count tiles, Today, Coming up, the cards for deliveries, subscriptions, trips,
      replies and messages, and the Recent emails bar. Before, each had its own margin, so some gaps were twice as big. */
   .duebars{padding-bottom:12px}
-  .duebars>.msgcard,.duebars>.shipcard,.duebars>.subcard,.duebars>.tripcard,.duebars>.waitcard{margin-bottom:0}
+  .duebars>.shipcard,.duebars>.subcard,.duebars>.tripcard,.duebars>.waitcard{margin-bottom:0}
   html .duebars>.preview-later,html body.calm .duebars>.preview-later{margin-top:12px}
   body.stuck .main>.top,body.stuck .main>.content>:not(#previewListHeading){      /* the Recent emails bar is left out: it is the one thing that stays in view */
     -webkit-mask-image:linear-gradient(#000 0,#000 var(--cut,-1px),transparent var(--cut,-1px),transparent var(--cut2,-1px),#000 calc(var(--cut2,-1px) + var(--fade,36px)));
@@ -1568,7 +1541,7 @@ body.preview-mobile-emails-closed #readDock{display:none!important}
 }
 /* Drafts page and the "Save this as a draft?" question */
 #draftPage{display:none;padding-top:14px}body.on-draft #draftPage{display:block}
-body.on-draft .filters,body.on-draft #list,body.on-draft .sample-banner,body.on-draft #dueBars,body.on-draft #shipBars,body.on-draft #subBars,body.on-draft #tripBars,body.on-draft #waitBars,body.on-draft #msgBars,body.on-draft #mTitleSub,body.on-draft #peek{display:none!important}
+body.on-draft .filters,body.on-draft #list,body.on-draft .sample-banner,body.on-draft #dueBars,body.on-draft #shipBars,body.on-draft #subBars,body.on-draft #tripBars,body.on-draft #waitBars,body.on-draft #mTitleSub,body.on-draft #peek{display:none!important}
 .drow{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:0 0 10px;display:grid;gap:6px}
 .drow .dtop{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
 .drow .dkind{font-size:12px;border:1px solid var(--c-1f3f75);color:var(--c-bfe3ff);border-radius:999px;padding:1px 9px}
@@ -1881,8 +1854,6 @@ body.dragging-mail{user-select:none;-webkit-user-select:none;cursor:grabbing}
     <button class="nav" data-filter="shipping" id="shipNav" title="Shipping" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg><span class="nav-label">Shipping</span><span class="badge" id="shipBadge"></span></button>
     <button class="nav" data-filter="subscriptions" id="subNav" title="Subscriptions" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3l3 3-3 3"/><path d="M4 11V9a3 3 0 0 1 3-3h13"/><path d="M7 21l-3-3 3-3"/><path d="M20 13v2a3 3 0 0 1-3 3H4"/></svg><span class="nav-label">Subscriptions</span><span class="badge" id="subBadge"></span></button>
     <button class="nav" data-filter="trips" id="tripNav" title="Trips" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5a2 2 0 0 0-2.8-2.8L13.2 8.2 5 6.4 3.6 7.8l6.4 3.7-3.2 3.2-2.7-.5L3 15.2l3.5 1.4 1.4 3.5 1.2-1.1-.5-2.7 3.2-3.2 3.7 6.4z"/></svg><span class="nav-label">Trips</span><span class="badge" id="tripBadge"></span></button>
-    <div class="label" id="peopleLabel" hidden>People</div>
-    <button class="nav" data-filter="messages" id="msgNav" title="Messages" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><span class="nav-label">Messages</span><span class="badge" id="msgBadge" hidden></span></button>
     <div class="label">Status</div>
 
     <button class="nav" data-filter="archived" title="Archived"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4.5" rx="1"/><path d="M5 8.5V20h14V8.5"/><path d="M10 12.5h4"/></svg><span class="nav-label">Archived</span></button>
@@ -1956,7 +1927,6 @@ body.dragging-mail{user-select:none;-webkit-user-select:none;cursor:grabbing}
   <div id="subBars" class="duebars" role="region" aria-label="Subscriptions coming up" hidden></div>
   <div id="tripBars" class="duebars" role="region" aria-label="Trips coming up" hidden></div>
   <div id="waitBars" class="duebars" role="region" aria-label="Waiting on others" hidden></div>
-  <div id="msgBars" class="duebars" role="region" aria-label="New messages" hidden></div>
   <div class="preview-list-heading" id="previewListHeading"><label class="selall" id="selectAllWrap" title="Tick every email in this list"><input class="check" type="checkbox" id="selectAll" aria-label="Select all emails in this list"><span>Select all</span></label><strong>Recent emails</strong><div class="preview-bulk" id="previewBulk" role="group" aria-label="What to do with the emails you ticked"><span class="pb-actions"><button class="action reviewed qic" type="button" data-bulk="reviewed" aria-label="Mark as read" title="Mark as read"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button><button class="action archive qic" type="button" data-bulk="archived" aria-label="Archive" title="Archive"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg></button><button class="action qic" type="button" data-bulk-move aria-label="Move to a folder" title="Move to a folder"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M10 14h5m-2-2 2 2-2 2"/></svg></button><button class="action trash qic" type="button" data-bulk="trashed" aria-label="Bin" title="Bin"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button></span><span class="pb-sub"><span class="pb-count"><b id="previewSelCount">0</b> selected</span><button class="linkbtn" type="button" id="previewBulkClear">Clear</button></span></div><span class="preview-heading-actions"><button type="button" id="previewInboxOptions" aria-expanded="false">Options ▾</button><button class="preview-fold-toggle" type="button" data-preview-fold="emails" aria-label="Collapse recent emails" aria-expanded="true">⌃</button></span></div>
   <div class="filters">
     <button class="chip active" data-chip="all">All</button>
@@ -2005,7 +1975,6 @@ body.dragging-mail{user-select:none;-webkit-user-select:none;cursor:grabbing}
   <section id="cleanPage" aria-label="Clean up"></section>
   <section id="waitPage" aria-label="Waiting for reply"></section>
   <section id="draftPage" aria-label="Drafts"></section>
-  <section id="msgPage" aria-label="Messages"></section>
   <div class="allfoot" id="allFoot" hidden>Last 60 days, no email limit.</div>
   <section id="sentView" class="sentview" aria-label="Sent" hidden>
     <div class="sent-top"><span class="sent-tools"><select id="sentBox" aria-label="Mailbox" hidden></select><button class="btn" id="sentRefresh" type="button">Refresh</button></span></div>
@@ -2625,7 +2594,7 @@ const emailDetails={
 for(const m of data)Object.assign(m,emailDetails[m.id]||{});
 
 let selected=new Set(),filter="all",query="",provider="compatible";
-let feat={compose:false,address_book:false,sent:false,media:false,all_mail:false,shipping:false,subscriptions:false,travel:false,waiting:false,messages:false,write_help:false,rss:false,tags:false,find_mail:false,junk_mail:false,clean_up:false};
+let feat={compose:false,address_book:false,sent:false,media:false,all_mail:false,shipping:false,subscriptions:false,travel:false,waiting:false,write_help:false,rss:false,tags:false,find_mail:false,junk_mail:false,clean_up:false};
 let allMail=false,recentAt=0,sq={items:[],waiting:0,writing:0},sqTimer=null,sqDoneSeen=new Set();
 try{allMail=localStorage.getItem("enveliq-all-mail")==="1"}catch{}
 let manageTabsScrollLeft=0;
@@ -2635,7 +2604,7 @@ const previewVault={initialized:false,unlocked:false,salt:null,verifier:null};
 const expanded=new Set();
 const convHidden=new Map(); // conversation key -> the open email when the person pressed Hide, so Hide works even while one of its emails is open
 // A refresh keeps you where you are: the page (in the address bar after #/) and which emails are open (this tab only).
-const PAGES=["found","all","action","starred","tasks","attachments","archived","sent","folders","drafts","shipping","subscriptions","trips","waiting","messages","junk","cleanup"];
+const PAGES=["found","all","action","starred","tasks","attachments","archived","sent","folders","drafts","shipping","subscriptions","trips","waiting","junk","cleanup"];
 let stateReady=false,navPopping=false;
 const rowKeyOf=id=>{const m=data.find(x=>String(x.id)===String(id));return m&&m.real?m.real.accountId+":"+m.real.messageId:null};
 function saveOpen(){
@@ -2673,13 +2642,12 @@ function applyHashNav(){
     }
     if(isOpen)closeSettings();
     const pm=/^#\/([a-z]+)$/.exec(h);let want=pm&&PAGES.includes(pm[1])?pm[1]:"all";
-    const ok={folders:realMail,sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,messages:feat.messages,junk:feat.junk_mail,cleanup:feat.clean_up}[want];
+    const ok={folders:realMail,sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,junk:feat.junk_mail,cleanup:feat.clean_up}[want];
     if(want!=="all"&&ok===false)want="all";
     filter=want;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===want));
     closeSnoozeMenu();readerOpen=false;if(want==="all")paneId=null;render();
     if(want==="sent")loadSent();if(want==="folders")loadFolders();
     if(want==="drafts")loadDrafts();
-    if(want==="messages")openMsgPage();
     if(want==="junk")openJunkPage();if(want==="cleanup")openCleanPage();
     window.scrollTo({top:0});
   }finally{navPopping=false}
@@ -2751,13 +2719,12 @@ if("serviceWorker" in navigator){
 function restorePage(){
   const m=/^#\/(settings|admin)\/([a-z]*)$/.exec(location.hash||""),p=/^#\/([a-z]+)$/.exec(location.hash||"");
   if(p&&PAGES.includes(p[1])){
-    const want=p[1],ok={sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,messages:feat.messages,junk:feat.junk_mail,cleanup:feat.clean_up}[want];
+    const want=p[1],ok={sent:feat.sent,drafts:realMail,shipping:feat.shipping,subscriptions:feat.subscriptions,trips:feat.travel,waiting:feat.waiting,junk:feat.junk_mail,cleanup:feat.clean_up}[want];
     if(want!=="all"&&ok!==false){
       filter=want;document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter===want));
       if(want==="sent")loadSent();if(want==="folders")loadFolders();
       if(want==="drafts")loadDrafts();
-      if(want==="messages")openMsgPage();
-      if(want==="junk")openJunkPage();if(want==="cleanup")openCleanPage();
+        if(want==="junk")openJunkPage();if(want==="cleanup")openCleanPage();
     }
   }
   if(m&&!(m[1]==="admin"&&!currentUser.is_admin)){
@@ -3054,7 +3021,7 @@ function snoozeOptions(now){
 // ---- Search everywhere: the one search box also looks in the other places Enveliq keeps things for this person ----
 // Reviewed, Archived and Snoozed emails, tasks, orders and waiting notes. It uses only what this page already holds for the signed-in person
 // (kept summaries and results): nothing new is stored and nothing extra is asked of the server. Matches are shown as text, a few at a time.
-const SEARCH_PAGES=["tasks","sent","folders","shipping","subscriptions","trips","waiting","messages"],SEARCH_EACH=4;
+const SEARCH_PAGES=["tasks","sent","folders","shipping","subscriptions","trips","waiting"],SEARCH_EACH=4;
 // "Ask the agent": what is typed in the search box is sent to the Agent chat as a new question, instead of searching for it.
 function askAgentFromSearch(){
   const text=String($("search").value||"").trim();
@@ -3561,10 +3528,10 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&tagUi.open){e.stopPropagation();if(tagUi.info){tagUi.info=false;tagPopPaint(true);const b=$("tagPop").querySelector("[data-tag-info]");if(b)b.focus()}else tagClose()}},true);
 
-// ---------- The bell: notes from Home Assistant and other services, and your chat messages ----------
+// ---------- The bell: notes from Home Assistant and other services ----------
 let bellData={items:[],unread:0,key_made:null,ws_path:"/api/v1/inbound/ws",webhook_path:"/api/v1/inbound/webhook"},bellUi={open:false,busy:false,err:"",key:"",copied:false};
 const bellOn=()=>!!realMail;
-function bellCount(){return bellOn()?(bellData.unread||0)+(msgOn()?msgSum.unread||0:0):0}
+function bellCount(){return bellOn()?(bellData.unread||0):0}
 function bellPaint(){
   const on=bellOn(),n=bellCount();
   document.querySelectorAll("[data-bell-open]").forEach(b=>{b.hidden=!on;b.setAttribute("aria-label",n?`Notifications, ${n} new`:"Notifications");
@@ -3578,21 +3545,19 @@ async function fetchBell(){
 }
 setInterval(()=>{if(bellOn()&&!document.hidden&&!bellUi.busy)fetchBell()},30000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&bellOn())fetchBell()});
-function bellWhen(t){if(!t)return "";const sec=Math.max(0,Date.now()/1000-t);if(sec<60)return "Just now";if(sec<3600)return Math.floor(sec/60)+" min ago";const d=new Date(t*1000);return msgSameDay(d,new Date())?msgClock(t):d.toLocaleDateString("en-AU",{day:"numeric",month:"short"})}
+function bellWhen(t){if(!t)return "";const sec=Math.max(0,Date.now()/1000-t);if(sec<60)return "Just now";if(sec<3600)return Math.floor(sec/60)+" min ago";const d=new Date(t*1000);return d.toLocaleDateString("en-AU",{day:"numeric",month:"short"})}
 function bellPopPaint(keep){
   const m=$("bellPop");if(!m)return;
   const sc=keep&&m.querySelector(".sf-body")?m.querySelector(".sf-body").scrollTop:0;
   const open=keep&&m.querySelector("details")?m.querySelector("details").open:false;
   const path=bellData.ws_path||"/api/v1/inbound/ws",hook=bellData.webhook_path||"/api/v1/inbound/webhook";
-  const chat=msgOn()&&msgSum.unread?(()=>{const L=msgSum.latest||[],names=[...new Set(L.map(x=>x.from.name))];
-    return `<section class="rss-feed" aria-label="Messages"><h4>Messages</h4><article class="rss-item new"><b>${msgSum.unread} unread ${msgSum.unread===1?"message":"messages"}${names.length?" from "+esc(names.join(", ")):""}</b><button class="obtn blue" type="button" data-msg-go>Read messages</button></article></section>`})():"";
   const notes=(bellData.items||[]).map(i=>`<article class="rss-item${i.unread?" new":""}">${i.title?`<b>${esc(i.title)}</b>`:""}${i.message?`<p>${esc(i.message)}</p>`:""}<span class="meta">From ${esc(i.source||"a service on your network")} · ${esc(bellWhen(i.at))}</span> <button class="bell-x" type="button" data-bell-dismiss="${esc(i.id)}" aria-label="Dismiss ${esc(i.title||"this note")}">Dismiss</button></article>`).join("");
-  const none=!chat&&!notes?'<p class="pop-note">Nothing new. Notes from Home Assistant and other services on your network, and messages from the people here, show up in this list.</p>':"";
+  const none=!notes?'<p class="pop-note">Nothing new. Notes from Home Assistant and other services on your network, show up in this list.</p>':"";
   const keyBox=bellUi.key?`<p class="pop-note"><b>Copy this key now.</b> Enveliq shows it only once. Paste it into Home Assistant or the other service.</p><div class="bell-key"><input id="bellKey" type="text" readonly spellcheck="false" autocomplete="off" aria-label="Your new key" value="${esc(bellUi.key)}"><button class="obtn" type="button" data-bell-copy>${bellUi.copied?"Copied":"Copy"}</button></div>`:"";
   const host=location.host,secure=location.protocol==="https:";
   m.innerHTML=`<div style="display:contents">
     <div class="sf-top"><b id="bellTitle">Notifications</b><button class="sf-close" type="button" data-bell-close aria-label="Close notifications">✕ Close</button></div>
-    <div class="sf-body">${chat}${notes?`<section class="rss-feed" aria-label="From other services"><h4>From Home Assistant and other services</h4>${notes}</section>`:""}${none}
+    <div class="sf-body">${notes?`<section class="rss-feed" aria-label="From other services"><h4>From Home Assistant and other services</h4>${notes}</section>`:""}${none}
       <details${open?" open":""}><summary>Show how to connect Home Assistant or another service</summary>
         <p class="pop-note">A service sends short notes to Enveliq through a WebSocket. Make a key for yourself, then give the service the address and the key. Notes it sends land in this list, only for you.</p>
         <p class="pop-note">On your own network use this machine's local address, so it works even when the public address sits behind Cloudflare: <code>ws://YOUR-SERVER-IP:8765${esc(path)}</code>. From outside, use <code>${secure?"wss":"ws"}://${esc(host)}${esc(path)}</code> if your proxy allows WebSockets.</p>
@@ -3609,7 +3574,7 @@ function bellPopPaint(keep){
 function bellOpen(){
   bellUi={...bellUi,open:true,err:"",copied:false};$("bellPop").hidden=false;bellPopPaint(false);
   const c=$("bellPop").querySelector(".sf-close");if(c)c.focus();
-  fetchBell();if(msgOn())fetchMsgSummary().then(()=>{bellPaint();if(bellUi.open)bellPopPaint(true)});
+  fetchBell();
 }
 async function bellClose(markRead=true){
   if(!bellUi.open)return;bellUi.open=false;bellUi.key="";$("bellPop").hidden=true;
@@ -3627,7 +3592,6 @@ document.addEventListener("click",async e=>{
   const t=e.target.closest?e.target:null;if(!t)return;
   if(t.closest("[data-bell-open]")){if(bellUi.open)bellClose();else bellOpen();return}
   if(t.closest("[data-bell-close]")){bellClose();return}
-  if(t.closest("[data-msg-go]")&&bellUi.open){bellClose(false);return}
   const dis=t.closest("[data-bell-dismiss]");if(dis){bellCall("/api/v1/me/bell/"+encodeURIComponent(dis.dataset.bellDismiss),{method:"DELETE",headers:{}});return}
   if(t.closest("[data-bell-clear]")){bellCall("/api/v1/me/bell",{method:"DELETE",headers:{}});return}
   if(t.closest("[data-bell-read]")){bellCall("/api/v1/me/bell/read",{method:"POST",body:"{}"});return}
@@ -4010,7 +3974,6 @@ async function shipAct(id,action){
   render();
 }
 document.addEventListener("input",e=>{const i=e.target&&e.target.id;if(i==="carName"||i==="carUrl"||i==="carEx"){shipCar.err="";if(i==="carName")shipCar.name=e.target.value;else if(i==="carUrl")shipCar.url=e.target.value;else shipCar.example=e.target.value}});
-document.addEventListener("keydown",e=>{if(e.target&&e.target.id==="mgText"&&e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();msgSend()}});
 const shipDay=iso=>{const d=new Date(iso+"T00:00:00");return isNaN(d)?"":d.toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short"})};
 const shipWhen=ts=>{const d=new Date(ts*1000);return isNaN(d)?"":d.toLocaleString("en-AU",{weekday:"short",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"})};
 function shipStatus(o){
@@ -4419,101 +4382,6 @@ function renderTripHome(){
   box.innerHTML=`<div class="tripcard"><div class="thead"><b>Trips</b><button class="linkbtn" type="button" data-trip-go>Open Trips</button></div>${near.slice(0,3).map(t=>`<div class="triprow"><div class="who"><b>${esc(t.title)}</b><span>${esc(t.state==="now"?`Under way · until ${tripDay(t.end)}`:`Starts ${tripIn(t.days_to_start)} · ${tripDay(t.start)}`)}</span></div></div>`).join("")}${near.length>3?`<button class="tmore" type="button" data-trip-go>+${near.length-3} more</button>`:""}</div>`;
   box.hidden=false;
 }
-// ---- Messages: short notes between the people who share this Enveliq ----
-// The server decides who may open a conversation; this page only shows what it is sent and keeps nothing after you leave. Plain text only.
-let msgSum={enabled:false,unread:0,conversations:0,latest:[]},msgS={threads:[],people:[],cur:null,mode:"list",draft:"",sig:"",busy:false};
-const msgOn=()=>realMail&&!!feat.messages;
-const MSG_COLORS=["#16803c","#8a4fd0","#0a7bff","#b45f06","#b4325a","#2a7f9e","#6b7a1f"];
-const msgColor=id=>{let n=0;for(const c of String(id))n=(n*31+c.charCodeAt(0))>>>0;return MSG_COLORS[n%MSG_COLORS.length]};
-const msgReq=(path,method="GET",body)=>secureBackendRequest("/api/v1/messages"+path,body===undefined?{method,headers:{}}:{method,body:JSON.stringify(body)});
-function msgAvatar(p,cls=""){
-  if(p&&p.avatar_v)return `<span class="mgav ${cls}"><img src="/api/v1/users/${encodeURIComponent(p.id)}/avatar?v=${encodeURIComponent(p.avatar_v)}" alt=""></span>`;
-  return `<span class="mgav ${cls}" style="background:${msgColor(p&&p.id)}" aria-hidden="true">${esc(initialsOf((p&&p.name)||"?"))}</span>`;
-}
-const msgThreadAv=t=>t.group?`<span class="mgav" style="background:#2a3446" aria-hidden="true">${t.members.length+1}</span>`:msgAvatar(t.members[0]);
-const msgSameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
-const msgClock=ts=>new Date(ts*1000).toLocaleTimeString("en-AU",{hour:"2-digit",minute:"2-digit"});
-function msgDay(ts){const d=new Date(ts*1000),n=new Date(),y=new Date(Date.now()-864e5);return msgSameDay(d,n)?"Today":msgSameDay(d,y)?"Yesterday":d.toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"})}
-function msgTime(ts){const d=new Date(ts*1000);return msgSameDay(d,new Date())?msgClock(ts):d.toLocaleDateString("en-AU",{day:"numeric",month:"short"})}
-async function fetchMsgSummary(){
-  if(!msgOn()){msgSum={enabled:false,unread:0,conversations:0,latest:[]};return}
-  try{const r=await msgReq("/summary");if(r)msgSum=r}catch{}
-}
-async function loadMsgs(){
-  try{msgS.threads=(await msgReq("/threads")).threads||[]}catch(er){toast(er.message,5000)}
-  if(msgS.cur){try{msgS.cur=await msgReq("/threads/"+encodeURIComponent(msgS.cur.id))}catch{msgS.cur=null;msgS.mode="list"}}
-}
-async function readOpenMsg(){
-  if(!msgS.cur||!msgS.cur.unread||document.hidden)return;
-  try{await msgReq(`/threads/${encodeURIComponent(msgS.cur.id)}/read`,"POST",{});msgS.cur.unread=0;const t=msgS.threads.find(x=>x.id===msgS.cur.id);if(t)t.unread=0;await fetchMsgSummary()}catch{}
-}
-async function refreshMsgs(){
-  await fetchMsgSummary();
-  if(filter==="messages"&&!document.hidden){await loadMsgs();await readOpenMsg()}
-  render();
-}
-setInterval(()=>{if(msgOn()&&!document.hidden)refreshMsgs()},30000);
-async function openMsgPage(){
-  msgS.mode="list";msgS.cur=null;msgS.sig="";msgS.draft="";
-  await loadMsgs();
-  if(!window.matchMedia("(max-width:760px)").matches&&msgS.threads.length){await openMsg((msgS.threads.find(t=>t.unread)||msgS.threads[0]).id);return}
-  render();
-}
-async function openMsg(id){
-  try{msgS.cur=await msgReq("/threads/"+encodeURIComponent(id));msgS.mode="thread";msgS.draft="";msgS.sig="";await readOpenMsg();await loadMsgs()}catch(er){toast(er.message,5000);await loadMsgs()}
-  render();
-}
-async function newMsg(){
-  try{msgS.people=(await msgReq("/people")).people||[]}catch(er){toast(er.message,5000);return}
-  msgS.mode="new";msgS.draft="";msgS.sig="";render();
-}
-async function msgSend(){
-  const ta=$("mgText");if(!ta||msgS.busy)return;
-  const text=ta.value.trim();if(!text){toast("Write a message first.");return}
-  let to=[];
-  if(msgS.mode==="new"){to=[...document.querySelectorAll("#msgPage [data-msg-pick]:checked")].map(x=>x.value);if(!to.length){toast("Choose who to write to.");return}}
-  msgS.busy=true;
-  try{
-    msgS.cur=msgS.mode==="new"?await msgReq("/threads","POST",{to,text}):await msgReq(`/threads/${encodeURIComponent(msgS.cur.id)}/messages`,"POST",{text});
-    msgS.mode="thread";msgS.draft="";msgS.sig="";ta.value="";
-    await loadMsgs();await fetchMsgSummary();
-  }catch(er){toast(er.message,5000)}
-  finally{msgS.busy=false}
-  render();
-}
-function renderMsgPage(){
-  const box=$("msgPage"),c=msgS.cur,ta0=box.querySelector("#mgText"),focused=!!ta0&&document.activeElement===ta0;
-  const sig=JSON.stringify([msgS.mode,c&&[c.id,c.muted,c.messages.length,c.messages.filter(m=>m.deleted).length],msgS.threads.map(t=>[t.id,t.unread,t.updated,t.muted,t.title]),msgS.people.length]);
-  if(sig===msgS.sig&&box.firstChild)return;
-  if(ta0)msgS.draft=ta0.value;
-  msgS.sig=sig;
-  const rows=msgS.threads.length?msgS.threads.map(t=>`<button type="button" class="mgrow${c&&c.id===t.id&&msgS.mode==="thread"?" on":""}" data-msg-open="${esc(t.id)}">${msgThreadAv(t)}<span class="mgmid"><span class="mgtop"><b>${esc(t.title)}</b><i>${t.last?esc(msgTime(t.last.at)):""}</i></span><span class="mgprev${t.unread&&!t.muted?" new":""}">${t.last?esc((t.last.mine?"You: ":t.group?t.last.name+": ":"")+t.last.text):"No messages yet"}</span></span>${t.unread&&!t.muted?`<span class="badge hot">${t.unread}</span>`:""}</button>`).join(""):'<p class="sp-sub" style="margin:12px">No conversations yet. Press New message to write to someone.</p>';
-  const left=`<div class="mgl"><div class="mgh"><h3>Messages</h3><button class="mgbtn pri" type="button" data-msg-new>New message</button></div><div class="mglist">${rows}</div></div>`;
-  const comp=ph=>`<div class="mgcomp"><textarea id="mgText" rows="1" maxlength="2000" aria-label="Your message" placeholder="${esc(ph)}"></textarea><button class="mgbtn pri" type="button" data-msg-send>Send</button></div><div class="mgtip">Enter sends. Shift+Enter starts a new line. Plain text, up to 2,000 characters.</div>`;
-  let right;
-  if(msgS.mode==="new"){
-    const people=msgS.people.length?msgS.people.map(p=>`<label>${msgAvatar(p)}<span style="flex:1">${esc(p.name)}</span><input type="checkbox" data-msg-pick value="${esc(p.id)}" aria-label="${esc(p.name)}"></label>`).join(""):'<p class="mgempty">There is nobody else to write to yet. People show up here once they have an Enveliq account and have not hidden themselves from the list.</p>';
-    right=`<div class="mgr"><div class="mgh"><button class="mgbtn mgback" type="button" data-msg-back aria-label="Back to all messages">‹ Back</button><h3>New message</h3></div><p class="sp-sub" style="margin:10px 16px 0">Choose one person, or a few for a small group (up to 7 others).</p><div class="mgpick">${people}</div>${comp("Write your message")}</div>`;
-  }else if(c&&msgS.mode==="thread"){
-    let day="";
-    const items=c.messages.map(m=>{const d=msgDay(m.at);let sep="";if(d!==day){day=d;sep=`<div class="mgday">${esc(d)}</div>`}
-      return sep+`<div class="mgmsg ${m.mine?"me":"them"}${m.deleted?" del":""}">${!m.mine&&c.group?`<span class="mgwho">${esc(m.name)}</span>`:""}<div class="mgb">${m.deleted?"Message removed":esc(m.text)}</div><span class="mgmeta">${esc(msgClock(m.at))}${m.mine&&!m.deleted?` · <button type="button" class="mglink" data-msg-unsend="${esc(m.id)}">Unsend</button>`:""}</span></div>`}).join("");
-    const who=c.group?`Only the ${c.everyone.length} people in this conversation can see it`:`Only you and ${esc(c.title)} can see this conversation`;
-    right=`<div class="mgr"><div class="mgh"><button class="mgbtn mgback" type="button" data-msg-back aria-label="Back to all messages">‹ Back</button>${msgThreadAv(c)}<div style="flex:1;min-width:0"><b>${esc(c.title)}</b><div class="mgtip" style="padding:0">${who}</div></div><button class="mgbtn" type="button" data-msg-mute aria-pressed="${c.muted}">${c.muted?"Unmute":"Mute"}</button></div><div class="mgmsgs" id="mgMsgs">${items||'<p class="mgempty">No messages yet.</p>'}</div>${comp("Write a message to "+c.title)}</div>`;
-  }else right='<div class="mgr"><div class="mgempty" style="margin-top:20%">Choose a conversation, or press New message to start one.</div></div>';
-  box.innerHTML=`<div class="mg${msgS.mode==="thread"?" thread":msgS.mode==="new"?" new":""}">${left}${right}</div>`;
-  const ta=box.querySelector("#mgText");
-  if(ta){ta.value=msgS.draft;if(focused||msgS.mode==="new"||msgS.sig!==sig)ta.focus({preventScroll:true})}
-  const ms=box.querySelector("#mgMsgs");if(ms)ms.scrollTop=ms.scrollHeight;
-}
-function renderMsgHome(){
-  const box=$("msgBars"),L=msgOn()?msgSum.latest||[]:[];
-  if(!msgOn()||!msgSum.unread||!L.length||filter==="messages"||filter==="sent"||filter==="folders"){box.hidden=true;box.replaceChildren();return}
-  const names=[...new Set(L.map(x=>x.from.name))],more=Math.max(0,(msgSum.conversations||L.length)-L.length);
-  const who=names.length===1&&!more?names[0]:names.length===2&&!more?names.join(" and "):names.slice(0,2).join(", ")+" and "+(names.length-2+more>0?`${names.length-2+more} more`:"others");
-  box.innerHTML=`<div class="msgcard"><span class="mgstack">${L.map(x=>msgAvatar(x.from)).join("")}</span><div class="mtx"><b>${esc(who)} left you ${msgSum.unread} ${msgSum.unread===1?"message":"messages"}</b><span>${L.map(x=>esc(x.from.name+": “"+x.text+"”")).join(" · ")}</span></div><button class="mgbtn pri" type="button" data-msg-go>Read messages</button></div>`;
-  box.hidden=false;
-}
 // ---- Waiting for reply: sent emails that ask for something, followed until the answer comes ----
 // Only a short note is kept (who, subject, date, one line). Plain text only.
 let waitData={enabled:false,days:3,notes:[]};
@@ -4798,12 +4666,10 @@ function render(){
   document.body.classList.toggle("on-trip",filter==="trips");
   document.body.classList.toggle("on-junk",filter==="junk");document.body.classList.toggle("on-clean",filter==="cleanup");
   document.body.classList.toggle("on-wait",filter==="waiting");
-  document.body.classList.toggle("on-msg",filter==="messages");
   saveOpen();syncHash();
-  renderToday();renderShipHome();renderSubHome();renderTripHome();renderWaitHome();renderMsgHome();if(filter==="messages")renderMsgPage();if(filter==="waiting")renderWaitPage();if(filter==="drafts")renderDraftPage();if(filter==="tasks")renderTasksPage();if(filter==="shipping")renderShipPage();if(filter==="subscriptions")renderSubPage();if(filter==="trips")renderTripPage();if(filter==="junk")renderJunkPage();if(filter==="cleanup")renderCleanPage();subNavSync();
+  renderToday();renderShipHome();renderSubHome();renderTripHome();renderWaitHome();if(filter==="waiting")renderWaitPage();if(filter==="drafts")renderDraftPage();if(filter==="tasks")renderTasksPage();if(filter==="shipping")renderShipPage();if(filter==="subscriptions")renderSubPage();if(filter==="trips")renderTripPage();if(filter==="junk")renderJunkPage();if(filter==="cleanup")renderCleanPage();subNavSync();
   // The number is how many are being followed; it turns blue when one needs you (an order to confirm, a reply nobody has sent).
   {const os=shipOn()?(shipData.orders||[]).filter(o=>!(o.delivered_at&&o.ack)):[];const sb=$("shipBadge");if(sb){sb.textContent=os.length;sb.hidden=!os.length;sb.classList.toggle("hot",os.some(o=>o.needs_confirm||o.unsure))}}
-  {const mb=$("msgBadge");if(mb){const n=msgOn()?msgSum.unread:0;mb.textContent=n;mb.hidden=!n;mb.classList.toggle("hot",n>0)}}
   bellPaint();
   hydrateInvites();
   {const ns=waitOn()?(waitData.notes||[]).filter(n=>n.state==="waiting"):[];const wb=$("waitBadge");if(wb){wb.textContent=ns.length;wb.hidden=!ns.length;wb.classList.toggle("hot",ns.some(n=>n.due))}}
@@ -4822,10 +4688,10 @@ function render(){
   const inbox=mine.filter(m=>m.status==="inbox"&&!isAside(m)),needN=inbox.filter(m=>m.action||m.priority==="high").length;
   const hr=new Date().getHours(),first=String(currentUser.name||"").trim().split(/\s+/)[0];
   const greeting=(hr<12?"Good morning":hr<18?"Good afternoon":"Good evening")+(first?`, ${first}`:"");
-  const VIEW_NAMES={held:"Held for summary",starred:"Starred",action:"Needs action",need:"Needs action",high:"Important",attachments:"Attachments",tasks:"Tasks",shipping:"Shipping",waiting:"Waiting for reply",found:"Found emails",archived:"Archived",subscriptions:"Subscriptions",trips:"Trips",messages:"Messages",junk:"Junk Mail",cleanup:"Clean up",sent:"Sent",drafts:"Drafts"};
+  const VIEW_NAMES={held:"Held for summary",starred:"Starred",action:"Needs action",need:"Needs action",high:"Important",attachments:"Attachments",tasks:"Tasks",shipping:"Shipping",waiting:"Waiting for reply",found:"Found emails",archived:"Archived",subscriptions:"Subscriptions",trips:"Trips",junk:"Junk Mail",cleanup:"Clean up",sent:"Sent",drafts:"Drafts"};
   document.querySelector(".top-left h2").textContent=VIEW_NAMES[filter]||(filter==="all"&&calmOn()?"One thing at a time":filter==="all"?"My inbox":greeting);
   $("previewCalmNotice").hidden=!(filter==="all"&&calmOn());
-  $("previewListHeading").hidden=["sent","folders","drafts","tasks","shipping","waiting","subscriptions","trips","messages","junk","cleanup"].includes(filter);
+  $("previewListHeading").hidden=["sent","folders","drafts","tasks","shipping","waiting","subscriptions","trips","junk","cleanup"].includes(filter);
   previewSyncMenu();
   $("todayDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"});
   {const sub=(calmOn()?(inbox.length?"One thing at a time. Important deadlines stay visible.":"Nothing waiting. Enjoy the quiet."):inbox.length?"":(document.body.classList.contains("backend")&&!realMail?"No mailbox is connected yet":"All caught up"));$("inboxSubtitle").innerHTML=sub?`<span class="sdate">${esc($("todayDate").textContent)} · </span>`+esc(sub):""}
@@ -4844,7 +4710,7 @@ function render(){
   if(searchPin!=null&&!rows.some(m=>m.id===searchPin)){const pm=data.find(x=>x.id===searchPin&&x.owner===currentUser.id);if(pm)rows.unshift(pm)}
   if(impSet.size)rows.sort((a,b)=>isImp(b)-isImp(a));          // a stable sort: important people first, the chosen order kept inside each group
   scheduleWake();
-  {const b=$("expandAll"),can=lay()==="list"&&!["tasks","sent","folders","drafts","shipping","subscriptions","trips","waiting","messages","junk","cleanup"].includes(filter)&&rows.length>0;
+  {const b=$("expandAll"),can=lay()==="list"&&!["tasks","sent","folders","drafts","shipping","subscriptions","trips","waiting","junk","cleanup"].includes(filter)&&rows.length>0;
    b.hidden=!can||selected.size>1;if(can){const all=view.rows==="open"||rows.every(m=>expanded.has(`row-${m.id}`));b.textContent=all?"Collapse all":"Expand all";b.dataset.mode=all?"collapse":"expand"}}
   const copyMailButtons=(m,mobile=false)=>{
     const id=esc(m.id);
@@ -4948,7 +4814,7 @@ function render(){
         ${act}<div class="deckdots" aria-hidden="true">${dots}</div></div>`;
     }else{
       const readingHtml=cur?(view.style==="rail"?`<section class="reading rail" aria-label="Selected email">${quiet(cur,"rail")}</section>`:`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div>${copyMailButtons(cur)}</header>${quiet(cur,"detail")}</section>`):`<section class="reading enveliq-empty" aria-label="No email selected">${enEmptyReading()}</section>`;
-      if(lay()==="right"&&!["sent","folders","drafts","tasks","shipping","waiting","subscriptions","trips","messages","junk","cleanup"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
+      if(lay()==="right"&&!["sent","folders","drafts","tasks","shipping","waiting","subscriptions","trips","junk","cleanup"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
         dockHtml=readingHtml;
         listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rowsHtml(rows,"pane")}</div></div>`;
       }else listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rowsHtml(rows,"pane")}</div>${readingHtml}</div>`;
@@ -6949,17 +6815,7 @@ document.addEventListener("click",e=>{
   const a=e.target.closest("[data-status]");if(a){deckDir="act";const m=data.find(x=>x.id===+a.dataset.id&&x.owner===currentUser.id);if(m&&["reviewed","archived","trashed"].includes(a.dataset.status)){if(readerOpen&&lay()==="screen")readerOpen=false;   // on a phone the email closes at once; the Undo bar still shows
     queueAction([m],a.dataset.status);return}if(m&&m.real){resolveRealOne(m,a.dataset.status,a);return}if(m){m.status=a.dataset.status;m.attachments=[];m.attachmentsPurged=true;closeAttachmentViewer();selected.delete(m.id);render();toast(m.status==="trashed"?"Moved to Bin · attachment data purged":`Marked ${m.status} · attachment data purged`,2000,"success")}return}
   const b=e.target.closest("[data-bulk]");if(b){queueAction([...selected].map(id=>data.find(x=>x.id===id&&x.owner===currentUser.id)),b.dataset.bulk);selMode=false;closeAttachmentViewer();return}
-  {const t=e.target.closest("[data-msg-open],[data-msg-new],[data-msg-back],[data-msg-send],[data-msg-mute],[data-msg-unsend],[data-msg-go]");
-   if(t){
-     if(t.matches("[data-msg-go]")){filter="messages";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="messages"));openMsgPage();return}
-     if(t.matches("[data-msg-open]")){openMsg(t.dataset.msgOpen);return}
-     if(t.matches("[data-msg-new]")){newMsg();return}
-     if(t.matches("[data-msg-back]")){msgS.mode="list";msgS.cur=null;msgS.sig="";msgS.draft="";render();return}
-     if(t.matches("[data-msg-send]")){msgSend();return}
-     if(t.matches("[data-msg-mute]")&&msgS.cur){msgReq(`/threads/${encodeURIComponent(msgS.cur.id)}/mute`,"PUT",{muted:!msgS.cur.muted}).then(async()=>{await loadMsgs();await fetchMsgSummary();render()}).catch(er=>toast(er.message,5000));return}
-     if(t.matches("[data-msg-unsend]")&&msgS.cur){msgReq(`/threads/${encodeURIComponent(msgS.cur.id)}/messages/${encodeURIComponent(t.dataset.msgUnsend)}`,"DELETE").then(async()=>{await loadMsgs();render()}).catch(er=>toast(er.message,5000));return}
-   }}
-  const n=e.target.closest("[data-filter]");if(n){const was=filter;filter=n.dataset.filter;if(n.id==="folderNav")void was;if(filter==="all")paneId=null;if(n.classList.contains("nav")&&query){query="";$("search").value="";document.body.classList.remove("msearch")}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="folders")loadFolders();if(filter==="drafts")loadDrafts();if(filter==="messages")openMsgPage();if(filter==="junk")openJunkPage();if(filter==="cleanup")openCleanPage();return}
+  const n=e.target.closest("[data-filter]");if(n){const was=filter;filter=n.dataset.filter;if(n.id==="folderNav")void was;if(filter==="all")paneId=null;if(n.classList.contains("nav")&&query){query="";$("search").value="";document.body.classList.remove("msearch")}document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x===n));render();if(filter==="sent")loadSent();if(filter==="folders")loadFolders();if(filter==="drafts")loadDrafts();if(filter==="junk")openJunkPage();if(filter==="cleanup")openCleanPage();return}
   const c=e.target.closest("[data-chip]");if(c){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render();return}
   const wa=e.target.closest("[data-wait]");if(wa){waitAct(wa.dataset.waitId,wa.dataset.wait);return}
   const wn=e.target.closest("[data-wait-nudge]");if(wn){waitNudge(wn.dataset.waitNudge);return}
@@ -7237,7 +7093,7 @@ const sideNav=document.querySelector(".side-nav");
 // Left panel order, most used first. What people reach for less often sits under "More".
 {const nv=f=>sideNav.querySelector(`[data-filter="${f}"]`),id=x=>document.getElementById(x);
  for(const el of [id("snoozeNav"),id("draftNav"),id("sentNav"),nv("archived"),nv("attachments"),id("subNav"),id("tripNav"),id("junkNav"),id("cleanNav"),id("foundNav")])if(el)moreItems.append(el);
- for(const el of [nv("all"),id("heldNav"),nv("action"),nv("tasks"),nv("starred"),id("msgNav"),id("waitNav"),id("shipNav"),id("savedNav"),sideNav.querySelector(".side-sep"),id("folderNav"),id("folderSide"),id("moreNav"),id("sideRss"),id("sideSettings")])if(el)sideNav.append(el)}
+ for(const el of [nv("all"),id("heldNav"),nv("action"),nv("tasks"),nv("starred"),id("waitNav"),id("shipNav"),id("savedNav"),sideNav.querySelector(".side-sep"),id("folderNav"),id("folderSide"),id("moreNav"),id("sideRss"),id("sideSettings")])if(el)sideNav.append(el)}
 let moreChoice;try{moreChoice=localStorage.getItem("enveliq-more-open")}catch{}
 function previewSyncMore(){
   const open=!!moreItems.querySelector(".nav.active")||moreChoice==="1";
@@ -7730,9 +7586,6 @@ function applyFeatures(){
   if(filter==="trips"&&!(on&&feat.travel)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   if(filter==="subscriptions"&&!(on&&feat.subscriptions)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   if(filter==="shipping"&&!(on&&feat.shipping)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
-  {const mo=realMail&&!!feat.messages;$("msgNav").hidden=$("peopleLabel").hidden=!mo;
-   if(filter==="messages"&&!mo){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
-   if(mo&&!msgS.started){msgS.started=true;refreshMsgs()}}
   if(filter==="found"&&!(on&&feat.find_mail)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}
   applyKeptNav();paintAllSwitch();
   if(filter==="sent"&&!(on&&feat.sent)){filter="all";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="all"));render()}

@@ -1633,7 +1633,7 @@ async function adminPage(me, only) {
           h("p", { class: "hint", text: "Create an OAuth2/OpenID application in your provider (confidential client, authorization code flow with PKCE), then fill in the details below." }), ssoForm))],
   };
   if (only === "features" && fe) {
-    const groups = [["Writing", ["compose", "write_help", "address_book", "messages"]], ["Reading mail", ["sent", "find_mail", "all_mail", "media", "junk_mail", "tags", "rss"]],
+    const groups = [["Writing", ["compose", "write_help", "address_book"]], ["Reading mail", ["sent", "find_mail", "all_mail", "media", "junk_mail", "tags", "rss"]],
       ["Keeping track", ["shipping", "subscriptions", "travel", "waiting"]], ["Tidying", ["clean_up"]]];
     const named = new Set(groups.flatMap(g => g[1]));
     const rest = Object.keys(fe.labels).filter(k => !named.has(k));
@@ -1731,7 +1731,6 @@ const FEATURE_HINTS = {
   tags: "Shows the tags (labels) your mail service already has on each email, lets a person put a tag on an email or take it off, and make a new tag. Every change is also made in the real mailbox (Proton labels, Gmail labels, or keywords on other services; Outlook is not supported). Only tag names are kept in Enveliq, encrypted, with the email's summary; nothing is sent to the AI. Each person must also turn it on for themselves.",
   rss: "Lets each person follow news feeds (RSS and Atom) and see new entries in a pop-up. Enveliq reads each feed from the server about every half hour, through the same careful outbound path as other calls. A feed on your own network needs its address on the local allow list (Administration, Reminders). Only a short plain-text version of the newest entries is kept, encrypted, for that person alone.",
   write_help: "Adds a button to the reply box and the New email box. It asks your AI model to write a reply or check one. The AI sees the email being answered and the person's draft, shows its suggestion in a separate box, and never sends or changes anything itself. Nothing is stored. Each person must also turn it on for themselves, and may add their own writing instructions, under Settings, AI instructions. If your AI model is a cloud service, that text goes to it.",
-  messages: "Short messages between the people who use this Enveliq, one to one or in a small group. Each conversation is kept encrypted on this server and only the people in it can open it. Administrators cannot read other people's messages, and they are never shown to the AI model. Plain text only.",
   shipping: "Follows your online orders. When a summary finds that an email is about an order or a delivery, Enveliq keeps the shop, order number, carrier, tracking number, expected date and a few words about the items (never the email) in a Shipping list, and asks you on Home to confirm when a parcel is delivered. No extra AI request is made."
 };
 // ---------- Fast search (optional word list, per mailbox) ----------

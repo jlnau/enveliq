@@ -26,7 +26,7 @@ function makeServer(opts = {}) {
     { ...base, id: "m3", subject: "Your newsletter", sender_display: "News", summary: "This week's news.", category: "Newsletters", held_for_summary: true, files: 2 },
   ];
   const view = () => { const items = msgs.filter((m) => m.held_for_summary && !m.gone).map((m) => ({ account_id: "a1", message_id: m.id, sender: m.sender_display, subject: m.subject, summary: m.summary, category: m.category, held_at: now, received_at: m.received_at, attachments: m.files || 0 })); return { enabled: opts.off !== true, count: items.length, unread: !seen, items }; };
-  const features = { compose: true, address_book: true, sent: true, media: true, all_mail: false, shipping: false, waiting: false, messages: false, write_help: opts.feature !== false };
+  const features = { compose: true, address_book: true, sent: true, media: true, all_mail: false, shipping: false, waiting: false, write_help: opts.feature !== false };
   const info = { available: true, quick: opts.quick !== false, on: opts.on !== false, ai_ready: true, instructions: "x", is_default: true, default: "x", max: 2000 };
   const handler = async (route) => {
     const req = route.request(), p = new URL(req.url()).pathname;
