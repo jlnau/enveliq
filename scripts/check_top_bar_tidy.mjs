@@ -24,6 +24,7 @@ const make = () => [
   { ...base, id: "m-c", subject: "Electricity bill", starred: true, sender_display: "Northside Power", sender_address: "bills@example.invalid", received_at: now - 1200, reply_context: ctx("c") },
   { ...base, id: "m-r", subject: "Starred and already read", sender_display: "Cara", sender_address: "cara@example.invalid", received_at: now - 5000, from_all_mail: true, starred: true, reply_context: ctx("r") },
 ];
+let layoutChoice = null;
 let messages, views, chats = [], asked = [];
 const _unused = (done) => ({ id: "AAAAAAAAAAAA", done, cancelled: false, total: 1, listed: 1, include_junk: false, mailboxes: [{ account_id: "a1", label: "me@example.invalid", state: done ? "done" : "searching", found: 1, message: "", fast: false }] });
 const iso = (n) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
@@ -39,7 +40,7 @@ const handler = async (route) => {
   if (p === "/api/v1/accounts") return json(200, [{ id: "a1", provider: "proton", auth_method: "proton_bridge", owner_user_id: "u1", display_name: "Proton test", email_address: "me@example.invalid", server: "172.30.0.1", port: 1143, username: "me@example.invalid", settings: {} }]);
   if (p === "/api/v1/accounts/a1/messages") return json(200, messages);
   if (p === "/api/v1/me/tasks") return json(200, { today: iso(0), tz: "UTC", now: Date.now() / 1000, tasks: [task("t1", "m-a", "Reply to Alice", 0), task("t2", "m-b", "Pay the bill", 3)] });
-  if (p === "/api/v1/me/mail-view") { if (m === "PUT") views.push(JSON.parse(req.postData() || "{}")); return json(200, m === "GET" ? { view: null } : { view: JSON.parse(req.postData() || "{}") }); }
+  if (p === "/api/v1/me/mail-view") { if (m === "PUT") views.push(JSON.parse(req.postData() || "{}")); return json(200, m === "GET" ? { view: layoutChoice ? { layout: layoutChoice } : null } : { view: JSON.parse(req.postData() || "{}") }); }
   if (p === "/api/v1/me/agent" && m === "GET") return json(200, { name: "Hermes", ready: true, chats, chat: null });
   if (p === "/api/v1/me/agent/messages" && m === "POST") {
     const body = JSON.parse(req.postData() || "{}"); asked.push(body);
@@ -110,6 +111,27 @@ messages = make(); views = []; chats = []; asked = [];
   await page.click("#mAgentBtn");
   check("and it opens the chat", await page.evaluate(() => !document.querySelector("#agentPop").hidden));
   check("no script errors on a phone", errors.length === 0);
+}
+{
+  layoutChoice = "screen";
+  // Full-screen reading: the Back button and the up/down arrows must be pressable, and nothing may sit over them.
+  const { page, errors } = await open({ width: 1400, height: 900 });
+  await page.click("article.mail");
+  await page.waitForSelector(".reader");
+  const top = await page.evaluate(() => [...document.querySelectorAll(".rtop .rbtn")].map((b) => { const r = b.getBoundingClientRect(), t = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return t === b; }));
+  check("the Back and the up and down buttons are not covered by anything", top.length === 3 && top.every(Boolean));
+  const title = async () => page.textContent(".reader .rtop b");
+  const first = await title();
+  await page.click('.rtop .rbtn[aria-label="Next email"]');
+  await page.waitForTimeout(300);
+  check("the down arrow moves to the next email", (await title()) !== first);
+  await page.click('.rtop .rbtn[aria-label="Previous email"]');
+  await page.waitForTimeout(300);
+  check("the up arrow moves back", (await title()) === first);
+  await page.click(".rtop [data-reader-close]");
+  await page.waitForTimeout(300);
+  check("Back returns to the list", (await page.locator(".reader").count()) === 0);
+  check("no script errors", errors.length === 0);
 }
 await browser.close();
 console.log(failed ? "Some top bar checks failed." : "All top bar checks passed.");
