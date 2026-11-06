@@ -134,6 +134,15 @@ Tick one email's box, then hold **Shift** and tick another one a few emails up o
 
 In a reply or forward window, the **Subject** box can be edited; what you type is what is sent (the usual "Re: ..." or "Fwd: ..." is used if you leave it).
 
+## Forward, Tag and Rules for several emails
+
+When you tick two or more emails, the bar over the list also has **Forward**, **Tag** and **Rules**, next to Move.
+
+- **Forward** asks for an address (or several, with commas) and an optional note. Each ticked email is forwarded on its own, with its attachments, so the person gets one email for each. The originals are fetched from your mailbox when you press the button and are not stored. If one fails, the form stays open, says how many did not send and lets you try just those again.
+- **Tag** lists your tags (and lets you make a new one) and adds the ones you tick to every ticked email. Tags already on an email stay. Tick "Always apply these tags" to also make a rule for each different sender. Pick emails from one mailbox at a time.
+- **Rules** makes one rule for each different sender among the ticked emails: always archive, always mark as read, always move to a folder, or always get a tag. The same "Always move" choice is in Move when you tick several emails. Rules can be changed in Settings, Mail rules.
+- On a phone each of these opens full screen, with the title and Close at the top and the buttons at the bottom.
+
 ## The daily summary and Held for summary
 
 When **Hold email for the daily summary** is on (Settings, Alerts), email that can wait is **not in My inbox**. It is listed under **Held for summary** in the left menu, and one special row at the top of My inbox (a **Summary** tag, a dashed border, and a dot until you open it) says how many emails are waiting. Urgent mail and mail from important people stay in the inbox. Opening the summary shows the held emails by kind, with the day and time it arrived at the far right, a paperclip when it has files, four coloured icon-only buttons (hover to see the name): **Reviewed**, **Archive**, **Bin** and an up arrow, **Send back to the inbox**, and the buttons **Show full email**, **Show attachment(s)** (only with files; several ask which one) and **Open**. **Done with summary**, at the top and the bottom, puts anything still in it back in the inbox. After 7 days untouched, held email returns to the inbox by itself. On a phone the summary opens full screen with the title and Done at the top and Close and Done fixed at the bottom. See [AI summaries](AI_SUMMARIES.md#needs-you-today-and-the-daily-summary-in-your-inbox).

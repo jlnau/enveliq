@@ -198,6 +198,8 @@ jobs:
         run: node scripts/check_attachment_view.mjs
       - name: The Back button returns to the previous section inside the app (made-up mail, no server)
         run: node scripts/check_back_button.mjs
+      - name: Forward, Tag and Rules work on several ticked emails at once (made-up mail, no server)
+        run: node scripts/check_bulk_actions.mjs
       - name: A Task button on every email adds a task of your own (made-up mail, no server)
         run: node scripts/check_task_add.mjs
       - name: News feeds, the badge at the top and the pop-up, on desktop and phone (made-up feeds, no server)
@@ -391,6 +393,7 @@ jobs:
       - run: node scripts/check_inbox_real_mail.mjs
       - run: node scripts/check_original_html.mjs
       - run: node scripts/check_back_button.mjs
+      - run: node scripts/check_bulk_actions.mjs
 
   # Keep the required Browser checks status context stable.
   browser:

@@ -555,7 +555,7 @@ body.in-folders .folderview{display:block}
 .fdr-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 12px}.fdr-chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
 .fchip{border:1px solid var(--line,#2a3a57);background:transparent;color:var(--text);border-radius:999px;padding:7px 14px;font:inherit;cursor:pointer}.fchip.on{background:var(--c-173056,#173056);border-color:var(--blue,#2f7bff)}
 .fmore{display:block;margin:12px auto}.frow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;width:100%;text-align:left;border:1px solid var(--line,#2a3a57);border-radius:12px;padding:10px 12px;margin:0 0 8px;background:transparent;color:var(--text);font:inherit;cursor:pointer}.frow b,.frow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.frow .fsub{grid-column:1/-1;opacity:.8}
-.fpick-new{align-items:center}.fp-always{display:flex!important;gap:10px;align-items:flex-start;margin-top:6px}.menu-note{margin:6px 12px;font-size:12px;color:var(--muted);line-height:1.4}#folderPick label{display:grid;gap:6px}.fpick-list{display:flex;flex-direction:column;gap:6px;margin:10px 0}.fpick-item{text-align:left;border:1px solid var(--line,#2a3a57);background:transparent;color:var(--text);border-radius:10px;padding:11px 12px;font:inherit;cursor:pointer}.fpick-item:hover,.fpick-item:focus-visible{background:var(--c-173056,#173056)}.fpick-new{display:flex;gap:8px;margin-top:8px}.fpick-new input{flex:1}
+.bs-list{display:grid;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:6px}.bs-list div{padding:7px 12px;font-size:13px;border-top:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bs-list div:first-child{border-top:0}.bs-more{color:var(--muted)}.bs-head{font-size:13px}.bs-choices{display:grid;gap:8px}.bs-choices .btn{text-align:left;min-height:42px}.bulksheet label{display:grid;gap:6px}.bulksheet textarea,.bulksheet input[type=text]{width:100%;font:inherit;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px}.bulksheet .tagrow,.bulksheet .tag-always{display:flex;gap:10px;align-items:center}.fpick-new{align-items:center}.fp-always{display:flex!important;gap:10px;align-items:flex-start;margin-top:6px}.menu-note{margin:6px 12px;font-size:12px;color:var(--muted);line-height:1.4}#folderPick label{display:grid;gap:6px}.fpick-list{display:flex;flex-direction:column;gap:6px;margin:10px 0}.fpick-item{text-align:left;border:1px solid var(--line,#2a3a57);background:transparent;color:var(--text);border-radius:10px;padding:11px 12px;font:inherit;cursor:pointer}.fpick-item:hover,.fpick-item:focus-visible{background:var(--c-173056,#173056)}.fpick-new{display:flex;gap:8px;margin-top:8px}.fpick-new input{flex:1}
 body.in-sent .filters,body.in-sent #list,body.in-sent .sample-banner,body.in-sent #dueBars,body.in-sent #shipBars,body.in-sent #subBars,body.in-sent #tripBars,body.in-sent #waitBars,body.in-sent #mTitleSub,body.in-sent #peek{display:none!important}
 .sent-top{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin:0 0 12px}
 .sent-tools{display:flex;gap:8px;align-items:center}
@@ -1927,7 +1927,7 @@ body.dragging-mail{user-select:none;-webkit-user-select:none;cursor:grabbing}
   <div id="subBars" class="duebars" role="region" aria-label="Subscriptions coming up" hidden></div>
   <div id="tripBars" class="duebars" role="region" aria-label="Trips coming up" hidden></div>
   <div id="waitBars" class="duebars" role="region" aria-label="Waiting on others" hidden></div>
-  <div class="preview-list-heading" id="previewListHeading"><label class="selall" id="selectAllWrap" title="Tick every email in this list"><input class="check" type="checkbox" id="selectAll" aria-label="Select all emails in this list"><span>Select all</span></label><strong>Recent emails</strong><div class="preview-bulk" id="previewBulk" role="group" aria-label="What to do with the emails you ticked"><span class="pb-actions"><button class="action reviewed qic" type="button" data-bulk="reviewed" aria-label="Mark as read" title="Mark as read"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button><button class="action archive qic" type="button" data-bulk="archived" aria-label="Archive" title="Archive"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg></button><button class="action qic" type="button" data-bulk-move aria-label="Move to a folder" title="Move to a folder"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M10 14h5m-2-2 2 2-2 2"/></svg></button><button class="action trash qic" type="button" data-bulk="trashed" aria-label="Bin" title="Bin"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button></span><span class="pb-sub"><span class="pb-count"><b id="previewSelCount">0</b> selected</span><button class="linkbtn" type="button" id="previewBulkClear">Clear</button></span></div><span class="preview-heading-actions"><button type="button" id="previewInboxOptions" aria-expanded="false">Options ▾</button><button class="preview-fold-toggle" type="button" data-preview-fold="emails" aria-label="Collapse recent emails" aria-expanded="true">⌃</button></span></div>
+  <div class="preview-list-heading" id="previewListHeading"><label class="selall" id="selectAllWrap" title="Tick every email in this list"><input class="check" type="checkbox" id="selectAll" aria-label="Select all emails in this list"><span>Select all</span></label><strong>Recent emails</strong><div class="preview-bulk" id="previewBulk" role="group" aria-label="What to do with the emails you ticked"><span class="pb-actions"><button class="action reviewed qic" type="button" data-bulk="reviewed" aria-label="Mark as read" title="Mark as read"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button><button class="action archive qic" type="button" data-bulk="archived" aria-label="Archive" title="Archive"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg></button><button class="action qic" type="button" data-bulk-forward aria-label="Forward" title="Forward"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5M20 9H10a6 6 0 0 0-6 6v3"/></svg></button><button class="action qic" type="button" data-bulk-tag aria-label="Add a tag" title="Add a tag"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l9 9-8 8z"/><circle cx="7.5" cy="8.5" r="1"/></svg></button><button class="action qic" type="button" data-bulk-move aria-label="Move to a folder" title="Move to a folder"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M10 14h5m-2-2 2 2-2 2"/></svg></button><button class="action qic" type="button" data-bulk-rules aria-label="Make a rule" title="Make a rule for these senders"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg></button><button class="action trash qic" type="button" data-bulk="trashed" aria-label="Bin" title="Bin"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button></span><span class="pb-sub"><span class="pb-count"><b id="previewSelCount">0</b> selected</span><button class="linkbtn" type="button" id="previewBulkClear">Clear</button></span></div><span class="preview-heading-actions"><button type="button" id="previewInboxOptions" aria-expanded="false">Options ▾</button><button class="preview-fold-toggle" type="button" data-preview-fold="emails" aria-label="Collapse recent emails" aria-expanded="true">⌃</button></span></div>
   <div class="filters">
     <button class="chip active" data-chip="all">All</button>
     <label class="flabel" for="filterBy">Filter</label>
@@ -1942,7 +1942,7 @@ body.dragging-mail{user-select:none;-webkit-user-select:none;cursor:grabbing}
     <button class="linkbtn expall" id="expandAll" type="button" hidden>Expand all</button>
     <div class="bulk" id="bulk">
       <div class="bulk-actions">
-        <button class="action reviewed qic" data-bulk="reviewed" aria-label="Mark as read" title="Mark as read"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button><button class="action archive qic" data-bulk="archived" aria-label="Archive" title="Archive"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg></button><button class="action qic" type="button" data-bulk-move aria-label="Move to a folder" title="Move to a folder"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M10 14h5m-2-2 2 2-2 2"/></svg></button><button class="action trash qic" data-bulk="trashed" aria-label="Bin" title="Bin"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button>
+        <button class="action reviewed qic" data-bulk="reviewed" aria-label="Mark as read" title="Mark as read"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button><button class="action archive qic" data-bulk="archived" aria-label="Archive" title="Archive"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16v3H4zM6 10v9h12v-9M10 14h4"/></svg></button><button class="action qic" type="button" data-bulk-forward aria-label="Forward" title="Forward"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5M20 9H10a6 6 0 0 0-6 6v3"/></svg></button><button class="action qic" type="button" data-bulk-tag aria-label="Add a tag" title="Add a tag"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l9 9-8 8z"/><circle cx="7.5" cy="8.5" r="1"/></svg></button><button class="action qic" type="button" data-bulk-move aria-label="Move to a folder" title="Move to a folder"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M10 14h5m-2-2 2 2-2 2"/></svg></button><button class="action qic" type="button" data-bulk-rules aria-label="Make a rule" title="Make a rule for these senders"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg></button><button class="action trash qic" data-bulk="trashed" aria-label="Bin" title="Bin"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button>
       </div>
       <span class="bulk-sub"><strong><span id="selectedCount">0</span> selected</strong> <button class="linkbtn" id="clear" type="button">Clear</button></span>
     </div>
@@ -8358,11 +8358,11 @@ async function moveRealOne(m,folder){
 async function openFolderPicker(list,forceAlways){
   const ms=list.filter(m=>m&&m.real&&!m._pending);
   if(!ms.length)return;
-  const aid=ms[0].real.accountId,one=ms.length===1&&!!ms[0].address;
+  const aid=ms[0].real.accountId,senders=[...new Map(ms.filter(m=>m.address&&!isImp(m)).map(m=>[m.address.toLowerCase(),m])).values()],one=senders.length>0;
   if(ms.some(m=>m.real.accountId!==aid)){toast("Pick emails from one mailbox at a time to move them.",4500);return}
   document.getElementById("folderPick")?.remove();
   const box=document.createElement("div");box.id="folderPick";box.className="sheetform popcard";box.setAttribute("role","dialog");box.setAttribute("aria-modal","true");box.setAttribute("aria-label","Move to a folder");
-  box.innerHTML=`<div class="sf-top"><strong>Move ${ms.length===1?"this email":ms.length+" emails"} to…</strong><button type="button" class="sf-close" data-fp-close>Close</button></div><div class="sf-body"><label>Find a folder<input type="text" id="fpFind" autocomplete="off" placeholder="Start typing a folder name"></label><div class="fpick-list" id="fpList" role="list"><p class="sp-sub">Reading your folders…</p></div><div class="fpick-new"><input type="text" id="fpNew" maxlength="80" placeholder="Or make a new folder" aria-label="Name of a new folder"><button type="button" class="btn" id="fpMake">Make it</button></div>${one&&!isImp(ms[0])?`<label class="fp-always"><input type="checkbox" id="fpAlways"${forceAlways?" checked":""}> <span>Always move new email from ${esc(ms[0].address)} into the folder I pick</span></label><p class="sp-sub">The email leaves your inbox. To keep it in your inbox and group it, use Tags instead.</p>`:""}<p class="sp-sub" id="fpNote" role="status"></p></div>`;
+  box.innerHTML=`<div class="sf-top"><strong>Move ${ms.length===1?"this email":ms.length+" emails"} to…</strong><button type="button" class="sf-close" data-fp-close>Close</button></div><div class="sf-body"><label>Find a folder<input type="text" id="fpFind" autocomplete="off" placeholder="Start typing a folder name"></label><div class="fpick-list" id="fpList" role="list"><p class="sp-sub">Reading your folders…</p></div><div class="fpick-new"><input type="text" id="fpNew" maxlength="80" placeholder="Or make a new folder" aria-label="Name of a new folder"><button type="button" class="btn" id="fpMake">Make it</button></div>${one?`<label class="fp-always"><input type="checkbox" id="fpAlways"${forceAlways?" checked":""}> <span>${senders.length===1?`Always move new email from ${esc(senders[0].address)} into the folder I pick`:`Always move new email from these ${senders.length} senders into the folder I pick`}</span></label><p class="sp-sub">The email leaves your inbox. To keep it in your inbox and group it, use Tags instead.</p>`:""}<p class="sp-sub" id="fpNote" role="status"></p></div>`;
   document.body.appendChild(box);
   const close=()=>{box.remove();document.removeEventListener("keydown",onKey);document.removeEventListener("pointerdown",onOut,true)},onKey=ev=>{if(ev.key==="Escape")close()},
     onOut=ev=>{if(!box.contains(ev.target))close()};                                   // a click anywhere outside the box closes it, like Close
@@ -8371,7 +8371,7 @@ async function openFolderPicker(list,forceAlways){
   const choose=async f=>{
     const always=!!(box.querySelector("#fpAlways")&&box.querySelector("#fpAlways").checked);
     if(always){
-      try{await secureBackendRequest("/api/v1/me/rules",{method:"POST",body:JSON.stringify({sender:ms[0].address,subject:"",action:"moved",folder:f.name,folder_label:f.label})});toast("Rule saved: new email from "+ms[0].address+" goes to "+f.label,3500,"success")}
+      try{for(const sd of senders)await secureBackendRequest("/api/v1/me/rules",{method:"POST",body:JSON.stringify({sender:sd.address,subject:"",action:"moved",folder:f.name,folder_label:f.label})});toast(senders.length===1?"Rule saved: new email from "+senders[0].address+" goes to "+f.label:`Rules saved: new email from these ${senders.length} senders goes to ${f.label}`,3500,"success")}
       catch(er){$("fpNote").textContent=er.message||"The rule could not be saved.";return}
     }
     close();rememberFolder(aid,f.name);queueAction(ms,"moved",{folder:f.name,folderLabel:f.label});selMode=false};
@@ -8392,6 +8392,108 @@ async function openFolderPicker(list,forceAlways){
     catch(er){$("fpNote").textContent=er.message||"That folder could not be made.";$("fpMake").disabled=false}
   };
 }
+
+// ----- Several emails at once: Forward, Tag and Rules (the bar that shows when you tick emails) -----
+function bulkReal(){return [...selected].map(id=>data.find(x=>x.id===id&&x.owner===currentUser.id)).filter(m=>m&&m.real&&realMail&&!m._pending)}
+function bulkSenders(ms){return [...new Map(ms.filter(m=>m.address&&!isImp(m)).map(m=>[m.address.toLowerCase(),m])).values()]}
+function bulkSheet(id,title,body,foot){
+  document.getElementById(id)?.remove();
+  const box=document.createElement("div");box.id=id;box.className="sheetform popcard bulksheet";box.setAttribute("role","dialog");box.setAttribute("aria-modal","true");box.setAttribute("aria-label",title);
+  box.innerHTML=`<div class="sf-top"><strong>${esc(title)}</strong><button type="button" class="sf-close" data-bs-close>Close</button></div><div class="sf-body">${body}</div><div class="sf-foot">${foot}</div>`;
+  document.body.appendChild(box);
+  const close=()=>{box.remove();document.removeEventListener("keydown",onKey);document.removeEventListener("pointerdown",onOut,true)},onKey=ev=>{if(ev.key==="Escape")close()},onOut=ev=>{if(!box.contains(ev.target))close()};
+  document.addEventListener("keydown",onKey);box.querySelectorAll("[data-bs-close]").forEach(b=>b.onclick=close);setTimeout(()=>document.addEventListener("pointerdown",onOut,true),0);
+  return {box,close};
+}
+const bulkNeedMail=()=>toast("These buttons work on emails from your mailbox.",4000);
+const bulkList=(ms,n)=>`<div class="bs-list" role="list">${ms.slice(0,n||6).map(m=>`<div role="listitem">${esc(m.subject||"(no subject)")}</div>`).join("")}${ms.length>(n||6)?`<div role="listitem" class="bs-more">and ${ms.length-(n||6)} more</div>`:""}</div>`;
+function openBulkForward(){
+  const ms=bulkReal();if(!ms.length){bulkNeedMail();return}
+  let todo=ms.slice();const many=ms.length>1;
+  const {box,close}=bulkSheet("bulkFwd",many?`Forward ${ms.length} emails`:"Forward this email",
+    `<label>To<input type="text" id="bfTo" autocomplete="off" spellcheck="false" placeholder="name@example.com"></label><p class="sp-sub">More than one person? Put a comma between the addresses.</p>
+     <label>Add a note (optional${many?", sent with each email":""})<textarea id="bfNote" rows="3" maxlength="5000"></textarea></label>
+     <div><b class="bs-head">${many?`These ${ms.length} emails will be sent`:"This email will be sent"}</b>${bulkList(ms)}</div>
+     <p class="sp-sub">${many?"Each email is sent on its own, with its attachments.":"It is sent with its attachments."} They are fetched from your mailbox now and are not stored.</p><p class="sa-err" id="bfErr" role="alert"></p>`,
+    `<button type="button" class="btn" data-bs-close>Cancel</button><button type="button" class="btn primary" id="bfSend">${many?`Forward ${ms.length} emails`:"Forward"}</button>`);
+  const to=box.querySelector("#bfTo"),err=box.querySelector("#bfErr"),send=box.querySelector("#bfSend");to.focus();
+  send.onclick=async()=>{
+    const list=[...new Set(to.value.split(/[\s,;]+/).map(x=>x.replace(/^[<"']+|[>"']+$/g,"")).filter(Boolean))];
+    if(!list.length||list.some(a=>!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(a))){err.textContent=list.length?"One of those addresses does not look right.":"Add the address to send these to.";to.focus();return}
+    if(list.length>50){err.textContent="A message can go to at most 50 people.";return}
+    err.textContent="";send.disabled=true;to.readOnly=true;const label=send.textContent,note=box.querySelector("#bfNote").value.trim();
+    const failed=[];let sent=0,n=0;
+    for(const m of todo){
+      n++;if(todo.length>1)send.textContent=`Sending ${n} of ${todo.length}…`;else send.textContent="Sending…";
+      try{
+        const plan=planReply(m);
+        const r=await secureBackendRequest(`/api/v1/accounts/${m.real.accountId}/messages/${m.real.messageId}/forward`,{method:"POST",body:JSON.stringify({body:note,from_address:plan.from,to:list})});
+        if(r&&r.queued)noteQueuedReply(r,m,"forward");
+        sent++;
+      }catch(er){failed.push([m,er.message||"It did not send."])}
+    }
+    const who=peopleText(list);
+    if(!failed.length){close();selected.clear();selMode=false;render();toast(`${sent===1?"1 email":sent+" emails"} forwarded to ${who}`,5000,"success");return}
+    todo=failed.map(f=>f[0]);send.disabled=false;to.readOnly=false;send.textContent=todo.length>1?`Try the other ${todo.length} again`:"Try again";
+    err.innerHTML="";err.append(`${sent?sent+" sent. ":""}${failed.length===1?"1 did not send":failed.length+" did not send"}: ${failed[0][1]}`);
+    toast(`${sent} sent, ${failed.length} did not send`,6000,"error");
+  };
+}
+async function openBulkTag(always){
+  const all=bulkReal().filter(m=>tagsOn(m));
+  if(!all.length){toast("Tags are not available for these emails.",4500);return}
+  const aid=all[0].real.accountId;
+  if(all.some(m=>m.real.accountId!==aid)){toast("Pick emails from one mailbox at a time to tag them.",4500);return}
+  const ms=all,senders=bulkSenders(ms),many=ms.length>1;
+  const {box,close}=bulkSheet("bulkTag",many?`Add a tag to ${ms.length} emails`:"Add a tag",
+    `<p class="pop-note" id="btNote" role="status">Looking at your tags…</p><div id="btRows"></div><div id="btNewBox" hidden><label for="btNew"><b>Make a new tag</b></label><div class="tag-new"><input id="btNew" type="text" maxlength="40" autocomplete="off" placeholder="For example: Taxes"></div></div>
+     ${senders.length?`<label class="tag-always"><input type="checkbox" id="btAlways"${always?" checked":""}><span>${senders.length===1?"Always apply these tags to new email from this sender":`Always apply these tags to new email from these ${senders.length} senders`}</span></label>`:""}<p class="sa-err" id="btErr" role="alert"></p>`,
+    `<button type="button" class="btn" data-bs-close>Cancel</button><button type="button" class="btn primary" id="btGo" disabled>Add the tags</button>`);
+  const rows=box.querySelector("#btRows"),note=box.querySelector("#btNote"),err=box.querySelector("#btErr"),go=box.querySelector("#btGo");
+  let names=[],canCreate=true;
+  try{const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/tags`,{method:"GET",headers:{}});
+    if(!document.body.contains(box))return;
+    if(!r.supported){note.textContent="Your email service does not keep tags that Enveliq can reach, so they cannot be changed here.";return}
+    names=r.names||[];canCreate=!!r.can_create;note.textContent=names.length?"Tick the tags to add. Tags already on an email stay.":"You have no tags yet."+(canCreate?" Make one below.":"")}
+  catch(er){note.textContent=er.message||"Could not read your tags. Try again.";return}
+  rows.innerHTML=names.map((n,i)=>`<label class="tagrow" for="bt${i}"><input id="bt${i}" type="checkbox" data-bt-name="${esc(n)}"><span>${esc(n)}</span></label>`).join("");
+  if(canCreate)box.querySelector("#btNewBox").hidden=false;go.disabled=false;
+  go.onclick=async()=>{
+    const chosen=[...rows.querySelectorAll("[data-bt-name]:checked")].map(x=>x.dataset.btName),fresh=box.querySelector("#btNew").value.replace(/\s+/g," ").trim();
+    if(fresh&&!chosen.some(n=>n.toLowerCase()===fresh.toLowerCase()))chosen.push(fresh);
+    if(!chosen.length){err.textContent="Tick a tag or write a name for a new one.";return}
+    err.textContent="";go.disabled=true;const label=go.textContent;let done=0;
+    try{
+      if(fresh&&!names.some(n=>n.toLowerCase()===fresh.toLowerCase())){const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/tags`,{method:"POST",body:JSON.stringify({name:fresh})});chosen[chosen.indexOf(fresh)]=r.name||fresh}
+      for(const m of ms){go.textContent=`Tagging ${++done} of ${ms.length}…`;for(const t of chosen)await tagSet(m,t,true)}
+      if(box.querySelector("#btAlways")&&box.querySelector("#btAlways").checked)for(const sd of senders)await secureBackendRequest("/api/v1/me/rules",{method:"POST",body:JSON.stringify({sender:sd.address,subject:"",action:"tag",tags:chosen})});
+      close();render();toast(`${chosen.length===1?"Tag":"Tags"} added to ${ms.length===1?"1 email":ms.length+" emails"}`,4000,"success");
+    }catch(er){err.textContent=(done?`${done-1} of ${ms.length} done. `:"")+(er.message||"That did not work. Try again.");go.disabled=false;go.textContent=label;render()}
+  };
+}
+function openBulkRules(){
+  const ms=bulkReal();if(!ms.length){bulkNeedMail();return}
+  const senders=bulkSenders(ms);
+  if(!senders.length){toast("There is no sender to make a rule for.",4000);return}
+  const names=senders.slice(0,5).map(m=>esc(m.sender||m.address)).join(", ")+(senders.length>5?` and ${senders.length-5} more`:"");
+  const {box,close}=bulkSheet("bulkRules",senders.length===1?"Make a rule":`Make a rule for ${senders.length} senders`,
+    `<p class="pop-note">New email from ${names} will:</p><div class="bs-choices"><button type="button" class="btn" data-br="archived">Always be archived</button><button type="button" class="btn" data-br="reviewed">Always be marked as read</button><button type="button" class="btn" data-br="folder">Always move to a folder…</button>${ms.some(tagsOn)?'<button type="button" class="btn" data-br="tag">Always get a tag…</button>':""}</div><p class="sp-sub">You can change or remove rules in Settings, Mail rules.</p><p class="sa-err" id="brErr" role="alert"></p>`,
+    `<button type="button" class="btn" data-bs-close>Close</button>`);
+  box.addEventListener("click",async e=>{
+    const b=e.target.closest("[data-br]");if(!b)return;const kind=b.dataset.br;
+    if(kind==="folder"){close();openFolderPicker(ms,true);return}
+    if(kind==="tag"){close();openBulkTag(true);return}
+    box.querySelectorAll("[data-br]").forEach(x=>x.disabled=true);
+    try{for(const sd of senders)await secureBackendRequest("/api/v1/me/rules",{method:"POST",body:JSON.stringify({sender:sd.address,subject:"",action:kind})});
+      close();toast(kind==="reviewed"?`From now on, new email from ${senders.length===1?senders[0].sender||senders[0].address:"these "+senders.length+" senders"} is marked as read for you. You can change this in Settings, Mail rules.`:`From now on, new email from ${senders.length===1?senders[0].sender||senders[0].address:"these "+senders.length+" senders"} is archived for you. You can change this in Settings, Mail rules.`,7000,"success")}
+    catch(er){box.querySelector("#brErr").textContent=er.message||"The rule could not be saved.";box.querySelectorAll("[data-br]").forEach(x=>x.disabled=false)}
+  });
+}
+document.addEventListener("click",e=>{
+  if(e.target.closest("[data-bulk-forward]")){openBulkForward();return}
+  if(e.target.closest("[data-bulk-tag]")){openBulkTag();return}
+  if(e.target.closest("[data-bulk-rules]")){openBulkRules();return}
+});
 let fdrAcct="",fdrFolder="",fdrRows=[],fdrToken=0,fdrKnown=[];
 // A slow pulsing arrow under the last visible folder says there are more below; it goes when you reach the end.
 function fsMoreSync(){const side=$("folderSide"),m=side&&side.querySelector(".fs-more");if(!m)return;m.classList.toggle("on",side.scrollHeight>side.clientHeight+4&&side.scrollTop+side.clientHeight<side.scrollHeight-6)}

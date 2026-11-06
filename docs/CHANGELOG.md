@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Forward, Tag and Rules for several emails at once.** Tick two or more emails and the bar now has Forward, Tag and Rules next to Move. Forward sends each ticked email on its own, with its attachments, to the address you type (with an optional note). Tag adds the tags you pick to every ticked email, and Rules makes an always-archive, mark-as-read, move or tag rule for each sender. Move now also offers "Always move" when you tick several emails.
+
 **The buttons that appear when you hover an email look the same everywhere.** In Folders and in search results, the Move, Archive and Bin buttons that show when you point at an email now have the same boxed, coloured look and size as the buttons on inbox emails.
 
 **The email you have selected is easier to see.** In your inbox, folders and search results, the selected email now fills with a deeper Enveliq blue, with white writing and clearly outlined buttons so it stays easy to read, so you can always tell which one is open. It is the same in every list and every layout (in the Classic list the open email's title bar fills blue), and also on emails you have not read yet, including when your list shows all your mail.
