@@ -88,6 +88,7 @@ from .mail.summary import DailySummary
 from .mail.senders import SenderBook
 from .mail.senders_routes import build_senders_router
 from .mail.agent import Agent
+from .mail.agent_context import Sources as AgentSources
 from .mail.agent_routes import build_agent_router
 from .mail.calsync import Sync
 from .mail import extra_channels, marks
@@ -735,7 +736,7 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, senders=senderbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, scheduled=scheduledbook, rules=rulebook, muted=mutebook, searches=searchbook, away=awaybook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, style=stylebook, digest=digestbook, waiting=waitbook, summary=dailysummary, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser, AgentSources(vault, taskbook, tripbook, shipbook, waitbook)), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, senders=senderbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, scheduled=scheduledbook, rules=rulebook, muted=mutebook, searches=searchbook, away=awaybook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, style=stylebook, digest=digestbook, waiting=waitbook, summary=dailysummary, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))

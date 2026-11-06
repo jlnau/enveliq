@@ -8,7 +8,7 @@ import pytest
 import backend.mail.agent as agent_mod
 
 from test_bridge import mails  # noqa: F401
-from test_summaries import start
+from test_summaries import account as make_account, start
 from test_llm import FakeModel
 from helpers import create_user, sign_in  # noqa: F401
 
@@ -20,6 +20,12 @@ def env(tmp_path):
     yield appm, client, bridge, model
     bridge.close()
     model.close()
+
+
+def asked(msg):
+    """The person's own words in the last turn sent to the model (the turn also carries their Enveliq data)."""
+    assert "ENVELIQ DATA" in msg["content"]
+    return msg["content"].split("My question: ", 1)[1].split("\n\n(", 1)[0]
 
 
 def say(client, text, chat=None):
@@ -41,8 +47,8 @@ def test_a_chat_is_saved_and_the_model_sees_the_earlier_turns(env):
     assert [m["role"] for m in out["chat"]["messages"]] == ["user", "assistant"] and out["chat"]["messages"][1]["text"] == "Hello from the model."
     assert out["chat"]["title"] == "What is a good way to start the day?" and len(out["chats"]) == 1
     sent = model.requests[-1]["messages"]
-    assert sent[0]["role"] == "system" and "cannot see their email" in sent[0]["content"]
-    assert sent[-1] == {"role": "user", "content": "What is a good way to start the day?"}
+    assert sent[0]["role"] == "system" and "Answer only from ENVELIQ DATA" in sent[0]["content"] and "Never invent" in sent[0]["content"]
+    assert sent[-1]["role"] == "user" and asked(sent[-1]) == "What is a good way to start the day?"
     cid = out["chat"]["id"]
     say(client, "And after lunch?", cid)
     assert [m["content"] for m in model.requests[-1]["messages"][1:]][:2] == ["What is a good way to start the day?", "Hello from the model."]
@@ -54,7 +60,7 @@ def test_several_chats_are_kept_apart_and_reopened(env):
     _, client, _, model = env
     a = say(client, "First topic")["chat"]["id"]
     b = say(client, "Second topic")["chat"]["id"]                      # no chat given: a new one starts
-    assert a != b and model.requests[-1]["messages"][1:] == [{"role": "user", "content": "Second topic"}]
+    assert a != b and len(model.requests[-1]["messages"]) == 2 and asked(model.requests[-1]["messages"][1]) == "Second topic"
     out = client.get("/api/v1/me/agent").json()
     assert [c["title"] for c in out["chats"]] == ["Second topic", "First topic"] and out["chat"]["id"] == b      # newest first
     old = client.get("/api/v1/me/agent", params={"chat": a}).json()
@@ -290,3 +296,30 @@ def test_a_question_left_unanswered_for_too_long_is_shown_as_failed(monkeypatch)
     assert got["pending"] is False and "did not answer" in got["error"]
     with pytest.raises(agent_mod.ChatError):                                          # and a new message can be sent again
         agent.send("u1", "again", "c000999999999")
+
+
+def test_the_model_is_given_the_persons_own_emails_and_the_data_is_not_saved_in_the_chat(env):
+    appm, client, bridge, model = env
+    aid = make_account(client, bridge, ai=False)
+    for m in appm.vault.list_messages(aid):
+        appm.vault.delete_message(aid, m["id"])
+    appm.vault.create_message(aid, {"subject": "Your flight to Perth", "sender_display": "Example Air", "sender_address": "bookings@example.com",
+                                    "summary": "Flight EX12 leaves Sydney on Thursday 12 November at 2:05 PM.", "received_at": time.time() - 3600, "state": "unread"})
+    out = say(client, "Do I have any flights booked?")
+    last = model.requests[-1]["messages"][-1]["content"]
+    assert "Your flight to Perth" in last and "Flight EX12 leaves Sydney on Thursday 12 November at 2:05 PM." in last and "Example Air" in last
+    assert last.index("ENVELIQ DATA") < last.index("Your flight to Perth") < last.index("My question: Do I have any flights booked?")
+    assert [m["text"] for m in out["chat"]["messages"]][0] == "Do I have any flights booked?"          # only the question is kept in the chat
+    assert "ENVELIQ DATA" not in str(client.get("/api/v1/me/agent").json())
+    assert "Answer only from ENVELIQ DATA" in model.requests[-1]["messages"][0]["content"]
+
+
+def test_when_the_data_cannot_be_read_the_model_is_told_so_instead_of_being_left_to_guess(env, monkeypatch):
+    _, client, _, model = env
+    import backend.mail.agent as agent_mod2
+
+    def boom(*a, **k):
+        raise RuntimeError("no")
+    monkeypatch.setattr(agent_mod2, "build_context", boom)
+    say(client, "whats the newest email")
+    assert "could not read the person's data" in model.requests[-1]["messages"][-1]["content"]

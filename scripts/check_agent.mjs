@@ -84,7 +84,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.waitForSelector(".agent-hello");
   await page.waitForFunction(() => document.activeElement && document.activeElement.id === "agentText");     // focus is set a moment after opening
   check("opening it loads the chat and focuses the box", server.calls.some((c) => c[0] === "get") && (await page.evaluate(() => document.activeElement.id)) === "agentText");
-  check("it says what Hermes can't do", (await page.locator("#agentPop").innerText()).includes("can't see your email"));
+  check("it says what Hermes can look at and can't do", (await page.locator("#agentPop").innerText()).includes("can't change anything"));
   await shot(page, "agent-empty");
   await page.fill("#agentText", "How do I start my day?");
   await page.keyboard.press("Enter");

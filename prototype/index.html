@@ -2267,7 +2267,7 @@ html[data-theme="light"] .qsummary:has(.qsummary-copy){background:#f2f5fa;border
 
 <section class="agent-pop" id="agentPop" role="dialog" aria-label="Chat with Hermes" aria-modal="false" hidden>
   <header class="agent-head">
-    <div class="agent-title"><span class="agent-dot" aria-hidden="true"></span><div><strong id="agentName">Hermes</strong><small id="agentSub">Your AI helper. It can't see your email.</small></div></div>
+    <div class="agent-title"><span class="agent-dot" aria-hidden="true"></span><div><strong id="agentName">Hermes</strong><small id="agentSub">Your AI helper. Ask about your email, trips and tasks.</small></div></div>
     <div class="agent-tools"><button type="button" class="agent-x" id="agentChatsBtn" aria-expanded="false" aria-controls="agentChats" title="Your saved chats">Chats</button><button type="button" class="agent-x" id="agentNew" title="Start a new chat">+ New</button><button type="button" class="agent-x" id="agentClose" aria-label="Close chat">&#10005;</button></div>
   </header>
   <div class="agent-log" id="agentLog" role="log" aria-live="polite" tabindex="0"></div>
@@ -8673,7 +8673,7 @@ $("sentBox").onchange=e=>{sentAcct=e.target.value;loadSent()};
 bootBackendMode().finally(()=>document.body.classList.remove("booting"));
 setTimeout(()=>document.body.classList.remove("booting"),6000);   // never leave the page blank if the server is slow to answer
 // ---------- Hermes chat ----------
-// Plain chat with the AI model the administrator set up. It sees only what is typed here. Chats are saved for this person
+// Chat with the AI model the administrator set up. Each question also carries the signed-in person's own Enveliq data, read on the server. Chats are saved for this person
 // (a list to reopen, rename or delete). The words that come back are shown as text, never as page code. With no server
 // behind the page (a preview) it keeps a few sample chats in this page only and answers with a fixed sentence.
 (function(){
@@ -8684,12 +8684,12 @@ setTimeout(()=>document.body.classList.remove("booting"),6000);   // never leave
   const say=(cls,text)=>{const d=document.createElement("div");d.className="agent-msg "+cls;d.textContent=text;log.appendChild(d);log.scrollTop=log.scrollHeight;return d};
   const title=()=>{const c=chats.find(x=>x.id===cur);return c?c.title:""};
   const paint=()=>{
-    $("agentSub").textContent=cur&&!showList?title():showList?"Your saved chats":"Your AI helper. It can't see your email.";
+    $("agentSub").textContent=cur&&!showList?title():showList?"Your saved chats":"Your AI helper. Ask about your email, trips and tasks.";
     chatsBtn.setAttribute("aria-expanded",String(showList));chatsBtn.textContent=showList?"Back":"Chats";
     log.hidden=showList;list.hidden=!showList;form.hidden=showList;
     if(showList){paintList();return}
     log.textContent="";
-    if(!turns.length){const h=document.createElement("div");h.className="agent-hello";h.innerHTML="<strong>Hi, I'm "+esc($("agentName").textContent)+".</strong>Ask me anything, like how to plan your day or how to word a tricky message. I can't see your email or change anything in Enveliq.";log.appendChild(h)}
+    if(!turns.length){const h=document.createElement("div");h.className="agent-hello";h.innerHTML="<strong>Hi, I'm "+esc($("agentName").textContent)+".</strong>Ask me about your email, trips, orders and tasks, like “Do I have a flight booked?” or “What was the newest email?” I only look at what Enveliq has kept, and I can't change anything. I'll tell you if I can't find something.";log.appendChild(h)}
     for(const m of turns)say(m.role==="user"?"me":"bot",m.text);
     if(pend)say("bot wait","Thinking… an agent that uses its tools can take a minute or two.");
     if(errText)say("err",errText);
