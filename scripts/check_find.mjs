@@ -183,7 +183,18 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
     window.scrollTo(0, 900); await new Promise((r) => setTimeout(r, 150));
     return { top: b.getBoundingClientRect().top, colTop: document.querySelector(".main>.content").getBoundingClientRect().top, chain };
   });
-  check("reading-pane layout: the search bar stays pinned at the top of the list column while it scrolls", Math.abs(info.top - info.colTop) < 4);
+  await page.evaluate(() => { for (let el = document.querySelector("#list"); el; el = el.parentElement) el.scrollTop = 0; window.scrollTo(0, 0); });
+  await page.locator(".find-row").first().click();
+  await page.waitForSelector("#readDock .fdoc .email-doc");
+  check("clicking a found email shows it in the reading pane, not in a pop-up", (await page.locator("#attachmentModal.open").count()) === 0 && (await page.locator("#readDock .fdoc").innerText()).includes("canvases are on the way"));
+  check("the found email's row is marked and the results stay where they were", (await page.locator(".find-row.on").count()) === 1 && (await page.locator(".find-row").count()) === 2 && (await page.locator("#findInline").count()) === 1);
+  await page.locator(".find-row").nth(1).click();
+  await page.waitForFunction(() => document.querySelectorAll(".find-row.on").length === 1 && document.querySelectorAll(".find-row")[1].classList.contains("on"));
+  check("choosing another one replaces it in the pane", (await page.locator("#readDock .fdoc").count()) === 1);
+  await shot(page, "find-in-pane");
+  await page.locator("[data-find-pane-close]").click();
+  check("Close in the pane puts the placeholder back", (await page.locator("#readDock .fdoc").count()) === 0);
+  check("reading-pane layout: the search bar stays pinned at the top of the list column, just under the Recent emails bar, while it scrolls", await page.evaluate(() => { const b = document.querySelector(".search-banner").getBoundingClientRect(), h = document.getElementById("previewListHeading").getBoundingClientRect(); return b.top >= h.bottom - 1 && b.top - h.bottom < 16 && b.top < 200; }));
   await context.close();
 }
 {

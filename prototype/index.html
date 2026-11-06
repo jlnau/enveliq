@@ -1806,7 +1806,7 @@ html[data-theme="light"] .fs-more{background:linear-gradient(180deg,rgba(233,241
 .fra-b{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;cursor:pointer;color:var(--text)}.fra-b svg{width:16px;height:16px}.fra-b:hover,.fra-b:focus-visible{background:var(--line)}
 #clearSearchBtn{background:#2f7bff;border:1px solid #6aa8ff;color:#fff;font-weight:700;height:39px;white-space:nowrap}#clearSearchBtn:hover{background:#4a8fff;color:#fff}
 .search input.searching{border-color:#6aa8ff!important;box-shadow:0 0 0 3px rgba(80,150,255,.35)}
-.search-banner{position:sticky;top:0;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 10px;padding:9px 10px 9px 14px;border-radius:12px;background:#1b4ba3;color:#fff;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.search-banner{position:sticky;top:var(--sb-top,0px);z-index:14;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 10px;padding:9px 10px 9px 14px;border-radius:12px;background:#1b4ba3;color:#fff;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
 .search-banner b{overflow-wrap:anywhere}.search-banner button{flex:none;border:0;border-radius:999px;padding:8px 16px;background:#fff;color:#12306b;font:inherit;font-weight:700;cursor:pointer}.search-banner button:hover{background:#e6f0ff}
 html[data-theme="light"] .search-banner{background:#2f6fe0}
 @media(max-width:760px){#clearSearchBtn{display:none}}
@@ -1826,6 +1826,9 @@ html[data-theme="light"] .search-banner{background:#2f6fe0}
 .find-row.compact .fr-where{grid-column:3;grid-row:2;font-size:12px;color:var(--faint,var(--muted));white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis}
 .find-row.compact .fr-note{grid-column:2/-1}
 .find-row.compact:hover{background:var(--panel2)}.find-row.compact:focus-visible{outline:2px solid var(--accent,#6aa8ff)}
+.fdoc{display:flex;flex-direction:column;gap:8px;padding:10px 6px}.fdoc-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 8px;color:var(--muted);font-size:13px}.fdoc-top .obtn{flex:none}
+.fdoc .email-doc{padding:14px 16px;width:100%;max-width:none;box-sizing:border-box;margin:0;border-radius:10px;box-shadow:none}
+.find-row.compact.on{border-color:var(--blue,#2f7bff);box-shadow:0 0 0 1px var(--blue,#2f7bff) inset}
 .drag-folders{display:none}
 body.dragging-mail .sidebar>*:not(.drag-folders){display:none!important}
 body.dragging-mail .drag-folders{display:flex;flex-direction:column;min-height:0;flex:1;padding:6px 0 0}
@@ -3696,7 +3699,7 @@ function findInlineHtml(){
     const note=findUi.notes[r.token],on=findUi.sel.has(r.token);
     const who=esc(r.from_name||r.from_address||"Unknown sender");
     const where=[findUi.prog&&findUi.prog.mailboxes.length>1?r.account:"",r.folder].filter(Boolean).map(esc).join(" · ");
-    return `<article class="find-row compact${on?" picked":""}" data-find-view="${esc(r.token)}" tabindex="0" role="button" aria-label="Open ${esc(r.subject)}"><input class="check" type="checkbox" data-find-sel="${esc(r.token)}" aria-label="Select ${esc(r.subject)}"${on?" checked":""}><span class="fr-from">${who}</span><span class="fr-when">${esc(findShortDate(r.date))}</span><b class="fr-sub">${esc(r.subject)}</b>${where||r.has_files?`<span class="fr-where">${r.has_files?"📎 ":""}${where}</span>`:""}${note?`<p class="fr-note" role="status">${esc(note.text)}</p>`:""}</article>`}).join("");
+    return `<article class="find-row compact${on?" picked":""}${findUi.openTok===r.token?" on":""}" data-find-view="${esc(r.token)}" tabindex="0" role="button" aria-label="Open ${esc(r.subject)}"><input class="check" type="checkbox" data-find-sel="${esc(r.token)}" aria-label="Select ${esc(r.subject)}"${on?" checked":""}><span class="fr-from">${who}</span><span class="fr-when">${esc(findShortDate(r.date))}</span><b class="fr-sub">${esc(r.subject)}</b>${where||r.has_files?`<span class="fr-where">${r.has_files?"📎 ":""}${where}</span>`:""}${note?`<p class="fr-note" role="status">${esc(note.text)}</p>`:""}</article>`}).join("");
   const none=p&&p.done&&!findUi.rows.length&&!p.cancelled?`<p class="pop-note">Nothing matched. Try fewer or different words, or <label class="find-opt" style="display:inline-flex"><input type="checkbox" data-find-junk${findUi.junk?" checked":""}> include Spam and Bin</label>.</p>`:"";
   const n=findUi.sel.size,allOn=findUi.rows.length>0&&findUi.rows.every(r=>findUi.sel.has(r.token));
   const tools=findUi.rows.length?`<div class="fi-tools"><label class="selall"><input class="check" type="checkbox" id="findSelectAll" data-find-all${allOn?" checked":""} aria-label="Select all the emails listed"><span>Select all</span></label>${n?`<span class="fi-count" aria-live="polite">${n} selected</span><button class="linkbtn" type="button" data-find-clear>Clear</button>`:""}${n>=1?`<button class="obtn blue" type="button" data-find-sum${findUi.summing?" disabled":""}>${findUi.summing?"Adding…":"Summarise Emails"}</button>`:""}</div>`:"";
@@ -3705,7 +3708,13 @@ function findInlineHtml(){
       <label class="find-opt"><input type="checkbox" data-find-junk${findUi.junk?" checked":""}> Include Spam and Bin</label></div>
     ${findUi.sumNote?`<p class="fr-note" role="status">${esc(findUi.sumNote)}</p>`:""}${tools}${rows}${none}${findUi.more?`<button class="obtn" type="button" data-find-more${findUi.busy?" disabled":""}>Show more</button>`:""}</section>`;
 }
-function bannerPaint(){          // the bar over the list follows the search: busy while it runs, quiet when it is done
+function bannerStick(){          // the bar pins just under the sticky Recent emails heading, never behind it
+  const h=$("previewListHeading");let top=0;
+  if(h&&!h.hidden&&h.offsetHeight){const cs=getComputedStyle(h);top=(cs.position==="sticky"?parseFloat(cs.top)||0:0)+h.offsetHeight+6}
+  document.documentElement.style.setProperty("--sb-top",top+"px");
+}
+addEventListener("resize",()=>bannerStick());
+function bannerPaint(){bannerStick();          // the bar over the list follows the search: busy while it runs, quiet when it is done
   const b=document.querySelector(".search-banner");if(!b)return;
   const t=document.createElement("div");t.innerHTML=searchBannerHtml();
   if(t.firstElementChild)b.replaceWith(t.firstElementChild);else b.remove();
@@ -3722,7 +3731,7 @@ function findPaint(){
 }
 async function findStart(){
   if(findUi.timer){clearTimeout(findUi.timer);findUi.timer=null}
-  findUi.err="";findUi.rows=[];findUi.more=false;findUi.notes={};findUi.prog=null;findUi.naming=false;findUi.saveNote="";findUi.shown=findSpec();findPaint();
+  findUi.openTok="";findUi.err="";findUi.rows=[];findUi.more=false;findUi.notes={};findUi.prog=null;findUi.naming=false;findUi.saveNote="";findUi.shown=findSpec();findPaint();
   try{
     const r=await secureBackendRequest("/api/v1/find/searches",{method:"POST",body:JSON.stringify(findUi.shown)});
     findUi.id=r.id;findUi.prog=r;findHistLoad();await findPoll();
@@ -3811,25 +3820,39 @@ function findReset(){          // the search words were cleared: forget the sear
   if(!findUi.open)return;
   if(findUi.id&&findUi.prog&&!findUi.prog.done){secureBackendRequest(`/api/v1/find/searches/${encodeURIComponent(findUi.id)}`,{method:"DELETE",headers:{}}).catch(()=>{})}
   if(findUi.timer){clearTimeout(findUi.timer);findUi.timer=null}
-  findUi={...findUi,open:false,manual:false,viewing:false,id:"",prog:null,rows:[],more:false,err:"",notes:{},sel:new Set(),anchor:null,sumNote:"",summing:false};
+  findUi={...findUi,open:false,openTok:"",manual:false,viewing:false,id:"",prog:null,rows:[],more:false,err:"",notes:{},sel:new Set(),anchor:null,sumNote:"",summing:false};
 }
 function findClose(){
   if(!findUi.open)return;
   autoDismissed=findUi.query;
   if(findUi.id&&findUi.prog&&!findUi.prog.done){secureBackendRequest(`/api/v1/find/searches/${encodeURIComponent(findUi.id)}`,{method:"DELETE",headers:{}}).catch(()=>{})}
   if(findUi.timer){clearTimeout(findUi.timer);findUi.timer=null}
-  findUi={...findUi,open:false,manual:false,viewing:false,id:"",prog:null,rows:[],more:false,err:"",notes:{},sel:new Set(),anchor:null,sumNote:"",summing:false};
+  findUi={...findUi,open:false,openTok:"",manual:false,viewing:false,id:"",prog:null,rows:[],more:false,err:"",notes:{},sel:new Set(),anchor:null,sumNote:"",summing:false};
   render();
 }
 async function findView(token){
   const row=findUi.rows.find(r=>r.token===token);if(!row)return;
-  toast("Fetching the email from your mailbox…");
+  // Beside the list (reading pane layouts) the email opens in the reading pane like any other; otherwise in the pop-up viewer.
+  const dock=document.body.classList.contains("split-read")&&(lay()==="right"||lay()==="bottom")?$("readDock"):null;
+  if(dock)dock.classList.add("busy");else toast("Fetching the email from your mailbox…");
   try{
     const o=await secureBackendRequest(`/api/v1/find/results/${encodeURIComponent(token)}/original`,{method:"GET",headers:{}});
-    findUi.viewing=true;
     const hadFiles=(o.attachments||[]).length;
+    if(dock){
+      const c={title:row.subject,fallbackDate:findShortDate(row.date),account:row.account};
+      const wrap=document.createElement("div");wrap.className="fdoc";
+      const top=document.createElement("div");top.className="fdoc-top";
+      const where=document.createElement("span");where.textContent=`Found by search · ${row.folder||""}${hadFiles?" · Open it in your mail app for its files":""}`;
+      const close=document.createElement("button");close.type="button";close.className="obtn";close.setAttribute("data-find-pane-close","");close.textContent="Close";
+      top.append(where,close);
+      const doc=document.createElement("div");revokeViewerUrls();fillOriginal(doc,{...o,attachments:[]},c);
+      wrap.append(top,doc);dock.classList.remove("busy");dock.replaceChildren(wrap);dock.scrollTop=0;
+      findUi.openTok=token;findPaint();
+      return;
+    }
+    findUi.viewing=true;
     presentOriginal({...o,attachments:[]},{title:row.subject,context:`${row.from_name||row.from_address} · ${findShortDate(row.date)} · ${row.folder}${hadFiles?" · Open it in your mail app for its files":""}`,account:row.account,fallbackDate:findShortDate(row.date)});
-  }catch(er){toast(er.message,6000)}
+  }catch(er){if(dock)dock.classList.remove("busy");toast(er.message,6000)}
 }
 function findBack(){if(findUi.open&&findUi.viewing){findUi.viewing=false}}
 async function findKeep(token){
@@ -3886,6 +3909,7 @@ document.addEventListener("click",e=>{
   if(t.closest("[data-find-cancel]")){if(findUi.id)secureBackendRequest(`/api/v1/find/searches/${encodeURIComponent(findUi.id)}`,{method:"DELETE",headers:{}}).then(findPoll).catch(()=>{});return}
   if(t.closest("[data-find-again]")){const q=String(query||"").trim();if(q.length>=2&&!findSet(findUi.f))findUi.query=q;findUi.sel=new Set();findUi.anchor=null;findUi.sumNote="";findStart();return}
   if(t.closest("[data-find-more]")){findMore();return}
+  if(t.closest("[data-find-pane-close]")){findUi.openTok="";lastDockHtml=null;render();return}
   if(t.closest("[data-find-clear]")){findUi.sel=new Set();findUi.anchor=null;findPaint();return}
   if(t.closest("[data-find-sum]")){findKeepMany();return}
   const v=t.closest("[data-find-view]");if(v&&!t.closest("[data-find-sel]")){findView(v.dataset.findView);return}
@@ -4936,8 +4960,8 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
   const nextHtml=searchBannerHtml()+findInlineHtml()+searchMore(baseRows)+listHtml;
   // With the original email showing, a redraw that changes nothing leaves the page alone, so the email does not reload and lose its place.
   if(!(nextHtml===lastListHtml&&document.querySelector("#list .qorig.live, #readDock .qorig.live")&&!document.querySelector("#list .busy, #list .working, #readDock .busy, #readDock .working"))){$("list").innerHTML=nextHtml;lastListHtml=nextHtml}
-  syncSelectAll();
-  if(!(dockHtml===lastDockHtml&&document.querySelector("#readDock .qorig.live")&&!document.querySelector("#readDock .busy, #readDock .working"))){$("readDock").innerHTML=dockHtml;lastDockHtml=dockHtml}
+  syncSelectAll();bannerStick();
+  if(!(dockHtml===lastDockHtml&&(document.querySelector("#readDock .qorig.live")||(findUi.open&&document.querySelector("#readDock .fdoc")))&&!document.querySelector("#readDock .busy, #readDock .working"))){$("readDock").innerHTML=dockHtml;lastDockHtml=dockHtml}
   document.body.classList.toggle("split-read",!!dockHtml);
   if(leftBox&&dockHtml){leftBox.scrollTop=leftTop;const c=currentChanged?document.querySelector("#paneList .current"):null;if(c){const a=c.getBoundingClientRect(),b=leftBox.getBoundingClientRect(),hh=(document.getElementById("previewListHeading")||{offsetHeight:0}).offsetHeight;if(a.top<b.top+hh)leftBox.scrollTop+=a.top-b.top-hh-6;else if(a.bottom>b.bottom)leftBox.scrollTop+=a.bottom-b.bottom+6}}
   document.body.classList.toggle("reader-open",lay()==="screen"&&readerOpen&&rows.length>0);
