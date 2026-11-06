@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Folders page tidy-up, summaries and drag to a folder.** The Folders page now has the inbox's side-by-side layout with no empty space above it, and a plain notice line instead of the black box. Emails opened in a folder get a **Generate summary** button (the text is sent to your AI model only when you press it, and nothing is kept). The folder list in the left menu shows a slow pulsing arrow when more folders are below, instead of a scroll bar. On a computer you can drag an email onto a folder: the left menu becomes your folders while you drag, and returns when you let go. It touches `prototype/index.html`, `backend/mail/folder_routes.py` and its test.
+
 **Folders moved and made clearer.** **Folders** is now just above More. Pressing it opens the list of folders just above More (it scrolls when long), which stays while you are in a folder (More stays below it), with the open folder marked and the page titled "Folders › name". A folder's emails now show in your own email view (reading pane on the right or below, in place, or full screen). The left menu is also the same width in Settings and the inbox. It touches `prototype/index.html`.
 
 **Fix: drop-down lists in Settings and Administration are readable.** The open list of a drop-down (for example AI service) showed light text on a white box in dark mode. It now has a solid background and readable text in both dark and light mode. It touches `web/static/auth.css` and `prototype/index.html`.

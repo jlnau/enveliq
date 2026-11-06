@@ -536,3 +536,5 @@ The daily summary (Settings, Notifications) is counted by Enveliq from lists the
 - Replies and new-time emails use the same sending identity checks, header-injection rules, rate limits and Undo send as other mail. A person always presses the button; the AI never answers an invitation.
 - Calendar writes go through the same outbound rules as the existing calendar connections. Only events Enveliq made itself (an id derived from the invitation) are changed or removed.
 - Every invitation route needs a full sign-in, checks that the mailbox belongs to the person (anything else answers "not found"), and is rate limited.
+
+- **Summary of a folder email:** pressing Generate summary on an email opened from a folder sends that email's text to the AI model for that moment and returns the summary to the page. Neither the email nor the summary is stored. It needs a signed-in session, only works for the person's own mailbox (an unknown or foreign token answers "not found") and is rate limited.

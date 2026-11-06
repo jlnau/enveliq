@@ -108,3 +108,35 @@ def test_important_people_are_moved_by_a_rule_the_owner_made_for_them(env):
     move_rule(client, "alice@example.invalid")
     synced(client, bridge)
     assert bridge.messages[1]["folder"] == "Bills"
+
+
+def test_a_folder_email_can_be_summarised_on_request_and_nothing_is_kept(tmp_path):
+    from test_llm import FakeModel
+    from test_summaries import account, start
+    model = FakeModel()
+    appm, client, bridge = start(tmp_path, model)
+    try:
+        aid = account(client, bridge)
+        bridge.folders.append(("\\HasNoChildren", "Bills"))
+        bridge.add(30, raw_email("March bill", "Power Co <bills@example.invalid>", MAILBOX, message_id="<b30@example.invalid>", body="Pay 40 dollars by Friday.\n"))
+        bridge.messages[30]["folder"] = "Bills"
+        page = client.get(f"/api/v1/accounts/{aid}/folder-mail", params={"folder": "Bills"}).json()
+        token = page["rows"][0]["token"]
+        r = client.post(f"/api/v1/folder-mail/{token}/summary")
+        assert r.status_code == 200 and r.json()["summary"]
+        assert "no-store" in r.headers["cache-control"]
+        assert client.post(f"/api/v1/folder-mail/{token[:-3]}abc/summary").status_code == 404
+    finally:
+        bridge.close()
+        model.close()
+
+
+def test_a_folder_summary_says_so_when_no_ai_model_is_set_up(env):
+    _, client, bridge, _ = env
+    aid, _ = synced(client, bridge)
+    bridge.folders.append(("\\HasNoChildren", "Bills"))
+    bridge.add(31, raw_email("Water", "Water Co <w@example.invalid>", MAILBOX, message_id="<b31@example.invalid>", body="Notice.\n"))
+    bridge.messages[31]["folder"] = "Bills"
+    token = client.get(f"/api/v1/accounts/{aid}/folder-mail", params={"folder": "Bills"}).json()["rows"][0]["token"]
+    r = client.post(f"/api/v1/folder-mail/{token}/summary")
+    assert r.status_code == 409 and r.json()["detail"]["code"] == "ai_not_configured"

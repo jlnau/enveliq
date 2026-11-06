@@ -91,4 +91,30 @@ def build_folder_router(ctx: Any) -> APIRouter:
         response.headers["Cache-Control"] = "no-store"
         return render_original(raw)
 
+    ask_limit = SlidingWindowLimiter(max_events=20, window=60)
+
+    @router.post("/folder-mail/{token}/summary")
+    def summary(token: str, response: Response, session: Session = Depends(session_dep)):
+        """A short summary of one email in a folder, written when the person presses the button. Nothing is kept."""
+        user = session.principal.user_id
+        allow(session, ask_limit)
+        response.headers["Cache-Control"] = "no-store"
+        try:
+            account_id, folder, validity, uid = folders.open_token(user, token)
+            account = mailbox(account_id, session, "summarise an email")
+            raw = folders.original(account, folder, validity, uid)
+        except BridgeError as err:
+            raise (HTTPException(status_code=404, detail="Not found.") if err.code == "not_found" else fail(err)) from None
+        service.refresh_ai(vault)
+        if not service.summariser.enabled:
+            raise HTTPException(status_code=409, detail={"code": "ai_not_configured", "message": "No AI model is set up yet. An administrator can add one under Administration, AI model."})
+        mail = render_original(raw)
+        sender = f"{mail['from']['name']} <{mail['from']['address']}>".strip()
+        try:
+            out = service.summariser.summarise(mail["subject"], sender, mail["text"])
+        except BridgeError as err:
+            raise fail(err) from None
+        vault.audit({"event": "folder_mail_summarised", "actor_user_id": user, "account_id": account_id, "at": time.time()})
+        return {"summary": out["summary"]}
+
     return router

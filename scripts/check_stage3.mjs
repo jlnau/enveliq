@@ -160,6 +160,28 @@ for (const width of [1200, 390]) {
   await context.close();
 }
 {
+  // Drag an email onto a folder: the left menu is swapped for the folders while dragging, and everything returns afterwards
+  const { page, errors, context } = await open(1200);
+  await page.waitForSelector("article.mail");
+  const row = page.locator("article.mail", { hasText: "Electricity bill" }).first();
+  const rb = await row.boundingBox();
+  await page.mouse.move(rb.x + 120, rb.y + 20);
+  await page.mouse.down();
+  await page.mouse.move(rb.x + 100, rb.y + 60, { steps: 4 });
+  await page.waitForSelector(".df-item", { timeout: 4000 });
+  check("while dragging, the left menu is replaced by the folder list", (await page.locator("body.dragging-mail").count()) === 1 && (await page.locator(".side-nav").isHidden()) && (await page.locator(".df-item").count()) >= 1);
+  await shot(page, "stage3-drag-1200");
+  const target = page.locator(".df-item", { hasText: "Bills" }).first();
+  const tb = await target.boundingBox();
+  await page.mouse.move(tb.x + 40, tb.y + 15, { steps: 8 });
+  check("the folder under the pointer lights up", (await page.locator(".df-item.over").count()) === 1);
+  await page.mouse.up();
+  await page.waitForSelector("#undoBar .undobar");
+  check("letting go moves the email (with Undo) and the menu returns", /Moved to Bills/.test(await page.locator("#undoBar").innerText()) && (await page.locator("body.dragging-mail").count()) === 0 && (await page.locator(".side-nav").isVisible()));
+  check("no page errors", errors.length === 0);
+  await context.close();
+}
+{
   const { page, errors, context } = await open(1200);
   await page.locator("article.mail", { hasText: "Trip plans" }).locator(".qmain, .qtoggle").first().click();
   await page.evaluate(() => { for (const id of ["m-a", "m-b"]) selected.add(data.find((x) => x.real && x.real.messageId === id).id); render(); });

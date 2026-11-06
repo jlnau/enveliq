@@ -1752,7 +1752,6 @@ html[data-theme="light"] .fs-head{background:#e3eeff;color:#1c4fa8}
 .folder-side .nav{min-height:36px;font-size:14px;padding:7px 10px;margin:1px 0}
 .folder-side .nav.active{background:#1b4ba3;color:#fff;font-weight:650}
 #folderNav.active{background:#173c80;color:#7bbaff}
-.fdr-title{margin:0 0 6px;font-size:20px}
 .fdr-cols{display:block}.fdr-pane{display:none}
 .fdr-inline{margin:-4px 0 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:6px 4px}.fdr-inline.busy,.fdr-pane.busy{opacity:.55}
 .fdr-empty{color:var(--muted);text-align:center;margin:40px 20px}
@@ -1764,6 +1763,49 @@ html[data-theme="light"] .fs-head{background:#e3eeff;color:#1c4fa8}
   .fdr-cols[data-lay="bottom"] .fdr-pane{margin-top:12px;max-height:70vh;overflow:auto}
 }
 .frow{background:var(--panel);border-color:var(--line)}.frow:hover{background:var(--panel2)}.frow.on{border-color:var(--blue,#2f7bff);box-shadow:0 0 0 1px var(--blue,#2f7bff) inset}.frow b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.frow .fsub{grid-column:1/-1;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Folders page: compact head, plain notice, and the same side-by-side layout as the inbox */
+.fdr-head{display:flex;align-items:center;gap:10px;margin:0 0 2px}.fdr-head .sp{flex:1}.fdr-head .btn.small{padding:5px 12px;font-size:13px}
+.fdr-title{margin:0;font-size:20px}
+.fdr-line{font-size:13px;line-height:1.5;color:var(--text);opacity:.8;margin:0}
+.fdr-note{margin-bottom:10px}
+body.in-folders .top .top-left,body.in-folders .top .enveliq-landscape,body.in-folders .top .greet{display:none!important}
+body.in-folders .main>.top{min-height:0!important;padding:0!important;height:0}
+.fdr-sum{margin:10px 12px 6px!important;max-width:none}
+@media(min-width:901px){
+  html:has(body.fdr-split){scrollbar-gutter:auto}
+  body.fdr-split{overflow:hidden;height:100vh;display:flex;flex-direction:column}
+  body.fdr-split .app{flex:1 1 auto;min-height:0;height:auto;grid-template-rows:minmax(0,1fr)}
+  body.fdr-split .sidebar,body.fdr-split .main{min-height:0}
+  body.fdr-split .main{height:100%;display:flex;flex-direction:column}
+  body.fdr-split .main>.mtop{display:none}
+  html body.fdr-split .main>.content{flex:1 1 auto;min-height:0;margin:0 24px 0 24px;padding:0 0 16px;max-width:none;overflow:hidden;display:flex;flex-direction:column}
+  body.fdr-split .folderview{display:flex;flex-direction:column;flex:1;min-height:0}
+  body.fdr-split .fdr-cols{display:grid;flex:1;min-height:0;grid-template-columns:max(296px,calc(40% - 20.8px)) minmax(0,1fr);gap:16px;margin-top:6px}
+  body.fdr-split #fdrList{min-height:0;overflow-y:auto;padding-right:2px}
+  body.fdr-split .fdr-pane{position:static;max-height:none;height:100%;min-height:0;overflow-y:auto}
+}
+/* the folder list in the left menu has no scroll bar; a slow pulsing arrow shows when there are more folders below */
+.folder-side{scrollbar-width:none;position:relative}.folder-side::-webkit-scrollbar{display:none}
+.fs-more{position:sticky;bottom:-2px;display:none;justify-content:center;padding:2px 0 0;height:20px;color:#8fbfff;background:linear-gradient(180deg,rgba(11,30,58,0),#0b1e3a 70%);pointer-events:none;margin-top:-18px}
+.fs-more.on{display:flex}.fs-more svg{width:20px;height:20px;animation:fsPulse 2.8s ease-in-out infinite}
+@keyframes fsPulse{0%,100%{opacity:.25;transform:translateY(-2px)}50%{opacity:1;transform:translateY(2px)}}
+@media(prefers-reduced-motion:reduce){.fs-more svg{animation:none;opacity:.8}}
+html[data-theme="light"] .fs-more{background:linear-gradient(180deg,rgba(233,241,255,0),#e9f1ff 70%);color:#1c4fa8}
+
+/* Drag an email onto a folder: the left menu is swapped for the folders while you drag */
+.drag-folders{display:none}
+body.dragging-mail .sidebar>*:not(.drag-folders){display:none!important}
+body.dragging-mail .drag-folders{display:flex;flex-direction:column;min-height:0;flex:1;padding:6px 0 0}
+.df-head{font-size:13px;font-weight:700;color:#8fbfff;padding:12px 8px 8px}
+.df-list{overflow-y:auto;flex:1;min-height:0;scrollbar-width:none;display:grid;gap:6px;align-content:start;padding-bottom:20px}.df-list::-webkit-scrollbar{display:none}
+.df-item{display:flex;align-items:center;gap:10px;min-height:46px;padding:9px 12px;border:1.5px dashed #2f5aa5;border-radius:12px;background:rgba(30,90,200,.10);color:var(--text);font-size:14px;text-align:left;cursor:copy}
+.df-item svg{width:20px;height:20px;flex:none}.df-item span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.df-item.over{background:#1b4ba3;border:1.5px solid #8fbfff;color:#fff;transform:scale(1.02)}
+.df-note{color:var(--muted);font-size:13px;padding:6px 8px}
+body.dragging-mail .app.collapsed .drag-folders{position:fixed;left:72px;top:70px;width:250px;max-height:80vh;z-index:70;background:#0b1e3a;border:1px solid #2b5db3;border-radius:12px;padding:6px 10px 10px}
+body.dragging-mail .app.collapsed .sidebar>*:not(.drag-folders){display:none!important}
+article.mail[draggable="true"]{cursor:grab}
 </style>
 </head>
 <body class="booting">
@@ -1922,11 +1964,10 @@ html[data-theme="light"] .fs-head{background:#e3eeff;color:#1c4fa8}
     <p id="sentFoot" class="sent-foot" hidden>Limited to the last 4 months.</p>
   </section>
   <section id="folderView" class="folderview" aria-label="Folders">
-    <div class="fdr-bar"><select id="fdrBox" aria-label="Mailbox" hidden></select><button class="btn" id="fdrRefresh" type="button">Refresh</button></div>
-    <div class="sent-note" role="note">Read from your mailbox when you open a folder. Nothing is saved in Enveliq.</div>
+    <div class="fdr-head"><h3 id="fdrTitle" class="fdr-title">Folders</h3><span class="sp"></span><select id="fdrBox" aria-label="Mailbox" hidden></select><button class="btn small" id="fdrRefresh" type="button">Refresh</button></div>
+    <div id="fdrStatus" class="fdr-line" role="status" aria-live="polite"></div>
+    <div class="fdr-line fdr-note">Read from your mailbox when you open a folder. Nothing is saved in Enveliq.</div>
     <div id="fdrChips" class="fdr-chips" hidden></div>
-    <h3 id="fdrTitle" class="fdr-title">Folders</h3>
-    <div id="fdrStatus" class="sent-status" role="status" aria-live="polite"></div>
     <div class="fdr-cols" id="fdrCols"><div id="fdrList"></div><div id="fdrPane" class="fdr-pane" aria-live="polite"><p class="fdr-empty">Choose an email to read it here.</p></div></div>
   </section>
   <div id="peek" class="peek" role="tooltip" hidden><div class="peek-in" id="peekIn"></div></div>
@@ -4645,7 +4686,7 @@ function render(){
   if(findUi.open&&!findUi.manual&&String(query||"").trim().length<2)findReset();
   if(selMode&&(!selected.size||!isPhone()))selMode=false;
   document.body.classList.toggle("selecting",selMode);
-  document.body.classList.toggle("in-sent",filter==="sent"||filter==="folders");document.body.classList.toggle("in-folders",filter==="folders");document.body.classList.toggle("in-found",filter==="found");document.body.classList.toggle("on-draft",filter==="drafts");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="folders"?"Folders":filter==="sent"?"Sent":filter==="drafts"?"Drafts":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="junk"?"Junk Mail":filter==="cleanup"?"Clean up":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
+  document.body.classList.toggle("in-sent",filter==="sent"||filter==="folders");document.body.classList.toggle("in-folders",filter==="folders");document.body.classList.toggle("fdr-split",filter==="folders"&&!phoneQuery.matches&&lay()==="right"&&window.matchMedia("(min-width:901px)").matches);document.body.classList.toggle("in-found",filter==="found");document.body.classList.toggle("on-draft",filter==="drafts");{const mt=$("mTitle").firstElementChild;if(mt)mt.textContent=filter==="folders"?"Folders":filter==="sent"?"Sent":filter==="drafts"?"Drafts":filter==="tasks"?"Tasks":filter==="shipping"?"Shipping":filter==="subscriptions"?"Subscriptions":filter==="trips"?"Trips":filter==="junk"?"Junk Mail":filter==="cleanup"?"Clean up":filter==="waiting"?"Waiting for reply":filter==="messages"?"Messages":"Inbox"}
   const mine=userMessages().filter(m=>!m.extra);          // the quiet "All emails" entries are never counted
   if(!realMail)syncDemoTasks();else settleTasks();
   document.body.classList.toggle("on-tasks",filter==="tasks");
@@ -4740,7 +4781,7 @@ const ICON_CLIP=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
     }
     if(mode==="detail")return detail;
     const tog=mode==="pane"?`<button class="qtoggle" data-pick="${esc(m.id)}" aria-label="Show this email">Show email</button>`:view.rows==="open"?"":`<button class="qtoggle" data-expand="row-${esc(m.id)}" aria-expanded="${esc(open)}" aria-label="${open?"Hide":"Show"} the full email summary and actions">${open?"Hide":"Show"} details</button>`;
-    return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(m._pending?"leaving to-"+m._pending:"")} ${esc(mode==="pane"&&lay()!=="screen"&&m.id===paneId?"current":"")} ${!isSeen(m)?"enveliq-new":""}"${leaveStyle(m)}><div class="qrow">
+    return `<article class="mail quiet ${esc(m.extra?"extra":"")} ${esc(open?"open":"")} ${esc(selected.has(m.id)?"selected":"")} ${esc(m._pending?"leaving to-"+m._pending:"")} ${esc(mode==="pane"&&lay()!=="screen"&&m.id===paneId?"current":"")} ${!isSeen(m)?"enveliq-new":""}"${leaveStyle(m)} data-mid="${esc(m.id)}"${m.real&&m.owner===currentUser.id&&!m._pending&&!open&&!m.found?' draggable="true"':""}><div class="qrow">
       ${lead}
       <div class="sender">${flag}${esc(m.sender)}${m.starred?`<span class="starmark" role="img" aria-label="Starred" title="Starred">★</span>`:""}</div>
       <div class="qmain">${boxChip(m)}${isImp(m)?'<span class="imp-pill" title="You marked this person as important">&#9733; Important</span>':""}${m.scam?'<span class="scam-pill" title="Something about this email looks odd. Open it to see what.">Be careful</span>':""}<span class="subject">${esc(m.subject)}</span>${tagChips(m,2)}</div>
@@ -7096,6 +7137,48 @@ function previewFitToolbar(){
   }
 }
 previewFitToolbar();window.addEventListener("resize",previewFitToolbar);
+// ---------- Drag an email onto a folder (computer): the left menu turns into the folder list while you drag ----------
+{
+  let panel=null,dragList=[],folderCache={};
+  const icon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+  const stop=()=>{document.body.classList.remove("dragging-mail");if(panel){panel.remove();panel=null}dragList=[]};
+  async function foldersFor(aid){
+    const c=folderCache[aid];if(c&&Date.now()-c.at<60000)return c.rows;
+    const r=await secureBackendRequest(foldersUrl(aid),{method:"GET",headers:{}});folderCache[aid]={at:Date.now(),rows:r.folders||[]};return folderCache[aid].rows;
+  }
+  document.addEventListener("dragstart",e=>{
+    const row=e.target.closest&&e.target.closest("article.mail[data-mid]");if(!row||phoneQuery.matches)return;
+    const m=data.find(x=>String(x.id)===row.dataset.mid);if(!m||!m.real||m.owner!==currentUser.id)return;
+    const group=selected.has(m.id)&&selected.size>1?[...selected].map(id=>data.find(x=>x.id===id)).filter(x=>x&&x.real&&x.owner===currentUser.id&&!x._pending):[m];
+    const aid=m.real.accountId;
+    if(group.some(x=>x.real.accountId!==aid)){e.preventDefault();toast("Drag emails from one mailbox at a time.",3500);return}
+    dragList=group;
+    try{e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",group.length===1?m.subject:group.length+" emails")}catch{}
+    setTimeout(async()=>{                                   // after the drag has begun, so changing the page cannot cancel it
+      if(!dragList.length)return;
+      panel=document.createElement("div");panel.className="drag-folders";panel.id="dragFolders";
+      panel.innerHTML=`<div class="df-head">Drop ${group.length===1?"this email":group.length+" emails"} on a folder</div><div class="df-list" id="dfList"><p class="df-note">Reading your folders…</p></div>`;
+      $("sidebar").append(panel);document.body.classList.add("dragging-mail");
+      try{
+        const rows=(await foldersFor(aid)).filter(r=>r.target),rec=recentFolders(aid);
+        rows.sort((a,b)=>{const ra=rec.indexOf(a.name),rb=rec.indexOf(b.name);return (ra<0?99:ra)-(rb<0?99:rb)||a.label.localeCompare(b.label)});
+        const L=panel&&panel.querySelector("#dfList");if(!L)return;L.replaceChildren();
+        if(!rows.length){L.innerHTML='<p class="df-note">You have no folders of your own yet. Make one from an email\'s Folders button.</p>';return}
+        for(const f of rows){
+          const b=document.createElement("div");b.className="df-item";b.innerHTML=icon+"<span></span>";b.lastChild.textContent=f.label;
+          b.addEventListener("dragenter",ev=>{ev.preventDefault();b.classList.add("over")});
+          b.addEventListener("dragover",ev=>{ev.preventDefault();try{ev.dataTransfer.dropEffect="move"}catch{}b.classList.add("over")});
+          b.addEventListener("dragleave",()=>b.classList.remove("over"));
+          b.addEventListener("drop",ev=>{ev.preventDefault();const ms=dragList.slice();stop();if(!ms.length)return;rememberFolder(aid,f.name);queueAction(ms,"moved",{folder:f.name,folderLabel:f.label});selMode=false});
+          L.append(b);
+        }
+      }catch(er){const L=panel&&panel.querySelector("#dfList");if(L)L.innerHTML='<p class="df-note"></p>',L.firstChild.textContent=er.message||"Could not read your folders."}
+    },0);
+  });
+  document.addEventListener("dragend",stop);
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")stop()});
+}
+
 // The page scrollbar is see-through; it shows while you scroll or when the pointer is at the right edge.
 {let t;const root=document.documentElement,show=()=>{root.classList.add("sb-show");clearTimeout(t);t=setTimeout(()=>root.classList.remove("sb-show"),1100)};
  addEventListener("scroll",show,{passive:true});addEventListener("wheel",show,{passive:true});
@@ -8293,6 +8376,9 @@ async function openFolderPicker(list,forceAlways){
   };
 }
 let fdrAcct="",fdrFolder="",fdrRows=[],fdrToken=0,fdrKnown=[];
+// A slow pulsing arrow under the last visible folder says there are more below; it goes when you reach the end.
+function fsMoreSync(){const side=$("folderSide"),m=side&&side.querySelector(".fs-more");if(!m)return;m.classList.toggle("on",side.scrollHeight>side.clientHeight+4&&side.scrollTop+side.clientHeight<side.scrollHeight-6)}
+$("folderSide").addEventListener("scroll",fsMoreSync,{passive:true});addEventListener("resize",fsMoreSync);
 async function loadFolders(){
   if(!accounts.length)return;
   const box=$("fdrBox");
@@ -8310,11 +8396,25 @@ async function loadFolders(){
     fdrKnown=r.folders;
     const side=$("folderSide"),icon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
     side.hidden=false;
-    const head=document.createElement("div");head.className="fs-head";head.textContent="Folders";
+    const head=document.createElement("div");head.className="fs-head";head.textContent="Folders";const more=document.createElement("div");more.className="fs-more";more.setAttribute("aria-hidden","true");more.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
     side.replaceChildren(head,...r.folders.map(f=>{const b=document.createElement("button");b.type="button";b.className="nav fchip"+(f.name===fdrFolder?" active":"");b.title=f.label;b.innerHTML=icon+'<span class="nav-label"></span>';b.lastChild.textContent=f.label;b.onclick=()=>{fdrFolder=f.name;side.querySelectorAll(".fchip").forEach(x=>x.classList.toggle("active",x===b));openFolder(aid,f,0)};return b}));
+    side.append(more);fsMoreSync();
     if(fdrFolder){const f=r.folders.find(x=>x.name===fdrFolder);if(f)openFolder(aid,f,0);else fdrFolder=""}
   }catch(er){status.textContent=er.message||"Could not read your folders."}
   finally{$("fdrRefresh").disabled=false}
+}
+// A summary of one folder email, written only when the person presses the button. The email text goes to the AI model for that moment and nothing is kept.
+function folderSummaryBox(token){
+  const box=document.createElement("div");box.className="qsummary fdr-sum";
+  const head='<div class="qsummary-head"><span class="qsummary-label">✦ AI summary</span></div>';
+  const ask=()=>{box.innerHTML=head+'<div class="nosum"><span class="nsdot" aria-hidden="true"></span><span>Summary not generated</span><button type="button" class="gen">Generate summary</button></div><p class="nosum-note">Pressing the button sends this email\'s text to your AI model. Nothing is saved.</p>';box.querySelector(".gen").onclick=run};
+  const run=async()=>{
+    box.innerHTML=head+'<div class="nosum"><span class="nsdot busy" aria-hidden="true"></span><span>Writing the summary…</span><span class="gprog"><i></i></span></div>';
+    try{const r=await secureBackendRequest(`/api/v1/folder-mail/${encodeURIComponent(token)}/summary`,{method:"POST",body:"{}"});
+      box.innerHTML=head+'<span class="qsummary-copy"></span><p class="nosum-note">Written by AI for you just now. Not saved.</p>';box.querySelector(".qsummary-copy").textContent=r.summary}
+    catch(er){ask();box.querySelector(".nosum span:nth-child(2)").textContent="Could not summarise ("+(er.message||"try again")+")"}
+  };
+  ask();return box;
 }
 async function openFolder(aid,f,offset){
   const list=$("fdrList"),status=$("fdrStatus"),mine=++fdrToken;
@@ -8341,8 +8441,8 @@ async function openFolder(aid,f,offset){
         if(host)host.classList.add("busy");else toast("Fetching the email from your mailbox…");
         try{const o=await secureBackendRequest(`/api/v1/folder-mail/${encodeURIComponent(it.token)}/original`,{method:"GET",headers:{}});
           const c={title:it.subject,context:`${it.from_name||it.from_address} · ${f.label}${(o.attachments||[]).length?" · Open it in your mail app for its files":""}`,fallbackDate:it.date?realTime(it.date):""};
-          if(host){revokeViewerUrls();host.classList.remove("busy");fillOriginal(host,{...o,attachments:[]},c);host.scrollTop=0;if(L==="bottom")host.scrollIntoView({block:"nearest"})}
-          else presentOriginal({...o,attachments:[]},c);
+          if(host){revokeViewerUrls();host.classList.remove("busy");fillOriginal(host,{...o,attachments:[]},c);host.prepend(folderSummaryBox(it.token));host.scrollTop=0;if(L==="bottom")host.scrollIntoView({block:"nearest"})}
+          else{presentOriginal({...o,attachments:[]},c);$("attachmentViewer").prepend(folderSummaryBox(it.token))}
         }catch(er){if(host)host.classList.remove("busy");toast(er.message,6000)}
       };
       list.append(row);

@@ -322,3 +322,10 @@ Choose **Reading pane on the right** in the View panel (the tab on the right edg
 - Scroll bars in the left menu, the email list and the reading area are thin and see-through. They show only while the pointer is over that area, and take no room from the list.
 - **Mark as unread** is a soft slate blue; **Mark as read** stays green.
 - The AI summary box has a stronger blue glow around its edge so it is the first thing you see.
+
+## Folders page, summaries and dragging to a folder
+
+- The **Folders** page has the same side-by-side layout as the inbox (list on the left, email on the right), with no greeting or empty space above it. The notice that folder mail is read from your mailbox and not saved is a plain line under the count.
+- When you open an email in a folder, a **Generate summary** button sits above it, in the same place as in the inbox. Pressing it sends that email's text to your AI model for that moment and shows the summary, labelled as written by AI. Nothing is saved. Without an AI model it says so.
+- The folder list in the left menu has no scroll bar. When more folders are hidden below, a slow pulsing arrow under the last one shows there is more to scroll to.
+- **Drag an email to a folder (computer):** press on an email in the list and start dragging. The whole left menu is swapped for your folders. Drop the email on one, and it moves (with the usual Undo) and the menu comes back. Letting go anywhere else, or pressing Esc, cancels and brings the menu back. Several ticked emails are dragged together. Not available on a phone, where the three-dot menu does the same job.
