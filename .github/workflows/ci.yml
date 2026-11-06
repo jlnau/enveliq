@@ -202,6 +202,8 @@ jobs:
         run: node scripts/check_bulk_actions.mjs
       - name: The Tags page, dragging emails onto a folder, the tag search box and the left menu words (made-up mail, no server)
         run: node scripts/check_tags_view.mjs
+      - name: The Dark colour choice in Customise (made-up mail, no server)
+        run: node scripts/check_dark_mode.mjs
       - name: A Task button on every email adds a task of your own (made-up mail, no server)
         run: node scripts/check_task_add.mjs
       - name: News feeds, the badge at the top and the pop-up, on desktop and phone (made-up feeds, no server)
@@ -397,6 +399,7 @@ jobs:
       - run: node scripts/check_back_button.mjs
       - run: node scripts/check_bulk_actions.mjs
       - run: node scripts/check_tags_view.mjs
+      - run: node scripts/check_dark_mode.mjs
 
   # Keep the required Browser checks status context stable.
   browser:

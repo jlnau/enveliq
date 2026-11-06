@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**A Dark colour choice.** In Customise there is a new **Colours** choice: **Standard** (the usual blue look) or **Dark**. Dark is a true dark grey, like a normal dark mode, with no blue sky behind the page. The email you are on stays bright blue so you can still see where you are. It covers the inbox, the reading panel and its From / Received details, the left menu, and the full-screen, deck and list layouts. It is saved with your other Customise choices. The light/dark button at the top works as before, and if you switch the light theme on it wins over Dark. Original emails keep their paper colour. This first version covers the inbox pages only; Settings and Administration come later once this is checked everywhere.
+
 **A softer background for original emails.** White emails were glaring. The "View original email" window and the email shown as the sender made it now sit on very slightly warm paper instead of pure white, everywhere an original email is shown. In Customise there is a new **Original email background** choice: **White**, **Soft** (the default) or **Softer**. It only changes the colour behind the email; the email's own text, pictures and colours are not touched, and printing stays white.
 
 **A Tags page, just like Folders.** Under **Folders** in the left menu there is now **Tags**. It opens the same kind of page: your tags in the left menu, and when you pick one, the emails that carry it in the same list and reading view as your inbox, with the same buttons (Move, Archive, Bin, Star, Reply, Forward and so on) and ticking several emails at once.

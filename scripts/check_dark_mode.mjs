@@ -1,0 +1,88 @@
+// Browser check for the Tags page (the Folders page, but for tags), dragging emails onto a folder, the search box in the
+// "Add a tag" window, and the left menu words fitting. The page is loaded from a pretend Enveliq server.
+//   node scripts/check_tags_view.mjs [path/to/prototype/index.html]     (SHOTS=<dir> saves screenshots)
+import { chromium } from "playwright";
+import { fileURLToPath } from "node:url";
+import fs from "node:fs";
+import path from "node:path";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const html = fs.readFileSync(path.resolve(process.argv[2] || path.join(here, "..", "prototype", "index.html")), "utf8");
+const ORIGIN = "http://enveliq.test";
+const SHOTS = process.env.SHOTS;
+if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
+let failed = false;
+const check = (label, good) => { console.log((good ? "✓ " : "✗ ") + label); if (!good) { failed = true; console.log("::error::" + label); } };
+const now = Math.floor(Date.now() / 1000);
+const calls = [];
+const features = { compose: true, address_book: true, sent: true, media: false, all_mail: false, shipping: false, subscriptions: false, travel: false, waiting: true, write_help: false, tags: true };
+const TAGS = ["Access Canberra", "Amazon", "Bank", "Beth", "Canada 2026", "Childcare", "Ebay", "Finance", "Friends", "Travel"];
+const mk = (id, subject) => ({ id, subject, sender_display: "Fiji Airways", sender_address: "fiji@example.invalid", summary: "Something to read.", priority: "normal", category: null, action_required: false, received_at: now - 600, status: "inbox", tags: [], has_attachments: false, attachments: [],
+  reply_context: { reply_to: "fiji@example.invalid", delivered_to: null, via_alias: null, message_id: `<${id}@x>`, references: [], cc: [], also_to: [] } });
+const messages = [mk("m1", "Flight one"), mk("m2", "Flight two"), mk("m3", "Flight three")];
+const tagRows = [1, 2, 3].map((n) => ({ token: "g" + n, from_name: "Fiji Airways", from_address: "fiji@example.invalid", to_name: "", to_address: "", to_more: 0, subject: "Tagged email " + n, date: now - n * 3600, has_files: false }));
+const handler = async (route) => {
+  const req = route.request(), u = new URL(req.url()), p = u.pathname;
+  const json = (status, body) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
+  if (p === "/") return route.fulfill({ status: 200, contentType: "text/html", body: html });
+  if (p === "/api/v1/status") return json(200, { initialized: true, unlocked: true, setup_required: false, sign_in: { password: true, passkeys: true, sso: { enabled: false, label: null } } });
+  if (p === "/api/v1/system") return json(200, { cipher: "AES-256-GCM", kdf: "Argon2id", idle_lock_seconds: 900 });
+  if (p === "/api/v1/me") return json(200, { id: "u1", username: "morgan", display_name: "Morgan", role: "admin" });
+  if (p === "/api/v1/accounts") return json(200, [{ id: "a1", provider: "proton", auth_method: "proton_bridge", owner_user_id: "u1", display_name: "Proton test", email_address: "me@example.invalid", server: "172.30.0.1", port: 1143, security: "starttls", settings: {}, status: "ok" }]);
+  if (p === "/api/v1/accounts/a1/messages") return json(200, messages);
+  if (p === "/api/v1/accounts/a1/tags") return json(200, { supported: true, names: TAGS, can_create: true });
+  if (p === "/api/v1/accounts/a1/tag-mail") { calls.push(["tag-mail", u.searchParams.get("tag")]); return json(200, { rows: tagRows, total: 3, more: false, now }); }
+  if (p === "/api/v1/accounts/a1/folders") return json(200, { folders: [{ name: "Travel", label: "Travel", special: false, target: true }, { name: "Bills", label: "Bills", special: false, target: true }] });
+  if (/^\/api\/v1\/folder-mail\/g\d\/original$/.test(p)) return json(200, { subject: "Tagged email", from: { name: "Fiji Airways", address: "fiji@example.invalid" }, to: [], date: "x", text: "Hello there", truncated: false, attachments: [] });
+  const mv = p.match(/^\/api\/v1\/folder-mail\/(g\d)\/move$/);
+  if (mv) { calls.push(["move", mv[1], JSON.parse(req.postData()).folder]); return route.fulfill({ status: 204 }); }
+  if (p === "/api/v1/me/features") return json(200, { effective: features, admin: features, user: features });
+  if (p === "/api/v1/me/rules") return json(200, { rules: [] });
+  if (p === "/api/v1/me/drafts") return json(200, { now: Date.now() / 1000, keep_days: 14, items: [] });
+  if (p === "/api/v1/me/preferences") return json(200, { keep_reviewed: true, keep_archived: true, keep_days: 7, max_days: 14, instructions: "" });
+  if (p === "/api/v1/me/contacts") return json(200, { items: [] });
+  if (p === "/api/v1/me/tasks") return json(200, { today: "2026-10-14", tz: "UTC", now: Date.now() / 1000, tasks: [] });
+  if (p === "/api/v1/me/waiting") return json(200, { enabled: true, days: 3, notes: [], now });
+  if (p === "/api/v1/sync/status") return json(200, { enabled: true, minutes: 10, now: Date.now() / 1000, accounts: {} });
+  return json(404, { detail: "not found" });
+};
+
+const browser = await chromium.launch();
+const context = await browser.newContext({ viewport: { width: 1500, height: 900 }, deviceScaleFactor: 1 });
+await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); } catch (e) {} });
+const page = await context.newPage();
+await context.route(`${ORIGIN}/**`, handler);
+await page.goto(`${ORIGIN}/`);
+await page.waitForSelector("article.mail");
+const rgb = (sel, prop) => page.evaluate(([s, p]) => getComputedStyle(document.querySelector(s))[p], [sel, prop]);
+const isGrey = (c) => { const m = c.match(/\d+/g).map(Number); return Math.abs(m[0] - m[2]) <= 6; };
+await page.evaluate(() => document.getElementById("customiseBtn").click());
+await page.waitForSelector('#viewPanel [data-view="scheme"]');
+check("Customise has a Colours choice with Standard and Dark, Standard chosen at first", (await page.locator('#viewPanel [data-view="scheme"]').count()) === 2 && (await page.locator('#viewPanel [data-view="scheme"][data-val="standard"]').getAttribute("aria-checked")) === "true");
+check("standard colours are still the blue look", !isGrey(await rgb("body", "backgroundColor")) || (await rgb(".sidebar", "backgroundImage")).includes("gradient"));
+await page.click('#viewPanel [data-view="scheme"][data-val="dark"]');
+await page.waitForTimeout(300);
+check("Dark sets the page colour scheme", (await page.evaluate(() => document.documentElement.dataset.scheme)) === "dark");
+check("dark page background is a neutral grey", isGrey(await rgb("body", "backgroundColor")));
+check("dark left menu is a neutral grey", isGrey(await rgb(".sidebar", "backgroundColor")));
+check("dark email rows are a neutral grey", isGrey(await rgb("article.mail:not(.current)", "backgroundColor")));
+await page.locator("article.mail").first().click();
+await page.waitForTimeout(500);
+check("the email you are on keeps the blue highlight", (await rgb("article.mail.current", "backgroundImage")).includes("rgb(21, 68, 173)"));
+check("the reading panel is a neutral grey", isGrey(await rgb("section.reading", "backgroundColor")));
+check("the side detail panel (From, Received) is a neutral grey", isGrey(await rgb("aside.qside", "backgroundColor")));
+for (const lay of ["screen", "deck", "bottom", "list", "right"]) {
+  await page.evaluate((l) => document.querySelector(`#viewPanel [data-view="layout"][data-val="${l}"]`).click(), lay);
+  await page.waitForTimeout(500);
+  const bad = await page.evaluate(() => [...document.querySelectorAll("body *")].filter((e) => { if (e.closest("#viewPanel,.sidebar,article.mail.current,.nav,.btn.primary,.vtab")) return false; const r = e.getBoundingClientRect(); if (r.width * r.height < 6000) return false; const m = (getComputedStyle(e).backgroundColor.match(/[\d.]+/g) || []).map(Number); return m.length >= 3 && (m[3] === undefined || m[3] > 0.3) && m[2] - m[0] > 14; }).map((e) => e.tagName + "." + String(e.className).slice(0, 30)));
+  check(`no large blue areas in the ${lay} layout (${bad.join(", ")})`, bad.length === 0);
+}
+await page.screenshot({ path: (process.env.SHOTS || "/tmp") + "/dark.png" });
+await page.reload();
+await page.waitForSelector("article.mail");
+check("Dark is remembered after a reload", (await page.evaluate(() => document.documentElement.dataset.scheme)) === "dark");
+await page.evaluate(() => document.documentElement.setAttribute("data-theme", "light"));
+check("the light theme wins over Dark", !isGrey("rgb(0,0,0)") || (await rgb("body", "backgroundColor")) !== "rgb(22, 22, 22)");
+await browser.close();
+if (failed) process.exit(1);
+console.log("All dark mode checks passed");

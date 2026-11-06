@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="/brand/enveliq-icon-256.webp">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0d0f14">
-<script>try{var t=localStorage.getItem("enveliq-theme");if(t==="light"||(t==="system"&&matchMedia("(prefers-color-scheme: light)").matches))document.documentElement.setAttribute("data-theme","light")}catch(e){}</script>
+<script>try{var t=localStorage.getItem("enveliq-theme");if(t==="light"||(t==="system"&&matchMedia("(prefers-color-scheme: light)").matches))document.documentElement.setAttribute("data-theme","light")}catch(e){}try{var v=JSON.parse(localStorage.getItem("enveliq-view")||"null");if(v&&v.scheme==="dark")document.documentElement.setAttribute("data-scheme","dark")}catch(e){}</script>
 <style>
 :root{
   --bg:#0d0f14;--panel:#141821;--panel2:#1a1f2a;--panel3:#202634;--line:#2a3140;
@@ -1847,6 +1847,42 @@ body.in-tags .folder-side{display:none}
 :root{--paper:#fff}html[data-paper="soft"]{--paper:#f6f3ec}html[data-paper="softer"]{--paper:#ece7da}
 .email-doc,.qorig{background:var(--paper)}.email-doc .fmt-pane{background:var(--paper)}
 .email-frame{background:transparent;mix-blend-mode:multiply}
+/* Dark colour scheme (Customise > Colours > Dark). Neutral greys, no sky; the email you are on keeps its blue. Light theme wins if it is switched on. */
+html[data-scheme="dark"]:not([data-theme="light"]){--bg:#161616;--panel:#1e1e1e;--panel2:#242424;--panel3:#2a2a2a;--line:#333;--text:#ececec;--muted:#a3a3a3;--faint:#777;--top-bg:#161616;--backdrop:none;--c-181c28:#1e1e1e;--c-11141b:#1a1a1a;--c-121620:#1a1a1a}
+html[data-scheme="dark"]:not([data-theme="light"]),html[data-scheme="dark"]:not([data-theme="light"]) body{background:#161616!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .main::before,html[data-scheme="dark"]:not([data-theme="light"]) .top::before,html[data-scheme="dark"]:not([data-theme="light"]) .top:before{display:none!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .enveliq-landscape,html[data-scheme="dark"]:not([data-theme="light"]) .landscape-sun,html[data-scheme="dark"]:not([data-theme="light"]) .landscape-mountain,html[data-scheme="dark"]:not([data-theme="light"]) .landscape-back,html[data-scheme="dark"]:not([data-theme="light"]) .landscape-front{display:none!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .top{background:#161616!important;background-image:none!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .sidebar{background:#1a1a1a!important;border-color:#2c2c2c!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .sidebar .side-sep{border-color:#2c2c2c!important}
+html[data-scheme="dark"]:not([data-theme="light"]) article.mail{background:#1e1e1e!important;border-color:#333!important}
+html[data-scheme="dark"]:not([data-theme="light"]) article.mail.current{background:linear-gradient(135deg,#1544ad,#1f5fd6)!important;border-color:#3a7bff!important}
+html[data-scheme="dark"]:not([data-theme="light"]) article.mail.current *{color:#fff}
+html[data-scheme="dark"]:not([data-theme="light"]) input,html[data-scheme="dark"]:not([data-theme="light"]) textarea{background:#222!important;color:#ececec!important}
+html[data-scheme="dark"]:not([data-theme="light"]) article.mail:not(.current){background-image:none!important;border-color:#2e2e2e!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .main *{scrollbar-color:#333 #161616}
+html[data-scheme="dark"]:not([data-theme="light"]) article.mail.current div,html[data-scheme="dark"]:not([data-theme="light"]) article.mail.current span{background:transparent!important}
+html[data-scheme="dark"]:not([data-theme="light"]) section.reading,html[data-scheme="dark"]:not([data-theme="light"]) .reading{background:#1e1e1e!important;background-image:none!important;border-color:#333!important}
+html[data-scheme="dark"]:not([data-theme="light"]) aside.qside,html[data-scheme="dark"]:not([data-theme="light"]) .qside{background:#1a1a1a!important;background-image:none!important;border-color:#333!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .qkv,html[data-scheme="dark"]:not([data-theme="light"]) .qkv *{border-color:#2e2e2e!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .qdetail .btn,html[data-scheme="dark"]:not([data-theme="light"]) .qdetail button,html[data-scheme="dark"]:not([data-theme="light"]) .qside button{background:#262626!important;background-image:none!important;border-color:#3a3a3a!important;color:#ececec!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .qside button[class*=mark],html[data-scheme="dark"]:not([data-theme="light"]) .qside .btn.ok{background:#1f2d22!important;color:#7bd88f!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .qside button[class*=bin],html[data-scheme="dark"]:not([data-theme="light"]) .qside .btn.danger{color:#ff7b7b!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .qside,html[data-scheme="dark"]:not([data-theme="light"]) .qside div:not(.qkv){background:#1a1a1a!important;background-image:none!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .qside .qkv{background:transparent!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .read-dock,html[data-scheme="dark"]:not([data-theme="light"]) .qdetail{background:transparent!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .enveliq-empty-action{background:#1e1e1e!important;border-color:#333!important;color:#ececec!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .quiet-list{background:#1e1e1e!important;background-image:none!important;border-color:#333!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .reader{background:#1a1a1a!important;border-color:#333!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .deckcard,html[data-scheme="dark"]:not([data-theme="light"]) article.deckcard{background:#1e1e1e!important;background-image:none!important;border-color:#333!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .decknav,html[data-scheme="dark"]:not([data-theme="light"]) .dcav{background:#262626!important;border-color:#3a3a3a!important;color:#ececec!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .action,html[data-scheme="dark"]:not([data-theme="light"]) button.action{background:#262626!important;background-image:none!important;border-color:#3a3a3a!important;color:#ececec!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .preview-calm-notice{background:#1e1e1e!important;border-color:#333!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .vtab,html[data-scheme="dark"]:not([data-theme="light"]) .vpanel,html[data-scheme="dark"]:not([data-theme="light"]) .vl,html[data-scheme="dark"]:not([data-theme="light"]) .seg{background:#1e1e1e!important;border-color:#333!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .vl.on,html[data-scheme="dark"]:not([data-theme="light"]) .seg .on{background:#2f2f2f!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .preview-list-heading{background:#1e1e1e!important;background-image:none!important;border-color:#333!important}
+html[data-scheme="dark"]:not([data-theme="light"]) article.mail:not(.current){box-shadow:none!important;outline:0!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .qsummary{border-color:#3a3a3a!important;background:#222!important}
 </style>
 </head>
 <body class="booting">
@@ -2050,6 +2086,7 @@ body.in-tags .folder-side{display:none}
       <button class="vl" type="button" role="radio" data-view="layout" data-val="deck"><svg viewBox="0 0 40 30" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="8" y="3" width="24" height="20" rx="3"/><path d="M11 26h18" stroke-linecap="round"/></svg><span><b>Focus deck<span class="new">New</span></b><small>One email at a time. Clear them like a stack of cards.</small></span></button>
     </div></div>
   <div class="vsec"><div class="vlabel">Row spacing</div><div class="seg" role="radiogroup" aria-label="Row spacing"><button type="button" role="radio" data-view="density" data-val="compact">Compact</button><button type="button" role="radio" data-view="density" data-val="standard">Standard</button><button type="button" role="radio" data-view="density" data-val="roomy">Roomy</button></div></div>
+  <div class="vsec"><div class="vlabel">Colours</div><div class="seg" role="radiogroup" aria-label="Colours"><button type="button" role="radio" data-view="scheme" data-val="standard">Standard</button><button type="button" role="radio" data-view="scheme" data-val="dark">Dark</button></div><p class="vhint">Dark is a true dark grey, with no blue sky. The email you are on stays blue so you can see where you are. The light/dark button at the top still works as before.</p></div>
   <div class="vsec"><div class="vlabel">Original email background</div><div class="seg" role="radiogroup" aria-label="Original email background"><button type="button" role="radio" data-view="paper" data-val="white">White</button><button type="button" role="radio" data-view="paper" data-val="soft">Soft</button><button type="button" role="radio" data-view="paper" data-val="softer">Softer</button></div><p class="vhint">The paper colour behind an email shown as the sender made it. It never changes the email itself.</p></div>
   <div class="vsec"><div class="vlabel">Width</div><div class="seg" role="radiogroup" aria-label="Width"><button type="button" role="radio" data-view="width" data-val="centered">Centred</button><button type="button" role="radio" data-view="width" data-val="full">Full width</button></div></div>
   <div class="vsec"><div class="vlabel">Email style</div><div class="seg" role="radiogroup" aria-label="Email style"><button type="button" role="radio" data-view="style" data-val="classic">Classic</button><button type="button" role="radio" data-view="style" data-val="rail">Side rail</button></div><p class="vhint">How an opened email looks. Side rail puts the buttons in a bar down the left and the task along the top. On a phone, the buttons sit along the bottom.</p></div>
@@ -2881,8 +2918,8 @@ const clipWords=m=>{const n=fileN(m),sure=m.attachments.length||m.fileCount!=nul
 function userMessages(){return data.filter(m=>m.owner===currentUser.id&&!m._pending)}
 let sortMode="newest",mailboxSel="";
 // ---- View options (saved in this browser) ----
-const VIEW_DEFAULT={layout:"right",density:"standard",width:"centered",rows:"collapsed",peek:true,action_feedback:true,show_original:false,conversations:false,style:"classic",show_counts:true,show_today:true,paper:"soft"};
-const VIEW_ALLOWED={layout:["list","right","bottom","screen","deck"],density:["compact","standard","roomy"],width:["centered","full"],rows:["collapsed","open"],style:["classic","rail"],paper:["white","soft","softer"]};
+const VIEW_DEFAULT={layout:"right",density:"standard",width:"centered",rows:"collapsed",peek:true,action_feedback:true,show_original:false,conversations:false,style:"classic",show_counts:true,show_today:true,paper:"soft",scheme:"standard"};
+const VIEW_ALLOWED={layout:["list","right","bottom","screen","deck"],density:["compact","standard","roomy"],width:["centered","full"],rows:["collapsed","open"],style:["classic","rail"],paper:["white","soft","softer"],scheme:["standard","dark"]};
 function loadView(){
   const v={...VIEW_DEFAULT};
   try{const raw=JSON.parse(localStorage.getItem("enveliq-view")||"null");
@@ -2994,7 +3031,7 @@ function applyView(){
   paneId=null;lastReadId=null;
   const c=document.body.classList;
   for(const l of VIEW_ALLOWED.layout)c.toggle("layout-"+l,lay()===l);
-  c.toggle("style-rail",view.style==="rail");c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");document.documentElement.dataset.paper=view.paper||"soft";
+  c.toggle("style-rail",view.style==="rail");c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");document.documentElement.dataset.paper=view.paper||"soft";document.documentElement.dataset.scheme=view.scheme||"standard";
   document.querySelectorAll("#viewPanel [data-view]").forEach(b=>{const on=view[b.dataset.view]===b.dataset.val;b.classList.toggle("on",on);b.setAttribute("aria-checked",String(on))});
   const classic=view.layout==="list";
   $("vOpen").checked=view.rows==="open";$("vPeek").checked=view.peek;$("vActionFeedback").checked=view.action_feedback!==false;$("vOrig").checked=!!view.show_original;$("vConv").checked=!!view.conversations;$("vCounts").checked=view.show_counts!==false;$("vToday").checked=view.show_today!==false;

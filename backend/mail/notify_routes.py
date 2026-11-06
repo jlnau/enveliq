@@ -72,6 +72,7 @@ class MailViewBody(StrictModel):
     style: str = Field(default="classic", pattern=r"^(classic|rail)$")
     show_counts: bool = True              # the four boxes across the top of the inbox
     show_today: bool = True               # the Today and Coming up section (also in Calm mode)
+    scheme: str = Field(default="standard", pattern=r"^(standard|dark)$")   # the colour scheme: the usual blue look, or a neutral dark grey
     paper: str = Field(default="soft", pattern=r"^(white|soft|softer)$")   # the background behind an original email (a very slight tint, or plain white)
 
 
