@@ -92,6 +92,25 @@ class Folders:
                 raise BridgeError("not_found", "The mailbox was reset on the server. Sync again.")
             s.move(uid, folder)
 
+    def move_from_folder(self, account: dict[str, Any], folder: str, validity: int, uid: int, dest: str | None) -> None:
+        """Move one email that sits in a folder to another of the person's folders, or back to the Inbox (dest None),
+        or to the Bin (dest "\\trash"). A folder name must be one the mailbox listed."""
+        target = self._target(account)
+        with self.bridge.session(target) as s:
+            s.set_timeout(30)
+            if dest == "\\trash":
+                where = s.folder_for("trash")
+            elif dest is None:
+                where = "INBOX"
+            else:
+                allowed = {r["name"] for r in folder_rows(s.list_folders(), target.kind) if r["target"]}
+                if dest not in allowed or dest == folder:
+                    raise BridgeError("not_found", "That folder is not in this mailbox.")
+                where = dest
+            if s.select_folder(folder, False) != validity:
+                raise BridgeError("not_found", "The mailbox was reset on the server. Open the folder again.")
+            s.move(uid, where)
+
     # ---------- looking inside a folder ----------
 
     def _token(self, user: str, account_id: str, folder: str, validity: int, uid: int) -> str:

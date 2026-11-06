@@ -24,6 +24,10 @@ class MoveBody(StrictModel):
     folder: str
 
 
+class FolderMoveBody(StrictModel):
+    folder: str | None = None   # a listed folder name; left out means the Inbox
+
+
 def build_folder_router(ctx: Any) -> APIRouter:
     router = APIRouter(prefix="/api/v1")
     vault, service = ctx.vault, ctx.mail
@@ -90,6 +94,27 @@ def build_folder_router(ctx: Any) -> APIRouter:
             raise (HTTPException(status_code=404, detail="Not found.") if err.code == "not_found" else fail(err)) from None
         response.headers["Cache-Control"] = "no-store"
         return render_original(raw)
+
+    def relocate(token: str, session: Session, dest: str | None, event: str) -> Response:
+        user = session.principal.user_id
+        allow(session)
+        try:
+            account_id, folder, validity, uid = folders.open_token(user, token)
+            account = mailbox(account_id, session, "move an email")
+            folders.move_from_folder(account, folder, validity, uid, dest)
+        except BridgeError as err:
+            raise (HTTPException(status_code=404, detail="Not found.") if err.code == "not_found" else fail(err)) from None
+        vault.audit({"event": event, "actor_user_id": user, "account_id": account_id, "at": time.time()})
+        return Response(status_code=204, headers={"Cache-Control": "no-store"})
+
+    @router.post("/folder-mail/{token}/move", status_code=204)
+    def move_folder_mail(token: str, body: FolderMoveBody, session: Session = Depends(session_dep)):
+        """Move an email that is in a folder to another folder, or to the Inbox when no folder is given."""
+        return relocate(token, session, body.folder, "folder_mail_moved")
+
+    @router.post("/folder-mail/{token}/bin", status_code=204)
+    def bin_folder_mail(token: str, session: Session = Depends(session_dep)):
+        return relocate(token, session, "\\trash", "folder_mail_binned")
 
     ask_limit = SlidingWindowLimiter(max_events=20, window=60)
 

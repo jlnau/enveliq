@@ -51,6 +51,7 @@ const handler = async (route) => {
     { name: "Archive", label: "Archive", special: true, target: false }, { name: "Trash", label: "Bin", special: true, target: false } ] });
   if (p === "/api/v1/accounts/a1/folders" && m === "POST") { const b = JSON.parse(req.postData() || "{}"); posts.push(["make", "", b]); madeFolder = true; return json(201, { name: "Folders/" + b.name, label: b.name, special: false, target: true }); }
   if (/\/messages\/[^/]+\/move$/.test(p) && m === "POST") { posts.push(["move", p.split("/")[6], JSON.parse(req.postData() || "{}")]); messages = messages.filter((x) => x.id !== p.split("/")[6]); return route.fulfill({ status: 204 }); }
+  if (/\/folder-mail\/[^/]+\/(move|bin)$/.test(p) && m === "POST") { posts.push(["fm-" + p.split("/")[5], p.split("/")[4], JSON.parse(req.postData() || "{}")]); return route.fulfill({ status: 204 }); }
   if (p === "/api/v1/accounts/a1/folder-mail") return json(200, { rows: [{ token: "tok1.mac", from_name: "Power Co", from_address: "bills@example.invalid", subject: "March bill", date: now - 86400, has_files: false }, { token: "tok2.mac", from_name: "Water Co", from_address: "water@example.invalid", subject: "Water notice", date: now - 172800, has_files: false }], total: 2, more: false, now });
   if (/\/folder-mail\/[^/]+\/original$/.test(p)) { posts.push(["open", p.split("/")[4], {}]); return json(200, { from: { name: "Power Co", address: "bills@example.invalid" }, to: [{ address: "me@example.invalid" }], date: "Today", subject: "March bill", text: "Plain words of the bill.", links: [], has_html: false, attachments: [] }); }
   if (p === "/api/v1/me/important" && m === "GET") return json(200, { items: [{ address: "bills@example.invalid", name: "Northside Power" }] });
@@ -203,6 +204,63 @@ for (const width of [1200, 390]) {
   await page.mouse.up();
   await page.waitForSelector("#undoBar .undobar");
   check("letting go moves the email (with Undo) and the menu returns", /Moved to Bills/.test(await page.locator("#undoBar").innerText()) && (await page.locator("body.dragging-mail").count()) === 0 && (await page.locator(".side-nav").isVisible()));
+  check("no page errors", errors.length === 0);
+  await context.close();
+}
+{
+  // Emails inside a folder are not stuck: arrows, Move to, Inbox, Bin, hover buttons and dragging
+  const { page, errors, context } = await open(1200);
+  await page.evaluate(() => document.querySelector('.nav[data-filter="folders"]').click());
+  await page.waitForSelector(".fchip");
+  await page.locator(".fchip", { hasText: "Bills" }).click();
+  await page.waitForSelector(".frow");
+  await page.locator(".frow").first().click();
+  await page.waitForSelector("#fdrPane .fbar");
+  check("an open folder email has an action bar with arrows, Move to and Bin", (await page.locator("#fdrPane .fbar .fb-prev").count()) === 1 && (await page.locator("#fdrPane .fbar .fb-move").count()) === 1 && (await page.locator("#fdrPane .fbar .fb-bin").count()) === 1);
+  check("there is no Archive button (it is already filed)", (await page.locator("#fdrPane .fbar", { hasText: "Archive" }).count()) === 0);
+  check("the first email has no Previous, but has Next", (await page.locator("#fdrPane .fb-prev").isDisabled()) && !(await page.locator("#fdrPane .fb-next").isDisabled()));
+  await shot(page, "stage3-folder-bar-1200");
+  await page.locator("#fdrPane .fb-next").click();
+  await page.waitForFunction(() => document.querySelectorAll(".frow.on").length === 1 && document.querySelectorAll(".frow")[1].classList.contains("on"));
+  check("Next opens the next email in the folder", true);
+  await page.locator("#fdrPane .fb-dots").click();
+  check("the dots menu offers Inbox, another folder and Bin", (await page.locator("#fdrPane .fmenu button").allInnerTexts()).join("|") === "Move to Inbox|Move to a folder…|Bin");
+  await page.locator("#fdrPane .fmenu button", { hasText: "Move to Inbox" }).click();
+  await page.waitForFunction(() => document.querySelectorAll(".frow").length === 1);
+  check("Move to Inbox sends the move and the email leaves the folder list", posts.some((x) => x[0] === "fm-move" && x[1] === "tok2.mac" && x[2].folder === undefined));
+  check("the next email opens by itself", await page.evaluate(() => document.querySelector(".frow").classList.contains("on")));
+  await page.locator("#fdrPane .fb-move").click();
+  await page.waitForSelector("#folderPick .fpick-item");
+  check("the picker lists the Inbox and the other folders but not the current one", (await page.locator("#folderPick .fpick-item").allInnerTexts()).join("|") === "Inbox|Holidays");
+  await page.locator("#folderPick .fpick-item", { hasText: "Holidays" }).click();
+  await page.waitForFunction(() => document.querySelectorAll(".frow").length === 0);
+  check("moving to another folder sends the folder name", posts.some((x) => x[0] === "fm-move" && x[1] === "tok1.mac" && x[2].folder === "Folders/Holidays"));
+  check("an empty folder says so", /empty/.test(await page.locator("#fdrStatus").innerText()));
+  check("no page errors", errors.length === 0);
+  await context.close();
+}
+{
+  const { page, errors, context } = await open(1200);
+  await page.evaluate(() => document.querySelector('.nav[data-filter="folders"]').click());
+  await page.waitForSelector(".fchip");
+  await page.locator(".fchip", { hasText: "Bills" }).click();
+  await page.waitForSelector(".frow");
+  await page.locator(".frow").first().hover();
+  check("hovering a folder email shows Move and Bin buttons", (await page.locator(".frow").first().locator(".fra-bin").isVisible()) && (await page.locator(".frow").first().locator(".fra-move").isVisible()));
+  await page.locator(".frow").first().locator(".fra-bin").click();
+  await page.waitForFunction(() => document.querySelectorAll(".frow").length === 1);
+  check("the Bin button on a row sends it to the Bin", posts.some((x) => x[0] === "fm-bin" && x[1] === "tok1.mac"));
+  // drag the remaining email: the Inbox and the other folders (not this one) appear on the side
+  const box = await page.locator(".frow").first().boundingBox();
+  await page.mouse.move(box.x + 60, box.y + 20); await page.mouse.down(); await page.mouse.move(box.x + 90, box.y + 40, { steps: 4 });
+  await page.waitForSelector(".drag-folders .df-item");
+  check("dragging in a folder shows the Inbox first and the other folders, not this one", (await page.locator(".drag-folders .df-item").allInnerTexts()).join("|") === "Inbox|Holidays");
+  const inbox = await page.locator(".drag-folders .df-item", { hasText: "Inbox" }).boundingBox();
+  await page.mouse.move(inbox.x + 40, inbox.y + 15, { steps: 6 });
+  check("the Inbox lights up under the pointer", (await page.locator(".drag-folders .df-item.over").innerText()) === "Inbox");
+  await page.mouse.up();
+  await page.waitForFunction(() => document.querySelectorAll(".frow").length === 0);
+  check("letting go on the Inbox moves it there", posts.some((x) => x[0] === "fm-move" && x[1] === "tok2.mac" && x[2].folder === undefined) && (await page.locator("body.dragging-mail").count()) === 0);
   check("no page errors", errors.length === 0);
   await context.close();
 }

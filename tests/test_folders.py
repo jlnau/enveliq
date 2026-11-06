@@ -140,3 +140,49 @@ def test_a_folder_summary_says_so_when_no_ai_model_is_set_up(env):
     token = client.get(f"/api/v1/accounts/{aid}/folder-mail", params={"folder": "Bills"}).json()["rows"][0]["token"]
     r = client.post(f"/api/v1/folder-mail/{token}/summary")
     assert r.status_code == 409 and r.json()["detail"]["code"] == "ai_not_configured"
+
+
+def where(bridge, token):
+    import base64, json
+    body = token.rsplit(".", 1)[0]
+    uid = json.loads(base64.urlsafe_b64decode(body + "=" * (-len(body) % 4)))[3]
+    return bridge.messages[uid]["folder"]
+
+
+def _token_in(client, aid, bridge, folder="Bills"):
+    bridge.folders.append(("\\HasNoChildren", folder))
+    bridge.folders.append(("\\HasNoChildren", "Taxes"))
+    mid = next(m["id"] for m in client.get(f"/api/v1/accounts/{aid}/messages").json())
+    assert client.post(f"/api/v1/accounts/{aid}/messages/{mid}/move", json={"folder": folder}).status_code == 204
+    return client.get(f"/api/v1/accounts/{aid}/folder-mail", params={"folder": folder}).json()["rows"][0]["token"]
+
+
+def test_an_email_in_a_folder_can_go_to_another_folder_the_inbox_or_the_bin(env):
+    _, client, bridge, _ = env
+    aid, _ = synced(client, bridge)
+    token = _token_in(client, aid, bridge)
+    assert client.post(f"/api/v1/folder-mail/{token}/move", json={"folder": "Taxes"}).status_code == 204
+    assert where(bridge, token) == "Taxes"
+    token = client.get(f"/api/v1/accounts/{aid}/folder-mail", params={"folder": "Taxes"}).json()["rows"][0]["token"]
+    assert client.post(f"/api/v1/folder-mail/{token}/move", json={}).status_code == 204
+    assert where(bridge, token).upper() == "INBOX"
+
+
+def test_an_email_in_a_folder_can_be_binned(env):
+    _, client, bridge, _ = env
+    aid, _ = synced(client, bridge)
+    token = _token_in(client, aid, bridge)
+    assert client.post(f"/api/v1/folder-mail/{token}/bin").status_code == 204
+    assert where(bridge, token) != "Bills"
+    assert client.get(f"/api/v1/accounts/{aid}/folder-mail", params={"folder": "Bills"}).json()["rows"] == []
+
+
+def test_a_folder_move_refuses_unknown_folders_and_bad_tokens(env):
+    _, client, bridge, _ = env
+    aid, _ = synced(client, bridge)
+    token = _token_in(client, aid, bridge)
+    assert client.post(f"/api/v1/folder-mail/{token}/move", json={"folder": "Nowhere"}).status_code == 404
+    assert client.post(f"/api/v1/folder-mail/{token}/move", json={"folder": "Bills"}).status_code == 404
+    assert client.post(f"/api/v1/folder-mail/{token[:-3]}abc/move", json={}).status_code == 404
+    assert client.post(f"/api/v1/folder-mail/{token[:-3]}abc/bin").status_code == 404
+    assert where(bridge, token) == "Bills"

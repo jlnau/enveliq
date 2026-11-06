@@ -1795,6 +1795,15 @@ body.in-folders .main>.top{min-height:0!important;padding:0!important;height:0}
 html[data-theme="light"] .fs-more{background:linear-gradient(180deg,rgba(233,241,255,0),#e9f1ff 70%);color:#1c4fa8}
 
 /* Drag an email onto a folder: the left menu is swapped for the folders while you drag */
+.fbar{position:relative;display:flex;align-items:center;gap:6px;margin:8px 12px 0;flex-wrap:wrap}
+.fbar .fb{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--text);font:inherit;font-size:13px;cursor:pointer}
+.fbar .fb svg{width:16px;height:16px}.fbar .fb:hover:not(:disabled){background:var(--panel2)}.fbar .fb:disabled{opacity:.35;cursor:default}.fbar .fb-prev,.fbar .fb-next,.fbar .fb-dots{padding:0;width:34px;justify-content:center;font-size:16px}.fb-sp{flex:1}
+.fmenu{position:absolute;right:0;top:100%;z-index:30;min-width:190px;margin-top:4px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 10px 30px rgba(0,0,0,.35);display:flex;flex-direction:column}
+.fmenu[hidden]{display:none}.fmenu button{text-align:left;border:0;background:transparent;color:var(--text);font:inherit;font-size:14px;padding:9px 10px;border-radius:8px;cursor:pointer}.fmenu button:hover{background:var(--panel2)}
+.frow{position:relative}.frow.busy{opacity:.5;pointer-events:none}
+.fra{position:absolute;right:8px;top:6px;display:none;gap:4px;padding:2px;border-radius:999px;background:var(--panel2)}
+.frow:hover .fra,.frow:focus-within .fra{display:flex}.frow:hover>span:not(.fsub):not(.fra),.frow:focus-within>span:not(.fsub):not(.fra){visibility:hidden}
+.fra-b{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;cursor:pointer;color:var(--text)}.fra-b svg{width:16px;height:16px}.fra-b:hover,.fra-b:focus-visible{background:var(--line)}
 .drag-folders{display:none}
 body.dragging-mail .sidebar>*:not(.drag-folders){display:none!important}
 body.dragging-mail .drag-folders{display:flex;flex-direction:column;min-height:0;flex:1;padding:6px 0 0}
@@ -7149,7 +7158,7 @@ previewFitToolbar();window.addEventListener("resize",previewFitToolbar);
 // Drawn by the page itself instead of the browser's own drag picture, so the small label follows the pointer smoothly (it only moves with a transform).
 // While you drag, the left menu turns into the folder list. Let go on a folder to move the email; let go anywhere else (or press Esc) to cancel.
 {
-  let panel=null,dragList=[],folderCache={},overEl=null,down=null,ghost=null,px=0,py=0,raf=0,swallow=0;
+  let dragKind="mail",dragAid="",panel=null,dragList=[],folderCache={},overEl=null,down=null,ghost=null,px=0,py=0,raf=0,swallow=0;
   const icon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
   const setOver=el=>{if(el===overEl)return;if(overEl)overEl.classList.remove("over");overEl=el;if(el)el.classList.add("over")};
   function frame(){
@@ -7159,13 +7168,13 @@ previewFitToolbar();window.addEventListener("resize",previewFitToolbar);
   }
   const ask=()=>{if(!raf)raf=requestAnimationFrame(frame)};
   function end(drop){
-    const f=drop&&overEl?overEl._folder:null,ms=dragList.slice(),aid=ms[0]&&ms[0].real.accountId;
+    const f=drop&&overEl?overEl._folder:null,ms=dragList.slice(),aid=dragAid,kind=dragKind;
     document.removeEventListener("pointermove",onMove,true);document.removeEventListener("pointerup",onUp,true);document.removeEventListener("pointercancel",onCancel,true);
     document.body.classList.remove("dragging-mail");if(panel){panel.remove();panel=null}if(ghost){ghost.remove();ghost=null}
     if(raf){cancelAnimationFrame(raf);raf=0}overEl=null;dragList=[];down=null;
     if(dragMailOn){dragMailOn=false;if(dragRenderLater){dragRenderLater=false;try{render()}catch{}}}
     swallow=Date.now()+350;                                  // the click that follows letting go is not a click on the email
-    if(f&&ms.length){rememberFolder(aid,f.name);queueAction(ms,"moved",{folder:f.name,folderLabel:f.label});selMode=false}
+    if(f&&ms.length){if(kind==="folder")folderMailMove(ms[0].folderRow,f.inbox?null:f.name,"Moved to "+f.label+".");else{rememberFolder(aid,f.name);queueAction(ms,"moved",{folder:f.name,folderLabel:f.label});selMode=false}}
   }
   const idle=()=>{document.removeEventListener("pointermove",onMove,true);document.removeEventListener("pointerup",onUp,true);document.removeEventListener("pointercancel",onCancel,true);down=null};
   const onUp=()=>{if(dragMailOn)end(true);else idle()},onCancel=()=>{if(dragMailOn)end(false);else idle()};
@@ -7178,17 +7187,18 @@ previewFitToolbar();window.addEventListener("resize",previewFitToolbar);
     if(dragMailOn)ask();
   }
   async function begin(){
-    const {group,aid}=down;dragList=group;dragMailOn=true;try{getSelection().removeAllRanges()}catch{}
+    const {group,aid,kind}=down;dragList=group;dragKind=kind||"mail";dragAid=aid;dragMailOn=true;try{getSelection().removeAllRanges()}catch{}
     ghost=document.createElement("div");ghost.className="drag-ghost";ghost.textContent=group.length===1?group[0].subject:group.length+" emails";document.body.append(ghost);
     panel=document.createElement("div");panel.className="drag-folders";panel.id="dragFolders";
-    panel.innerHTML=`<div class="df-head">Drop ${group.length===1?"this email":group.length+" emails"} on a folder</div><div class="df-list" id="dfList"><p class="df-note">Reading your folders…</p></div>`;
+    panel.innerHTML=`<div class="df-head">Drop ${group.length===1?"this email":group.length+" emails"} on ${dragKind==="folder"?"the Inbox or a folder":"a folder"}</div><div class="df-list" id="dfList"><p class="df-note">Reading your folders…</p></div>`;
     $("sidebar").append(panel);document.body.classList.add("dragging-mail");ask();
     try{
-      const rows=(await foldersFor(aid)).filter(r=>r.target),rec=recentFolders(aid);
+      const rows=(await foldersFor(aid)).filter(r=>r.target&&!(dragKind==="folder"&&r.name===fdrFolder)),rec=recentFolders(aid);
       rows.sort((a,b)=>{const ra=rec.indexOf(a.name),rb=rec.indexOf(b.name);return (ra<0?99:ra)-(rb<0?99:rb)||a.label.localeCompare(b.label)});
       const L=panel&&panel.querySelector("#dfList");if(!L)return;
-      if(!rows.length){L.innerHTML='<p class="df-note">You have no folders of your own yet. Make one from an email\'s Folders button.</p>';return}
       const frag=document.createDocumentFragment();
+      if(dragKind==="folder"){const b=document.createElement("div");b.className="df-item df-inbox";b.innerHTML=fdrIcons.inbox+"<span>Inbox</span>";b._folder={name:null,label:"Inbox",inbox:true};frag.append(b)}
+      if(!rows.length&&dragKind!=="folder"){L.innerHTML='<p class="df-note">You have no folders of your own yet. Make one from an email\'s Folders button.</p>';return}
       for(const f of rows){const b=document.createElement("div");b.className="df-item";b.innerHTML=icon+"<span></span>";b.lastChild.textContent=f.label;b._folder=f;frag.append(b)}
       L.replaceChildren(frag);
     }catch(er){const L=panel&&panel.querySelector("#dfList");if(L){L.innerHTML='<p class="df-note"></p>';L.firstChild.textContent=er.message||"Could not read your folders."}}
@@ -7199,6 +7209,11 @@ previewFitToolbar();window.addEventListener("resize",previewFitToolbar);
   }
   document.addEventListener("pointerdown",e=>{
     if(e.button!==0||e.pointerType==="touch"||phoneQuery.matches||dragMailOn)return;
+    const fr=e.target.closest&&e.target.closest("#fdrList .frow");
+    if(fr&&fr._it&&!e.target.closest(".fra")){
+      down={x:e.clientX,y:e.clientY,group:[{subject:fr._it.subject,folderRow:fr}],aid:fdrAcct,kind:"folder"};px=e.clientX;py=e.clientY;
+      document.addEventListener("pointermove",onMove,true);document.addEventListener("pointerup",onUp,true);document.addEventListener("pointercancel",onCancel,true);return;
+    }
     const row=e.target.closest&&e.target.closest("article.mail[data-dragmail]");if(!row)return;
     if(e.target.closest("button,a,input,select,textarea,label,summary,.qic,[contenteditable]"))return;
     const m=data.find(x=>String(x.id)===row.dataset.mid);if(!m||!m.real||m.owner!==currentUser.id)return;
@@ -8450,6 +8465,60 @@ function folderSummaryBox(token){
   };
   ask();return box;
 }
+// ---- Emails inside a folder: previous / next, move to another folder or the Inbox, Bin ----
+let fdrInfo={label:"",total:0};
+const fdrIcons={bin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
+  folder:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+  inbox:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13l3-8h12l3 8v6H3zM3 13h5l1 3h6l1-3h5"/></svg>'};
+function fdrRowsNow(){return [...$("fdrList").querySelectorAll(".frow")]}
+function fdrTakeOut(row){
+  const rows=fdrRowsNow(),i=rows.indexOf(row),next=rows[i+1]||rows[i-1]||null,wasOpen=row.classList.contains("on");
+  const inl=row.nextElementSibling;if(inl&&inl.classList.contains("fdr-inline"))inl.remove();
+  row.remove();fdrInfo.total=Math.max(0,fdrInfo.total-1);
+  $("fdrStatus").textContent=fdrInfo.total?`${fdrInfo.label}: ${fdrInfo.total} ${fdrInfo.total===1?"email":"emails"}, newest first.`:`${fdrInfo.label} is empty.`;
+  if(!wasOpen)return;
+  if(next&&next._open)next._open();
+  else{$("fdrPane").innerHTML='<p class="fdr-empty">Choose an email to read it here.</p>';if($("attachmentModal").classList.contains("open"))closeAttachmentViewer()}
+}
+// dest: a folder name, null for the Inbox, or "bin"
+async function folderMailMove(row,dest,say){
+  const it=row._it;if(!it||row.classList.contains("busy"))return;
+  row.classList.add("busy");
+  try{
+    if(dest==="bin")await secureBackendRequest(`/api/v1/folder-mail/${encodeURIComponent(it.token)}/bin`,{method:"POST",body:"{}"});
+    else await secureBackendRequest(`/api/v1/folder-mail/${encodeURIComponent(it.token)}/move`,{method:"POST",body:JSON.stringify(dest?{folder:dest}:{})});
+    if(dest&&dest!=="bin")rememberFolder(fdrAcct,dest);
+    fdrTakeOut(row);toast(say,3500,"success");
+  }catch(er){row.classList.remove("busy");toast(er.message||"That did not work. Try again.",6000)}
+}
+function folderMailPicker(row){
+  document.getElementById("folderPick")?.remove();
+  const box=document.createElement("div");box.id="folderPick";box.className="sheetform popcard";box.setAttribute("role","dialog");box.setAttribute("aria-modal","true");box.setAttribute("aria-label","Move to a folder");
+  box.innerHTML='<div class="sf-top"><strong>Move this email to…</strong><button type="button" class="sf-close" data-fp-close>Close</button></div><div class="sf-body"><div class="fpick-list" id="fpList" role="list"></div></div>';
+  document.body.appendChild(box);
+  const close=()=>{box.remove();document.removeEventListener("keydown",onKey);document.removeEventListener("pointerdown",onOut,true)},onKey=ev=>{if(ev.key==="Escape")close()},onOut=ev=>{if(!box.contains(ev.target))close()};
+  document.addEventListener("keydown",onKey);box.querySelector("[data-fp-close]").onclick=close;setTimeout(()=>document.addEventListener("pointerdown",onOut,true),0);
+  const L=box.querySelector("#fpList"),add=(label,fn)=>{const b=document.createElement("button");b.type="button";b.className="fpick-item";b.setAttribute("role","listitem");b.textContent=label;b.onclick=()=>{close();fn()};L.append(b)};
+  add("Inbox",()=>folderMailMove(row,null,"Moved to your Inbox."));
+  for(const f of fdrKnown.filter(x=>x.target&&x.name!==fdrFolder))add(f.label,()=>folderMailMove(row,f.name,"Moved to "+f.label+"."));
+}
+function folderBar(row){
+  const bar=document.createElement("div");bar.className="fbar";
+  const rows=fdrRowsNow(),i=rows.indexOf(row);
+  const mk=(cls,html,label,fn,off)=>{const b=document.createElement("button");b.type="button";b.className="fb "+cls;b.innerHTML=html;b.setAttribute("aria-label",label);b.title=label;if(off)b.disabled=true;else b.onclick=fn;return b};
+  const go=d=>{const t=fdrRowsNow()[fdrRowsNow().indexOf(row)+d];if(t&&t._open){t._open();t.scrollIntoView({block:"nearest"})}};
+  const sp=document.createElement("span");sp.className="fb-sp";
+  const menuBtn=mk("fb-dots","⋯","More choices",()=>{menu.hidden=!menu.hidden});
+  const menu=document.createElement("div");menu.className="fmenu";menu.hidden=true;menu.setAttribute("role","menu");
+  for(const [t,fn] of [["Move to Inbox",()=>folderMailMove(row,null,"Moved to your Inbox.")],["Move to a folder…",()=>folderMailPicker(row)],["Bin",()=>folderMailMove(row,"bin","Moved to Bin.")]]){
+    const b=document.createElement("button");b.type="button";b.setAttribute("role","menuitem");b.textContent=t;b.onclick=()=>{menu.hidden=true;fn()};menu.append(b)}
+  const off=e=>{if(!bar.contains(e.target))menu.hidden=true};document.addEventListener("pointerdown",off,true);
+  new MutationObserver((_m,ob)=>{if(!bar.isConnected){document.removeEventListener("pointerdown",off,true);ob.disconnect()}}).observe(document.body,{childList:true,subtree:true});
+  bar.append(mk("fb-prev","←","Previous email",()=>go(-1),i<=0),mk("fb-next","→","Next email",()=>go(1),i<0||i>=rows.length-1),sp,
+    mk("fb-move",fdrIcons.folder+"<span>Move to…</span>","Move to a folder",()=>folderMailPicker(row)),
+    mk("fb-bin",fdrIcons.bin+"<span>Bin</span>","Move to Bin",()=>folderMailMove(row,"bin","Moved to Bin.")),menuBtn,menu);
+  return bar;
+}
 async function openFolder(aid,f,offset){
   const list=$("fdrList"),status=$("fdrStatus"),mine=++fdrToken;
   if(!offset){list.replaceChildren();fdrRows=[]}
@@ -8459,6 +8528,7 @@ async function openFolder(aid,f,offset){
   try{
     const r=await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(aid)}/folder-mail?folder=${encodeURIComponent(f.name)}&offset=${offset}`,{method:"GET",headers:{}});
     if(mine!==fdrToken||filter!=="folders")return;
+    fdrInfo={label:f.label,total:r.total};
     status.textContent=r.total?`${f.label}: ${r.total} ${r.total===1?"email":"emails"}, newest first.`:`${f.label} is empty.`;
     for(const it of r.rows){
       const row=document.createElement("button");row.type="button";row.className="frow";
@@ -8466,7 +8536,13 @@ async function openFolder(aid,f,offset){
       const when=document.createElement("span");when.textContent=it.date?realTime(it.date):"";
       const sub=document.createElement("span");sub.className="fsub";sub.textContent=it.subject;
       row.append(who,when,sub);
-      row.onclick=async()=>{
+      const fra=document.createElement("span");fra.className="fra";
+      for(const [cls,ic,lab,fn] of [["fra-move",fdrIcons.folder,"Move to a folder",()=>folderMailPicker(row)],["fra-bin",fdrIcons.bin,"Move to Bin",()=>folderMailMove(row,"bin","Moved to Bin.")]]){
+        const a=document.createElement("span");a.className="fra-b "+cls;a.setAttribute("role","button");a.tabIndex=0;a.title=lab;a.setAttribute("aria-label",lab);a.innerHTML=ic;
+        a.onclick=e=>{e.stopPropagation();e.preventDefault();fn()};a.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.stopPropagation();e.preventDefault();fn()}};fra.append(a)}
+      row.append(fra);row._it=it;
+      row.onclick=e=>{if(e.target.closest&&e.target.closest(".fra"))return;row._open()};
+      row._open=async()=>{
         const L=lay();$("fdrCols").dataset.lay=L;
         list.querySelectorAll(".frow.on").forEach(x=>x.classList.remove("on"));row.classList.add("on");
         let host=null;
@@ -8475,8 +8551,8 @@ async function openFolder(aid,f,offset){
         if(host)host.classList.add("busy");else toast("Fetching the email from your mailbox…");
         try{const o=await secureBackendRequest(`/api/v1/folder-mail/${encodeURIComponent(it.token)}/original`,{method:"GET",headers:{}});
           const c={title:it.subject,context:`${it.from_name||it.from_address} · ${f.label}${(o.attachments||[]).length?" · Open it in your mail app for its files":""}`,fallbackDate:it.date?realTime(it.date):""};
-          if(host){revokeViewerUrls();host.classList.remove("busy");fillOriginal(host,{...o,attachments:[]},c);host.prepend(folderSummaryBox(it.token));host.scrollTop=0;if(L==="bottom")host.scrollIntoView({block:"nearest"})}
-          else{presentOriginal({...o,attachments:[]},c);$("attachmentViewer").prepend(folderSummaryBox(it.token))}
+          if(host){revokeViewerUrls();host.classList.remove("busy");fillOriginal(host,{...o,attachments:[]},c);host.prepend(folderSummaryBox(it.token));host.prepend(folderBar(row));host.scrollTop=0;if(L==="bottom")host.scrollIntoView({block:"nearest"})}
+          else{presentOriginal({...o,attachments:[]},c);$("attachmentViewer").prepend(folderSummaryBox(it.token));$("attachmentViewer").prepend(folderBar(row))}
         }catch(er){if(host)host.classList.remove("busy");toast(er.message,6000)}
       };
       list.append(row);

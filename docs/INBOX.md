@@ -329,3 +329,11 @@ Choose **Reading pane on the right** in the View panel (the tab on the right edg
 - When you open an email in a folder, a **Generate summary** button sits above it, in the same place as in the inbox. Pressing it sends that email's text to your AI model for that moment and shows the summary, labelled as written by AI. Nothing is saved. Without an AI model it says so.
 - The folder list in the left menu has no scroll bar. When more folders are hidden below, a slow pulsing arrow under the last one shows there is more to scroll to.
 - **Drag an email to a folder (computer):** press on an email in the list and drag (a small label follows the pointer; the page draws it itself so it stays smooth). The whole left menu is swapped for your folders. Drop the email on one, and it moves (with the usual Undo) and the menu comes back. Letting go anywhere else, or pressing Esc, cancels and brings the menu back. Several ticked emails are dragged together. Not available on a phone, where the three-dot menu does the same job.
+
+## Emails inside a folder are not stuck
+
+- An email opened from a folder has a bar above it: **← →** to go to the previous or next email in the folder, **Move to…**, **Bin**, and a **⋯** menu (Move to Inbox, Move to a folder…, Bin). There is no Archive button, because the email is already filed. The same bar shows in the reading pane, in the list layout and in the full-screen view.
+- Hovering an email in the folder list shows small Move and Bin buttons on that row.
+- **Move to…** lists the Inbox and your other folders (not the one you are in). After a move or Bin the email leaves the list and the next one opens.
+- **Dragging** works in a folder too. The left menu is swapped for the **Inbox** (first) and your other folders; drop the email on one to move it.
+- Moves out of a folder cannot be undone with an Undo bar; the email can be moved back from where it went. Reply and Forward are not available on folder emails, because Enveliq does not keep them.
