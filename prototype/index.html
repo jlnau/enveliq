@@ -3095,12 +3095,17 @@ function applyScheme(over){
   const show=b=>{
     const k=b.dataset.val,m=MOCK[k];if(!m)return;
     const pr=p.getBoundingClientRect(),br=b.getBoundingClientRect();
-    if(pr.left<260)return;   // on a phone the panel fills the screen: no room beside it
+    if(!matchMedia("(hover:hover)").matches)return;   // touch screens have no pointing
     box.innerHTML=`<svg viewBox="0 0 200 120" role="img" aria-hidden="true"><rect class="pv-f" x="0.5" y="0.5" width="199" height="119" rx="8"/>${m()}</svg><b>${b.querySelector("b")?.firstChild?.textContent||""}</b>`;
     box.hidden=false;
     const h=box.offsetHeight,w=box.offsetWidth;
-    box.style.left=Math.max(8,pr.left-w-12)+"px";
-    box.style.top=Math.min(innerHeight-h-8,Math.max(8,br.top+br.height/2-h/2))+"px";
+    if(pr.left-w-12>=8){   // room beside the panel
+      box.style.left=(pr.left-w-12)+"px";
+      box.style.top=Math.min(innerHeight-h-8,Math.max(8,br.top+br.height/2-h/2))+"px";
+    }else{   // a narrow window: show it just under (or over) the layout being pointed at
+      box.style.left=Math.max(8,Math.min(innerWidth-w-8,pr.left+(pr.width-w)/2))+"px";
+      box.style.top=(br.bottom+8+h<=innerHeight-8?br.bottom+8:Math.max(8,br.top-h-8))+"px";
+    }
   };
   const hide=()=>{box.hidden=true};
   const sel='[data-view="layout"]';

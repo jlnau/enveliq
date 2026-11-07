@@ -165,6 +165,14 @@ check("the page layout does not change while pointing at a layout", (await page.
 await page.mouse.move(5, 500);
 await page.waitForTimeout(200);
 check("the little picture goes away again", await page.evaluate(() => document.getElementById("vPreview").hidden));
+await page.setViewportSize({ width: 700, height: 800 });
+await page.waitForTimeout(400);
+await page.hover('#viewPanel [data-view="layout"][data-val="right"]');
+await page.waitForTimeout(200);
+check("in a narrow window the layout picture still shows, inside the screen", await page.evaluate(() => { const b = document.getElementById("vPreview"), r = b.getBoundingClientRect(); return !b.hidden && r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight; }));
+await page.screenshot({ path: (process.env.SHOTS || "/tmp") + "/layout-preview-narrow.png" });
+await page.setViewportSize({ width: 1500, height: 900 });
+await page.waitForTimeout(400);
 await page.screenshot({ path: (process.env.SHOTS || "/tmp") + "/dark-green.png" });
 await page.locator("article.mail").first().click({ force: true });
 await page.waitForTimeout(300);
