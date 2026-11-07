@@ -73,7 +73,7 @@ class MailViewBody(StrictModel):
     show_counts: bool = True              # the four boxes across the top of the inbox
     show_today: bool = True               # the Today and Coming up section (also in Calm mode)
     highlight: str = Field(default="blue", pattern=r"^(blue|green|purple|orange|pink|teal)$")   # the highlight colour
-    scheme: str = Field(default="standard", pattern=r"^(standard|dark)$")   # the colour scheme: the usual blue look, or a neutral dark grey
+    scheme: str = Field(default="standard", pattern=r"^(standard|light|dark|system)$")   # the colour scheme: the usual blue look, light, a neutral dark grey, or follow the device
     paper: str = Field(default="soft", pattern=r"^(white|soft|softer)$")   # the background behind an original email (a very slight tint, or plain white)
 
 

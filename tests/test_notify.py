@@ -505,6 +505,9 @@ def test_mail_view_preferences_stored_per_user_in_vault(env):
     assert client.get("/api/v1/me/mail-view").json()["view"].get("scheme", "standard") == "standard"
     assert client.put("/api/v1/me/mail-view", json={**chosen, "scheme": "dark"}).status_code == 200
     assert client.get("/api/v1/me/mail-view").json()["view"]["scheme"] == "dark"
+    for ok in ("light", "system", "standard"):
+        assert client.put("/api/v1/me/mail-view", json={**chosen, "scheme": ok}).status_code == 200
+        assert client.get("/api/v1/me/mail-view").json()["view"]["scheme"] == ok
     assert client.put("/api/v1/me/mail-view", json={**chosen, "scheme": "neon"}).status_code == 422
     assert client.get("/api/v1/me/mail-view").json()["view"].get("highlight", "blue") == "blue"
     assert client.put("/api/v1/me/mail-view", json={**chosen, "highlight": "green"}).status_code == 200

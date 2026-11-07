@@ -14,6 +14,7 @@ const html = fs.readFileSync(path.resolve(process.argv[2] || path.join(root, "pr
 const authJs = ["welcome.js", "auth.js"].map((n) => fs.readFileSync(path.join(root, "web", "static", n), "utf8")).join("\n");   // as /embed.js serves them
 const authCss = fs.readFileSync(path.join(root, "web", "static", "auth.css"), "utf8");
 const ORIGIN = "http://enveliq.test";
+const pickScheme = (page, v) => page.evaluate((v) => { document.getElementById("customiseBtn").click(); document.querySelector(`#viewPanel [data-view="scheme"][data-val="${v}"]`).click(); const t = document.getElementById("viewTab"); if (t.getAttribute("aria-expanded") === "true") t.click(); }, v);
 let failed = false;
 const check = (label, good) => { console.log((good ? "✓ " : "✗ ") + label); if (!good) { failed = true; console.log("::error::" + label); } };
 for (const ev of ["uncaughtException", "unhandledRejection"]) process.on(ev, (e) => { console.log("::error::" + String((e && e.message) || e).split("\n").slice(0, 3).join(" | ")); process.exit(1); });
@@ -83,16 +84,16 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   await page.click("#userPill");
   await shot(page, "menu");
   const items = (await page.locator("#userMenu .menu-item").allInnerTexts()).map((t) => t.trim());
-  check("the menu offers Settings only (Administration lives inside Settings), and all three appearance modes", items.includes("Settings") && !items.includes("Administration") && !items.includes("Profile settings") && !items.includes("Manage users") && (await page.locator("[data-theme-choice]").count())===3 && (await page.locator("#previewCalmBtn").isVisible()));
+  check("the menu offers Settings only (Administration lives inside Settings), and no colour buttons (they live in Customise)", items.includes("Settings") && !items.includes("Administration") && !items.includes("Profile settings") && !items.includes("Manage users") && (await page.locator("#userMenu [data-theme-choice]").count())===0 && (await page.locator("#previewCalmBtn").isVisible()));
   check("Sign out is in the menu too", (await page.locator("#userMenu button", { hasText: "Sign out" }).count()) === 1);
-  await page.click('[data-theme-choice="light"]');
-  check("Light mode works from the account menu", (await page.evaluate(() => document.documentElement.dataset.theme))==="light");
-  check("Light mode is visibly selected", await page.locator('[data-theme-choice="light"]').getAttribute("aria-pressed")==="true");
-  await page.click('[data-theme-choice="system"]');
-  check("System theme can be chosen and is remembered", await page.locator('[data-theme-choice="system"]').getAttribute("aria-pressed")==="true" && await page.evaluate(()=>localStorage.getItem("enveliq-theme"))==="system");
-  await page.click('[data-theme-choice="dark"]');
-  check("Dark mode works from the menu", !(await page.evaluate(() => document.documentElement.dataset.theme)));
-  await page.click("#userPill");
+  await pickScheme(page, "light");
+  check("Light works from Customise", (await page.evaluate(() => document.documentElement.dataset.theme))==="light");
+  check("Light is visibly selected", await page.locator('#viewPanel [data-view="scheme"][data-val="light"]').getAttribute("aria-checked")==="true");
+  await pickScheme(page, "system");
+  check("System theme can be chosen and is remembered", await page.locator('#viewPanel [data-view="scheme"][data-val="system"]').getAttribute("aria-checked")==="true" && await page.evaluate(()=>localStorage.getItem("enveliq-theme"))==="system");
+  await pickScheme(page, "dark");
+  check("Dark works from Customise", !(await page.evaluate(() => document.documentElement.dataset.theme)) && (await page.evaluate(() => document.documentElement.dataset.scheme))==="dark");
+  await pickScheme(page, "standard");
 
   // Settings (the same page for everyone) opens on the person's own settings, including the Profile page
   await page.click("#userPill");
@@ -202,7 +203,7 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   await page.click("#userPill");
   const box = await page.locator("#userMenu").boundingBox();
   check("on a phone the menu fits on the screen", !!box && box.x >= 0 && box.x + box.width <= 390 && box.y >= 0 && box.y + box.height <= 780);
-  check("on a phone account, appearance and Calm controls can be reached", (await page.locator("#userMenu .menu-item:visible").count()) >= 2 && (await page.locator("[data-theme-choice]:visible").count()) === 3 && await page.locator("#previewCalmBtn").isVisible());
+  check("on a phone account, the menu items and Calm control can be reached", (await page.locator("#userMenu .menu-item:visible").count()) >= 2 && await page.locator("#previewCalmBtn").isVisible());
   await page.click("#settingsBtn");
   await page.waitForSelector("#settings.open");
   check("choosing Settings on a phone closes the side menu and the user menu", !(await page.evaluate(() => document.body.classList.contains("menu-open"))) && (await page.locator("#userMenu").isHidden()));

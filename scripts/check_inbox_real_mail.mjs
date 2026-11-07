@@ -22,6 +22,7 @@ const target = path.resolve(process.argv[2] || path.join(here, "..", "prototype"
 const html = fs.readFileSync(target, "utf8");
 const ORIGIN = "http://enveliq.test";
 
+const pickScheme = (page, v) => page.evaluate((v) => { document.getElementById("customiseBtn").click(); document.querySelector(`#viewPanel [data-view="scheme"][data-val="${v}"]`).click(); const t = document.getElementById("viewTab"); if (t.getAttribute("aria-expanded") === "true") t.click(); }, v);
 let failed = false;
 const panelOpen = async (page) => { if (!(await page.evaluate(() => document.body.classList.contains("vopen")))) { await page.click("#viewTab"); await page.waitForTimeout(250); } };   // clicking outside closes the panel, as it should
 const check = (label, good) => { console.log((good ? "✓ " : "✗ ") + label); if (!good) { failed = true; console.log("::error::" + label); } };
@@ -273,11 +274,10 @@ async function open(server, { seen = true } = {}) {
   // Light / dark mode
   const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   const darkBg = await bg();
-  check("starts in dark mode and offers appearance choices", (await page.locator("[data-theme-choice]").count()) === 3 && await page.locator('[data-theme-choice="dark"]').getAttribute("aria-pressed")==="true");
-  await page.click("#userPill");
-await page.click('[data-theme-choice="light"]');
+  check("starts in dark mode and offers appearance choices", (await page.locator("#userMenu [data-theme-choice]").count()) === 0 && (await page.evaluate(() => document.documentElement.dataset.theme)) === undefined);
+  await pickScheme(page, "light");
   const lightBg = await bg();
-  check("toggle switches to light mode", (await page.evaluate(() => document.documentElement.dataset.theme)) === "light" && lightBg !== darkBg && (await page.locator('[data-theme-choice="light"]').getAttribute("aria-pressed")) === "true");
+  check("toggle switches to light mode", (await page.evaluate(() => document.documentElement.dataset.theme)) === "light" && lightBg !== darkBg && (await page.locator('#viewPanel [data-view="scheme"][data-val="light"]').getAttribute("aria-checked")) === "true");
   const lum = (c) => c.match(/\d+/g).slice(0, 3).map(Number).reduce((a, b) => a + b, 0) / 3;
   const cardBg = await page.evaluate(() => getComputedStyle(document.querySelector(".sidebar")).backgroundColor);
   const subjectColour = await page.evaluate(() => getComputedStyle(document.querySelector("article.mail .subject")).color);
@@ -288,8 +288,7 @@ await page.click('[data-theme-choice="light"]');
   // A fresh browser reload restores the new right-panel default; these assertions target classic list.
   await page.evaluate(() => { view.layout = "list"; applyView(); render(); });
   check("light mode is remembered after reload", (await page.evaluate(() => document.documentElement.dataset.theme)) === "light");
-  await page.click("#userPill");
-await page.click('[data-theme-choice="dark"]');
+  await pickScheme(page, "standard");
   check("toggle switches back to dark mode", (await page.evaluate(() => document.documentElement.dataset.theme)) === undefined && (await bg()) === darkBg);
 
   // View email (rows hide their extra buttons until opened)

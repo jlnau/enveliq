@@ -130,7 +130,7 @@ check("sorting by sender puts them in A to Z order", senders.length === 6 && sen
 
 // The Settings and Administration pop-ups on the inbox page hold the real pages
 await page.click("#userPill");
-check("the redesigned user menu offers settings, appearance and sign out (Administration lives inside Settings)", (await page.locator("#userMenu #profileBtn").count()) === 0 && (await page.locator("#userMenu #settingsBtn").count()) === 1 && (await page.locator("#userMenu #adminBtn").count()) === 0 && (await page.locator("#userMenu [data-theme-choice]").count()) === 3 && (await page.locator("#userMenu button", { hasText: "Sign out" }).count()) === 1 && (await page.locator("#userMenu [data-switch-user]").count()) === 0);
+check("the redesigned user menu offers settings and sign out (the colour choices live in Customise) (Administration lives inside Settings)", (await page.locator("#userMenu #profileBtn").count()) === 0 && (await page.locator("#userMenu #settingsBtn").count()) === 1 && (await page.locator("#userMenu #adminBtn").count()) === 0 && (await page.locator("#userMenu [data-theme-choice]").count()) === 0 && (await page.locator("#userMenu button", { hasText: "Sign out" }).count()) === 1 && (await page.locator("#userMenu [data-switch-user]").count()) === 0);
 await page.click("#userPill");
 await page.click("#userPill");
 await page.click("#settingsBtn");

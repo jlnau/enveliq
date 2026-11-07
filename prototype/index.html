@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="/brand/enveliq-icon-256.webp">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0d0f14">
-<script>try{var t=localStorage.getItem("enveliq-theme");if(t==="light"||(t==="system"&&matchMedia("(prefers-color-scheme: light)").matches))document.documentElement.setAttribute("data-theme","light")}catch(e){}try{var v=JSON.parse(localStorage.getItem("enveliq-view")||"null");if(v&&v.scheme==="dark")document.documentElement.setAttribute("data-scheme","dark");if(v&&/^(green|purple|orange|pink|teal)$/.test(v.highlight))document.documentElement.setAttribute("data-hl",v.highlight)}catch(e){}</script>
+<script>try{var t=localStorage.getItem("enveliq-theme");if(t==="light"||(t==="system"&&matchMedia("(prefers-color-scheme: light)").matches))document.documentElement.setAttribute("data-theme","light")}catch(e){}try{var v=JSON.parse(localStorage.getItem("enveliq-view")||"null");var sl=matchMedia("(prefers-color-scheme: light)").matches;if(v&&(v.scheme==="dark"||(v.scheme==="system"&&!sl)))document.documentElement.setAttribute("data-scheme","dark");if(v&&/^(green|purple|orange|pink|teal)$/.test(v.highlight))document.documentElement.setAttribute("data-hl",v.highlight)}catch(e){}</script>
 <style>
 :root{
   --bg:#0d0f14;--panel:#141821;--panel2:#1a1f2a;--panel3:#202634;--line:#2a3140;
@@ -1099,17 +1099,12 @@ html[data-theme="light"] .side-foot .calm-row{background:#e4eeff;border-color:va
 .preview-profile-data{display:flex;flex-direction:column;min-width:0;flex:1}.preview-profile-data strong,.preview-profile-data small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .preview-profile-data small{color:var(--muted);font-size:11px}
 .preview-profile-role{color:var(--accent);background:var(--panel2);font-size:10px;border-radius:99px;padding:4px 8px}
-.preview-theme-options{border-top:1px solid var(--line);padding:9px 0 3px}
-.preview-theme-options button{width:100%;display:flex;justify-content:space-between;background:none;color:var(--text);border:0;border-radius:9px;text-align:left;padding:9px 12px}
-.preview-theme-options button:hover,.preview-theme-options button.chosen{background:var(--panel2)}
-.preview-theme-options button span{display:none;color:var(--accent)}.preview-theme-options button.chosen span{display:inline}
 .preview-calm-option{align-items:center}.preview-calm-option small{display:block}
 .preview-menu-switch{width:32px;height:18px;background:var(--faint);border-radius:99px;position:relative;flex:none}
 .preview-menu-switch:after{content:"";position:absolute;width:14px;height:14px;top:2px;left:2px;background:white;border-radius:50%;transition:left .2s}
 .preview-calm-option[aria-checked="true"] .preview-menu-switch{background:#1b69fa}
 .preview-calm-option[aria-checked="true"] .preview-menu-switch:after{left:16px}
 .user-menu .menu-actions{display:flex;flex-direction:column}
-.user-menu #themeBtn{display:none}
 .user-menu .menu-label[data-preview-only],.user-menu [data-preview-only]{display:none}
 .top{position:relative!important;top:auto!important;z-index:2;min-height:148px!important;padding:25px 28px 25px!important;background:linear-gradient(120deg,#102d67,#193a78 48%,#152c57 85%,#0a234d)!important;overflow:hidden}
 .top:before{content:"";position:absolute;inset:0;background-image:radial-gradient(ellipse at 72% 37%,#ffdb9d 0 20px,transparent 21px),linear-gradient(155deg,transparent 56%,#102650 56% 100%);opacity:.95}
@@ -2078,18 +2073,11 @@ html[data-hl="teal"]:not([data-x]){--accent:#2fc4d3}html[data-hl="teal"][data-th
 
 <div class="user-menu" id="userMenu" role="menu" aria-label="Account and appearance">
   <div class="preview-profile"><span class="preview-profile-avatar" id="previewProfileAvatar"></span><span class="preview-profile-data"><strong id="previewProfileName"></strong><small id="previewProfileEmail"></small></span><span class="preview-profile-role" id="previewProfileRole"></span></div>
-  <div class="preview-theme-options" role="group" aria-label="Appearance">
-    <button type="button" data-theme-choice="dark">☾ &nbsp; Dark mode <span aria-hidden="true">✓</span></button>
-    <button type="button" data-theme-choice="light">☼ &nbsp; Light mode <span aria-hidden="true">✓</span></button>
-    <button type="button" data-theme-choice="system">▣ &nbsp; System theme <span aria-hidden="true">✓</span></button>
-  </div>
-  <div class="menu-sep"></div>
   <button class="user-option preview-calm-option" id="previewCalmBtn" type="button" role="switch" aria-checked="true"><span>Calm mode <small>One thing at a time</small></span><span class="preview-menu-switch" aria-hidden="true"></span></button>
   <div class="menu-sep"></div>
   <div class="menu-actions" id="menuActions">
     <button class="user-option menu-item" id="customiseBtn" type="button" title="Change how the inbox looks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span class="menu-text">Customise</span></button>
     <button class="user-option menu-item" id="settingsBtn" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="nav-label menu-text">Settings</span></button>
-    <button class="user-option menu-item theme-btn" id="themeBtn" type="button" title="Switch between light and dark mode" aria-pressed="false"><svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span class="nav-label menu-text" id="themeLabel">Light mode</span></button>
   </div>
   <a class="user-option preview-help-item" href="https://enveliq.app/docs/" target="_blank" rel="noopener noreferrer">? &nbsp; Help and support</a>
   <div class="menu-sep" id="menuSep"></div>
@@ -2111,7 +2099,7 @@ html[data-hl="teal"]:not([data-x]){--accent:#2fc4d3}html[data-hl="teal"][data-th
       <button class="vl" type="button" role="radio" data-view="layout" data-val="deck"><svg viewBox="0 0 40 30" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="8" y="3" width="24" height="20" rx="3"/><path d="M11 26h18" stroke-linecap="round"/></svg><span><b>Focus deck<span class="new">New</span></b><small>One email at a time. Clear them like a stack of cards.</small></span></button>
     </div></div>
   <div class="vsec"><div class="vlabel">Row spacing</div><div class="seg" role="radiogroup" aria-label="Row spacing"><button type="button" role="radio" data-view="density" data-val="compact">Compact</button><button type="button" role="radio" data-view="density" data-val="standard">Standard</button><button type="button" role="radio" data-view="density" data-val="roomy">Roomy</button></div></div>
-  <div class="vsec"><div class="vlabel">Colours</div><div class="seg" role="radiogroup" aria-label="Colours"><button type="button" role="radio" data-view="scheme" data-val="standard">Standard</button><button type="button" role="radio" data-view="scheme" data-val="dark">Dark</button></div><p class="vhint">Dark is a true dark grey, with no blue sky. The email you are on stays blue so you can see where you are. The light/dark button at the top still works as before.</p></div>
+  <div class="vsec"><div class="vlabel">Colours</div><div class="seg" role="radiogroup" aria-label="Colours"><button type="button" role="radio" data-view="scheme" data-val="standard">Standard</button><button type="button" role="radio" data-view="scheme" data-val="light">Light</button><button type="button" role="radio" data-view="scheme" data-val="dark">Dark</button><button type="button" role="radio" data-view="scheme" data-val="system">System theme</button></div><p class="vhint">Standard is the blue look. Dark is a true dark grey with no blue sky; the email you are on stays coloured so you can see where you are. System theme follows your device: Light when your device is light, Dark when it is dark.</p></div>
   <div class="vsec"><div class="vlabel">Highlight colour</div><div class="seg" role="radiogroup" aria-label="Highlight colour"><button type="button" role="radio" data-view="highlight" data-val="blue">Blue</button><button type="button" role="radio" data-view="highlight" data-val="green">Green</button><button type="button" role="radio" data-view="highlight" data-val="purple">Purple</button><button type="button" role="radio" data-view="highlight" data-val="orange">Orange</button><button type="button" role="radio" data-view="highlight" data-val="pink">Pink</button><button type="button" role="radio" data-view="highlight" data-val="teal">Teal</button></div><p class="vhint">The colour of the email you are on, the open menu item, the New email button and links. It works in both the light and dark looks.</p></div>
   <div class="vsec"><div class="vlabel">Original email background</div><div class="seg" role="radiogroup" aria-label="Original email background"><button type="button" role="radio" data-view="paper" data-val="white">White</button><button type="button" role="radio" data-view="paper" data-val="soft">Soft</button><button type="button" role="radio" data-view="paper" data-val="softer">Softer</button></div><p class="vhint">The paper colour behind an email shown as the sender made it. It never changes the email itself.</p></div>
   <div class="vsec"><div class="vlabel">Width</div><div class="seg" role="radiogroup" aria-label="Width"><button type="button" role="radio" data-view="width" data-val="centered">Centred</button><button type="button" role="radio" data-view="width" data-val="full">Full width</button></div></div>
@@ -2945,10 +2933,11 @@ function userMessages(){return data.filter(m=>m.owner===currentUser.id&&!m._pend
 let sortMode="newest",mailboxSel="";
 // ---- View options (saved in this browser) ----
 const VIEW_DEFAULT={layout:"right",density:"standard",width:"centered",rows:"collapsed",peek:true,action_feedback:true,show_original:false,conversations:false,style:"classic",show_counts:true,show_today:true,paper:"soft",scheme:"standard",highlight:"blue"};
-const VIEW_ALLOWED={layout:["list","right","bottom","screen","deck"],density:["compact","standard","roomy"],width:["centered","full"],rows:["collapsed","open"],style:["classic","rail"],paper:["white","soft","softer"],scheme:["standard","dark"],highlight:["blue","green","purple","orange","pink","teal"]};
+const VIEW_ALLOWED={layout:["list","right","bottom","screen","deck"],density:["compact","standard","roomy"],width:["centered","full"],rows:["collapsed","open"],style:["classic","rail"],paper:["white","soft","softer"],scheme:["standard","light","dark","system"],highlight:["blue","green","purple","orange","pink","teal"]};
 function loadView(){
   const v={...VIEW_DEFAULT};
   try{const raw=JSON.parse(localStorage.getItem("enveliq-view")||"null");
+    if(raw&&typeof raw==="object"&&raw.scheme===undefined){const t=localStorage.getItem("enveliq-theme");if(t==="light"||t==="system")raw.scheme=t}
     if(raw&&typeof raw==="object"){for(const k in VIEW_ALLOWED)if(VIEW_ALLOWED[k].includes(raw[k]))v[k]=raw[k];if(typeof raw.peek==="boolean")v.peek=raw.peek;if(typeof raw.action_feedback==="boolean")v.action_feedback=raw.action_feedback;if(typeof raw.show_original==="boolean")v.show_original=raw.show_original;if(typeof raw.conversations==="boolean")v.conversations=raw.conversations;if(typeof raw.show_counts==="boolean")v.show_counts=raw.show_counts;if(typeof raw.show_today==="boolean")v.show_today=raw.show_today}}catch{}
   return v;
 }
@@ -3051,13 +3040,22 @@ async function loadServerView(){
   viewServerReady=true;
   applyView();
 }
+function applyScheme(){
+  // Colours: Standard (the blue look), Light, Dark (neutral grey) or System (Light or Dark, whichever this device is using).
+  const sc=view.scheme||"standard",root=document.documentElement;
+  let sysLight=false;try{sysLight=window.matchMedia("(prefers-color-scheme: light)").matches}catch{}
+  const light=sc==="light"||(sc==="system"&&sysLight),dark=sc==="dark"||(sc==="system"&&!sysLight);
+  if(light)root.setAttribute("data-theme","light");else root.removeAttribute("data-theme");
+  root.dataset.scheme=dark?"dark":"standard";
+  try{localStorage.setItem("enveliq-theme",sc==="light"?"light":sc==="system"?"system":"dark")}catch{}
+}
 function applyView(){
   readerOpen=false;
   // Switching layouts starts with an unselected reading panel.
   paneId=null;lastReadId=null;
   const c=document.body.classList;
   for(const l of VIEW_ALLOWED.layout)c.toggle("layout-"+l,lay()===l);
-  c.toggle("style-rail",view.style==="rail");c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");document.documentElement.dataset.paper=view.paper||"soft";document.documentElement.dataset.scheme=view.scheme||"standard";if((view.highlight||"blue")==="blue")delete document.documentElement.dataset.hl;else document.documentElement.dataset.hl=view.highlight;
+  c.toggle("style-rail",view.style==="rail");c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");document.documentElement.dataset.paper=view.paper||"soft";applyScheme();if((view.highlight||"blue")==="blue")delete document.documentElement.dataset.hl;else document.documentElement.dataset.hl=view.highlight;
   document.querySelectorAll("#viewPanel [data-view]").forEach(b=>{const on=view[b.dataset.view]===b.dataset.val;b.classList.toggle("on",on);b.setAttribute("aria-checked",String(on))});
   const classic=view.layout==="list";
   $("vOpen").checked=view.rows==="open";$("vPeek").checked=view.peek;$("vActionFeedback").checked=view.action_feedback!==false;$("vOrig").checked=!!view.show_original;$("vConv").checked=!!view.conversations;$("vCounts").checked=view.show_counts!==false;$("vToday").checked=view.show_today!==false;
@@ -7298,20 +7296,11 @@ function previewSyncAccount(){
 }
 function previewSyncMenu(){
   document.getElementById("previewCalmBtn").setAttribute("aria-checked",String(calmOn()));
-  let choice="dark";try{choice=localStorage.getItem("enveliq-theme")||"dark"}catch{}
-  document.querySelectorAll("[data-theme-choice]").forEach(x=>{x.classList.toggle("chosen",x.dataset.themeChoice===choice);x.setAttribute("aria-pressed",String(x.dataset.themeChoice===choice))});
   previewSyncMore();
 }
 document.getElementById("previewCalmBtn").onclick=()=>document.getElementById("calmBtn").click();
 document.getElementById("previewCalmOff").onclick=()=>document.getElementById("calmBtn").click();
-function previewTheme(choice){
-  const light=choice==="light"||(choice==="system"&&window.matchMedia("(prefers-color-scheme:light)").matches);
-  if(light)document.documentElement.setAttribute("data-theme","light");else document.documentElement.removeAttribute("data-theme");
-  try{localStorage.setItem("enveliq-theme",choice)}catch{}
-  previewSyncMenu();
-}
-document.querySelectorAll("[data-theme-choice]").forEach(x=>x.onclick=()=>previewTheme(x.dataset.themeChoice));
-window.matchMedia("(prefers-color-scheme:light)").addEventListener("change",()=>{try{if(localStorage.getItem("enveliq-theme")==="system")previewTheme("system")}catch{}});
+window.matchMedia("(prefers-color-scheme:light)").addEventListener("change",()=>{if(view.scheme==="system")applyScheme()});
 document.getElementById("previewInboxOptions").onclick=()=>{
   const open=document.body.classList.toggle("preview-show-filters");
   document.getElementById("previewInboxOptions").setAttribute("aria-expanded",String(open));
@@ -9564,19 +9553,6 @@ function calmOn(){return document.body.classList.contains("calm")}
     try{localStorage.setItem("enveliq-calm",calmOn()?"1":"0")}catch{}
     paint();
     try{render()}catch{}
-  };
-  paint();
-})();
-// ---------- Light / dark mode ----------
-// Dark is the default. The choice is remembered in this browser only.
-(function(){
-  const btn=$("themeBtn"),label=$("themeLabel"),root=document.documentElement;
-  const paint=()=>{const light=root.getAttribute("data-theme")==="light";label.textContent=light?"Dark mode":"Light mode";btn.setAttribute("aria-pressed",String(light))};
-  btn.onclick=()=>{
-    const light=root.getAttribute("data-theme")!=="light";
-    if(light)root.setAttribute("data-theme","light");else root.removeAttribute("data-theme");
-    try{localStorage.setItem("enveliq-theme",light?"light":"dark")}catch{}
-    paint();
   };
   paint();
 })();

@@ -60,7 +60,7 @@ const statBg = async () => page.evaluate(() => [...document.querySelectorAll(".p
 const isGrey = (c) => { const m = c.match(/\d+/g).map(Number); return Math.abs(m[0] - m[2]) <= 6; };
 await page.evaluate(() => document.getElementById("customiseBtn").click());
 await page.waitForSelector('#viewPanel [data-view="scheme"]');
-check("Customise has a Colours choice with Standard and Dark, Standard chosen at first", (await page.locator('#viewPanel [data-view="scheme"]').count()) === 2 && (await page.locator('#viewPanel [data-view="scheme"][data-val="standard"]').getAttribute("aria-checked")) === "true");
+check("Customise has a Colours choice with Standard, Light, Dark and System theme, Standard chosen at first", (await page.locator('#viewPanel [data-view="scheme"]').count()) === 4 && (await page.locator('#viewPanel [data-view="scheme"][data-val="standard"]').getAttribute("aria-checked")) === "true");
 check("standard colours are still the blue look", !isGrey(await rgb("body", "backgroundColor")) || (await rgb(".sidebar", "backgroundImage")).includes("gradient"));
 await page.click('#viewPanel [data-view="scheme"][data-val="dark"]');
 await page.waitForTimeout(300);
@@ -115,6 +115,17 @@ await page.waitForSelector("article.mail");
 check("Dark is remembered after a reload", (await page.evaluate(() => document.documentElement.dataset.scheme)) === "dark");
 await page.evaluate(() => document.documentElement.setAttribute("data-theme", "light"));
 check("the light theme wins over Dark", !isGrey("rgb(0,0,0)") || (await rgb("body", "backgroundColor")) !== "rgb(22, 22, 22)");
+
+await page.evaluate(() => document.documentElement.removeAttribute("data-theme"));
+await page.evaluate(() => document.getElementById("customiseBtn").click());
+await page.evaluate(() => document.querySelector('#viewPanel [data-view="scheme"][data-val="system"]').click());
+await page.emulateMedia({ colorScheme: "dark" });
+await page.waitForTimeout(400);
+check("System theme with a dark device gives the new Dark", (await page.evaluate(() => document.documentElement.dataset.scheme)) === "dark" && !(await page.evaluate(() => document.documentElement.dataset.theme)));
+await page.emulateMedia({ colorScheme: "light" });
+await page.waitForTimeout(400);
+check("System theme with a light device gives Light", (await page.evaluate(() => document.documentElement.dataset.theme)) === "light");
+check("the account menu has no colour buttons any more", (await page.locator("#userMenu [data-theme-choice], #userMenu #themeBtn").count()) === 0);
 await browser.close();
 if (failed) process.exit(1);
 console.log("All dark mode checks passed");
