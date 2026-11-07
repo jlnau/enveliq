@@ -95,6 +95,8 @@ await page.waitForTimeout(400);
 check("Green: the email you are on turns green (dark)", (await rgb("article.mail.current", "backgroundImage")).includes("rgb(20, 107, 58)"));
 check("Green: the open menu item turns green (dark)", (await rgb(".sidebar .nav.active", "backgroundColor")) === "rgb(23, 77, 46)");
 check("Green: the New email button turns green", (await rgb(".sidebar .nav.newmail", "backgroundImage")).includes("rgb(11, 138, 74)"));
+await page.evaluate(() => { const d = document.createElement("div"); d.className = "qsummary"; d.innerHTML = '<span class="qsummary-copy">x</span>'; document.querySelector(".main").append(d); });
+check("Green: the AI summary outline turns green", (await rgb(".main > .qsummary", "borderTopColor")).includes("47, 191, 113"));
 await page.screenshot({ path: (process.env.SHOTS || "/tmp") + "/dark-green.png" });
 await page.evaluate(() => { document.documentElement.setAttribute("data-theme", "light"); });
 await page.waitForTimeout(300);

@@ -1699,7 +1699,7 @@ html[data-theme="light"] .search #findFiltersBtn,html[data-theme="light"] .searc
 .action.unread:hover,.qic.unread:hover{background:rgba(124,142,200,.22)}
 html[data-theme="light"] .action.unread,html[data-theme="light"] .qic.unread{color:#44537f;background:#eef1fb;border-color:#c9d2ee}
 /* The AI summary box glows so the eye lands there first */
-.qsummary:has(.qsummary-copy){border-color:rgba(110,175,255,.55);box-shadow:0 0 0 1px rgba(100,165,255,.22),0 0 16px rgba(80,150,255,.34),0 0 38px rgba(80,150,255,.16),inset 0 0 18px rgba(90,150,255,.07)}
+.qsummary:has(.qsummary-copy){border-color:rgba(var(--hl-rgb,110,175,255),.55);box-shadow:0 0 0 1px rgba(var(--hl-rgb,100,165,255),.22),0 0 16px rgba(var(--hl-rgb,80,150,255),.34),0 0 38px rgba(var(--hl-rgb,80,150,255),.16),inset 0 0 18px rgba(var(--hl-rgb,90,150,255),.07)}
 html[data-theme="light"] .qsummary:has(.qsummary-copy){border-color:#8db6f5;box-shadow:0 0 0 1px rgba(60,120,230,.18),0 0 14px rgba(60,130,240,.28),0 0 30px rgba(60,130,240,.12)}
 .mail.quiet:not(.open) .qsummary:has(.qsummary-copy){box-shadow:none}
 body.calm .qsummary:has(.qsummary-copy){box-shadow:0 0 0 1px rgba(100,165,255,.18),0 0 12px rgba(80,150,255,.22)}
@@ -1877,7 +1877,7 @@ html[data-scheme="dark"]:not([data-theme="light"]) .vtab,html[data-scheme="dark"
 html[data-scheme="dark"]:not([data-theme="light"]) .vl.on,html[data-scheme="dark"]:not([data-theme="light"]) .seg .on{background:#2f2f2f!important}
 html[data-scheme="dark"]:not([data-theme="light"]) .preview-list-heading{background:#1e1e1e!important;background-image:none!important;border-color:#333!important}
 html[data-scheme="dark"]:not([data-theme="light"]) article.mail:not(.current){box-shadow:none!important;outline:0!important}
-html[data-scheme="dark"]:not([data-theme="light"]) .qsummary{border-color:#3a3a3a!important;background:#222!important;box-shadow:none!important}
+html[data-scheme="dark"]:not([data-theme="light"]) .qsummary:has(.qsummary-copy){background:#222}
 html[data-scheme="dark"]:not([data-theme="light"]) .preview-stat,html[data-scheme="dark"]:not([data-theme="light"]) .preview-stat.action{background:#1e1e1e!important;background-image:none!important;border-color:#333!important;color:#ececec!important}
 html[data-scheme="dark"]:not([data-theme="light"]) .preview-stat-icon,html[data-scheme="dark"]:not([data-theme="light"]) .preview-stat.action .preview-stat-icon,html[data-scheme="dark"]:not([data-theme="light"]) .preview-stat.shipping .preview-stat-icon{background:#2a2a2a!important;color:#ececec!important}
 html[data-scheme="dark"]:not([data-theme="light"]) .preview-stat-copy small{color:#a3a3a3!important}
@@ -1886,19 +1886,19 @@ html[data-scheme="dark"]:not([data-theme="light"]) .preview-stat.tasks b{color:#
 html[data-scheme="dark"]:not([data-theme="light"]) .preview-stat.shipping b{color:#c3b3ff}
 html[data-scheme="dark"]:not([data-theme="light"]) .preview-stat.waiting b{color:#ffd37a}
 /* Highlight colour (Customise > Highlight colour). Blue is the normal look and sets nothing. These only change the highlight: the email you are on, the open menu item, New email and links. */
-html[data-hl="green"]{--hl1:#146b3a;--hl2:#1f9150;--hl-nav:#174d2e;--hl-navfg:#7be0a2;--hl-nav-l:#d8f3e3;--hl-navfg-l:#12633a;--hl-new1:#0b8a4a;--hl-new2:#17a35c;--hl-bd:#4fd18a}
+html[data-hl="green"]{--hl-rgb:47,191,113;--hl1:#146b3a;--hl2:#1f9150;--hl-nav:#174d2e;--hl-navfg:#7be0a2;--hl-nav-l:#d8f3e3;--hl-navfg-l:#12633a;--hl-new1:#0b8a4a;--hl-new2:#17a35c;--hl-bd:#4fd18a}
 html[data-hl="green"]:not([data-x]){--accent:#2fbf71}html[data-hl="green"][data-theme="light"]:not([data-x]){--accent:#148a50}
 #viewPanel [data-view="highlight"][data-val="green"]::before{background:#2fbf71}
-html[data-hl="purple"]{--hl1:#5a2fb0;--hl2:#7a4fd6;--hl-nav:#3b2a7a;--hl-navfg:#c3b0ff;--hl-nav-l:#e8e0fb;--hl-navfg-l:#5a2fb0;--hl-new1:#6a3fd0;--hl-new2:#8559ea;--hl-bd:#a98bff}
+html[data-hl="purple"]{--hl-rgb:154,123,255;--hl1:#5a2fb0;--hl2:#7a4fd6;--hl-nav:#3b2a7a;--hl-navfg:#c3b0ff;--hl-nav-l:#e8e0fb;--hl-navfg-l:#5a2fb0;--hl-new1:#6a3fd0;--hl-new2:#8559ea;--hl-bd:#a98bff}
 html[data-hl="purple"]:not([data-x]){--accent:#9a7bff}html[data-hl="purple"][data-theme="light"]:not([data-x]){--accent:#6a3fd0}
 #viewPanel [data-view="highlight"][data-val="purple"]::before{background:#9a7bff}
-html[data-hl="orange"]{--hl1:#b45309;--hl2:#d97706;--hl-nav:#6b3a0a;--hl-navfg:#ffc27a;--hl-nav-l:#fdebd0;--hl-navfg-l:#9a4a05;--hl-new1:#d9660a;--hl-new2:#f08217;--hl-bd:#ffb066}
+html[data-hl="orange"]{--hl-rgb:255,154,60;--hl1:#b45309;--hl2:#d97706;--hl-nav:#6b3a0a;--hl-navfg:#ffc27a;--hl-nav-l:#fdebd0;--hl-navfg-l:#9a4a05;--hl-new1:#d9660a;--hl-new2:#f08217;--hl-bd:#ffb066}
 html[data-hl="orange"]:not([data-x]){--accent:#ff9a3c}html[data-hl="orange"][data-theme="light"]:not([data-x]){--accent:#c2570a}
 #viewPanel [data-view="highlight"][data-val="orange"]::before{background:#ff9a3c}
-html[data-hl="pink"]{--hl1:#b0245f;--hl2:#d13a7a;--hl-nav:#6e1d44;--hl-navfg:#ff9cc6;--hl-nav-l:#fbe0ec;--hl-navfg-l:#a01f58;--hl-new1:#d02b73;--hl-new2:#e8478e;--hl-bd:#ff7fb4}
+html[data-hl="pink"]{--hl-rgb:255,111,168;--hl1:#b0245f;--hl2:#d13a7a;--hl-nav:#6e1d44;--hl-navfg:#ff9cc6;--hl-nav-l:#fbe0ec;--hl-navfg-l:#a01f58;--hl-new1:#d02b73;--hl-new2:#e8478e;--hl-bd:#ff7fb4}
 html[data-hl="pink"]:not([data-x]){--accent:#ff6fa8}html[data-hl="pink"][data-theme="light"]:not([data-x]){--accent:#c2255f}
 #viewPanel [data-view="highlight"][data-val="pink"]::before{background:#ff6fa8}
-html[data-hl="teal"]{--hl1:#0f6e78;--hl2:#168f9b;--hl-nav:#124e55;--hl-navfg:#7ee0ea;--hl-nav-l:#d6f2f4;--hl-navfg-l:#0d6670;--hl-new1:#0f8a96;--hl-new2:#14a6b4;--hl-bd:#4fd3e0}
+html[data-hl="teal"]{--hl-rgb:47,196,211;--hl1:#0f6e78;--hl2:#168f9b;--hl-nav:#124e55;--hl-navfg:#7ee0ea;--hl-nav-l:#d6f2f4;--hl-navfg-l:#0d6670;--hl-new1:#0f8a96;--hl-new2:#14a6b4;--hl-bd:#4fd3e0}
 html[data-hl="teal"]:not([data-x]){--accent:#2fc4d3}html[data-hl="teal"][data-theme="light"]:not([data-x]){--accent:#0f7f8b}
 #viewPanel [data-view="highlight"][data-val="teal"]::before{background:#2fc4d3}
 #viewPanel [data-view="highlight"][data-val="blue"]::before{background:#2f86ff}
