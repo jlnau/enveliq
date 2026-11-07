@@ -150,6 +150,21 @@ check("the little tab says Close when the panel is open", (await tabText()) === 
 await page.locator("#viewTab").screenshot({ path: (process.env.SHOTS || "/tmp") + "/tab-open.png" });
 await page.evaluate(() => { if (document.getElementById("viewTab").getAttribute("aria-expanded") !== "true") document.getElementById("viewTab").click(); });
 await page.waitForTimeout(300);
+await page.evaluate(() => { if (document.getElementById("viewTab").getAttribute("aria-expanded") !== "true") document.getElementById("viewTab").click(); });
+await page.waitForTimeout(300);
+const bodyBefore = await page.evaluate(() => document.body.className);
+for (const lay of ["list", "right", "bottom", "screen", "deck"]) {
+  await page.hover(`#viewPanel [data-view="layout"][data-val="${lay}"]`);
+  await page.waitForTimeout(150);
+  check(`pointing at the ${lay} layout shows a small picture of it`, await page.evaluate(() => { const b = document.getElementById("vPreview"); const r = b.getBoundingClientRect(); const pr = document.getElementById("viewPanel").getBoundingClientRect(); return !b.hidden && !!b.querySelector("svg") && r.right <= pr.left && r.width < 260; }));
+  if (lay === "bottom") await page.locator("#vPreview").screenshot({ path: (process.env.SHOTS || "/tmp") + "/layout-preview.png" });
+  if (lay === "deck") await page.locator("#vPreview").screenshot({ path: (process.env.SHOTS || "/tmp") + "/layout-preview-deck.png" });
+  if (lay === "right") await page.locator("#vPreview").screenshot({ path: (process.env.SHOTS || "/tmp") + "/layout-preview-right.png" });
+}
+check("the page layout does not change while pointing at a layout", (await page.evaluate(() => document.body.className)) === bodyBefore);
+await page.mouse.move(5, 500);
+await page.waitForTimeout(200);
+check("the little picture goes away again", await page.evaluate(() => document.getElementById("vPreview").hidden));
 await page.screenshot({ path: (process.env.SHOTS || "/tmp") + "/dark-green.png" });
 await page.locator("article.mail").first().click({ force: true });
 await page.waitForTimeout(300);

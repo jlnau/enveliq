@@ -1917,6 +1917,9 @@ html[data-scheme="dark"]:not([data-theme="light"]) .email-doc,html[data-scheme="
 .vcheck .qtip{margin-left:6px;flex:none}
 .vtab .vt-view,.vtab .vt-close{writing-mode:vertical-rl;transform:rotate(180deg);font-size:12px;font-weight:650;letter-spacing:.08em;line-height:1}
 .vtab .vt-close,.vtab[aria-expanded="true"] .vt-view{display:none}.vtab[aria-expanded="true"] .vt-close{display:block}
+.vprev{position:fixed;z-index:75;width:216px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 10px 30px rgba(0,0,0,.4);pointer-events:none;text-align:center}
+.vprev[hidden]{display:none}.vprev svg{display:block;width:100%;height:auto}.vprev b{display:block;margin-top:7px;font-size:12.5px;font-weight:650;color:var(--text)}
+.vprev .pv-f{fill:var(--bg);stroke:var(--line)}.vprev .pv-side{fill:var(--panel2)}.vprev .pv-row{fill:var(--panel3)}.vprev .pv-sel{fill:var(--hl1,#1544ad)}.vprev .pv-line{fill:var(--faint);opacity:.55}
 </style>
 </head>
 <body class="booting">
@@ -3074,6 +3077,39 @@ function applyScheme(over){
   p.addEventListener("mouseout",e=>{const b=e.target.closest(sel);if(b&&!b.contains(e.relatedTarget))back()});
   p.addEventListener("focusin",e=>{const b=e.target.closest(sel);if(b)show(b)});
   p.addEventListener("focusout",e=>{if(e.target.closest(sel))back()});
+})();
+// Pointing at a layout shows a small picture of it beside the panel. The page itself does not change.
+(function(){
+  const p=$("viewPanel");
+  const box=document.createElement("div");box.className="vprev";box.id="vPreview";box.hidden=true;box.setAttribute("aria-hidden","true");document.body.append(box);
+  const L=(x,y,w,h,c)=>`<rect class="${c}" x="${x}" y="${y}" width="${w}" height="${h}" rx="2.5"/>`;
+  const lines=(x,y,w,n)=>Array.from({length:n},(_,i)=>L(x,y+i*7,i===n-1?w*.6:w,3,"pv-line")).join("");
+  const side=L(0,0,28,120,"pv-side");
+  const MOCK={
+    list:()=>side+L(36,10,156,12,"pv-row")+L(36,26,156,12,"pv-sel")+L(36,40,156,34,"pv-row")+lines(42,46,144,3)+L(36,78,156,12,"pv-row")+L(36,94,156,12,"pv-row"),
+    right:()=>side+[10,26,42,58,74,90].map((y,i)=>L(36,y,58,12,i===1?"pv-sel":"pv-row")).join("")+L(100,10,92,100,"pv-row")+L(106,16,60,5,"pv-line")+lines(106,30,80,6),
+    bottom:()=>side+[10,24,38].map((y,i)=>L(36,y,156,10,i===1?"pv-sel":"pv-row")).join("")+L(36,54,156,56,"pv-row")+L(42,60,70,5,"pv-line")+lines(42,72,144,4),
+    screen:()=>L(64,6,72,108,"pv-row")+L(70,14,40,5,"pv-line")+lines(70,28,60,5)+L(70,96,18,10,"pv-sel")+L(91,96,18,10,"pv-side")+L(112,96,18,10,"pv-side"),
+    deck:()=>L(58,10,84,70,"pv-side")+L(52,16,96,70,"pv-side")+L(46,22,108,70,"pv-row")+L(54,30,50,5,"pv-line")+lines(54,44,92,4)+L(70,100,18,9,"pv-sel")+L(91,100,18,9,"pv-side")+L(112,100,18,9,"pv-side")
+  };
+  const show=b=>{
+    const k=b.dataset.val,m=MOCK[k];if(!m)return;
+    const pr=p.getBoundingClientRect(),br=b.getBoundingClientRect();
+    if(pr.left<260)return;   // on a phone the panel fills the screen: no room beside it
+    box.innerHTML=`<svg viewBox="0 0 200 120" role="img" aria-hidden="true"><rect class="pv-f" x="0.5" y="0.5" width="199" height="119" rx="8"/>${m()}</svg><b>${b.querySelector("b")?.firstChild?.textContent||""}</b>`;
+    box.hidden=false;
+    const h=box.offsetHeight,w=box.offsetWidth;
+    box.style.left=Math.max(8,pr.left-w-12)+"px";
+    box.style.top=Math.min(innerHeight-h-8,Math.max(8,br.top+br.height/2-h/2))+"px";
+  };
+  const hide=()=>{box.hidden=true};
+  const sel='[data-view="layout"]';
+  p.addEventListener("mouseover",e=>{const b=e.target.closest(sel);if(b)show(b)});
+  p.addEventListener("mouseout",e=>{const b=e.target.closest(sel);if(b&&!b.contains(e.relatedTarget))hide()});
+  p.addEventListener("focusin",e=>{const b=e.target.closest(sel);if(b)show(b)});
+  p.addEventListener("focusout",e=>{if(e.target.closest(sel))hide()});
+  p.addEventListener("scroll",hide);
+  document.addEventListener("click",e=>{if(!e.target.closest("#viewPanel"))hide()});
 })();
 let appliedLayout=null;
 function applyView(){

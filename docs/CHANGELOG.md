@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**A small picture of each layout.** In Customise, point at (or tab to) a layout and a small picture of it appears beside the panel, so you can see what it is without changing the page. The Colours and Highlight colour choices still preview on the whole page as before.
+
 **The tab says View / Close, and Highlight colours stay out of Standard.** The little tab on the right edge now reads **View** and changes to **Close** while Customise is open. When Colours is on **Standard**, the Highlight colour choices are switched off (greyed out) and the usual blue is used; pick Light, Dark or System theme and your saved highlight colour comes back.
 
 **Settings and Administration follow your colours.** The Settings and Administration pages now use the same Dark look and the same Highlight colour as the inbox (and Light, as before), including the sign-in pages in this browser. Changing a Customise choice no longer closes the email you have open; only choosing a different layout does that.
