@@ -38,7 +38,7 @@ const handler = async (route) => {
   if (p === "/api/v1/accounts/a1/messages") return json(200, mails);
   if (p === "/api/v1/me/mail-view") { if (req.method() === "PUT") { puts.push(JSON.parse(req.postData())); return json(200, { view: puts[puts.length - 1] }); } return json(200, { view: serverView }); }
   if (p === "/api/v1/accounts/a1/messages/m1/original") { originalFetches++; return json(200, { from: { name: "Sender 1", address: "s1@example.invalid" }, to: [{ address: "me@example.invalid" }], date: "Sun 11:24 PM", subject: "Email number 1", text: "Plain words of the original email.", links: [], has_html: true, remote_images: 0, attachments: [], truncated: false }); }
-  if (p === "/api/v1/accounts/a1/messages/m1/original/html") { framesServed++; return route.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><body style='margin:0'><div style='height:1600px;font:14px Arial'>The original email, sent as the sender made it.</div><script>parent.postMessage({enveliq:'height',height:1600},'*')</script></body>" }); }
+  if (p === "/api/v1/accounts/a1/messages/m1/original/html") { framesServed++; return route.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><body style='margin:0'><div style='height:1600px;font:14px Arial'><a id='lk' style='display:inline-block;margin:20px' href='https://shop.example.com/deal?id=1&x=2'>Shop now</a> The original email, sent as the sender made it.</div><script>document.addEventListener('click',function(e){var a=e.target.closest('a');if(a){e.preventDefault();parent.postMessage({enveliq:'link',href:a.href,x:e.clientX,y:e.clientY},'*')}})</script><script>parent.postMessage({enveliq:'height',height:1600},'*')</script></body>" }); }
   if (p === "/api/v1/me/preferences") return json(200, { keep_reviewed: true, keep_archived: true, keep_days: 7, max_days: 14, instructions: "", undo_send_seconds: 0 });
   if (p === "/api/v1/me/features") return json(200, { effective: {}, admin: {}, user: {}, labels: {} });
   if (p === "/api/v1/sync/status") return json(200, { enabled: true, minutes: 10, now: Date.now() / 1000, accounts: { a1: { ok: true, at: now } } });
@@ -84,6 +84,15 @@ const fetchesBefore = originalFetches, framesBefore = framesServed;
 await page.evaluate(() => render());
 await page.waitForTimeout(400);
 check("a redraw of the page does not reload the email or lose its place", (await page.locator(".qorig iframe").getAttribute("data-mark")) === "same" && (await page.locator(".qorig").evaluate((e) => e.scrollTop)) === 400 && originalFetches === fetchesBefore && framesServed === framesBefore);
+await page.frameLocator(".qorig iframe").locator("#lk").click();
+await page.waitForSelector("#linkPop:not([hidden])");
+const lp = await page.locator("#linkPop").boundingBox(), lk = await page.locator(".qorig iframe").boundingBox();
+check("a link in the reading panel opens a small box that names the website and shows the whole address", (await page.locator("#linkPop").innerText()).includes("shop.example.com") && (await page.locator("#linkPop code").innerText()) === "https://shop.example.com/deal?id=1&x=2" && (await page.locator("#linkPop a").getAttribute("href")) === "https://shop.example.com/deal?id=1&x=2");
+check("the box appears next to the link, not at the top of the page", Math.abs(lp.y - (lk.y + 20)) < 160 && lp.x >= 0 && lp.x + lp.width <= 1280);
+check("the old bar at the top stays hidden", await page.locator("#linkAsk").isHidden());
+if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, "link-pop.png") });
+await page.locator("#linkPop button").click();
+check("Not now closes it", await page.locator("#linkPop").isHidden());
 await page.locator("#viewTab").click({ force: true }).catch(() => {});
 await page.keyboard.press("Escape");
 await page.locator("article.mail .qmain").nth(1).click();

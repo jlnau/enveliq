@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Links in the original email now ask first when it is shown in the reading panel.** Before, pressing a link there did nothing. Now a small box appears next to your pointer. It names the website, shows the whole address, and offers Open it or Not now. The pop-up window version is unchanged. Touches `prototype/index.html` and the link message in `backend/mail/htmlview.py`.
+
 **In the Light look, the original email background is always white.** The choice greys out and shows White. Your own choice is kept and comes back when you switch to another look.
 
 **Help bubbles near the bottom of Customise no longer get cut off.** When there is no room below a "?", its bubble now opens above it.
