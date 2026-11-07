@@ -537,10 +537,8 @@ async function open(server, { seen = true } = {}) {
   const w0 = (await page.locator(".content").boundingBox()).width;
   await page.setViewportSize({ width: 1700, height: 900 });
   const w1 = (await page.locator(".content").boundingBox()).width;
-  await panelOpen(page); await page.click('#viewPanel [data-view=width][data-val=full]');
-  check("full width widens the page, header included", (await page.locator(".content").boundingBox()).width > w1 + 30 && (await page.locator(".top-inner").boundingBox()).width > 1200);
+  check("there is no Width choice in Customise any more", (await page.locator('#viewPanel [data-view="width"]').count()) === 0);
   check("the Today card sits inside the page column, so it follows the width setting", await page.evaluate(() => !!document.querySelector(".content #dueBars")));
-  await panelOpen(page); await page.click('#viewPanel [data-view=width][data-val=centered]');
   await page.setViewportSize({ width: 1200, height: 900 });
   await panelOpen(page); await page.check("#vOpen");
   check("'show every email open' opens all rows with no collapse", (await page.locator("article.mail.open").count()) === (await page.locator("article.mail").count()) && (await page.locator("article.mail .qrow .qic").count()) === 0);
