@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import email
+import time
 from email import policy
 
 from test_bridge import MAILBOX, WORK, env, synced  # noqa: F401  (the shared Bridge fixture)
@@ -194,7 +195,7 @@ def test_propose_a_new_time_sends_plain_words_and_does_not_touch_the_calendar(en
     appm.sync.invite_target = lambda uid: "google"
     appm.sync.invite_put = lambda *a, **k: calls.append(a) or "Google Calendar"
     aid, mid = open_card(client, bridge)
-    start = 1_794_000_000                                   # Nov 2026
+    start = int(time.time()) + 7 * 86400                    # a week from now, so the test never goes stale
     r = client.post(f"/api/v1/accounts/{aid}/messages/{mid}/invite/propose", json={"start": start, "end": start + 2700, "zone": "Australia/Sydney", "note": "Wednesday suits me better."})
     assert r.status_code == 200, r.text
     msg = email.message_from_bytes(bridge.sent[-1]["data"] if isinstance(bridge.sent[-1]["data"], bytes) else bridge.sent[-1]["data"].encode(), policy=policy.default)
