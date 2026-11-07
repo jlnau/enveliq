@@ -1915,6 +1915,7 @@ html[data-scheme="dark"]:not([data-theme="light"]) .email-doc,html[data-scheme="
 .vhead,.vlabel,.vcheck,.vl{position:relative}
 .qtip:hover::after,.qtip:focus::after{content:attr(data-tip);position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel3);box-shadow:0 8px 24px rgba(0,0,0,.35);color:var(--text);font:400 12.5px/1.45 system-ui,sans-serif;letter-spacing:0;text-transform:none;text-align:left;white-space:normal;pointer-events:none}
 .vcheck .qtip{margin-left:6px;flex:none}
+.qtip.up:hover::after,.qtip.up:focus::after{top:auto;bottom:calc(100% + 4px)}
 .vtab .vt-view,.vtab .vt-close{writing-mode:vertical-rl;transform:rotate(180deg);font-size:12px;font-weight:650;letter-spacing:.08em;line-height:1}
 .vtab .vt-close,.vtab[aria-expanded="true"] .vt-view{display:none}.vtab[aria-expanded="true"] .vt-close{display:block}
 .vprev{position:fixed;z-index:75;width:216px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 10px 30px rgba(0,0,0,.4);pointer-events:none;text-align:center}
@@ -3075,6 +3076,8 @@ function applyScheme(over){
   const show=b=>{if(b.dataset.view==="highlight"&&((view.scheme||"standard")!=="standard"))applyHl(b.dataset.val)};
   const back=()=>{applyScheme();applyHl(hlFor())};
   p.addEventListener("click",e=>{if(e.target.closest(".qtip")){e.preventDefault();e.stopPropagation()}},true);
+  const qtipPlace=e=>{const q=e.target.closest&&e.target.closest(".qtip");if(!q)return;q.classList.remove("up");const pr=p.getBoundingClientRect(),qr=q.getBoundingClientRect();const below=Math.min(pr.bottom,innerHeight)-qr.bottom,above=qr.top-Math.max(pr.top,0);if(below<120&&above>below)q.classList.add("up")};
+  p.addEventListener("mouseover",qtipPlace);p.addEventListener("focusin",qtipPlace);
   p.addEventListener("mouseover",e=>{const b=e.target.closest(sel);if(b)show(b)});
   p.addEventListener("mouseout",e=>{const b=e.target.closest(sel);if(b&&!b.contains(e.relatedTarget))back()});
   p.addEventListener("focusin",e=>{const b=e.target.closest(sel);if(b)show(b)});

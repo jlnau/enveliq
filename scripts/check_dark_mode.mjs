@@ -218,6 +218,15 @@ check("System theme with a dark device gives the new Dark", (await page.evaluate
 await page.emulateMedia({ colorScheme: "light" });
 await page.waitForTimeout(400);
 check("System theme with a light device gives Light", (await page.evaluate(() => document.documentElement.dataset.theme)) === "light");
+await page.evaluate(() => { const b = document.getElementById("viewTab"); if (b.getAttribute("aria-expanded") !== "true") b.click(); });
+await page.evaluate(() => { const p = document.getElementById("viewPanel"); p.scrollTop = p.scrollHeight; });
+await page.locator("#vActionFeedback").evaluate((i) => i.closest("label").querySelector(".qtip").scrollIntoView({ block: "end" }));
+await page.locator("#vActionFeedback").evaluate((i) => i.closest("label").querySelector(".qtip")).catch(() => {});
+await page.locator("label:has(#vActionFeedback) .qtip").hover();
+await page.waitForTimeout(200);
+const tipBox = await page.evaluate(() => { const q = document.querySelector("label:has(#vActionFeedback) .qtip"); const t = getComputedStyle(q, "::after"); const pr = document.getElementById("viewPanel").getBoundingClientRect(); const qr = q.getBoundingClientRect(); return { up: q.classList.contains("up"), h: parseFloat(t.height), qBottom: qr.bottom, panelBottom: pr.bottom, qTop: qr.top, bottomProp: t.bottom, topProp: t.top }; });
+if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/bottom-tip.png" });
+check("the help bubble at the bottom opens upward so it is not cut off", tipBox.up === true);
 check("the account menu has no colour buttons any more", (await page.locator("#userMenu [data-theme-choice], #userMenu #themeBtn").count()) === 0);
 await browser.close();
 if (failed) process.exit(1);
