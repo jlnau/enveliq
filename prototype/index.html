@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="/brand/enveliq-icon-256.webp">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0d0f14">
-<script>try{var t=localStorage.getItem("enveliq-theme");if(t==="light"||(t==="system"&&matchMedia("(prefers-color-scheme: light)").matches))document.documentElement.setAttribute("data-theme","light")}catch(e){}try{var v=JSON.parse(localStorage.getItem("enveliq-view")||"null");var sl=matchMedia("(prefers-color-scheme: light)").matches;if(v&&(v.scheme==="dark"||(v.scheme==="system"&&!sl)))document.documentElement.setAttribute("data-scheme","dark");if(v&&/^(green|purple|orange|pink|teal)$/.test(v.highlight))document.documentElement.setAttribute("data-hl",v.highlight)}catch(e){}</script>
+<script>try{var t=localStorage.getItem("enveliq-theme");if(t==="light"||(t==="system"&&matchMedia("(prefers-color-scheme: light)").matches))document.documentElement.setAttribute("data-theme","light")}catch(e){}try{var v=JSON.parse(localStorage.getItem("enveliq-view")||"null");var sl=matchMedia("(prefers-color-scheme: light)").matches;if(v&&(v.scheme==="dark"||(v.scheme==="system"&&!sl)))document.documentElement.setAttribute("data-scheme","dark");if(v&&v.scheme&&v.scheme!=="standard"&&/^(green|purple|orange|pink|teal)$/.test(v.highlight))document.documentElement.setAttribute("data-hl",v.highlight)}catch(e){}</script>
 <style>
 :root{
   --bg:#0d0f14;--panel:#141821;--panel2:#1a1f2a;--panel3:#202634;--line:#2a3140;
@@ -1909,11 +1909,14 @@ html[data-scheme="dark"]:not([data-theme="light"]) .today-card,html[data-scheme=
 .seg.grid button{border-left:0;background:var(--panel2);min-height:38px;padding:8px 6px;white-space:nowrap}.seg.grid button.on{background:var(--c-0c1a33)}
 html[data-scheme="dark"]:not([data-theme="light"]) .seg.grid{background:#333!important}html[data-scheme="dark"]:not([data-theme="light"]) .seg.grid button{background:#222}html[data-scheme="dark"]:not([data-theme="light"]) .seg.grid button.on{background:#2f2f2f!important}
 html[data-scheme="dark"]:not([data-theme="light"]) .email-doc,html[data-scheme="dark"]:not([data-theme="light"]) .email-doc .fmt-pane,html[data-scheme="dark"]:not([data-theme="light"]) .qorig,html[data-scheme="dark"]:not([data-theme="light"]) .reading .email-doc,html[data-scheme="dark"]:not([data-theme="light"]) .qside .email-doc{background:var(--paper)!important;background-image:none!important}
+.vsec.vdisabled .seg{opacity:.45}.vsec.vdisabled .seg button{cursor:not-allowed}
 .qtip{display:inline-grid;place-items:center;width:15px;height:15px;margin-left:6px;border:1px solid var(--faint);border-radius:50%;color:var(--faint);font:700 10px/1 system-ui,sans-serif;letter-spacing:0;text-transform:none;cursor:help;vertical-align:1px;outline-offset:2px}
 .qtip:hover,.qtip:focus{color:var(--text);border-color:var(--text)}
 .vhead,.vlabel,.vcheck,.vl{position:relative}
 .qtip:hover::after,.qtip:focus::after{content:attr(data-tip);position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel3);box-shadow:0 8px 24px rgba(0,0,0,.35);color:var(--text);font:400 12.5px/1.45 system-ui,sans-serif;letter-spacing:0;text-transform:none;text-align:left;white-space:normal;pointer-events:none}
 .vcheck .qtip{margin-left:6px;flex:none}
+.vtab .vt-view,.vtab .vt-close{writing-mode:vertical-rl;transform:rotate(180deg);font-size:12px;font-weight:650;letter-spacing:.08em;line-height:1}
+.vtab .vt-close,.vtab[aria-expanded="true"] .vt-view{display:none}.vtab[aria-expanded="true"] .vt-close{display:block}
 </style>
 </head>
 <body class="booting">
@@ -2097,7 +2100,7 @@ html[data-scheme="dark"]:not([data-theme="light"]) .email-doc,html[data-scheme="
   <button class="user-option" data-preview-only data-switch-user="cara"><span><strong>Cara</strong><br><small>User</small></span><span>CA</span></button>
 </div>
 
-<button class="vtab" id="viewTab" type="button" aria-expanded="false" aria-controls="viewPanel" title="Change how the inbox looks" aria-label="Change how the inbox looks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+<button class="vtab" id="viewTab" type="button" aria-expanded="false" aria-controls="viewPanel" title="Change how the inbox looks" aria-label="Change how the inbox looks"><span class="vt-view">View</span><span class="vt-close">Close</span></button>
 <aside class="vpanel" id="viewPanel" aria-label="View options">
   <div class="vhead"><span><strong>View</strong><span class="qtip" tabindex="0" role="note" aria-label="Changes apply straight away." data-tip="Changes apply straight away.">?</span></span><button class="linkbtn" id="viewReset" type="button">Reset to default</button></div>
     <div class="vsec"><div class="vlabel">Layout</div>
@@ -2110,7 +2113,7 @@ html[data-scheme="dark"]:not([data-theme="light"]) .email-doc,html[data-scheme="
     </div></div>
   <div class="vsec"><div class="vlabel">Row spacing</div><div class="seg" role="radiogroup" aria-label="Row spacing"><button type="button" role="radio" data-view="density" data-val="compact">Compact</button><button type="button" role="radio" data-view="density" data-val="standard">Standard</button><button type="button" role="radio" data-view="density" data-val="roomy">Roomy</button></div></div>
   <div class="vsec"><div class="vlabel">Colours<span class="qtip" tabindex="0" role="note" aria-label="Standard is the blue look. Dark is a true dark grey with no blue sky; the email you are on stays coloured so you can see where you are. System theme follows your device: Light when your device is light, Dark when it is dark. Point at a choice to preview it." data-tip="Standard is the blue look. Dark is a true dark grey with no blue sky; the email you are on stays coloured so you can see where you are. System theme follows your device: Light when your device is light, Dark when it is dark. Point at a choice to preview it.">?</span></div><div class="seg grid g2" role="radiogroup" aria-label="Colours"><button type="button" role="radio" data-view="scheme" data-val="standard">Standard</button><button type="button" role="radio" data-view="scheme" data-val="light">Light</button><button type="button" role="radio" data-view="scheme" data-val="dark">Dark</button><button type="button" role="radio" data-view="scheme" data-val="system">System theme</button></div></div>
-  <div class="vsec"><div class="vlabel">Highlight colour<span class="qtip" tabindex="0" role="note" aria-label="The colour of the email you are on, the open menu item, the New email button and links. It works in both the light and dark looks. Point at a colour to preview it." data-tip="The colour of the email you are on, the open menu item, the New email button and links. It works in both the light and dark looks. Point at a colour to preview it.">?</span></div><div class="seg grid g3" role="radiogroup" aria-label="Highlight colour"><button type="button" role="radio" data-view="highlight" data-val="blue">Blue</button><button type="button" role="radio" data-view="highlight" data-val="green">Green</button><button type="button" role="radio" data-view="highlight" data-val="purple">Purple</button><button type="button" role="radio" data-view="highlight" data-val="orange">Orange</button><button type="button" role="radio" data-view="highlight" data-val="pink">Pink</button><button type="button" role="radio" data-view="highlight" data-val="teal">Teal</button></div></div>
+  <div class="vsec"><div class="vlabel">Highlight colour<span class="qtip" tabindex="0" role="note" aria-label="The colour of the email you are on, the open menu item, the New email button and links. It works in both the light and dark looks. Point at a colour to preview it. Highlight colours are for Light, Dark and System theme; Standard always uses blue." data-tip="The colour of the email you are on, the open menu item, the New email button and links. It works in both the light and dark looks. Point at a colour to preview it.">?</span></div><div class="seg grid g3" role="radiogroup" aria-label="Highlight colour"><button type="button" role="radio" data-view="highlight" data-val="blue">Blue</button><button type="button" role="radio" data-view="highlight" data-val="green">Green</button><button type="button" role="radio" data-view="highlight" data-val="purple">Purple</button><button type="button" role="radio" data-view="highlight" data-val="orange">Orange</button><button type="button" role="radio" data-view="highlight" data-val="pink">Pink</button><button type="button" role="radio" data-view="highlight" data-val="teal">Teal</button></div></div>
   <div class="vsec"><div class="vlabel">Original email background<span class="qtip" tabindex="0" role="note" aria-label="The paper colour behind an email shown as the sender made it. It never changes the email itself." data-tip="The paper colour behind an email shown as the sender made it. It never changes the email itself.">?</span></div><div class="seg" role="radiogroup" aria-label="Original email background"><button type="button" role="radio" data-view="paper" data-val="white">White</button><button type="button" role="radio" data-view="paper" data-val="soft">Soft</button><button type="button" role="radio" data-view="paper" data-val="softer">Softer</button></div></div>
   <div class="vsec"><div class="vlabel">Width</div><div class="seg" role="radiogroup" aria-label="Width"><button type="button" role="radio" data-view="width" data-val="centered">Centred</button><button type="button" role="radio" data-view="width" data-val="full">Full width</button></div></div>
   <div class="vsec"><div class="vlabel">Email style<span class="qtip" tabindex="0" role="note" aria-label="How an opened email looks. Side rail puts the buttons in a bar down the left and the task along the top. On a phone, the buttons sit along the bottom." data-tip="How an opened email looks. Side rail puts the buttons in a bar down the left and the task along the top. On a phone, the buttons sit along the bottom.">?</span></div><div class="seg" role="radiogroup" aria-label="Email style"><button type="button" role="radio" data-view="style" data-val="classic">Classic</button><button type="button" role="radio" data-view="style" data-val="rail">Side rail</button></div></div>
@@ -3050,6 +3053,7 @@ async function loadServerView(){
   viewServerReady=true;
   applyView();
 }
+function hlFor(sc){return (sc||view.scheme||"standard")==="standard"?"blue":(view.highlight||"blue")}
 function applyHl(h){const r=document.documentElement;if((h||"blue")==="blue")delete r.dataset.hl;else r.dataset.hl=h}
 function applyScheme(over){
   // Colours: Standard (the blue look), Light, Dark (neutral grey) or System (Light or Dark, whichever this device is using).
@@ -3063,8 +3067,8 @@ function applyScheme(over){
 // Pointing at (or tabbing to) a colour choice shows it for a moment; moving away puts the saved choice back. Nothing is saved until it is clicked.
 (function(){
   const sel='[data-view="scheme"],[data-view="highlight"]',p=$("viewPanel");
-  const show=b=>{if(b.dataset.view==="scheme")applyScheme(b.dataset.val);else applyHl(b.dataset.val)};
-  const back=()=>{applyScheme();applyHl(view.highlight)};
+  const show=b=>{if(b.dataset.view==="scheme"){applyScheme(b.dataset.val);applyHl(hlFor(b.dataset.val))}else if(hlFor()!=="blue"||(view.scheme||"standard")!=="standard")applyHl(b.dataset.val)};
+  const back=()=>{applyScheme();applyHl(hlFor())};
   p.addEventListener("click",e=>{if(e.target.closest(".qtip")){e.preventDefault();e.stopPropagation()}},true);
   p.addEventListener("mouseover",e=>{const b=e.target.closest(sel);if(b)show(b)});
   p.addEventListener("mouseout",e=>{const b=e.target.closest(sel);if(b&&!b.contains(e.relatedTarget))back()});
@@ -3078,7 +3082,7 @@ function applyView(){
   appliedLayout=lay();
   const c=document.body.classList;
   for(const l of VIEW_ALLOWED.layout)c.toggle("layout-"+l,lay()===l);
-  c.toggle("style-rail",view.style==="rail");c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");document.documentElement.dataset.paper=view.paper||"soft";applyScheme();applyHl(view.highlight);
+  c.toggle("style-rail",view.style==="rail");c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");document.documentElement.dataset.paper=view.paper||"soft";applyScheme();applyHl(hlFor());document.querySelectorAll('#viewPanel [data-view="highlight"]').forEach(b=>{b.disabled=(view.scheme||"standard")==="standard"});const hs=document.querySelector('#viewPanel [data-view="highlight"]')?.closest(".vsec");if(hs)hs.classList.toggle("vdisabled",(view.scheme||"standard")==="standard");
   document.querySelectorAll("#viewPanel [data-view]").forEach(b=>{const on=view[b.dataset.view]===b.dataset.val;b.classList.toggle("on",on);b.setAttribute("aria-checked",String(on))});
   const classic=view.layout==="list";
   $("vOpen").checked=view.rows==="open";$("vPeek").checked=view.peek;$("vActionFeedback").checked=view.action_feedback!==false;$("vOrig").checked=!!view.show_original;$("vConv").checked=!!view.conversations;$("vCounts").checked=view.show_counts!==false;$("vToday").checked=view.show_today!==false;

@@ -10,6 +10,6 @@ try {
   if (v) {
     var sl = matchMedia("(prefers-color-scheme: light)").matches;
     if (v.scheme === "dark" || (v.scheme === "system" && !sl)) document.documentElement.setAttribute("data-scheme", "dark");
-    if (/^(green|purple|orange|pink|teal)$/.test(v.highlight)) document.documentElement.setAttribute("data-hl", v.highlight);
+    if (v.scheme && v.scheme !== "standard" && /^(green|purple|orange|pink|teal)$/.test(v.highlight)) document.documentElement.setAttribute("data-hl", v.highlight);
   }
 } catch (e) { /* storage unavailable: stay standard */ }
