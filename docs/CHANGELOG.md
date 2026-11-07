@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Android: Away reply, Saved replies, Subscriptions, Tags and Ask Enveliq.** Settings has **Away reply** (the same days and words as the website) and **Saved replies** (add, change or remove). **More** has **Ask Enveliq** (a chat about your own Enveliq; every answer is labelled as written by AI), **Tags** (your tags and the emails that carry each one) and **Subscriptions** (what you pay for and what renews soon, for reading). They use the website's own routes. Touches `android/`, `docs/ANDROID.md`.
+
 **The link box closes when you click anywhere else.** Clicking outside it, inside the email away from the link, or pressing Escape puts it away.
 
 **Links in the original email now ask first when it is shown in the reading panel.** Before, pressing a link there did nothing. Now a small box appears next to your pointer. It names the website, shows the whole address, and offers Open it or Not now. The pop-up window version is unchanged. Touches `prototype/index.html` and the link message in `backend/mail/htmlview.py`.

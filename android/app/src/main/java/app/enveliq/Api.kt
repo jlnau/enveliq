@@ -1040,6 +1040,87 @@ class EnveliqApi(address: String) {
     }
 
     /** The email as the server describes it: its plain text, and whether a formatted (HTML) version exists. */
+    // ---- Away reply, saved replies, subscriptions, tag emails, headers and the Ask Enveliq chat. Same routes as the website. ----
+
+    fun away(): AwayInfo = awayOf(JSONObject(call("GET", "/api/v1/me/away")))
+
+    fun saveAway(enabled: Boolean, start: String, end: String, body: String): AwayInfo =
+        awayOf(JSONObject(call("PUT", "/api/v1/me/away", JSONObject().put("enabled", enabled).put("start", start).put("end", end).put("body", body))))
+
+    private fun awayOf(r: JSONObject) = AwayInfo(r.optBoolean("enabled", false), r.str("start"), r.str("end"), r.str("body"), r.str("state"), r.optInt("answered", 0), r.str("today"))
+
+    fun savedReplies(): List<SavedReply> = repliesOf(JSONObject(call("GET", "/api/v1/me/saved")))
+
+    private fun repliesOf(r: JSONObject): List<SavedReply> = r.list("replies").map { SavedReply(it.str("id"), it.str("title"), it.str("text")) }
+
+    fun addSavedReply(title: String, text: String): List<SavedReply> =
+        repliesOf(JSONObject(call("POST", "/api/v1/me/saved/replies", JSONObject().put("title", title).put("text", text))))
+
+    fun updateSavedReply(id: String, title: String, text: String): List<SavedReply> =
+        repliesOf(JSONObject(call("PUT", "/api/v1/me/saved/replies/" + enc(id), JSONObject().put("title", title).put("text", text))))
+
+    fun deleteSavedReply(id: String): List<SavedReply> = repliesOf(JSONObject(call("DELETE", "/api/v1/me/saved/replies/" + enc(id))))
+
+    fun subscriptions(): SubscriptionsInfo {
+        val r = JSONObject(call("GET", "/api/v1/me/subscriptions"))
+        return SubscriptionsInfo(r.optBoolean("enabled", false), r.list("items").map {
+            val next = it.optJSONObject("next")
+            SubscriptionRow(it.str("id"), it.str("service"), if (it.isNull("amount")) "" else it.optString("amount"), it.str("period"), it.str("status"),
+                next?.str("on") ?: "", next?.optInt("days", 0) ?: 0, next?.str("kind") ?: "", it.optBoolean("soon", false))
+        })
+    }
+
+    /** The emails that carry one tag, in the same shape as a folder's emails. */
+    fun tagMail(accountId: String, tag: String, offset: Int): FolderPage {
+        val r = JSONObject(call("GET", "/api/v1/accounts/" + enc(accountId) + "/tag-mail?tag=" + enc(tag) + "&offset=" + offset))
+        return FolderPage(r.list("rows").map {
+            val from = it.str("from_name").ifBlank { it.str("from_address") }.ifBlank { "(no sender)" }
+            FolderMail(it.str("token"), from, it.str("subject"), it.optDouble("date", 0.0).toLong())
+        }, r.optInt("total", 0), r.optBoolean("more", false))
+    }
+
+    /** The header lines of an email, fetched now and never kept. */
+    fun originalHeaders(mail: Mail): String =
+        JSONObject(call("GET", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/original/headers")).str("headers")
+
+    /** The whole email as an .eml file, fetched now. The app does not keep it. */
+    fun originalEml(mail: Mail): ByteArray {
+        val conn = URL(base + "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/original/eml").openConnection() as HttpURLConnection
+        try {
+            conn.connectTimeout = 15000
+            conn.readTimeout = 60000
+            val code = conn.responseCode
+            if (code >= 400) {
+                val text = conn.errorStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
+                throw ApiException(detail(text, code), code)
+            }
+            return conn.inputStream.use { it.readBytes() }
+        } catch (e: ApiException) {
+            throw e
+        } catch (e: IOException) {
+            throw ApiException("Could not get the email. Check your connection and try again.")
+        } finally {
+            conn.disconnect()
+        }
+    }
+
+    /** The Ask Enveliq chat: the latest chat, or the one with this id. */
+    fun agent(chat: String? = null): AgentInfo =
+        agentOf(JSONObject(call("GET", "/api/v1/me/agent" + if (chat != null) "?chat=" + enc(chat) else "")))
+
+    fun agentSend(text: String, chat: String?): AgentInfo {
+        val body = JSONObject().put("text", text)
+        if (chat != null) body.put("chat", chat)
+        return agentOf(JSONObject(call("POST", "/api/v1/me/agent/messages", body)))
+    }
+
+    private fun agentOf(r: JSONObject): AgentInfo {
+        val c = r.optJSONObject("chat")
+        return AgentInfo(r.str("name").ifBlank { "Enveliq" }, r.optBoolean("ready", false), c?.str("id"),
+            c?.list("messages")?.map { AgentMessage(it.str("role"), it.str("text")) } ?: emptyList(),
+            c?.optBoolean("pending", false) ?: false, c?.str("error") ?: "")
+    }
+
     fun originalInfo(mail: Mail): OriginalInfo {
         val r = JSONObject(call("GET", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/original"))
         return OriginalInfo(r.str("text").ifBlank { "(no text content)" }, r.optBoolean("has_html", false), r.optInt("remote_images", 0))

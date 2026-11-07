@@ -184,6 +184,8 @@ internal fun MoreTab(api: EnveliqApi, start: String = "home", findStart: FindSpe
     val back = { page = "home" }
     var cleanOn by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { cleanOn = withContext(Dispatchers.IO) { api.cleanUpAvailable() } }
+    var mailboxIds by remember { mutableStateOf(emptyList<String>()) }
+    LaunchedEffect(Unit) { try { mailboxIds = withContext(Dispatchers.IO) { api.mailboxes().map { it.id } } } catch (e: Exception) { } }
     when {
         page == "bell" -> BellPage(api, back)
         page == "trips" -> TripsPage(api, back)
@@ -191,12 +193,18 @@ internal fun MoreTab(api: EnveliqApi, start: String = "home", findStart: FindSpe
         page == "find" -> FindPage(api, findStart, back)
         page == "later" -> WaitingPage(api, back)
         page == "cleanup" -> CleanUpPage(api, back)
+        page == "subscriptions" -> SubscriptionsPage(api, back)
+        page == "tags" -> TagsPage(api, mailboxIds, back)
+        page == "ask" -> AskPage(api, back)
         else -> Column(Modifier.fillMaxSize()) {
             Heading("More", "")
             LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(listOf(
                     Triple("cleanup", "Clean up", "Quiet the mailing lists you do not need."),
                     Triple("find", "Find any email", "Search everything in your mailboxes, old email too."),
+                    Triple("ask", "Ask Enveliq", "Questions about your own Enveliq. Answers are written by AI."),
+                    Triple("tags", "Tags", "Your tags, and the emails that carry each one."),
+                    Triple("subscriptions", "Subscriptions", "What you pay for, and what renews soon."),
                     Triple("later", "Waiting to send", "Emails you set to go later, and any that could not go."),
                     Triple("bell", "Notes and alerts", "Things your other services told Enveliq."),
                     Triple("trips", "Trips and calendar", "Flights, stays and bookings from your email."),

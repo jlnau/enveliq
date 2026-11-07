@@ -527,6 +527,8 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
             if (note.isNotEmpty()) Footnote(note, Amber)
         }
         "rules" -> RulesPage(api, back("home"))
+        "away" -> AwayPage(api, back("home"))
+        "saved" -> SavedRepliesPage(api, back("home"))
         "muted" -> Page("Muted conversations", back("home")) {
             var items by remember { mutableStateOf<List<MutedConversation>?>(null) }
             var note by remember { mutableStateOf("") }
@@ -681,6 +683,10 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                 NavRow("🚫", tintAlerts, "Blocked senders") { page = "blocked" }
                 HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
                 NavRow("🔇", tintAlerts, "Muted conversations") { page = "muted" }
+                HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                NavRow("✈", tintAccount, "Away reply", note = "Answer new email for you while you are away.") { page = "away" }
+                HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                NavRow("💬", tintAccount, "Saved replies", note = "Short answers you use again and again.") { page = "saved" }
             }
             if (writeOn) Group {
                 NavRow("✎", tintAccount, "Writing help", note = "Suggested wording, Quick AI Send and your writing style.") { page = "writing" }

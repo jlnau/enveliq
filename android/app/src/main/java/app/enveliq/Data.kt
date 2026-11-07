@@ -191,3 +191,10 @@ data class DigestItem(val accountId: String, val messageId: String, val sender: 
 
 /** The daily summary: the emails held for it (they are not in the inbox). [enabled] is false when the person has not switched it on. */
 data class SummaryInfo(val enabled: Boolean, val count: Int, val unread: Int, val items: List<DigestItem>)
+
+data class AwayInfo(val enabled: Boolean, val start: String, val end: String, val body: String, val state: String, val answered: Int, val today: String)
+data class SavedReply(val id: String, val title: String, val text: String)
+data class SubscriptionRow(val id: String, val service: String, val amount: String, val period: String, val status: String, val nextOn: String, val nextDays: Int, val nextKind: String, val soon: Boolean)
+data class SubscriptionsInfo(val enabled: Boolean, val items: List<SubscriptionRow>)
+data class AgentMessage(val role: String, val text: String)
+data class AgentInfo(val name: String, val ready: Boolean, val chatId: String?, val messages: List<AgentMessage>, val pending: Boolean, val error: String)

@@ -112,6 +112,14 @@ Settings, Security, **Your devices** lists the places you are signed in and lets
 - **Alerts for notes and alerts, tasks due today and parcels to confirm.** **Settings, Notifications** has a switch for each, off until you turn it on. Direct mode only (not Google's push). The server's alert stream tells the app only *which kind* has something new, never any words, so the note says just "New message", "A task is due" and so on. They follow your quiet hours.
 - **Install updates from inside the app.** **Settings, About, Install it**: the app downloads the new version through your own server (which checks it against its published checksum), then Android asks you to confirm. Android asks once to allow Enveliq to install apps. See [Updates](UPDATES.md).
 
+## Added in version 0.104
+
+- **Away reply** (Settings). Switch it on, pick the first and last day with the phone's day picker, write the words, and Save. It is the website's Away reply (see [Away reply](AWAY_REPLY.md)), saved on your server.
+- **Saved replies** (Settings). Add, change or remove the short answers you keep on the website.
+- **Ask Enveliq** (More). A chat about your own Enveliq, the same as the website's Agent chat. Each answer is labelled "Written by AI". An administrator can keep it to administrators, and it needs an AI model to be set up.
+- **Tags** (More). Your mailbox's tags as chips; tap one to read the emails that carry it. Read when you look and never kept.
+- **Subscriptions** (More). The website's list of what you pay for and what renews soon, for reading. Changes are made on the website.
+
 ## Not in the app
 
 - **A calendar of events.** Trips and bookings are listed under More, Trips and calendar.
