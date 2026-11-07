@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Check for new mail instantly (Proton Bridge).** Each Proton Bridge mailbox has a new **Check for new mail instantly** switch (off at first). When it is on, Enveliq keeps one quiet connection to Bridge open and checks the mailbox the moment new mail arrives, instead of waiting for the timer. The timed check keeps running underneath, so a dropped connection never loses mail. Touches `backend/mail/instant.py`, `backend/mail/scheduler.py`, `web/static/auth.js`, `docs/PROTON_BRIDGE.md`.
+
 **Copy a sign-in code with one tap.** When an email is a sign-in or verification code, Enveliq shows a **Copy code 123456** button under the AI summary, on the website and in the Android app. On Android the new-email alert also has a **Copy code** button, so you can copy the code without opening the app. The code is found only in the subject and the AI summary (the email itself is never kept), and the lock screen still shows nothing private. Browser pop-up alerts cannot copy, so on the website the button is in the summary. Touches `prototype/index.html`, `android/`, `docs/INBOX.md`, `docs/ANDROID.md`, `scripts/check_copy_code.mjs`.
 
 **Android: Highlight colour, and Forward, Tag and Rules for several emails.** **Settings, Appearance** has a **Highlight colour** (Blue, Green, Purple, Orange, Pink or Teal) for buttons, links and chosen items. It is kept on the phone. Picking several emails now shows **Forward**, **Tag** and **Rules** under the buttons: Forward sends each email on its own to one address, Tag adds the tags you pick (one mailbox at a time) and Rules makes an always-archive, mark-as-read or star rule for each sender. Touches `android/`, `docs/ANDROID.md`.

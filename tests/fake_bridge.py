@@ -7,6 +7,7 @@ import datetime
 import ipaddress
 import re
 import socket
+import select
 import socketserver
 import ssl
 import threading
@@ -67,6 +68,7 @@ class FakeBridge:
         self.folders = folders if folders is not None else [("\\HasNoChildren", "INBOX"), ("\\HasNoChildren \\Archive", "Archive"), ("\\HasNoChildren \\Trash", "Trash")]
         self.uidvalidity = 7
         self.messages: dict[int, dict] = {}          # uid -> {raw, flags, folder}
+        self.idles = 0                                # how many times a client started IDLE
         self.log: list[str] = []                     # IMAP commands received (passwords redacted)
         self.smtp_log: list[str] = []
         self.sent: list[dict] = []
@@ -139,7 +141,7 @@ class FakeBridge:
                     bridge.log.append(f"{cmd} {'***' if cmd == 'LOGIN' else args}".strip() + f" [tls={tls}]")
                     w = self.wfile.write
                     if cmd == "CAPABILITY":
-                        caps = "IMAP4rev1 UIDPLUS AUTH=XOAUTH2" + (" MOVE" if bridge.move_supported else "") + (" STARTTLS" if (not tls and bridge.starttls) else "")
+                        caps = "IMAP4rev1 UIDPLUS IDLE AUTH=XOAUTH2" + (" MOVE" if bridge.move_supported else "") + (" STARTTLS" if (not tls and bridge.starttls) else "")
                         w(f"* CAPABILITY {caps}\r\n{tag} OK done\r\n".encode())
                     elif cmd == "STARTTLS":
                         if not bridge.starttls:
@@ -195,6 +197,20 @@ class FakeBridge:
                         w(f"{tag} OK done\r\n".encode())
                     elif cmd == "UID":
                         self._uid(tag, args)
+                    elif cmd == "IDLE":
+                        bridge.idles += 1
+                        w(b"+ idling\r\n"); self.wfile.flush()
+                        seen = len(bridge.in_folder(self.cur))
+                        while True:
+                            if (hasattr(self.connection, "pending") and self.connection.pending()) or select.select([self.connection], [], [], 0.05)[0]:
+                                break
+                            now = len(bridge.in_folder(self.cur))
+                            if now != seen:
+                                seen = now
+                                w(f"* {now} EXISTS\r\n".encode()); self.wfile.flush()
+                        if not self.rfile.readline():
+                            return
+                        w(f"{tag} OK idle done\r\n".encode())
                     elif cmd == "NOOP":
                         w(f"{tag} OK\r\n".encode())
                     elif cmd == "LOGOUT":

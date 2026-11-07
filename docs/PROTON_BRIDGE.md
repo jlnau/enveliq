@@ -187,3 +187,13 @@ Then press **Check connection** and **Sync now**.
 - **Reviewed and Archived lists** keep Enveliq's summary card for a few days after
   you mark an email Reviewed or Archive it (your mailbox changes at once). Choose
   this under Settings, General; an administrator sets the longest allowed time.
+
+## Check for new mail instantly
+
+Each Proton Bridge mailbox has a **Check for new mail instantly** switch on its Mailboxes page (off at first). When it is on, Enveliq keeps one quiet connection to Bridge open (IMAP IDLE). Bridge only says that something changed; nothing is read over that connection. The moment it does, that mailbox is checked by the normal automatic check, so summaries, alerts and everything else behave exactly as they do for a timed check, just sooner.
+
+- It costs one open connection per mailbox that has the switch on, and almost nothing between emails, which is lighter than checking every two minutes.
+- It runs only while Enveliq is unlocked, and only when automatic checking is on for the server and for that mailbox. Turning either off, removing the mailbox or locking Enveliq closes the connection.
+- If the connection drops it is opened again after 15 seconds, then 30, and so on up to 5 minutes. The timed check keeps running underneath, so a dropped connection means slower mail, never missed mail.
+- Other mail services (Gmail, Microsoft and so on) do not have this switch yet.
+

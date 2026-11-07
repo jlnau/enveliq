@@ -82,6 +82,13 @@ check("automatic checking saves too", patches.length === 2 && patches[1].setting
 await page.check("#mb_ai_a1", { force: true });
 await page.waitForTimeout(150);
 check("switching on again saves too", patches.length === 3 && patches[2].settings.ai_summaries === true);
+check("Proton Bridge has a Check for new mail instantly switch, off at first", (await page.locator("#mb_instant_a1").count()) === 1 && !(await page.locator("#mb_instant_a1").isChecked()));
+check("Gmail does not have it", (await page.locator("#mb_instant_a2").count()) === 0);
+await page.check("#mb_auto_a1", { force: true });
+await page.waitForTimeout(150);
+await page.check("#mb_instant_a1", { force: true });
+await page.waitForTimeout(150);
+check("the instant switch saves at once", patches[patches.length - 1].settings.instant === true);
 await page.getByRole("button", { name: /^Name/ }).click();
 await page.fill("input[aria-label='Mailbox name']", "Home Proton");
 await page.keyboard.press("Tab");

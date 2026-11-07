@@ -2655,6 +2655,7 @@ function mailboxEditPage(me, a, { auto, ai }) {
   const sw = (id, title, hint, on, key) => swRow(title, on, (checked, box) => save({ [key]: checked }, () => { box.checked = !checked; }), { id, help: hint });
   const doing = [
     auto.enabled && isMail(a) ? sw(`mb_auto_${a.id}`, "Check for new mail automatically", `Enveliq looks every ${auto.minutes} minutes. Turn off to check only when you press Sync now.`, autoOn, "auto_sync") : null,
+    auto.enabled && a.auth_method === "proton_bridge" ? sw(`mb_instant_${a.id}`, "Check for new mail instantly", "Enveliq keeps a quiet connection to Proton Bridge open and looks the moment new mail arrives. If the connection drops, the timed check above still finds it.", !!(a.settings && a.settings.instant) && autoOn, "instant") : null,
     ai.configured ? sw(`mb_ai_${a.id}`, "Write AI summaries", "Each email gets a short summary, marked as written by AI. The email text goes to your AI model and is not kept.", !!(a.settings && a.settings.ai_summaries), "ai_summaries") : null,
     ai.configured && isMail(a) ? sw(`mb_wait_${a.id}`, "Follow sent mail for replies", "Shows Waiting for reply. Each new email you send is shown to your AI model once, to decide whether you expect an answer. Older sent mail is not read, and only a short note is kept.", !!(a.settings && a.settings.waiting), "waiting") : null,
   ].filter(Boolean);

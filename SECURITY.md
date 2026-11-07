@@ -129,6 +129,7 @@ Protect backups and encryption keys carefully. Anyone who obtains both may be ab
 Enveliq connects to existing email providers rather than replacing them.
 
 Supported connections include standard IMAP services, Proton Mail through Proton Bridge and Microsoft accounts using the supported authentication methods.
+The optional instant check for Proton Bridge keeps one extra authenticated connection open per chosen mailbox, only while Enveliq is unlocked. It receives only a "something changed" notice (no mail content), uses the same pinned certificate and sign-in as a normal check, and closes when Enveliq locks.
 
 ### What Enveliq stores
 

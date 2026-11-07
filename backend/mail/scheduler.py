@@ -19,6 +19,7 @@ from typing import Any, Callable
 
 from . import review
 from .errors import BridgeError
+from .instant import InstantListeners
 from .service import MAIL_METHODS, MailService
 
 log = logging.getLogger("enveliq.sync")
@@ -44,6 +45,8 @@ class AutoSync:
         self._next: dict[str, float] = {}
         self._fails: dict[str, int] = {}
         self._stop = threading.Event()
+        self._wake = threading.Event()                  # set when an instant-check connection hears about new mail
+        self.instant = InstantListeners(service, self.nudge)
         self._thread: threading.Thread | None = None
         self.digest_hold: Any = None                    # set by the application: holds new email that can wait for the daily summary (mail/digest.py)
         self.mail_alerts: Any = None                    # set by the application: new-email alerts (mail/mail_alerts.py)
@@ -79,9 +82,33 @@ class AutoSync:
 
     def stop(self) -> None:
         self._stop.set()
+        self._wake.set()
+        self.instant.stop_all()
+
+    def nudge(self, account_id: str) -> None:
+        """Make one mailbox due now (an instant-check connection heard about new mail) and wake the loop."""
+        self._next[account_id] = 0.0
+        self._wake.set()
+
+    def _reconcile_instant(self) -> None:
+        """Keep one waiting connection per mailbox that has Check instantly on, only while the vault is unlocked."""
+        if not self.vault.is_unlocked():
+            self.instant.stop_all()
+            return
+        try:
+            with self.vault.passive():
+                self.refresh()
+                self.instant.reconcile(self.vault.list_accounts(), self.enabled)
+        except Exception:
+            log.info("instant check set-up failed")
 
     def _run(self) -> None:
-        while not self._stop.wait(30):
+        while not self._stop.is_set():
+            self._wake.wait(30)
+            self._wake.clear()
+            if self._stop.is_set():
+                break
+            self._reconcile_instant()
             try:
                 self.run_once()
             except Exception:                           # never let the loop die
@@ -196,5 +223,7 @@ class AutoSync:
         self.state[aid] = result
 
     def status_for(self, account_ids: set[str]) -> dict[str, Any]:
+        live = self.instant.states()
         return {"enabled": self.enabled, "minutes": self.minutes, "source": self.source,
-                "accounts": {k: v for k, v in self.state.items() if k in account_ids}}
+                "accounts": {k: ({**v, "instant": live[k]} if k in live else v) for k, v in self.state.items() if k in account_ids},
+                "instant": {k: v for k, v in live.items() if k in account_ids}}
