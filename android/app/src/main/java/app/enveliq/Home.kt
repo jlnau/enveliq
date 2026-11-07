@@ -1441,6 +1441,13 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
                         mail.summary.ifBlank { "No summary yet." },
                         color = Ink, fontSize = 17.sp, lineHeight = 26.sp, modifier = Modifier.padding(top = 6.dp),
                     )
+                    val ctx = LocalContext.current
+                    CodeFinder.find(mail.subject, mail.summary)?.takeIf { !mail.ungenerated }?.let { code ->
+                        OutlinedButton(
+                            onClick = { CodeFinder.copy(ctx, code); android.widget.Toast.makeText(ctx, "Copied the code.", android.widget.Toast.LENGTH_SHORT).show() },
+                            modifier = Modifier.padding(top = 10.dp).height(40.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
+                        ) { Text("Copy code $code", color = Ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold) }
+                    }
                 }
             }
 

@@ -142,6 +142,12 @@ object Notifier {
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
             builder.setContentIntent(open)
+            // A sign-in or verification code gets a one-tap "Copy code" button (the lock screen still shows nothing private).
+            CodeFinder.find(m.subject, m.summary)?.let { code ->
+                val copy = Intent(context, CopyCodeReceiver::class.java).putExtra("code", code).putExtra("nid", id)
+                val pi = PendingIntent.getBroadcast(context, id * 10 + 3, copy, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+                builder.addAction(Notification.Action.Builder(Icon.createWithResource(context, R.drawable.ic_notification), "Copy code $code", pi).build())
+            }
             builder.addAction(action(context, id, 1, "Archive", m, Outcome.Archived))
             builder.addAction(action(context, id, 2, "Delete", m, Outcome.Binned))      // Delete moves the email to the Bin, like the Bin button in the app
         } else {

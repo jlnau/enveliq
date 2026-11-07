@@ -93,6 +93,7 @@
         </provider>
 
         <receiver android:name=".MailActionReceiver" android:exported="false" />
+        <receiver android:name=".CopyCodeReceiver" android:exported="false" />
 
         <receiver android:name=".WatcherStarter" android:exported="false">
             <intent-filter>

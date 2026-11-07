@@ -400,6 +400,7 @@ jobs:
       - run: node scripts/check_bulk_actions.mjs
       - run: node scripts/check_tags_view.mjs
       - run: node scripts/check_dark_mode.mjs
+      - run: node scripts/check_copy_code.mjs
 
   # Keep the required Browser checks status context stable.
   browser:
