@@ -1843,7 +1843,7 @@ body.in-tags .folder-side{display:none}
 .email-doc,.qorig{background:var(--paper)}.email-doc .fmt-pane{background:var(--paper)}
 .email-frame{background:transparent;mix-blend-mode:multiply}
 /* Dark colour scheme (Customise > Colours > Dark). Neutral greys, no sky; the email you are on keeps its blue. Light theme wins if it is switched on. */
-html[data-scheme="dark"]:not([data-theme="light"]){--bg:#161616;--panel:#1e1e1e;--panel2:#242424;--panel3:#2a2a2a;--line:#333;--text:#ececec;--muted:#a3a3a3;--faint:#777;--top-bg:#161616;--backdrop:none;--c-181c28:#1e1e1e;--c-11141b:#1a1a1a;--c-121620:#1a1a1a}
+html[data-scheme="dark"]:not([data-theme="light"]){--bg:#161616;--panel:#1e1e1e;--panel2:#242424;--panel3:#2a2a2a;--line:#333;--text:#ececec;--muted:#a3a3a3;--faint:#777;--top-bg:#161616;--backdrop:none;--c-181c28:#1e1e1e;--c-11141b:#1a1a1a;--c-121620:#1a1a1a;--c-11161f:#161616}
 html[data-scheme="dark"]:not([data-theme="light"]),html[data-scheme="dark"]:not([data-theme="light"]) body{background:#161616!important}
 html[data-scheme="dark"]:not([data-theme="light"]) .main::before,html[data-scheme="dark"]:not([data-theme="light"]) .top::before,html[data-scheme="dark"]:not([data-theme="light"]) .top:before{display:none!important}
 html[data-scheme="dark"]:not([data-theme="light"]) .enveliq-landscape,html[data-scheme="dark"]:not([data-theme="light"]) .landscape-sun,html[data-scheme="dark"]:not([data-theme="light"]) .landscape-mountain,html[data-scheme="dark"]:not([data-theme="light"]) .landscape-back,html[data-scheme="dark"]:not([data-theme="light"]) .landscape-front{display:none!important}
@@ -3071,10 +3071,11 @@ function applyScheme(over){
   p.addEventListener("focusin",e=>{const b=e.target.closest(sel);if(b)show(b)});
   p.addEventListener("focusout",e=>{if(e.target.closest(sel))back()});
 })();
+let appliedLayout=null;
 function applyView(){
-  readerOpen=false;
-  // Switching layouts starts with an unselected reading panel.
-  paneId=null;lastReadId=null;
+  // Switching to a different layout starts with an unselected reading panel. Any other Customise choice (colours, spacing, width and so on) leaves the open email as it is.
+  if(appliedLayout!==lay()){readerOpen=false;paneId=null;lastReadId=null}
+  appliedLayout=lay();
   const c=document.body.classList;
   for(const l of VIEW_ALLOWED.layout)c.toggle("layout-"+l,lay()===l);
   c.toggle("style-rail",view.style==="rail");c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");document.documentElement.dataset.paper=view.paper||"soft";applyScheme();applyHl(view.highlight);
@@ -6625,7 +6626,7 @@ function loadEmbedAssets(){
   window.ENVELIQ_EMBED=true;
   embedLoad=(async()=>{
     const css=await (await fetch("/static/auth.css",{credentials:"same-origin"})).text();
-    embedCss=css.replace(/:root\s*\{/g,":host{").replace(/html\[data-theme="light"\]\s*\{/g,":host(.light){")
+    embedCss=css.replace(/:root\s*\{/g,":host{").replace(/html\[data-scheme="dark"\]:not\(\[data-theme="light"\]\)\s*\{/g,":host(.dark){").replace(/html\[data-hl="(\w+)"\](\[data-theme="light"\])?\s*\{/g,(m,h,l)=>":host([data-hl=\""+h+"\"]"+(l?".light":"")+"){").replace(/html\[data-theme="light"\]\s*\{/g,":host(.light){")
       .replace(/(^|\n)html\{[^}]*\}/,"\n").replace(/(^|\n)body\{[^}]*\}/,'\n:host{display:block;color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}')
       +"\n.page{max-width:none;padding:0;margin:0}.top{display:none}";
     await new Promise((ok,no)=>{const sc=document.createElement("script");sc.type="module";sc.src="/embed.js";sc.onload=ok;sc.onerror=()=>no(new Error("Could not load this page"));document.head.append(sc)});
@@ -6633,8 +6634,8 @@ function loadEmbedAssets(){
   embedLoad.catch(()=>{embedLoad=null});
   return embedLoad;
 }
-function embedTheme(){document.querySelectorAll(".embed-host").forEach(x=>x.classList.toggle("light",document.documentElement.dataset.theme==="light"))}
-new MutationObserver(embedTheme).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+function embedTheme(){const r=document.documentElement,light=r.dataset.theme==="light";document.querySelectorAll(".embed-host").forEach(x=>{x.classList.toggle("light",light);x.classList.toggle("dark",!light&&r.dataset.scheme==="dark");if(r.dataset.hl)x.dataset.hl=r.dataset.hl;else delete x.dataset.hl})}
+new MutationObserver(embedTheme).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme","data-scheme","data-hl"]});
 function prepareEmbedPanels(){
   for(const id of EMBED_IDS){
     const panel=document.querySelector(`[data-settings-panel="${id}"]`);

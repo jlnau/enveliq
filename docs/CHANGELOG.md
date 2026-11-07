@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Settings and Administration follow your colours.** The Settings and Administration pages now use the same Dark look and the same Highlight colour as the inbox (and Light, as before), including the sign-in pages in this browser. Changing a Customise choice no longer closes the email you have open; only choosing a different layout does that.
+
 **Customise is much shorter.** All the little explanations in Customise are gone from the page. Each one now sits behind a small **?** next to its heading: point at the ? (or tap it) to read it. In Dark, original emails keep their own paper colour and still follow the three Original email background choices.
 
 **Tidier colour choices, with a preview.** In Customise, the Colours choices sit in a neat two-by-two grid and the Highlight colours in a three-by-two grid, so nothing is cut off any more. Point at a colour (or tab to it) to see it on the page straight away; move away and your saved choice comes back. Nothing is saved until you click.

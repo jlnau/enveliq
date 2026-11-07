@@ -134,6 +134,13 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   check("the picture replaces the initials beside the name", (await page.locator("#avatar img").getAttribute("src")).includes("/api/v1/users/u1/avatar"));
   check("the picture loads (the page allows it)", await page.evaluate(() => { const i = document.querySelector("#avatar img"); return new Promise((ok) => (i.complete ? ok(i.naturalWidth > 0) : (i.onload = () => ok(true), i.onerror = () => ok(false)))); }));
   await shot(page, "profile");
+  await page.evaluate(() => { view.scheme = "dark"; view.highlight = "purple"; applyView(); });
+  await page.waitForTimeout(500);
+  check("Settings follow Dark and the highlight colour", await page.evaluate(() => { const hs = [...document.querySelectorAll(".embed-host")].filter((h) => getComputedStyle(h).getPropertyValue("--i-card").trim()); return hs.length > 0 && hs.every((h) => h.classList.contains("dark") && h.dataset.hl === "purple" && getComputedStyle(h).getPropertyValue("--i-card").trim() === "#1e1e1e" && getComputedStyle(h).getPropertyValue("--i-blue").trim() === "#9a7bff"); }));
+  await shot(page, "settings-dark");
+  await page.evaluate(() => { view.scheme = "standard"; view.highlight = "blue"; applyView(); });
+  await page.waitForTimeout(300);
+  check("Settings go back to the usual look with Standard and Blue", await page.evaluate(() => [...document.querySelectorAll(".embed-host")].every((h) => !h.classList.contains("dark") && !h.dataset.hl)));
   await pf.getByRole("button", { name: /^Picture/ }).first().click();
   await pf.getByRole("button", { name: "Remove picture", exact: true }).click();
   await page.waitForFunction(() => !document.querySelector("#avatar img") && document.getElementById("avatar").textContent.length > 0);

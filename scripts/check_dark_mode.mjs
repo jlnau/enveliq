@@ -84,6 +84,18 @@ await page.evaluate(() => { const g = document.createElement("div"); g.className
 check("the Today and Coming up boxes are neutral grey in Dark", await page.evaluate(() => [...document.querySelectorAll(".today-card,.preview-later")].every((e) => { const m = getComputedStyle(e).backgroundColor.match(/\d+/g).map(Number); return Math.abs(m[0] - m[2]) <= 6; })));
 check("the four cards at the top of the inbox are neutral grey in Dark", (await statBg()).length === 4 && (await statBg()).every(isGrey));
 
+await page.locator("article.mail").nth(1).click({ force: true });
+await page.waitForTimeout(400);
+const openSubject = () => page.evaluate(() => document.querySelector("article.mail.current .subject")?.textContent || "");
+const before = await openSubject();
+await page.evaluate(() => { document.getElementById("customiseBtn").click(); for (const [k, v] of [["highlight", "teal"], ["scheme", "dark"], ["density", "roomy"], ["width", "full"], ["paper", "white"], ["style", "rail"]]) document.querySelector(`#viewPanel [data-view="${k}"][data-val="${v}"]`).click(); });
+await page.waitForTimeout(400);
+check("changing colours, spacing, width or style keeps the open email open", before !== "" && (await openSubject()) === before);
+await page.evaluate(() => { for (const [k, v] of [["highlight", "blue"], ["density", "standard"], ["width", "centered"], ["paper", "soft"], ["style", "classic"]]) document.querySelector(`#viewPanel [data-view="${k}"][data-val="${v}"]`).click(); });
+await page.evaluate(() => document.querySelector('#viewPanel [data-view="layout"][data-val="bottom"]').click());
+await page.waitForTimeout(400);
+check("choosing a different layout still starts with nothing open", (await openSubject()) === "");
+await page.evaluate(() => document.querySelector('#viewPanel [data-view="layout"][data-val="right"]').click());
 await page.evaluate(() => document.getElementById("customiseBtn").click());
 await page.waitForSelector('#viewPanel [data-view="highlight"]');
 check("Customise has a Highlight colour choice with six colours, Blue chosen at first", (await page.locator('#viewPanel [data-view="highlight"]').count()) === 6 && (await page.locator('#viewPanel [data-view="highlight"][data-val="blue"]').getAttribute("aria-checked")) === "true");

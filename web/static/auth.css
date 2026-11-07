@@ -466,3 +466,18 @@ select option,select optgroup{background-color:var(--panel);color:var(--text)}
 select optgroup{font-weight:700}
 select option:disabled{color:var(--faint)}
 select option:checked{background-color:var(--panel2)}
+
+/* Dark colour scheme (chosen in the app under Customise > Colours): neutral greys instead of blue-tinted ones. */
+html[data-scheme="dark"]:not([data-theme="light"]){--bg:#161616;--panel:#1e1e1e;--panel2:#242424;--line:#333;--text:#ececec;--muted:#a3a3a3;--faint:#777;--c-0b1628:#151515;--c-0c1626:#151515;--c-0c1c38:#1a1a1a;--c-0d1119:#111111;--c-0d121b:#111111;--c-122219:#1c1c1c;--c-252b38:#2b2b2b;--c-261f12:#202020;--c-2a161b:#1d1d1d;--c-2c3546:#343434;--c-2f394b:#383838;--c-315644:#494949;--c-3b4352:#424242;--c-47526a:#515151;--c-5a4720:#484848;--c-5b2e36:#3c3c3c;--c-b9d6f5:#d1d1d1;--c-bfe8cf:#d9d9d9;--c-ffc4ca:#d6d6d6;
+  --i-bg:#161616;--i-card:#1e1e1e;--i-line:#2e2e2e;--i-grey:#9a9a9a;--i-chev:#666;--i-fill:#262626;--i-fill2:#2f2f2f;--i-off:#444;--i-pop:#242424;--i-avatar:#2a2a2a}
+/* Highlight colour (chosen in the app under Customise > Highlight colour). Blue sets nothing. */
+html[data-hl="green"]{--brand-deep:#0b8a4a;--brand:#17a35c;--i-blue:#2fbf71}
+html[data-hl="green"][data-theme="light"]{--i-blue:#148a50}
+html[data-hl="purple"]{--brand-deep:#6a3fd0;--brand:#8559ea;--i-blue:#9a7bff}
+html[data-hl="purple"][data-theme="light"]{--i-blue:#6a3fd0}
+html[data-hl="orange"]{--brand-deep:#d9660a;--brand:#f08217;--i-blue:#ff9a3c}
+html[data-hl="orange"][data-theme="light"]{--i-blue:#c2570a}
+html[data-hl="pink"]{--brand-deep:#d02b73;--brand:#e8478e;--i-blue:#ff6fa8}
+html[data-hl="pink"][data-theme="light"]{--i-blue:#c2255f}
+html[data-hl="teal"]{--brand-deep:#0f8a96;--brand:#14a6b4;--i-blue:#2fc4d3}
+html[data-hl="teal"][data-theme="light"]{--i-blue:#0f7f8b}
