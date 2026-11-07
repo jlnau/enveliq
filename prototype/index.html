@@ -1839,7 +1839,7 @@ body.in-tags .folder-side{display:none}
 .wait-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px;margin:0 0 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.wait-bar>span{flex:1 1 220px;font-size:14px}
 .wait-bar .btn{min-height:44px}
 /* Original email "paper": white, or a very slight warm tint so a white email is not blinding. The email itself is multiplied onto it, so white becomes the paper colour. */
-:root{--paper:#fff}html[data-paper="soft"]{--paper:#f6f3ec}html[data-paper="softer"]{--paper:#ece7da}
+:root{--paper:#fff}html[data-paper="soft"]{--paper:#f6f3ec}html[data-paper="softer"]{--paper:#ece7da}html[data-theme="light"]{--paper:#fff}
 .email-doc,.qorig{background:var(--paper)}.email-doc .fmt-pane{background:var(--paper)}
 .email-frame{background:transparent;mix-blend-mode:multiply}
 /* Dark colour scheme (Customise > Colours > Dark). Neutral greys, no sky; the email you are on keeps its blue. Light theme wins if it is switched on. */
@@ -3069,7 +3069,10 @@ function applyScheme(over){
   if(light)root.setAttribute("data-theme","light");else root.removeAttribute("data-theme");
   root.dataset.scheme=dark?"dark":"standard";
   if(!over){try{localStorage.setItem("enveliq-theme",sc==="light"?"light":sc==="system"?"system":"dark")}catch{}}
+  try{paperLock()}catch{}
 }
+// In the Light look the original-email paper is always white. The choice is greyed out and shows White, and the saved choice is kept for the other looks.
+function paperLock(){const lock=document.documentElement.dataset.theme==="light";const bs=document.querySelectorAll('#viewPanel [data-view="paper"]');bs.forEach(b=>{b.disabled=lock;const on=lock?b.dataset.val==="white":view.paper===b.dataset.val;b.classList.toggle("on",on);b.setAttribute("aria-checked",String(on))});const sec=bs[0]?.closest(".vsec");if(sec)sec.classList.toggle("vdisabled",lock)}
 // Pointing at (or tabbing to) a colour choice shows it for a moment; moving away puts the saved choice back. Nothing is saved until it is clicked.
 (function(){
   const sel='[data-view="highlight"]',p=$("viewPanel");
@@ -3141,6 +3144,7 @@ function applyView(){
   for(const l of VIEW_ALLOWED.layout)c.toggle("layout-"+l,lay()===l);
   c.toggle("style-rail",view.style==="rail");c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",false);document.documentElement.dataset.paper=view.paper||"soft";applyScheme();applyHl(hlFor());document.querySelectorAll('#viewPanel [data-view="highlight"]').forEach(b=>{b.disabled=(view.scheme||"standard")==="standard"});const hs=document.querySelector('#viewPanel [data-view="highlight"]')?.closest(".vsec");if(hs)hs.classList.toggle("vdisabled",(view.scheme||"standard")==="standard");
   document.querySelectorAll("#viewPanel [data-view]").forEach(b=>{const on=view[b.dataset.view]===b.dataset.val;b.classList.toggle("on",on);b.setAttribute("aria-checked",String(on))});
+  paperLock();
   const classic=view.layout==="list";
   $("vOpen").checked=view.rows==="open";$("vPeek").checked=view.peek;$("vActionFeedback").checked=view.action_feedback!==false;$("vOrig").checked=!!view.show_original;$("vConv").checked=!!view.conversations;$("vCounts").checked=view.show_counts!==false;$("vToday").checked=view.show_today!==false;
   $("vOpen").disabled=$("vPeek").disabled=!classic;$("vOpenL").classList.toggle("off",!classic);$("vPeekL").classList.toggle("off",!classic);

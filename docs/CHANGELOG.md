@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**In the Light look, the original email background is always white.** The choice greys out and shows White. Your own choice is kept and comes back when you switch to another look.
+
 **Help bubbles near the bottom of Customise no longer get cut off.** When there is no room below a "?", its bubble now opens above it.
 
 **The Width choice is gone from Customise.** It was not needed. The page is always centred.
