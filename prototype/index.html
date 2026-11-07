@@ -1919,7 +1919,10 @@ html[data-scheme="dark"]:not([data-theme="light"]) .email-doc,html[data-scheme="
 .vtab .vt-close,.vtab[aria-expanded="true"] .vt-view{display:none}.vtab[aria-expanded="true"] .vt-close{display:block}
 .vprev{position:fixed;z-index:75;width:216px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 10px 30px rgba(0,0,0,.4);pointer-events:none;text-align:center}
 .vprev[hidden]{display:none}.vprev svg{display:block;width:100%;height:auto}.vprev b{display:block;margin-top:7px;font-size:12.5px;font-weight:650;color:var(--text)}
-.vprev .pv-f{fill:var(--bg);stroke:var(--line)}.vprev .pv-side{fill:var(--panel2)}.vprev .pv-row{fill:var(--panel3)}.vprev .pv-sel{fill:var(--hl1,#1544ad)}.vprev .pv-line{fill:var(--faint);opacity:.55}
+.vprev .pv-f{fill:var(--pv-bg,var(--bg));stroke:var(--pv-line2,var(--line))}.vprev .pv-side{fill:var(--pv-side,var(--panel2))}.vprev .pv-row{fill:var(--pv-row,var(--panel3))}.vprev .pv-sel{fill:var(--pv-sel,var(--hl1,#1544ad))}.vprev .pv-line{fill:var(--pv-text,var(--faint));opacity:.55}
+.vprev .pv-standard{--pv-bg:#08182e;--pv-side:#0d2140;--pv-row:#1b3153;--pv-sel:#1f5fd6;--pv-text:#9fb4d6;--pv-line2:#293d5b}
+.vprev .pv-light{--pv-bg:#f2f6ff;--pv-side:#e3ecfb;--pv-row:#ffffff;--pv-sel:#1f5fd6;--pv-text:#5b6f8c;--pv-line2:#d0dbed}
+.vprev .pv-dark{--pv-bg:#161616;--pv-side:#1e1e1e;--pv-row:#2a2a2a;--pv-sel:#1f5fd6;--pv-text:#9a9a9a;--pv-line2:#333}
 </style>
 </head>
 <body class="booting">
@@ -3069,8 +3072,8 @@ function applyScheme(over){
 }
 // Pointing at (or tabbing to) a colour choice shows it for a moment; moving away puts the saved choice back. Nothing is saved until it is clicked.
 (function(){
-  const sel='[data-view="scheme"],[data-view="highlight"]',p=$("viewPanel");
-  const show=b=>{if(b.dataset.view==="scheme"){applyScheme(b.dataset.val);applyHl(hlFor(b.dataset.val))}else if(hlFor()!=="blue"||(view.scheme||"standard")!=="standard")applyHl(b.dataset.val)};
+  const sel='[data-view="highlight"]',p=$("viewPanel");
+  const show=b=>{if(b.dataset.view==="highlight"&&((view.scheme||"standard")!=="standard"))applyHl(b.dataset.val)};
   const back=()=>{applyScheme();applyHl(hlFor())};
   p.addEventListener("click",e=>{if(e.target.closest(".qtip")){e.preventDefault();e.stopPropagation()}},true);
   p.addEventListener("mouseover",e=>{const b=e.target.closest(sel);if(b)show(b)});
@@ -3093,10 +3096,21 @@ function applyScheme(over){
     deck:()=>L(58,10,84,70,"pv-side")+L(52,16,96,70,"pv-side")+L(46,22,108,70,"pv-row")+L(54,30,50,5,"pv-line")+lines(54,44,92,4)+L(70,100,18,9,"pv-sel")+L(91,100,18,9,"pv-side")+L(112,100,18,9,"pv-side")
   };
   const show=b=>{
-    const k=b.dataset.val,m=MOCK[k];if(!m)return;
+    const k=b.dataset.val,isScheme=b.dataset.view==="scheme";
+    let inner="";
+    if(isScheme){
+      const g=(cls,clip)=>`<g class="${cls}"${clip?` clip-path="url(#${clip})"`:""}><rect class="pv-f" x="0.5" y="0.5" width="199" height="119" rx="8"/>${MOCK.right()}</g>`;
+      inner=k==="system"
+        ?`<defs><clipPath id="pvL"><rect x="0" y="0" width="100" height="120"/></clipPath><clipPath id="pvR"><rect x="100" y="0" width="100" height="120"/></clipPath></defs>${g("pv-light","pvL")}${g("pv-dark","pvR")}`
+        :g("pv-"+k);
+    }else{
+      const m=MOCK[k];if(!m)return;
+      inner=`<rect class="pv-f" x="0.5" y="0.5" width="199" height="119" rx="8"/>${m()}`;
+    }
+    const mk=()=>inner;
     const pr=p.getBoundingClientRect(),br=b.getBoundingClientRect();
     if(!matchMedia("(hover:hover)").matches)return;   // touch screens have no pointing
-    box.innerHTML=`<svg viewBox="0 0 200 120" role="img" aria-hidden="true"><rect class="pv-f" x="0.5" y="0.5" width="199" height="119" rx="8"/>${m()}</svg><b>${b.querySelector("b")?.firstChild?.textContent||""}</b>`;
+    box.innerHTML=`<svg viewBox="0 0 200 120" role="img" aria-hidden="true">${inner}</svg><b>${b.querySelector("b")?.firstChild?.textContent||b.textContent.trim()}</b>`;
     box.hidden=false;
     const h=box.offsetHeight,w=box.offsetWidth;
     if(pr.left-w-12>=8){   // room beside the panel
@@ -3108,7 +3122,7 @@ function applyScheme(over){
     }
   };
   const hide=()=>{box.hidden=true};
-  const sel='[data-view="layout"]';
+  const sel='[data-view="layout"],[data-view="scheme"]';
   p.addEventListener("mouseover",e=>{const b=e.target.closest(sel);if(b)show(b)});
   p.addEventListener("mouseout",e=>{const b=e.target.closest(sel);if(b&&!b.contains(e.relatedTarget))hide()});
   p.addEventListener("focusin",e=>{const b=e.target.closest(sel);if(b)show(b)});

@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Colours get a small picture too.** In Customise, pointing at Standard, Light, Dark or System theme now shows a small picture of that look (System theme shows Light and Dark side by side) instead of changing the whole page. The Highlight colour choices still preview on the whole page.
+
 **A small picture of each layout.** In Customise, point at (or tab to) a layout and a small picture of it appears beside the panel, so you can see what it is without changing the page. The Colours and Highlight colour choices still preview on the whole page as before.
 
 **The tab says View / Close, and Highlight colours stay out of Standard.** The little tab on the right edge now reads **View** and changes to **Close** while Customise is open. When Colours is on **Standard**, the Highlight colour choices are switched off (greyed out) and the usual blue is used; pick Light, Dark or System theme and your saved highlight colour comes back.
