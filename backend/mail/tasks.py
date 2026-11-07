@@ -106,6 +106,9 @@ def task_id(account_id: str, message_id: str) -> str:
 
 
 class TaskBook:
+    # Set by the app: (user id, stored message) -> True when a "Never make tasks" rule applies. Left empty, every email may make a task.
+    suppress: Callable[[str, dict[str, Any]], bool] | None = None
+
     def __init__(self, vault: Any, clock: Callable[[], float] = time.time):
         self.vault = vault
         self.clock = clock
@@ -174,6 +177,8 @@ class TaskBook:
                     if tid in items or m.get("state", "unread") != "unread" or m.get("from_all_mail") or m.get("replied_at") \
                             or not isinstance(spec, dict) or not spec.get("title"):
                         continue
+                    if self.suppress is not None and self.suppress(user_id, m):
+                        continue                  # the person said never to make tasks from this sender
                     sent = datetime.fromtimestamp(m["received_at"], tz).date() if m.get("received_at") else today
                     due = parse_due(spec.get("due"), sent, today) or today
                     items[tid] = {

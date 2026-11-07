@@ -62,8 +62,8 @@ def test_a_handled_email_loses_its_snooze_and_cannot_be_snoozed(env):
     mail = by_state(client, aid)["unread"]["Weekly news"]
     snooze(client, aid, mail["id"], time.time() + HOUR)
     assert resolve(client, aid, mail["id"], "reviewed").status_code == 204
-    card = by_state(client, aid)["reviewed"]["Weekly news"]
-    assert card["snoozed_until"] is None
+    card = by_state(client, aid)["unread"]["Weekly news"]
+    assert card["snoozed_until"] is None and card["from_all_mail"] is True
     assert snooze(client, aid, card["id"], time.time() + HOUR).status_code == 409
 
 

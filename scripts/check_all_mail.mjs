@@ -96,7 +96,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("on: all four emails are listed", true);
   check("the switch reads as on and the choice is asked of the server once", (await page.locator("#allSwitch").getAttribute("aria-checked")) === "true" && server.calls.filter((c) => c[0] === "recent").length === 1);
   check("the footer says 60 days, unlimited", (await page.locator("#allFoot").innerText()).includes("Last 60 days, no email limit."));
-  check("only the unread email is counted as to look at", (await page.locator("#inboxSubtitle").innerText()).includes("1 email"));
+  check("the count line is gone from under the title", !/to look at|need you/.test(await page.locator("#inboxSubtitle").innerText()));
   check("the quiet entries are marked and the unread one is not", (await page.locator("article.mail.extra").count()) === 3 && (await page.locator("article.mail:not(.extra)").count()) === 1);
   const weights = await page.evaluate(() => [...document.querySelectorAll("article.mail")].map((a) => [a.classList.contains("extra"), getComputedStyle(a.querySelector(".subject")).fontWeight]));
   check("quiet subjects are plain and the unread subject is bold", weights.every(([x, w]) => (x ? Number(w) <= 400 : Number(w) >= 600)));

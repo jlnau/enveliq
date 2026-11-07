@@ -52,6 +52,7 @@ function makeServer(opts = {}) {
     if (p === "/api/v1/find/searches/AAAAAAAAAAAA" && req.method() === "DELETE") { calls.push(["cancel"]); return route.fulfill({ status: 204 }); }
     if (/\/api\/v1\/find\/results\/[^/]+\/original$/.test(p)) { calls.push(["view"]); return json(200, { subject: "Canvas order", from: { name: "Dana", address: "dana@example.invalid" }, to: [{ name: "", address: "me@example.invalid" }], date: "Mon, 5 Oct 2026 10:00:00 +0000", text: "Your canvases are on the way.", truncated: false, attachments: [], file_count: 0, remote_images: 0, unsubscribe: null, links: [], warning: null, sender_check: null }); }
     if (p === "/api/v1/find/results/keep" && req.method() === "POST") { const b = JSON.parse(req.postData() || "{}"); calls.push(["keepmany", b.tokens]); state.kept = true; return json(200, { results: Object.fromEntries(b.tokens.map((t) => [t, { ok: true, already: false, account_id: "a1", message_id: "f1", summary_queued: true }])) }); }
+    if (/\/api\/v1\/find\/results\/[^/]+\/(move|bin|archive|star)$/.test(p) && req.method() === "POST") { calls.push(["live-" + p.split("/")[6], p.split("/")[5], JSON.parse(req.postData() || "{}")]); return route.fulfill({ status: 204 }); }
     if (/\/api\/v1\/find\/results\/[^/]+\/keep$/.test(p)) { calls.push(["keep"]); state.kept = true; return json(200, { already: false, account_id: "a1", message_id: "f1", found_until: now + 60 * 86400, summary_queued: true }); }
     if (p === "/api/v1/accounts/a1/messages/f1/resolve") { calls.push(["resolve", JSON.parse(req.postData() || "{}").outcome]); state.kept = false; return route.fulfill({ status: 204 }); }
     if (p === "/api/v1/me/summary-queue") return json(200, { items: [], waiting: 0, writing: 0 });
@@ -67,7 +68,7 @@ function makeServer(opts = {}) {
 const browser = await chromium.launch();
 async function open(server, { width = 1200, height = 900 } = {}) {
   const context = await browser.newContext({ viewport: { width, height } });
-  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-calm", "0"); } catch (e) {} });
+  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-more-open", "1"); localStorage.setItem("enveliq-calm", "0"); } catch (e) {} });
   const page = await context.newPage();
   const errors = [], csp = [];
   page.on("pageerror", (e) => errors.push(String(e)));
@@ -76,6 +77,7 @@ async function open(server, { width = 1200, height = 900 } = {}) {
   await page.goto(`${ORIGIN}/`);
   await page.waitForSelector("article.mail");
   await page.evaluate(() => { view.layout = "list"; applyView(); render(); });
+  if (process.env.EMAIL_STYLE) await page.evaluate((st) => { view.style = st; applyView(); render(); }, process.env.EMAIL_STYLE);
   return { page, errors, csp, context };
 }
 const shot = async (page, name) => { if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, name + ".png") }); };
@@ -93,9 +95,23 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("the results open in the main list area (not a pop-up) with the search words shown", (await page.locator("#list #findInline").innerText()).includes("canvas") && (await page.locator("#findPop").count()) === 0);
   await page.waitForFunction(() => /^2 emails/.test(document.querySelector("#findInline .find-total")?.innerText || ""));
   check("the total and each mailbox are shown", (await page.locator("#findInline .find-mbx").innerText()).includes("2 found"));
-  check("two rows, newest first, with folder and date", (await page.locator(".find-row").count()) === 2 && (await page.locator(".find-row b").first().innerText()) === "Canvas order" && (await page.locator(".find-row .fr-meta").first().innerText()).includes("Archive"));
-  check("a row with files says so", (await page.locator(".find-row .fr-meta").nth(1).innerText()).includes("has files"));
-  check("each row has View original email and Summarise", (await page.locator(".find-row [data-find-view]").count()) === 2 && (await page.locator(".find-row [data-find-keep]").count()) === 2);
+  await page.locator(".find-row").first().hover();
+  check("hovering a found email shows Move, Archive and Bin buttons", (await page.locator(".find-row").first().locator('[data-live-act="bin"]').isVisible()) && (await page.locator(".find-row").first().locator('[data-live-act="move"]').isVisible()) && (await page.locator(".find-row").first().locator('[data-live-act="archive"]').isVisible()));
+  await page.locator(".find-row [data-find-sel]").nth(0).check();
+  await page.locator(".find-row [data-find-sel]").nth(1).check();
+  await page.waitForSelector("[data-find-bulk] .lbar");
+  check("ticking found emails shows the full set of buttons above the results", (await page.locator("[data-find-bulk] .lbar .fb-move, [data-find-bulk] .lbar .fb-arch, [data-find-bulk] .lbar .fb-bin, [data-find-bulk] .lbar .fb-star, [data-find-bulk] .lbar .fb-tag").count()) === 5);
+  await page.locator("[data-find-bulk] .fb-star").click();
+  await page.waitForFunction(() => document.querySelector("[data-find-bulk] .fb-star.on"));
+  check("Star on two sends one star to each", server.calls.filter((c) => c[0] === "live-star").length === 2);
+  await page.locator("[data-find-bulk] .fb-bin").click();
+  await page.waitForFunction(() => document.querySelectorAll(".find-row").length === 0);
+  check("Bin on two sends one to each and they leave the list", server.calls.filter((c) => c[0] === "live-bin").length === 2);
+  await page.click("[data-find-again]");
+  await page.waitForFunction(() => document.querySelectorAll(".find-row").length === 2);
+  check("two rows, newest first, with folder and date", (await page.locator(".find-row").count()) === 2 && (await page.locator(".find-row .fr-sub").first().innerText()) === "Canvas order" && (await page.locator(".find-row .fr-where").first().innerText()).includes("Archive"));
+  check("a row with files says so", (await page.locator(".find-row .fr-where").nth(1).innerText()).includes("📎"));
+  check("each result is one tight clickable row, with no big buttons", (await page.locator(".find-row[data-find-view]").count()) === 2 && (await page.locator(".find-row [data-find-keep]").count()) === 0 && (await page.locator(".find-row button").count()) === 0 && (await page.locator(".find-row").first().boundingBox()).height < 80);
   check("nothing is shown that could name a message number or folder path", !(await page.locator("#findInline").innerHTML()).includes("source_locator"));
   await shot(page, "results");
 
@@ -107,10 +123,10 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 
   // Tick boxes, Select all and Summarise Emails
   check("each result has a tick box on its left, and Summarise Emails is not offered yet", (await page.locator(".find-row > input[data-find-sel]").count()) === 2 && (await page.locator("[data-find-sum]").count()) === 0);
-  const boxes = await page.evaluate(() => { const c = document.querySelector(".find-row > input").getBoundingClientRect(), t = document.querySelector(".find-row b").getBoundingClientRect(); return c.right <= t.left; });
+  const boxes = await page.evaluate(() => { const c = document.querySelector(".find-row > input").getBoundingClientRect(), t = document.querySelector(".find-row .fr-sub").getBoundingClientRect(); return c.right <= t.left; });
   check("the tick box sits to the left of the email", boxes);
   await page.locator(".find-row [data-find-sel]").nth(0).check();
-  check("one ticked email still shows no Summarise Emails button", (await page.locator("[data-find-sum]").count()) === 0 && (await page.locator(".fi-count").innerText()).includes("1 selected"));
+  check("one ticked email shows the Summarise Emails button and the count", (await page.locator("[data-find-sum]").count()) === 1 && (await page.locator(".fi-count").innerText()).includes("1 selected"));
   await page.locator(".find-row [data-find-sel]").nth(1).check();
   check("two ticked emails show the Summarise Emails button above the results", await page.locator("[data-find-sum]").isVisible() && await page.evaluate(() => document.querySelector("[data-find-sum]").getBoundingClientRect().bottom <= document.querySelector(".find-row").getBoundingClientRect().top));
   await page.locator("[data-find-all]").uncheck();
@@ -134,17 +150,18 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   server.state.kept = false;
   await page.click("[data-find-again]");
   await page.waitForFunction(() => document.querySelectorAll(".find-row").length === 2 && !/added to Found/.test(document.querySelector("#findInline")?.innerText || ""));
-  await page.locator("[data-find-view]").first().click();
-  await page.waitForSelector("#attachmentModal.open");
-  check("View original email shows the email", (await page.locator("#attachmentModal").innerText()).includes("canvases are on the way"));
-  await page.evaluate(() => closeAttachmentViewer());
+  await page.locator(".find-row").first().click();
+  await page.waitForSelector(".reader.live .qorig.live, #readDock .livepane .qorig.live");
+  check("opening a found email shows it in the shared reading view", ((await page.locator(".reader.live, #readDock .livepane").first().innerText()).includes("canvases are on the way")));
+  await page.evaluate(() => { document.querySelectorAll(".reader.live").forEach((x) => x.remove()); });
   await page.waitForSelector("#findInline .find-row");
   check("closing the email leaves the results where they were", (await page.locator(".find-row").count()) === 2);
 
-  await page.locator("[data-find-keep]").first().click();
-  await page.waitForFunction(() => /Added to Found emails/.test(document.querySelector("#findInline")?.innerText || ""));
-  check("Summarise says it was added and for how long", (await page.locator(".find-row .fr-note").first().innerText()).includes("60 days"));
-  check("the button cannot be pressed twice", await page.locator("[data-find-keep]").first().isDisabled());
+  await page.locator(".find-row [data-find-sel]").first().check();
+  await page.locator("[data-find-sum]").click();
+  await page.waitForFunction(() => /added to Found emails/i.test(document.querySelector("#findInline")?.innerText || ""));
+  check("Summarise says it was added", (await page.locator(".find-row .fr-note").first().innerText()).toLowerCase().includes("added to found"));
+  check("the row stays tight with its note", await page.evaluate(() => { const r = document.querySelector(".find-row"); return !!r && r.getBoundingClientRect().height < 110; }));
   await shot(page, "kept");
   await page.click("[data-find-close]");
   check("closing removes the results panel", (await page.locator("#findInline").count()) === 0);
@@ -156,7 +173,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.waitForFunction(() => document.querySelector(".top-left h2")?.textContent === "Found emails");
   check("Found emails lists it, and says how long it is kept", (await page.locator("article.mail").count()) === 1 && (await page.locator("#inboxSubtitle").innerText()).includes("60 days"));
   await page.locator("article.mail .subject").first().click();
-  check("a found email offers Reviewed but not Archive or Bin", (await page.locator("article.mail.open [data-status=reviewed]").first().isVisible()) && !(await page.locator("article.mail.open [data-status=archived]").first().isVisible()) && !(await page.locator("article.mail.open [data-status=trashed]").first().isVisible()));
+  check("a found email offers Mark as read but not Archive or Bin", (await page.locator("article.mail.open [data-status=reviewed]").first().isVisible()) && !(await page.locator("article.mail.open [data-status=archived]").first().isVisible()) && !(await page.locator("article.mail.open [data-status=trashed]").first().isVisible()));
   await shot(page, "found");
   await page.locator("article.mail.open [data-status=reviewed]").first().click();
   await page.waitForFunction(() => document.querySelectorAll("article.mail").length === 0);
@@ -166,11 +183,55 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 }
 
 {
+  // The reading-pane layout: the bar over the list stays in view while the list scrolls
+  const server = makeServer({ fast: "ready" });
+  const { page, errors, csp, context } = await open(server, { width: 1200, height: 700 });
+  await page.evaluate(() => { view.layout = "right"; applyView(); render(); });
+  const subj = await page.evaluate(() => { const m = data.find((x) => x.owner === currentUser.id); paneId = m.id; render(); return m.subject; });
+  await page.waitForTimeout(300);
+  await page.fill("#search", subj.split(" ")[0]);
+  await page.waitForSelector("#findInline .find-row", { timeout: 5000 });
+  check("the list sits in its own scrolling column beside the email", await page.evaluate(() => document.body.classList.contains("split-read")));
+  const info = await page.evaluate(async () => {
+    const b = document.querySelector(".search-banner"); const sp = document.createElement("div"); sp.style.height = "4000px"; b.parentElement.append(sp);
+    const chain = []; for (let el = b.parentElement; el && el !== document.documentElement; el = el.parentElement) { const cs = getComputedStyle(el); chain.push(`${el.id || el.className}:${cs.overflowY}:${el.scrollHeight}/${el.clientHeight}`); }
+    for (let el = b.parentElement; el; el = el.parentElement) el.scrollTop = 900;
+    window.scrollTo(0, 900); await new Promise((r) => setTimeout(r, 150));
+    return { top: b.getBoundingClientRect().top, colTop: document.querySelector(".main>.content").getBoundingClientRect().top, chain };
+  });
+  await page.evaluate(() => { for (let el = document.querySelector("#list"); el; el = el.parentElement) el.scrollTop = 0; window.scrollTo(0, 0); });
+  await page.evaluate(() => { feat.tags = true; });
+  await page.locator(".find-row").first().click();
+  await page.waitForSelector("#readDock .livepane .email-doc");
+  check("clicking a found email shows it in the reading pane, not in a pop-up", (await page.locator("#attachmentModal.open").count()) === 0 && (await page.locator("#readDock .livepane").innerText()).includes("canvases are on the way"));
+  check("the found email's row is marked and the results stay where they were", (await page.locator(".find-row.on").count()) === 1 && (await page.locator(".find-row").count()) === 2 && (await page.locator("#findInline").count()) === 1);
+  await page.locator(".find-row").nth(1).click();
+  await page.waitForFunction(() => document.querySelectorAll(".find-row.on").length === 1 && document.querySelectorAll(".find-row")[1].classList.contains("on"));
+  check("the found email has a Generate summary button and the full action bar", (await page.locator("#readDock .fdr-sum .gen").count()) === 1 && (await page.locator("#readDock [data-live-act=\"tag\"]").count()) >= 1 && (await page.locator("#readDock [data-live-nav=\"-1\"]").count()) === 1);
+  check("choosing another one replaces it in the pane", (await page.locator("#readDock .livepane").count()) === 1);
+  await shot(page, "find-in-pane");
+  await page.locator("[data-find-pane-close]").click();
+  check("Close in the pane puts the placeholder back", (await page.locator("#readDock .livepane").count()) === 0);
+  check("reading-pane layout: the search bar stays pinned at the top of the list column, just under the Recent emails bar, while it scrolls", await page.evaluate(() => { const b = document.querySelector(".search-banner").getBoundingClientRect(), h = document.getElementById("previewListHeading").getBoundingClientRect(); return b.top >= h.bottom - 1 && b.top - h.bottom < 16 && b.top < 200; }));
+  await context.close();
+}
+{
   // With Fast search ready on every mailbox, typing searches all mail by itself.
   const server = makeServer({ fast: "ready" });
   const { page, errors, csp, context } = await open(server);
   await page.fill("#search", "canvas");
+  check("the Search all my mail panel is there at once, saying it is searching, with a progress bar", (await page.locator("#findPending, #findInline").count()) === 1 && /Searching all your mail/.test(await page.locator("#findPending, #findInline").innerText()) && (await page.locator("#findPending .sprog, #findInline .sprog").count()) === 1);
+  check("a bar that stays at the top says it is searching, with a progress bar and Clear search", /Searching all your mail for/.test(await page.locator(".search-banner").innerText()) && (await page.locator(".search-banner .sprog").count()) === 1 && (await page.locator(".search-banner [data-clear-search]").count()) === 1);
   await page.waitForSelector("#findInline .find-row", { timeout: 5000 });
+  await shot(page, "find-results-tight");
+  await page.waitForFunction(() => !document.querySelector(".sprog"), null, { timeout: 8000 }).catch(() => {});
+  check("the search bar over the list stays in view when you scroll down", await page.evaluate(async () => {
+    const b = document.querySelector(".search-banner"); const sp = document.createElement("div"); sp.style.height = "3000px"; sp.id = "spacerTest"; b.parentElement.append(sp);
+    let el = b.parentElement; while (el && el !== document.documentElement && el.scrollHeight <= el.clientHeight + 5) el = el.parentElement;
+    el.scrollTop = 800; window.scrollTo(0, 800); await new Promise((r) => setTimeout(r, 100));
+    const top = b.getBoundingClientRect().top; sp.remove(); el.scrollTop = 0; window.scrollTo(0, 0); return top >= 0 && top < 140;
+  }));
+  check("when the search finishes the progress bars are gone", (await page.locator(".sprog").count()) === 0 && /Only emails that match/.test(await page.locator(".search-banner").innerText()));
   check("Fast search ready: typing opens the results in the list by itself, with no button press", server.calls.some((c) => c[0] === "start" && c[1] === "canvas") && (await page.locator("[data-find-open]").count()) === 0);
   await page.fill("#search", "canvas order");
   await page.waitForFunction(() => true);
@@ -213,12 +274,53 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.click("[data-find-open]");
   await page.waitForSelector("#findInline .find-row");
   check("on a phone the results are in the page, not a pop-up", (await page.locator("#findPop").count()) === 0 && (await page.locator("#list #findInline").count()) === 1);
-  check("the tick boxes and buttons are easy to press", (await page.locator(".find-row [data-find-view]").first().boundingBox()).height >= 44 && (await page.locator("[data-find-close]").first().boundingBox()).height >= 44);
+  check("the tick boxes and buttons are easy to press", (await page.locator(".find-row").first().boundingBox()).height >= 44 && (await page.locator("[data-find-close]").first().boundingBox()).height >= 44);
   await page.locator(".find-row [data-find-sel]").nth(0).check();
   await page.locator(".find-row [data-find-sel]").nth(1).check();
   check("Summarise Emails is easy to press on a phone", (await page.locator("[data-find-sum]").boundingBox()).height >= 44);
   await shot(page, "phone-results");
   check("no sideways scrolling on the phone", await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  check("no errors on the phone", errors.length === 0 && csp.length === 0);
+  await context.close();
+}
+
+{
+  // One reading view for every email: the choices in Customise change the found email too, and on a phone it opens full screen like any email
+  const server = makeServer({ fast: "ready" });
+  const { page, errors, csp, context } = await open(server, { width: 1200, height: 800 });
+  await page.evaluate(() => { feat.tags = true; view.layout = "right"; view.style = "rail"; applyView(); render(); });
+  const subj = await page.evaluate(() => { const m = data.find((x) => x.owner === currentUser.id); paneId = m.id; render(); return m.subject; });
+  await page.waitForTimeout(300);
+  await page.fill("#search", subj.split(" ")[0]);
+  await page.waitForSelector("#findInline .find-row", { timeout: 5000 });
+  await page.locator(".find-row").first().click();
+  await page.waitForSelector("#readDock .livepane .rl-rail");
+  check("Side rail: a found email shows the same rail of buttons a normal email does", (await page.locator("#readDock .rl-rail .rl-btn").count()) >= 8);
+  const same = await page.evaluate(() => { const norm = ["Reply", "Forward", "Snooze", "Task", "Tags", "Folders"]; return norm.every((t) => [...document.querySelectorAll("#readDock .rl-rail .rl-btn")].some((b) => b.textContent.trim() === t)); });
+  check("the rail has Reply, Forward, Snooze, Task, Tags and Folders, like any email", same);
+  await page.evaluate(() => { view.style = "classic"; applyView(); render(); });
+  await page.locator(".find-row").nth(1).click();
+  await page.waitForSelector("#readDock .livepane .qside");
+  check("choosing the Classic style changes the found email too (no side rail)", (await page.locator("#readDock .rl-rail").count()) === 0 && (await page.locator("#readDock .livepane .qfoot").count()) === 1);
+  check("no errors", errors.length === 0 && csp.length === 0);
+  await context.close();
+}
+{
+  const server = makeServer({ fast: "ready" });
+  const { page, errors, csp, context } = await open(server, { width: 390, height: 780 });
+  await page.evaluate(() => { feat.tags = true; view.style = "rail"; applyView(); render(); });
+  await page.evaluate(() => { document.body.classList.add("msearch"); });
+  await page.fill("#search", "canvas");
+  await page.click("[data-find-open]");
+  await page.waitForSelector("#findInline .find-row");
+  await page.locator(".find-row").first().click();
+  await page.waitForSelector(".reader.live.rail .rl-bar");
+  check("phone: a found email opens full screen with a small X at the top", (await page.locator(".reader.live .rtop .rclose").count()) === 1);
+  check("phone: the buttons sit in a bar along the bottom, as for any email", (await page.locator(".reader.live .rl-bar .rl-sq").count()) >= 4 && (await page.locator(".reader.live .rl-rail").count()) === 0);
+  await shot(page, "phone-found-email");
+  check("phone: nothing sticks out sideways", await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  await page.locator(".reader.live .rclose").click();
+  check("phone: the X closes it", (await page.locator(".reader.live").count()) === 0);
   check("no errors on the phone", errors.length === 0 && csp.length === 0);
   await context.close();
 }

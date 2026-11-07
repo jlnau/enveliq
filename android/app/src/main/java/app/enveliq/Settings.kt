@@ -73,7 +73,7 @@ private fun appVersion(context: Context): String = try {
     ""
 }
 
-private val swipeNames = listOf("archive" to "Archive", "bin" to "Bin", "reviewed" to "Reviewed", "none" to "Nothing")
+private val swipeNames = listOf("archive" to "Archive", "bin" to "Bin", "none" to "Nothing")
 private val scopeNames = listOf(
     Triple("all", "All new email", "Every new email gets a quiet note."),
     Triple("action", "Only email that needs action", "Emails the AI marked as needing something from you."),
@@ -150,6 +150,18 @@ private fun ChoiceRow(title: String, note: String = "", selected: Boolean, enabl
     }
 }
 
+/** The Conversation View switch: saved on your account, so the website and the app agree. */
+@Composable
+private fun ConversationViewRow(api: EnveliqApi) {
+    val scope = rememberCoroutineScope()
+    var on by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { on = try { withContext(Dispatchers.IO) { api.conversationView() } } catch (e: Exception) { false } }
+    ToggleRow("Conversation View", "Group emails of one conversation under the newest one.", on) { now ->
+        on = now
+        scope.launch { try { withContext(Dispatchers.IO) { api.setConversationView(now) } } catch (e: Exception) { on = !now } }
+    }
+}
+
 @Composable
 private fun Footnote(text: String, color: Color = Muted) {
     Text(text, color = color, fontSize = 13.sp, lineHeight = 18.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp))
@@ -194,8 +206,8 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
     var mode by remember { mutableStateOf(AlertPrefs.mode(context)) }
     var googleOffered by remember { mutableStateOf(false) }
     var working by remember { mutableStateOf(false) }
-    var swipeRight by remember { mutableStateOf(prefs.getString("swipe_right", "archive") ?: "archive") }
-    var swipeLeft by remember { mutableStateOf(prefs.getString("swipe_left", "bin") ?: "bin") }
+    var swipeRight by remember { mutableStateOf(prefs.getString("swipe_right", "archive").let { if (it == "reviewed") "archive" else it } ?: "archive") }
+    var swipeLeft by remember { mutableStateOf(prefs.getString("swipe_left", "bin").let { if (it == "reviewed") "bin" else it } ?: "bin") }
     val power = remember { context.getSystemService(android.os.PowerManager::class.java) }
     var unrestricted by remember { mutableStateOf(power.isIgnoringBatteryOptimizations(context.packageName)) }
     var openNext by remember { mutableStateOf(prefs.getBoolean("open_next", false)) }
@@ -374,6 +386,16 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                     }
                 }
             }
+            Footnote("Highlight colour", Ink)
+            Group {
+                Look.highlights.forEachIndexed { i, (id, label) ->
+                    if (i > 0) HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                    ChoiceRow(label, selected = Look.highlight == id) {
+                        Look.highlight = id
+                        prefs.edit().putString("highlight", id).apply()
+                    }
+                }
+            }
             Footnote("Text size", Ink)
             Group {
                 listOf("normal" to "Normal", "large" to "Large", "larger" to "Extra large").forEachIndexed { i, (id, label) ->
@@ -526,6 +548,9 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
             }
             if (note.isNotEmpty()) Footnote(note, Amber)
         }
+        "rules" -> RulesPage(api, back("home"))
+        "away" -> AwayPage(api, back("home"))
+        "saved" -> SavedRepliesPage(api, back("home"))
         "muted" -> Page("Muted conversations", back("home")) {
             var items by remember { mutableStateOf<List<MutedConversation>?>(null) }
             var note by remember { mutableStateOf("") }
@@ -670,14 +695,22 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                 NavRow("🔒", tintSecurity, "Security", value = if (appLock) "Lock on" else "") { page = "security" }
             }
             Group {
-                ToggleRow("Open the next email", "After you archive or mark an email reviewed, open the next one.", openNext) {
+                ToggleRow("Open the next email", "After you archive an email or mark it as read, open the next one.", openNext) {
                     openNext = it
                     prefs.edit().putBoolean("open_next", it).apply()
                 }
                 HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                NavRow("🧹", tintSwipe, "Mail rules", note = "Archive, star, snooze or file new email for you.") { page = "rules" }
+                HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
                 NavRow("🚫", tintAlerts, "Blocked senders") { page = "blocked" }
                 HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
                 NavRow("🔇", tintAlerts, "Muted conversations") { page = "muted" }
+                HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                ConversationViewRow(api)
+                HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                NavRow("✈", tintAccount, "Away reply", note = "Answer new email for you while you are away.") { page = "away" }
+                HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                NavRow("💬", tintAccount, "Saved replies", note = "Short answers you use again and again.") { page = "saved" }
             }
             if (writeOn) Group {
                 NavRow("✎", tintAccount, "Writing help", note = "Suggested wording, Quick AI Send and your writing style.") { page = "writing" }

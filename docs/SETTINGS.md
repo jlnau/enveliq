@@ -23,7 +23,7 @@ Each page is a **list**. Rows sit together in rounded cards under a small grey h
 | **People & writing** | Address book, Important people, Signature & saved replies, and Your AI instructions (summary instructions, Writing help, My writing style). |
 | **Rules & calendar** | Mail rules, Muted conversations, Away reply, and Calendar & to-do (calendar link, Google Calendar, instant calendar, Home Assistant list). |
 | **Alerts** | Notifications (where they go and what to tell you about) and Email alerts. |
-| **General** | Undo send, how long the Reviewed and Archived lists are kept, Features, Fast search, Your data, and Keyboard shortcuts. |
+| **General** | Undo send, how long the Archived list is kept, Features, Fast search, Your data, and Keyboard shortcuts. |
 | **Help** | The setup guide. |
 
 ## Administration (administrators only): six pages
@@ -31,7 +31,7 @@ Each page is a **list**. Rows sit together in rounded cards under a small grey h
 | Page | What is on it |
 | --- | --- |
 | **People & sign-in** | Sign-in rules, Single sign-on, the people (open one to change or remove them) and Add a person. |
-| **Mail** | Automatic sync, Reviewed and Archived limits, Forward to check, and Microsoft sign-in. |
+| **Mail** | Automatic sync, the Archived limit, Forward to check, and Microsoft sign-in. |
 | **AI** | The AI model, Extra summary instructions and Agent chat. |
 | **Features** | Switches for everything that can be turned off for everyone, in groups. |
 | **Notifications** | Which places reminders can go, addresses on your own network, and Google Calendar. |

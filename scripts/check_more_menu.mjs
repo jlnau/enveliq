@@ -78,7 +78,7 @@ for (const width of [1200, 390]) {
   await more.click();
   const menu = page.locator("#moreMenu");
   const items = (await menu.locator("[role=menuitem]").allInnerTexts()).join("|");
-  check(tag + "the menu holds Reply, Snooze, Important, Always archive, Junk, Block, Mute, Print and Save as PDF", ["Reply", "Snooze", "Important person", "Always archive these", "Send to Junk", "Block sender", "Mute conversation", "Print email", "Save as PDF"].every((t) => items.includes(t)));
+  check(tag + "the menu holds Reply, Snooze, Important, Mail rules, Junk, Mute, Print and Save as PDF", ["Reply", "Snooze", "Important person", "Mail rules for this sender", "Send to Junk", "Mute conversation", "Print email", "Save as PDF"].every((t) => items.includes(t)));
   const mb = await menu.boundingBox();
   check(tag + "the menu stays on the screen", mb && mb.x >= 0 && mb.y >= 0 && mb.x + mb.width <= width && mb.y + mb.height <= 900);
   await shot(page, "more-menu-" + width);
@@ -103,15 +103,17 @@ for (const width of [1200, 390]) {
 
 {
   const { page, errors, context } = await open(1200);
-  await page.evaluate(() => document.querySelector('.nav[data-filter="reviewed"]').click());
+  features.all_mail = true;
+  await page.evaluate(() => { localStorage.setItem("enveliq-all-mail", "1"); });
+  await page.reload(); await page.waitForSelector("article.mail");                       // read mail shown
+  features.all_mail = false;
   await page.waitForSelector("article.mail");
   await pick(page, "Already read one");
-  const btn = page.locator("[data-unread]").first();
-  check("a Reviewed email has a clear Mark unread button", (await btn.count()) > 0 && (await btn.innerText()) === "Mark unread");
+  const btn = page.locator(".action.unread:not(.qic)").first();
+  check("a read email has a clear red Mark as unread button", (await btn.count()) > 0 && (await btn.innerText()).trim() === "Mark as unread");
   await btn.click();
-  await page.waitForFunction(() => /back in your inbox/.test(document.getElementById("toast").innerText));
+  await page.waitForFunction(() => /Marked as unread/.test(document.getElementById("toast").innerText));
   check("it asks the server to restore the unread mark", posts.some((x) => x[0] === "unread" && x[1] === "m-r"));
-  await page.evaluate(() => document.querySelector('.nav[data-filter="all"]').click());
   check("the email is back in the inbox list", (await page.locator("article.mail", { hasText: "Already read one" }).count()) === 1);
   check("no page errors", errors.length === 0);
   await context.close();
@@ -127,7 +129,7 @@ for (const width of [1200, 390]) {
   check("switching it on groups the two emails of one conversation", (await page.locator("article.mail").count()) === 2 && /2 emails in this conversation/.test(await page.locator(".conv-bar").innerText()));
   await shot(page, "conversation-view");
   await page.locator("[data-conv]").click();
-  check("Show lists the older email, with its own buttons", (await page.locator("article.mail").count()) === 3 && (await page.locator(".conv-kids article.mail .qic").count()) === 3);
+  check("Show lists the older email, with its own buttons", (await page.locator("article.mail").count()) === 3 && (await page.locator(".conv-kids article.mail .qic").count()) === 4);          // Mark as read, Archive, Bin and the star
   await page.locator(".conv-kids article.mail .qrow").first().click();   // open the older email, then press Hide: it must really hide
   await page.waitForTimeout(200);
   await page.locator("[data-conv]").click();

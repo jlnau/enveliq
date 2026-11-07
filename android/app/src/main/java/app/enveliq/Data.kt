@@ -34,6 +34,10 @@ data class Mail(
     val ungenerated: Boolean = false,
     /** Held for the daily summary: not in the inbox, listed under Held for summary. */
     val held: Boolean = false,
+    /** Starred (the mailbox's own Flagged mark). */
+    val starred: Boolean = false,
+    /** The email's own id and the ids it answers, so emails of one conversation can sit together (Conversation View). */
+    val refs: List<String> = emptyList(),
 )
 
 /** A file that came with an email. [summary] is written by the AI and is labelled that way where it is shown. */
@@ -51,7 +55,7 @@ data class Me(val id: String, val name: String, val initials: String, val avatar
 data class TagInfo(val names: List<String>, val canCreate: Boolean)
 
 enum class Outcome(val api: String, val done: String) {
-    Reviewed("reviewed", "Marked reviewed"),
+    Reviewed("reviewed", "Marked as read"),
     Archived("archived", "Archived"),
     Binned("binned", "Moved to Bin"),
     Junked("junked", "Sent to Junk"),
@@ -94,19 +98,34 @@ data class DeviceInfo(val id: String, val name: String, val signedIn: Long, val 
 
 data class MyTask(val id: String, val accountId: String, val messageId: String, val title: String, val sender: String, val priority: String, val due: String, val days: Int, val state: String, val manual: Boolean, val detail: String = "", val remindAt: Long = 0L)
 data class BellNote(val id: String, val title: String, val message: String, val source: String, val at: Long, val unread: Boolean)
-data class Order(val id: String, val shop: String, val items: String, val status: String, val expected: String, val delayed: Boolean, val delivered: Boolean, val needsConfirm: Boolean, val trackUrl: String)
+data class FolderInfo(val name: String, val label: String, val special: Boolean, val target: Boolean)
+data class FolderMail(val token: String, val from: String, val subject: String, val date: Long)
+data class FolderPage(val rows: List<FolderMail>, val total: Int, val more: Boolean)
+data class Order(val id: String, val shop: String, val items: String, val status: String, val expected: String, val delayed: Boolean, val delivered: Boolean, val needsConfirm: Boolean, val trackUrl: String,
+    val acked: Boolean = false, val manual: Boolean = false, val note: String = "", val tracking: String = "", val deliveredAt: Long = 0L)
 data class Booking(val kind: String, val provider: String, val detail: String, val from: String, val to: String, val start: String, val startTime: String, val reference: String, val cancelled: Boolean)
 data class Trip(val title: String, val start: String, val end: String, val state: String, val cancelled: Boolean, val bookings: List<Booking>)
 data class FeedItem(val title: String, val text: String, val link: String, val at: Long, val isNew: Boolean)
 data class Feed(val id: String, val title: String, val error: String, val newCount: Int, val items: List<FeedItem>)
-data class Chat(val id: String, val title: String, val unread: Int, val last: String, val updated: Long, val muted: Boolean)
-data class ChatMessage(val id: String, val name: String, val mine: Boolean, val at: Long, val text: String, val deleted: Boolean)
 
 /** A list from a feature that an administrator or the person may have switched off. */
 data class Section<T>(val enabled: Boolean, val items: List<T>)
 
 /** A rule: email from [sender] (and, when set, with [subject] words) gets [action] ("archived", "reviewed" or "junked"). */
-data class Rule(val id: String, val sender: String, val subject: String, val action: String)
+data class Rule(
+    val id: String, val sender: String, val subject: String, val action: String,
+    val notSubject: String = "", val to: String = "", val list: String = "", val files: Boolean = false, val largerMb: Int = 0,
+    val hours: Int = 0, val folderLabel: String = "", val tags: List<String> = emptyList(),
+)
+
+/** What the Mail rules form sends: the conditions and what to do. */
+data class RuleSpec(
+    val sender: String = "", val subject: String = "", val notSubject: String = "", val to: String = "", val list: String = "",
+    val files: Boolean = false, val largerMb: Int = 0, val action: String = "archived", val hours: Int = 24,
+)
+
+/** What "Run on existing mail" would do (counts only), or has done. */
+data class RunPlan(val total: Int, val counts: Map<String, Int>, val limit: Int)
 
 /** A conversation the person muted: later replies go to Archive without an alert. */
 data class MutedConversation(val id: String, val subject: String, val count: Int)
@@ -115,6 +134,34 @@ data class MutedConversation(val id: String, val subject: String, val count: Int
 const val APP_DOWNLOAD_PAGE = "https://github.com/jlnau/enveliq/releases/latest"
 
 /** One email found by "Find any email". [token] opens it; the email itself stays at the mailbox. */
+/** What a search is: the words and every filter. Anything left empty is not used. Dates are YYYY-MM-DD. */
+data class FindSpec(
+    val query: String = "", val sender: String = "", val to: String = "", val since: String = "", val until: String = "",
+    val unread: Boolean = false, val starred: Boolean = false, val files: Boolean = false, val junk: Boolean = false,
+    val accountId: String = "", val folder: String = "",
+) {
+    /** How many filters are set (the words and the Junk switch do not count). */
+    val filterCount: Int get() = listOf(sender, to, since, until, accountId).count { it.isNotBlank() } + listOf(unread, starred, files).count { it }
+    val canSearch: Boolean get() = query.trim().length >= 2 || filterCount > 0
+    fun chips(mailboxes: List<Mailbox> = emptyList()): List<String> {
+        val parts = ArrayList<String>()
+        if (query.isNotBlank()) parts.add(query.trim())
+        if (sender.isNotBlank()) parts.add("from " + sender)
+        if (to.isNotBlank()) parts.add("to " + to)
+        if (since.isNotBlank()) parts.add("since " + since)
+        if (until.isNotBlank()) parts.add("until " + until)
+        if (files) parts.add("has files")
+        if (unread) parts.add("unread")
+        if (starred) parts.add("starred")
+        mailboxes.firstOrNull { it.id == accountId }?.let { parts.add(it.label) }
+        if (folder.isNotBlank()) parts.add(folder.substringAfterLast('/'))
+        if (junk) parts.add("with Spam and Bin")
+        return parts
+    }
+    fun describe(mailboxes: List<Mailbox> = emptyList()): String = chips(mailboxes).joinToString(" · ").ifBlank { "All mail" }
+}
+data class SavedSearch(val id: String, val name: String, val spec: FindSpec)
+data class FindHistory(val recent: List<FindSpec>, val saved: List<SavedSearch>)
 data class FoundRow(val token: String, val from: String, val subject: String, val date: String, val mailbox: String, val folder: String)
 
 /** How a search is going: [done] when every mailbox has answered. */
@@ -146,3 +193,10 @@ data class DigestItem(val accountId: String, val messageId: String, val sender: 
 
 /** The daily summary: the emails held for it (they are not in the inbox). [enabled] is false when the person has not switched it on. */
 data class SummaryInfo(val enabled: Boolean, val count: Int, val unread: Int, val items: List<DigestItem>)
+
+data class AwayInfo(val enabled: Boolean, val start: String, val end: String, val body: String, val state: String, val answered: Int, val today: String)
+data class SavedReply(val id: String, val title: String, val text: String)
+data class SubscriptionRow(val id: String, val service: String, val amount: String, val period: String, val status: String, val nextOn: String, val nextDays: Int, val nextKind: String, val soon: Boolean)
+data class SubscriptionsInfo(val enabled: Boolean, val items: List<SubscriptionRow>)
+data class AgentMessage(val role: String, val text: String)
+data class AgentInfo(val name: String, val ready: Boolean, val chatId: String?, val messages: List<AgentMessage>, val pending: Boolean, val error: String)

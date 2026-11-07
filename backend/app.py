@@ -28,13 +28,18 @@ from .mail.microsoft import Microsoft
 from .mail.microsoft_routes import build_microsoft_router
 from .mail.routes import build_mail_router
 from .mail.extra_routes import build_extra_router
+from .mail.invite_routes import build_invite_router
 from .mail.find_routes import build_find_router
+from .mail.saved_searches import SearchBook
+from .mail.folder_routes import build_folder_router
+from pydantic import Field
 from .mail.task_routes import build_task_router
 from .mail.shipping import ShipBook
 from .mail.inbound import InboundBook
 from .mail.inbound_routes import WEBHOOK_PATH as INBOUND_WEBHOOK_PATH, WS_PATH as INBOUND_WS_PATH, build_inbound_router
 from .mail.rss import RssBook, RssRefresher
 from .mail import features
+from .mail.rules import fits as fits_rule
 from .mail.tags import TagService
 from .mail.tag_routes import build_tag_router
 from .mail.rss_routes import build_rss_router
@@ -59,8 +64,6 @@ from .mail.subscriptions import SubBook
 from .mail.subscriptions_routes import build_subscriptions_router
 from .mail.trips import TripBook
 from .mail.trips_routes import build_trips_router
-from .mail.messages import MessageBook
-from .mail.messages_routes import build_messages_router
 from .mail.writehelp import WriteHelpBook
 from .mail.writehelp_routes import build_writehelp_router
 from .mail.style import StyleBook
@@ -83,6 +86,7 @@ from .mail.summary import DailySummary
 from .mail.senders import SenderBook
 from .mail.senders_routes import build_senders_router
 from .mail.agent import Agent
+from .mail.agent_context import Sources as AgentSources
 from .mail.agent_routes import build_agent_router
 from .mail.calsync import Sync
 from .mail import extra_channels, marks
@@ -92,7 +96,7 @@ from .mail.gcal_routes import build_gcal_router
 from .mail.mail_alerts import MailAlerts
 from .mail.reminders import Reminders
 from .mail.outbox import Outbox
-from .version import VERSION
+from .version import BUILD, VERSION
 from .update_check import UpdateChecker
 from .mail.scheduler import AutoSync
 from .mail import review
@@ -108,6 +112,7 @@ from .crypto_vault import (
     VaultNotInitialized,
 )
 from .models import (
+    StrictModel,
     AccountCreate,
     AccountPatch,
     AttachmentPolicyPatch,
@@ -211,6 +216,8 @@ def read_configured_key() -> str | None:
     return VAULT_KEY_ENV
 
 vault = SecureVault(DB_PATH, idle_lock_seconds=(10 ** 9 if AUTO_UNLOCK else IDLE_LOCK_SECONDS))
+for _gone in ("msg:thread:", "msg:index:"):          # the removed Messages feature: anything it stored is cleared
+    vault.purge_global_prefix(_gone)
 sessions = SessionManager(vault, ttl_seconds=SESSION_TTL_SECONDS)
 flows = FlowStore()
 users = UserService(vault)
@@ -531,7 +538,6 @@ def remember_seconds() -> int:
 
 def delete_user_data(user_id: str) -> None:
     """Remove every mailbox a user owns, with its messages and previews, and the person's own messages to other people."""
-    messagebook.forget_user(user_id)
     inboundbook.forget_user(user_id)
     writehelpbook.forget_user(user_id)
     stylebook.forget_user(user_id)
@@ -542,6 +548,7 @@ def delete_user_data(user_id: str) -> None:
     scheduledbook.forget_user(user_id)
     rulebook.forget_user(user_id)
     mutebook.forget_user(user_id)
+    searchbook.forget_user(user_id)
     awaybook.forget_user(user_id)
     senderbook.forget_user(user_id)
     junkbook.forget_user(user_id)
@@ -663,10 +670,13 @@ draftbook = Drafts(vault)
 scheduledbook = ScheduledMail(vault)
 scheduled_sender = ScheduledSender(vault, mail_service, scheduledbook, vault.audit)
 rulebook = Rules(vault)
+# "Never make tasks": mail from that sender or website is left out of the task list. Your important people always still make tasks.
+taskbook.suppress = lambda user, m: bool(m.get("sender_address")) and not importantbook.contains(user, m["sender_address"]) \
+    and rulebook.blocks_tasks(user, m["sender_address"], m.get("subject"))
 mutebook = MutedBook(vault)
+searchbook = SearchBook(vault)
 awaybook = AwayBook(vault, taskbook.timezone_of)
 tripbook = TripBook(vault, taskbook.timezone_of)
-messagebook = MessageBook(vault, users)
 writehelpbook = WriteHelpBook(vault)
 stylebook = StyleBook(vault, mail_service)
 mail_service.shipments = shipbook
@@ -724,11 +734,13 @@ class _Mailer:
 notifier.mailer = _Mailer()
 mail_ctx = SimpleNamespace(
     checkbox=checkbox,
-    agent=Agent(vault, mail_service.summariser), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, senders=senderbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, scheduled=scheduledbook, rules=rulebook, muted=mutebook, away=awaybook, trips=tripbook, messages=messagebook, writehelp=writehelpbook, style=stylebook, digest=digestbook, waiting=waitbook, summary=dailysummary, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
+    agent=Agent(vault, mail_service.summariser, AgentSources(vault, taskbook, tripbook, shipbook, waitbook, finder=lambda: getattr(mail_ctx, "find_index", None), bridge=lambda: mail_service.bridge, target=mail_service.target)), tasks=taskbook, shipping=shipbook, rss=rssbook, inbound=inboundbook, allowed_origins=ALLOWED_ORIGINS, tags=tagservice, subscriptions=subbook, junk=junkbook, senders=senderbook, important=importantbook, saved_writing=savedbook, drafts=draftbook, scheduled=scheduledbook, rules=rulebook, muted=mutebook, searches=searchbook, away=awaybook, trips=tripbook, writehelp=writehelpbook, style=stylebook, digest=digestbook, waiting=waitbook, summary=dailysummary, sync=sync, notifier=notifier, click_url=_click, vault=vault, users=users, mail=mail_service, bridge=bridge, auto_sync=auto_sync, outbox=outbox, full_session=full_session, admin_session=admin_session, load_account=load_account,
     microsoft=microsoft,
 )
 app.include_router(build_mail_router(mail_ctx))
 app.include_router(build_extra_router(mail_ctx))          # after the main router: shares its send limits
+app.include_router(build_invite_router(mail_ctx))         # answers to calendar invites use the same send limits
+app.include_router(build_folder_router(mail_ctx))
 app.include_router(build_find_router(mail_ctx))           # after the extra router: uses its summary queue
 app.include_router(build_task_router(mail_ctx))
 app.include_router(build_shipping_router(mail_ctx))
@@ -750,16 +762,14 @@ app.include_router(build_check_router(mail_ctx))
 def apply_rules(account: dict, arrived: list) -> None:
     """Mail that has just arrived: first a muted conversation (filed in Archive, never shown, never alerted), then the owner's rules (archive it,
     or mark it reviewed), then, for what is left, the away reply if the owner switched it on. Nothing else about the email is read. Mail from
-    the owner's important people is never touched by a rule or a mute, and a rule never bins anything (sending to Junk is not binning: the
+    the owner's important people is never muted, but the owner's own rules for them do apply, and a rule never bins anything (sending to Junk is not binning: the
     email stays in the mailbox's Junk folder)."""
     user = account.get("owner_user_id")
     if not user:
         return
     for item in arrived:
-        if importantbook.contains(user, item["sender_address"]):
-            _away_reply(account, item, user)              # never muted or filed by a rule, but still politely answered while away
-            continue
-        muted = mutebook.match(user, item.get("ids") or [])
+        important = importantbook.contains(user, item["sender_address"])
+        muted = None if important else mutebook.match(user, item.get("ids") or [])      # a mute never hides an important person; their own rules do apply
         if muted:
             try:
                 resolve_message(account["id"], item["id"], "archived", user, by="mute")
@@ -769,16 +779,114 @@ def apply_rules(account: dict, arrived: list) -> None:
             except KeyError:
                 pass
             continue
-        rule = rulebook.match(user, item["sender_address"], item["subject"])
-        if not rule:
+        facts = _facts_of(item)
+        _apply_tag_rules(account, item, user, facts)
+        rule = rulebook.match(user, item["sender_address"], item["subject"], facts)
+        if not rule or rule["action"] == "safe":          # a safe sender is left exactly as it is, and no later rule touches it
             _away_reply(account, item, user)
             continue
         try:
-            resolve_message(account["id"], item["id"], rule["action"], user, by="rule")
-        except BridgeError:
-            break                              # the mailbox cannot be changed right now: leave the rest where they are
+            _apply_rule(account, item["id"], user, rule)
+        except BridgeError as err:
+            if rule["action"] in ("moved", "starred") and err.code == "not_found":
+                continue
+            break                                         # the mailbox cannot be changed right now: leave the rest where they are
         except KeyError:
             continue
+
+
+def _facts_of(item: dict) -> dict:
+    """What a rule may look at besides the sender and subject: who it was sent to, the mailing list, files and size. Nothing else is read."""
+    ctx = item.get("reply_context") or {}
+    recipients = item.get("recipients") or [*(ctx.get("cc") or []), *(ctx.get("also_to") or [])]
+    return {"recipients": recipients, "list_id": item.get("list_id"), "files": item.get("files", item.get("has_attachments")), "size": item.get("size", item.get("size_bytes"))}
+
+
+def _apply_rule(account: dict, message_id: str, user: str, rule: dict, by: str = "rule") -> None:
+    """One acting rule on one inbox email. Raises BridgeError when the mailbox cannot be changed and KeyError when the email is gone."""
+    action = rule["action"]
+    if action == "safe":
+        return
+    if action == "moved":
+        move_message_now(account["id"], message_id, user, rule.get("folder", ""), by=by)
+    elif action == "starred":
+        stored = vault.get_message(account["id"], message_id)
+        mail_service.set_starred(account, stored, True)
+        mail_service.mark_starred(vault, account["id"], message_id, True)
+        vault.audit({"event": "message_starred", "actor_user_id": user, "account_id": account["id"], "message_id": message_id, "at": time.time(), "by": by})
+    elif action == "snoozed":
+        mail_service.mark_snoozed(vault, account["id"], message_id, time.time() + int(rule.get("hours") or 1) * 3600)
+        vault.audit({"event": "message_snoozed", "actor_user_id": user, "account_id": account["id"], "message_id": message_id, "at": time.time(), "by": by})
+    else:
+        resolve_message(account["id"], message_id, action, user, by=by)
+
+
+def _existing_inbox(user: str):
+    """The emails Enveliq already holds in this person's inbox (unread, still in the mailbox, not snoozed). Nothing is fetched from the mailbox."""
+    for acct in vault.list_accounts():
+        if acct.get("owner_user_id") != user or acct.get("auth_method") not in ("proton_bridge", "imap", "gmail", "microsoft"):
+            continue
+        for m in vault.list_messages(acct["id"]):
+            if m.get("state", "unread") != "unread" or m.get("found_until") or not m.get("source_locator") or m.get("snoozed_until"):
+                continue
+            yield acct, m
+
+
+class _RuleTools:
+    """What the Mail rules page needs from the rest of the app: a count before a rule is saved, and a run over mail that is already here."""
+    MAX_RUN = 500
+
+    def preview(self, user: str, rule: dict) -> dict:
+        total = fit = 0
+        for _acct, m in _existing_inbox(user):
+            total += 1
+            if fits_rule(rule, m.get("sender_address"), m.get("subject"), _facts_of(m)):
+                fit += 1
+        return {"matches": fit, "checked": total}
+
+    def plan(self, user: str) -> list:
+        out = []
+        for acct, m in _existing_inbox(user):
+            rule = rulebook.match(user, m.get("sender_address"), m.get("subject"), _facts_of(m))
+            if rule and rule["action"] != "safe":
+                out.append((acct, m, rule))
+        return out
+
+    def run(self, user: str, confirm: bool) -> dict:
+        plan = self.plan(user)
+        counts: dict = {}
+        for _a, _m, rule in plan:
+            counts[rule["action"]] = counts.get(rule["action"], 0) + 1
+        if not confirm:
+            return {"total": len(plan), "counts": counts, "limit": self.MAX_RUN}
+        done: dict = {}
+        failed = 0
+        for acct, m, rule in plan[: self.MAX_RUN]:
+            try:
+                _apply_rule(acct, m["id"], user, rule, by="rule_run")
+                done[rule["action"]] = done.get(rule["action"], 0) + 1
+            except BridgeError:
+                failed += 1
+            except KeyError:
+                continue
+        vault.audit({"event": "rules_run_on_existing", "actor_user_id": user, "at": time.time(), "done": sum(done.values()), "failed": failed})
+        return {"done": done, "failed": failed, "left": max(0, len(plan) - self.MAX_RUN)}
+
+
+mail_ctx.rule_tools = _RuleTools()
+
+
+def _apply_tag_rules(account: dict, item: dict, user: str, facts: dict | None = None) -> None:
+    """"Always apply tags" rules: put the chosen tags on the email that has just arrived. A tag that cannot be put on (the mailbox does not keep tags,
+    the tag was deleted, the mail service is busy) is skipped without a word: it never holds up a sync or another rule."""
+    names = rulebook.tags_for(user, item["sender_address"], item["subject"], facts)
+    if not names or not features.effective(vault, user)["tags"]:
+        return
+    for name in names:
+        try:
+            tagservice.set_for_message(account, item["id"], name, True)
+        except Exception:
+            logger.info("a tag rule could not put a tag on a new email")
 
 
 def _away_reply(account: dict, item: dict, user: str) -> None:
@@ -812,22 +920,13 @@ exporter = build_exporter(
     vault, users, public_account=public_account, public_message=public_message, principal_of=users.principal,
     prefs=lambda uid: review.user_prefs(vault, uid),
     contacts_of=lambda uid: [contacts_mod._public(a, p) for a, p in contacts_mod._load(vault, uid).items()],
-    threads_of=lambda uid: [t for t in (_thread_or_none(uid, tid) for tid in messagebook._index(uid)) if t],
     notify_state=lambda uid: {"settings": notifier.settings(uid), "channels_on": notifier.enabled_channels(uid)},
     sync_state=lambda uid: sync.overview(uid))
-
-
-def _thread_or_none(uid: str, tid: str):
-    try:
-        return messagebook._thread(tid, uid)
-    except KeyError:
-        return None
 
 
 app.include_router(build_backup_router(SimpleNamespace(
     vault=vault, users=users, sessions=sessions, backups=backups, login_limiter=login_limiter, exporter=exporter,
     admin_session=admin_session, full_session=full_session)))
-app.include_router(build_messages_router(mail_ctx))
 app.include_router(build_inbound_router(mail_ctx))
 app.include_router(build_writehelp_router(mail_ctx))
 app.include_router(build_style_router(mail_ctx))
@@ -950,6 +1049,7 @@ def system_endpoint(session: Session = Depends(full_session)):
     detail (encryption settings, public address, key-file unlock) is for administrators."""
     out: dict[str, Any] = {
         "version": VERSION,
+        **({"build": BUILD} if BUILD else {}),
         "cipher": "AES-256-GCM", "kdf": "Argon2id",
         "idle_lock_seconds": 0 if AUTO_UNLOCK else vault.idle_lock_seconds,
         "raw_message_body_persistence": False, "raw_attachment_persistence": False,
@@ -1204,23 +1304,56 @@ def resolve_message_endpoint(
     return Response(status_code=204)
 
 
+def move_message_now(account_id: str, message_id: str, user_id: str, folder: str, *, by: str | None = None) -> None:
+    """Moves an Inbox email into a folder at the mailbox (the name must be one the mailbox listed), then forgets it here as Bin does.
+    Raises BridgeError when the mailbox cannot do it and KeyError when the message is gone."""
+    stored = vault.get_message(account_id, message_id)
+    mail_service.move_to_folder(mail_ctx.folders, vault.get_account(account_id), stored, folder)
+    preview_leases.purge_message(account_id, message_id)
+    taskbook.close_message(user_id, account_id, message_id, "handled")
+    vault.delete_message(account_id, message_id)
+    vault.audit({"event": "message_moved", "actor_user_id": user_id, "account_id": account_id, "message_id": message_id, "at": time.time(), **({"by": by} if by else {})})
+
+
+class MoveMessageRequest(StrictModel):
+    folder: str = Field(min_length=1, max_length=300)
+
+
+@app.post("/api/v1/accounts/{account_id}/messages/{message_id}/move", status_code=204)
+def move_message_to_folder(body: MoveMessageRequest, account_id: AccountId, message_id: MessageId, session: Session = Depends(current_session)):
+    """Moves an Inbox email into one of the person's own folders at the mailbox. Like Archive, the email then leaves the list."""
+    load_account(account_id, session.principal, owner_only=True, action="move this email")
+    try:
+        stored = vault.get_message(account_id, message_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Message not found") from exc
+    if stored.get("found_until") or stored.get("state") != "unread" or not stored.get("source_locator"):
+        raise HTTPException(status_code=409, detail="This email cannot be moved from here.")
+    try:
+        move_message_now(account_id, message_id, session.principal.user_id, body.folder)
+    except BridgeError as err:
+        raise HTTPException(status_code=BRIDGE_HTTP_STATUS.get(err.code, 502),
+                            detail={"code": err.code, "message": err.message}) from None
+    return Response(status_code=204)
+
+
 @app.post("/api/v1/accounts/{account_id}/messages/{message_id}/unread", status_code=204)
 def mark_message_unread(account_id: AccountId, message_id: MessageId, session: Session = Depends(current_session)):
-    """Marks a Reviewed email unread again: the real mailbox gets its unread mark back and the email returns to the inbox list."""
+    """Marks a read email unread again: the mailbox gets its unread mark back and the email returns to the inbox list."""
     load_account(account_id, session.principal, owner_only=True, action="mark this email unread")
     try:
         stored = vault.get_message(account_id, message_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Message not found") from exc
-    if stored.get("state") != "reviewed" or stored.get("found_until"):
-        raise HTTPException(status_code=409, detail="Only an email you marked Reviewed can be marked unread.")
+    if stored.get("found_until") or stored.get("state") == "archived":
+        raise HTTPException(status_code=409, detail="This email has moved, so it cannot be marked unread here.")
     try:
         mail_service.mark_unread(vault.get_account(account_id), stored)
     except BridgeError as err:
         raise HTTPException(status_code=BRIDGE_HTTP_STATUS.get(err.code, 502),
                             detail={"code": err.code, "message": err.message}) from None
     data = {k: v for k, v in stored.items() if k != "id"}
-    data.update(state="unread", resolved_at=None)
+    data.update(state="unread", resolved_at=None, from_all_mail=False)
     vault.update_message(account_id, message_id, data)
     vault.audit({"event": "message_marked_unread", "actor_user_id": session.principal.user_id, "account_id": account_id,
                  "message_id": message_id, "at": time.time()})
@@ -1243,7 +1376,18 @@ def resolve_message(account_id: str, message_id: str, outcome: str, user_id: str
     else:
         mail_service.apply_outcome(account, stored, outcome)
     preview_leases.purge_message(account_id, message_id)
-    kept = None if found else review.kept_state_for(vault, user_id, outcome)
+    if outcome == "reviewed" and not found:
+        taskbook.close_message(user_id, account_id, message_id, "handled")
+        if features.effective(vault, user_id)["all_mail"]:
+            # Mark as read: with read mail shown, the email stays in the list exactly where it was, just without the unread highlight.
+            # Like any kept card it loses its attachment details; it keeps only its pointer to the mailbox, so Mark as unread can find it.
+            data = review.keep_record(vault.get_message(account_id, message_id), "reviewed")
+            data.update(state="unread", resolved_at=None, from_all_mail=True)
+            vault.update_message(account_id, message_id, data)
+            vault.audit({"event": "message_marked_read", "actor_user_id": user_id, "account_id": account_id, "message_id": message_id, "at": time.time(),
+                         **({"by": by} if by else {})})
+            return
+    kept = None if found or outcome == "reviewed" else review.kept_state_for(vault, user_id, outcome)     # Mark as read keeps no list: the email is simply read now
     if outcome != "expired":
         taskbook.close_message(user_id, account_id, message_id, "handled")
     if kept:

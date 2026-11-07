@@ -240,3 +240,59 @@ def test_your_own_task_needs_a_signed_in_person_and_is_limited(env):
         book = appm.taskbook
         book.add(appm.vault.list_accounts()[0]["owner_user_id"], aid, mid, f"Thing {i}")
     assert add_task(client, aid, mid).status_code == 422
+
+
+# ---------- "Never make tasks" rule ----------
+
+def _no_tasks(client, sender="@example.invalid", subject=""):
+    r = client.post("/api/v1/me/rules", json={"sender": sender, "subject": subject, "action": "notasks"})
+    if sender == "@example.invalid" and not subject:                       # the test mail also has one sender at another website
+        r = client.post("/api/v1/me/rules", json={"sender": "@simplelogin.co", "subject": "", "action": "notasks"})
+    return r
+
+
+def test_a_never_make_tasks_rule_stops_tasks_but_not_the_email(env):
+    _, client, bridge, _ = env
+    assert _no_tasks(client).status_code == 200
+    aid = summarised(client, bridge)
+    assert listing(client)["tasks"] == []
+    assert len(messages(client, aid)) >= 1 and all(m["state"] == "unread" for m in messages(client, aid).values())      # the mail itself is untouched
+
+
+def test_removing_the_rule_lets_tasks_appear_again(env):
+    _, client, bridge, _ = env
+    rules = _no_tasks(client).json()["rules"]
+    summarised(client, bridge)
+    assert listing(client)["tasks"] == []
+    for rule in rules:
+        assert client.delete(f"/api/v1/me/rules/{rule['id']}").status_code == 200
+    assert len(listing(client)["tasks"]) >= 1
+
+
+def test_the_rule_can_name_one_sender_and_words_in_the_subject(env):
+    _, client, bridge, _ = env
+    _no_tasks(client, "nobody@example.invalid")                    # a different sender: nothing changes
+    _no_tasks(client, "@example.invalid", "words that are in no subject")
+    summarised(client, bridge)
+    assert len(listing(client)["tasks"]) >= 1
+
+
+def test_important_people_still_make_tasks(env):
+    appm, client, bridge, _ = env
+    _no_tasks(client)
+    aid = account(client, bridge)
+    client.post(f"/api/v1/accounts/{aid}/sync", json={})
+    for m in appm.vault.list_messages(aid):
+        client.post("/api/v1/me/important", json={"address": m["sender_address"]})
+    client.post(f"/api/v1/accounts/{aid}/summarise", json={})
+    assert len(listing(client)["tasks"]) >= 1
+
+
+def test_a_task_made_by_hand_is_not_blocked(env):
+    _, client, bridge, _ = env
+    _no_tasks(client)
+    aid = summarised(client, bridge)
+    mid = next(iter(messages(client, aid).values()))["id"]
+    r = client.post("/api/v1/me/tasks", json={"account_id": aid, "message_id": mid, "title": "Call back"})
+    assert r.status_code in (200, 201), r.text
+    assert [t["title"] for t in listing(client)["tasks"]] == ["Call back"]

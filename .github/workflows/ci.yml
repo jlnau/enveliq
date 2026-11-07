@@ -158,6 +158,8 @@ jobs:
         run: node scripts/check_formatted_email.mjs
       - name: Snooze (simulated server)
         run: node scripts/check_snooze.mjs
+      - name: Calendar invitations (simulated server)
+        run: node scripts/check_invites.mjs
       - name: Search everywhere (simulated server)
         run: node scripts/check_search_everywhere.mjs
       - name: A blank install shows no sample mail (simulated server)
@@ -196,6 +198,12 @@ jobs:
         run: node scripts/check_attachment_view.mjs
       - name: The Back button returns to the previous section inside the app (made-up mail, no server)
         run: node scripts/check_back_button.mjs
+      - name: Forward, Tag and Rules work on several ticked emails at once (made-up mail, no server)
+        run: node scripts/check_bulk_actions.mjs
+      - name: The Tags page, dragging emails onto a folder, the tag search box and the left menu words (made-up mail, no server)
+        run: node scripts/check_tags_view.mjs
+      - name: The Dark colour choice in Customise (made-up mail, no server)
+        run: node scripts/check_dark_mode.mjs
       - name: A Task button on every email adds a task of your own (made-up mail, no server)
         run: node scripts/check_task_add.mjs
       - name: News feeds, the badge at the top and the pop-up, on desktop and phone (made-up feeds, no server)
@@ -271,6 +279,24 @@ jobs:
         run: node scripts/check_rules.mjs
       - name: Three-dot menu, Mute, Mark unread, Print and Conversation View (simulated server)
         run: node scripts/check_more_menu.mjs
+      - name: Never make tasks rule (simulated server)
+        run: node scripts/check_never_tasks.mjs
+      - name: Mark as read, next/previous, headers, .eml and importance (simulated server)
+        run: node scripts/check_stage1.mjs
+      - name: Star check
+        run: node scripts/check_stage2.mjs
+      - name: Folders check
+        run: node scripts/check_stage3.mjs
+      - name: Search filters, recent and saved searches check
+        run: node scripts/check_stage4.mjs
+      - name: Smarter mail rules check
+        run: node scripts/check_stage5.mjs
+      - name: Hide counts and Today section check
+        run: node scripts/check_home_sections.mjs
+      - name: Ask the agent from the search box check
+        run: node scripts/check_ask_agent.mjs
+      - name: Top bar and left menu tidy-up check
+        run: node scripts/check_top_bar_tidy.mjs
       - name: Trips page and Home card (simulated server)
         run: node scripts/check_trips.mjs
       - name: Subscriptions page and Home card (simulated server)
@@ -291,8 +317,6 @@ jobs:
         run: node scripts/check_settings_list.mjs
       - name: User menu, Profile settings and tidied Settings (simulated server)
         run: node scripts/check_user_menu.mjs
-      - name: Messages page, sidebar count and Home card (simulated server)
-        run: node scripts/check_messages.mjs
       - name: Writing help in the reply and New email boxes (simulated server)
         run: node scripts/check_writehelp.mjs
       - name: Daily summary item in the inbox (simulated server)
@@ -373,6 +397,10 @@ jobs:
       - run: node scripts/check_inbox_real_mail.mjs
       - run: node scripts/check_original_html.mjs
       - run: node scripts/check_back_button.mjs
+      - run: node scripts/check_bulk_actions.mjs
+      - run: node scripts/check_tags_view.mjs
+      - run: node scripts/check_dark_mode.mjs
+      - run: node scripts/check_copy_code.mjs
 
   # Keep the required Browser checks status context stable.
   browser:

@@ -33,7 +33,7 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
     check("phone: recent emails remain visible", await p.locator("#previewListHeading").isVisible() && await p.locator("#list").isVisible());
   }
   const sw = p.locator("#calmBtn");
-  check(name + ": the Calm mode switch is just above Agent, in the footer of the menu", await p.evaluate(() => { const a = document.getElementById("agentBtn"), c = document.getElementById("calmBtn"); return !!c && c.nextElementSibling === a && a.parentElement.classList.contains("side-foot"); }));
+  check(name + ": the Calm mode switch is no longer shown in the left menu (the account menu has it)", await p.evaluate(() => { const c = document.getElementById("calmBtn"); return !!c && c.hidden && !!document.getElementById("previewCalmBtn"); }));
   check(name + ": Calm mode starts enabled and announces its state", (await sw.getAttribute("role")) === "switch" && (await sw.getAttribute("aria-checked")) === "true");
   check(name + ": the original Enveliq wordmark remains in the sidebar", await p.locator(".brand-wordmark").getAttribute("alt") === "Enveliq" && (await p.locator(".brand-wordmark").getAttribute("src")).startsWith("data:image/webp;base64,"));
   if (name === "desktop") {
@@ -43,12 +43,12 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
     }));
     check(name + ": More starts collapsed in Calm mode", (await p.locator("#moreToggle").getAttribute("aria-expanded")) === "false");
     await p.click("#moreToggle");
-    check(name + ": More still exposes Reviewed and Archived", await p.locator('.more-items [data-filter="reviewed"]').isVisible() && await p.locator('.more-items [data-filter="archived"]').isVisible());
+    check(name + ": More still exposes Archived",  await p.locator('.more-items [data-filter="archived"]').isVisible());
     await p.click("#moreToggle");
   } else {
     check(name + ": mobile has no landscape banner", await p.evaluate(() => getComputedStyle(document.querySelector(".enveliq-landscape")).display === "none" && document.querySelector(".preview-toolbar").getBoundingClientRect().height === 0));
     await p.click("#moreToggle");
-    check(name + ": opening More does not close mobile navigation", await p.evaluate(() => document.body.classList.contains("menu-open")) && await p.locator('.more-items [data-filter="reviewed"]').isVisible());
+    check(name + ": opening More does not close mobile navigation", await p.evaluate(() => document.body.classList.contains("menu-open")) && await p.locator('.more-items [data-filter="archived"]').isVisible());
     await p.click("#moreToggle");
   }
 
@@ -92,7 +92,7 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
     }
   }
   const off = await calmState();
-  check(name + ": switching off restores counters", off.badges > 0 && /\d/.test(off.today) && /\d/.test(off.sub));
+  check(name + ": switching off restores counters", off.badges > 0 && /\d/.test(off.today));
   await p.reload(); await p.waitForTimeout(800);
   check(name + ": explicit opt out is remembered after reload", await p.evaluate(() => !document.body.classList.contains("calm")));
   await p.evaluate(() => document.querySelector(".demo-banner")?.remove());

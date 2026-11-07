@@ -260,3 +260,15 @@ def test_export_needs_a_sign_in_and_is_rate_limited(app):
     assert TestClient(appm.app).get("/api/v1/me/export").status_code == 401
     codes = [admin.get("/api/v1/me/export").status_code for _ in range(8)]
     assert codes[:6] == [200] * 6 and 429 in codes[6:]
+
+
+
+def test_clearing_a_removed_feature_deletes_only_its_own_records(tmp_path):
+    vault = make_vault(tmp_path)
+    vault.set_global("msg:thread:t1", {"id": "t1"})
+    vault.set_global("msg:index:u1", {"threads": ["t1"]})
+    vault.set_global("note", {"x": "stays"})
+    assert vault.purge_global_prefix("msg:thread:") == 1 and vault.purge_global_prefix("msg:index:") == 1
+    assert vault.get_global("msg:thread:t1") is None and vault.get_global("msg:index:u1") is None
+    assert vault.get_global("note") == {"x": "stays"}
+    assert vault.purge_global_prefix("msg:thread:") == 0

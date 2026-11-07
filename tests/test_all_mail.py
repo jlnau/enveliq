@@ -112,7 +112,7 @@ def test_a_reviewed_quiet_entry_becomes_an_ordinary_kept_card(env):
     mid = messages(client, aid)["Read yesterday"]["id"]
     assert client.post(f"/api/v1/accounts/{aid}/messages/{mid}/resolve", json={"outcome": "reviewed"}).status_code == 204
     kept = messages(client, aid).get("Read yesterday")
-    assert kept is None or (kept["state"] == "reviewed" and kept["from_all_mail"] is False)
+    assert kept is None or (kept["state"] == "unread" and kept["from_all_mail"] is True)       # read mail stays read; no Reviewed card
 
 
 # ---------- the line itself ----------

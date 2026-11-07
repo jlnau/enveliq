@@ -21,6 +21,8 @@ This folder describes the separate Docker preview stack originally used to test 
 
 **Testing a version before it goes live.** Each version has one draft pull request (for example "Version 0.89") and one test branch with the same number (for example `preview/v0.89`). The test branch always holds the same code as the pull request. Every push to a `preview/` branch builds the preview images (the `ui-preview` tag). The draft pull request's description starts with the test branch name. When the **Build UI Preview** run on that branch shows a green tick, redeploy the `enveliq-preview` project in Arcane and test there.
 
+**Which build is running?** A preview shows **Preview build N** at the bottom of the left panel (hover for the version it belongs to) instead of **Version X.YY**, where N is the number of the **Build UI Preview** run that made the image. After a redeploy, check that the number matches the run you waited for. Released images show only the version.
+
 To update an existing preview after its image source changes, wait for a successful preview image build and then redeploy only the preview project in Arcane. Do not redeploy the production project as part of preview testing.
 
 ## Interface changes

@@ -203,8 +203,9 @@ def test_junk_goes_with_the_person(env):
 
 def test_an_email_with_broken_characters_does_not_stop_the_list(env):
     _, client, bridge, _ = env
+    when = format_datetime(datetime.now(timezone.utc) - timedelta(days=1)).encode()      # a recent date: the Junk list only looks back 30 days
     raw = (b"From: =?utf-8?q?Sh=FFp?= <shop@example.invalid>\r\nTo: me@example.invalid\r\nSubject: Cheap \xff\xfe pills\r\n"
-           b"Date: Mon, 5 Oct 2026 09:00:00 +0000\r\nMessage-ID: <broken@example.invalid>\r\n\r\nBuy now\r\n")
+           b"Date: " + when + b"\r\nMessage-ID: <broken@example.invalid>\r\n\r\nBuy now\r\n")
     bridge.add(903, raw, "Spam")
     account(client, bridge)
     got = client.post("/api/v1/junk/refresh")

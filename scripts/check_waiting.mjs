@@ -46,14 +46,17 @@ function makeServer(opts = {}) {
     if (p === "/api/v1/sync/status") return json(200, { enabled: true, minutes: 10, now: Date.now() / 1000, accounts: { a1: { ok: true, at: now } } });
     if (p === "/api/v1/me/outbox") return json(200, { now: Date.now() / 1000, items: [] });
     if (p === "/api/v1/me/shipping") return json(200, { enabled: false, orders: [], now });
-    if (p === "/api/v1/accounts/a1/sent") {
-      return json(200, { validity: 1, days: 14, more: false, items: [
-        { uid: 5, to: [{ name: "Dana", address: "dana@example.invalid" }], subject: "Quote for the fence", date: now - 3 * day, follow: null },
-        { uid: 6, to: [{ name: "Sam", address: "sam@example.invalid" }], subject: "Thanks for lunch", date: now - 2 * day, follow: null },
-        { uid: 7, to: [{ name: "Kim", address: "kim@example.invalid" }], subject: "Invoice 88", date: now - 1 * day, follow: "waiting" },
-      ] });
+    if (p === "/api/v1/accounts/a1/folders") return json(200, { folders: [{ name: "Sent", label: "Sent", special: true, target: false }] });
+    if (p === "/api/v1/accounts/a1/folder-mail") {
+      const row = (uid, name, address, subject, ago) => ({ token: "t" + uid, from_name: "Me", from_address: "me@example.invalid", to_name: name, to_address: address, to_more: 0, subject, date: now - ago * day, has_files: false });
+      return json(200, { rows: [row(7, "Kim", "kim@example.invalid", "Invoice 88", 1), row(6, "Sam", "sam@example.invalid", "Thanks for lunch", 2), row(5, "Dana", "dana@example.invalid", "Quote for the fence", 3)], total: 3, more: false, now: Date.now() / 1000 });
     }
-    const f = p.match(/^\/api\/v1\/accounts\/a1\/sent\/1\/(\d+)\/follow$/);
+    if (p === "/api/v1/accounts/a1/waiting-mail") {
+      const r = (tok, name, address, subject) => ({ token: tok, from_name: "", from_address: "", to_name: name, to_address: address, to_more: 0, subject, date: now - 3 * day, has_files: false, folder: "Sent" });
+      return json(200, { rows: { ["w" + "a".repeat(23)]: r("t5", "Dana", "dana@example.invalid", "Quote for the fence"), ["w" + "b".repeat(23)]: r("t6", "Sam", "sam@example.invalid", "Lunch on Thursday?") } });
+    }
+    if (/^\/api\/v1\/folder-mail\/t\d+\/original$/.test(p)) return json(200, { subject: "x", from: { name: "Me", address: "me@example.invalid" }, to: [], date: "x", text: "Hello", truncated: false, attachments: [] });
+    const f = p.match(/^\/api\/v1\/folder-mail\/t(\d+)\/follow$/);
     if (f && req.method() === "POST") {
       const force = JSON.parse(req.postData() || "{}").force === true;
       calls.push(["follow", Number(f[1]), force]);
@@ -104,40 +107,51 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await shot(page, "wait-home");
 
   await page.click("#waitNav");
-  await page.waitForSelector("#waitPage .wcard");
-  check("the page lists due and waiting notes, and Closed is folded away until opened", (await page.locator("#waitPage .wcard").count()) === 3 && (await page.locator("#waitPage .wcard.due").count()) === 2 && (await page.locator("#waitPage .wcard.closed").count()) === 0 && (await page.locator("[data-wait-closed-toggle]").getAttribute("aria-expanded")) === "false" && /closed · 1/i.test(await page.locator("[data-wait-closed-toggle]").innerText()) && await page.locator("#list").isHidden());
+  await page.waitForSelector(".frow.wrow");
+  const rows = () => page.locator(".frow.wrow");
+  check("Waiting is the same page as Folders: a list of rows and a reading pane, not its own layout", (await page.locator("#fdrTitle").innerText()) === "Waiting for reply" && (await page.locator("#fdrPane").count()) === 1 && (await page.locator("#waitPage").isVisible()) === false);
+  check("the page lists due and waiting notes, and Closed is folded away until opened", (await rows().count()) === 3 && (await page.locator(".frow.wdone").count()) === 0 && (await page.locator("[data-wait-closed-toggle]").getAttribute("aria-expanded")) === "false");
   await shot(page, "wait-closed-folded");
   await page.click("[data-wait-closed-toggle]");
-  check("opening Closed shows the closed note", (await page.locator("#waitPage .wcard").count()) === 4 && (await page.locator("#waitPage .wcard.closed").count()) === 1 && (await page.locator("[data-wait-closed-toggle]").getAttribute("aria-expanded")) === "true");
-  const txt = await page.locator("#waitPage").innerText();
-  check("shows the ask, the time left, and why a note was closed", txt.includes("Waiting: Send me the quote by Friday.") && /Reminder after 3 days/.test(txt) && txt.includes("Replied"));
-  check("hostile text is shown as text, not run", !(await page.evaluate(() => window.__pwned)) && (await page.locator("#waitPage img, #waitPage script").count()) === 0 && txt.includes("<script>window.__pwned=1</script>"));
-  check("buttons are at least 44px tall", await page.evaluate(() => [...document.querySelectorAll("#waitPage .wbtn")].every((b) => b.getBoundingClientRect().height >= 43)));
+  check("opening Closed shows the closed note", (await rows().count()) === 4 && (await page.locator(".frow.wdone").count()) === 1 && (await page.locator("[data-wait-closed-toggle]").getAttribute("aria-expanded")) === "true");
+  const txt = await page.locator("#fdrList").innerText();
+  check("rows say who, the subject and what is being waited for; a closed one says why", txt.includes("Dana") && txt.includes("waiting for Send me the quote by Friday.") && txt.includes("Replied"));
+  check("hostile text is shown as text, not run", !(await page.evaluate(() => window.__pwned)) && (await page.locator("#fdrList img, #fdrList script").count()) === 0 && txt.includes("<script>window.__pwned=1</script>"));
+  await rows().filter({ hasText: "Quote for the fence" }).click();
+  await page.waitForSelector("#fdrPane .wait-bar");
+  check("opening a row shows the sent email in the reading view with the Waiting buttons above it", /Reminder after 3 days|No reply yet/.test(await page.locator("#fdrPane .wait-bar").innerText()) && (await page.locator("#fdrPane [data-live-act]").count()) > 0);
+  check("the Waiting buttons are at least 44px tall", await page.evaluate(() => [...document.querySelectorAll("#fdrPane .wait-bar .btn")].every((b) => b.getBoundingClientRect().height >= 43)));
   await shot(page, "wait-page");
+  await rows().filter({ hasText: "Evil" }).click();
+  check("a note whose email is no longer in Sent still opens, with its buttons and a plain message", (await page.locator("#fdrPane .wait-bar").count()) === 1 && (await page.locator("#fdrPane").innerText()).includes("no longer in your Sent folder"));
 
   await page.selectOption("#waitDays", "5");
-  await page.waitForFunction(() => document.querySelector("#waitDays").value === "5" && document.querySelectorAll("#waitPage .wcard.due").length === 1);
-  check("changing the days is sent to the server and the due notes follow (the four-day one is no longer due)", server.calls.some((c) => c[0] === "days" && c[1] === 5) && (await page.locator("#waitPage .wcard.due").count()) === 1);
+  await page.waitForFunction(() => document.querySelector("#waitDays").value === "5" && document.querySelectorAll(".frow.wrow").length === 4);
+  check("changing the days is sent to the server and the due notes follow (the four-day one is no longer due)", server.calls.some((c) => c[0] === "days" && c[1] === 5) && /no reply yet · 1/i.test(await page.locator("#fdrList").innerText()));
   await page.selectOption("#waitDays", "3");
-  await page.waitForFunction(() => document.querySelectorAll("#waitPage .wcard.due").length === 2);
+  await page.waitForFunction(() => /no reply yet · 2/i.test(document.getElementById("fdrList").innerText));
 
-  await page.locator('#waitPage .wcard', { hasText: "Quote for the fence" }).locator('[data-wait-nudge]').click();
+  await rows().filter({ hasText: "Quote for the fence" }).click();
+  await page.locator("#fdrPane .wait-bar").getByRole("button", { name: "Write a nudge" }).click();
   await page.waitForSelector("#newMail.open");
-  check("Write a nudge opens New email to that person, with the subject and a short message", (await page.locator("#nmSubject").inputValue()) === "Re: Quote for the fence" && (await page.locator("#nmTo").innerText()).includes("Dana") && (await page.evaluate(() => document.getElementById("nmText").value)).includes("Send me the quote by Friday"));
+  check("Write a nudge opens New email to that person, with the subject and a short message", (await page.locator("#nmSubject").inputValue()) === "Re: Quote for the fence" && (await page.locator("#nmTo").innerText()).includes("Dana") && (await page.evaluate(() => document.getElementById("nmText").value)).includes("Send me the qu"));
   await page.locator("#nmCancel").click();
   await page.waitForFunction(() => !document.querySelector("#newMail.open"));
 
-  await page.locator('#waitPage .wcard', { hasText: "Quote for the fence" }).locator('[data-wait="later"]').click();
-  await page.waitForFunction(() => document.querySelectorAll("#waitPage .wcard.due").length === 1);
+  await page.locator("#fdrPane .wait-bar").getByRole("button", { name: /Ask again/ }).click();
+  await page.waitForFunction(() => /no reply yet · 1/i.test(document.getElementById("fdrList").innerText));
   check("Ask again moves it out of the due list", server.calls.some((c) => c[0] === "later"));
-  await page.locator('#waitPage .wcard', { hasText: "Lunch on Thursday" }).locator('[data-wait="got_reply"]').click();
-  await page.waitForFunction(() => document.querySelectorAll("#waitPage .wcard.closed").length === 2);
-  check("Got a reply closes it", server.calls.some((c) => c[0] === "got_reply"));
-  await page.locator('#waitPage .wcard.closed', { hasText: "Lunch on Thursday" }).locator('[data-wait="undo"]').click();
-  await page.waitForFunction(() => document.querySelectorAll("#waitPage .wcard.closed").length === 1);
+  await rows().filter({ hasText: "Lunch on Thursday" }).hover();
+  await rows().filter({ hasText: "Lunch on Thursday" }).locator('.fra-b[title="Got a reply"]').click();
+  await page.waitForFunction(() => document.querySelectorAll(".frow.wdone").length === 2);
+  check("Got a reply (the hover button) closes it", server.calls.some((c) => c[0] === "got_reply"));
+  await rows().filter({ hasText: "Lunch on Thursday" }).click();
+  await page.locator("#fdrPane .wait-bar").getByRole("button", { name: "Undo" }).click();
+  await page.waitForFunction(() => document.querySelectorAll(".frow.wdone").length === 1);
   check("Undo puts it back", server.calls.some((c) => c[0] === "undo"));
-  await page.locator('#waitPage [data-wait="not_needed"]').first().click();
-  await page.waitForFunction(() => document.querySelectorAll("#waitPage .wcard.closed").length === 2);
+  await rows().filter({ hasText: "Lunch on Thursday" }).click();
+  await page.locator("#fdrPane .wait-bar").getByRole("button", { name: "Not needed" }).click();
+  await page.waitForFunction(() => document.querySelectorAll(".frow.wdone").length === 2);
   check("Not needed closes it", server.calls.some((c) => c[0] === "not_needed"));
   check("no script errors or policy violations", errors.length === 0 && csp.length === 0);
   await page.close(); await context.close();
@@ -148,23 +162,21 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   const { page, errors, context } = await open(server);
   if (!(await page.locator("#sentNav").isVisible())) await page.locator("#moreToggle").click();
   await page.click("#sentNav");
-  await page.waitForSelector(".srow");
-  const rows = page.locator(".srow");
-  await rows.nth(0).locator(".shead").click();
-  check("an opened sent email has a Follow for a reply button", (await rows.nth(0).locator(".sent-follow, .sbody").locator("button", { hasText: "Follow for a reply" }).count()) === 1);
-  await rows.nth(2).locator(".shead").click();
-  check("one that is already followed says so and cannot be pressed", await rows.nth(2).locator("button", { hasText: "Following for a reply" }).isDisabled());
+  await page.waitForSelector(".frow");
+  const rows = page.locator(".frow");
+  check("Sent opens the same list as Folders, showing who each email went to", (await rows.count()) === 3 && (await rows.nth(0).innerText()).includes("Kim"));
+  const follow = async (n) => { await rows.nth(n).click(); await page.locator(".qmore").first().click(); await page.locator('[data-live-act="follow"]').first().click(); };
+  await follow(2);
+  await page.waitForFunction(() => /Waiting for reply/.test(document.querySelector("#toast")?.innerText || ""));
+  check("Follow for a reply in the three-dot menu follows that email and says where to see it", server.calls.some((c) => c[0] === "follow" && c[1] === 5 && c[2] === false));
   await shot(page, "sent-follow");
-  await rows.nth(0).locator("button", { hasText: "Follow for a reply" }).click();
-  await rows.nth(0).locator("button", { hasText: "Following for a reply" }).waitFor();
-  check("pressing it follows that email and says where to see it", server.calls.some((c) => c[0] === "follow" && c[1] === 5 && c[2] === false) && (await rows.nth(0).innerText()).includes("See Waiting for reply"));
-  await rows.nth(1).locator(".shead").click();
-  await rows.nth(1).locator("button", { hasText: "Follow for a reply" }).click();
-  await rows.nth(1).locator("button", { hasText: "Follow it anyway" }).waitFor();
-  check("when the AI finds nothing asked it says so and offers Follow it anyway", (await rows.nth(1).innerText()).includes("did not find a question or request"));
-  await rows.nth(1).locator("button", { hasText: "Follow it anyway" }).click();
-  await rows.nth(1).locator("button", { hasText: "Following for a reply" }).waitFor();
-  check("Follow it anyway sends force", server.calls.some((c) => c[0] === "follow" && c[1] === 6 && c[2] === true));
+  await follow(1);
+  await page.waitForFunction(() => /did not find a question/.test(document.querySelector("#toast")?.innerText || ""));
+  check("when the AI finds nothing asked it says so", true);
+  await page.locator(".qmore").first().click(); await page.locator('[data-live-act="follow"]').first().click();
+  await page.waitForFunction(() => true);
+  await page.waitForTimeout(300);
+  check("pressing it again follows it anyway (sends force)", server.calls.some((c) => c[0] === "follow" && c[1] === 6 && c[2] === true));
   check("no script errors", errors.length === 0);
   await page.close(); await context.close();
 }

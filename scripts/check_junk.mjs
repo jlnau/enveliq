@@ -64,7 +64,7 @@ function makeServer(opts = {}) {
 const browser = await chromium.launch();
 async function open(server, { width = 1200, height = 900, touch = false } = {}) {
   const context = await browser.newContext({ viewport: { width, height }, hasTouch: touch });
-  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-calm", "0"); } catch (e) {} });
+  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-more-open", "1"); localStorage.setItem("enveliq-calm", "0"); } catch (e) {} });
   const page = await context.newPage();
   const errors = [], csp = [];
   page.on("pageerror", (e) => errors.push(String(e)));

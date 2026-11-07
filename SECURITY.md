@@ -67,7 +67,7 @@ This includes:
 * Contacts and saved replies
 * Shipping and subscription information
 * Trips and reminders
-* Private messages and agent chats
+* Agent chats
 * Notification settings
 * Saved preferences and viewing state
 
@@ -129,6 +129,7 @@ Protect backups and encryption keys carefully. Anyone who obtains both may be ab
 Enveliq connects to existing email providers rather than replacing them.
 
 Supported connections include standard IMAP services, Proton Mail through Proton Bridge and Microsoft accounts using the supported authentication methods.
+The optional instant check for Proton Bridge keeps one extra authenticated connection open per chosen mailbox, only while Enveliq is unlocked. It receives only a "something changed" notice (no mail content), uses the same pinned certificate and sign-in as a normal check, and closes when Enveliq locks.
 
 ### What Enveliq stores
 
@@ -164,9 +165,18 @@ Email sending requires an explicit user action.
 
 The AI may suggest wording but cannot independently send messages.
 
-User configured mail rules can automatically archive or mark qualifying messages as reviewed. These rules cannot send, forward or delete email.
+User configured mail rules can automatically archive or mark qualifying messages as read. These rules cannot send, forward or delete email. The "Never make tasks" rule does not touch the email at all: it only decides, on the server, whether a task is made from it. It looks only at the sender and subject, belongs to one person and is stored encrypted with their other rules. It is never applied to a person's important people, and tasks added by hand are never blocked. **Smarter rules (v0.104).** A rule may also look at who an email was sent to (To and Cc addresses), its mailing list (List-Id) and its size, and can star it, snooze it or mark the sender safe. To make that possible, those three facts are kept with the email's short card inside the encrypted vault (as metadata, like the sender and subject already are); the email text and attachments are still never kept. Emails held before this version do not have them, so those conditions do not match them. Rules, their order and edits belong to one person, are checked on the server from the signed-in session, and another person's rule answers "not found". **Check** and **Run on existing mail** (`POST /api/v1/me/rules/preview` and `/run`) count or act only on the signed-in person's own held emails. Counting changes nothing; acting needs `confirm`, does at most 500 emails, is rate limited (3 a minute), never deletes, skips snoozed and kept emails and leaves a safe sender alone, and the audit log records only that it ran and how many were done or failed, never a sender, subject or address. A safe-sender rule is just a rule that stops later ones; it does not change what Enveliq trusts.
+
+Forwarding several ticked emails at once is the person's own action: each email is forwarded by the server one by one, the same way as a single forward. The original is fetched from the mailbox at that moment and never stored, and only the signed-in person's own emails can be chosen.
+The "Always apply tags" rule only adds tags that already exist in the person's own mailbox to new email from the chosen sender; it uses the same server routine and Tags switch as the Tags button, applies to important people too when the owner made the rule, and a failure is skipped without affecting mail.
 
 Mailbox actions are performed through the connected email provider, with server side ownership and permission checks.
+
+**Folders.** Moving an email, making a folder and looking inside a folder act only on the signed-in person's own mailbox, after the ownership check used for every mailbox action; another person's mailbox or email answers "not found". The server only moves into a folder name the mailbox itself listed (the page cannot name any other, and Inbox, Bin, Junk and the like are refused), and a new folder name is cleaned (short, no slashes or control characters). Looking inside a folder fetches header lines live and stores nothing. An email in a folder is opened through a signed, per-person reference the server made, so a changed or borrowed reference answers "not found". Requests are rate limited and a move or a new folder is noted in the audit log without any folder name or email words. A "move to a folder" rule stores only the folder's exact name and a short label (no email content), runs only on newly arrived mail of the rule's owner, only into a folder that person's mailbox lists, for any sender including Important people (the owner chose the rule); each automatic move is audited without the folder name.
+
+**Search filters, recent and saved searches.** The filters (from, to, dates, unread, starred, has files, mailbox, folder) are sent only to the person's own mail service, like the search words, and are never logged or shown to an administrator; the audit log still records only that a search happened. The chosen mailbox must be one of the signed-in person's own (another's answers "not found"), and a folder is used only if that mailbox lists it. Recent (8) and saved (30) searches are one encrypted vault record per person (`searches:<user id>`) holding the words and filters only, never results or email; they can be cleared or removed any time, are included in **Export my data**, and are erased when the account is removed.
+
+**Stars.** Starring an email sets or clears the mailbox's own Flagged mark, only on the signed-in person's own mailbox, after the same ownership check as every other mailbox action (another person's email answers "not found"), and is rate limited. Enveliq stores one yes/no per email; no email text is kept for it. A flagged email Enveliq did not hold is added as a quiet card with only sender, subject, date and no body, and it is never summarised until the person asks.
 
 **Formatted email you write.** The web writing box makes simple HTML. The page's version is never trusted: before an email is built, the server rebuilds the HTML from a short list of allowed tags and settings (`backend/mail/outhtml.py`). Scripts, frames, forms, plug-ins, SVG, style sheets and every event handler are dropped. Links keep only web and email addresses. A picture can only be one added to that message: it is sent inside the email as its own part and referred to by a `cid:` name, so an email you write can never contain a picture fetched from the internet and never tells a third party it was opened. Pictures are checked as real PNG, JPEG, GIF or WebP files (type and file header), at most 12, 6 MB each and 12 MB together. Pictures are never kept in Drafts or waiting emails; the formatted words of those are kept encrypted in the vault, like the plain words, and are rebuilt the same way when sent. The page also strips pasted content to the same allowed list before it is placed in the box.
 
@@ -210,15 +220,11 @@ Users should review important information against the original email.
 
 ### Agent chat
 
-Enveliq also supports a separate agent chat feature.
+Enveliq has a separate agent chat.
 
-The standard chat does not receive access to a user's email, tasks or private settings.
+The chat talks to the plain AI model the administrator set up. That model has no tools and cannot look anything up or change anything. With each question, the server adds a short set of facts read from the signed-in person's own Enveliq (the saved AI summaries, sender, subject and date of their emails, their trips, orders, open tasks and replies they wait for, and today's date). For the best three matches from the person's own whole-mailbox Fast search it also reads each email from the mail service for that moment and sends the first part of its text (about 1,500 characters) with the question, in the same way the AI already reads an email to summarise it; that text is held in memory for the request only and is never stored, logged or kept in the chat, and the search words are not logged. It never sends a file, a password, a key or private settings. Only mailboxes the person owns are read, the person comes from the session and not from the request, and the facts are rebuilt for every question, limited to about 10,000 characters, cleaned of control characters, labelled as data to read and never as instructions, and not saved in the chat. The AI is told to answer only from them and to say when it cannot find something; its answers are shown as the AI's, and the facts it was given come from the same AI summaries the rest of Enveliq already keeps in the vault. The administrator's "who can use it" choice is checked by the server on every request. The AI server the administrator chose receives these facts with the question, as it already does for summaries and writing help.
 
-Administrators can optionally connect an external agent through Own agent mode.
-
-**Own agent mode has a different security boundary.** An external agent may have tools or permissions configured outside Enveliq. Enveliq does not automatically provide it with mailbox data, but cannot control what that external agent can do in its own environment.
-
-Operators should connect only agents they trust and understand.
+The chat cannot be connected to an external agent. An address, model name or access key saved by an older version for that purpose is deleted from the vault the first time the Agent chat settings are read or saved.
 
 ## Attachment security
 
@@ -248,6 +254,8 @@ Running without the isolated rendering container provides weaker isolation and s
 ### Original email as the sender formatted it
 
 "View original email" shows an email's own formatting, fetched from the mailbox on demand and never stored.
+
+"Show email headers" and "Download this email (.eml)" fetch the email from the mailbox when the signed-in person asks, through the same checks as "View original email" (the person must own the mailbox, requests are rate limited, the answer is marked `no-store`). The header lines or the file go only to that person's browser; Enveliq stores neither (`tests/test_stage1_helpers.py` checks that nothing is kept). Sending with high importance only adds the standard `Importance` and `X-Priority` headers to an email the person chose to send.
 
 * The server rebuilds the HTML from an allowed list of tags and settings. Scripts, forms, frames, plug-ins, SVG and event handlers are removed, links keep only web and mail addresses, and style rules lose anything that can load a file or run code.
 * The result is served from its own address with its own strict Content-Security-Policy: no scripts except one fixed script of ours (pinned by its hash), no forms, and pictures only from inside the email unless the person asks.
@@ -421,7 +429,6 @@ Important limitations include:
 * A malicious or inaccurate email may influence an AI summary despite prompt and output controls.
 * Cloud AI providers receive the content required for enabled AI processing.
 * External notification and integration services receive information explicitly sent to them.
-* Connected external agents may have capabilities outside Enveliq's control.
 * Application security relies partly on the host system, container configuration and network environment.
 * Some browser security policies can be strengthened further.
 * Independent penetration testing and broader security assessments remain valuable.
@@ -495,7 +502,7 @@ The View panel option "Show the original email" fetches the original from the ma
 - A search keeps only folder and message numbers, in server memory, for about 15 minutes. No email text. Results carry an opaque signed reference tied to the signed-in person and that one search; a reference that is not theirs, or is forged, answers "not found". Opening a result fetches the email then and does not store it.
 - Searching never changes the mailbox. A search never holds the lock that syncing uses. Searches are limited (six a minute per person, four at once on the server, about three minutes per mailbox) and the words are length-limited and quoted safely before they reach the mail service.
 - **Summarise Emails** (two or more ticked results, at most 100 at a time, six requests a minute) does the same for each ticked result through the same per-result checks: a result that is not the person's own, or is forged, answers "not found" for that one and the rest still go through.
-- **Summarise** keeps one email as an ordinary encrypted card (sender, subject, date, summary) in Found emails for 60 days or until Reviewed. It is treated as quiet: no alert, not counted as unread, not touched by syncing. Reviewed removes the card and does not change the mailbox.
+- **Summarise** keeps one email as an ordinary encrypted card (sender, subject, date, summary) in Found emails for 60 days or until Mark as read. It is treated as quiet: no alert, not counted as unread, not touched by syncing. Reviewed removes the card and does not change the mailbox.
 - **Fast search** is optional, per person and per mailbox, off by default, and needs a plain warning to be accepted. If it is on, an encrypted word list is kept: for each email, where it lives and which words it contains, with no email text. Numbers longer than 8 digits and words longer than 30 characters are skipped, and attachments are not indexed. It is one file per person sealed with AES-256-GCM under a key derived from the vault key, so it can only be read while Enveliq is unlocked, and it is dropped from memory when the vault locks. It is not in backups or exports, and it is deleted when switched off, when the mailbox is removed and when the person is removed. Honest limit: while Enveliq builds or uses the word list, or summarises an email, the text is briefly in the server's memory, as it already is for summaries. Someone with full control of the running server could read it then.
 
 ## New mailboxes start with AI summaries and Waiting for reply on
@@ -517,6 +524,8 @@ The daily summary (Settings, Notifications) is counted by Enveliq from lists the
 
 ## Mute, away reply and signatures (v0.102)
 
+**Messages removed.** The household chat feature is gone: no routes, no page, not part of "Download my data". The encrypted records it kept (`msg:thread:` and `msg:index:`) are deleted from the vault every time the server starts, so nothing from it is left behind.
+
 **Mute conversation.** A muted conversation is remembered as a list of message identifiers (Message-ID and References) plus the subject line and a count, in one encrypted vault record per person (`muted:<user id>`). It holds no email text and no addresses. New mail whose identifiers match is archived in the person's own mailbox by the same code path as a mail rule (before any alert, and never for the person's important people); nothing is deleted. The routes need the person's own full session and answer "not found" for anything that is not theirs. The record is included in the person's export and removed with the person.
 
 **Away reply is the one authorised exception to "Enveliq never sends mail by itself".** It is off until the person switches it on, and it sends only the plain text they wrote (up to 2,000 characters, control characters removed), never any text from the email it answers and never AI output. Guards, all on the server: only between the chosen dates in the person's time zone; one reply per sender per absence (a list kept in the person's own record, reset when the dates change); never for mail marked automatic or bulk (`Auto-Submitted`, `Precedence`, `List-Id`, auto-response headers), never to no-reply or system addresses, the person's own addresses, or mail not addressed to the person; at most 20 per hour; mail older than 3 days is not answered. Each reply carries `Auto-Submitted: auto-replied`, `X-Auto-Response-Suppress: All` and `Precedence: bulk`, so it can never start a reply loop, and Enveliq's own waiting-for-reply check ignores such replies. Each one is written to the audit log as an event without any address or text. Settings are per person (`away:<user id>`), included in the export and removed with the person; the routes need the person's own full session.
@@ -524,3 +533,18 @@ The daily summary (Settings, Notifications) is counted by Enveliq from lists the
 **Signatures.** A formatted signature is stored as HTML rebuilt from the same short allowlist as outgoing email (bold, italic, underline, links to http, https or mailto, line breaks; no pictures, scripts, styles or classes), with its plain-text copy made by the server. A per-address signature can only be set for an address the signed-in person can send from; anything else is refused. The signature lives in the person's own encrypted record and is part of their export.
 
 **Print email and Save as PDF** use the browser's print window on the page's own copy of the email. Enveliq makes and keeps no PDF and stores no email body; the email is fetched from the mailbox only while it is shown, as before.
+
+## Calendar invitations (v0.104)
+- An invitation (`.ics`) is untrusted input. It is parsed in memory by plain code from the original email fetched on demand, limited to 1 MB, one event, 50 people, with every field length-limited and stripped of control characters. Nothing in it is run, fetched or shown as a link, and the AI plays no part in reading dates.
+- Nothing about a meeting is stored. Only the person's own answer (the answer, its time, and which calendar it reached) is kept, encrypted in the vault per person, for 180 days.
+- A reply goes to the organiser named in the invitation. When the organiser is on a different domain from the sender, the server refuses to send until the person confirms, because that is how forged invitations work. The check is on the server, not only in the page.
+- Replies and new-time emails use the same sending identity checks, header-injection rules, rate limits and Undo send as other mail. A person always presses the button; the AI never answers an invitation.
+- Calendar writes go through the same outbound rules as the existing calendar connections. Only events Enveliq made itself (an id derived from the invitation) are changed or removed.
+- Every invitation route needs a full sign-in, checks that the mailbox belongs to the person (anything else answers "not found"), and is rate limited.
+
+- **Summary of a folder email:** pressing Generate summary on an email opened from a folder sends that email's text to the AI model for that moment and returns the summary to the page. Neither the email nor the summary is stored. It needs a signed-in session, only works for the person's own mailbox (an unknown or foreign token answers "not found") and is rate limited.
+- **Moving or binning a folder email:** `POST /api/v1/folder-mail/{token}/move` and `.../bin` work only from the signed token the server made for the signed-in person (anything else answers not found), are limited to the person's own mailbox and rate-limited, and accept only a folder the mailbox listed, the Inbox or the Bin. The audit log records who and which mailbox, never the email or its subject. Nothing from the email is stored.
+- **Tags page:** `GET /api/v1/accounts/{id}/tag-mail?tag=` lists the emails with one tag, only for the signed-in person's own mailbox, only when tags are switched on, and only for a tag the mailbox itself listed (anything else answers not found). Rows carry the same signed tokens as folder emails, so every action on them is checked the same way. Nothing from the emails is stored.
+- **Archive, Star, Tag and Keep for folder emails, and Move, Bin, Archive and Star for search results:** `POST /api/v1/folder-mail/{token}/archive|star|keep` and `POST /api/v1/find/results/{token}/move|bin|archive|star` work only from the signed token the server made for the signed-in person's own folder or search (anything else answers not found), are rate-limited and are recorded in the audit log without any email text. Move and Archive accept only a folder the mailbox listed. Tag uses the existing keep step: the email's headers and an encrypted summary are kept for 60 days, nothing else.
+- **Summary of a found email and searching inside a folder:** `POST /api/v1/find/results/{token}/summary` follows the same rules as the folder email summary (signed token for the signed-in person only, rate-limited, the text goes to the AI model for that moment, nothing is kept, the audit log records no email text). `folder-mail?q=` runs the person's words inside one folder of their own mailbox, with the same limits as opening a folder, and the words are never logged.
+- **Formatted copy of a folder email or a search result:** `GET /api/v1/folder-mail/{token}/original/html` and `GET /api/v1/find/results/{token}/original/html` work only from the signed token the server made for the signed-in person (anything else answers not found), are limited per minute, fetch the email from the mailbox now and keep nothing. The page is built by the same safe rebuild as every other email (scripts, forms and trackers removed, outside pictures off until the person asks, its own strict Content-Security-Policy, shown only inside a sandboxed frame).

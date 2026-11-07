@@ -28,7 +28,10 @@ RUN mkdir -p /data && chown enveliq:enveliq /data && chmod 700 /data
 # publishes it to the host's loopback only, for a reverse proxy to use.
 # The official release and preview builds pass the push relay's address here (docs/PUSH_RELAY.md); a build without it offers no Google push.
 ARG ENVELIQ_PUSH_RELAY=
+# The preview build passes its build number here (docs/RELEASING.md). Release images leave it empty and show only the version.
+ARG ENVELIQ_BUILD=
 ENV ENVELIQ_PUSH_RELAY=${ENVELIQ_PUSH_RELAY} \
+    ENVELIQ_BUILD=${ENVELIQ_BUILD} \
     ENVELIQ_DATA_DIR=/data \
     ENVELIQ_BIND=0.0.0.0 \
     ENVELIQ_ALLOW_NON_LOOPBACK=1 \

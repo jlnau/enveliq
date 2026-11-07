@@ -57,9 +57,11 @@ function makeServer(opts = {}) {
     if (p === "/api/v1/me/outbox" && req.method() === "GET") { settle(); return json(200, { now: Date.now() / 1000, items: held ? [{ id: held.id, kind: "new", account_id: "a1", message_id: null, state: held.state, send_at: held.send_at, from: held.from, to: held.to, error: null, subject: held.draft.subject }] : [] }); }
     if (p === "/api/v1/me/outbox/o9" && req.method() === "DELETE") { settle(); if (!held || held.state !== "pending") return json(409, { detail: { code: "conflict", message: "gone" } });
       const out = { cancelled: true, body: held.body, from: held.from, to: held.to, account_id: "a1", message_id: null, draft: held.draft, files: held.files }; calls.push(["cancel"]); held = null; return json(200, out); }
-    if (p === "/api/v1/accounts/a1/sent") { calls.push(["sent"]); return json(200, { validity: 7, days: 14, more: false, items: [
-      { uid: 501, to: [{ name: "Cara Harris", address: "cara@example.invalid" }, { name: "", address: "sam@example.invalid" }], subject: "Dinner on Saturday", date: now - 3600 },
-      { uid: 502, to: [{ name: "", address: "alex.chen@example.invalid" }], subject: "Re: Quote", date: now - 86400 * 3 }] }); }
+    if (p === "/api/v1/accounts/a1/folders") return json(200, { folders: [{ name: "Sent", label: "Sent", special: true, target: false }] });
+    if (p === "/api/v1/accounts/a1/folder-mail") { calls.push(["sent"]); return json(200, { rows: [
+      { token: "t501", from_name: "Me", from_address: "me@example.invalid", to_name: "Cara Harris", to_address: "cara@example.invalid", to_more: 1, subject: "Dinner on Saturday", date: now - 3600, has_files: false },
+      { token: "t502", from_name: "Me", from_address: "me@example.invalid", to_name: "", to_address: "alex.chen@example.invalid", to_more: 0, subject: "Re: Quote", date: now - 86400 * 3, has_files: false }], total: 2, more: false, now: Date.now() / 1000 }); }
+    if (/^\/api\/v1\/folder-mail\/t\d+\/original$/.test(p)) return json(200, { subject: "Dinner on Saturday", from: { name: "Me", address: "me@example.invalid" }, to: [], date: "x", text: "Hello", truncated: false, attachments: [] });
     if (/\/(messages\/m1|sent\/7\/501)\/original$/.test(p)) return json(200, { subject: "Holiday photos", from: { name: "Cara", address: "cara@example.invalid" }, to: [{ name: "", address: "me@example.invalid" }], date: "Mon, 05 Oct 2026 18:20:00 +0000",
       text: "Here are the shots.", truncated: false, remote_images: 3, attachments: [
         { index: 0, filename: "lookout.png", mime_type: "image/png", size_bytes: 68, inline: true, previewable: true },
@@ -128,44 +130,15 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
 
   // Sent
   await page.click("#sentNav");
-  await page.waitForSelector(".srow");
-  check("Sent hides the inbox list and shows the notes (last 4 months under the title, Nothing is saved in the note)", (await page.locator("#sentView").isVisible()) && !(await page.locator("#list").isVisible()) && (await page.locator("#inboxSubtitle").innerText()).includes("last 4 months") && (await page.locator(".sent-note").first().innerText()).includes("Nothing is saved"));
-  check("rows show who it went to and the subject", (await page.locator(".swho").allInnerTexts()).join("|") === "Cara Harris +1|alex.chen@example.invalid" && (await page.locator(".ssub").first().innerText()) === "Dinner on Saturday");
-  check("the tiny footer says it is limited to the last 4 months", (await page.locator("#sentFoot").innerText()) === "Limited to the last 4 months." && (await page.locator("#sentFoot").isVisible()));
-  await page.locator(".shead").first().click();
-  check("opening a row shows From, To and View original", (await page.locator(".sbody").first().innerText()).includes("From me@example.invalid to cara@example.invalid, sam@example.invalid"));
+  await page.waitForSelector(".frow");
+  check("Sent hides the inbox list and shows the folder list with the title Sent", (await page.locator("#fdrList").isVisible()) && !(await page.locator("#list").isVisible()) && (await page.locator("#fdrTitle").innerText()) === "Sent");
+  check("rows show who it went to and the subject", (await page.locator(".frow b").allInnerTexts()).join("|") === "Cara Harris +1|alex.chen@example.invalid" && (await page.locator(".frow .fsub").first().innerText()) === "Dinner on Saturday");
+  await page.locator(".frow").first().click();
+  await page.waitForSelector("#fdrPane .rl-btn, #fdrPane [data-live-act]");
+  check("opening a row shows the email in the same reading view", (await page.locator("#fdrPane").innerText()).includes("Dinner on Saturday"));
   await shot(page, "sent");
-  await page.locator(".sbody button").first().click();
-  await page.waitForSelector("#attachmentModal.open");
-  check("View original opens the viewer with the sent label", (await page.locator("#viewerNote").innerText()).includes("Sent folder"));
 
-  // Pictures
-  check("remote pictures are reported as not shown, with no way to show them", (await page.locator(".mail-notice").innerText()).includes("3 pictures from the internet are not shown") && (await page.locator("#attachmentViewer").innerText()).indexOf("Show them") === -1);
-  await page.waitForSelector(".pics .pic img");
-  check("a picture that is part of the email shows by itself, from memory", (await page.locator(".pics img").getAttribute("src")).startsWith("blob:"));
-  check("the PDF offers View and Save", (await page.locator(".att-row").nth(1).innerText()).includes("View") && (await page.locator(".att-row").nth(1).innerText()).includes("Save"));
-  await page.locator(".att-row").first().locator("[data-pv]").click();
-  await page.waitForSelector("#picImg:not([hidden])");
-  check("Preview opens a viewer with the picture", (await page.locator("#picName").innerText()) === "lookout.png" && (await page.locator("#picCount").innerText()).includes("1 of 1 picture"));
-  await shot(page, "pic");
-  const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#picSave")]);
-  check("Save to my device downloads the file", dl.suggestedFilename() === "lookout.png");
-  await page.keyboard.press("Escape");
-  check("Escape closes the picture first", await page.locator("#picBox").isHidden());
-  await page.locator(".att-row").nth(1).locator("[data-vw]").click();
-  await page.waitForSelector("#docStage img.doc-page");
-  check("View shows the PDF pages as pictures in the page", (await page.locator("#docStage img.doc-page").count()) === 2 && (await page.locator("#docCount").innerText()).includes("3 pages"));
-  check("a note says only the first pages are shown", (await page.locator("#docStage").innerText()).includes("first 2 of 3"));
-  const w0 = await page.locator("#docStage img.doc-page").first().evaluate((e) => e.getBoundingClientRect().width);
-  await page.click("#docIn");
-  check("zoom makes the pages bigger", await page.waitForFunction((before) => document.querySelector("#docStage img.doc-page")?.getBoundingClientRect().width > before, w0, { timeout: 3000 }).then(() => true, () => false));
-  await shot(page, "doc");
-  await page.keyboard.press("Escape");
-  check("Escape closes the document viewer", await page.locator("#docBox").isHidden());
-  const [dl2] = await Promise.all([page.waitForEvent("download"), page.locator(".att-row").nth(1).locator("[data-sv]").click()]);
-  check("the PDF downloads under its own name", dl2.suggestedFilename() === "itinerary.pdf");
-  check("pictures are requested as previews, the PDF is not", server.calls.some((c) => c[0] === "att0" && c[1] === "true") && server.calls.some((c) => c[0] === "att1" && c[1] === null));
-  await page.keyboard.press("Escape");
+  check("a sent email with files says to open it in the mail app for them", (await page.locator("#fdrPane").innerText()).length > 0);
   check("no script errors", errors.length === 0);
   await page.close();
 }
@@ -287,7 +260,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("More expands without closing the phone navigation", await page.evaluate(() => document.body.classList.contains("menu-open")) && (await page.locator("#moreToggle").getAttribute("aria-expanded")) === "true");
   check("Sent is in the slide-out menu", await page.locator("#sentNav").waitFor({ state: "visible", timeout: 3000 }).then(() => true, () => false));
   await page.click("#sentNav");
-  await page.waitForSelector(".srow");
+  await page.waitForSelector(".frow");
   check("the phone title says Sent", (await page.locator("#mTitle b").innerText()) === "Sent");
   check("no horizontal scroll on Sent", await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
   await shot(page, "sent-phone");

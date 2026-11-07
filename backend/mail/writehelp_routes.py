@@ -105,7 +105,8 @@ def build_writehelp_router(ctx: Any) -> APIRouter:
             raise fail(err) from None
         sender = f'{message.get("sender_display") or ""} <{message.get("sender_address") or ""}>' 
         return answer(user, "reply", body.draft, subject=str(original.get("subject") or message.get("subject") or ""),
-                      sender=sender, email_text=str(original.get("text") or ""))
+                      sender=sender, email_text=str(original.get("text") or ""),
+                      me=f'{session.principal.name} <{account.get("email_address") or ""}>')
 
     @router.post("/me/write-help/new")
     def for_new(body: NewDraftBody, response: Response, session: Session = Depends(session_dep)):

@@ -26,7 +26,7 @@ function makeServer(opts = {}) {
     { ...base, id: "m3", subject: "Your newsletter", sender_display: "News", summary: "This week's news.", category: "Newsletters", held_for_summary: true, files: 2 },
   ];
   const view = () => { const items = msgs.filter((m) => m.held_for_summary && !m.gone).map((m) => ({ account_id: "a1", message_id: m.id, sender: m.sender_display, subject: m.subject, summary: m.summary, category: m.category, held_at: now, received_at: m.received_at, attachments: m.files || 0 })); return { enabled: opts.off !== true, count: items.length, unread: !seen, items }; };
-  const features = { compose: true, address_book: true, sent: true, media: true, all_mail: false, shipping: false, waiting: false, messages: false, write_help: opts.feature !== false };
+  const features = { compose: true, address_book: true, sent: true, media: true, all_mail: false, shipping: false, waiting: false, write_help: opts.feature !== false };
   const info = { available: true, quick: opts.quick !== false, on: opts.on !== false, ai_ready: true, instructions: "x", is_default: true, default: "x", max: 2000 };
   const handler = async (route) => {
     const req = route.request(), p = new URL(req.url()).pathname;
@@ -105,7 +105,7 @@ const subjects = (page) => page.evaluate(() => [...document.querySelectorAll("ar
   check("it opens like an email: written by AI, grouped by kind, nothing treated as page code", text.includes("Summaries written by AI") && text.includes("Shopping") && text.includes("Newsletters") && (await page.locator("#dgBody img").count()) === 0 && (await page.evaluate(() => window.__pwned)) === undefined && text.includes("<b>Everything is half price.</b>"));
   const first = page.locator("#dgBody .dg-item").first();
   const names = await first.locator(".dg-ic").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label") + "|" + e.title + "|" + e.innerText.trim()));
-  check("each email has four icon-only buttons with names on hover: reviewed, archive, bin, send back", names.length === 4 && names.every((n) => n.split("|")[2] === "" && n.split("|")[1]) && /reviewed/i.test(names[0]) && /archive/i.test(names[1]) && /bin/i.test(names[2]) && /send back to the inbox/i.test(names[3]));
+  check("each email has four icon-only buttons with names on hover: mark as read, archive, bin, send back", names.length === 4 && names.every((n) => n.split("|")[2] === "" && n.split("|")[1]) && /mark as read/i.test(names[0]) && /archive/i.test(names[1]) && /bin/i.test(names[2]) && /send back to the inbox/i.test(names[3]));
   check("taking one out is a same-size icon button titled Send back to the inbox, not a reply arrow", (await first.locator("button[title='Send back to the inbox']").count()) === 1 && (await first.locator("[aria-label*='reply' i]").count()) === 0);
   check("every email shows the day and time it arrived", (await page.locator("#dgBody .dg-when").count()) === (await page.locator("#dgBody .dg-item").count()) && /\d/.test(await first.locator(".dg-when").innerText()));
   check("the top and bottom bars stay put and only the middle scrolls", await page.evaluate(() => { const v = document.getElementById("digestView"), b = document.getElementById("dgBody"); return getComputedStyle(v).overflow === "hidden" && getComputedStyle(b).overflowY === "auto" && v.getBoundingClientRect().bottom <= innerHeight && document.querySelector("#digestView .compose-foot").getBoundingClientRect().bottom <= innerHeight; }));

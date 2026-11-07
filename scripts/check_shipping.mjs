@@ -193,7 +193,11 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("Yes, I've got it removes the Home card", server.calls.some((c) => c[0] === "confirm"));
   check("Home no longer asks", (await page.locator("#shipBars .shiprow").count()) === 0);
   await page.click("#shipNav");
-  check("the order stays on the page as 'You got it' with Undo", (await page.locator("#shipPage").innerText()).includes("You got it") && (await page.locator('#shipPage [data-ship="undo"]').count()) === 1);
+  check("a received order moves into a folded Received list, not the main list", /Received · 1/i.test(await page.locator("#shipPage").innerText()) && !(await page.locator("#shipPage").innerText()).includes("You got it") && (await page.locator('#shipPage [data-ship-recv-toggle]').getAttribute("aria-expanded")) === "false");
+  await page.locator("#shipPage [data-ship-recv-toggle]").click();
+  check("opening the list shows it as 'You got it' with Undo", (await page.locator("#shipPage").innerText()).includes("You got it") && (await page.locator('#shipPage [data-ship="undo"]').count()) === 1);
+  await page.locator("#shipPage [data-ship-recv-toggle]").click();
+  check("folding it again hides it", (await page.locator('#shipPage [data-ship="undo"]').count()) === 0);
   await page.close(); await context.close();
 }
 
