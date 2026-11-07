@@ -1905,6 +1905,9 @@ html[data-hl="teal"]:not([data-x]){--accent:#2fc4d3}html[data-hl="teal"][data-th
 #viewPanel [data-view="highlight"]::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
 html[data-scheme="dark"]:not([data-theme="light"]){--preview-gradient:#1e1e1e;--preview-border:#333}
 html[data-scheme="dark"]:not([data-theme="light"]) .today-card,html[data-scheme="dark"]:not([data-theme="light"]) .preview-later,html[data-scheme="dark"]:not([data-theme="light"]) .preview-important{background:#1e1e1e!important;background-image:none!important;border-color:#333!important}
+.seg.grid{display:grid;gap:1px;background:var(--line)}.seg.grid.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.seg.grid.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.seg.grid button{border-left:0;background:var(--panel2);min-height:38px;padding:8px 6px;white-space:nowrap}.seg.grid button.on{background:var(--c-0c1a33)}
+html[data-scheme="dark"]:not([data-theme="light"]) .seg.grid{background:#333!important}html[data-scheme="dark"]:not([data-theme="light"]) .seg.grid button{background:#222}html[data-scheme="dark"]:not([data-theme="light"]) .seg.grid button.on{background:#2f2f2f!important}
 </style>
 </head>
 <body class="booting">
@@ -2101,8 +2104,8 @@ html[data-scheme="dark"]:not([data-theme="light"]) .today-card,html[data-scheme=
       <button class="vl" type="button" role="radio" data-view="layout" data-val="deck"><svg viewBox="0 0 40 30" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="8" y="3" width="24" height="20" rx="3"/><path d="M11 26h18" stroke-linecap="round"/></svg><span><b>Focus deck<span class="new">New</span></b><small>One email at a time. Clear them like a stack of cards.</small></span></button>
     </div></div>
   <div class="vsec"><div class="vlabel">Row spacing</div><div class="seg" role="radiogroup" aria-label="Row spacing"><button type="button" role="radio" data-view="density" data-val="compact">Compact</button><button type="button" role="radio" data-view="density" data-val="standard">Standard</button><button type="button" role="radio" data-view="density" data-val="roomy">Roomy</button></div></div>
-  <div class="vsec"><div class="vlabel">Colours</div><div class="seg" role="radiogroup" aria-label="Colours"><button type="button" role="radio" data-view="scheme" data-val="standard">Standard</button><button type="button" role="radio" data-view="scheme" data-val="light">Light</button><button type="button" role="radio" data-view="scheme" data-val="dark">Dark</button><button type="button" role="radio" data-view="scheme" data-val="system">System theme</button></div><p class="vhint">Standard is the blue look. Dark is a true dark grey with no blue sky; the email you are on stays coloured so you can see where you are. System theme follows your device: Light when your device is light, Dark when it is dark.</p></div>
-  <div class="vsec"><div class="vlabel">Highlight colour</div><div class="seg" role="radiogroup" aria-label="Highlight colour"><button type="button" role="radio" data-view="highlight" data-val="blue">Blue</button><button type="button" role="radio" data-view="highlight" data-val="green">Green</button><button type="button" role="radio" data-view="highlight" data-val="purple">Purple</button><button type="button" role="radio" data-view="highlight" data-val="orange">Orange</button><button type="button" role="radio" data-view="highlight" data-val="pink">Pink</button><button type="button" role="radio" data-view="highlight" data-val="teal">Teal</button></div><p class="vhint">The colour of the email you are on, the open menu item, the New email button and links. It works in both the light and dark looks.</p></div>
+  <div class="vsec"><div class="vlabel">Colours</div><div class="seg grid g2" role="radiogroup" aria-label="Colours"><button type="button" role="radio" data-view="scheme" data-val="standard">Standard</button><button type="button" role="radio" data-view="scheme" data-val="light">Light</button><button type="button" role="radio" data-view="scheme" data-val="dark">Dark</button><button type="button" role="radio" data-view="scheme" data-val="system">System theme</button></div><p class="vhint">Standard is the blue look. Dark is a true dark grey with no blue sky; the email you are on stays coloured so you can see where you are. System theme follows your device: Light when your device is light, Dark when it is dark. Point at a choice to preview it.</p></div>
+  <div class="vsec"><div class="vlabel">Highlight colour</div><div class="seg grid g3" role="radiogroup" aria-label="Highlight colour"><button type="button" role="radio" data-view="highlight" data-val="blue">Blue</button><button type="button" role="radio" data-view="highlight" data-val="green">Green</button><button type="button" role="radio" data-view="highlight" data-val="purple">Purple</button><button type="button" role="radio" data-view="highlight" data-val="orange">Orange</button><button type="button" role="radio" data-view="highlight" data-val="pink">Pink</button><button type="button" role="radio" data-view="highlight" data-val="teal">Teal</button></div><p class="vhint">The colour of the email you are on, the open menu item, the New email button and links. It works in both the light and dark looks. Point at a colour to preview it.</p></div>
   <div class="vsec"><div class="vlabel">Original email background</div><div class="seg" role="radiogroup" aria-label="Original email background"><button type="button" role="radio" data-view="paper" data-val="white">White</button><button type="button" role="radio" data-view="paper" data-val="soft">Soft</button><button type="button" role="radio" data-view="paper" data-val="softer">Softer</button></div><p class="vhint">The paper colour behind an email shown as the sender made it. It never changes the email itself.</p></div>
   <div class="vsec"><div class="vlabel">Width</div><div class="seg" role="radiogroup" aria-label="Width"><button type="button" role="radio" data-view="width" data-val="centered">Centred</button><button type="button" role="radio" data-view="width" data-val="full">Full width</button></div></div>
   <div class="vsec"><div class="vlabel">Email style</div><div class="seg" role="radiogroup" aria-label="Email style"><button type="button" role="radio" data-view="style" data-val="classic">Classic</button><button type="button" role="radio" data-view="style" data-val="rail">Side rail</button></div><p class="vhint">How an opened email looks. Side rail puts the buttons in a bar down the left and the task along the top. On a phone, the buttons sit along the bottom.</p></div>
@@ -3042,22 +3045,33 @@ async function loadServerView(){
   viewServerReady=true;
   applyView();
 }
-function applyScheme(){
+function applyHl(h){const r=document.documentElement;if((h||"blue")==="blue")delete r.dataset.hl;else r.dataset.hl=h}
+function applyScheme(over){
   // Colours: Standard (the blue look), Light, Dark (neutral grey) or System (Light or Dark, whichever this device is using).
-  const sc=view.scheme||"standard",root=document.documentElement;
+  const sc=over||view.scheme||"standard",root=document.documentElement;
   let sysLight=false;try{sysLight=window.matchMedia("(prefers-color-scheme: light)").matches}catch{}
   const light=sc==="light"||(sc==="system"&&sysLight),dark=sc==="dark"||(sc==="system"&&!sysLight);
   if(light)root.setAttribute("data-theme","light");else root.removeAttribute("data-theme");
   root.dataset.scheme=dark?"dark":"standard";
-  try{localStorage.setItem("enveliq-theme",sc==="light"?"light":sc==="system"?"system":"dark")}catch{}
+  if(!over){try{localStorage.setItem("enveliq-theme",sc==="light"?"light":sc==="system"?"system":"dark")}catch{}}
 }
+// Pointing at (or tabbing to) a colour choice shows it for a moment; moving away puts the saved choice back. Nothing is saved until it is clicked.
+(function(){
+  const sel='[data-view="scheme"],[data-view="highlight"]',p=$("viewPanel");
+  const show=b=>{if(b.dataset.view==="scheme")applyScheme(b.dataset.val);else applyHl(b.dataset.val)};
+  const back=()=>{applyScheme();applyHl(view.highlight)};
+  p.addEventListener("mouseover",e=>{const b=e.target.closest(sel);if(b)show(b)});
+  p.addEventListener("mouseout",e=>{const b=e.target.closest(sel);if(b&&!b.contains(e.relatedTarget))back()});
+  p.addEventListener("focusin",e=>{const b=e.target.closest(sel);if(b)show(b)});
+  p.addEventListener("focusout",e=>{if(e.target.closest(sel))back()});
+})();
 function applyView(){
   readerOpen=false;
   // Switching layouts starts with an unselected reading panel.
   paneId=null;lastReadId=null;
   const c=document.body.classList;
   for(const l of VIEW_ALLOWED.layout)c.toggle("layout-"+l,lay()===l);
-  c.toggle("style-rail",view.style==="rail");c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");document.documentElement.dataset.paper=view.paper||"soft";applyScheme();if((view.highlight||"blue")==="blue")delete document.documentElement.dataset.hl;else document.documentElement.dataset.hl=view.highlight;
+  c.toggle("style-rail",view.style==="rail");c.toggle("v-compact",view.density==="compact");c.toggle("v-roomy",view.density==="roomy");c.toggle("v-wide",view.width==="full");document.documentElement.dataset.paper=view.paper||"soft";applyScheme();applyHl(view.highlight);
   document.querySelectorAll("#viewPanel [data-view]").forEach(b=>{const on=view[b.dataset.view]===b.dataset.val;b.classList.toggle("on",on);b.setAttribute("aria-checked",String(on))});
   const classic=view.layout==="list";
   $("vOpen").checked=view.rows==="open";$("vPeek").checked=view.peek;$("vActionFeedback").checked=view.action_feedback!==false;$("vOrig").checked=!!view.show_original;$("vConv").checked=!!view.conversations;$("vCounts").checked=view.show_counts!==false;$("vToday").checked=view.show_today!==false;
