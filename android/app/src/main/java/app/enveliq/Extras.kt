@@ -260,9 +260,9 @@ internal fun TagsPage(api: EnveliqApi, accountIds: List<String>, onBack: () -> U
         }
     }
     SubPage("Tags", onBack = onBack) {
-        Loader(0, { api.tagInfo(acct) }) { info ->
+        Loader(0, { api.tagInfo(acct) ?: TagInfo(emptyList(), false) }) { info ->
             LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (info.names.isEmpty()) item { Empty("This mailbox has no tags yet. Open an email and press Tag to make one.") }
+                if (info.names.isEmpty()) item { Empty("This mailbox has no tags, or its mail service does not keep tags. Open an email and press Tag to make one.") }
                 item {
                     androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         for (n in info.names) {

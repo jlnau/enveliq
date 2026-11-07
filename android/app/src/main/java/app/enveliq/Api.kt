@@ -297,6 +297,7 @@ class EnveliqApi(address: String) {
                         held = held,
                         ungenerated = quiet && r.str("summary").startsWith("Not summarised yet"),
                         replyAlsoTo = r.optJSONObject("reply_context")?.optJSONArray("also_to").strings(),
+                        refs = (r.optJSONObject("reply_context")?.optJSONArray("references").strings() + listOf(r.optJSONObject("reply_context")?.str("message_id") ?: "")).filter { it.isNotBlank() },
                     )
                 )
             }
@@ -387,30 +388,33 @@ class EnveliqApi(address: String) {
 
     fun reply(
         mail: Mail, all: Boolean, text: String, from: String? = null, files: List<PickedFile> = emptyList(),
-        to: List<String>? = null, cc: List<String>? = null, bcc: List<String>? = null, subject: String? = null,
+        to: List<String>? = null, cc: List<String>? = null, bcc: List<String>? = null, subject: String? = null, important: Boolean = false,
     ): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/reply",
             JSONObject().put("body", text).put("kind", if (all) "reply_all" else "reply").also { if (from != null) it.put("from_address", from) }
                 .also { if (!subject.isNullOrBlank()) it.put("subject", subject) }.also { if (to != null) it.put("to", JSONArray(to)) }.also { if (cc != null) it.put("cc", JSONArray(cc)) }.also { if (bcc != null) it.put("bcc", JSONArray(bcc)) }
+                .also { if (important) it.put("important", true) }
                 .also { if (files.isNotEmpty()) it.put("files", filesJson(files)) },
         ),
     )
 
-    fun forward(mail: Mail, to: List<String>, cc: List<String>, bcc: List<String>, text: String, from: String? = null, files: List<PickedFile> = emptyList(), subject: String? = null): Sent = sentFrom(
+    fun forward(mail: Mail, to: List<String>, cc: List<String>, bcc: List<String>, text: String, from: String? = null, files: List<PickedFile> = emptyList(), subject: String? = null, important: Boolean = false): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(mail.accountId) + "/messages/" + enc(mail.id) + "/forward",
             JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("body", text).also { if (from != null) it.put("from_address", from) }
                 .also { if (!subject.isNullOrBlank()) it.put("subject", subject) }
+                .also { if (important) it.put("important", true) }
                 .also { if (files.isNotEmpty()) it.put("files", filesJson(files)) },
         ),
     )
 
-    fun sendNew(accountId: String, to: List<String>, cc: List<String>, bcc: List<String>, subject: String, text: String, from: String? = null, files: List<PickedFile> = emptyList()): Sent = sentFrom(
+    fun sendNew(accountId: String, to: List<String>, cc: List<String>, bcc: List<String>, subject: String, text: String, from: String? = null, files: List<PickedFile> = emptyList(), important: Boolean = false): Sent = sentFrom(
         call(
             "POST", "/api/v1/accounts/" + enc(accountId) + "/send",
             JSONObject().put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc)).put("subject", subject).put("body", text)
                 .also { if (from != null) it.put("from_address", from) }
+                .also { if (important) it.put("important", true) }
                 .also { body ->
                     if (files.isNotEmpty()) body.put("files", JSONArray(files.map {
                         JSONObject().put("name", it.name).put("type", it.type).put("data", android.util.Base64.encodeToString(it.bytes, android.util.Base64.NO_WRAP))
@@ -420,11 +424,12 @@ class EnveliqApi(address: String) {
     )
 
     /** Keeps the email at the server and sends it from the person's own mailbox at [atSeconds] (Unix time). Files cannot wait. */
-    fun scheduleSend(kind: String, accountId: String, messageId: String?, to: List<String>, cc: List<String>, bcc: List<String>, subject: String, text: String, from: String?, atSeconds: Double): String {
+    fun scheduleSend(kind: String, accountId: String, messageId: String?, to: List<String>, cc: List<String>, bcc: List<String>, subject: String, text: String, from: String?, atSeconds: Double, important: Boolean = false): String {
         val body = JSONObject().put("kind", kind).put("account_id", accountId).put("to", JSONArray(to)).put("cc", JSONArray(cc)).put("bcc", JSONArray(bcc))
             .put("subject", subject).put("body", text).put("send_at", atSeconds)
         if (messageId != null) body.put("message_id", messageId)
         if (from != null) body.put("from_address", from)
+        if (important) body.put("important", true)
         return JSONObject(call("POST", "/api/v1/me/scheduled", body)).str("id")
     }
 
@@ -1041,6 +1046,11 @@ class EnveliqApi(address: String) {
 
     /** The email as the server describes it: its plain text, and whether a formatted (HTML) version exists. */
     // ---- Away reply, saved replies, subscriptions, tag emails, headers and the Ask Enveliq chat. Same routes as the website. ----
+
+    /** The Conversation View switch, saved on the person's account (the same one the website's Customise has). */
+    fun conversationView(): Boolean = JSONObject(call("GET", "/api/v1/me/mail-view")).optBoolean("conversations", false)
+
+    fun setConversationView(on: Boolean) { call("PUT", "/api/v1/me/mail-view", JSONObject().put("conversations", on)) }
 
     fun away(): AwayInfo = awayOf(JSONObject(call("GET", "/api/v1/me/away")))
 

@@ -36,6 +36,8 @@ data class Mail(
     val held: Boolean = false,
     /** Starred (the mailbox's own Flagged mark). */
     val starred: Boolean = false,
+    /** The email's own id and the ids it answers, so emails of one conversation can sit together (Conversation View). */
+    val refs: List<String> = emptyList(),
 )
 
 /** A file that came with an email. [summary] is written by the AI and is labelled that way where it is shown. */

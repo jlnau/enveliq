@@ -827,6 +827,8 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         }
         // A wide screen (a tablet, or a phone on its side) shows the list and the open email side by side.
         val wide = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp >= 720
+        var convView by remember { mutableStateOf(false) }
+        LaunchedEffect(tab) { convView = try { withContext(Dispatchers.IO) { api.conversationView() } } catch (e: Exception) { false } }
         val inboxPane: @Composable () -> Unit = {
             InboxTab(
                         mails, loading, error, inboxList, selected, view, filters, onView = { view = it; selected.clear() },
@@ -841,6 +843,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                         summary = summary, onOpenDigest = { digestOpen = true },
                         onSwipe = { m, outcome -> resolve(m, outcome) },
                         onRefresh = { load() },
+                        conversations = convView,
                     )
         }
         val topBar: @Composable () -> Unit = {
@@ -915,6 +918,7 @@ private fun InboxTab(
     fresh: (Mail) -> Boolean, tagsOf: (Mail) -> List<String>,
     includeRead: Boolean, includeReadOk: Boolean, onIncludeRead: (Boolean) -> Unit,
     onOpen: (Mail) -> Unit, summary: SummaryInfo?, onOpenDigest: () -> Unit, onSwipe: (Mail, Outcome) -> Unit, onRefresh: () -> Unit,
+    conversations: Boolean = false,
 ) {
     var onlyAction by filters::onlyAction
     var onlyStarred by filters::onlyStarred
@@ -938,6 +942,9 @@ private fun InboxTab(
     val needs = mails.count { it.needsAction }
     val selecting = selected.isNotEmpty()
     fun keyOf(m: Mail) = m.accountId + ":" + m.id
+    // Conversation View (a switch in Settings, saved on your account like the website's): emails of one conversation sit under the newest one.
+    val openConvs = remember { androidx.compose.runtime.mutableStateListOf<String>() }
+    val groups = if (conversations && q.length < 2) groupConversations(shown) else shown.map { listOf(it) }
     Column(Modifier.fillMaxSize()) {
         // One thin row: where you are, the list filter (Inbox, Reviewed, Archived) and the other filters (needs action, mailbox, tags).
         Row(Modifier.fillMaxWidth().height(40.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -1018,18 +1025,50 @@ private fun InboxTab(
             )
             else -> LazyColumn(Modifier.fillMaxSize(), state = listState) {
                 if ((view == "inbox" || view == "held") && q.length < 2 && !onlyAction && tag == null && box == null && summary != null && summary.enabled && summary.count > 0) item(key = "summary") { DigestCard(summary) { onOpenDigest() } }
-                items(shown, key = { it.accountId + ":" + it.id }) { m ->
-                    SwipeRow(
-                        mail = m, right = swipeRight, left = swipeLeft, selecting = selecting, picked = selected.contains(keyOf(m)), fresh = fresh(m), tags = tagsOf(m),
-                        onSwipe = { outcome -> onSwipe(m, outcome) },
-                        onClick = { if (selecting) toggle(selected, keyOf(m)) else onOpen(m) },
-                        onLongClick = { toggle(selected, keyOf(m)) },
-                    )
+                items(groups, key = { it[0].accountId + ":" + it[0].id }) { g ->
+                    val lead = g[0]
+                    val convKey = keyOf(lead)
+                    val open = openConvs.contains(convKey)
+                    Column {
+                        for ((i, m) in g.withIndex()) {
+                            if (i > 0 && !open) break
+                            Column(if (i > 0) Modifier.padding(start = 18.dp) else Modifier) {
+                                SwipeRow(
+                                    mail = m, right = swipeRight, left = swipeLeft, selecting = selecting, picked = selected.contains(keyOf(m)), fresh = fresh(m), tags = tagsOf(m),
+                                    onSwipe = { outcome -> onSwipe(m, outcome) },
+                                    onClick = { if (selecting) toggle(selected, keyOf(m)) else onOpen(m) },
+                                    onLongClick = { toggle(selected, keyOf(m)) },
+                                )
+                            }
+                            if (i == 0 && g.size > 1) TextButton(onClick = { toggle(openConvs, convKey) }) {
+                                Text(g.size.toString() + " emails in this conversation · " + (if (open) "Hide" else "Show"), color = Blue, fontSize = 13.sp)
+                            }
+                        }
+                    }
                 }
             }
         }
         }
     }
+}
+
+/** Groups emails of one conversation (they name each other in their reply markers) under the newest, keeping the list's order. */
+private fun groupConversations(list: List<Mail>): List<List<Mail>> {
+    val root = HashMap<String, String>()
+    val owner = HashMap<String, String>()
+    fun find(x: String): String { var i = x; while (root[i] != i) { root[i] = root[root[i]!!]!!; i = root[i]!! }; return i }
+    for (m in list) {
+        val id = m.accountId + ":" + m.id
+        root[id] = id
+        for (r in m.refs) {
+            val k = m.accountId + "|" + r
+            val o = owner[k]
+            if (o != null) { val a = find(id); val b = find(o); if (a != b) root[a] = b } else owner[k] = id
+        }
+    }
+    val groups = LinkedHashMap<String, MutableList<Mail>>()
+    for (m in list) groups.getOrPut(find(m.accountId + ":" + m.id)) { mutableListOf() }.add(m)
+    return groups.values.toList()
 }
 
 private fun toggle(list: MutableList<String>, key: String) {
@@ -1206,6 +1245,25 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
     var addressMenu by remember(mail.id) { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
     val scope = rememberCoroutineScope()
+    // Show email headers and Download this email (.eml): both fetch the email from the mailbox when asked and keep nothing.
+    var headersText by remember(mail.id) { mutableStateOf<String?>(null) }
+    var headersNote by remember(mail.id) { mutableStateOf("") }
+    var askHeaders by remember(mail.id) { mutableStateOf(false) }
+    var emlNote by remember(mail.id) { mutableStateOf("") }
+    val emlPicker = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("message/rfc822")) { uri: android.net.Uri? ->
+        if (uri != null) {
+            emlNote = "Saving the email…"
+            scope.launch {
+                try {
+                    val bytes = withContext(Dispatchers.IO) { api.originalEml(mail) }
+                    withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) } }
+                    emlNote = "Saved the email to your phone."
+                } catch (e: ApiException) { emlNote = e.message ?: "Could not save the email." }
+                catch (e: Exception) { emlNote = "Could not save the email." }
+                android.widget.Toast.makeText(context, emlNote, android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+    }
     var important by remember(mail.id) { mutableStateOf<Boolean?>(null) }
     LaunchedEffect(mail.id) {
         important = try { withContext(Dispatchers.IO) { api.importantAddresses() }.contains(mail.address.lowercase()) } catch (_: Exception) { null }
@@ -1312,6 +1370,8 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
                             },
                         )
                         DropdownMenuItem(text = { Text("Mute conversation", color = Ink) }, onClick = { moreMenu = false; onMute() })
+                        DropdownMenuItem(text = { Text("Show email headers", color = Ink) }, onClick = { moreMenu = false; headersText = null; headersNote = ""; askHeaders = true })
+                        DropdownMenuItem(text = { Text("Download this email (.eml)", color = Ink) }, onClick = { moreMenu = false; emlPicker.launch("email.eml") })
                         if (mail.unsubUrl != null || mail.unsubMailto != null) DropdownMenuItem(text = { Text("Unsubscribe from this sender", color = Ink) }, onClick = {
                             moreMenu = false
                             if (mail.unsubUrl != null) unsubLink = mail.unsubUrl
@@ -1396,6 +1456,36 @@ private fun DetailBody(mail: Mail, tags: List<String>, api: EnveliqApi, onBack: 
     }
     if (showOriginal) OriginalScreen(mail, api) { showOriginal = false }
     unsubLink?.let { LinkConfirm(it) { unsubLink = null } }
+    if (askHeaders) {
+        LaunchedEffect(mail.id) {
+            try { headersText = withContext(Dispatchers.IO) { api.originalHeaders(mail) } }
+            catch (e: ApiException) { headersNote = e.message ?: "Could not get the headers." }
+            catch (e: Exception) { headersNote = "Could not get the headers. Check your connection." }
+        }
+        AlertDialog(
+            onDismissRequest = { askHeaders = false },
+            containerColor = Panel,
+            title = { Text("Email headers", color = Ink) },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    val h = headersText
+                    if (h == null && headersNote.isEmpty()) CircularProgressIndicator(color = Blue)
+                    if (headersNote.isNotEmpty()) Text(headersNote, color = Amber, fontSize = 14.sp)
+                    if (h != null) Text(h, color = Ink, fontSize = 12.sp, lineHeight = 17.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                }
+            },
+            confirmButton = {
+                val h = headersText
+                if (h != null) TextButton(onClick = {
+                    val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    cm.setPrimaryClip(android.content.ClipData.newPlainText("Email headers", h))
+                    tell("Copied the headers.")
+                }) { Text("Copy", color = Blue) }
+            },
+            dismissButton = { TextButton(onClick = { askHeaders = false }) { Text("Close", color = Muted) } },
+        )
+    }
+
     if (askBlock) AlertDialog(
         onDismissRequest = { askBlock = false },
         containerColor = Panel,

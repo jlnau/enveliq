@@ -120,6 +120,11 @@ Settings, Security, **Your devices** lists the places you are signed in and lets
 - **Tags** (More). Your mailbox's tags as chips; tap one to read the emails that carry it. Read when you look and never kept.
 - **Subscriptions** (More). The website's list of what you pay for and what renews soon, for reading. Changes are made on the website.
 
+- **Saved replies while writing.** A **Saved replies** button on a new email, reply or forward lists your saved replies; tap one to add it to the message.
+- **Send options.** **Send options** on a new email, reply or forward has **Send with high importance** (also kept for Send later) and, for replies, **Mark as read when I send**. Both start off each time.
+- **Show email headers and Download this email (.eml).** In an open email's three dots. The headers appear in a box with a Copy button; the .eml is saved where you choose. Both are fetched when you ask and are not kept.
+- **Conversation View** (Settings). Groups emails of one conversation under the newest one, with Show and Hide. It is saved on your account, so the website and the app agree. Each email keeps its own swipe and buttons.
+
 ## Not in the app
 
 - **A calendar of events.** Trips and bookings are listed under More, Trips and calendar.

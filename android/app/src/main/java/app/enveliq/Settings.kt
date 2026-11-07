@@ -150,6 +150,18 @@ private fun ChoiceRow(title: String, note: String = "", selected: Boolean, enabl
     }
 }
 
+/** The Conversation View switch: saved on your account, so the website and the app agree. */
+@Composable
+private fun ConversationViewRow(api: EnveliqApi) {
+    val scope = rememberCoroutineScope()
+    var on by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { on = try { withContext(Dispatchers.IO) { api.conversationView() } } catch (e: Exception) { false } }
+    ToggleRow("Conversation View", "Group emails of one conversation under the newest one.", on) { now ->
+        on = now
+        scope.launch { try { withContext(Dispatchers.IO) { api.setConversationView(now) } } catch (e: Exception) { on = !now } }
+    }
+}
+
 @Composable
 private fun Footnote(text: String, color: Color = Muted) {
     Text(text, color = color, fontSize = 13.sp, lineHeight = 18.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp))
@@ -683,6 +695,8 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                 NavRow("🚫", tintAlerts, "Blocked senders") { page = "blocked" }
                 HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
                 NavRow("🔇", tintAlerts, "Muted conversations") { page = "muted" }
+                HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                ConversationViewRow(api)
                 HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
                 NavRow("✈", tintAccount, "Away reply", note = "Answer new email for you while you are away.") { page = "away" }
                 HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
