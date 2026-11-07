@@ -353,3 +353,92 @@ internal fun AskPage(api: EnveliqApi, onBack: () -> Unit) {
         }
     }
 }
+
+/** Forward, Tag and Rules for several emails at once: the three things the website's several-selected bar has beside Move. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+internal fun BulkDialog(api: EnveliqApi, kind: String, mails: List<Mail>, onClose: () -> Unit, onDone: (String) -> Unit) {
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    var note by remember { mutableStateOf("") }
+    var to by remember { mutableStateOf("") }
+    var words by remember { mutableStateOf("") }
+    var rule by remember { mutableStateOf("archived") }
+    val ticked = remember { mutableStateListOf<String>() }
+    var tagNames by remember { mutableStateOf<List<String>?>(null) }
+    val oneBox = mails.map { it.accountId }.distinct().size == 1
+    val senders = mails.map { it.address.lowercase() }.filter { it.isNotBlank() }.distinct()
+    LaunchedEffect(kind) {
+        if (kind == "tag" && oneBox) {
+            try { tagNames = withContext(Dispatchers.IO) { api.tagInfo(mails[0].accountId)?.names ?: emptyList() } }
+            catch (e: Exception) { note = "Could not load your tags. Check your connection."; tagNames = emptyList() }
+        }
+    }
+    val title = when (kind) { "forward" -> "Forward ${mails.size} emails"; "tag" -> "Tag ${mails.size} emails"; else -> "Rules for ${senders.size} ${if (senders.size == 1) "sender" else "senders"}" }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+        Column(Modifier.fillMaxSize().background(Navy).systemBarsPadding().imePadding()) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(title, color = Ink, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f).padding(start = 8.dp))
+                TextButton(onClick = onClose) { Text("Close", color = Blue, fontSize = 16.sp) }
+            }
+            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                when (kind) {
+                    "forward" -> {
+                        Text("Each email is sent on its own, with its files, to this address.", color = Muted, fontSize = 14.sp)
+                        OutlinedTextField(value = to, onValueChange = { to = it }, label = { Text("To") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = words, onValueChange = { words = it }, label = { Text("A note (optional)") }, modifier = Modifier.fillMaxWidth().height(140.dp))
+                    }
+                    "tag" -> {
+                        if (!oneBox) Text("Pick emails from one mailbox at a time to tag them.", color = Amber, fontSize = 14.sp)
+                        else if (tagNames == null) CircularProgressIndicator(color = Blue)
+                        else if (tagNames?.isEmpty() == true) Text("This mailbox has no tags, or its mail service does not keep tags.", color = Muted, fontSize = 14.sp)
+                        else androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            for (n in tagNames ?: emptyList()) {
+                                val on = ticked.contains(n)
+                                Surface(color = if (on) androidx.compose.ui.graphics.Color(0xFF173056) else PanelHigh, shape = RoundedCornerShape(20.dp), modifier = Modifier.clickable { if (on) ticked.remove(n) else ticked.add(n) }) {
+                                    Text((if (on) "✓ " else "") + n, color = if (on) androidx.compose.ui.graphics.Color(0xFF8DB8FF) else Ink, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp))
+                                }
+                            }
+                        }
+                    }
+                    else -> {
+                        Text("From now on, new email from these senders:", color = Muted, fontSize = 14.sp)
+                        senders.take(6).forEach { Text(it, color = Ink, fontSize = 14.sp) }
+                        if (senders.size > 6) Text("and ${senders.size - 6} more", color = Muted, fontSize = 13.sp)
+                        for ((id, label) in listOf("archived" to "Is archived", "reviewed" to "Is marked as read", "starred" to "Is starred")) {
+                            Surface(color = if (rule == id) androidx.compose.ui.graphics.Color(0xFF173056) else PanelHigh, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().clickable { rule = id }) {
+                                Text((if (rule == id) "✓  " else "") + label, color = Ink, fontSize = 16.sp, modifier = Modifier.padding(14.dp))
+                            }
+                        }
+                    }
+                }
+                if (note.isNotEmpty()) Text(note, color = Amber, fontSize = 14.sp)
+            }
+            Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val ready = !busy && when (kind) { "forward" -> to.contains("@"); "tag" -> oneBox && ticked.isNotEmpty(); else -> senders.isNotEmpty() }
+                Button(onClick = {
+                    scope.launch {
+                        busy = true; note = ""
+                        var done = 0
+                        try {
+                            withContext(Dispatchers.IO) {
+                                when (kind) {
+                                    "forward" -> for (m in mails) { api.forward(m, listOf(to.trim()), emptyList(), emptyList(), words.trim()); done++ }
+                                    "tag" -> for (m in mails) { for (t in ticked) api.setTag(m, t, true); done++ }
+                                    else -> for (a in senders) { api.saveRule("", RuleSpec(sender = a, action = rule)); done++ }
+                                }
+                                Unit
+                            }
+                            onDone(when (kind) { "forward" -> "Forwarded $done."; "tag" -> "Tagged $done."; else -> "Made $done ${if (done == 1) "rule" else "rules"}. Change them in Settings, Mail rules." })
+                        } catch (e: ApiException) { note = (e.message ?: "That did not work.") + if (done > 0) " $done were done first." else "" }
+                        catch (e: Exception) { note = "That did not work. Check your connection." + if (done > 0) " $done were done first." else "" }
+                        busy = false
+                    }
+                }, enabled = ready, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(12.dp)) {
+                    Text(if (busy) "One moment…" else when (kind) { "forward" -> "Forward"; "tag" -> "Add the tags"; else -> "Make the rules" })
+                }
+                OutlinedButton(onClick = onClose, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line)) { Text("Cancel") }
+            }
+        }
+    }
+}

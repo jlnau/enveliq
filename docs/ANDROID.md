@@ -125,6 +125,9 @@ Settings, Security, **Your devices** lists the places you are signed in and lets
 - **Show email headers and Download this email (.eml).** In an open email's three dots. The headers appear in a box with a Copy button; the .eml is saved where you choose. Both are fetched when you ask and are not kept.
 - **Conversation View** (Settings). Groups emails of one conversation under the newest one, with Show and Hide. It is saved on your account, so the website and the app agree. Each email keeps its own swipe and buttons.
 
+- **Highlight colour** (Settings, Appearance). Blue, Green, Purple, Orange, Pink or Teal for buttons, links and chosen items, in light and dark. It is kept on the phone (the website keeps its own).
+- **Forward, Tag and Rules for several emails.** Press and hold an email to pick several. Under the buttons, **Forward** sends each one on its own, with its files, to the address you type (and an optional note). **Tag** adds the tags you pick to every email (one mailbox at a time). **Rules** makes an always-archive, mark-as-read or star rule for each sender; change them later in Settings, Mail rules.
+
 ## Not in the app
 
 - **A calendar of events.** Trips and bookings are listed under More, Trips and calendar.

@@ -583,6 +583,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
 
     // Move to a folder: the emails leave the list at once, and are moved at the mailbox when the Undo time has passed.
     var pickFor by remember { mutableStateOf<List<Mail>?>(null) }
+    var bulk by remember { mutableStateOf<Pair<String, List<Mail>>?>(null) }
     var pickAlways by remember { mutableStateOf(false) }
     fun moveAll(items: List<Mail>, folder: FolderInfo, always: Boolean = false) {
         if (items.isEmpty()) return
@@ -739,6 +740,9 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     LaunchedEffect(tab, moreKey) {
         bellUnread = try { withContext(Dispatchers.IO) { api.bell() }.any { it.unread } } catch (_: Exception) { false }
     }
+    bulk?.let { (k, list) ->
+        BulkDialog(api, k, list, onClose = { bulk = null }, onDone = { words -> bulk = null; selected.clear(); scope.launch { snack.showSnackbar(words) } })
+    }
     pickFor?.let { list ->
         val acct = list.firstOrNull()?.accountId
         if (acct != null && list.all { it.accountId == acct }) {
@@ -812,7 +816,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 )
             } else if (selected.isNotEmpty() && tab == Tab.Inbox) {
                 val chosen = mails.filter { selected.contains(keyOf(it)) }
-                SelectionBar(chosen.size, onMove = { pickFor = chosen }, onResolve = { outcome -> if (outcome == Outcome.Reviewed) { chosen.forEach { markRead(it) }; selected.clear() } else resolveAll(chosen, outcome) }, onCancel = { selected.clear() })
+                SelectionBar(chosen.size, onMove = { pickFor = chosen }, onResolve = { outcome -> if (outcome == Outcome.Reviewed) { chosen.forEach { markRead(it) }; selected.clear() } else resolveAll(chosen, outcome) }, onCancel = { selected.clear() }, onBulk = { k -> bulk = k to chosen })
             }
         },
     ) { inner ->
@@ -1529,7 +1533,7 @@ private fun ActionBar(read: Boolean, onMove: () -> Unit, starred: Boolean, onSta
 
 /** The bar shown while several emails are ticked. */
 @Composable
-private fun SelectionBar(count: Int, onMove: () -> Unit, onResolve: (Outcome) -> Unit, onCancel: () -> Unit) {
+private fun SelectionBar(count: Int, onMove: () -> Unit, onResolve: (Outcome) -> Unit, onCancel: () -> Unit, onBulk: (String) -> Unit = {}) {
     Column(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(if (count == 1) "1 email selected" else "$count emails selected", color = Ink, fontSize = 15.sp, modifier = Modifier.padding(bottom = 8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1537,6 +1541,11 @@ private fun SelectionBar(count: Int, onMove: () -> Unit, onResolve: (Outcome) ->
             BarIcon("Move to a folder", Color(0xFF8DB8FF), Color(0xFF173056), onMove) { FolderIcon(Color(0xFF8DB8FF)) }
             BarIcon("Archive", Color(0xFF8DB8FF), Color(0xFF173056), { onResolve(Outcome.Archived) }) { ArchiveIcon(Color(0xFF8DB8FF)) }
             BarIcon("Bin", Red, Color(0xFF3A1D22), { onResolve(Outcome.Binned) }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Red) }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            TextButton(onClick = { onBulk("forward") }) { Text("Forward", color = Blue) }
+            TextButton(onClick = { onBulk("tag") }) { Text("Tag", color = Blue) }
+            TextButton(onClick = { onBulk("rules") }) { Text("Rules", color = Blue) }
         }
         TextButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) { Text("Cancel", color = Blue) }
     }

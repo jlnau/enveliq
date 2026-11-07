@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Android: Highlight colour, and Forward, Tag and Rules for several emails.** **Settings, Appearance** has a **Highlight colour** (Blue, Green, Purple, Orange, Pink or Teal) for buttons, links and chosen items. It is kept on the phone. Picking several emails now shows **Forward**, **Tag** and **Rules** under the buttons: Forward sends each email on its own to one address, Tag adds the tags you pick (one mailbox at a time) and Rules makes an always-archive, mark-as-read or star rule for each sender. Touches `android/`, `docs/ANDROID.md`.
+
 **Android: Saved replies and Send options while writing, headers and .eml, Conversation View.** Writing a new email, reply or forward has **Saved replies** (pick one to put it in the message) and **Send options** (**Send with high importance**, and **Mark as read when I send** for replies). An open email's three dots have **Show email headers** and **Download this email (.eml)**. **Settings, Conversation View** groups emails of one conversation under the newest, the same switch as the website. Touches `android/`, `docs/ANDROID.md`.
 
 **Android: Away reply, Saved replies, Subscriptions, Tags and Ask Enveliq.** Settings has **Away reply** (the same days and words as the website) and **Saved replies** (add, change or remove). **More** has **Ask Enveliq** (a chat about your own Enveliq; every answer is labelled as written by AI), **Tags** (your tags and the emails that carry each one) and **Subscriptions** (what you pay for and what renews soon, for reading). They use the website's own routes. Touches `android/`, `docs/ANDROID.md`.

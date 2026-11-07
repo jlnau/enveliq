@@ -386,6 +386,16 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                     }
                 }
             }
+            Footnote("Highlight colour", Ink)
+            Group {
+                Look.highlights.forEachIndexed { i, (id, label) ->
+                    if (i > 0) HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
+                    ChoiceRow(label, selected = Look.highlight == id) {
+                        Look.highlight = id
+                        prefs.edit().putString("highlight", id).apply()
+                    }
+                }
+            }
             Footnote("Text size", Ink)
             Group {
                 listOf("normal" to "Normal", "large" to "Large", "larger" to "Extra large").forEachIndexed { i, (id, label) ->
