@@ -93,6 +93,8 @@ const host = (page, panel) => page.locator(`[data-settings-panel="${panel}"] .em
   check("System theme can be chosen and is remembered", await page.locator('#viewPanel [data-view="scheme"][data-val="system"]').getAttribute("aria-checked")==="true" && await page.evaluate(()=>localStorage.getItem("enveliq-theme"))==="system");
   await pickScheme(page, "dark");
   check("Dark works from Customise", !(await page.evaluate(() => document.documentElement.dataset.theme)) && (await page.evaluate(() => document.documentElement.dataset.scheme))==="dark");
+  await pickScheme(page, "light");
+  check("Light works straight after Dark (page really turns light)", (await page.evaluate(() => document.documentElement.dataset.theme)) === "light" && (await page.evaluate(() => document.documentElement.dataset.scheme)) === "standard" && (await page.evaluate(() => { const m = getComputedStyle(document.body).backgroundColor.match(/\d+/g).map(Number); return m[0] > 200; })));
   await pickScheme(page, "standard");
 
   // Settings (the same page for everyone) opens on the person's own settings, including the Profile page
