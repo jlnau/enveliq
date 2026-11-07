@@ -80,6 +80,8 @@ for (const lay of ["screen", "deck", "bottom", "list", "right"]) {
   check(`no large blue areas in the ${lay} layout (${bad.join(", ")})`, bad.length === 0);
 }
 await page.evaluate(() => { const box = document.getElementById("previewOverview"); box.hidden = false; box.replaceChildren(); for (const [t, n, c] of [["action", "Needs action", 17], ["tasks", "Today", 8], ["shipping", "Packages", 4], ["waiting", "Waiting", 5]]) { const b = document.createElement("button"); b.className = "preview-stat " + t; b.innerHTML = '<span class="preview-stat-icon">!</span><span class="preview-stat-copy"><strong>' + n + '</strong><b>' + c + '</b><small>x</small></span>'; box.append(b); } });
+await page.evaluate(() => { const g = document.createElement("div"); g.className = "preview-today-grid"; g.innerHTML = '<section class="today-card"><b>Today</b></section><section class="preview-later"><b>Coming up</b></section>'; document.querySelector(".main").append(g); });
+check("the Today and Coming up boxes are neutral grey in Dark", await page.evaluate(() => [...document.querySelectorAll(".today-card,.preview-later")].every((e) => { const m = getComputedStyle(e).backgroundColor.match(/\d+/g).map(Number); return Math.abs(m[0] - m[2]) <= 6; })));
 check("the four cards at the top of the inbox are neutral grey in Dark", (await statBg()).length === 4 && (await statBg()).every(isGrey));
 
 await page.evaluate(() => document.getElementById("customiseBtn").click());
