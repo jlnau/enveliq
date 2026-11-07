@@ -9349,6 +9349,8 @@ function linkPop(url,host,careful,mail,pt){
   b.style.left=x+"px";b.style.top=y+"px";a.focus();
 }
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){const b=$("linkPop");if(b&&!b.hidden){b.hidden=true}}});
+// A press inside the email itself never reaches this page, but the page loses focus to the email's frame, which is how it is noticed.
+window.addEventListener("blur",()=>{setTimeout(()=>{const b=$("linkPop"),f=document.activeElement;if(b&&!b.hidden&&f&&f.tagName==="IFRAME")b.hidden=true},0)});
 document.addEventListener("mousedown",e=>{const b=$("linkPop");if(b&&!b.hidden&&!e.target.closest("#linkPop"))b.hidden=true},true);
 // The whole address is always shown before a link can be opened, however long it is. It wraps over as many lines as it needs and is never cut short.
 function showLinkFull(url){
