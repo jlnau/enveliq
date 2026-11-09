@@ -40,6 +40,12 @@ RANK = {"ordered": 0, "shipped": 1, "out_for_delivery": 2, "delivered": 3}
 ACTIONS = ("confirm", "not_yet", "not_order", "track", "undo", "remove")
 HAND_STATUSES = ("ordered", "shipped", "out_for_delivery", "delivered")      # what a person can pick for an order they enter by hand
 
+# The AI sometimes calls an order confirmation or a "shipped" email "delivered". The subject line settles it: an email whose
+# subject says the order was placed or is on its way, and never says it arrived, cannot be a delivery.
+_SAYS_ARRIVED = re.compile(r"\b(delivered|arrived|has arrived|was delivered|left at|handed over|collected|ready for collection|ready to collect)\b", re.I)
+_SAYS_SHIPPED = re.compile(r"\b(shipped|shipment|on (its|the) way|dispatched|despatched|out for delivery)\b", re.I)
+_SAYS_ORDERED = re.compile(r"^\W*(ordered\b|order\b.{0,20}\b(confirm|received|placed)|thanks? for your order|your order\b.{0,20}\b(confirm|received|placed)|we(?:'|\u2019)ve received your order)", re.I)
+
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 # Carrier name (lower case, as it appears in the email) -> tracking page. {n} is the tracking number.
@@ -208,6 +214,11 @@ class ShipBook:
         info = self._clean_shipment(shipment)
         if info is None or not (info["shop"] or info["order"] or info["tracking"]):
             return False
+        if info["kind"] == "delivered" and not _SAYS_ARRIVED.search(subject or ""):
+            if _SAYS_SHIPPED.search(subject or ""):
+                info["kind"] = "shipped"
+            elif _SAYS_ORDERED.search(subject or ""):
+                info["kind"] = "order_confirmed"
         now = self.clock()
         at = float(received_at) if received_at and 0 < received_at <= now + 86400 else now
         okey, tkey, skey = order_key(info["order"]), info["tracking"], shop_key(info["shop"])

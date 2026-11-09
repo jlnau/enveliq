@@ -83,6 +83,20 @@ def test_one_order_from_several_emails(book):
     assert not o["unsure"] and not o["needs_confirm"]
 
 
+def test_an_order_or_shipped_email_the_ai_called_delivered_is_not_a_delivery(book):
+    assert seen(book, 1, ship("delivered", order_number="249-1", shop="Amazon.com.au"), 'Ordered: "Snorkeling Gear for Adult..."', NOW - 5000)
+    assert seen(book, 2, ship("delivered", order_number="TMS_1", shop="The Man Shake"), "A shipment from order TMS_1 is on the way", NOW - 4000)
+    rows = {r["order_number"]: r for r in book.view("u1")["orders"]}
+    assert rows["249-1"]["status"] == "ordered" and not rows["249-1"]["delivered_at"] and not rows["249-1"]["needs_confirm"]
+    assert rows["TMS_1"]["status"] == "shipped" and not rows["TMS_1"]["needs_confirm"]
+
+
+def test_a_real_delivery_email_still_counts(book):
+    assert seen(book, 1, ship("delivered"), "Your order has been delivered", NOW - 4000)
+    assert seen(book, 2, ship("delivered", order_number="BB-7", tracking_number=None), "Your parcel has arrived", NOW - 3000)
+    assert all(r["needs_confirm"] for r in book.view("u1")["orders"])
+
+
 def test_two_different_orders_stay_apart(book):
     seen(book, 1, ship(order_number="BB-1111"))
     seen(book, 2, ship(order_number="BB-2222"))
