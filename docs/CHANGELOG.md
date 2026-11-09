@@ -4,7 +4,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-**No more "Did it arrive?" for orders that have only just been placed.** The AI sometimes called an order confirmation ("Ordered: ...") or a "your shipment is on the way" email a delivery, which made the Home page ask "Delivered · did it arrive?" too early. Enveliq now looks at the email's subject as well: if it says the order was placed or is on its way and never says it arrived, it is filed as ordered or shipped, never delivered. Cards already wrongly marked as delivered are fixed by pressing **Not yet**. Touches `backend/mail/shipping.py`, `docs/SHIPPING.md`.
+**No more "Did it arrive?" for orders that have only just been placed.** The AI sometimes called an order confirmation ("Ordered: ...") or a "your shipment is on the way" email a delivery, which made the Home page ask "Delivered · did it arrive?" too early. Enveliq now looks at the email's subject as well: if it says the order was placed or is on its way and never says it arrived, it is filed as ordered or shipped, never delivered. Cards already wrongly marked as delivered are fixed by pressing **Not yet**. Touches `backend/mail/shipping.py`, `docs/INBOX.md`.
 
 **Check for new mail instantly (Proton Bridge).** Each Proton Bridge mailbox has a new **Check for new mail instantly** switch (off at first). When it is on, Enveliq keeps one quiet connection to Bridge open and checks the mailbox the moment new mail arrives, instead of waiting for the timer. The timed check keeps running underneath, so a dropped connection never loses mail. Touches `backend/mail/instant.py`, `backend/mail/scheduler.py`, `web/static/auth.js`, `docs/PROTON_BRIDGE.md`.
 
