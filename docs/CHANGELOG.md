@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Fix: "Check my reply" now improves what you wrote.** If you had already written a reply, the AI could throw it away and write a new one answering the other person's email. It is now told that your draft is the email: keep every point, question, list item and number, in the same order and in your voice, fix only spelling, grammar and clarity, and add nothing of its own. It only writes a reply from scratch when your box is empty. This is the same on the website and in the Android app. Touches `backend/mail/writehelp.py`, `docs/WRITING_HELP.md`, `tests/test_writehelp.py`.
+
 **Search all my mail now keeps the reading panel beside the list.** When a search found nothing in the current view, the reading panel disappeared and a found email opened as a pop-out over the whole page. With the reading panel on the right, the list is now always on the left and the email on the right while you search, the same as every other view. Touches `prototype/index.html`, `scripts/check_find.mjs`, `docs/INBOX.md`.
 
 **No more "Did it arrive?" for orders that have only just been placed.** The AI sometimes called an order confirmation ("Ordered: ...") or a "your shipment is on the way" email a delivery, which made the Home page ask "Delivered · did it arrive?" too early. Enveliq now looks at the email's subject as well: if it says the order was placed or is on its way and never says it arrived, it is filed as ordered or shipped, never delivered. Cards already wrongly marked as delivered are fixed by pressing **Not yet**. Touches `backend/mail/shipping.py`, `docs/INBOX.md`.

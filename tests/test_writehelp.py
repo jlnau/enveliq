@@ -225,3 +225,12 @@ def test_a_deleted_person_leaves_no_writing_help_record(env):
     assert appm.vault.get_global("writehelp:" + made["id"])
     assert client.delete(f"/api/v1/admin/users/{made['id']}").status_code in (200, 204)
     assert not appm.vault.get_global("writehelp:" + made["id"])
+
+
+def test_a_draft_is_checked_and_improved_not_replaced_by_a_new_reply():
+    turn = W.user_turn("reply", "1. Supply a ceiling fan\n2. Meter box data", "Quote", "Jarrad <j@example.invalid>", "Please tell me about the fan.", "Julien <ju@example.invalid>")
+    assert "already written their email" in turn and "Do not write a new one" in turn
+    assert "1. Supply a ceiling fan" in turn and "Keep all of it" in turn
+    assert "that draft IS the email" in W.FIXED_RULES and "do not drop anything they wrote" in W.FIXED_RULES
+    assert "already written their email" not in W.user_turn("reply", "", "Quote", "J <j@example.invalid>", "x")       # no draft: it may write one
+    assert "keep it short" in W.DEFAULT_INSTRUCTIONS and "from nothing" in W.DEFAULT_INSTRUCTIONS

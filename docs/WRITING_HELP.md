@@ -49,3 +49,7 @@ Writing help is the same on the phone: under the message there is **Write a repl
 - A model cannot be made immune to a hostile email. Its output is only ever shown, never acted on.
 
 The plan this came from, with the mock-ups' decisions, is in `docs/EMAIL_ASSIST.md`. One-tap replies are a later release.
+
+## Check my reply keeps your text
+
+When the box already has your words, the AI treats them as the email: it keeps every point, request, question, list item, number and name, in the same order and in your voice, and fixes only spelling, grammar and clarity. The email you are answering is only background. The AI never adds questions or promises of its own and never writes a different reply in place of yours. When the box is empty, it writes a short reply for you as before.
