@@ -216,6 +216,21 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await context.close();
 }
 {
+  // A search that matches nothing already in this view: the reading panel is still beside the list, and a found email opens in it.
+  const server = makeServer({ fast: "ready" });
+  const { page, errors, csp, context } = await open(server, { width: 1200, height: 700 });
+  await page.evaluate(() => { view.layout = "right"; applyView(); render(); });
+  await page.waitForTimeout(300);
+  await page.fill("#search", "canvas");
+  await page.waitForSelector("#findInline .find-row", { timeout: 5000 });
+  check("nothing local matches, yet the list and reading panel sit side by side", await page.evaluate(() => !document.querySelector("#list .qrow, #list .quiet-row") && document.body.classList.contains("split-read") && document.getElementById("readDock").getBoundingClientRect().left > document.getElementById("list").getBoundingClientRect().left + 200));
+  await page.locator(".find-row").first().click();
+  await page.waitForSelector("#readDock .livepane .email-doc");
+  check("a found email opens in the reading panel, not over the page", (await page.locator("#readDock .livepane").innerText()).includes("canvases are on the way") && (await page.locator(".reader.live").count()) === 0);
+  await shot(page, "find-nothing-local-pane");
+  await context.close();
+}
+{
   // With Fast search ready on every mailbox, typing searches all mail by itself.
   const server = makeServer({ fast: "ready" });
   const { page, errors, csp, context } = await open(server);

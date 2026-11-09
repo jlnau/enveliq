@@ -359,6 +359,7 @@ Choose **Reading pane on the right** in the View panel (the tab on the right edg
 
 ## Search all my mail: shows at once, tight list
 
+- **The reading panel stays beside the list.** With the reading panel on the right, the list is on the left and the email on the right while you search, even when nothing in the current view matched. A found email opens in that panel, never as a pop-out over the page.
 - Typing shows the **Search all my mail** panel immediately ("Searching all your mail…" with a moving progress bar). The bar over the list (always in view) has the same progress bar and the Clear search button; both bars go quiet when the search ends.
 - Results are small rows: tick box, sender, date, subject, and the folder (with a paperclip if it has files). Click a row to read the email. To summarise, tick one or more and press **Summarise Emails**.
 

@@ -4964,6 +4964,8 @@ function render(){
   const prevScroll=document.getElementById("paneList"),prevTop=prevScroll?prevScroll.scrollTop:0,prevRead=document.querySelector(".reading"),prevReadTop=prevRead?prevRead.scrollTop:0;const prevBody=document.querySelector(".reader .rbody"),prevBodyTop=prevBody?prevBody.scrollTop:0;
   lastRowIds=rows.map(m=>m.id);
   if(!rows.length){listHtml=`<div class="empty">${query&&String(query).trim().length>=2&&filter!=="snoozed"?"Nothing in this view matches your search.":filter==="snoozed"?"Nothing is snoozed. Use Snooze on an email to set it aside until you need it.":filter==="held"?"Nothing is held for your summary. Email that can wait appears here as it arrives.":realMail&&!data.some(m=>m.status==="inbox")?"You're all caught up. Press <strong>Sync mail</strong> to look for new unread email.":document.body.classList.contains("backend")&&!realMail?`Your mail will appear here once a mailbox is connected. <a href="/welcome">Set up your mailbox</a>`:`Nothing in this view for ${esc(currentUser.name)}.`}</div>`}
+  // Searching all my mail with the reading panel on the right: even when nothing in this view matches, the panel is there beside the list, so a found email opens in it like in every other view.
+  if(!rows.length&&findUi.open&&lay()==="right"&&!["sent","folders","tags","drafts","tasks","shipping","waiting","subscriptions","trips","junk","cleanup"].includes(filter))dockHtml=`<section class="reading" aria-label="Selected email"><div class="empty">Pick an email from the search results to read it here.</div></section>`;
   else if(lay()==="list"){listHtml=`<div class="quiet-list">${rowsHtml(rows)}</div>`}
   else{
     let idx=rows.findIndex(m=>m.id===paneId);
