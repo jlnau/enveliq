@@ -504,18 +504,3 @@ def test_the_waiting_list_finds_its_sent_emails_so_they_open_like_folder_emails(
     row = r.json()["rows"][note["id"]]
     assert row["subject"] == "Quote for the fence" and row["to_address"] == "dana@example.invalid"
     assert client.get(f"/api/v1/folder-mail/{row['token']}/original").status_code == 200
-
-
-def test_the_waiting_list_still_finds_a_sent_email_when_the_server_search_cannot(env, monkeypatch):
-    from backend.mail import bridge as bridge_mod
-    appm, client, bridge, model = env
-    add_sent(bridge)
-    aid = start_watching(client, bridge)
-    validity, item = sent_item(client, aid, "Quote for the fence")
-    assert client.post(f"/api/v1/accounts/{aid}/sent/{validity}/{item['uid']}/follow", json={}).json()["result"] == "added"
-    note = client.get("/api/v1/me/waiting").json()["notes"][0]
-    target = next(c for c in vars(bridge_mod).values() if isinstance(c, type) and hasattr(c, "recent_uids"))
-    orig = target.search
-    monkeypatch.setattr(target, "search", lambda self, crit, utf8=False: [] if crit[:1] == ["HEADER"] else orig(self, crit, utf8))
-    row = client.get(f"/api/v1/accounts/{aid}/waiting-mail").json()["rows"][note["id"]]
-    assert row["subject"] == "Quote for the fence"

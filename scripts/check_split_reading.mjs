@@ -88,7 +88,7 @@ for (const theme of ["dark", "light"]) {
     const second = (await page.locator("#paneList article.mail .subject").nth(1).innerText()).trim();
     await page.locator("#paneList article.mail .qmain").nth(1).click(); await page.waitForTimeout(200);
     check("clicking another email shows it in the panel on the right", (await page.locator("#readDock .rhead h3").innerText()).trim() === second);
-    check("Tasks has the same panel on the right, waiting for a pick (not the email left over from the inbox)", await (async () => { await page.locator('[data-filter="tasks"]').first().click(); await page.waitForTimeout(250); return (await page.evaluate(() => document.body.classList.contains("split-read"))) === true && /Pick a task/.test(await page.locator("#readDock").innerText()); })());
+    check("the email panel is not left over on the Tasks page", await (async () => { await page.locator('[data-filter="tasks"]').first().click(); await page.waitForTimeout(250); return (await page.evaluate(() => document.body.classList.contains("split-read"))) === false && (await page.locator("#readDock .reading").count()) === 0; })());
   }
   await page.context().close();
 }
