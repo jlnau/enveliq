@@ -7542,17 +7542,21 @@ function realTime(sec){
   return d.toLocaleDateString(undefined,{day:"numeric",month:"short",year:d.getFullYear()===new Date().getFullYear()?undefined:"numeric"});
 }
 const realIds=new Map();let realNextId=1;
+let bootPaint=0;
 async function loadRealMail(me){
   const list=await secureBackendRequest("/api/v1/accounts",{method:"GET",headers:{}});
   const bridges=list.filter(a=>!a.check_address&&(a.auth_method==="proton_bridge"||a.auth_method==="imap")&&a.owner_user_id===me.id);
   if(!bridges.length)return false;
   const items=[];
   const accts=[];
-  try{realPrefs=await secureBackendRequest("/api/v1/me/preferences",{method:"GET",headers:{}})}catch{}
-  try{feat=(await secureBackendRequest("/api/v1/me/features",{method:"GET",headers:{}})).effective}catch{}
-  await enFetchOpened();
-  await whLoad();
-  await dgLoad();
+  // Everything the first screen needs is asked for at the same moment (one after another, a single slow answer held up all the rest).
+  const rawMsgs=Object.fromEntries(bridges.map(a=>[a.id,secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(a.id)}/messages`,{method:"GET",headers:{}})]));
+  for(const p of Object.values(rawMsgs))p.catch(()=>{});
+  await Promise.all([
+    secureBackendRequest("/api/v1/me/preferences",{method:"GET",headers:{}}).then(r=>{realPrefs=r}).catch(()=>{}),
+    secureBackendRequest("/api/v1/me/features",{method:"GET",headers:{}}).then(r=>{feat=r.effective}).catch(()=>{}),
+    enFetchOpened(),dgLoad()]);
+  whLoad().then(()=>render()).catch(()=>{});
   const wantAll=!!(feat.all_mail&&allMail);
   if(wantAll&&Date.now()-recentAt>300000){
     recentAt=Date.now();
@@ -7561,7 +7565,7 @@ async function loadRealMail(me){
   document.body.classList.toggle("allmail",wantAll);
   for(const a of bridges){
     const identities=[a.email_address,...((a.settings&&a.settings.send_identities)||[])].filter((v,i,arr)=>v&&arr.indexOf(v)===i);
-    const msgs=(await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(a.id)}/messages`,{method:"GET",headers:{}})).map(r=>r.state==="reviewed"?{...r,from_all_mail:true}:r).filter(r=>wantAll||!r.from_all_mail||r.starred||(r.found_until&&feat.find_mail));
+    const msgs=(await rawMsgs[a.id]).map(r=>r.state==="reviewed"?{...r,from_all_mail:true}:r).filter(r=>wantAll||!r.from_all_mail||r.starred||(r.found_until&&feat.find_mail));
     const isBridge=a.auth_method==="proton_bridge";
     accts.push({id:a.id,color:(a.settings&&a.settings.color)||"",providerId:isBridge?"proton":(a.settings&&a.settings.provider_id)||"imap",owner:me.id,provider:a.provider||"Email",method:isBridge?"Proton Bridge":"App password (IMAP)",name:a.display_name,address:a.email_address,identities,
       status:"Connected",visibility:"private",server:a.server,port:String(a.port),username:a.username,security:isBridge?"STARTTLS / pinned Bridge certificate":"Encrypted (TLS), certificate checked",
@@ -7590,7 +7594,12 @@ async function loadRealMail(me){
   }else{mailboxSel="";box.hidden=true}
   {const here=new Set(data.map(m=>m.id));for(const k of [...selected])if(!here.has(k))selected.delete(k)}   // a reload (for example when an AI summary finishes) keeps the emails you ticked
   realMail=true;applyFeatures();
-  await fetchTasks();await fetchShipping();await fetchRss();findHistLoad();await fetchBell();await fetchSubs();await fetchTrips();await fetchJunk();await fetchWaiting();await fetchImportant();await fetchSaved();      // after realMail is set, so the first load already has the person's tasks
+  // Everything besides the emails themselves is fetched side by side and does not hold the inbox up: the emails appear as soon as they are here,
+  // and tasks, shipping and the rest fill in the moment each one arrives (one slow part can no longer make the whole page wait).
+  findHistLoad();
+  const rest=[fetchTasks,fetchShipping,fetchRss,fetchBell,fetchSubs,fetchTrips,fetchJunk,fetchWaiting,fetchImportant,fetchSaved].map(f=>Promise.resolve().then(f).catch(()=>{}));
+  Promise.all(rest).then(()=>render());
+  for(const r of rest)r.then(()=>{if(bootPaint)return;bootPaint=setTimeout(()=>{bootPaint=0;render()},150)});
   document.body.classList.add("real-mail");
   $("syncBtn").hidden=false;
   return true;
