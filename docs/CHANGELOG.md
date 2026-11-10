@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Fix: instant check no longer re-checks again and again.** A mailbox with "Check for new mail instantly" on now counts only a bigger number of emails as new mail, and wakes the check at most once every 15 seconds. Before, any "something changed" line from the server could start a check, which could keep the mailbox "busy". Touches `backend/mail/instant.py`.
+
 **Faster start.** When the page opens, everything it needs is now asked for at the same time instead of one thing after another, and the emails show as soon as they arrive. Tasks, shipping, waiting and the rest fill in a moment later, so one slow part can no longer hold the whole inbox up. The Waiting page's lookup of sent emails is also limited to one search per email, a small scan and 20 seconds. Touches `prototype/index.html`, `backend/mail/folders.py`.
 
 **Tasks: the same layout as every other page, a Calendar pop-up and options.** With the reading panel on the right, Tasks now has the list on the left and the email of the task you open on the right. The Focus view is gone. The Calendar is a full-page pop-up (Close or Escape to leave it; choosing an email there takes you back to the list with that email open). A new **Options** row lets you hide finished tasks, hide tasks that are not due yet, and choose the order. Touches `prototype/index.html`, `docs/INBOX.md`, `scripts/check_tasks_layout.mjs`.

@@ -26,8 +26,8 @@ log = logging.getLogger("enveliq.instant")
 
 RENEW_SECONDS = 25 * 60.0           # IDLE is restarted before servers (which allow about 30 minutes) give up on it
 FIRST_DELAY, MAX_DELAY = 15.0, 300.0
-EVENT_GAP = 3.0                     # at most one nudge every few seconds, however busy the mailbox
-_CHANGE = re.compile(rb"^\* \d+ (EXISTS|EXPUNGE)\b", re.I)
+EVENT_GAP = 15.0                    # at most one nudge every quarter of a minute, however busy the mailbox
+_EXISTS = re.compile(rb"^\* (\d+) EXISTS\b", re.I)
 
 
 def _readable(imap: Any, seconds: float) -> bool:
@@ -50,9 +50,13 @@ class _Listener:
             imap = None
             try:
                 imap = self.bridge.open_imap(self.target)
-                imap.select("INBOX", True)
+                _typ, counted = imap.select("INBOX", True)
+                try:
+                    known = int(counted[0])
+                except (TypeError, ValueError, IndexError):
+                    known = 0
                 self.state, delay = "listening", FIRST_DELAY
-                self._idle(imap)
+                self._idle(imap, known)
             except Exception:
                 self.state = "retrying"
                 log.info("instant check connection dropped")
@@ -62,7 +66,9 @@ class _Listener:
                 return
             delay = min(delay * 2, MAX_DELAY)
 
-    def _idle(self, imap: Any) -> None:
+    def _idle(self, imap: Any, known: int) -> None:
+        # Only a larger number of emails than before counts as new mail. Servers also say "EXISTS" again for other reasons (read marks, a refresh),
+        # and treating each of those as new mail would make Enveliq check the mailbox again and again.
         while not self.stop.is_set():
             tag = imap._new_tag()
             imap.send(tag + b" IDLE\r\n")
@@ -76,7 +82,10 @@ class _Listener:
                 line = imap.readline()
                 if not line:
                     raise OSError("closed")
-                changed = changed or bool(_CHANGE.match(line))
+                found = _EXISTS.match(line)
+                if found:
+                    count = int(found.group(1))
+                    changed, known = changed or count > known, count
                 break                                   # any line ends this round; the next round starts clean
             imap.send(b"DONE\r\n")
             while True:                                 # read everything up to the end of IDLE, so nothing is missed
@@ -85,7 +94,10 @@ class _Listener:
                     raise OSError("closed")
                 if line.startswith(tag):
                     break
-                changed = changed or bool(_CHANGE.match(line))
+                found = _EXISTS.match(line)
+                if found:
+                    count = int(found.group(1))
+                    changed, known = changed or count > known, count
             if changed:
                 self.on_change()
                 if self.stop.wait(EVENT_GAP):
