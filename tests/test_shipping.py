@@ -42,8 +42,8 @@ def ship(kind="order_confirmed", **kw):
     return {"kind": kind, "shop": "Brightwater Books", "order_number": "BB-5509", "tracking_number": None, "carrier": None, "expected": None, "items": "3 books", **kw}
 
 
-def seen(book, n, shipment, subject="Hello", at=NOW - 1000, user="u1", account="a1"):
-    return book.observe(user, account, f"m{n}", subject, at, shipment)
+def seen(book, n, shipment, subject="Hello", at=NOW - 1000, user="u1", account="a1", text=""):
+    return book.observe(user, account, f"m{n}", subject, at, shipment, text=text)
 
 
 # ---------- keys, cleaning, links ----------
@@ -545,3 +545,17 @@ def test_the_hand_order_routes_need_a_signed_in_person(env):
     anon = TestClient(appm.app)
     assert anon.post("/api/v1/me/shipping", json={"shop": "X", "status": "ordered"}).status_code in (401, 403)
     assert anon.put("/api/v1/me/shipping/s" + "0" * 23 + "/status", json={"status": "shipped"}).status_code in (401, 403)
+
+
+def test_arriving_soon_in_the_text_is_out_for_delivery_not_delivered(book):
+    body = "YOUR SHIPMENT IS ARRIVING SOON. Our courier is just a few stops away. Your shipment will be delivered shortly."
+    assert seen(book, 1, ship("delivered", order_number="8917076210", shop="DHL Express"), "DHL On Demand Delivery", NOW - 900, text=body)
+    row = book.view("u1")["orders"][0]
+    assert row["status"] == "out_for_delivery" and not row["delivered_at"] and not row["needs_confirm"]
+
+
+def test_a_later_real_delivery_email_with_the_same_generic_subject_still_counts(book):
+    assert seen(book, 1, ship("out_for_delivery", order_number="8917076210", shop="DHL Express"), "DHL On Demand Delivery", NOW - 900)
+    assert seen(book, 2, ship("delivered", order_number="8917076210", shop="DHL Express"), "DHL On Demand Delivery", NOW - 500,
+                text="Your shipment was delivered today at 9:23 am and signed for.")
+    assert book.view("u1")["orders"][0]["needs_confirm"]

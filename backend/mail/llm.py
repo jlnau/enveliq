@@ -64,7 +64,7 @@ FIXED_PROMPT = (
     "task (null, or an object with title: a short instruction, due: a date or time phrase taken from the email or null, "
     "detail: one sentence), "
     "shipment (null, unless the email is about an online order or a parcel delivery; then an object with "
-    "kind: one of order_confirmed, shipped, out_for_delivery, delivered, delayed; "
+    "kind: one of order_confirmed, shipped, out_for_delivery, delivered, delayed (use delivered ONLY when the email says the parcel has already been delivered, left or collected; \"arriving soon\", \"will be delivered\", \"on its way\" and \"out for delivery\" are out_for_delivery or shipped, never delivered); "
     "shop: the seller's name; "
     "order_number: the order number exactly as written, or null; "
     "tracking_number: exactly as written, or null; "

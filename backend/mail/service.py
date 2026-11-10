@@ -520,7 +520,7 @@ class MailService:
                 summarised.add(m["id"])
                 if shipment and self.shipments is not None:
                     try:
-                        self.shipments.observe(account.get("owner_user_id"), account_id, m["id"], m.get("subject") or "", m.get("received_at"), shipment)
+                        self.shipments.observe(account.get("owner_user_id"), account_id, m["id"], m.get("subject") or "", m.get("received_at"), shipment, text=text)
                     except Exception:                  # a problem filing an order never loses the summary
                         pass
                 if subscription and self.subscriptions is not None and not found:      # an email with a "Be careful" flag never files anything

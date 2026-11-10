@@ -44,6 +44,10 @@ HAND_STATUSES = ("ordered", "shipped", "out_for_delivery", "delivered")      # w
 # subject says the order was placed or is on its way, and never says it arrived, cannot be a delivery.
 _SAYS_ARRIVED = re.compile(r"\b(delivered|arrived|has arrived|was delivered|left at|handed over|collected|ready for collection|ready to collect)\b", re.I)
 _SAYS_SHIPPED = re.compile(r"\b(shipped|shipment|on (its|the) way|dispatched|despatched|out for delivery)\b", re.I)
+# "Will be delivered shortly" and "not yet delivered" are not deliveries, so they are set aside before looking for "delivered".
+_FUTURE = re.compile(r"\b(?:(?:will|would|should|shall|can|may|to|going to)\s+(?:soon\s+|shortly\s+)?(?:be\s+)?(?:\w+\s+){0,2}?(?:delivered|arrive)|(?:not|never|yet to be|yet to)\s+(?:yet\s+)?(?:been\s+)?(?:delivered|arrived))\b", re.I)
+_NOT_YET = re.compile(r"\b(arriving soon|will (?:soon )?arrive|will be delivered|to be delivered|is arriving|about to arrive|out for delivery|on (?:its|the) way|a few stops away|delivery attempt|arriving (?:today|tomorrow))\b", re.I)
+_OUT_FOR = re.compile(r"\b(arriving soon|will (?:soon )?arrive|will be delivered (?:shortly|today|soon)|is arriving|about to arrive|out for delivery|a few stops away|arriving today)\b", re.I)
 _SAYS_ORDERED = re.compile(r"^\W*(ordered\b|order\b.{0,20}\b(confirm|received|placed)|thanks? for your order|your order\b.{0,20}\b(confirm|received|placed)|we(?:'|\u2019)ve received your order)", re.I)
 
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
@@ -207,18 +211,29 @@ class ShipBook:
             "expected_text": clean(raw.get("expected"), 60) or None,
         }
 
-    def observe(self, user_id: str | None, account_id: str, message_id: str, subject: str, received_at: float | None, shipment: Any) -> bool:
+    @staticmethod
+    def _believable_kind(subject: str, text: str) -> str:
+        """The AI says "delivered". Keep that only if nothing in the subject or text says otherwise (read here, never stored)."""
+        if _SAYS_ARRIVED.search(_FUTURE.sub(" ", subject + "\n" + text[:4000])):
+            return "delivered"
+        whole = subject + "\n" + text[:4000]
+        if _OUT_FOR.search(whole):
+            return "out_for_delivery"
+        if _SAYS_SHIPPED.search(subject) or _NOT_YET.search(whole):
+            return "shipped"
+        if _SAYS_ORDERED.search(subject):
+            return "order_confirmed"
+        return "delivered"
+
+    def observe(self, user_id: str | None, account_id: str, message_id: str, subject: str, received_at: float | None, shipment: Any, text: str = "") -> bool:
         """File what an email says about an order. Returns True when an order was added or changed."""
         if not user_id or not self.enabled(user_id):
             return False
         info = self._clean_shipment(shipment)
         if info is None or not (info["shop"] or info["order"] or info["tracking"]):
             return False
-        if info["kind"] == "delivered" and not _SAYS_ARRIVED.search(subject or ""):
-            if _SAYS_SHIPPED.search(subject or ""):
-                info["kind"] = "shipped"
-            elif _SAYS_ORDERED.search(subject or ""):
-                info["kind"] = "order_confirmed"
+        if info["kind"] == "delivered":
+            info["kind"] = self._believable_kind(subject or "", text or "")
         now = self.clock()
         at = float(received_at) if received_at and 0 < received_at <= now + 86400 else now
         okey, tkey, skey = order_key(info["order"]), info["tracking"], shop_key(info["shop"])
