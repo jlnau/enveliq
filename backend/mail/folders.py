@@ -206,19 +206,43 @@ class Folders:
             if not sent or not wanted:
                 return found
             validity = s.select_folder(sent, True)
+            def row_of(uid: int, raw: bytes) -> dict[str, Any]:
+                msg = parse_headers(raw)
+                to_name, to_address = (_addresses(msg, "To") or [("", "")])[0]
+                return {"token": self._token(user, account["id"], sent, validity, uid),
+                        "from_name": "", "from_address": "", "to_name": clean(to_name, 200), "to_address": clean(to_address, 320),
+                        "to_more": max(0, len(_addresses(msg, "To")) - 1), "subject": clean(msg.get("Subject"), 300) or "(no subject)",
+                        "date": received_at_of(raw), "has_files": likely_has_files(msg), "folder": sent}
+
+            missing: dict[str, str] = {}
             for key, mid in list(wanted.items())[:60]:
                 if not mid or any(c in mid for c in '"\\\r\n'):
                     continue
-                uids = s.search(["HEADER", "Message-ID", f'"{mid}"'])
+                bare = mid.strip().strip("<>")
+                uids: list[int] = []
+                for form in (f"<{bare}>", bare):               # some servers only match the id with its brackets, some only without
+                    try:
+                        uids = s.search(["HEADER", "Message-ID", f'"{form}"'])
+                    except BridgeError:
+                        uids = []
+                    if uids:
+                        break
                 if not uids:
+                    missing[key] = bare.lower()
                     continue
                 for uid, raw in s.header_blocks(uids[-1:]):
-                    msg = parse_headers(raw)
-                    to_name, to_address = (_addresses(msg, "To") or [("", "")])[0]
-                    found[key] = {"token": self._token(user, account["id"], sent, validity, uid),
-                                  "from_name": "", "from_address": "", "to_name": clean(to_name, 200), "to_address": clean(to_address, 320),
-                                  "to_more": max(0, len(_addresses(msg, "To")) - 1), "subject": clean(msg.get("Subject"), 300) or "(no subject)",
-                                  "date": received_at_of(raw), "has_files": likely_has_files(msg), "folder": sent}
+                    found[key] = row_of(uid, raw)
+            if missing:
+                # The server's own search did not find them (a just-sent email it has not indexed yet, or an id it keeps in another form):
+                # read the Message-ID lines of the newest sent emails and compare them here, ignoring capital letters and brackets.
+                by_id: dict[str, tuple[int, bytes]] = {}
+                for uid, raw in s.header_blocks(s.search(["ALL"])[:400]):
+                    got = clean(parse_headers(raw).get("Message-ID"), 320).strip().strip("<>").lower()
+                    if got:
+                        by_id[got] = (uid, raw)
+                for key, bare in missing.items():
+                    if bare in by_id:
+                        found[key] = row_of(*by_id[bare])
         return found
 
     def original(self, account: dict[str, Any], folder: str, validity: int, uid: int) -> bytes:

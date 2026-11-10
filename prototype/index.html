@@ -903,7 +903,13 @@ body.calm .today-card{border-color:transparent;background:var(--panel)}
 }
 .sp-sub{color:var(--muted);margin:-6px 0 14px;max-width:660px}
 .shipadd{max-width:520px}.shipadd label{display:block;font-size:13px;font-weight:600;margin:0 0 5px}.shipadd input[type=text],.shipadd select,.ostatus{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--text);padding:9px 10px;font:inherit}.ostatus{width:auto;max-width:100%}.sa-err{margin:0;color:var(--bad,#c0392b);font-size:13.5px}
-.ocard{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px 16px;margin-bottom:12px;display:grid;gap:10px}
+.ocard{position:relative;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px 16px;margin-bottom:12px;display:grid;gap:10px}.ocard.picked{border-color:var(--accent)}
+.ocheck{flex:0 0 auto;margin-top:3px}.opillbox{flex:0 0 auto}.odots{flex:0 0 auto;border:0;background:transparent;color:var(--muted);width:36px;height:36px;border-radius:9px;display:grid;place-items:center;cursor:pointer}.odots:hover,.odots[aria-expanded=true]{background:var(--panel3);color:var(--text)}
+.omenu{position:fixed;right:24px;top:96px;z-index:60;min-width:230px;background:var(--panel2,var(--panel));border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 12px 34px rgba(0,0,0,.45)}.omenu button{display:block;width:100%;text-align:left;border:0;background:transparent;color:var(--text);font:inherit;padding:10px 12px;border-radius:8px;cursor:pointer;min-height:40px}.omenu button:hover,.omenu button:focus-visible{background:var(--panel3)}.omenu .omh{font-size:12px;color:var(--muted);padding:6px 12px 4px}.omenu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+.obadge{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600;background:var(--panel3);color:var(--muted)}.obadge.gone{background:#3a1f22;color:#ff9a9a}
+.shipall{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin:0 0 8px}
+.shipbar{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;background:var(--panel3);border:1px solid var(--accent);border-radius:12px;padding:10px 14px;margin:0 0 12px}.shipbar .sbtns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.shipbar .sbask{flex:1 1 280px}
+@media(max-width:700px){.omenu{position:fixed;left:8px;right:8px;top:auto;bottom:8px;max-height:75vh;overflow:auto;z-index:60}.omenu button{min-height:48px}.shipbar{position:sticky;top:0}}
 .ocard.arrive{background:#0f2429;border-color:#1f5560}.ocard.unsure{border-style:dashed;border-color:var(--faint)}
 .ohead{display:flex;gap:10px 14px;flex-wrap:wrap;align-items:flex-start}.otitle{flex:1 1 260px;min-width:0}
 .oshop{font-weight:700;font-size:16px}.onum{color:var(--muted);margin-left:8px;font-size:14px}.oitems{color:var(--muted);margin-top:2px}
@@ -4206,34 +4212,71 @@ document.addEventListener("input",e=>{const k=e.target&&e.target.dataset&&e.targ
 document.addEventListener("change",async e=>{
   const t=e.target;if(!t||!t.dataset)return;
   if(t.dataset.shipAdd==="status"){shipAdd.status=t.value;return}
+  if(t.dataset.shipSel){const id=t.dataset.shipSel;if(t.checked)shipSel.add(id);else shipSel.delete(id);if(shipSel.size<2)shipMergeAsk=false;render();const b=document.querySelector(`[data-ship-sel="${CSS.escape(id)}"]`);if(b)b.focus();return}
+  if("shipAll" in t.dataset){const os=(shipData.orders||[]);if(t.checked)os.forEach(o=>shipSel.add(o.id));else shipSel.clear();if(shipSel.size<2)shipMergeAsk=false;render();return}
   if(t.dataset.shipStatus){
     try{const r=await secureBackendRequest(`/api/v1/me/shipping/${encodeURIComponent(t.dataset.shipStatus)}/status`,{method:"PUT",body:JSON.stringify({status:t.value})});if(r&&Array.isArray(r.orders))shipData=r}
     catch(er){toast(er.message,5000);await fetchShipping()}
     render();
   }
 });
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&shipMenu){const id=shipMenu;shipMenu=null;render();const b=document.querySelector(`[data-ship-menu="${CSS.escape(id)}"]`);if(b)b.focus()}});
 document.addEventListener("submit",e=>{if(e.target&&e.target.matches&&e.target.matches("[data-ship-add-form]")){e.preventDefault();shipAddSave()}});
 document.addEventListener("click",e=>{
   if(e.target.closest&&e.target.closest("[data-ship-add-open]")){shipAdd={...shipAdd,open:true,err:""};render();const i=$("saShop");if(i)i.focus();return}
   if(e.target.closest&&e.target.closest("[data-ship-add-cancel]")){shipAdd={open:false,shop:"",tracking:"",status:"ordered",err:"",busy:false};render();return}
 });
+let shipSel=new Set(),shipMenu=null,shipMergeAsk=false,shipMailId=null;
+const SHIP_STEPS=[["ordered","Ordered"],["shipped","Shipped"],["out_for_delivery","Out for delivery"],["delivered","Delivered"]];
+// The three-dot menu on each shipment: where it is up to (any step, by hand), a note, and removing it.
+function shipMenuHtml(o){
+  if(shipMenu!==o.id)return "";
+  const id=esc(o.id);
+  return `<div class="omenu" role="menu" aria-label="Change this shipment"><div class="omh">Where is it up to?</div>${SHIP_STEPS.map(([v,l])=>`<button type="button" role="menuitemradio" aria-checked="${o.status===v}" data-ship-set="${v}" data-ship-id="${id}">${o.status===v?"&#10003; ":""}${l}</button>`).join("")}<hr><button type="button" role="menuitem" data-ship-note="${id}">${o.note?"Edit note":"Add a note"}</button>${o.manual?`<button type="button" role="menuitem" data-ship="remove" data-ship-id="${id}">Remove</button>`:`<button type="button" role="menuitem" data-ship="not_order" data-ship-id="${id}">This is not an order</button>`}</div>`;
+}
+const shipDots=o=>`<button class="odots" type="button" data-ship-menu="${esc(o.id)}" aria-haspopup="menu" aria-expanded="${shipMenu===o.id}" aria-label="Change this shipment" title="Change this shipment">${ICON_MORE}</button>`;
 function orderCard(o){
-  const head=`<div class="ohead"><div class="otitle"><span class="oshop">${esc(o.shop||"An order")}</span>${o.order_number?`<span class="onum">Order ${esc(o.order_number)}</span>`:""}${o.items||o.total?`<div class="oitems">${esc(o.items||"")}${o.items&&o.total?" · ":""}${esc(o.total||"")}</div>`:""}${shipNoteHtml(o)}</div>`;
-  if(o.unsure)return `<article class="ocard unsure">${head}</div><div>Is this an order? Enveliq found no order or tracking number in this email, so it is not sure.</div><div class="oact"><button class="obtn blue" type="button" data-ship="track" data-ship-id="${esc(o.id)}">Yes, track it</button><button class="obtn" type="button" data-ship="not_order" data-ship-id="${esc(o.id)}">Not an order</button></div></article>`;
-  if(o.manual){                  // a parcel you typed in yourself: you say where it is up to, and you can remove it
-    const sel=`<select class="ostatus" data-ship-status="${esc(o.id)}" aria-label="Where is it up to?">${SHIP_HAND.map(([v,l])=>`<option value="${v}"${o.status===v?" selected":""}>${l}</option>`).join("")}</select>`;
-    const pillM=`<div><span class="opill${o.status!=="ordered"?" teal":""}">${esc(shipStatus(o))}</span></div>`;
-    return `<article class="ocard">${head}</div>${pillM}</div>${shipStages(o)}<div class="oact">${sel}${trackBtn(o)}${o.tracking?`<span class="meta">Tracking ${esc(o.tracking)}</span><button class="olink" type="button" data-ship-copy="${esc(o.id)}">Copy number</button>`:""}<button class="olink" type="button" data-ship-note="${esc(o.id)}" aria-expanded="${shipNoteOpen.has(o.id)}">${o.note?"Edit note":"Note"}</button><button class="olink" type="button" data-ship="remove" data-ship-id="${esc(o.id)}">Remove</button></div></article>`;
-  }
+  const picked=shipSel.has(o.id);
+  const head=`<div class="ohead"><input class="check ocheck" type="checkbox" data-ship-sel="${esc(o.id)}" aria-label="Select this shipment"${picked?" checked":""}><div class="otitle"><span class="oshop">${esc(o.shop||"An order")}</span>${o.order_number?`<span class="onum">Order ${esc(o.order_number)}</span>`:""}${o.items||o.total?`<div class="oitems">${esc(o.items||"")}${o.items&&o.total?" · ":""}${esc(o.total||"")}</div>`:""}${shipNoteHtml(o)}</div>`;
+  const menu=shipMenuHtml(o),dots=shipDots(o),cls=`ocard${picked?" picked":""}`;
+  if(o.unsure)return `<article class="${cls} unsure">${head}${dots}</div>${menu}<div>Is this an order? Enveliq found no order or tracking number in this email, so it is not sure.</div><div class="oact"><button class="obtn blue" type="button" data-ship="track" data-ship-id="${esc(o.id)}">Yes, track it</button><button class="obtn" type="button" data-ship="not_order" data-ship-id="${esc(o.id)}">Not an order</button></div></article>`;
   const arrived=o.needs_confirm,done=o.delivered_at&&!arrived;
-  const pill=`<div><span class="opill${o.status!=="ordered"?" teal":""}">${esc(shipStatus(o))}</span>${o.delayed&&o.prev_expected?`<div class="odelay">Delayed. It was ${esc(shipDay(o.prev_expected))}.</div>`:""}</div>`;
+  const pill=`<div class="opillbox"><span class="opill${o.status!=="ordered"?" teal":""}">${esc(shipStatus(o))}</span>${o.delayed&&o.prev_expected?`<div class="odelay">Delayed. It was ${esc(shipDay(o.prev_expected))}.</div>`:""}</div>`;
   const n=(o.events||[]).length,open=shipOpen.has(o.id);
   const acts=arrived?`<button class="obtn teal" type="button" data-ship="confirm" data-ship-id="${esc(o.id)}">Yes, I've got it</button><button class="obtn" type="button" data-ship="not_yet" data-ship-id="${esc(o.id)}">Not yet</button>`
     :done&&o.ack?`<span class="meta">You got it</span><button class="olink" type="button" data-ship="undo" data-ship-id="${esc(o.id)}">Undo</button>`
-    :`${trackBtn(o)}${o.tracking&&!(o.track_url&&/^https:\/\//.test(o.track_url))?`<button class="obtn" type="button" data-carrier-add="${esc(o.id)}">Add this carrier</button>`:""}${o.tracking?`<span class="meta">Tracking ${esc(o.tracking)}</span><button class="olink" type="button" data-ship-copy="${esc(o.id)}">Copy number</button>`:""}`;
+    :`${trackBtn(o)}${o.tracking&&!(o.track_url&&/^https:\/\//.test(o.track_url))?`<button class="obtn" type="button" data-carrier-add="${esc(o.id)}">Add this carrier</button>`:""}`;
+  const track=o.tracking?`<span class="meta">Tracking ${esc(o.tracking)}</span><button class="olink" type="button" data-ship-copy="${esc(o.id)}">Copy number</button>`:"";
   const ev=n?`<button class="olink push" type="button" data-ship-open="${esc(o.id)}" aria-expanded="${open}">${n} ${n===1?"email":"emails"} matched</button>`:"";
   const list=open&&n?`<ul class="oevents">${o.events.map(e=>`<li${e.m?` data-mark="${esc(e.m)}"`:""}><b>${esc(e.subject||"(no subject)")}</b> · ${esc(shipWhen(e.at))}</li>`).join("")}</ul>`:"";
-  return `<article class="ocard${arrived?" arrive":""}">${head}</div>${pill}</div>${shipStages(o)}<div class="oact">${acts}${ev}<button class="olink" type="button" data-ship-note="${esc(o.id)}" aria-expanded="${shipNoteOpen.has(o.id)}">${o.note?"Edit note":"Note"}</button><button class="olink" type="button" data-ship="not_order" data-ship-id="${esc(o.id)}">Not an order</button></div>${list}</article>`;
+  return `<article class="${cls}${arrived?" arrive":""}">${head}${pill}${dots}</div>${menu}${shipStages(o)}<div class="oact">${acts}${track}${ev}</div>${list}</article>`;
+}
+// The menu is placed beside its three dots on the screen (below them, or above when there is no room), so it is never cut off at the bottom of the page.
+function placeShipMenu(){
+  const m=document.querySelector("#shipPage .omenu");if(!m||window.matchMedia("(max-width:700px)").matches)return;
+  const b=document.querySelector(`[data-ship-menu="${CSS.escape(String(shipMenu))}"]`);if(!b)return;
+  const r=b.getBoundingClientRect(),h=m.offsetHeight,w=m.offsetWidth;
+  let top=r.bottom+4;if(top+h>window.innerHeight-8)top=Math.max(8,r.top-h-4);
+  m.style.top=top+"px";m.style.left=Math.max(8,Math.min(window.innerWidth-w-8,r.right-w))+"px";m.style.right="auto";
+}
+window.addEventListener("scroll",()=>{if(shipMenu)placeShipMenu()},true);window.addEventListener("resize",()=>{if(shipMenu)placeShipMenu()});
+function shipBarHtml(os){
+  const n=shipSel.size;
+  if(!n)return "";
+  const names=os.filter(o=>shipSel.has(o.id)).map(o=>esc(o.shop||"An order")+(o.order_number?" "+esc(o.order_number):"")).join(", ");
+  if(shipMergeAsk&&n>=2)return `<div class="shipbar" role="region" aria-label="Join shipments"><div class="sbask"><b>Join these ${n} into one shipment?</b> ${names}. Later emails from the shop or the courier will go to the joined shipment.</div><div class="sbtns"><button class="obtn blue" type="button" data-ship-merge-yes>Yes, join them</button><button class="olink" type="button" data-ship-merge-no>Cancel</button></div></div>`;
+  return `<div class="shipbar" role="region" aria-label="Selected shipments"><b>${n} selected</b><span class="meta">Mark as</span><span class="sbtns">${SHIP_STEPS.map(([v,l])=>`<button class="obtn" type="button" data-ship-bulk="${v}">${l}</button>`).join("")}</span><span class="sbtns"><button class="obtn blue" type="button" data-ship-merge${n<2?" disabled title=\"Tick two or more to join them\"":""}>Merge</button><button class="olink" type="button" data-ship-bulk-no>This is not an order</button><button class="olink" type="button" data-ship-clear>Clear</button></span></div>`;
+}
+async function shipBulk(path,body,done){
+  try{const r=await secureBackendRequest(`/api/v1/me/shipping/${path}`,{method:"POST",body:JSON.stringify(body)});if(r&&Array.isArray(r.orders)){shipData=r;toast(done,3000)}}
+  catch(er){toast(er.message,5000);await fetchShipping()}
+  shipSel.clear();shipMergeAsk=false;render();
+}
+function shipBulkMerge(){const ids=[...shipSel];shipBulk("merge",{ids},"Joined into one shipment. Later emails from either will go to it.")}
+async function shipSetOne(id,status){
+  try{const r=await secureBackendRequest(`/api/v1/me/shipping/${encodeURIComponent(id)}/status`,{method:"PUT",body:JSON.stringify({status})});if(r&&Array.isArray(r.orders))shipData=r}
+  catch(er){toast(er.message,5000);await fetchShipping()}
+  shipMenu=null;render();
 }
 const markCache=new Map();
 // SHA-256 in plain script: the browser's own crypto.subtle is missing on a page opened over plain http.
@@ -4258,16 +4301,26 @@ function mailMark(m){
   let h=markCache.get(k);if(!h){h=sha256Hex(k).slice(0,16);markCache.set(k,h)}
   return h;
 }
-// An email that is still in the inbox becomes a link that opens it; one that is gone stays plain text.
+// A matched email becomes a link that opens it (in the reading panel when that sits on the right, otherwise only while it is in the inbox).
+// An email that has been deleted, archived and so on says so on its line, and one that is gone completely says that too.
+const SHIP_MAIL_STATE={archived:"Archived",trashed:"Deleted",junked:"Junk",reviewed:"Marked as read",moved:"Moved to a folder",expired:"Removed from the list",cancelled:"Cancelled"};
+const shipSplit=()=>lay()==="right"&&window.matchMedia("(min-width:901px)").matches;
 function linkShipEmails(){
   const items=[...document.querySelectorAll("#shipPage li[data-mark]")];
   if(!items.length)return;
   const byMark=new Map();
-  for(const m of data){if(!m.real||m.status!=="inbox")continue;try{byMark.set(mailMark(m),m)}catch{}}
+  for(const m of data){if(!m.real)continue;try{byMark.set(mailMark(m),m)}catch{}}
+  const split=shipSplit();
   for(const li of items){
     const m=byMark.get(li.dataset.mark),b=li.querySelector("b");
-    if(!m||!b||b.querySelector("button"))continue;
-    const btn=document.createElement("button");btn.type="button";btn.className="olinkmail";btn.dataset.dueOpen=String(m.id);btn.title="Open this email in your inbox";btn.textContent=b.textContent;
+    if(!b||li.querySelector(".obadge"))continue;
+    if(!m){li.insertAdjacentHTML("beforeend",' <span class="obadge gone">Deleted or removed</span>');continue}
+    const state=SHIP_MAIL_STATE[m.status];
+    if(state)li.insertAdjacentHTML("beforeend",` <span class="obadge${m.status==="trashed"?" gone":""}">${esc(state)}</span>`);
+    if(m.status!=="inbox"&&!split)continue;
+    const btn=document.createElement("button");btn.type="button";btn.className="olinkmail";
+    if(split)btn.dataset.shipMail=String(m.id);else btn.dataset.dueOpen=String(m.id);
+    btn.title=split?"Read this email on the right":"Open this email in your inbox";btn.textContent=b.textContent;
     b.replaceChildren(btn);
   }
 }
@@ -4275,13 +4328,16 @@ function renderShipPage(){
   const box=$("shipPage"),os=shipData.orders||[];
   const tn=shipTrackable().length;
   const head='<div class="tp-head"><h3>Shipping</h3></div><p class="sp-sub">Your online orders, followed from the emails you get. Each new email about the same order updates its card.</p>'+shipAddHtml()+(tn>1?`<div class="oact" style="margin:0 0 12px"><button class="obtn blue" type="button" data-ship-trackall>Track all (${Math.min(tn,10)})</button><span class="meta">Opens each parcel on its way in its carrier's own page. If only one opens, allow pop-ups for Enveliq.</span></div>`:"");
+  shipSel=new Set([...shipSel].filter(id=>os.some(o=>o.id===id)));if(shipSel.size<2)shipMergeAsk=false;
+  if(shipMenu&&!os.some(o=>o.id===shipMenu))shipMenu=null;
+  const selAll=os.length>1?`<label class="shipall"><input class="check" type="checkbox" data-ship-all${shipSel.size===os.length?" checked":""}> Select all</label>`:"";
   if(!os.length){box.innerHTML=head+'<div class="focus-card"><div class="focus-big">No orders to follow</div><div class="focus-sub">When an email says you ordered something, it shows up here by itself.</div></div>'+carriersBox();return}
   // Orders you have marked "You got it" move to their own list under the parcels still to come, folded away so they do not fill the page.
   const got=os.filter(o=>o.delivered_at&&o.ack),active=os.filter(o=>!(o.delivered_at&&o.ack));
   const recv=got.length?`<h4 class="wgroup wclosed-head"><button class="wclosed-toggle" type="button" data-ship-recv-toggle aria-expanded="${shipRecvOpen}">Received · ${got.length}<span class="wclosed-arrow" aria-hidden="true">${ICON_FOLD}</span></button></h4>`+(shipRecvOpen?got.map(orderCard).join(""):""):"";
   const none=!active.length?'<div class="focus-card"><div class="focus-big">Nothing on its way</div><div class="focus-sub">Parcels you have not marked as received show here.</div></div>':"";
-  box.innerHTML=head+active.map(orderCard).join("")+none+recv+'<p class="sp-sub">Arrived orders stay here for 14 days, then are forgotten. "Track" opens the carrier\'s own page in a new tab. Enveliq never contacts the carrier.</p>'+carriersBox();
-  linkShipEmails();
+  box.innerHTML=head+selAll+shipBarHtml(os)+active.map(orderCard).join("")+none+recv+'<p class="sp-sub">Arrived orders stay here for 14 days, then are forgotten. "Track" opens the carrier\'s own page in a new tab. Enveliq never contacts the carrier.</p>'+carriersBox();
+  linkShipEmails();placeShipMenu();
 }
 function renderShipHome(){
   const box=$("shipBars"),due=shipOn()?(shipData.orders||[]).filter(o=>o.needs_confirm):[];
@@ -5002,6 +5058,9 @@ function render(){
   }
   // Searching all my mail with the reading panel on the right: even when nothing in this view matches, the panel is there beside the list, so a found email opens in it like in every other view.
   if(!rows.length&&findUi.open&&lay()==="right"&&!["sent","folders","tags","drafts","tasks","shipping","waiting","subscriptions","trips","junk","cleanup"].includes(filter))dockHtml=`<section class="reading" aria-label="Selected email"><div class="empty">Pick an email from the search results to read it here.</div></section>`;
+  // Shipping with the reading panel on the right: the shipments are on the left, and the panel on the right shows the matched email you opened (or waits for you to open one).
+  if(filter!=="shipping")shipMailId=null;
+  else if(shipSplit()){const sm=shipMailId!=null?data.find(x=>String(x.id)===String(shipMailId)&&x.owner===currentUser.id):null;dockHtml=sm?`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(sm.subject)}</h3><div class="rmeta">${esc(sm.sender)} · ${esc(sm.time)}</div>${copyMailButtons(sm)}</header>${quiet(sm,"detail")}</section>`:`<section class="reading enveliq-empty" aria-label="No email selected"><div class="empty">Open one of a shipment's matched emails to read it here.</div></section>`}
   // The highlighted email is scrolled into view only when it has just changed. A refresh in the background redraws the list too, and it must
   // leave the list exactly where the person scrolled it to (it used to pull the list back up to the highlighted email after a few seconds).
   const currentChanged=lastScrolledTo!==`${filter}|${paneId}`;lastScrolledTo=`${filter}|${paneId}`;
@@ -7008,6 +7067,17 @@ document.addEventListener("click",e=>{
   if(e.target.closest("[data-trip-go]")){filter="trips";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="trips"));render();return}
   const sb=e.target.closest("[data-sub]");if(sb){subAct(sb.dataset.subId,sb.dataset.sub);return}
   if(e.target.closest("[data-sub-go]")){filter="subscriptions";document.querySelectorAll(".nav[data-filter]").forEach(x=>x.classList.toggle("active",x.dataset.filter==="subscriptions"));render();return}
+  if(shipMenu&&!e.target.closest(".omenu,[data-ship-menu]")){shipMenu=null;render()}
+  {const sm=e.target.closest("[data-ship-mail]");if(sm){const m=data.find(x=>String(x.id)===sm.dataset.shipMail);shipMailId=m?m.id:null;if(m)paneId=m.id;render();return}}
+  {const dm=e.target.closest("[data-ship-menu]");if(dm){const id=dm.dataset.shipMenu;shipMenu=shipMenu===id?null:id;render();const b=document.querySelector(`.omenu button`);if(shipMenu&&b)b.focus();return}}
+  {const ss=e.target.closest("[data-ship-set]");if(ss){shipSetOne(ss.dataset.shipId,ss.dataset.shipSet);return}}
+  if(e.target.closest(".omenu [data-ship-note],.omenu [data-ship]"))shipMenu=null;
+  {const bk=e.target.closest("[data-ship-bulk]");if(bk){const ids=[...shipSel];shipBulk("bulk",{ids,status:bk.dataset.shipBulk},`Marked ${ids.length} as ${(SHIP_STEPS.find(x=>x[0]===bk.dataset.shipBulk)||[0,""])[1].toLowerCase()}.`);return}}
+  if(e.target.closest("[data-ship-bulk-no]")){const ids=[...shipSel];shipBulk("bulk",{ids,action:"not_order"},`Removed ${ids.length}. Enveliq will not file those emails again.`);return}
+  if(e.target.closest("[data-ship-clear]")){shipSel.clear();shipMergeAsk=false;render();return}
+  if(e.target.closest("[data-ship-merge]")){if(shipSel.size>=2){shipMergeAsk=true;render()}return}
+  if(e.target.closest("[data-ship-merge-no]")){shipMergeAsk=false;render();return}
+  if(e.target.closest("[data-ship-merge-yes]")){shipBulkMerge();return}
   const sh=e.target.closest("[data-ship]");if(sh){shipAct(sh.dataset.shipId,sh.dataset.ship);return}
   {const t=e.target.closest("[data-ship-copy],[data-ship-trackall],[data-carrier-add],[data-carriers-toggle],[data-carrier-save],[data-carrier-remove],[data-carrier-edit],[data-carrier-cancel]");
    if(t){
