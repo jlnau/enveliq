@@ -164,6 +164,8 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.locator("[data-ship-open]").nth(1).click();
   check("the matched emails open on demand", (await page.locator("#shipPage .oevents li").count()) === 3 && (await page.locator("#shipPage .oevents").innerText()).includes("Thanks for your order"));
   await shot(page, "ship-page");
+  await page.evaluate(() => { const t = document.querySelector("#shipPage .otitle"); if (t) t.insertAdjacentHTML("beforeend", '<span class="onum">A very long list of items that goes on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on</span>'); });
+  check("the three dots stay in the top right corner of every card, however long the text is", await page.evaluate(() => [...document.querySelectorAll("#shipPage .ocard")].every((c) => { const d = c.querySelector(".odots"); if (!d) return true; const a = c.getBoundingClientRect(), b = d.getBoundingClientRect(); return b.top - a.top <= 16 && a.right - b.right <= 16; })));
   check("the browser's own hash and this page's agree (a known value)", await page.evaluate(() => sha256Hex("a1|m1").slice(0, 16)) === "a7fa9296c2cfd7f1");
   check("the matched email that is still in the inbox is a link; the others are plain text", (await page.locator("#shipPage .oevents .olinkmail").count()) === 1 && (await page.locator("#shipPage .oevents li").count()) === 3);
   check("the total is shown beside the items", (await page.locator("#shipPage").innerText()).includes("3 books · $54.90"));

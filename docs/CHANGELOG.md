@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Fix: the three dots on a shipment stay in the top right corner.** With long item lists they used to drop onto the next line. They now sit in the corner of the card whatever the text says. Touches `prototype/index.html`, `scripts/check_shipping.mjs`.
+
 **Fix: Waiting no longer says an email is gone when it could not look.** If your mailbox does not answer when the Waiting page looks for a sent email, the page now says the mailbox did not answer and to press Refresh (with the reason), instead of saying the email is no longer in Sent. Enveliq also now looks at your newest sent emails first, which finds a Waiting email in one step. Touches `prototype/index.html`, `backend/mail/folders.py`, `scripts/check_waiting.mjs`.
 
 **Fix: the inbox no longer waits for "read my recent mail".** When "Include read mail" is on, the page asked the mailbox for the last 60 days before showing anything, and waited up to 25 seconds if the mailbox was busy (then showed "Your mailbox is busy"). That now runs behind the scenes: your emails show at once and the list refreshes when it is done. Pressing refresh again does not start it again within 5 minutes. Touches `prototype/index.html`, `scripts/check_boot_fast.mjs`.
