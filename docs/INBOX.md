@@ -267,7 +267,7 @@ Every email has a **Task** button beside Reply and Snooze (and in the full scree
 
 Once you press **Yes, I've got it** on a parcel, it leaves the main list and moves into its own list under the parcels still to come, called **Received**. The list is folded away to keep the page short: press **Received · N** to show it and again to fold it. Inside, each parcel still says "You got it" and keeps **Undo**, which puts it back with the others. Parcels that have arrived but that you have not confirmed yet stay in the main list. Arrived parcels are still forgotten after 14 days. Nothing is stored differently: this only changes how the page is laid out. If every parcel is received, the page says "Nothing on its way".
 
-Enveliq does not take "delivered" on the AI's word alone. If an email's subject says the order was placed ("Ordered: ...", "Thanks for your order") or that a shipment is on its way, and does not say it arrived or was delivered, it is filed as ordered or shipped, so "Did it arrive?" never appears before anything has been sent. An order wrongly marked as delivered can be put right with **Not yet**.
+Enveliq does not take "delivered" on the AI's word alone. If an email's subject says the order was placed ("Ordered: ...", "Thanks for your order") or that a shipment is on its way, and does not say it arrived or was delivered, it is filed as ordered or shipped, so "Did it arrive?" never appears before anything has been sent. The email text is checked too (read while it is summarised, never stored): "arriving soon", "will be delivered shortly", "a few stops away" and "out for delivery" mean Out for delivery, not Delivered. An order wrongly marked as delivered can be put right with **Not yet**.
 
 ## Adding a parcel by hand (Shipping)
 
