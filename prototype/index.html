@@ -7542,7 +7542,7 @@ function realTime(sec){
   return d.toLocaleDateString(undefined,{day:"numeric",month:"short",year:d.getFullYear()===new Date().getFullYear()?undefined:"numeric"});
 }
 const realIds=new Map();let realNextId=1;
-let bootPaint=0;
+let bootPaint=0,leavingPage=false;for(const ev of ["beforeunload","pagehide"])addEventListener(ev,()=>{leavingPage=true});      // a refresh cancels requests in flight: that is not an error to show or to forget
 async function loadRealMail(me){
   const list=await secureBackendRequest("/api/v1/accounts",{method:"GET",headers:{}});
   const bridges=list.filter(a=>!a.check_address&&(a.auth_method==="proton_bridge"||a.auth_method==="imap")&&a.owner_user_id===me.id);
@@ -7558,9 +7558,16 @@ async function loadRealMail(me){
     enFetchOpened(),dgLoad()]);
   whLoad().then(()=>render()).catch(()=>{});
   const wantAll=!!(feat.all_mail&&allMail);
-  if(wantAll&&Date.now()-recentAt>300000){
-    recentAt=Date.now();
-    for(const a of bridges){try{await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(a.id)}/inbox/recent`,{method:"POST",body:"{}"})}catch(er){recentAt=0;toast(`Could not read your recent mail: ${er.message}`,5000)}}
+  // Reading the last 60 days from the mailbox can take a while (and waits if the mailbox is busy), so it never holds the page up: the emails already
+  // saved show straight away, this runs behind them, and the list refreshes when it has finished. Pressing refresh again does not start it again within 5 minutes.
+  let lastRecent=0;try{lastRecent=Number(localStorage.getItem("enveliq-recent-at"))||0}catch{}
+  if(wantAll&&Date.now()-Math.max(recentAt,lastRecent)>300000){
+    recentAt=Date.now();try{localStorage.setItem("enveliq-recent-at",String(recentAt))}catch{}
+    (async()=>{
+      let ok=false;
+      for(const a of bridges){try{await secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(a.id)}/inbox/recent`,{method:"POST",body:"{}"});ok=true}catch(er){if(leavingPage)return;recentAt=0;try{localStorage.removeItem("enveliq-recent-at")}catch{}toast(`Could not read your recent mail: ${er.message}`,5000)}}
+      if(ok){try{await loadRealMail(me)}catch{}render()}
+    })();
   }
   document.body.classList.toggle("allmail",wantAll);
   for(const a of bridges){
@@ -7736,7 +7743,7 @@ async function syncRealMail(me){
         }catch(er){aiProblem=er.message}
       }
     }
-    recentAt=0;await loadRealMail(me);noteSynced();render();
+    recentAt=0;try{localStorage.removeItem("enveliq-recent-at")}catch{}await loadRealMail(me);noteSynced();render();
     const parts=[added?`${added} new email${added===1?"":"s"}`:"Nothing new"];
     if(removed)parts.push(`${removed} removed (handled elsewhere)`);
     if(summarised)parts.push(`${summarised} summarised`);

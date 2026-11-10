@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Fix: the inbox no longer waits for "read my recent mail".** When "Include read mail" is on, the page asked the mailbox for the last 60 days before showing anything, and waited up to 25 seconds if the mailbox was busy (then showed "Your mailbox is busy"). That now runs behind the scenes: your emails show at once and the list refreshes when it is done. Pressing refresh again does not start it again within 5 minutes. Touches `prototype/index.html`, `scripts/check_boot_fast.mjs`.
+
 **Fix: instant check no longer re-checks again and again.** A mailbox with "Check for new mail instantly" on now counts only a bigger number of emails as new mail, and wakes the check at most once every 15 seconds. Before, any "something changed" line from the server could start a check, which could keep the mailbox "busy". Touches `backend/mail/instant.py`.
 
 **Faster start.** When the page opens, everything it needs is now asked for at the same time instead of one thing after another, and the emails show as soon as they arrive. Tasks, shipping, waiting and the rest fill in a moment later, so one slow part can no longer hold the whole inbox up. The Waiting page's lookup of sent emails is also limited to one search per email, a small scan and 20 seconds. Touches `prototype/index.html`, `backend/mail/folders.py`.
