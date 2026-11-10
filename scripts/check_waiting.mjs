@@ -52,6 +52,7 @@ function makeServer(opts = {}) {
       return json(200, { rows: [row(7, "Kim", "kim@example.invalid", "Invoice 88", 1), row(6, "Sam", "sam@example.invalid", "Thanks for lunch", 2), row(5, "Dana", "dana@example.invalid", "Quote for the fence", 3)], total: 3, more: false, now: Date.now() / 1000 });
     }
     if (p === "/api/v1/accounts/a1/waiting-mail") {
+      if (globalThis.__failWaitMail) return json(504, { detail: "Your mailbox took too long to answer." });
       const r = (tok, name, address, subject) => ({ token: tok, from_name: "", from_address: "", to_name: name, to_address: address, to_more: 0, subject, date: now - 3 * day, has_files: false, folder: "Sent" });
       return json(200, { rows: { ["w" + "a".repeat(23)]: r("t5", "Dana", "dana@example.invalid", "Quote for the fence"), ["w" + "b".repeat(23)]: r("t6", "Sam", "sam@example.invalid", "Lunch on Thursday?") } });
     }
@@ -124,6 +125,17 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await shot(page, "wait-page");
   await rows().filter({ hasText: "Evil" }).click();
   check("a note whose email is no longer in Sent still opens, with its buttons and a plain message", (await page.locator("#fdrPane .wait-bar").count()) === 1 && (await page.locator("#fdrPane").innerText()).includes("no longer in your Sent folder"));
+
+  globalThis.__failWaitMail = true;
+  await page.locator("#fdrRefresh").click();
+  await page.waitForFunction(() => !document.getElementById("fdrRefresh").disabled);
+  await rows().filter({ hasText: "Evil" }).click();
+  await page.waitForSelector("#fdrPane .wait-bar");
+  const failText = await page.locator("#fdrPane").innerText();
+  check("when the mailbox does not answer, the page says so and does NOT claim the email is gone", failText.includes("did not answer just now") && !failText.includes("no longer in your Sent folder"));
+  globalThis.__failWaitMail = false;
+  await page.locator("#fdrRefresh").click();
+  await page.waitForFunction(() => !document.getElementById("fdrRefresh").disabled);
 
   await page.selectOption("#waitDays", "5");
   await page.waitForFunction(() => document.querySelector("#waitDays").value === "5" && document.querySelectorAll(".frow.wrow").length === 4);

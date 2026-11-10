@@ -9144,7 +9144,7 @@ async function openFolder(aid,f,offset){
   }catch(er){status.textContent=er.message||"Could not open that folder."}
 }
 // ---- Waiting for reply: the Folders page again. Your sent emails you are waiting on are the list; the email opens in the same reading view. ----
-let waitMail={},waitSig="",waitOpen="",waitToken=0;
+let waitFail={},waitMail={},waitSig="",waitOpen="",waitToken=0;
 async function loadWaitingPage(){
   const mine=++waitToken,status=$("fdrStatus");
   $("fdrBox").hidden=true;$("folderSide").hidden=true;$("tagSide").hidden=true;
@@ -9153,7 +9153,7 @@ async function loadWaitingPage(){
   try{
     await fetchWaiting();
     const ids=[...new Set((waitData.notes||[]).map(n=>n.account_id).filter(Boolean))];
-    const got=await Promise.all(ids.map(a=>secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(a)}/waiting-mail`,{method:"GET",headers:{}}).then(r=>[a,r.rows||{}]).catch(()=>[a,{}])));
+    const got=await Promise.all(ids.map(a=>secureBackendRequest(`/api/v1/accounts/${encodeURIComponent(a)}/waiting-mail`,{method:"GET",headers:{}}).then(r=>{delete waitFail[a];return[a,r.rows||{}]}).catch(er=>{waitFail[a]=(er&&er.message)||"no answer";return[a,{}]})));
     if(mine!==waitToken||filter!=="waiting")return;
     waitMail={};for(const [a,rows] of got)for(const [id,row] of Object.entries(rows))waitMail[id]={...row,account:a};
   }catch(er){status.textContent=er.message||"Could not read your waiting list.";$("fdrRefresh").disabled=false;return}
@@ -9206,7 +9206,7 @@ function paintWaitingPage(force){
       list.querySelectorAll(".frow.on").forEach(x=>x.classList.remove("on"));row.classList.add("on");
       const nav=(d,probe)=>{const rs=fdrRowsNow(),t=rs[rs.indexOf(row)+d];if(probe)return !!t;if(t&&t._open){t._open();t.scrollIntoView({block:"nearest"})}};
       const ctx={nav,folderLabel:"Sent"};
-      if(!it){const h=$("fdrPane");h.replaceChildren(bar());const p=document.createElement("p");p.className="fdr-empty";p.textContent="This email is no longer in your Sent folder, so it cannot be shown here.";h.append(p);return}
+      if(!it){const h=$("fdrPane");h.replaceChildren(bar());const p=document.createElement("p");p.className="fdr-empty";p.textContent=waitFail[n.account_id]?`Your mailbox did not answer just now, so this email cannot be shown yet (${waitFail[n.account_id]}). Press Refresh to try again.`:"This email is no longer in your Sent folder, so it cannot be shown here.";h.append(p);return}
       if(L==="right"||L==="bottom"){const h=$("fdrPane");h.replaceChildren(bar());const inner=document.createElement("div");h.append(inner);liveShow(it,{...ctx,host:inner});if(L==="bottom")h.scrollIntoView({block:"nearest"})}
       else if(L==="list"){const had=row.nextElementSibling&&row.nextElementSibling.classList.contains("fdr-inline");list.querySelectorAll(".fdr-inline").forEach(x=>x.remove());if(had){row.classList.remove("on");return}const host=document.createElement("div");host.className="fdr-inline";host.append(bar());const inner=document.createElement("div");host.append(inner);row.after(host);liveShow(it,{...ctx,host:inner,nav:null})}
       else liveShow(it,{...ctx,overlay:true});
