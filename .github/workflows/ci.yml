@@ -241,6 +241,8 @@ jobs:
         run: node scripts/check_list_scroll.mjs
       - name: Searching your tasks by typing part of their words (made-up tasks, no server)
         run: node scripts/check_task_search.mjs
+      - name: Tasks page layout, Calendar pop-up and options (made-up tasks, no server)
+        run: node scripts/check_tasks_layout.mjs
       - name: On a phone an open email is never wider than the screen, so the page does not look zoomed in (made-up mail, no server)
         run: node scripts/check_phone_width.mjs
       - name: No flash of the old layout on a quick refresh (page with its script switched off)

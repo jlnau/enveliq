@@ -269,6 +269,16 @@ Once you press **Yes, I've got it** on a parcel, it leaves the main list and mov
 
 Enveliq does not take "delivered" on the AI's word alone. If an email's subject says the order was placed ("Ordered: ...", "Thanks for your order") or that a shipment is on its way, and does not say it arrived or was delivered, it is filed as ordered or shipped, so "Did it arrive?" never appears before anything has been sent. The email text is checked too (read while it is summarised, never stored): "arriving soon", "will be delivered shortly", "a few stops away" and "out for delivery" mean Out for delivery, not Delivered. An order wrongly marked as delivered can be put right with **Not yet**.
 
+## Where a parcel is up to, and changing it (Shipping)
+
+Each step has a rule, whatever the AI said: **Delivered** only when the email says the parcel has been delivered; **Out for delivery** only when it says so in so many words (or that the courier is a few stops away or arriving today); **Ordered** only when nothing in the email is about shipping; everything in between is **Shipped** ("on its way", "arriving soon", tracking details). The newest email decides, even if that moves a parcel back (an email read wrongly as "out for delivery" is put right by the next one). A later email that only confirms the order, such as an invoice, never moves a parcel back to Ordered.
+
+Every shipment has a **three-dot menu**: choose any of the four steps by hand, add a note, or say "This is not an order" (a parcel you typed in yourself has Remove instead). A step you set by hand stands until an email newer than your change arrives.
+
+Every shipment also has a **checkbox**. Tick one or more and a bar offers the same four steps for all of them, **This is not an order**, and, with two or more ticked, **Merge**. Merge joins shipments that are really one parcel (for example the shop's email and the courier's email did not match up): it asks first, keeps everything from both (emails, order numbers, tracking numbers), and from then on an email from the shop or the courier goes to the joined shipment.
+
+With the reading panel on the right, Shipping sits on the left and the panel on the right waits empty; pressing a matched email shows it there. A matched email that has been deleted, archived or marked as read says so on its line, and one that is gone completely says "Deleted or removed" (the shipment stays, as before).
+
 ## Adding a parcel by hand (Shipping)
 
 At the top of the Shipping page, **Add a parcel** opens a small form for a parcel that did not start from an email: **Who is it from?** (required), **Tracking number** (if you have one) and **Where is it up to?** (Waiting to be shipped, Shipped, Out for delivery or Delivered). The parcel appears as a card like the others, marked "Waiting to be shipped" and so on. Because no emails follow it, you move it along yourself with the **Where is it up to?** list on its card, and **Remove** takes it off the list (nothing is remembered about it afterwards). A parcel you mark Delivered is not asked "did it arrive?". A tracking number must be 8 to 40 letters or digits, and the same number cannot be added twice. There is no carrier box, so no Track button is offered for these cards; the number is shown with a **Copy number** button. Server: `POST /api/v1/me/shipping`, `PUT /api/v1/me/shipping/<id>/status` and the `remove` action (`backend/mail/shipping.py`, `shipping_routes.py`). Checks: `tests/test_shipping.py` and `scripts/check_shipping.mjs`.
@@ -309,7 +319,14 @@ The search box clears by itself when you choose something from the menu (My inbo
 
 ## Searching your tasks
 
-The Tasks page opens on the **List** view the first time (Focus and Calendar are one tap away, and Enveliq remembers the one you choose on that device). The Tasks page has a **Search your tasks** box under its title. Type part of a task's words (its title, its details or who it is from; capital letters do not matter) and the page lists only the tasks that have them, open ones under **To do** and finished ones under **Done**, with a line saying how many match. Clear the box to get your usual view back. It works in the Focus, List and Calendar views. Browser check: `scripts/check_task_search.mjs`.
+The Tasks page is one list, laid out like every other page. With **Reading pane on the right**, the tasks are on the left and the email of the task you open appears on the right (before you pick one, the panel says so). In other layouts, opening a task takes you to its email in your inbox, as before. There is no Focus view any more.
+
+Under the title are **Calendar**, **Options** and **Reminder settings**.
+
+- **Calendar** opens a full-page pop-up with the month grid and the tasks of the day you pick. Close it with **Close** or Escape. Choosing an email in it closes the pop-up and shows that email (on the right when the reading panel is on the right). On a phone it fills the screen with Close fixed at the top.
+- **Options** shows: **Show finished tasks**, **Show tasks that are not due yet** (when off, a line says how many are hidden) and **Order** (Due soonest, Newest email first, A to Z). Your choices are remembered on that device.
+
+The Tasks page has a **Search your tasks** box under its title. Type part of a task's words (its title, its details or who it is from; capital letters do not matter) and the page lists only the tasks that have them, open ones under **To do** and finished ones under **Done**, with a line saying how many match. Clear the box to get your usual view back. Browser checks: `scripts/check_task_search.mjs`, `scripts/check_tasks_layout.mjs`.
 
 ## Forms on a phone
 

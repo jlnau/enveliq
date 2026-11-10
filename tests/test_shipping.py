@@ -42,8 +42,14 @@ def ship(kind="order_confirmed", **kw):
     return {"kind": kind, "shop": "Brightwater Books", "order_number": "BB-5509", "tracking_number": None, "carrier": None, "expected": None, "items": "3 books", **kw}
 
 
-def seen(book, n, shipment, subject="Hello", at=NOW - 1000, user="u1", account="a1", text=""):
-    return book.observe(user, account, f"m{n}", subject, at, shipment, text=text)
+_SAYS = {"delivered": "Your parcel has been delivered.", "out_for_delivery": "Your parcel is out for delivery today.", "shipped": "Your parcel has shipped.",
+         "delayed": "Your parcel has shipped but is delayed.", "order_confirmed": "Thanks, we have your order."}
+
+
+def seen(book, n, shipment, subject="Hello", at=NOW - 1000, user="u1", account="a1", text=None):
+    """The email text says what the AI said it says, unless the test gives other text."""
+    kind = shipment.get("kind") if isinstance(shipment, dict) else None
+    return book.observe(user, account, f"m{n}", subject, at, shipment, text=_SAYS.get(kind, "") if text is None else text)
 
 
 # ---------- keys, cleaning, links ----------
@@ -84,8 +90,8 @@ def test_one_order_from_several_emails(book):
 
 
 def test_an_order_or_shipped_email_the_ai_called_delivered_is_not_a_delivery(book):
-    assert seen(book, 1, ship("delivered", order_number="249-1", shop="Amazon.com.au"), 'Ordered: "Snorkeling Gear for Adult..."', NOW - 5000)
-    assert seen(book, 2, ship("delivered", order_number="TMS_1", shop="The Man Shake"), "A shipment from order TMS_1 is on the way", NOW - 4000)
+    assert seen(book, 1, ship("delivered", order_number="249-1", shop="Amazon.com.au"), 'Ordered: "Snorkeling Gear for Adult..."', NOW - 5000, text="Thanks for your order.")
+    assert seen(book, 2, ship("delivered", order_number="TMS_1", shop="The Man Shake"), "A shipment from order TMS_1 is on the way", NOW - 4000, text="Your order is on the way.")
     rows = {r["order_number"]: r for r in book.view("u1")["orders"]}
     assert rows["249-1"]["status"] == "ordered" and not rows["249-1"]["delivered_at"] and not rows["249-1"]["needs_confirm"]
     assert rows["TMS_1"]["status"] == "shipped" and not rows["TMS_1"]["needs_confirm"]
@@ -502,17 +508,46 @@ def test_a_tracking_number_is_checked_and_not_added_twice(book):
     assert len(book.view("u1")["orders"]) == 1
 
 
-def test_an_order_from_an_email_is_not_changed_by_hand(book):
-    assert seen(book, 1, ship("shipped"), "On its way", NOW - 1000)
+def test_any_order_can_be_changed_by_hand_and_a_newer_email_still_wins(book):
+    assert seen(book, 1, ship("shipped"), "On its way", NOW - 3000)
     oid = book.view("u1")["orders"][0]["id"]
-    with pytest.raises(ValueError, match="not by hand"):
-        book.set_status("u1", oid, "delivered")
-    with pytest.raises(ValueError, match="not by hand"):
-        book.act("u1", oid, "remove")                                            # the emails decide, and "Not an order" is the way to drop it
+    row = book.set_status("u1", oid, "out_for_delivery")["orders"][0]
+    assert row["status"] == "out_for_delivery" and row["status_manual"]
+    assert seen(book, 2, ship("shipped"), "Update", NOW - 9000)                    # an email older than the change does not undo it
+    assert book.view("u1")["orders"][0]["status"] == "out_for_delivery"
+    book.clock = lambda: NOW + 100
+    assert seen(book, 3, ship("shipped"), "Update", NOW + 50)                       # a newer one does
+    row = book.view("u1")["orders"][0]
+    assert row["status"] == "shipped" and not row["status_manual"]
+    with pytest.raises(ValueError, match="bad status"):
+        book.set_status("u1", oid, "lost")
     with pytest.raises(KeyError):
-        book.set_status("u1", "s" + "0" * 23, "shipped")
-    with pytest.raises(KeyError):
-        book.set_status("u2", oid, "shipped")                                    # someone else's order is not found
+        book.set_status("u1", "snope", "shipped")
+
+
+def test_the_newest_email_decides_so_a_wrong_step_can_go_back(book):
+    assert seen(book, 1, ship("out_for_delivery"), "Update", NOW - 5000, text="Your parcel is out for delivery.")
+    assert book.view("u1")["orders"][0]["status"] == "out_for_delivery"
+    assert seen(book, 2, ship("shipped"), "Shipped: your order", NOW - 4000, text="Your order has shipped.")
+    assert book.view("u1")["orders"][0]["status"] == "shipped"
+
+
+def test_a_later_order_confirmation_never_moves_a_parcel_back_to_ordered(book):
+    assert seen(book, 1, ship("shipped"), "Shipped", NOW - 5000)
+    assert seen(book, 2, ship("order_confirmed"), "Your invoice", NOW - 4000, text="Thanks for your order. Invoice attached.")
+    assert book.view("u1")["orders"][0]["status"] == "shipped"
+
+
+def test_each_step_has_its_rule(book):
+    # "On the way" is never "out for delivery"; "arriving soon" is only shipped; "will be delivered" is not delivered.
+    assert seen(book, 1, ship("out_for_delivery", order_number="AA-1001"), "Your order is on its way", NOW - 900, text="Your order is arriving soon and will be delivered shortly.")
+    assert book.view("u1")["orders"][0]["status"] == "shipped"
+    assert seen(book, 2, ship("delivered", order_number="BB-2002"), "DHL On Demand Delivery", NOW - 800, text="Track it until it is delivered.")
+    assert seen(book, 3, ship("order_confirmed", order_number="CC-3003"), "Order confirmed", NOW - 700, text="Thanks for your order.")
+    rows = {r["order_number"]: r["status"] for r in book.view("u1")["orders"]}
+    assert rows == {"AA-1001": "shipped", "BB-2002": "shipped", "CC-3003": "ordered"}
+    assert seen(book, 4, ship("order_confirmed", order_number="DD-4004"), "Your order has shipped", NOW - 600, text="Thanks for your order. It has shipped.")
+    assert {r["order_number"]: r["status"] for r in book.view("u1")["orders"]}["DD-4004"] == "shipped"
 
 
 def test_a_hand_order_can_be_matched_to_nothing_else_and_kept_apart_per_person(book):
@@ -559,3 +594,52 @@ def test_a_later_real_delivery_email_with_the_same_generic_subject_still_counts(
     assert seen(book, 2, ship("delivered", order_number="8917076210", shop="DHL Express"), "DHL On Demand Delivery", NOW - 500,
                 text="Your shipment was delivered today at 9:23 am and signed for.")
     assert book.view("u1")["orders"][0]["needs_confirm"]
+
+
+# ---------- ticking several, and joining two that are really one ----------
+
+def test_two_orders_that_are_one_parcel_can_be_merged_and_later_emails_find_it(book):
+    assert seen(book, 1, ship("order_confirmed", order_number="AB-123456", shop="Brightwater Books", items="3 books"), "Order confirmed", NOW - 9000)
+    assert seen(book, 2, ship("shipped", order_number=None, tracking_number="ZX99887766", shop="Speedy Couriers", carrier="Speedy"), "Parcel on its way", NOW - 8000)
+    rows = book.view("u1")["orders"]
+    assert len(rows) == 2
+    one = book.merge("u1", [r["id"] for r in rows])["orders"]
+    assert len(one) == 1
+    row = one[0]
+    assert row["order_number"] == "AB-123456" and row["tracking"] == "ZX99887766" and row["status"] == "shipped" and len(row["events"]) == 2
+    # a later email from the shop, or from the courier, joins the merged order
+    assert seen(book, 3, ship("shipped", order_number="AB-123456"), "Shipped", NOW - 100)
+    assert seen(book, 4, ship("delivered", order_number=None, tracking_number="ZX99887766", shop="Speedy Couriers"), "Parcel update", NOW - 50)
+    rows = book.view("u1")["orders"]
+    assert len(rows) == 1 and rows[0]["status"] == "delivered" and len(rows[0]["events"]) == 4
+
+
+def test_merge_needs_two_and_keeps_where_it_is_up_to(book):
+    assert seen(book, 1, ship("order_confirmed", order_number="AB-123456"), "Order confirmed", NOW - 300)
+    assert seen(book, 2, ship("shipped", order_number="CD-654321", shop="Other Shop"), "On its way", NOW - 9000)
+    ids = [r["id"] for r in book.view("u1")["orders"]]
+    with pytest.raises(ValueError, match="merge"):
+        book.merge("u1", ids[:1])
+    with pytest.raises(ValueError, match="merge"):
+        book.merge("u1", [ids[0], ids[0]])
+    row = book.merge("u1", ids)["orders"][0]
+    assert row["status"] == "shipped"                       # the newer "ordered" does not send a shipped parcel back
+
+
+def test_the_bulk_and_merge_routes(env):
+    appm, client, bridge, _ = env
+    ids = []
+    for shop in ("Corner Hardware", "Fix It Hardware", "Third Shop"):
+        r = client.post("/api/v1/me/shipping", json={"shop": shop, "status": "ordered"})
+        assert r.status_code == 200
+        ids.append(next(x["id"] for x in r.json()["orders"] if x["shop"] == shop))
+    r = client.post("/api/v1/me/shipping/bulk", json={"ids": ids[:2], "status": "delivered"})
+    assert r.status_code == 200 and {x["status"] for x in r.json()["orders"] if x["id"] in ids[:2]} == {"delivered"}
+    assert client.post("/api/v1/me/shipping/bulk", json={"ids": ids, "status": "lost"}).status_code == 422
+    assert client.post("/api/v1/me/shipping/bulk", json={"ids": ids}).status_code == 422
+    assert client.post("/api/v1/me/shipping/bulk", json={"ids": ["nope"], "status": "shipped"}).status_code == 422
+    assert client.post("/api/v1/me/shipping/merge", json={"ids": ids[:1]}).status_code == 422
+    r = client.post("/api/v1/me/shipping/merge", json={"ids": ids[:2]})
+    assert r.status_code == 200 and len(r.json()["orders"]) == 2 and r.headers["cache-control"] == "no-store"
+    r = client.post("/api/v1/me/shipping/bulk", json={"ids": ids[2:], "action": "not_order"})
+    assert r.status_code == 200 and len(r.json()["orders"]) == 1
