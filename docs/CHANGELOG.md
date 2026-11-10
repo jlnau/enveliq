@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Tasks: the same layout as every other page, a Calendar pop-up and options.** With the reading panel on the right, Tasks now has the list on the left and the email of the task you open on the right. The Focus view is gone. The Calendar is a full-page pop-up (Close or Escape to leave it; choosing an email there takes you back to the list with that email open). A new **Options** row lets you hide finished tasks, hide tasks that are not due yet, and choose the order. Touches `prototype/index.html`, `docs/INBOX.md`, `scripts/check_tasks_layout.mjs`.
+
 **Fix: Waiting finds the emails you sent.** The Waiting page sometimes said "This email is no longer in your Sent folder" when it was there. If the mailbox's own search misses it, Enveliq now looks through your newest sent emails itself, so it opens as it should.
 
 **Shipping: rules for each step, a three-dot menu, checkboxes and Merge.** Delivered, Out for delivery and Ordered are now only shown when the email really says so; everything else is Shipped, and the newest email decides, so a wrong step corrects itself. Every shipment has a three-dot menu to set its step by hand (it stands until a newer email arrives), and a checkbox: tick several to set the same step, mark them "not an order", or **Merge** two that are really one parcel so later emails from the shop and the courier join it. With the reading panel on the right, Shipping now has the panel beside it and a matched email opens there; matched emails you deleted say "Deleted". Touches `backend/mail/shipping.py`, `shipping_routes.py`, `llm.py`, `prototype/index.html`, `docs/INBOX.md`, `scripts/check_shipping.mjs`, `tests/test_shipping.py`.

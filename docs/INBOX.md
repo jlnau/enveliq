@@ -319,7 +319,14 @@ The search box clears by itself when you choose something from the menu (My inbo
 
 ## Searching your tasks
 
-The Tasks page opens on the **List** view the first time (Focus and Calendar are one tap away, and Enveliq remembers the one you choose on that device). The Tasks page has a **Search your tasks** box under its title. Type part of a task's words (its title, its details or who it is from; capital letters do not matter) and the page lists only the tasks that have them, open ones under **To do** and finished ones under **Done**, with a line saying how many match. Clear the box to get your usual view back. It works in the Focus, List and Calendar views. Browser check: `scripts/check_task_search.mjs`.
+The Tasks page is one list, laid out like every other page. With **Reading pane on the right**, the tasks are on the left and the email of the task you open appears on the right (before you pick one, the panel says so). In other layouts, opening a task takes you to its email in your inbox, as before. There is no Focus view any more.
+
+Under the title are **Calendar**, **Options** and **Reminder settings**.
+
+- **Calendar** opens a full-page pop-up with the month grid and the tasks of the day you pick. Close it with **Close** or Escape. Choosing an email in it closes the pop-up and shows that email (on the right when the reading panel is on the right). On a phone it fills the screen with Close fixed at the top.
+- **Options** shows: **Show finished tasks**, **Show tasks that are not due yet** (when off, a line says how many are hidden) and **Order** (Due soonest, Newest email first, A to Z). Your choices are remembered on that device.
+
+The Tasks page has a **Search your tasks** box under its title. Type part of a task's words (its title, its details or who it is from; capital letters do not matter) and the page lists only the tasks that have them, open ones under **To do** and finished ones under **Done**, with a line saying how many match. Clear the box to get your usual view back. Browser checks: `scripts/check_task_search.mjs`, `scripts/check_tasks_layout.mjs`.
 
 ## Forms on a phone
 
