@@ -115,12 +115,16 @@ def trip_event_lines(b: dict[str, Any], *, titles: bool, link: str, stamp: float
     return lines
 
 
-def trip_google_body(b: dict[str, Any], titles: bool, link: str) -> dict[str, Any]:
+def trip_google_body(b: dict[str, Any], titles: bool, link: str, tz: str | None = None) -> dict[str, Any]:
     first, last, timed = trip_span(b)
     iso = lambda v: f"{v[:4]}-{v[4:6]}-{v[6:8]}" + (f"T{v[9:11]}:{v[11:13]}:00" if timed else "")
     key = "dateTime" if timed else "date"
     body: dict[str, Any] = {"id": b["id"], "summary": b["summary"] if titles else "Enveliq trip", "status": "confirmed", "transparency": "transparent",
                             "start": {key: iso(first)}, "end": {key: iso(last)}, "extendedProperties": {"private": {"enveliq": b["id"]}}}
+    if timed:
+        # Google refuses a clock time that has no time zone (400). The times are as written in the email; the person's own zone is the best available.
+        for part in ("start", "end"):
+            body[part]["timeZone"] = tz or "UTC"
     if titles and b.get("description"):
         body["description"] = _clean(b["description"], 1000)
     if link:
@@ -536,7 +540,7 @@ class Sync:
             sig = trip_sig(b, rec["titles"])
             if pushed.get(bid, {}).get("sig") == sig:
                 continue
-            body = trip_google_body(b, rec["titles"], self._link())
+            body = trip_google_body(b, rec["titles"], self._link(), self.tasks.timezone_of(uid))
             if bid in pushed:
                 status, _ = self.google.call(uid, rt, "PUT", f"{cal}/events/{bid}", body)
                 if status == 404:

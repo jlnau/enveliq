@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Fix: Google Calendar said "Google refused an event (400)".** A flight with a departure time was sent to Google without a time zone, which Google refuses, and that stopped the whole sync. It now carries your time zone. Touches `backend/mail/calsync.py`.
+
 **Fix: orders an older version wrongly showed as Delivered.** An order whose only emails are order confirmations now goes back to Ordered by itself (an order you set by hand is never touched). Touches `backend/mail/shipping.py`.
 
 **Fix: one long email that would not summarise.** When the AI model could not make a usable answer from a very long email (for example a delivery email with many tracking details), Enveliq now also tries to pick the summary out of a muddled answer, and as a last try sends only the start of the email. Touches `backend/mail/llm.py` and `backend/mail/service.py`.
