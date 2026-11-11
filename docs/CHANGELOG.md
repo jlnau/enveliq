@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Fix: more AI answers can be read as a summary.** Some models write their thinking, or a few words with curly brackets, before the answer, and Enveliq then said "Could not summarise". It now skips that and finds the answer. Touches `backend/mail/llm.py`, `tests/test_llm.py`.
+
 **Fix: the three dots on a shipment stay in the top right corner.** With long item lists they used to drop onto the next line. They now sit in the corner of the card whatever the text says. Touches `prototype/index.html`, `scripts/check_shipping.mjs`.
 
 **Fix: Waiting no longer says an email is gone when it could not look.** If your mailbox does not answer when the Waiting page looks for a sent email, the page now says the mailbox did not answer and to press Refresh (with the reason), instead of saying the email is no longer in Sent. Enveliq also now looks at your newest sent emails first, which finds a Waiting email in one step. Touches `prototype/index.html`, `backend/mail/folders.py`, `scripts/check_waiting.mjs`.

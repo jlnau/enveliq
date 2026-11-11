@@ -213,17 +213,22 @@ def parse_reply(content: Any) -> dict[str, Any]:
     if not isinstance(content, str) or not content.strip():
         raise bad
     raw = content.strip()
+    raw = re.sub(r"<(think|thinking|reasoning)>.*?</\1>", "", raw, flags=re.I | re.S).strip()     # some models write their thinking first
     raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.I)
     data: Any = None
     try:
         data = json.loads(raw)
     except ValueError:
-        start, end = raw.find("{"), raw.rfind("}")
-        if 0 <= start < end:
+        end = raw.rfind("}")
+        starts = [i for i, ch in enumerate(raw[:end + 1]) if ch == "{"][:40]
+        for start in starts:                    # the first "{" may belong to some text before the answer: try each one
             try:
-                data = json.loads(raw[start:end + 1])
+                got = json.loads(raw[start:end + 1])
             except ValueError:
-                data = None
+                continue
+            if isinstance(got, dict) and "summary" in got:
+                data = got
+                break
     if not isinstance(data, dict):
         raise bad
     summary = _text(data.get("summary"), 600)

@@ -215,3 +215,11 @@ def test_the_error_message_never_contains_the_email_or_the_key(model):
         summariser(m, api_key="secret-key-123").summarise("Subject line", "a@b.example", "private words here")
     shown = exc.value.message + repr(exc.value)
     assert "secret-key-123" not in shown and "private words" not in shown
+
+
+def test_a_reply_with_thinking_or_braces_before_the_answer_is_still_read():
+    from backend.mail.llm import parse_reply
+    answer = '{"summary": "Your parcel is out for delivery.", "category": "Shopping", "priority": "normal"}'
+    assert parse_reply("<think>I should use {braces} here</think>\n" + answer)["summary"] == "Your parcel is out for delivery."
+    assert parse_reply("Sure! In the form {summary, category} here it is:\n" + answer + "\nHope that helps.")["summary"] == "Your parcel is out for delivery."
+    assert parse_reply("```json\n" + answer + "\n```")["summary"] == "Your parcel is out for delivery."
