@@ -207,9 +207,19 @@ def _trips(raw: Any) -> list[dict[str, Any]]:
     return out
 
 
-def parse_reply(content: Any) -> dict[str, Any]:
+def _why(content: Any, finish: Any, found_json: bool) -> str:
+    """A short plain reason a reply could not be used, said without quoting any of it (it may contain the email's words)."""
+    cut = str(finish or "").lower() in ("length", "max_tokens", "max_output_tokens")
+    if not isinstance(content, str) or not content.strip():
+        return "the reply was empty" + ("; the model ran out of room before it wrote anything, which happens with models that think first, so raise the model's answer limit or use one that does not think" if cut else "")
+    if cut:
+        return "the reply was cut off at the model's length limit before the answer was finished"
+    return "the reply had an answer in it, but no summary" if found_json else "the reply was not in the answer form Enveliq asks for"
+
+
+def parse_reply(content: Any, finish: Any = None) -> dict[str, Any]:
     """Turn the model's answer into the few safe fields Enveliq keeps."""
-    bad = BridgeError("ai_bad_reply", "The AI model did not return a usable summary for this email.")
+    bad = BridgeError("ai_bad_reply", "The AI model did not return a usable summary for this email. (" + _why(content, finish, False) + ")")
     if not isinstance(content, str) or not content.strip():
         raise bad
     raw = content.strip()
@@ -233,7 +243,7 @@ def parse_reply(content: Any) -> dict[str, Any]:
         raise bad
     summary = _text(data.get("summary"), 600)
     if not summary:
-        raise bad
+        raise BridgeError("ai_bad_reply", "The AI model did not return a usable summary for this email. (" + _why(content, finish, True) + ")")
     category = _text(data.get("category"), 40)
     category = next((c for c in CATEGORIES if c.lower() == category.lower()), "Other")
     priority = _text(data.get("priority"), 10).lower()
@@ -457,7 +467,11 @@ class Summariser:
                 content = reply["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError, AttributeError):
             raise BridgeError("ai_bad_reply", "The AI server did not answer in the expected format.") from None
-        return parse_reply(content)
+        try:
+            finish = reply["stop_reason"] if provider.style == "anthropic" else reply["choices"][0].get("finish_reason")
+        except (KeyError, IndexError, TypeError, AttributeError):
+            finish = None
+        return parse_reply(content, finish)
 
     def complete(self, system: str, user: str, max_tokens: int = 900, timeout: float | None = None) -> str:
         """One question, one answer: the model's text. Used for attachment summaries (backend/mail/attach_ai.py)."""

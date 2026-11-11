@@ -223,3 +223,13 @@ def test_a_reply_with_thinking_or_braces_before_the_answer_is_still_read():
     assert parse_reply("<think>I should use {braces} here</think>\n" + answer)["summary"] == "Your parcel is out for delivery."
     assert parse_reply("Sure! In the form {summary, category} here it is:\n" + answer + "\nHope that helps.")["summary"] == "Your parcel is out for delivery."
     assert parse_reply("```json\n" + answer + "\n```")["summary"] == "Your parcel is out for delivery."
+
+
+def test_a_failed_reply_says_why_without_quoting_it():
+    import pytest
+    from backend.mail.errors import BridgeError
+    from backend.mail.llm import parse_reply
+    for content, finish, words in (("", "length", "ran out of room"), ('{"a": 1', "length", "cut off"), ("I cannot help with that, Hello Sam", "stop", "not in the answer form"), ('{"category": "Other"}', "stop", "no summary")):
+        with pytest.raises(BridgeError) as err:
+            parse_reply(content, finish)
+        assert words in err.value.message and "Hello Sam" not in err.value.message

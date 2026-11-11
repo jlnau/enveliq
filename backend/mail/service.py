@@ -494,7 +494,8 @@ class MailService:
                     self.reporter.event("ai_request_failed", provider=provider, cloud=cloud, ok=False, code=err.code, duration_ms=(time.monotonic() - asked) * 1000)
                     if err.code == "ai_bad_reply":
                         failed += 1
-                        self.problems[m["id"]] = "The AI model answered, but not in a form Enveliq could use as a summary."
+                        why = re.search(r"\((the reply[^()]*|the model[^()]*)\)\s*$", err.message or "")
+                        self.problems[m["id"]] = "The AI model answered, but not in a form Enveliq could use as a summary" + (f" ({why.group(1)})." if why else ".")
                         continue
                     raise  # model unreachable or refusing: stop, nothing is lost
                 shipment = result.pop("shipment", None)
