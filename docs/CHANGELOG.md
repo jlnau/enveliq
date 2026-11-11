@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Fix: orders an older version wrongly showed as Delivered.** An order whose only emails are order confirmations now goes back to Ordered by itself (an order you set by hand is never touched). Touches `backend/mail/shipping.py`.
+
 **Fix: one long email that would not summarise.** When the AI model could not make a usable answer from a very long email (for example a delivery email with many tracking details), Enveliq now also tries to pick the summary out of a muddled answer, and as a last try sends only the start of the email. Touches `backend/mail/llm.py` and `backend/mail/service.py`.
 
 **Fix: the open email flickered while a summary was being written.** The page redrew itself every few seconds while waiting; it now redraws only when the summary list really changes. Touches `prototype/index.html`.

@@ -97,6 +97,21 @@ def test_an_order_or_shipped_email_the_ai_called_delivered_is_not_a_delivery(boo
     assert rows["TMS_1"]["status"] == "shipped" and not rows["TMS_1"]["needs_confirm"]
 
 
+def test_an_order_wrongly_marked_delivered_by_an_older_version_goes_back_to_ordered(book):
+    assert seen(book, 1, ship("order_confirmed", order_number="249-9", shop="Amazon.com.au"), 'Ordered: "Crucial DDR5..."', NOW - 5000)
+    uid = next(iter(book.vault_.get_global(S.RECORD_PREFIX + "u1")["orders"]))
+    raw = book.vault_.get_global(S.RECORD_PREFIX + "u1")
+    o = raw["orders"][uid]
+    o.update({"status": "delivered", "delivered_at": NOW - 4000, "status_manual": False})
+    book._save("u1", raw)
+    row = book.view("u1")["orders"][0]
+    assert row["status"] == "ordered" and not row["delivered_at"] and not row["needs_confirm"]
+    raw = book.vault_.get_global(S.RECORD_PREFIX + "u1")
+    raw["orders"][uid].update({"status": "delivered", "delivered_at": NOW - 4000, "status_manual": True})   # but not one the person set
+    book._save("u1", raw)
+    assert book.view("u1")["orders"][0]["status"] == "delivered"
+
+
 def test_a_real_delivery_email_still_counts(book):
     assert seen(book, 1, ship("delivered"), "Your order has been delivered", NOW - 4000)
     assert seen(book, 2, ship("delivered", order_number="BB-7", tracking_number=None), "Your parcel has arrived", NOW - 3000)

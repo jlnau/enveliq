@@ -386,13 +386,29 @@ class ShipBook:
             "events": [{"at": e["at"], "kind": e["kind"], "subject": e["subject"], "m": e.get("m")} for e in reversed(o.get("events") or [])],
         }
 
+    @staticmethod
+    def _heal(o: dict[str, Any]) -> bool:
+        """An order that older versions wrongly moved past Ordered, when every email filed for it is only an order confirmation,
+        goes back to Ordered. Never touches a change the person made by hand."""
+        events = o.get("events") or []
+        if o.get("status") not in ("shipped", "out_for_delivery", "delivered") or o.get("status_manual") or o.get("manual") or not events or o.get("tracking_key"):
+            return False
+        if not all(_SAYS_ORDERED.search(e.get("subject") or "") and not _SAYS_SHIPPED.search(e.get("subject") or "") for e in events):
+            return False
+        o["status"], o["status_at"] = "ordered", max(float(e["at"]) for e in events)
+        o["delivered_at"], o["ack"], o["ack_at"] = None, None, None
+        return True
+
     def view(self, user_id: str) -> dict[str, Any]:
         if not self.enabled(user_id):
             return {"enabled": False, "orders": [], "now": self.clock()}
         now = self.clock()
         with self._lock:
             book = self._load(user_id)
-            if self._purge(book, now):
+            fixed = self._purge(book, now)
+            for o in book["orders"].values():
+                fixed = self._heal(o) or fixed
+            if fixed:
                 self._save(user_id, book)
         shared = self.shared_carriers()
         rows = [self._row(o, now, shared) for o in book["orders"].values()]
