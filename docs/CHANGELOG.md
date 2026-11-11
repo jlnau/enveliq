@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Fix: Check my reply wrote its own reply instead of checking yours.** When you have written something, the AI is now told plainly to improve your text and treat the email as background. If its answer ignores what you wrote, Enveliq asks again without the email, and if that fails shows your text unchanged. Touches `backend/mail/writehelp.py`.
+
 **Fix: Google Calendar said "Google refused an event (400)".** A flight with a departure time was sent to Google without a time zone, which Google refuses, and that stopped the whole sync. It now carries your time zone. Touches `backend/mail/calsync.py`.
 
 **Fix: orders an older version wrongly showed as Delivered.** An order whose only emails are order confirmations now goes back to Ordered by itself (an order you set by hand is never touched). Touches `backend/mail/shipping.py`.

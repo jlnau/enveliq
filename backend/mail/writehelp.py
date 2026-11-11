@@ -104,8 +104,10 @@ def system_prompt(instructions: str, guide: str = "") -> str:
 
 def user_turn(mode: str, draft: str, subject: str = "", sender: str = "", email_text: str = "", me: str = "") -> str:
     parts: list[str] = []
+    draft_in = bool(clean(draft, DRAFT_MAX))
     if mode == "reply":
-        parts.append("Task: write or check the person's reply to the email below.")
+        parts.append("Task: " + ("the person has ALREADY WRITTEN their reply (it comes last). Check and improve THEIR reply; do not write your own reply to the email below. "
+                                 "The email below is only background." if draft_in else "write the person's reply to the email below."))
         if me:
             parts.append("[WHO IS WHO]\nThe writer (the person you are helping, who will send this reply): " + clean(me, 200)
                          + "\nThe reply goes TO the sender of the email below: " + clean(sender, 200)
@@ -144,13 +146,35 @@ def parse_answer(text: str) -> dict[str, Any]:
     return {"text": suggestion, "notes": notes}
 
 
+_WORD = re.compile(r"[a-z']{4,}")
+
+
+def keeps_the_draft(draft: str, suggestion: str) -> bool:
+    """True when the suggestion is still the person's own text: most of the longer words they wrote are still in it. A reply the AI
+    wrote from scratch about the email being answered shares almost nothing with the draft."""
+    mine = set(_WORD.findall(draft.lower()))
+    if len(mine) < 5:
+        return True                                    # too short to judge
+    return len(mine & set(_WORD.findall(suggestion.lower()))) / len(mine) >= 0.4
+
+
 def run(summariser: Any, instructions: str, mode: str, draft: str, subject: str = "", sender: str = "",
         email_text: str = "", guide: str = "", me: str = "") -> dict[str, Any]:
     if mode not in MODES:
         raise ValueError("mode")
-    turn = user_turn(mode, draft, subject, sender, email_text, me)
-    answer = summariser.chat(system_prompt(instructions, guide), [{"role": "user", "content": turn}], max_tokens=1500, timeout=TIMEOUT)
-    result = parse_answer(answer)
+    draft_text = clean(draft, DRAFT_MAX)
+    background = clean(email_text, 3000) if draft_text else email_text       # with a draft the email is only background
+    system = system_prompt(instructions, guide)
+
+    def ask(turn: str) -> dict[str, Any]:
+        return parse_answer(summariser.chat(system, [{"role": "user", "content": turn}], max_tokens=1500, timeout=TIMEOUT))
+
+    result = ask(user_turn(mode, draft, subject, sender, background, me))
+    if draft_text and result["text"] and not keeps_the_draft(draft_text, result["text"]):
+        # The AI wrote its own reply instead of checking the person's. Ask again without the other email, so there is nothing to answer.
+        result = ask(user_turn("new", draft, subject))
+        if result["text"] and not keeps_the_draft(draft_text, result["text"]):
+            result = {"text": draft_text, "notes": ["The AI did not manage to improve your text this time, so it is shown unchanged."]}
     if not result["text"]:
         raise BridgeError("ai_bad_reply", "The AI server sent an empty answer.")
     result["gaps"] = bool(re.search(r"\[[^\]\n]{1,80}\]", result["text"]))

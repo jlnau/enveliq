@@ -234,3 +234,38 @@ def test_a_draft_is_checked_and_improved_not_replaced_by_a_new_reply():
     assert "that draft IS the email" in W.FIXED_RULES and "do not drop anything they wrote" in W.FIXED_RULES
     assert "already written their email" not in W.user_turn("reply", "", "Quote", "J <j@example.invalid>", "x")       # no draft: it may write one
     assert "keep it short" in W.DEFAULT_INSTRUCTIONS and "from nothing" in W.DEFAULT_INSTRUCTIONS
+
+
+class _Chat:
+    """A pretend AI that answers each request with the next reply in the list and keeps what it was asked."""
+    def __init__(self, *replies):
+        self.replies, self.turns = list(replies), []
+
+    def chat(self, system, messages, **kw):
+        self.turns.append(messages[0]["content"])
+        return self.replies.pop(0)
+
+
+MY_DRAFT = "Hi Richard,\n\nI had been working on the attached as something to send to my friends and family, and I think it might be what you are talking about for Mediation. Let me know your thoughts.\n\nJulien"
+LONG_EMAIL = "Dan advises we focus on the impact of the injury at mediation and decide on further expert reports before the hearing. " * 20
+
+
+def test_an_answer_that_ignores_the_draft_is_asked_again_without_the_other_email():
+    ai = _Chat("SUGGESTION:\nHi Richard, That is a detailed email from Dan. Does that align with your understanding?\nNOTES:\n",
+               "SUGGESTION:\n" + MY_DRAFT + "\nNOTES:\n- Fixed nothing.")
+    out = W.run(ai, "", "reply", MY_DRAFT, subject="Re: SC 128", sender="Richard <r@example.com>", email_text=LONG_EMAIL, me="Julien <j@example.com>")
+    assert out["text"].startswith("Hi Richard,\n\nI had been working") and len(ai.turns) == 2
+    assert "ALREADY WRITTEN" in ai.turns[0] and "Dan advises" in ai.turns[0]
+    assert "Dan advises" not in ai.turns[1]                                      # the second try has nothing to answer
+
+
+def test_when_both_tries_ignore_the_draft_the_persons_own_text_is_shown_unchanged():
+    ai = _Chat("SUGGESTION:\nA brand new reply about something else entirely.\nNOTES:\n", "SUGGESTION:\nAnother unrelated reply altogether, sorry.\nNOTES:\n")
+    out = W.run(ai, "", "reply", MY_DRAFT, subject="s", sender="r@example.com", email_text=LONG_EMAIL)
+    assert out["text"] == MY_DRAFT.strip() and out["notes"]
+
+
+def test_an_answer_that_keeps_the_draft_is_used_at_once():
+    ai = _Chat("SUGGESTION:\n" + MY_DRAFT.replace("had been", "have been") + "\nNOTES:\n- Fixed a tense.")
+    out = W.run(ai, "", "reply", MY_DRAFT, email_text=LONG_EMAIL)
+    assert "have been working" in out["text"] and len(ai.turns) == 1

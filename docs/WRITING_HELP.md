@@ -53,3 +53,7 @@ The plan this came from, with the mock-ups' decisions, is in `docs/EMAIL_ASSIST.
 ## Check my reply keeps your text
 
 When the box already has your words, the AI treats them as the email: it keeps every point, request, question, list item, number and name, in the same order and in your voice, and fixes only spelling, grammar and clarity. The email you are answering is only background. The AI never adds questions or promises of its own and never writes a different reply in place of yours. When the box is empty, it writes a short reply for you as before.
+
+## Your own text always comes first
+
+When your box already has text, **Check my reply** checks and improves *your* text; the email you are answering is only background. If the AI answers with a brand-new reply that shares little with what you wrote, Enveliq asks again without the other email. If that also ignores your text, your own text is shown unchanged with a note, never a made-up reply. (`backend/mail/writehelp.py`, `keeps_the_draft`.)
