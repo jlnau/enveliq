@@ -233,3 +233,16 @@ def test_a_failed_reply_says_why_without_quoting_it():
         with pytest.raises(BridgeError) as err:
             parse_reply(content, finish)
         assert words in err.value.message and "Hello Sam" not in err.value.message
+
+
+def test_a_slightly_broken_json_answer_still_gives_a_summary():
+    from backend.mail.llm import parse_reply
+    trailing = '{"summary": "Parcel out for delivery today.", "category": "Shopping", "priority": "normal",}'
+    assert parse_reply(trailing)["summary"] == "Parcel out for delivery today."
+    newline = '{"summary": "Parcel out\nfor delivery.", "category": "Shopping"}'
+    assert parse_reply(newline)["category"] == "Shopping"
+    cut = '{"summary": "Parcel out for delivery today.", "category": "Shopping", "task": {"title": "Be home'
+    got = parse_reply(cut)
+    assert got["summary"] == "Parcel out for delivery today." and got["category"] == "Shopping"
+    stray = '{"summary": "He said "hi" to me", "category": "Other"} {"x": 1'
+    assert parse_reply('Here you go: ' + '{"summary": "Parcel out for delivery.", "category": "Shopping", "action_required": false, "extra": [1,2,}')["summary"].startswith("Parcel")

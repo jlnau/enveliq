@@ -4826,6 +4826,7 @@ function paintSumBar(){
   box.addEventListener("pointerup",end);box.addEventListener("pointercancel",end);
 })();
 setInterval(()=>{if(realMail&&!document.hidden&&!sqTimer)pollSummaries(false)},15000);   // new mail is queued by the server, so look now and then even when nothing was pressed
+let sqSig="";
 async function pollSummaries(first){
   let r;try{r=await secureBackendRequest("/api/v1/me/summary-queue",{method:"GET",headers:{}})}catch{return}
   sq=r;paintSumBar();
@@ -4834,7 +4835,9 @@ async function pollSummaries(first){
   const busy=r.waiting||r.writing;
   if((finished||(sqWasBusy&&!busy))&&realMail){try{await loadRealMail(currentUser)}catch{}}   // a finished job may have just shown a new email
   sqWasBusy=!!busy;
-  if(realMail)render();
+  // Draw the page again only when the queue really changed. Doing it every 2.5 seconds made the open email (and the original email in its frame) flicker.
+  const sig=JSON.stringify([r.waiting,r.writing,(r.items||[]).map(it=>[it.account_id,it.message_id,it.state,it.error||""])]);
+  if(realMail&&(sig!==sqSig||finished)){sqSig=sig;render()}
   if(busy&&!sqTimer)sqTimer=setInterval(()=>pollSummaries(false),2500);
   if(!busy&&sqTimer){clearInterval(sqTimer);sqTimer=null}
 }

@@ -119,6 +119,13 @@ await page.locator("#viewTab").click();
 await page.locator("#vOrig").uncheck();
 await page.waitForFunction(() => !document.querySelector(".qorig"));
 check("untick it and the original email goes away", (await page.locator(".reading .qorig").count()) === 0 && puts[puts.length - 1].show_original === false);
+// While a summary is being written the page is asked every few seconds how it is going; it must not redraw (and flicker) when nothing changed.
+queue = { items: [{ account_id: "a1", message_id: "m3", state: "writing" }], waiting: 0, writing: 1 };
+await page.evaluate(() => { window.__draws = 0; const r = window.render; window.render = function () { window.__draws++; return r.apply(this, arguments); }; pollSummaries(false); });
+await page.waitForTimeout(7500);
+const draws = await page.evaluate(() => window.__draws);
+check("while a summary is being written the page does not redraw again and again (" + draws + " redraws in 7 seconds)", draws <= 2);
+queue = { items: [], waiting: 0, writing: 0 };
 check("no script errors", errors.length === 0);
 await context.close();
 

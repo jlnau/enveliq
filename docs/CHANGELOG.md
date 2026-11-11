@@ -4,6 +4,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Fix: one long email that would not summarise.** When the AI model could not make a usable answer from a very long email (for example a delivery email with many tracking details), Enveliq now also tries to pick the summary out of a muddled answer, and as a last try sends only the start of the email. Touches `backend/mail/llm.py` and `backend/mail/service.py`.
+
+**Fix: the open email flickered while a summary was being written.** The page redrew itself every few seconds while waiting; it now redraws only when the summary list really changes. Touches `prototype/index.html`.
+
 **"Could not summarise" now says why.** When the AI model's answer cannot be used, the message now adds a short reason (the reply was empty, it was cut off at the model's length limit, it was not in the answer form, or it had no summary), without quoting anything from the email. Models that think first can use up their whole answer limit before writing the summary; this makes that visible. Touches `backend/mail/llm.py`, `backend/mail/service.py`, `tests/test_llm.py`.
 
 **Fix: more AI answers can be read as a summary.** Some models write their thinking, or a few words with curly brackets, before the answer, and Enveliq then said "Could not summarise". It now skips that and finds the answer. Touches `backend/mail/llm.py`, `tests/test_llm.py`.

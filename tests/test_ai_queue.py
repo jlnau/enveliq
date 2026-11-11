@@ -207,3 +207,31 @@ def test_the_queue_route_carries_the_notice_only_for_the_signed_in_person(held):
     appm, client, aid = _placeholder_mail(held, ai=False)
     r = client.get("/api/v1/me/summary-queue").json()
     assert r["notice"]["count"] == 1 and "switched off" in r["notice"]["text"]
+
+
+def test_a_long_email_the_model_cannot_answer_gets_one_last_try_with_its_start(tmp_path, monkeypatch):
+    from backend.mail import extra_routes
+    monkeypatch.setattr(extra_routes.time, "sleep", lambda s: None)
+    sizes = []
+
+    def reply(body):
+        text = json.dumps(body)
+        sizes.append(len(text))
+        return "I cannot help with that." if len(text) > 9000 else json.dumps(GOOD)
+
+    model = FakeModel(reply=reply)
+    appm, client, bridge = start(tmp_path, model)
+    try:
+        appm.mail_service.hold_new_mail = True
+        for uid in list(bridge.messages):
+            del bridge.messages[uid]
+        long = ("Your parcel is on its way. " * 600).encode()
+        bridge.add(5, b"From: Shop <shop@example.invalid>\r\nTo: me@example.invalid\r\nSubject: Out for delivery\r\nMessage-ID: <long1@example.invalid>\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n" + long)
+        aid = account(client, bridge)
+        client.post(f"/api/v1/accounts/{aid}/sync", json={})
+        shown = wait_for(lambda: [m for m in listing(client, aid) if m["summary"].startswith("Dentist")])
+        assert shown[0]["summary"].startswith("Dentist"), (sizes, shown[0]["summary"])
+        assert sizes[2] < sizes[0] < 11000                                   # the last try sent less
+    finally:
+        bridge.close()
+        model.close()

@@ -488,7 +488,13 @@ class MailService:
                     except BridgeError as first:
                         if first.code != "ai_bad_reply":
                             raise
-                        result = self.summariser.summarise(m.get("subject") or "", sender, text, instructions, prompt)    # a small model sometimes answers badly once
+                        try:
+                            result = self.summariser.summarise(m.get("subject") or "", sender, text, instructions, prompt)    # a small model sometimes answers badly once
+                        except BridgeError as second:
+                            if second.code != "ai_bad_reply" or len(text) <= 3000:
+                                raise
+                            # A very long email can confuse a small model: one last try with just the start of it.
+                            result = self.summariser.summarise(m.get("subject") or "", sender, text[:3000], instructions, prompt)
                     self.reporter.event("ai_request", provider=provider, cloud=cloud, ok=True, duration_ms=(time.monotonic() - asked) * 1000)
                 except BridgeError as err:
                     self.reporter.event("ai_request_failed", provider=provider, cloud=cloud, ok=False, code=err.code, duration_ms=(time.monotonic() - asked) * 1000)

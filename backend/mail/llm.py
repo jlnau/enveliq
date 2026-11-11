@@ -217,6 +217,33 @@ def _why(content: Any, finish: Any, found_json: bool) -> str:
     return "the reply had an answer in it, but no summary" if found_json else "the reply was not in the answer form Enveliq asks for"
 
 
+_STRING = r'"((?:[^"\\]|\\.)*)"'
+
+
+def _salvage(raw: str) -> dict[str, Any] | None:
+    """When the answer is not valid JSON as a whole (a stray quote, a cut-off ending), still take the plain fields it did write."""
+    found = re.search(r'"summary"\s*:\s*' + _STRING, raw)
+    if not found:
+        return None
+    out: dict[str, Any] = {"summary": _unescape(found.group(1))}
+    for key in ("category", "priority", "today_reason"):
+        got = re.search(rf'"{key}"\s*:\s*' + _STRING, raw)
+        if got:
+            out[key] = _unescape(got.group(1))
+    for key in ("action_required", "act_today"):
+        got = re.search(rf'"{key}"\s*:\s*(true|false)', raw, re.I)
+        if got:
+            out[key] = got.group(1).lower() == "true"
+    return out
+
+
+def _unescape(value: str) -> str:
+    try:
+        return json.loads('"' + value + '"', strict=False)
+    except ValueError:
+        return value.replace('\\"', '"').replace("\\n", " ")
+
+
 def parse_reply(content: Any, finish: Any = None) -> dict[str, Any]:
     """Turn the model's answer into the few safe fields Enveliq keeps."""
     bad = BridgeError("ai_bad_reply", "The AI model did not return a usable summary for this email. (" + _why(content, finish, False) + ")")
@@ -232,13 +259,19 @@ def parse_reply(content: Any, finish: Any = None) -> dict[str, Any]:
         end = raw.rfind("}")
         starts = [i for i, ch in enumerate(raw[:end + 1]) if ch == "{"][:40]
         for start in starts:                    # the first "{" may belong to some text before the answer: try each one
-            try:
-                got = json.loads(raw[start:end + 1])
-            except ValueError:
-                continue
-            if isinstance(got, dict) and "summary" in got:
-                data = got
+            piece = raw[start:end + 1]
+            for text in (piece, re.sub(r",\s*([}\]])", r"\1", piece)):          # a small model often leaves a comma before the closing bracket
+                try:
+                    got = json.loads(text, strict=False)         # strict=False lets a line break sit inside a sentence
+                except ValueError:
+                    continue
+                if isinstance(got, dict) and "summary" in got:
+                    data = got
+                    break
+            if data is not None:
                 break
+    if not isinstance(data, dict):
+        data = _salvage(raw)
     if not isinstance(data, dict):
         raise bad
     summary = _text(data.get("summary"), 600)
