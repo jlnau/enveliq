@@ -47,7 +47,7 @@ def test_mark_as_read_sets_the_mailbox_flag_and_keeps_no_reviewed_card_while_arc
     assert client.post(f"/api/v1/accounts/{aid}/sync", json={}).json()["added"] == 0
 
 
-def test_binning_deletes_the_card_and_view_is_not_offered_for_kept_ones(env):
+def test_binning_deletes_the_card_and_an_archived_card_can_open_its_original_from_the_archive(env):
     _, client, _, _, aid = env
     m = by_state(client, aid)["unread"]
     assert resolve(client, aid, m["Weekly news"]["id"], "binned").status_code == 204
@@ -55,7 +55,7 @@ def test_binning_deletes_the_card_and_view_is_not_offered_for_kept_ones(env):
     assert resolve(client, aid, m["Quarterly update"]["id"], "archived").status_code == 204
     kept = by_state(client, aid)["archived"]["Quarterly update"]
     r = client.get(f"/api/v1/accounts/{aid}/messages/{kept['id']}/original")
-    assert r.status_code >= 400
+    assert r.status_code == 200                                    # the email is in the Archive folder and is found there by its Message-ID
     # removing a kept card only forgets it here
     assert resolve(client, aid, kept["id"], "expired").status_code == 204
     assert "archived" not in by_state(client, aid)
