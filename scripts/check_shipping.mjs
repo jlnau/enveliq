@@ -404,6 +404,13 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.waitForFunction(() => document.querySelector("#readDock .rhead h3"));
   check("pressing a matched email shows it on the right and stays on Shipping", (await page.locator("#readDock .rhead h3").innerText()).length > 0 && await page.locator("#shipPage").isVisible());
   await shot(page, "ship-split");
+  // An email that is archived (kept here as a card) opens in the same full reading view as the inbox: side rail, buttons, the original email.
+  await page.evaluate(() => { view.style = "rail"; view.show_original = true; const m = data.find((x) => String(x.id) === String(shipMailId)); m.kept = true; m.status = "archived"; m.keptUntil = "20 Nov"; render(); });
+  await page.waitForSelector("#readDock .reading.rail .rl-rail");
+  const rail = await page.locator("#readDock .rl-rail").innerText();
+  check("an archived email opens with the same side-rail buttons (Reply, Forward, Task...) and no Mark as read, Archive or Bin", /Reply/.test(rail) && /Forward/.test(rail) && /Task/.test(rail) && !/Mark as read|Archive\b|Snooze/.test(rail) && /Remove from this list/.test(rail));
+  await shot(page, "ship-split-archived");
+  check("and it shows the original email, not just the summary", (await page.locator("#readDock .qorig").count()) === 1);
   check("no script errors", errors.length === 0);
   await page.close(); await context.close();
 }

@@ -393,6 +393,19 @@ def test_archive_and_bin_move_the_email(env):
     assert bridge.messages[1]["folder"] == "Archive" and bridge.messages[2]["folder"] == "Trash"
 
 
+def test_the_original_of_an_archived_card_is_found_in_the_archive_folder(env):
+    _, client, bridge, _ = env
+    bridge.add(4, html_mail())
+    aid, m = synced(client, bridge)
+    mid = m["Rich message"]["id"]
+    assert resolve(client, aid, mid, "archived").status_code == 204
+    assert bridge.messages[4]["folder"] == "Archive"
+    kept = next(x for x in client.get(f"/api/v1/accounts/{aid}/messages").json() if x["id"] == mid)
+    assert kept.get("state") == "archived"
+    r = client.get(f"/api/v1/accounts/{aid}/messages/{mid}/original")
+    assert r.status_code == 200 and "Hello Dana" in r.json()["text"]
+
+
 def test_move_falls_back_to_copy_and_expunge(tmp_path):
     bridge = FakeBridge(tmp_path, move=False)
     bridge.add(1, mails()[1])

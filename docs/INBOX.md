@@ -411,3 +411,5 @@ The search box does the same thing on every page (Folders, Tasks, Sent, Needs ac
 - The formatted ("As the sender made it") copy of a folder email or a search result comes from `GET /api/v1/folder-mail/{token}/original/html` and `GET /api/v1/find/results/{token}/original/html`. They use the same safe rebuild as every other email (`htmlview`): scripts, trackers and outside pictures removed, a strict policy of their own, never stored.
 
 When the original email is shown in the reading panel, pressing a link opens a small box beside your pointer with the website, the whole address, and Open it or Not now. Nothing opens until you choose.
+
+**Archived emails** (the cards kept for a few days after you archive, and the matched emails on Shipping) open in the same reading view as every other email: your View choice, the same buttons (without Mark as read, Archive, Bin and Snooze, which no longer apply) and the original email. The original is looked up in your Archive folder by its Message-ID each time and is never stored. If it has been deleted since, the panel says so plainly. Checks: `scripts/check_shipping.mjs`, `tests/test_bridge.py`.

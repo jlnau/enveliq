@@ -675,6 +675,19 @@ class MailService:
         """The whole email as it sits in the mailbox, fetched now and never kept."""
         target = self.target(account)
         with self.bridge.session(target) as s:
+            if not message.get("source_locator"):
+                # An archived card has no place in the Inbox any more: the email is looked up in the Archive folder by its Message-ID.
+                mid = str((message.get("reply_context") or {}).get("message_id") or "").strip().strip("<>")
+                if not mid or any(c in mid for c in '"\\\r\n'):
+                    raise BridgeError("not_found", "That email is no longer in your mailbox.")
+                s.select_folder(s.folder_for("archive"), True)
+                try:
+                    uids = s.search(["HEADER", "Message-ID", f'"<{mid}>"'])
+                except BridgeError:
+                    uids = []
+                if not uids:
+                    raise BridgeError("not_found", "That email is no longer in your Archive folder.")
+                return s.original(uids[-1])
             uid = self.open_location(s, message.get("source_locator"))
             return s.original(uid)
 

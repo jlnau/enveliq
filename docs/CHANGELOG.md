@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Fix: an archived email now opens the full way.** An email you archived (a shipment's matched emails, for example) used to open as a short card with only the summary. It now opens like every other email: the side rail or header you chose in View, Reply, Forward, Task, Tags and Folders, and the original email itself, which is read from your Archive folder when you open it and never saved. Buttons that cannot apply to an archived email (Mark as read, Archive, Bin, Snooze) are left out; Remove from this list stays. Touches `prototype/index.html` and `backend/mail/service.py`.
+
 **Fix: an email opened from Shipping or Tasks now looks like the inbox.** The panel on the right used to show its own simple view. It now uses the same reading view as the inbox, so your View choice (side rail or header, the Reply row, the original email) applies there too. Touches `prototype/index.html`.
 
 **Fix: Check my reply wrote its own reply instead of checking yours.** When you have written something, the AI is now told plainly to improve your text and treat the email as background. If its answer ignores what you wrote, Enveliq asks again without the email, and if that fails shows your text unchanged. Touches `backend/mail/writehelp.py`.
