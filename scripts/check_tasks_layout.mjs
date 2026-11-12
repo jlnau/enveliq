@@ -77,6 +77,7 @@ const text = (page) => page.locator("#tasksPage").innerText();
   await page.waitForFunction(() => !/Pick a task/.test(document.getElementById("readDock").innerText));
   check("opening a task shows its email on the right and stays on Tasks", (await page.evaluate(() => document.body.classList.contains("on-tasks"))) && /Just you/.test(await page.locator("#readDock").innerText()));
   if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "tasks_right.png") });
+  check("the email on the right looks like the inbox's (same header style as View says)", await page.evaluate(() => !!document.querySelector("#readDock .reading .rhead") === !document.querySelector("#readDock .reading.rail")));
   // Calendar pop-up
   await page.locator("[data-cal-open]").click();
   await page.waitForSelector("#calPop:not([hidden])");
@@ -131,6 +132,20 @@ const text = (page) => page.locator("#tasksPage").innerText();
   await page.locator("[data-cal-close]").click();
   check("Close brings the list back", await page.locator("#calPop").isHidden());
   check("no script errors", errors.length === 0);
+  await context.close();
+}
+{
+  const context = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-view", JSON.stringify({ layout: "right", style: "rail" })); } catch (e) {} });
+  const page = await context.newPage();
+  await context.route(`${ORIGIN}/**`, handler);
+  await page.goto(`${ORIGIN}/`);
+  await page.waitForSelector("article.mail");
+  await page.locator('.nav[data-filter="tasks"]').first().click();
+  await page.waitForSelector("#taskSearch");
+  await page.locator('#tasksPage .tmain:not([disabled])').first().click();
+  await page.waitForFunction(() => !/Pick a task/.test(document.getElementById("readDock").innerText));
+  check("with the side-rail look chosen, a task's email opens in the side-rail reading view, like in the inbox", await page.evaluate(() => !!document.querySelector("#readDock .reading.rail .qside, #readDock .reading.rail .qdetail, #readDock .reading.rail") && !document.querySelector("#readDock .reading > .rhead")));
   await context.close();
 }
 await browser.close();

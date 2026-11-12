@@ -5040,6 +5040,8 @@ function render(){
     lastRowIds=shown;
     return out.map(x=>x[1]).join("");
   };
+  // One reading view for every email, wherever it opens (inbox, Tasks, Shipping): the one the person chose in View (side rail or header).
+  const readingSection=m=> view.style==="rail"?`<section class="reading rail" aria-label="Selected email">${quiet(m,"rail")}</section>`:`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(m.subject)}</h3><div class="rmeta">${esc(m.sender)} · ${esc(m.time)}</div>${copyMailButtons(m)}</header>${quiet(m,"detail")}</section>`;
   let listHtml,dockHtml="";
   const prevScroll=document.getElementById("paneList"),prevTop=prevScroll?prevScroll.scrollTop:0,prevRead=document.querySelector(".reading"),prevReadTop=prevRead?prevRead.scrollTop:0;const prevBody=document.querySelector(".reader .rbody"),prevBodyTop=prevBody?prevBody.scrollTop:0;
   lastRowIds=rows.map(m=>m.id);
@@ -5073,7 +5075,7 @@ function render(){
         <button class="decknav next" type="button" ${next?`data-pick="${esc(next.id)}"`:"disabled"} aria-label="Next email">›</button></div>
         ${act}<div class="deckdots" aria-hidden="true">${dots}</div></div>`;
     }else{
-      const readingHtml=cur?(view.style==="rail"?`<section class="reading rail" aria-label="Selected email">${quiet(cur,"rail")}</section>`:`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(cur.subject)}</h3><div class="rmeta">${esc(cur.sender)} · ${esc(cur.time)}</div>${copyMailButtons(cur)}</header>${quiet(cur,"detail")}</section>`):`<section class="reading enveliq-empty" aria-label="No email selected">${enEmptyReading()}</section>`;
+      const readingHtml=cur?readingSection(cur):`<section class="reading enveliq-empty" aria-label="No email selected">${enEmptyReading()}</section>`;
       if(lay()==="right"&&!["sent","folders","tags","drafts","tasks","shipping","waiting","subscriptions","trips","junk","cleanup"].includes(filter)){          // the reading panel sits beside the whole left side, all the way up to the top bar
         dockHtml=readingHtml;
         listHtml=`<div class="panes ${esc(lay())}"><div class="panelist quiet-list" id="paneList">${rowsHtml(rows,"pane")}</div></div>`;
@@ -5084,9 +5086,9 @@ function render(){
   if(!rows.length&&findUi.open&&lay()==="right"&&!["sent","folders","tags","drafts","tasks","shipping","waiting","subscriptions","trips","junk","cleanup"].includes(filter))dockHtml=`<section class="reading" aria-label="Selected email"><div class="empty">Pick an email from the search results to read it here.</div></section>`;
   // Shipping with the reading panel on the right: the shipments are on the left, and the panel on the right shows the matched email you opened (or waits for you to open one).
   if(filter!=="tasks")taskMailId=null;
-  else if(shipSplit()){const tm=taskMailId!=null?data.find(x=>String(x.id)===String(taskMailId)&&x.owner===currentUser.id):null;dockHtml=tm?`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(tm.subject)}</h3><div class="rmeta">${esc(tm.sender)} · ${esc(tm.time)}</div>${copyMailButtons(tm)}</header>${quiet(tm,"detail")}</section>`:`<section class="reading enveliq-empty" aria-label="No email selected"><div class="empty">Pick a task to read its email here.</div></section>`}
+  else if(shipSplit()){const tm=taskMailId!=null?data.find(x=>String(x.id)===String(taskMailId)&&x.owner===currentUser.id):null;dockHtml=tm?readingSection(tm):`<section class="reading enveliq-empty" aria-label="No email selected"><div class="empty">Pick a task to read its email here.</div></section>`}
   if(filter!=="shipping")shipMailId=null;
-  else if(shipSplit()){const sm=shipMailId!=null?data.find(x=>String(x.id)===String(shipMailId)&&x.owner===currentUser.id):null;dockHtml=sm?`<section class="reading" aria-label="Selected email"><header class="rhead"><h3>${esc(sm.subject)}</h3><div class="rmeta">${esc(sm.sender)} · ${esc(sm.time)}</div>${copyMailButtons(sm)}</header>${quiet(sm,"detail")}</section>`:`<section class="reading enveliq-empty" aria-label="No email selected"><div class="empty">Open one of a shipment's matched emails to read it here.</div></section>`}
+  else if(shipSplit()){const sm=shipMailId!=null?data.find(x=>String(x.id)===String(shipMailId)&&x.owner===currentUser.id):null;dockHtml=sm?readingSection(sm):`<section class="reading enveliq-empty" aria-label="No email selected"><div class="empty">Open one of a shipment's matched emails to read it here.</div></section>`}
   // The highlighted email is scrolled into view only when it has just changed. A refresh in the background redraws the list too, and it must
   // leave the list exactly where the person scrolled it to (it used to pull the list back up to the highlighted email after a few seconds).
   const currentChanged=lastScrolledTo!==`${filter}|${paneId}`;lastScrolledTo=`${filter}|${paneId}`;

@@ -4,6 +4,8 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+**Fix: an email opened from Shipping or Tasks now looks like the inbox.** The panel on the right used to show its own simple view. It now uses the same reading view as the inbox, so your View choice (side rail or header, the Reply row, the original email) applies there too. Touches `prototype/index.html`.
+
 **Fix: Check my reply wrote its own reply instead of checking yours.** When you have written something, the AI is now told plainly to improve your text and treat the email as background. If its answer ignores what you wrote, Enveliq asks again without the email, and if that fails shows your text unchanged. Touches `backend/mail/writehelp.py`.
 
 **Fix: Google Calendar said "Google refused an event (400)".** A flight with a departure time was sent to Google without a time zone, which Google refuses, and that stopped the whole sync. It now carries your time zone. Touches `backend/mail/calsync.py`.
