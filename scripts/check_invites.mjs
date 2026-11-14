@@ -129,8 +129,7 @@ const row = (page, subject) => page.locator("article.mail", { hasText: subject }
   await row(page, "Project catch-up").click();               // on a phone a tap opens the email
   const a = page.locator("section[data-invite]").first();
   await a.waitFor({ state: "visible" });
-  await a.locator('[data-invite-act="propose"]').scrollIntoViewIfNeeded();
-  await a.locator('[data-invite-act="propose"]').click();
+  await a.locator('[data-invite-act="propose"]').click();   // click scrolls into view itself and retries if the page redraws
   const box = await page.locator("#invProp").boundingBox();
   check("on a phone the form fills the whole screen", box && box.x === 0 && box.y === 0 && Math.round(box.width) === 390 && Math.round(box.height) === 844);
   const top = await page.locator("#invProp .sf-top").boundingBox(), foot = await page.locator("#invProp .sf-foot").boundingBox();
