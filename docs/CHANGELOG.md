@@ -4,6 +4,10 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
+No changes recorded yet.
+
+## v0.104 (2026-11-14)
+
 **Fix: an archived email now opens the full way.** An email you archived (a shipment's matched emails, for example) used to open as a short card with only the summary. It now opens like every other email: the side rail or header you chose in View, Reply, Forward, Task, Tags and Folders, and the original email itself, which is read from your Archive folder when you open it and never saved. Buttons that cannot apply to an archived email (Mark as read, Archive, Bin, Snooze) are left out; Remove from this list stays. Touches `prototype/index.html` and `backend/mail/service.py`.
 
 **Fix: an email opened from Shipping or Tasks now looks like the inbox.** The panel on the right used to show its own simple view. It now uses the same reading view as the inbox, so your View choice (side rail or header, the Reply row, the original email) applies there too. Touches `prototype/index.html`.
