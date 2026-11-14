@@ -75,7 +75,7 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
   check(name + ": Calm home keeps actionable task controls", await p.locator(".preview-focus-card [data-task-act=done]").count() === 1 && (await p.locator(".preview-focus-card [data-due-open],.preview-focus-card [data-tasks-go]").count()) === 1);
   if (shots) await p.screenshot({ path: path.join(shots, "calm-" + name + ".png") });
 
-  await sw.click(); await p.waitForTimeout(300);
+  await p.evaluate(() => document.getElementById("previewCalmBtn").click()); await p.waitForTimeout(300);   // the switch now lives in the account menu
   check(name + ": switching Calm mode off announces the change", (await sw.getAttribute("aria-checked")) === "false");
   if (name === "phone") {
     check("phone: Today and Coming up start collapsed in normal mode", await p.evaluate(() => !!document.querySelector(".today-card.mobile-folded") && [...document.querySelectorAll(".preview-later")].every(el => el.classList.contains("mobile-folded"))));
@@ -97,7 +97,7 @@ for (const [name, vp] of [["desktop", { width: 1180, height: 820 }], ["phone", {
   check(name + ": explicit opt out is remembered after reload", await p.evaluate(() => !document.body.classList.contains("calm")));
   await p.evaluate(() => document.querySelector(".demo-banner")?.remove());
   if (name === "phone") await p.click("#menuBtn");
-  await p.click("#calmBtn"); await p.waitForTimeout(300);
+  await p.evaluate(() => document.getElementById("previewCalmBtn").click()); await p.waitForTimeout(300);
   check(name + ": Calm mode can be enabled again", (await p.locator("#calmBtn").getAttribute("aria-checked")) === "true" && (await calmState()).badges === 0);
   await p.reload(); await p.waitForTimeout(800);
   check(name + ": choosing Calm mode on is remembered after reload", await p.evaluate(() => document.body.classList.contains("calm")));

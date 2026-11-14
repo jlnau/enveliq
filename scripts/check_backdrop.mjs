@@ -25,7 +25,7 @@ const shots = process.env.SHOTS; if (shots) fs.mkdirSync(shots, { recursive: tru
 const scenes = {};
 for (const [name, theme, vp] of [["desktop dark", "dark", { width: 1440, height: 900 }], ["desktop light", "light", { width: 1440, height: 900 }], ["wide dark", "dark", { width: 2000, height: 1000 }], ["tablet light", "light", { width: 900, height: 900 }], ["phone dark", "dark", { width: 390, height: 800 }]]) {
   const ctx = await b.newContext({ viewport: vp });
-  await ctx.addInitScript((t) => { try { localStorage.setItem("enveliq-theme", t); localStorage.setItem("enveliq-welcome-seen", "1"); } catch {} }, theme);
+  await ctx.addInitScript((t) => { try { localStorage.setItem("enveliq-view", JSON.stringify({ scheme: t === "light" ? "light" : "standard" })); localStorage.setItem("enveliq-welcome-seen", "1"); } catch {} }, theme);
   const p = await ctx.newPage(); const errors = [], outside = [];
   p.on("pageerror", (e) => errors.push(String(e)));
   p.on("request", (r) => { if (!r.url().startsWith(origin) && !r.url().startsWith("data:")) outside.push(r.url()); });
