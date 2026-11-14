@@ -175,15 +175,16 @@ await page.evaluate(() => closeSettings());
   await ready();
   if (!(await page.locator("#sentNav").isVisible())) await page.click("#moreToggle");          // Sent lives under More, which starts folded
   check("New email and Sent are available by default", (await page.locator("#newMailBtn").isVisible()) && (await page.locator("#sentNav").isVisible()));
-  // Sent comes from the mailbox's Sent folder, last 4 months only
+  // Sent is the Folders page showing the mailbox's Sent folder; opening a row shows the email in the reading view
+  // (under the row in the list layout, beside it in the split layouts)
   await page.click("#sentNav");
-  await page.waitForSelector(".srow");
-  check("Sent lists the last 4 months and leaves out older mail", (await page.locator(".ssub").allInnerTexts()).join("|") === "Recent sent mail" && (await page.locator("#sentFoot").innerText()) === "Limited to the last 4 months.");
-  await page.locator(".shead").first().click();
-  await page.locator(".sbody button").first().click();
-  await page.waitForSelector("#attachmentModal.open");
-  check("View original shows the sent email's text", (await page.locator("#attachmentViewer").innerText()).includes("Sent body text"));
-  await page.click("#attachmentModalClose");
+  await page.waitForSelector(".frow");
+  const sentRows = await page.locator(".frow").allInnerTexts();
+  check("Sent lists the mailbox's Sent folder", sentRows.length === 2 && sentRows.some((t) => t.includes("Recent sent mail")) && sentRows.some((t) => t.includes("Old sent mail")));
+  await page.locator(".frow").filter({ hasText: "Recent sent mail" }).click();
+  const reading = page.locator("#fdrList .fdr-inline, #fdrPane").filter({ hasText: "Sent body text" });
+  await reading.first().waitFor({ state: "visible" });
+  check("opening a sent email shows its text in the reading view", (await reading.first().innerText()).includes("Sent body text"));
   // New email through the real server and the pretend mailbox
   await page.click("#newMailBtn");
   await page.locator("#nmTo input").fill("ali");

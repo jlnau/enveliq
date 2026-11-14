@@ -138,7 +138,7 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.waitForFunction(() => !document.getElementById("fdrRefresh").disabled);
 
   await page.selectOption("#waitDays", "5");
-  await page.waitForFunction(() => document.querySelector("#waitDays").value === "5" && document.querySelectorAll(".frow.wrow").length === 4);
+  await page.waitForFunction(() => document.querySelector("#waitDays").value === "5" && /no reply yet · 1/i.test(document.getElementById("fdrList").innerText));
   check("changing the days is sent to the server and the due notes follow (the four-day one is no longer due)", server.calls.some((c) => c[0] === "days" && c[1] === 5) && /no reply yet · 1/i.test(await page.locator("#fdrList").innerText()));
   await page.selectOption("#waitDays", "3");
   await page.waitForFunction(() => /no reply yet · 2/i.test(document.getElementById("fdrList").innerText));

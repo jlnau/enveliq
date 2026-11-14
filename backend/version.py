@@ -1,5 +1,5 @@
 """The version shown in reports and the status page. Keep it in step with the README."""
-VERSION = "0.103"
+VERSION = "0.104"
 
 
 import os as _os
