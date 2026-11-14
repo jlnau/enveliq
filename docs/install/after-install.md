@@ -64,5 +64,5 @@ By default Enveliq opens only on the computer that runs it. [How should I open E
 ## Where next?
 
 - Make Enveliq yours: **Settings** has everything about you. Start with [AI instructions](../AI_SUMMARIES.md#instructions-for-how-summaries-are-written).
-- Optional extras, each with a guide: [Messages between people](../MESSAGES.md), [Writing help](../WRITING_HELP.md), [Tasks in a calendar](../CALENDAR.md), [Reminders](../NOTIFICATIONS.md), [Single sign-on](../SSO.md).
+- Optional extras, each with a guide: [Writing help](../WRITING_HELP.md), [Tasks in a calendar](../CALENDAR.md), [Reminders](../NOTIFICATIONS.md), [Single sign-on](../SSO.md).
 - Keep it safe: [Maintenance](maintenance.md) (backups, updates).

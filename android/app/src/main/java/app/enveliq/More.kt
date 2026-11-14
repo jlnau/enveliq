@@ -4,6 +4,9 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -175,30 +179,34 @@ internal fun TasksScreen(api: EnveliqApi, mails: List<Mail>, onOpen: (Mail) -> U
 // ---------- The More tab ----------
 
 @Composable
-internal fun MoreTab(api: EnveliqApi, start: String = "home") {
+internal fun MoreTab(api: EnveliqApi, start: String = "home", findStart: FindSpec? = null) {
     var page by remember { mutableStateOf(start) }
     val back = { page = "home" }
     var cleanOn by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { cleanOn = withContext(Dispatchers.IO) { api.cleanUpAvailable() } }
+    var mailboxIds by remember { mutableStateOf(emptyList<String>()) }
+    LaunchedEffect(Unit) { try { mailboxIds = withContext(Dispatchers.IO) { api.mailboxes().map { it.id } } } catch (e: Exception) { } }
     when {
         page == "bell" -> BellPage(api, back)
-        page == "shipping" -> ShippingPage(api, back)
         page == "trips" -> TripsPage(api, back)
         page == "news" -> NewsPage(api, back)
-        page == "chat" -> ChatsPage(api, back)
-        page == "find" -> FindPage(api, back)
+        page == "find" -> FindPage(api, findStart, back)
         page == "later" -> WaitingPage(api, back)
         page == "cleanup" -> CleanUpPage(api, back)
+        page == "subscriptions" -> SubscriptionsPage(api, back)
+        page == "tags" -> TagsPage(api, mailboxIds, back)
+        page == "ask" -> AskPage(api, back)
         else -> Column(Modifier.fillMaxSize()) {
             Heading("More", "")
             LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(listOf(
                     Triple("cleanup", "Clean up", "Quiet the mailing lists you do not need."),
                     Triple("find", "Find any email", "Search everything in your mailboxes, old email too."),
+                    Triple("ask", "Ask Enveliq", "Questions about your own Enveliq. Answers are written by AI."),
+                    Triple("tags", "Tags", "Your tags, and the emails that carry each one."),
+                    Triple("subscriptions", "Subscriptions", "What you pay for, and what renews soon."),
                     Triple("later", "Waiting to send", "Emails you set to go later, and any that could not go."),
                     Triple("bell", "Notes and alerts", "Things your other services told Enveliq."),
-                    Triple("chat", "Messages", "Chat with the people in your household."),
-                    Triple("shipping", "Shipping", "Parcels on their way and when they arrive."),
                     Triple("trips", "Trips and calendar", "Flights, stays and bookings from your email."),
                     Triple("news", "News feeds", "The sites you follow."),
                 ).filter { it.first != "cleanup" || cleanOn }) { (id, title, note) ->
@@ -238,31 +246,109 @@ private fun BellPage(api: EnveliqApi, onBack: () -> Unit) {
 }
 
 @Composable
-private fun ShippingPage(api: EnveliqApi, onBack: () -> Unit) {
+internal fun ShippingPage(api: EnveliqApi, onBack: () -> Unit) {
     var link by remember { mutableStateOf<String?>(null) }
+    var reload by remember { mutableStateOf(0) }
+    var recvOpen by remember { mutableStateOf(false) }
+    var noting by remember { mutableStateOf<Order?>(null) }
+    var askNot by remember { mutableStateOf<Order?>(null) }
+    val scope = rememberCoroutineScope()
+    val snack = androidx.compose.runtime.remember { androidx.compose.material3.SnackbarHostState() }
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    fun act(id: String, action: String) {
+        scope.launch {
+            try { withContext(Dispatchers.IO) { api.shippingAct(id, action) } } catch (e: Exception) { snack.showSnackbar((e as? ApiException)?.message ?: "That did not work. Please try again.") }
+            reload++
+        }
+    }
     SubPage("Shipping", onBack = onBack) {
-        Loader(0, { api.shipping() }) { sec ->
+        Loader(reload, { api.shipping() }) { sec ->
             if (!sec.enabled) Empty("Shipping is switched off. You can turn it on in Settings on the website.")
-            else LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (sec.items.isEmpty()) item { Empty("No parcels yet. Order confirmations and shipping emails are picked up here.") }
-                items(sec.items, key = { it.id }) { o ->
-                    Card {
-                        Text(o.shop.ifBlank { "Order" }, color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-                        if (o.items.isNotBlank()) Text(o.items, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 2.dp))
-                        val status = when {
-                            o.needsConfirm -> "Delivered. Did it arrive?"
-                            o.delivered -> "Delivered"
-                            o.delayed -> "Delayed" + if (o.expected.isNotBlank()) ", now " + o.expected else ""
-                            else -> o.status.replaceFirstChar { it.uppercase() } + if (o.expected.isNotBlank()) ", expected " + o.expected else ""
+            else {
+                val got = sec.items.filter { it.delivered && it.acked }
+                val active = sec.items.filter { !(it.delivered && it.acked) }
+                LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (sec.items.isEmpty()) item { Empty("No parcels yet. Order confirmations and shipping emails are picked up here.") }
+                    else if (active.isEmpty()) item { Empty("Nothing on its way. Parcels you have not marked as received show here.") }
+                    items(active, key = { it.id }) { o ->
+                        var menu by remember { mutableStateOf(false) }
+                        Card {
+                            Text(o.shop.ifBlank { "Order" }, color = Ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                            if (o.items.isNotBlank()) Text(o.items, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 2.dp))
+                            val status = when {
+                                o.needsConfirm -> "Delivered. Did it arrive?"
+                                o.delivered -> "Delivered"
+                                o.delayed -> "Delayed" + if (o.expected.isNotBlank()) ", now " + o.expected else ""
+                                else -> o.status.replaceFirstChar { it.uppercase() } + if (o.expected.isNotBlank()) ", expected " + o.expected else ""
+                            }
+                            Text(status, color = if (o.delayed) Amber else if (o.delivered) Green else Ink, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
+                            if (o.note.isNotBlank()) Text(o.note, color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (o.needsConfirm) {
+                                    TextButton(onClick = { act(o.id, "confirm") }) { Text("Yes, I've got it", color = Green) }
+                                    TextButton(onClick = { act(o.id, "not_yet") }) { Text("Not yet", color = Muted) }
+                                } else if (o.trackUrl.startsWith("https://")) TextButton(onClick = { link = o.trackUrl }) { Text("Track it", color = Blue) }
+                                Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+                                  // The menu hangs from the three dots themselves, so it opens right under them and raised above the cards.
+                                  Box {
+                                    TextButton(onClick = { menu = true }) { Text("⋮", color = Muted, fontSize = 20.sp) }
+                                    androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = PanelHigh, shape = RoundedCornerShape(14.dp), shadowElevation = 8.dp) {
+                                        if (o.needsConfirm && o.trackUrl.startsWith("https://")) androidx.compose.material3.DropdownMenuItem(text = { Text("Track it", color = Ink) }, onClick = { menu = false; link = o.trackUrl })
+                                        if (o.tracking.isNotBlank()) androidx.compose.material3.DropdownMenuItem(text = { Text("Copy tracking number", color = Ink) }, onClick = { menu = false; clipboard.setText(androidx.compose.ui.text.AnnotatedString(o.tracking)) })
+                                        androidx.compose.material3.DropdownMenuItem(text = { Text((if (o.note.isBlank()) "\u270E  Add a note" else "\u270E  Edit note"), color = Ink) }, onClick = { menu = false; noting = o })
+                                        if (o.manual) androidx.compose.material3.DropdownMenuItem(text = { Text("\u2298  Remove", color = Red) }, onClick = { menu = false; act(o.id, "remove") })
+                                        else androidx.compose.material3.DropdownMenuItem(text = { Text("\u2298  Not an order", color = Red) }, onClick = { menu = false; askNot = o })
+                                    }
+                                  }
+                                }
+                            }
                         }
-                        Text(status, color = if (o.delayed) Amber else if (o.delivered) Green else Ink, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
-                        if (o.trackUrl.startsWith("https://")) TextButton(onClick = { link = o.trackUrl }) { Text("Track it", color = Blue) }
+                    }
+                    if (got.isNotEmpty()) {
+                        item {
+                            Row(Modifier.fillMaxWidth().clickable { recvOpen = !recvOpen }.padding(vertical = 12.dp, horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text("Received · " + got.size, color = Muted, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                                Text(if (recvOpen) "⌃" else "⌄", color = Muted, fontSize = 18.sp)
+                            }
+                        }
+                        if (recvOpen) {
+                            items(got, key = { "r" + it.id }) { o ->
+                                Surface(color = Panel, shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, Line), modifier = Modifier.fillMaxWidth()) {
+                                    Row(Modifier.padding(start = 14.dp, top = 6.dp, bottom = 6.dp, end = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Column(Modifier.weight(1f)) {
+                                            Text(o.shop.ifBlank { "Order" }, color = Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                                            if (o.items.isNotBlank()) Text(o.items, color = Muted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        }
+                                        TextButton(onClick = { act(o.id, "undo") }) { Text("Undo", color = Blue) }
+                                    }
+                                }
+                            }
+                            item { Text("Received orders stay here for 14 days, then are forgotten.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(4.dp)) }
+                        }
                     }
                 }
             }
         }
+        androidx.compose.material3.SnackbarHost(snack)
     }
     link?.let { LinkConfirm(it) { link = null } }
+    askNot?.let { o ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { askNot = null }, title = { Text("This is not an order?") },
+            text = { Text("It is taken off your list and Enveliq will not pick it up again.") },
+            confirmButton = { TextButton(onClick = { askNot = null; act(o.id, "not_order") }) { Text("Not an order", color = Red) } },
+            dismissButton = { TextButton(onClick = { askNot = null }) { Text("Cancel", color = Muted) } },
+        )
+    }
+    noting?.let { o ->
+        var text by remember(o.id) { mutableStateOf(o.note) }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { noting = null }, title = { Text("Note") },
+            text = { OutlinedTextField(value = text, onValueChange = { text = it.take(500) }, modifier = Modifier.fillMaxWidth(), maxLines = 5) },
+            confirmButton = { TextButton(onClick = { noting = null; scope.launch { try { withContext(Dispatchers.IO) { api.shippingNote(o.id, text) } } catch (e: Exception) { snack.showSnackbar("That did not work. Please try again.") }; reload++ } }) { Text("Save", color = Blue) } },
+            dismissButton = { TextButton(onClick = { noting = null }) { Text("Cancel", color = Muted) } },
+        )
+    }
 }
 
 @Composable
@@ -334,90 +420,62 @@ private fun NewsPage(api: EnveliqApi, onBack: () -> Unit) {
     link?.let { LinkConfirm(it) { link = null } }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun ChatsPage(api: EnveliqApi, onBack: () -> Unit) {
-    var open by remember { mutableStateOf<Chat?>(null) }
-    val chat = open
-    if (chat != null) { ChatThread(api, chat) { open = null }; return }
-    SubPage("Messages", onBack = onBack) {
-        Loader(0, { api.threads() }) { threads ->
-            LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (threads.isEmpty()) item { Empty("No conversations yet. Start one on the website.") }
-                items(threads, key = { it.id }) { t ->
-                    Card(onClick = { open = t }) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(t.title, color = Ink, fontSize = 17.sp, fontWeight = if (t.unread > 0) FontWeight.Bold else FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                            if (t.unread > 0) Text("${t.unread}", color = Blue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                        }
-                        if (t.last.isNotBlank()) Text(t.last, color = Muted, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
-                    }
-                }
-            }
-        }
+private fun DateField(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier = Modifier) {
+    var show by remember { mutableStateOf(false) }
+    OutlinedTextField(
+        value = value, onValueChange = {}, readOnly = true, singleLine = true, label = { Text(label) }, placeholder = { Text("any date") },
+        modifier = modifier.clickable { show = true },
+        enabled = false,
+        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+            disabledTextColor = Ink, disabledBorderColor = Line, disabledLabelColor = Muted, disabledPlaceholderColor = Muted,
+        ),
+        trailingIcon = { if (value.isNotBlank()) TextButton(onClick = { onChange("") }) { Text("Clear", color = Blue, fontSize = 13.sp) } },
+    )
+    if (show) {
+        val state = androidx.compose.material3.rememberDatePickerState(
+            initialSelectedDateMillis = runCatching { java.time.LocalDate.parse(value).atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli() }.getOrNull(),
+        )
+        androidx.compose.material3.DatePickerDialog(
+            onDismissRequest = { show = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.selectedDateMillis?.let { onChange(java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).toLocalDate().toString()) }
+                    show = false
+                }) { Text("OK", color = Blue) }
+            },
+            dismissButton = { TextButton(onClick = { show = false }) { Text("Cancel", color = Muted) } },
+        ) { androidx.compose.material3.DatePicker(state = state) }
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun ChatThread(api: EnveliqApi, chat: Chat, onBack: () -> Unit) {
-    var reload by remember { mutableStateOf(0) }
-    var text by remember { mutableStateOf("") }
-    var note by remember { mutableStateOf("") }
+private fun FindPage(api: EnveliqApi, start: FindSpec? = null, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
-    SubPage(chat.title, onBack = onBack) {
-        Column(Modifier.fillMaxSize().imePadding()) {
-            Box(Modifier.weight(1f)) {
-                Loader(reload, { api.thread(chat.id) }) { msgs ->
-                    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp), reverseLayout = true) {
-                        items(msgs.reversed(), key = { it.id }) { m ->
-                            Column(Modifier.fillMaxWidth(), horizontalAlignment = if (m.mine) Alignment.End else Alignment.Start) {
-                                Surface(color = if (m.mine) Blue else PanelHigh, shape = RoundedCornerShape(16.dp)) {
-                                    Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
-                                        if (!m.mine) Text(m.name, color = Muted, fontSize = 12.sp)
-                                        Text(if (m.deleted) "Message removed" else m.text, color = if (m.mine) androidx.compose.ui.graphics.Color.White else Ink, fontSize = 16.sp)
-                                    }
-                                }
-                                Text(whenText(m.at), color = Muted, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 6.dp))
-                            }
-                        }
-                    }
-                }
-            }
-            if (note.isNotEmpty()) Text(note, color = Red, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 16.dp))
-            Row(Modifier.fillMaxWidth().background(Panel).padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(value = text, onValueChange = { text = it }, modifier = Modifier.weight(1f), placeholder = { Text("Write a message") }, maxLines = 4)
-                Box(Modifier.size(8.dp))
-                Button(enabled = text.isNotBlank(), onClick = {
-                    val sending = text
-                    scope.launch {
-                        try {
-                            withContext(Dispatchers.IO) { api.sendChat(chat.id, sending) }
-                            text = ""
-                            note = ""
-                            reload++
-                        } catch (e: ApiException) {
-                            note = e.message ?: "Could not send that."
-                        } catch (e: Exception) {
-                            note = "Could not send that. Check your connection."
-                        }
-                    }
-                }) { Text("Send") }
-            }
-        }
-    }
-}
-
-@Composable
-private fun FindPage(api: EnveliqApi, onBack: () -> Unit) {
-    val scope = rememberCoroutineScope()
-    var query by remember { mutableStateOf("") }
-    var junk by remember { mutableStateOf(false) }
+    var spec by remember { mutableStateOf(start ?: FindSpec()) }
+    var filtersOpen by remember { mutableStateOf(false) }
     var jobId by remember { mutableStateOf("") }
     var running by remember { mutableStateOf(false) }
+    var searched by remember { mutableStateOf<FindSpec?>(null) }
     var note by remember { mutableStateOf("") }
     val rows = remember { androidx.compose.runtime.mutableStateListOf<FoundRow>() }
     var more by remember { mutableStateOf(false) }
     var reading by remember { mutableStateOf<FoundRow?>(null) }
     var text by remember { mutableStateOf("") }
+    var boxes by remember { mutableStateOf<List<Mailbox>>(emptyList()) }
+    var folders by remember { mutableStateOf<List<FolderInfo>>(emptyList()) }
+    var history by remember { mutableStateOf(FindHistory(emptyList(), emptyList())) }
+    var naming by remember { mutableStateOf(false) }
+    var saveName by remember { mutableStateOf("") }
+    var reload by remember { mutableStateOf(0) }
+
+    LaunchedEffect(Unit) { boxes = try { withContext(Dispatchers.IO) { api.mailboxes() } } catch (_: Exception) { emptyList() } }
+    LaunchedEffect(reload) { history = try { withContext(Dispatchers.IO) { api.findHistory() } } catch (_: Exception) { history } }
+    LaunchedEffect(spec.accountId) {
+        folders = if (spec.accountId.isBlank()) emptyList() else try { withContext(Dispatchers.IO) { api.folders(spec.accountId) } } catch (_: Exception) { emptyList() }
+    }
 
     val row = reading
     if (row != null) {
@@ -435,13 +493,15 @@ private fun FindPage(api: EnveliqApi, onBack: () -> Unit) {
         return
     }
 
-    fun search() {
-        if (query.isBlank() || running) return
-        rows.clear(); more = false; note = ""; running = true
+    fun search(s: FindSpec = spec) {
+        if (!s.canSearch || running) return
+        spec = s; searched = s
+        rows.clear(); more = false; note = ""; running = true; filtersOpen = false
         scope.launch {
             try {
-                var p = withContext(Dispatchers.IO) { api.findStart(query.trim(), junk) }
+                var p = withContext(Dispatchers.IO) { api.findStart(s) }
                 jobId = p.id
+                reload++
                 var shown = 0
                 var tries = 0
                 while (true) {
@@ -458,7 +518,7 @@ private fun FindPage(api: EnveliqApi, onBack: () -> Unit) {
                     kotlinx.coroutines.delay(1500)
                     p = withContext(Dispatchers.IO) { api.findProgress(p.id) }
                 }
-                note = if (rows.isEmpty()) "Nothing found. Try fewer or different words." else p.notes.joinToString(" ")
+                note = if (rows.isEmpty()) "Nothing found. Try fewer or different words or filters." else p.notes.joinToString(" ")
             } catch (e: ApiException) {
                 note = e.message ?: "The search did not work."
             } catch (e: Exception) {
@@ -467,33 +527,124 @@ private fun FindPage(api: EnveliqApi, onBack: () -> Unit) {
             running = false
         }
     }
+    // Opened from a saved search in the main menu: run it straight away.
+    LaunchedEffect(start) { if (start != null && start.canSearch) search(start) }
+
+    if (naming) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { naming = false },
+            title = { Text("Save this search") },
+            text = { OutlinedTextField(value = saveName, onValueChange = { saveName = it.take(60) }, singleLine = true, label = { Text("Name") }) },
+            confirmButton = {
+                TextButton(enabled = saveName.isNotBlank(), onClick = {
+                    naming = false
+                    val s = searched ?: spec
+                    scope.launch {
+                        note = try { withContext(Dispatchers.IO) { api.findSave(saveName, s) }; "Saved. It is in the main menu." }
+                        catch (e: ApiException) { e.message ?: "That did not save." }
+                        catch (e: Exception) { "That did not save. Check your connection." }
+                        saveName = ""; reload++
+                    }
+                }) { Text("Save", color = Blue) }
+            },
+            dismissButton = { TextButton(onClick = { naming = false }) { Text("Cancel", color = Muted) } },
+        )
+    }
 
     SubPage("Find any email", onBack = onBack) {
         LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp).imePadding(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item {
                 OutlinedTextField(
-                    value = query, onValueChange = { query = it.take(300) }, singleLine = true, label = { Text("Words to look for") },
+                    value = spec.query, onValueChange = { spec = spec.copy(query = it.take(200)) }, singleLine = true, label = { Text("Words to look for") },
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    androidx.compose.material3.Switch(checked = junk, onCheckedChange = { junk = it })
-                    Text("Look in Junk too", color = Ink, fontSize = 15.sp, modifier = Modifier.padding(start = 10.dp))
+                Row(Modifier.fillMaxWidth().clickable { filtersOpen = !filtersOpen }.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(if (filtersOpen) "Filters \u25B4" else "Filters \u25BE", color = Blue, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.weight(1f))
+                    Text(if (spec.filterCount == 0) "none set" else spec.filterCount.toString() + " set", color = Muted, fontSize = 13.sp)
                 }
-                Button(onClick = { search() }, enabled = !running && query.isNotBlank(), modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                if (filtersOpen) {
+                    OutlinedTextField(value = spec.sender, onValueChange = { spec = spec.copy(sender = it.take(100)) }, singleLine = true, label = { Text("From") }, placeholder = { Text("a name or address") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = spec.to, onValueChange = { spec = spec.copy(to = it.take(100)) }, singleLine = true, label = { Text("To") }, placeholder = { Text("a name or address") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+                    Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        DateField("Since", spec.since, { spec = spec.copy(since = it) }, Modifier.weight(1f))
+                        DateField("Until", spec.until, { spec = spec.copy(until = it) }, Modifier.weight(1f))
+                    }
+                    for ((label, on, set) in listOf<Triple<String, Boolean, (Boolean) -> Unit>>(
+                        Triple("Has files", spec.files) { spec = spec.copy(files = it) },
+                        Triple("Unread only", spec.unread) { spec = spec.copy(unread = it) },
+                        Triple("Starred only", spec.starred) { spec = spec.copy(starred = it) },
+                        Triple("Look in Junk too", spec.junk) { spec = spec.copy(junk = it) },
+                    )) {
+                        Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(label, color = Ink, fontSize = 15.sp, modifier = Modifier.weight(1f))
+                            androidx.compose.material3.Switch(checked = on, onCheckedChange = set)
+                        }
+                    }
+                    if (boxes.size > 1) {
+                        Text("Where", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 10.dp, bottom = 4.dp))
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            FindChip("All mailboxes", spec.accountId.isBlank()) { spec = spec.copy(accountId = "", folder = "") }
+                            boxes.forEach { b -> FindChip(b.label, spec.accountId == b.id) { spec = spec.copy(accountId = b.id, folder = "") } }
+                        }
+                    }
+                    if (spec.accountId.isNotBlank() && folders.isNotEmpty()) {
+                        Text("Folder", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 10.dp, bottom = 4.dp))
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            FindChip("Every folder", spec.folder.isBlank()) { spec = spec.copy(folder = "") }
+                            folders.forEach { f -> FindChip(f.label, spec.folder == f.name) { spec = spec.copy(folder = f.name) } }
+                        }
+                    }
+                    TextButton(onClick = { spec = FindSpec(query = spec.query) }) { Text("Clear filters", color = Blue) }
+                }
+                Button(onClick = { search() }, enabled = !running && spec.canSearch, modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
                     Text(if (running) "Searching..." else "Search")
                 }
                 if (running) TextButton(onClick = { scope.launch { withContext(Dispatchers.IO) { api.findCancel(jobId) } } }) { Text("Stop searching", color = Blue) }
                 if (note.isNotEmpty()) Text(note, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
+                val shownSpec = searched
+                if (shownSpec != null) {
+                    FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        shownSpec.chips(boxes).forEach { c -> FindChip(c, true) {} }
+                    }
+                    if (!running) OutlinedButton(onClick = { saveName = ""; naming = true }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) { Text("Save this search", color = Blue) }
+                }
+            }
+            if (searched == null) {
+                if (history.recent.isNotEmpty()) item {
+                    Text("Recent", color = Muted, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    FlowRow(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        history.recent.forEach { r -> FindChip(r.describe(boxes), false) { search(r) } }
+                        TextButton(onClick = { scope.launch { try { withContext(Dispatchers.IO) { api.findClearRecent() } } catch (_: Exception) { }; reload++ } }) { Text("Clear", color = Muted, fontSize = 13.sp) }
+                    }
+                }
+                if (history.saved.isNotEmpty()) {
+                    item { Text("Saved searches", color = Muted, fontSize = 13.sp, fontWeight = FontWeight.SemiBold) }
+                    items(history.saved, key = { it.id }) { s ->
+                        Card(onClick = { search(s.spec) }) {
+                            Text(s.name, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                            Text(s.spec.describe(boxes), color = Muted, fontSize = 13.sp)
+                            TextButton(onClick = { scope.launch { try { withContext(Dispatchers.IO) { api.findForget(s.id) } } catch (_: Exception) { }; reload++ } }) { Text("Remove", color = Muted, fontSize = 13.sp) }
+                        }
+                    }
+                }
             }
             items(rows, key = { it.token }) { r ->
                 Card(onClick = { reading = r }) {
                     Text(r.subject, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Text(r.from, color = Muted, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(listOf(r.date.take(10), r.mailbox, r.folder).filter { it.isNotBlank() }.joinToString(" · "), color = Muted, fontSize = 12.sp)
+                    Text(listOf(r.date.take(10), r.mailbox, r.folder).filter { it.isNotBlank() }.joinToString(" \u00B7 "), color = Muted, fontSize = 12.sp)
                 }
             }
-            item { if (more && !running) Text("Only the first results are shown. Add more words to narrow it down.", color = Muted, fontSize = 13.sp) }
+            item { if (more && !running) Text("Only the first results are shown. Add more words or a filter to narrow it down.", color = Muted, fontSize = 13.sp) }
         }
+    }
+}
+
+@Composable
+private fun FindChip(label: String, on: Boolean, onClick: () -> Unit) {
+    Surface(onClick = onClick, shape = RoundedCornerShape(20.dp), color = if (on) androidx.compose.ui.graphics.Color(0xFF173056) else PanelHigh) {
+        Text(label, color = if (on) androidx.compose.ui.graphics.Color(0xFF8DB8FF) else Ink, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -522,6 +673,136 @@ private fun WaitingPage(api: EnveliqApi, onBack: () -> Unit) {
                         }) { Text(if (w.state == "failed") "Remove" else "Take it back", color = Blue) }
                     }
                 }
+            }
+        }
+    }
+}
+
+// ---------- Folders ----------
+
+/** Full-screen box to pick a folder to move [count] emails into, or to make a new one. */
+@Composable
+internal fun FolderPicker(api: EnveliqApi, accountId: String, count: Int, prefs: android.content.SharedPreferences, senderName: String? = null, startAlways: Boolean = false, onPick: (FolderInfo, Boolean) -> Unit, onClose: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var rows by remember { mutableStateOf<List<FolderInfo>?>(null) }
+    var err by remember { mutableStateOf("") }
+    var find by remember { mutableStateOf("") }
+    var fresh by remember { mutableStateOf("") }
+    var making by remember { mutableStateOf(false) }
+    var always by remember { mutableStateOf(startAlways) }
+    val key = "recent_folders_" + accountId
+    val recent = (prefs.getString(key, "") ?: "").split("\n").filter { it.isNotBlank() }
+    LaunchedEffect(accountId) {
+        try { rows = withContext(Dispatchers.IO) { api.folders(accountId) } }
+        catch (e: ApiException) { err = e.message ?: "Could not read your folders." }
+        catch (e: Exception) { err = "Could not read your folders. Check your connection." }
+    }
+    fun choose(f: FolderInfo) {
+        prefs.edit().putString(key, (listOf(f.name) + recent.filter { it != f.name }).take(6).joinToString("\n")).apply()
+        onPick(f, always && senderName != null)
+    }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(color = androidx.compose.ui.graphics.Color.Unspecified.let { Navy }, modifier = Modifier.fillMaxSize()) {
+            Column(Modifier.fillMaxSize().imePadding()) {
+                Row(Modifier.fillMaxWidth().background(Panel).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(if (count == 1) "Move this email to…" else "Move $count emails to…", color = Ink, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                    TextButton(onClick = onClose) { Text("Close", color = Blue, fontSize = 16.sp) }
+                }
+                OutlinedTextField(value = find, onValueChange = { find = it }, singleLine = true, placeholder = { Text("Find a folder") }, modifier = Modifier.fillMaxWidth().padding(16.dp, 12.dp, 16.dp, 4.dp))
+                val shown = (rows ?: emptyList()).filter { it.target && (find.isBlank() || it.label.contains(find.trim(), ignoreCase = true)) }
+                    .sortedWith(compareBy({ val i = recent.indexOf(it.name); if (i < 0) 99 else i }, { it.label.lowercase() }))
+                LazyColumn(Modifier.weight(1f).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (err.isNotEmpty()) item { Text(err, color = Red, fontSize = 15.sp, modifier = Modifier.padding(8.dp)) }
+                    else if (rows == null) item { Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Blue) } }
+                    else if (shown.isEmpty()) item { Text(if (rows!!.any { it.target }) "No folder matches that." else "You have no folders of your own yet. Make one below.", color = Muted, fontSize = 15.sp, modifier = Modifier.padding(8.dp)) }
+                    items(shown, key = { it.name }) { f -> Card(onClick = { choose(f) }) { Text(f.label, color = Ink, fontSize = 17.sp) } }
+                }
+                if (senderName != null) Row(Modifier.fillMaxWidth().background(Panel).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.Top) {
+                    androidx.compose.material3.Checkbox(checked = always, onCheckedChange = { always = it })
+                    Column(Modifier.padding(start = 6.dp, top = 12.dp)) {
+                        Text("Always move new email from " + senderName + " into the folder I pick", color = Ink, fontSize = 15.sp)
+                        Text("It leaves the Inbox. To keep it in the Inbox too, use Tags.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp))
+                    }
+                }
+                Row(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = fresh, onValueChange = { fresh = it.take(80) }, singleLine = true, placeholder = { Text("Or make a new folder") }, modifier = Modifier.weight(1f))
+                    Button(enabled = fresh.isNotBlank() && !making, onClick = {
+                        making = true
+                        scope.launch {
+                            try { choose(withContext(Dispatchers.IO) { api.makeFolder(accountId, fresh.trim()) }) }
+                            catch (e: ApiException) { err = e.message ?: "That folder could not be made." }
+                            catch (e: Exception) { err = "That folder could not be made. Check your connection." }
+                            making = false
+                        }
+                    }) { Text("Make it") }
+                }
+            }
+        }
+    }
+}
+
+/** Folders: the mailbox's folders as chips, and the newest emails in the chosen one. Read live, never kept. */
+@Composable
+internal fun FoldersPage(api: EnveliqApi, accountIds: List<String>, onBack: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var acct by remember { mutableStateOf(accountIds.firstOrNull() ?: "") }
+    var chosen by remember { mutableStateOf<FolderInfo?>(null) }
+    val rows = remember { androidx.compose.runtime.mutableStateListOf<FolderMail>() }
+    var total by remember { mutableStateOf(0) }
+    var more by remember { mutableStateOf(false) }
+    var note by remember { mutableStateOf("") }
+    var reading by remember { mutableStateOf<FolderMail?>(null) }
+    var text by remember { mutableStateOf("") }
+    val row = reading
+    if (row != null) {
+        SubPage(row.subject, row.from, onBack = { reading = null }) {
+            LaunchedEffect(row.token) {
+                text = ""
+                try { text = withContext(Dispatchers.IO) { api.folderOriginal(row.token) } }
+                catch (e: ApiException) { text = e.message ?: "Could not open this email." }
+                catch (e: Exception) { text = "Could not open this email. Check your connection." }
+            }
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+                if (text.isEmpty()) CircularProgressIndicator(color = Blue) else Text(text, color = Ink, fontSize = 16.sp, lineHeight = 24.sp)
+            }
+        }
+        return
+    }
+    fun open(f: FolderInfo, offset: Int) {
+        if (offset == 0) { rows.clear(); chosen = f }
+        note = "Reading " + f.label + "…"
+        scope.launch {
+            try {
+                val p = withContext(Dispatchers.IO) { api.folderMail(acct, f.name, offset) }
+                rows.addAll(p.rows); total = p.total; more = p.more
+                note = if (p.total == 0) f.label + " is empty." else f.label + ": " + p.total + (if (p.total == 1) " email" else " emails") + ", newest first."
+            } catch (e: ApiException) { note = e.message ?: "Could not open that folder." }
+            catch (e: Exception) { note = "Could not open that folder. Check your connection." }
+        }
+    }
+    SubPage("Folders", onBack = onBack) {
+        Loader(0, { api.folders(acct) }) { folders ->
+            LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (folders.isEmpty()) item { Empty("This mailbox has no other folders.") }
+                item {
+                    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        for (f in folders) {
+                            val on = chosen?.name == f.name
+                            Surface(color = if (on) androidx.compose.ui.graphics.Color(0xFF173056) else PanelHigh, shape = RoundedCornerShape(20.dp), modifier = Modifier.clickable { open(f, 0) }) {
+                                Text(f.label, color = if (on) androidx.compose.ui.graphics.Color(0xFF8DB8FF) else Ink, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp))
+                            }
+                        }
+                    }
+                }
+                if (note.isNotEmpty()) item { Text(note, color = Muted, fontSize = 13.sp) }
+                items(rows.toList(), key = { it.token }) { r ->
+                    Card(onClick = { reading = r }) {
+                        Text(r.from, color = Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(r.subject, color = Muted, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
+                    }
+                }
+                if (more) item { TextButton(onClick = { chosen?.let { open(it, rows.size) } }) { Text("Show more", color = Blue) } }
+                item { Text("Read from your mailbox when you look. Nothing is saved in Enveliq.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(vertical = 8.dp)) }
             }
         }
     }

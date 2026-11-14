@@ -68,17 +68,20 @@ def target_for(account: dict[str, Any], microsoft: Any = None) -> Target:
 
 
 class AccountLocks:
-    """One mailbox operation at a time per account."""
+    """One mailbox operation at a time per account. A person's request that arrives while another operation (a sync, a summary) is
+    using the mailbox waits its turn for up to WAIT seconds, so it simply happens a moment later instead of being refused."""
+
+    WAIT = 25.0
 
     def __init__(self) -> None:
         self._guard = threading.Lock()
         self._locks: dict[str, threading.Lock] = {}
 
-    def acquire(self, account_id: str) -> threading.Lock:
+    def acquire(self, account_id: str, wait: float | None = None) -> threading.Lock:
         with self._guard:
             lock = self._locks.setdefault(account_id, threading.Lock())
-        if not lock.acquire(blocking=False):
-            raise BridgeError("busy", "This mailbox is already syncing. Try again in a moment.")
+        if not lock.acquire(timeout=self.WAIT if wait is None else max(0.0, wait)):
+            raise BridgeError("busy", "Your mailbox is busy with something else right now. Nothing is lost. Try again in a few seconds.")
         return lock
 
 
@@ -284,6 +287,16 @@ class MailService:
         hold = self._holds(account)
         stored_all = vault.list_messages(account_id)
         for stored in stored_all:
+            if stored.get("state") == "reviewed" and not stored.get("found_until"):
+                # The old Reviewed list is gone: such an email is simply a read email, listed with the read mail.
+                try:
+                    data = {k: v for k, v in stored.items() if k != "id"}
+                    data.update(state="unread", resolved_at=None, from_all_mail=True)
+                    vault.update_message(account_id, stored["id"], RetainedMessageCreate(**data).model_dump(mode="python"))
+                    stored["state"], stored["from_all_mail"] = "unread", True
+                except (ValueError, KeyError):
+                    pass
+        for stored in stored_all:
             if stored.get("source_locator"):
                 known_locators.add(stored["source_locator"])
             mid = (stored.get("reply_context") or {}).get("message_id")
@@ -297,12 +310,14 @@ class MailService:
                 uids = s.unseen_uids(since_days, limit)
                 added = skipped = 0
                 fresh = [u for u in uids if locator(validity, u) not in known_locators]
-                for uid, raw in s.header_blocks(fresh):
+                sizes: dict[int, int] = {}
+                for uid, raw in s.header_blocks(fresh, sizes=sizes):
                     info = summarise_headers(raw, identities)
                     if info is None or (info["message_id"] and info["message_id"] in known_ids) or marks.ours(vault, info["message_id"], info.get("reminder_mark")):
                         skipped += 1
                         continue
                     body = RetainedMessageCreate(
+                        list_id=info["list_id"], recipients=info["recipients"], size_bytes=sizes.get(uid),
                         subject=info["subject"],
                         sender_display=info["sender_display"],
                         sender_address=info["sender_address"],
@@ -317,7 +332,8 @@ class MailService:
                     )
                     new_id = vault.create_message(account_id, body.model_dump(mode="python"))
                     arrived.append({"id": new_id, "sender_address": info["sender_address"], "subject": info["subject"], "automated": info["automated"],
-                                    "ids": thread_ids(info["reply_context"])})
+                                    "ids": thread_ids(info["reply_context"]), "recipients": info["recipients"], "list_id": info["list_id"],
+                                    "files": info["has_attachments"], "size": sizes.get(uid)})
                     people.append((info["sender_display"], info["sender_address"]))
                     if info["message_id"]:
                         known_ids.add(info["message_id"])
@@ -363,6 +379,10 @@ class MailService:
                         vault.update_message(account_id, stored["id"], data)
                     except (ValueError, KeyError):
                         continue
+                try:
+                    self._sync_stars(vault, account, s, validity)
+                except Exception:
+                    log.warning("stars could not be read after a sync", exc_info=True)           # stars never break a sync
                 if self.tags_sync:
                     try:
                         self.tags_sync(s, account, validity)
@@ -418,6 +438,7 @@ class MailService:
         instructions = review.instructions_for(vault, account.get("owner_user_id"))
         prompt = review.active_prompt(vault)
         lock = self.locks.acquire(account_id)
+        locked = True
         try:
             # Read the texts first and close Bridge, so a slow model never holds the mailbox connection open.
             with self.bridge.session(target) as s:
@@ -450,6 +471,8 @@ class MailService:
                     except BridgeError as err:
                         failed += 1
                         self.problems[m["id"]] = f"The email could not be read from your mailbox ({err.message})."
+            lock.release()                  # the mailbox is not needed while the model writes: tags, sync, Reviewed and the rest can go ahead
+            locked = False
             done = 0
             for m in batch:
                 if m["id"] not in texts:
@@ -465,13 +488,20 @@ class MailService:
                     except BridgeError as first:
                         if first.code != "ai_bad_reply":
                             raise
-                        result = self.summariser.summarise(m.get("subject") or "", sender, text, instructions, prompt)    # a small model sometimes answers badly once
+                        try:
+                            result = self.summariser.summarise(m.get("subject") or "", sender, text, instructions, prompt)    # a small model sometimes answers badly once
+                        except BridgeError as second:
+                            if second.code != "ai_bad_reply" or len(text) <= 3000:
+                                raise
+                            # A very long email can confuse a small model: one last try with just the start of it.
+                            result = self.summariser.summarise(m.get("subject") or "", sender, text[:3000], instructions, prompt)
                     self.reporter.event("ai_request", provider=provider, cloud=cloud, ok=True, duration_ms=(time.monotonic() - asked) * 1000)
                 except BridgeError as err:
                     self.reporter.event("ai_request_failed", provider=provider, cloud=cloud, ok=False, code=err.code, duration_ms=(time.monotonic() - asked) * 1000)
                     if err.code == "ai_bad_reply":
                         failed += 1
-                        self.problems[m["id"]] = "The AI model answered, but not in a form Enveliq could use as a summary."
+                        why = re.search(r"\((the reply[^()]*|the model[^()]*)\)\s*$", err.message or "")
+                        self.problems[m["id"]] = "The AI model answered, but not in a form Enveliq could use as a summary" + (f" ({why.group(1)})." if why else ".")
                         continue
                     raise  # model unreachable or refusing: stop, nothing is lost
                 shipment = result.pop("shipment", None)
@@ -497,7 +527,7 @@ class MailService:
                 summarised.add(m["id"])
                 if shipment and self.shipments is not None:
                     try:
-                        self.shipments.observe(account.get("owner_user_id"), account_id, m["id"], m.get("subject") or "", m.get("received_at"), shipment)
+                        self.shipments.observe(account.get("owner_user_id"), account_id, m["id"], m.get("subject") or "", m.get("received_at"), shipment, text=text)
                     except Exception:                  # a problem filing an order never loses the summary
                         pass
                 if subscription and self.subscriptions is not None and not found:      # an email with a "Be careful" flag never files anything
@@ -512,7 +542,8 @@ class MailService:
                     except Exception:                  # a problem filing a booking never loses the summary
                         pass
         finally:
-            lock.release()
+            if locked:
+                lock.release()
         # The files are read after the mailbox is free again, so a long document never holds up Reviewed, Archive or a sync.
         for message_id, raw in raws.items():
             if message_id not in summarised:
@@ -576,7 +607,7 @@ class MailService:
         for m in stored_all:
             if (account_id, m["id"]) in held:
                 continue
-            if m.get("from_all_mail") and not m.get("found_until") and m.get("state", "unread") == "unread" and (m.get("received_at") or 0) and m["received_at"] < cutoff:
+            if m.get("from_all_mail") and not m.get("found_until") and not m.get("starred") and m.get("state", "unread") == "unread" and (m.get("received_at") or 0) and m["received_at"] < cutoff:
                 vault.delete_message(account_id, m["id"])
                 removed += 1
         return {"added": added, "removed": removed}
@@ -601,6 +632,14 @@ class MailService:
                                      received_at=info["received_at"], source_locator=where, from_all_mail=True, has_attachments=info["has_attachments"],
                                      found_until=time.time() + self.FOUND_DAYS * 86400)
         return vault.create_message(account_id, body.model_dump(mode="python"))
+
+    def stored_id_at(self, vault: Any, account_id: str, folder: str, validity: int, uid: int) -> str | None:
+        """The id of the entry already kept for this email, if there is one."""
+        where = locator(validity, uid, folder)
+        for stored in vault.list_messages(account_id):
+            if stored.get("source_locator") == where:
+                return stored["id"]
+        return None
 
     def drop_expired_found(self, vault: Any, account: dict[str, Any]) -> int:
         removed = 0
@@ -636,6 +675,19 @@ class MailService:
         """The whole email as it sits in the mailbox, fetched now and never kept."""
         target = self.target(account)
         with self.bridge.session(target) as s:
+            if not message.get("source_locator"):
+                # An archived card has no place in the Inbox any more: the email is looked up in the Archive folder by its Message-ID.
+                mid = str((message.get("reply_context") or {}).get("message_id") or "").strip().strip("<>")
+                if not mid or any(c in mid for c in '"\\\r\n'):
+                    raise BridgeError("not_found", "That email is no longer in your mailbox.")
+                s.select_folder(s.folder_for("archive"), True)
+                try:
+                    uids = s.search(["HEADER", "Message-ID", f'"<{mid}>"'])
+                except BridgeError:
+                    uids = []
+                if not uids:
+                    raise BridgeError("not_found", "That email is no longer in your Archive folder.")
+                return s.original(uids[-1])
             uid = self.open_location(s, message.get("source_locator"))
             return s.original(uid)
 
@@ -884,9 +936,16 @@ class MailService:
             main, _, sub = ctype.partition("/")
             part.add_related(data, maintype=main, subtype=sub, cid=f"<{cids[name]}>", disposition="inline")
 
+    @staticmethod
+    def _flag_important(msg: EmailMessage, important: bool) -> None:
+        """Mark an outgoing email as high importance (the two headers mail programs understand). Only when the person asked."""
+        if important:
+            msg["Importance"] = "high"
+            msg["X-Priority"] = "1 (Highest)"
+
     def build_new(self, account: dict[str, Any], to: list[str], cc: list[str], bcc: list[str], subject: str, body: str,
                   from_address: str | None, files: list[dict[str, str]], html: str | None = None,
-                  images: list[dict[str, str]] | None = None) -> tuple[EmailMessage, str, list[str]]:
+                  images: list[dict[str, str]] | None = None, important: bool = False) -> tuple[EmailMessage, str, list[str]]:
         identities = {i.lower(): i for i in sending_identities(account)}
         mailbox = str(account.get("email_address") or "")
         chosen = identities.get((from_address or mailbox).lower())
@@ -909,6 +968,7 @@ class MailService:
         self.set_content(msg, body.replace("\r\n", "\n"), html, images)
         self.attach_files(msg, files)
         recipients = [a.addr_spec for a in to_a + cc_a + bcc_a]
+        self._flag_important(msg, important)
         return msg, chosen, recipients
 
     # ---------- reply ----------
@@ -947,7 +1007,7 @@ class MailService:
                     to: list[str] | None = None, cc: list[str] | None = None, bcc: list[str] | None = None,
                     kind: str = "reply", add_original: bool = True, files: list[dict[str, str]] | None = None,
                     subject: str | None = None, html: str | None = None,
-                    images: list[dict[str, str]] | None = None, auto: bool = False) -> tuple[EmailMessage, str, list[str]]:
+                    images: list[dict[str, str]] | None = None, auto: bool = False, important: bool = False) -> tuple[EmailMessage, str, list[str]]:
         """A reply. Unless the person already put the original into their own message (add_original False), the whole
         original email is fetched from the mailbox now and quoted under their words. It is never kept."""
         ctx = message.get("reply_context")
@@ -996,12 +1056,13 @@ class MailService:
         self.set_content(msg, text, html, images, tail)
         if files:
             self.attach_files(msg, files)
+        self._flag_important(msg, important)
         return msg, chosen, [a.addr_spec for a in to_a + cc_a + bcc_a]
 
     def build_forward(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None,
                       to: list[str], cc: list[str], bcc: list[str], keep_files: list[int] | None,
                       extra_files: list[dict[str, str]] | None = None, subject: str | None = None, html: str | None = None,
-                      images: list[dict[str, str]] | None = None) -> tuple[EmailMessage, str, list[str]]:
+                      images: list[dict[str, str]] | None = None, important: bool = False) -> tuple[EmailMessage, str, list[str]]:
         """Forward an email: the original is fetched from the mailbox now, quoted under the person's note, and never kept.
         keep_files are the numbers of the original's files to send along (None sends all of them)."""
         ctx = message.get("reply_context") or {}
@@ -1036,6 +1097,7 @@ class MailService:
             msg.add_attachment(data, maintype=main, subtype=sub, filename=clean(name, 200) or "attachment")
         if extra_files:
             self.attach_files(msg, extra_files, already=len(files), already_bytes=total)
+        self._flag_important(msg, important)
         return msg, chosen, [a.addr_spec for a in to_a + cc_a + bcc_a]
 
     def reply(self, account: dict[str, Any], message: dict[str, Any], body: str, from_address: str | None,
@@ -1064,7 +1126,68 @@ class MailService:
         vault.update_message(account_id, message_id, RetainedMessageCreate(**data).model_dump(mode="python"))
         return {"snoozed_until": until}
 
+    @staticmethod
+    def mark_starred(vault: Any, account_id: str, message_id: str, on: bool) -> None:
+        stored = vault.get_message(account_id, message_id)
+        data = {k: v for k, v in stored.items() if k != "id"}
+        data["starred"] = on
+        vault.update_message(account_id, message_id, RetainedMessageCreate(**data).model_dump(mode="python"))
+
     # ---------- resolve ----------
+
+    def set_starred(self, account: dict[str, Any], message: dict[str, Any], on: bool) -> None:
+        """Star or unstar an inbox email in the real mailbox (its Flagged flag)."""
+        if account.get("auth_method") not in MAIL_METHODS or not message.get("source_locator"):
+            raise BridgeError("not_found", "Enveliq can no longer find this email in the mailbox.")
+        validity, uid = parse_locator(message["source_locator"])
+        with self.bridge.session(self.target(account)) as s:
+            if s.select_inbox(readonly=False) != validity:
+                raise BridgeError("not_found", "The mailbox was reset on the server. Sync again.")
+            s.set_flagged(uid, on)
+
+    def move_to_folder(self, folders: Any, account: dict[str, Any], message: dict[str, Any], folder: str) -> None:
+        """Move an Inbox email into a folder of the person's own."""
+        if account.get("auth_method") not in MAIL_METHODS or not message.get("source_locator"):
+            raise BridgeError("not_found", "Enveliq can no longer find this email in the mailbox.")
+        validity, uid = parse_locator(message["source_locator"])
+        folders.move(account, uid, validity, folder)
+
+    STAR_LIMIT = 100
+
+    def _sync_stars(self, vault: Any, account: dict[str, Any], s: Any, validity: int) -> None:
+        """Called by the sync with its open session: bring each email's star in line with the mailbox's Flagged flag, and list starred emails
+        that Enveliq does not hold yet (already read, say) as quiet entries, so a star set in Gmail or Proton shows up here."""
+        flagged = s.flagged_uids()
+        account_id = account["id"]
+        stored = vault.list_messages(account_id)
+        known_uids: set[int] = set()
+        known_ids = {(m.get("reply_context") or {}).get("message_id") for m in stored} - {None, ""}
+        for m in stored:
+            parts = str(m.get("source_locator") or "").split("|")
+            if len(parts) != 3 or parts[0] != "INBOX" or not parts[1].isdigit() or not parts[2].isdigit() or int(parts[1]) != validity:
+                continue
+            uid = int(parts[2])
+            known_uids.add(uid)
+            if bool(m.get("starred")) != (uid in flagged):
+                try:
+                    data = {k: v for k, v in m.items() if k != "id"}
+                    data["starred"] = uid in flagged
+                    vault.update_message(account_id, m["id"], RetainedMessageCreate(**data).model_dump(mode="python"))
+                except (ValueError, KeyError):
+                    continue
+        fresh = sorted(flagged - known_uids, reverse=True)[: self.STAR_LIMIT]
+        identities = sending_identities(account)
+        for uid, raw in s.header_blocks(fresh):
+            info = summarise_headers(raw, identities)
+            if info is None or (info["message_id"] and info["message_id"] in known_ids) or marks.ours(vault, info["message_id"], info.get("reminder_mark")):
+                continue
+            body = RetainedMessageCreate(subject=info["subject"], sender_display=info["sender_display"], sender_address=info["sender_address"],
+                                         summary=PLACEHOLDER_SUMMARY, reply_context=info["reply_context"], unsubscribe=info["unsubscribe"],
+                                         scam_warning=info["scam_warning"], received_at=info["received_at"], source_locator=locator(validity, uid),
+                                         from_all_mail=True, has_attachments=info["has_attachments"], starred=True)
+            vault.create_message(account_id, body.model_dump(mode="python"))
+            if info["message_id"]:
+                known_ids.add(info["message_id"])
 
     def mark_unread(self, account: dict[str, Any], message: dict[str, Any]) -> None:
         """Put the unread mark back on a Reviewed email, in the real mailbox."""

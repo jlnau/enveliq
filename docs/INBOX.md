@@ -10,20 +10,51 @@ The Tag, Task, Reply and other email actions have a fine oval outline so they ar
 
 **Customise, Email style** has two choices. **Classic** is how an opened email has always looked, and it stays the default. **Side rail** is an alternative:
 
-- **On a computer** (the reading panel beside the list, or under it): a narrow bar runs down the left of the email with Reply, Forward, Snooze, Task and Tags at the top, and Reviewed, Archive and Bin at the bottom, each with a small label. If the email has a task, it sits as a flat bar across the top. Under the heading you see the email address, the sender and the time, then the tags and the four Copy buttons. The AI summary comes first, then any attachments. The From, Received, Category and Attachments box is not repeated, because that information is already in the heading line. If **Show the original email** is on, it appears under the attachments.
+- **On a computer** (the reading panel beside the list, or under it): a narrow bar runs down the left of the email with Reply, Forward, Snooze, Task and Tags at the top, and Archive and Bin at the bottom, each with a small label. If the email has a task, it sits as a flat bar across the top. Under the heading you see the email address, the sender and the time, then the tags and the four Copy buttons. The AI summary comes first, then any attachments. The From, Received, Category and Attachments box is not repeated, because that information is already in the heading line. If **Show the original email** is on, it appears under the attachments.
+- **Copy code:** if the email is a sign-in or verification code, a **Copy code 123456** button sits under the AI summary. The code is found only in the subject and the AI summary, and only when the email talks about a code (order numbers, phone numbers and the like are left alone).
 - **On a phone:** there is no side bar. A small X at the top closes the email, the task sits as a bar under it, and the heading has a Reply button and the three-dot menu on its right. The email address is a button: tap it to open Copy sender address, Copy subject and the other copy choices. Reviewed, Archive, Bin, Snooze and Tags are square icon buttons fixed along the bottom. The original email is not shown inline on a phone.
 
 The choice is saved with your other View choices, and **Reset to default** puts it back to Classic. Side rail applies to the reading panel and to the full-screen email on a phone; the list rows, the Cards layout and the daily summary look the same either way. Every button does the same thing as its Classic twin. The browser check is `scripts/check_email_style.mjs`.
 
 ## The three-dot menu on an email
 
-The action row under an email ends, at the far right on a computer and on a phone, with a **three-dot button**. It opens a menu with Reply, Reply all, Forward and Snooze (these stay in the row too), and also: **Important person**, **Always archive these**, **Send to Junk**, **Block sender** (it sends this email to Junk and makes sure new email from them goes there too; undo it in Settings, Mail rules), **Mute conversation** (see [Mute](MUTE.md)), **Print email** and **Save as PDF**. On a phone the same menu slides up from the bottom. Escape closes it and the arrow keys move through it. The same three-dot button is in the open original email. The Android app already had these actions behind its three dots; it now has **Mute conversation** there too.
+The action row under an email ends, at the far right on a computer and on a phone, with a **three-dot button**. It opens a menu with Reply, Reply all, Forward and Snooze (these stay in the row too), and also: **Important person**, **Mail rules for this sender** (opens a second list in the same pop-up with Always archive these, Always mark these as reviewed, Never make tasks from this sender, Never send to Junk and Block sender, which sends this email to Junk and makes sure new email from them goes there too; undo it in Settings, Mail rules; see [Mail rules](MAIL_RULES.md)), **Send to Junk**, **Mute conversation** (see [Mute](MUTE.md)), **Print email**, **Save as PDF**, **Show email headers** and **Download this email (.eml)** (both described below). **Mark as read** is the first item for an email in your inbox (see below). On a phone the same menu slides up from the bottom. Escape closes it and the arrow keys move through it. The same three-dot button is in the open original email. The Android app already had these actions behind its three dots; it now has **Mute conversation** there too.
 
 **Print email** and **Save as PDF** open the email on its own, as the sender made it when it has formatting, and then your browser's print window. Your email stays open while you print: Enveliq prints a hidden copy of it. Choose a printer to print, or choose **Save as PDF** as the destination to keep a PDF with the original formatting. Enveliq does not make or keep a PDF itself, and the email is still only fetched from your mailbox while you look at it.
 
+## Star an email
+
+A star marks an email you want to find again. It is the mailbox's own Flagged mark, so it shows in Gmail and Proton too, and a star you set there shows in Enveliq after the next sync.
+
+- **Where:** the star in the row of buttons under an open email, the three-dot menu (**Star** / **Remove star**), and a small star that appears when you point at an email row. Starred emails show a small star after the sender's name.
+- **Starred page:** the left menu has **Starred** (and Filter has a **Starred** choice). It lists every starred email, including ones already read: those appear quietly even when **Include read mail** is off.
+- **Limits:** only emails Enveliq can reach in your mailbox can be starred. Archived cards kept by Enveliq alone have no star button. Starred emails are not removed by the clean-up of old read mail.
+- **Android:** a star button in the bottom bar of an open email, and **Starred** in the filter menu.
+
+## Folders
+
+- **Move to folder:** the three-dot menu on an email has **Move to folder…**. A box lists your own folders (the ones you made, not Archive, Bin or Junk, which have their own buttons). Type to narrow the list; folders you used lately come first. On a phone the box fills the screen with Close at the top.
+- **Click outside to close:** on a computer, clicking anywhere outside the folder box closes it, the same as Close (or Escape).
+- **Make a new folder:** type a name under "Or make a new folder" and press **Make it**. The folder is made in your mailbox and the email goes into it. Names are short, with no slashes. On Proton the folder is made under Folders, so it shows in Proton too.
+- **Move several:** tick emails, then press the folder button in the bar of buttons.
+- **Undo:** like Archive, the move waits a few seconds. The bar says "Moved to Bills" and **Undo** puts it back; nothing has been sent to the mailbox yet.
+- **Folders button beside Tags:** wherever the Tags button is (an email's row, the side rail of the reading view, the bar under an open email) there is now a Folders button next to it.
+- **Always use this folder:** the folder box has a tick box, "Always move new email from this sender into this folder". With it ticked, the email moves now and later email from that sender is filed there as it arrives. It is a mail rule (see Mail rules), so you can remove it any time. If you want an email in a folder but still in the Inbox, use a Tag: a folder holds an email in one place only, while a tag is a label that can sit alongside the Inbox.
+- **Mail rules for this sender:** the item is in the three-dot menu of every email. It has every rule, including for Important people: rules you make for them do apply.
+- **Open any folder:** **Folders** sits just below the line above **More**. Pressing it opens the list of your mailbox's folders just above **More** (a box that scrolls when there are many, headed **Folders**). The list stays while you are in Folders, with the open folder marked and the page titled **Folders › name**, and More stays below it with Settings. The emails of the folder show in your own email view (reading pane on the right or below, opening in place, or full screen) The list closes when you leave Folders. The left menu is the same width in Settings as in the inbox. It lists the mailbox's folders (and a mailbox choice when you have more than one). Pick one to see its newest emails, 25 at a time, and open any of them. They are read from the mailbox when you look and are never saved in Enveliq, like Sent. A folder's emails cannot be moved from here yet.
+- Only Inbox emails can be moved. Emails already read stay readable and keep their read or unread mark.
+
 ## Mark unread
 
-A Reviewed email (the ones kept for a few days) has a **Mark unread** button, and the same item in its three-dot menu. It puts the unread mark back on the email in your mailbox (Proton, IMAP and Microsoft alike) and returns it to the inbox. Android has had this on Reviewed emails since v0.100. Emails you archived are in your mailbox's Archive folder, so open them there if you want them unread again.
+A read email has a red **Mark as unread** button (an unread email has a green **Mark as read** button in the same place), and the same item in its three-dot menu. It puts the unread mark back on the email in your mailbox (Proton, IMAP and Microsoft alike) and the email is highlighted as new again. Mark as read and Mark as unread only change the read mark on your mail service (Proton, IMAP or Microsoft). Enveliq's own blue "new" shine is not touched by them: it goes when you open an email, as before. The email is not moved or hidden. Read email shows in the inbox only while **Include read mail** is on; otherwise it is simply no longer in your list of unread mail, as for any read email. Emails you archived are in your mailbox's Archive folder, so open them there if you want them unread again.
+
+## Top of the inbox: counts and Today
+
+In the View panel (the tab on the right edge, or **Customise**), **Top of the inbox** has two switches, both on to begin with:
+- **Counts across the top** shows or hides the four boxes (Needs action, Today, Packages and Waiting). Calm mode already hides them.
+- **Today and coming up** shows or hides the section that lists what is due today and what is coming up next. In **Calm mode** the same section is the "Start here" card, and the same switch hides it there too.
+
+Each is remembered for you (on the server, with your other View choices) and **Reset to default** brings both back. Hiding them does not delete any task or change any count; **Tasks** in the left menu still has everything.
 
 ## Conversation View
 
@@ -84,7 +115,17 @@ Open an email and its files are listed under the summary, above the task: one ro
 - Administrators control this under Administration, AI model. See [the AI guide](AI_SUMMARIES.md#summaries-of-attached-files) for the limits and the cloud-service rule.
 - Attachment file rows and summaries use names that do not get mistaken for advertisements, so they remain visible with common ad blockers enabled.
 
-## Reviewed, Archive and Bin
+## Mark as read, Archive and Bin
+
+**Mark as read** (green), **Archive** and **Bin** are the buttons on an email. Mark as read is the ordinary one: your mailbox gets its read mark and the email loses its "new" highlight. It stays exactly where it is while **Include read mail** is on (and is out of the unread list when that is off, like any read email). There is no Reviewed list and no five seconds of Undo: **Mark as unread** (the same button turns red once your mailbox has it as read, and it is in the three-dot menu too) is the way back. On a phone, swiping right archives and swiping left bins. When you tick several emails, the bar has a **Mark as read** button too. Emails that were in the old Reviewed list become ordinary read mail.
+
+**Next and previous email.** When one email is open next to the list or over it (the reading pane layouts and a phone), two small arrows beside the three-dot button open the previous or next email in the list. At the ends, a quiet note says it is the first or last email. They are not shown when emails open in place inside the list. The **Left** and **Right arrow keys** do the same (Left is previous, Right is next). They work only while you are plainly reading an email with those arrows on screen, and never while a writing window (reply, forward, new email), a pop-up, a menu, the headers, the original email, an attachment, a settings page or a text box (including the search box) is open. They follow the **Enable keyboard shortcuts** switch in Settings.
+
+**Show email headers.** In the three-dot menu, **Show email headers** opens the technical lines at the top of the email (who it came from, the route it took, and so on). Enveliq fetches them from your mailbox when you ask and does not keep them.
+
+**Download this email (.eml).** In the three-dot menu, **Download this email (.eml)** saves the whole email, with its files, as a standard `.eml` file you can keep or open in another mail program. It is fetched from your mailbox when you press it, goes only to you, and is not stored by Enveliq.
+
+**Send with high importance, and Mark as read when I send.** Under **More options** in a reply, reply all, forward or new email, **Send with high importance** adds the standard importance marks so the other person's mail program can show it as important. In a reply, **Mark the email as read when I send** puts the email on the usual Undo bar after the reply is sent. Both start unticked each time. If you choose Send later, the importance mark is kept (see [Send later](SEND_LATER.md)) but the email is not marked as read, because it has not been sent yet.
 
 On a computer the three small buttons on a row show when you point at the email. Press one and the email stays in the list, slightly grey and pulsing, for five seconds while a thin line runs across it. Press **Undo** in the bar at the bottom to bring it back. On a phone, swipe a row. See [Undo](UNDO.md).
 
@@ -93,6 +134,15 @@ On a computer the three small buttons on a row show when you point at the email.
 Tick one email's box, then hold **Shift** and tick another one a few emails up or down, and every email between them is ticked too. Shift and untick clears the range the same way. Ticking without Shift works one email at a time. The **Select all** box next to "Recent emails" ticks every email in the list you are looking at (a dash means only some are ticked; pressing it again unticks them all), and works with Shift, single ticks and the bar below. On a phone it sits on the same line as the heading. Once two or more are ticked, a bar appears with **Reviewed**, **Archive** and **Bin** for all of them at once (one Undo covers them all). **Clear selection** starts again. Your ticks stay while Enveliq works in the background: when an AI summary finishes or the list refreshes, the emails you ticked are still ticked (only an email that has left the list loses its tick).
 
 In a reply or forward window, the **Subject** box can be edited; what you type is what is sent (the usual "Re: ..." or "Fwd: ..." is used if you leave it).
+
+## Forward, Tag and Rules for several emails
+
+When you tick two or more emails, the bar over the list also has **Forward**, **Tag** and **Rules**, next to Move.
+
+- **Forward** is laid out like New email: the **To** box suggests people from your address book and makes chips, **From** picks the address it is sent from (when all ticked emails are in one mailbox), and **Cc** and **Bcc** can be added. There is also an optional note. Each ticked email is forwarded on its own, with its attachments, so the person gets one email for each. The originals are fetched from your mailbox when you press the button and are not stored. If one fails, the form stays open, says how many did not send and lets you try just those again.
+- **Tag** lists your tags (and lets you make a new one) and adds the ones you tick to every ticked email. Tags already on an email stay. Tick "Always apply these tags" to also make a rule for each different sender. Pick emails from one mailbox at a time.
+- **Rules** makes one rule for each different sender among the ticked emails: always archive, always mark as read, always move to a folder, or always get a tag. The same "Always move" choice is in Move when you tick several emails. Rules can be changed in Settings, Mail rules.
+- On a phone each of these opens full screen, with the title and Close at the top and the buttons at the bottom.
 
 ## The daily summary and Held for summary
 
@@ -118,7 +168,7 @@ If the Undo bar at the bottom is covering an email, swipe it left or right and i
 
 ## Ticked emails: where the buttons show
 
-When you tick two or more emails on a computer, three small icon buttons (Reviewed, Archive and Bin, the same ones that show when you point at an email) appear in the "Recent emails" panel, with how many are ticked and **Clear** under them, so you can still see them while **Options** is closed. When Inbox options is open they sit in its bar instead, never in both places.
+When you tick two or more emails on a computer, small icon buttons (Mark as read, Archive and Bin) appear in the "Recent emails" panel, with how many are ticked and **Clear** under them, so you can still see them while **Options** is closed. When Inbox options is open they sit in its bar instead, never in both places.
 
 ## The side panel, and opening and closing the lists
 
@@ -146,11 +196,11 @@ The **Include read mail** button (before it was called **All emails**) opens a s
 
 **Junk Mail** lists what your mail services put in their Junk and Spam folders, with the AI's answer for each. See [Junk Mail](JUNK_MAIL.md).
 
-**Found emails** lists the emails you found with **Search all my mail** and chose to keep. Each stays for 60 days, or until you press **Reviewed**. See [Find any email](FIND_MAIL.md).
+**Found emails** lists the emails you found with **Search all my mail** and chose to keep. Each stays for 60 days, or until you press **Mark as read**. See [Find any email](FIND_MAIL.md).
 
 The **Recent emails** section lists your mail. **Options** starts closed on computers and phones. Press it to show the mailbox filter, sorting, **Include read mail**, **Expand all**, and the other available inbox controls; press it again to hide them. On phones, **Recent emails** can also be expanded or collapsed.
 
-The left menu leads to **My inbox**, **Needs action**, **Tasks**, **Shipping**, **Waiting for reply**, and **Attachments**. The **More** section contains other views, including Sent, Reviewed, and Archived where available. Collapsing the desktop menu keeps the icons; the compact Calm mode control remains available.
+The left menu leads to **My inbox**, **Needs action**, **Tasks**, **Starred**, **Messages**, **Waiting for reply** and **Shipping**, most used first. The **More** section contains other views, including Sent and Archived where available. Collapsing the desktop menu keeps the icons; the compact Calm mode control remains available.
 
 ## Bigger windows for emails and attachments
 
@@ -160,13 +210,13 @@ Web addresses in the text of an email can be clicked, but they never open by the
 
 ## Getting back to My inbox
 - The Sent page uses the same header as the other pages (Back button, title, then a line saying it shows your last 4 months of sent mail). The page keeps room for its scroll bar, so nothing moves sideways when the emails finish loading.
-- On every page other than My inbox (Needs action, Tasks, Shipping, Waiting for reply, Attachments, Reviewed, Archived, Sent and so on), a **Back to My inbox** button sits above the page title. The title now shows the name of the page you are on instead of "My inbox".
-- Needs action, Attachments, Reviewed and Archived show the same **Recent emails** panel with **Options** as My inbox, so the options fold away in the same way everywhere.
+- Every page has a small page title (18px) in the same place, right under the search box. It shows the name of the page you are on (My inbox, Needs action, Tasks, Shipping and so on). There is no "Back to My inbox" button: use **My inbox** in the left menu. The line "N emails to look at, N need you" is gone. Pages that explain themselves (Clean up, Junk Mail, Found emails, Sent, Drafts) keep their short line under the title.
+- Needs action, Attachments and Archived show the same **Recent emails** panel with **Options** as My inbox, so the options fold away in the same way everywhere.
 - On **Waiting for reply**, the **Closed** section is folded away until you open it with its arrow, so the page does not look like a long list of open items.
-- With **Open full screen**, on a computer the email sits beside the left menu and below the top bar, and **Reviewed**, **Archive** and **Bin** are normal buttons centred along the bottom (they used to be stretched across the screen and partly hidden).
+- With **Open full screen**, on a computer the email sits beside the left menu and below the top bar, and **Archive** and **Bin** are normal buttons centred along the bottom (they used to be stretched across the screen and partly hidden).
 
 ## The top stays in view while you scroll
-- On a computer, the bar with the search box, Sync mail, the help button and your name stays at the top of the page when you scroll down a long list. The "Recent emails" bar with **Options** (and the buttons for ticked emails) stays right under it. Only the emails move.
+- On a computer, the bar with the search box, the round Sync, Agent, notification and help buttons, and your name stays at the top of the page when you scroll down a long list. The "Recent emails" bar with **Options** (and the buttons for ticked emails) stays right under it. Only the emails move.
 - The title, the four count tiles and the picture behind them scroll away as before, so you get more room for the emails.
 - The top bar is never a solid block. It stays see-through the whole time, so the picture behind it always shows. Emails, tiles and titles that scroll up to it fade out softly just below its lower edge (no hard cut-off line), so no text is ever seen through it. The Recent emails bar itself is never faded.
 - Phones are unchanged. They already have their own bar at the top of the screen.
@@ -185,7 +235,7 @@ While the page starts up, only the background shows. Nothing else is drawn (no m
 
 ## Calm mode
 
-Calm mode is on by default in a browser that has never chosen a mode. Each browser remembers the choice, and you can turn Calm mode off from the bottom of the left menu or from the account menu.
+Calm mode is on by default in a browser that has never chosen a mode. Each browser remembers the choice, and you can turn Calm mode on or off from the account menu (click your name at the top right). The switch is no longer in the left menu.
 
 When Calm mode is on:
 
@@ -212,6 +262,22 @@ On a phone, whichever layout is chosen in the View panel (List, Reading pane on 
 ## Adding your own task to an email
 
 Every email has a **Task** button beside Reply and Snooze (and in the full screen email on a phone), even when the AI found nothing to do. Press it, write what you want to remember (for example "ring the plumber when I get home"), choose a day (today unless you pick another) and press **Add task**. Enter does the same, and Escape or **Cancel** closes the box without adding anything. The task shows under the email as **Your task** and on the Tasks page with the AI's tasks. An email can have several tasks. Unlike a task the AI made, yours does **not** finish by itself when you reply to, archive or bin the email: only you finish it (tick it on the Tasks page). The email is kept in Enveliq while one of your own tasks on it is open, like any email with an open task. Your task text is stored only in your own encrypted task record. Server: `POST /api/v1/me/tasks` (`backend/mail/task_routes.py`, `TaskBook.add` in `backend/mail/tasks.py`). Checks: `tests/test_tasks.py` and `scripts/check_task_add.mjs`.
+
+## Received parcels (Shipping)
+
+Once you press **Yes, I've got it** on a parcel, it leaves the main list and moves into its own list under the parcels still to come, called **Received**. The list is folded away to keep the page short: press **Received · N** to show it and again to fold it. Inside, each parcel still says "You got it" and keeps **Undo**, which puts it back with the others. Parcels that have arrived but that you have not confirmed yet stay in the main list. Arrived parcels are still forgotten after 14 days. Nothing is stored differently: this only changes how the page is laid out. If every parcel is received, the page says "Nothing on its way".
+
+Enveliq does not take "delivered" on the AI's word alone. If an email's subject says the order was placed ("Ordered: ...", "Thanks for your order") or that a shipment is on its way, and does not say it arrived or was delivered, it is filed as ordered or shipped, so "Did it arrive?" never appears before anything has been sent. The email text is checked too (read while it is summarised, never stored): "arriving soon", "will be delivered shortly", "a few stops away" and "out for delivery" mean Out for delivery, not Delivered. An order wrongly marked as delivered can be put right with **Not yet**.
+
+## Where a parcel is up to, and changing it (Shipping)
+
+Each step has a rule, whatever the AI said: **Delivered** only when the email says the parcel has been delivered; **Out for delivery** only when it says so in so many words (or that the courier is a few stops away or arriving today); **Ordered** only when nothing in the email is about shipping; everything in between is **Shipped** ("on its way", "arriving soon", tracking details). The newest email decides, even if that moves a parcel back (an email read wrongly as "out for delivery" is put right by the next one). A later email that only confirms the order, such as an invoice, never moves a parcel back to Ordered.
+
+Every shipment has a **three-dot menu**: choose any of the four steps by hand, add a note, or say "This is not an order" (a parcel you typed in yourself has Remove instead). A step you set by hand stands until an email newer than your change arrives.
+
+Every shipment also has a **checkbox**. Tick one or more and a bar offers the same four steps for all of them, **This is not an order**, and, with two or more ticked, **Merge**. Merge joins shipments that are really one parcel (for example the shop's email and the courier's email did not match up): it asks first, keeps everything from both (emails, order numbers, tracking numbers), and from then on an email from the shop or the courier goes to the joined shipment.
+
+With the reading panel on the right, Shipping sits on the left and the panel on the right waits empty; pressing a matched email shows it there. A matched email that has been deleted, archived or marked as read says so on its line, and one that is gone completely says "Deleted or removed" (the shipment stays, as before).
 
 ## Adding a parcel by hand (Shipping)
 
@@ -241,7 +307,7 @@ The name you gave a mailbox when you connected it (for example "Proton Test") ca
 
 On the same Mailboxes card, the **Label colour** drop-down picks the colour of that mailbox's label: Blue, Green, Orange, Pink, Red, Teal, Purple or Lime. **Automatic** (the start) lets Enveliq choose one for you. The choice is saved at once and shows in the mail list and in the open email the next time the inbox loads. It is only a colour; nothing else about the mailbox changes.
 
-On a computer, moving the mouse over an email shows its quick buttons in place of the date: **Reviewed**, **Archive** and **Bin** on mail in your inbox, in every layout including the reading pane on the right, and a single **Remove from this list** button on emails in the Reviewed and Archived lists. They look and sit the same everywhere. Sent and Drafts have no such buttons because they hold nothing to archive. On a phone the buttons stay out of the way (swipe instead).
+On a computer, moving the mouse over an email shows its quick buttons in place of the date: **Archive** and **Bin** on mail in your inbox, in every layout including the reading pane on the right, and a single **Remove from this list** button on emails in the Reviewed and Archived lists. They look and sit the same everywhere. Sent and Drafts have no such buttons because they hold nothing to archive. On a phone the buttons stay out of the way (swipe instead).
 
 **View** next to a file under an email opens that file in its own viewer (a picture viewer for pictures, a document viewer for PDFs, text and spreadsheets), on top of the email you were reading. Close it and you are back at the same place. **Save to my device** in the viewer still downloads the file. Pictures and attachment previews must be switched on (Administration, Features).
 
@@ -249,9 +315,18 @@ When you scroll down an open email on a phone, it now stays where you scrolled w
 
 The search box clears by itself when you choose something from the menu (My inbox, Needs action, Tasks and so on), so the next page is never left filtered by words you typed earlier. Pressing the X in the box still clears it too.
 
+**Ask the agent from the search box.** Once two or more letters are typed in the search box, an **Ask the agent** button appears beside it (and again under the search results, which is the one a phone shows). Pressing it opens the Agent chat, starts a new chat and sends what you typed as the question, and clears the search box. Nothing is sent just by typing. The chat is the plain AI model with no access to your email (see [AGENT.md](AGENT.md)). Touches `prototype/index.html`, `scripts/check_ask_agent.mjs`.
+
 ## Searching your tasks
 
-The Tasks page opens on the **List** view the first time (Focus and Calendar are one tap away, and Enveliq remembers the one you choose on that device). The Tasks page has a **Search your tasks** box under its title. Type part of a task's words (its title, its details or who it is from; capital letters do not matter) and the page lists only the tasks that have them, open ones under **To do** and finished ones under **Done**, with a line saying how many match. Clear the box to get your usual view back. It works in the Focus, List and Calendar views. Browser check: `scripts/check_task_search.mjs`.
+The Tasks page is one list, laid out like every other page. With **Reading pane on the right**, the tasks are on the left and the email of the task you open appears on the right (before you pick one, the panel says so). In other layouts, opening a task takes you to its email in your inbox, as before. There is no Focus view any more.
+
+Under the title are **Calendar**, **Options** and **Reminder settings**.
+
+- **Calendar** opens a full-page pop-up with the month grid and the tasks of the day you pick. Close it with **Close** or Escape. Choosing an email in it closes the pop-up and shows that email (on the right when the reading panel is on the right). On a phone it fills the screen with Close fixed at the top.
+- **Options** shows: **Show finished tasks**, **Show tasks that are not due yet** (when off, a line says how many are hidden) and **Order** (Due soonest, Newest email first, A to Z). Your choices are remembered on that device.
+
+The Tasks page has a **Search your tasks** box under its title. Type part of a task's words (its title, its details or who it is from; capital letters do not matter) and the page lists only the tasks that have them, open ones under **To do** and finished ones under **Done**, with a line saying how many match. Clear the box to get your usual view back. Browser checks: `scripts/check_task_search.mjs`, `scripts/check_tasks_layout.mjs`.
 
 ## Forms on a phone
 
@@ -259,8 +334,82 @@ A form or pop-up that asks you to type something (Add a parcel, Task, News feeds
 
 ## The Back button
 
-Moving to another section (Sent, Reviewed, Tasks and so on) adds a step to the browser's history, so the **Back** button of the browser, or a phone's back gesture, returns to the section you were in before, inside Enveliq, instead of leaving it. **Forward** works too. Back also closes Settings and Administration if they are open. Moving between the tabs of Settings does not add steps, so one Back leaves Settings. On a computer, opening or closing an email does not add steps. **On a phone, an email that is open full screen has its own step**: Back (or the back gesture) closes the email and shows the list again, instead of leaving Enveliq. Closing it with the **✕ Close** button, or with Reviewed, Archive or Bin, leaves no extra step behind. `scripts/check_back_button.mjs` checks this.
+Moving to another section (Sent, Archived, Tasks and so on) adds a step to the browser's history, so the **Back** button of the browser, or a phone's back gesture, returns to the section you were in before, inside Enveliq, instead of leaving it. **Forward** works too. Back also closes Settings and Administration if they are open. Moving between the tabs of Settings does not add steps, so one Back leaves Settings. On a computer, opening or closing an email does not add steps. **On a phone, an email that is open full screen has its own step**: Back (or the back gesture) closes the email and shows the list again, instead of leaving Enveliq. Closing it with the **✕ Close** button, or with Reviewed, Archive or Bin, leaves no extra step behind. `scripts/check_back_button.mjs` checks this.
 
 ## Reading pane on the right (computer)
 
-Choose **Reading pane on the right** in the View panel (the tab on the right edge). The open email fills the whole right side of the screen, from just under the search bar to the bottom of the window, and **Reviewed**, **Archive** and **Bin** stay along its bottom edge. The left column holds the page title, the four counts in one slim row, **Today** and **Coming up** side by side, the **Recent emails** bar and the list. **Today** shows its first two things; **Coming up** shows the soonest two, in a box the same height and shade (neither box has the round tick buttons in this view; use the Tasks page to mark things done), and **Coming up · N more** is a link to the Tasks page (in the other layouts it still folds open and closed). In Calm mode this view has no Calm mode bar on top and no icon in Start here, the cards are shorter, and Also important today sits under Later on the right. The left column scrolls by itself; the page does not. This applies to every page that lists emails. On a phone, or a window narrower than 900 pixels, the email appears under the list as before. The other layouts are unchanged. Browser check: `scripts/check_split_reading.mjs`.
+Choose **Reading pane on the right** in the View panel (the tab on the right edge). The open email fills the whole right side of the screen, from just under the search bar to the bottom of the window, and **Archive** and **Bin** stay along its bottom edge. The left column holds the page title, the four counts in one slim row, **Today** and **Coming up** side by side, the **Recent emails** bar and the list. **Today** shows its first two things; **Coming up** shows the soonest two, in a box the same height and shade (neither box has the round tick buttons in this view; use the Tasks page to mark things done), and **Coming up · N more** is a link to the Tasks page (in the other layouts it still folds open and closed). In Calm mode this view has no Calm mode bar on top and no icon in Start here, the cards are shorter, and Also important today sits under Later on the right. The left column scrolls by itself; the page does not. This applies to every page that lists emails. On a phone, or a window narrower than 900 pixels, the email appears under the list as before. The other layouts are unchanged. Browser check: `scripts/check_split_reading.mjs`.
+
+## Top bar and left menu tidy-up
+
+- The Enveliq logo is smaller and sits in the same row as the search box.
+- The left menu is narrower (about 206 pixels instead of 242), giving the emails more room.
+- **Sync mail** and **Agent** are round icon buttons beside the notification bell, the news feeds button and the help button. Point at either to see its name. While mail is syncing the Sync icon turns. On a phone, Sync and Agent are in the top bar.
+- The Calm mode switch and the Agent entry are gone from the bottom of the left menu. Calm mode is in the account menu.
+- Less used views (Snoozed, Drafts, Sent, Archived, Attachments, Subscriptions, Trips, Junk mail, Clean up, Found emails) are under **More**, which starts closed and remembers how you leave it.
+- **Filters** and **Ask the agent** beside the search box are see-through buttons that match the rest of the bar.
+- Scroll bars in the left menu, the email list and the reading area are thin and see-through. They show only while the pointer is over that area, and take no room from the list.
+- **Mark as unread** is a soft slate blue; **Mark as read** stays green.
+- The AI summary box has a stronger blue glow around its edge so it is the first thing you see.
+
+## Folders page, summaries and dragging to a folder
+
+- The **Folders** page has the same side-by-side layout as the inbox (list on the left, email on the right), with no greeting or empty space above it. The notice that folder mail is read from your mailbox and not saved is a plain line under the count.
+- When you open an email in a folder, a **Generate summary** button sits above it, in the same place as in the inbox. Pressing it sends that email's text to your AI model for that moment and shows the summary, labelled as written by AI. Nothing is saved. Without an AI model it says so.
+- The folder list in the left menu has no scroll bar. When more folders are hidden below, a slow pulsing arrow under the last one shows there is more to scroll to.
+- **Drag an email to a folder (computer):** press on an email in the list and drag (a small label follows the pointer; the page draws it itself so it stays smooth). The whole left menu is swapped for your folders. Drop the email on one, and it moves (with the usual Undo) and the menu comes back. Letting go anywhere else, or pressing Esc, cancels and brings the menu back. Several ticked emails are dragged together. Not available on a phone, where the three-dot menu does the same job.
+
+## Emails inside a folder are not stuck
+
+- An email opened from a folder has a bar above it: **← →** to go to the previous or next email in the folder, **Move to…**, **Bin**, and a **⋯** menu (Move to Inbox, Move to a folder…, Bin). There is no Archive button, because the email is already filed. The same bar shows in the reading pane, in the list layout and in the full-screen view.
+- Hovering an email in the folder list shows small Move and Bin buttons on that row.
+- **Move to…** lists the Inbox and your other folders (not the one you are in). After a move or Bin the email leaves the list and the next one opens.
+- **Dragging** works in a folder too. The left menu is swapped for the **Inbox** (first) and your other folders; drop the email on one to move it.
+- Moves out of a folder cannot be undone with an Undo bar; the email can be moved back from where it went. Reply and Forward are not available on folder emails, because Enveliq does not keep them.
+
+## Searching stays put until you clear it
+
+- Opening an email from the search results (including "Also found elsewhere") keeps the search and its results; the email opens next to them.
+- While a search is on, the search bar shows a bright **Clear search** button and the box glows, and a bar over the list says "Searching for …" with its own **Clear search** button. The bar stays at the top as you scroll. Clearing empties the box and brings back the normal list.
+
+- The empty search box shows a small **/** key at its right end: press **/** to start typing in the search without the mouse. The hint hides while the box is in use, on a phone, and when **Enable keyboard shortcuts** is off.
+
+## Search all my mail: shows at once, tight list
+
+- **The reading panel stays beside the list.** With the reading panel on the right, the list is on the left and the email on the right while you search, even when nothing in the current view matched. A found email opens in that panel, never as a pop-out over the page.
+- Typing shows the **Search all my mail** panel immediately ("Searching all your mail…" with a moving progress bar). The bar over the list (always in view) has the same progress bar and the Clear search button; both bars go quiet when the search ends.
+- Results are small rows: tick box, sender, date, subject, and the folder (with a paperclip if it has files). Click a row to read the email. To summarise, tick one or more and press **Summarise Emails**.
+
+- In the side-by-side layouts, clicking a found email shows it in the reading pane (with a Close button), and the row stays marked. In the list-only layout and on a phone it opens in the pop-up viewer. The blue Searching bar pins just under the Recent emails bar as the list scrolls.
+
+## Folder emails and search results: the full set of actions
+
+- Both lists have a tick box on every email and a **Select all**. One bar of buttons works on the open email or on everything ticked: **Move to…** (the Inbox and your folders), **Archive**, **Bin**, **Star**, **Tag** (one email at a time) and the three-dot menu (**Move to Inbox**, **Mark the sender as an important person**, **Always move this sender's email to a folder…** for one email). The arrows go to the previous or next email.
+- Hovering a row shows Move, Archive and Bin. **Dragging** one email, or several ticked ones, shows the Inbox and your folders on the left; drop to move.
+- Move, Archive, Bin and Star act on the email where it sits in the mailbox and Enveliq keeps nothing. **Tag** first adds the email quietly to your lists (headers and an encrypted summary only, for 60 days, like Found emails) and then opens the tag box.
+- Not available for these emails: Snooze, Tasks, Reply and Forward (they need the email in your lists), and the other mail rules beyond Always move.
+
+## The search box works everywhere
+
+- **Colours.** Customise has a **Colours** choice: Standard (the blue look), Light, Dark (neutral grey) or System theme (Light or Dark, following the device). Standard is the default; it is saved with your other Customise choices (`scheme` in the mail view) and also remembered in this browser so the page does not flash before it loads. The old Dark mode / Light mode / System theme buttons that were in the account menu now live here. Light sets `data-theme="light"`; Dark sets `data-scheme="dark"`; System picks one of those from the device and follows it when it changes. Original emails keep their paper colour. Settings and Administration use the same colours: `web/static/auth.css` has matching dark and highlight rules, and `web/static/theme.js` applies them on the stand-alone pages. Pointing at (or tabbing to) a layout shows a small picture of it beside the panel (the page does not change); pointing at a Colours choice shows a small picture of that look (System theme shows Light and Dark side by side); pointing at a Highlight choice previews it on the whole page; nothing is saved until it is clicked. Check: `scripts/check_dark_mode.mjs`.
+- **Highlight colour.** Customise has a **Highlight colour** choice (Blue, Green, Purple, Orange, Pink, Teal; Blue is the default; `highlight` in the mail view, also remembered in this browser). It sets the page attribute `data-hl`, which swaps a small set of colour variables (`--hl1`, `--hl2`, `--hl-nav`, `--hl-new1`, `--accent` and so on) used by the selected email, the open left-menu item, New email and links. Blue sets nothing. It works with Light, Dark and System theme; on Standard the choices are greyed out and blue is always used (the saved choice is kept). Pointing at (or tabbing to) a Colours or Highlight choice previews it; nothing is saved until it is clicked. Check: `scripts/check_dark_mode.mjs`.
+- **Original email background.** Customise has an **Original email background** choice (White, Soft, Softer; Soft is the default; it is saved with your other Customise choices, `paper` in the mail view). Every original-email view uses it: the card behind the email gets the paper colour, and an email shown as the sender made it is blended onto that paper, so its white becomes the paper colour while other colours only shift very slightly. Check: `scripts/check_original_html.mjs`.
+
+**Waiting** ("Waiting for reply") is the Folders page again: the emails you sent that ask for something are the list, grouped as "No reply yet", "Still within the time" and a folded "Closed". An email opens in the same reading view; above it a bar has Got a reply, Not needed, Write a nudge and Ask again (Undo for a closed one). The sent email is found again in your Sent folder by its Message-ID when you open the page and is never saved; if it is no longer in Sent the bar still works. Checks: `scripts/check_waiting.mjs`.
+
+**Tags** (under Folders in the left menu, when tags are switched on) is the Folders page for tags. Your tags are in the left menu; picking one lists its emails, read from your mailbox when you look and never saved, in the same reading view with the same buttons, ticking and bulk actions as the inbox. Where a tag lives depends on the mailbox: Proton's label folder, a Gmail label, or a keyword on emails in the Inbox (other mailboxes list only Inbox emails with that keyword). Folders and Tags are separate: pressing Folders shows only your folders, pressing Tags shows only your tags. **Dragging** is the same everywhere (inbox, Folders, Sent, Tags, search results): press and drag an email, the left menu turns into your folders, and letting go on one moves it (all ticked emails go if the dragged one is ticked). It needs a mouse or trackpad; the Move button does the same on a phone. Checks: `scripts/check_tags_view.mjs`.
+
+**Sent** is the Folders view opened on your mailbox's Sent folder, so it looks and works like the inbox: rows show who the email went to ("Name +2" when there are more people), you read it in the same reading pane, and Move, Archive, Bin and Star are the same buttons. **Follow for a reply** is in the More menu of a sent email. Emails waiting to be sent appear above the list. Files on a sent email are not opened here; the email tells you to use your mail app. The sent email is read from the mailbox when you open it and never saved. Checks: `scripts/check_waiting.mjs`, `scripts/check_email_features.mjs`.
+
+The search box does the same thing on every page (Folders, Tasks, Sent, Needs action, Starred, Archived and the rest): typing takes you to your inbox and searches it and all your mail. It never searches only inside one folder. In Settings the box still searches the settings.
+- A found email lights up the moment you click it, shows "Opening this email…" in the reading pane, and has a **Generate summary** button above it.
+
+## One reading view for every email
+
+- Stored mail, emails opened from a folder and search results are all drawn by the same two functions in `prototype/index.html` (`railPane` and `detailPane`). The side rail or Classic style, and every other Customise choice, therefore apply everywhere. Do not write a second layout for an email: give these functions the pieces.
+- For a folder email or a search result, the original email is always shown (it has no stored summary), the **Generate summary** button writes a summary only when pressed and keeps nothing, and the pieces that need the email in your lists (Reply, Forward, Snooze, Task, Tags) first keep a small encrypted summary for 60 days, as Tag already did.
+- The formatted ("As the sender made it") copy of a folder email or a search result comes from `GET /api/v1/folder-mail/{token}/original/html` and `GET /api/v1/find/results/{token}/original/html`. They use the same safe rebuild as every other email (`htmlview`): scripts, trackers and outside pictures removed, a strict policy of their own, never stored.
+
+When the original email is shown in the reading panel, pressing a link opens a small box beside your pointer with the website, the whole address, and Open it or Not now. Nothing opens until you choose.
+
+**Archived emails** (the cards kept for a few days after you archive, and the matched emails on Shipping) open in the same reading view as every other email: your View choice, the same buttons (without Mark as read, Archive, Bin and Snooze, which no longer apply) and the original email. The original is looked up in your Archive folder by its Message-ID each time and is never stored. If it has been deleted since, the panel says so plainly. Checks: `scripts/check_shipping.mjs`, `tests/test_bridge.py`.

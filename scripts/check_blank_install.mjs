@@ -50,7 +50,7 @@ function makeServer(mode, meDelay = 0) {
 const browser = await chromium.launch();
 for (const [name, vp] of [["desktop", { width: 1200, height: 900 }], ["phone", { width: 390, height: 800 }]]) {
   const context = await browser.newContext({ viewport: vp });
-  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); } catch (e) {} });
+  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-more-open", "1"); } catch (e) {} });
   const page = await context.newPage(); const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
   await context.route("**/*", makeServer("real", 0));
@@ -66,9 +66,9 @@ for (const [name, vp] of [["desktop", { width: 1200, height: 900 }], ["phone", {
   check(name + ": the empty list invites them to set up a mailbox", /Your mail will appear here once a mailbox is connected/.test(text));
   check(name + ": it does not claim they are all caught up", !/All caught up/.test(text));
   const seen = [];
-  for (const f of ["tasks", "attachments", "reviewed", "archived", "action"]) {
+  for (const f of ["tasks", "attachments", "archived", "action"]) {
     if (name === "phone") await page.click("#menuBtn");
-    if ((f === "reviewed" || f === "archived") && !(await page.locator("#moreToggle").getAttribute("aria-expanded")).includes("true")) await page.click("#moreToggle");
+    if (f === "archived" && !(await page.locator("#moreToggle").getAttribute("aria-expanded")).includes("true")) await page.click("#moreToggle");
     await page.locator(`.side-nav .nav[data-filter="${f}"]`).click(); await page.waitForTimeout(250);
     seen.push(await page.evaluate(() => document.body.innerText));
   }
@@ -81,7 +81,7 @@ for (const [name, vp] of [["desktop", { width: 1200, height: 900 }], ["phone", {
 {
   // The hosted demo and the preview (no server) keep their made-up mail, and say it is made up.
   const context = await browser.newContext({ viewport: { width: 1200, height: 900 } });
-  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); } catch (e) {} });
+  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-more-open", "1"); } catch (e) {} });
   const page = await context.newPage();
   await context.route("**/*", makeServer("preview", 0));
   await page.goto(`${ORIGIN}/`, { waitUntil: "domcontentloaded" });

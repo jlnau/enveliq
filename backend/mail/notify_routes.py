@@ -70,6 +70,11 @@ class MailViewBody(StrictModel):
     show_original: bool = False
     conversations: bool = False
     style: str = Field(default="classic", pattern=r"^(classic|rail)$")
+    show_counts: bool = True              # the four boxes across the top of the inbox
+    show_today: bool = True               # the Today and Coming up section (also in Calm mode)
+    highlight: str = Field(default="blue", pattern=r"^(blue|green|purple|orange|pink|teal)$")   # the highlight colour
+    scheme: str = Field(default="standard", pattern=r"^(standard|light|dark|system)$")   # the colour scheme: the usual blue look, light, a neutral dark grey, or follow the device
+    paper: str = Field(default="soft", pattern=r"^(white|soft|softer)$")   # the background behind an original email (a very slight tint, or plain white)
 
 
 class MailContextBody(StrictModel):
@@ -120,11 +125,6 @@ def mail_changes(before: set[tuple[str, str]], now: set[tuple[str, str]]) -> tup
 def other_counts(ctx: Any, user_id: str) -> dict[str, int]:
     """How many things of each other kind are waiting for this person. Only numbers, never any text."""
     out: dict[str, int] = {}
-    try:
-        if ctx.messages.enabled(user_id):
-            out["messages"] = int(ctx.messages.summary(user_id).get("unread") or 0)
-    except Exception:
-        pass
     try:
         out["bell"] = int(ctx.inbound.unread(user_id))
     except Exception:

@@ -26,6 +26,8 @@ const mk = (id, subject, name, n) => ({ id, subject, sender_display: name, sende
   reply_context: { reply_to: name.toLowerCase() + "@example.invalid", delivered_to: null, via_alias: null, message_id: "<" + id + "@x>", references: [], cc: [], also_to: [] } });
 const base = [mk("m-plain", "Just you", "Bob", 120), mk("m-other", "Another one", "Cara", 180), mk("m-third", "Third one", "Dan", 240)];
 const messages = () => base.map((m) => ({ ...m, tags: tagsOf[m.id] || [] }));
+const rulePosts = [];
+let tagRules = [];
 const handler = async (route) => {
   const req = route.request(), p = new URL(req.url()).pathname;
   const json = (status, body) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
@@ -49,6 +51,8 @@ const handler = async (route) => {
     const now_ = (tagsOf[tm[1]] || []).filter((x) => x !== b.name); tagsOf[tm[1]] = (b.on ? [...now_, b.name] : now_).sort();
     return json(200, { tags: tagsOf[tm[1]] });
   }
+  if (p === "/api/v1/me/rules" && req.method() === "GET") return json(200, { rules: tagRules, actions: {}, max: 50 });
+  if (p === "/api/v1/me/rules" && req.method() === "POST") { const b = JSON.parse(req.postData()); rulePosts.push(b); tagRules = b.tags.length ? [{ id: "u0123456789abcdef", sender: b.sender, subject: "", action: "tag", tags: b.tags }] : []; return json(200, { rules: tagRules, actions: {}, max: 50 }); }
   if (p === "/api/v1/me/drafts") return json(200, { now: Date.now() / 1000, keep_days: 14, items: [] });
   if (p === "/api/v1/me/preferences") return json(200, { keep_reviewed: true, keep_archived: true, keep_days: 7, max_days: 14, instructions: "" });
   if (p === "/api/v1/me/contacts") return json(200, { items: [] });
@@ -225,6 +229,39 @@ const openRow = async (page, subject) => {
   await page.locator("#tagPop .sf-foot [data-tag-close]").click();
   check("Done closes it", await page.locator("#tagPop").isHidden());
   check("no script errors", errors.length === 0);
+  await context.close();
+}
+for (const width of [1200, 390]) {
+  const tag = width + "px wide: ";
+  tagRules = []; rulePosts.length = 0; tagsOf["m-other"] = [];
+  const { page, errors, context } = await run(width, width > 600 ? 900 : 844);
+  if (width > 600) { const row = await openRow(page, "Another one"); await row.locator("[data-tag-open]").click(); }
+  else { await rowOf(page, "Another one").locator(".qmain").click(); await page.waitForTimeout(400); await page.locator("[data-tag-open]:visible").first().click(); }
+  await page.waitForSelector("#tagPop:not([hidden]) .tagrow");
+  await page.waitForTimeout(300);
+  const always = page.locator("#tagPop [data-tag-always]");
+  check(tag + "the Tags window has an Always apply these tags for this sender box at the bottom, not ticked", (await always.count()) === 1 && !(await always.isChecked()) && /Always apply these tags for this sender/.test(await page.locator("#tagPop .sf-foot").innerText()));
+  await page.locator('#tagPop [data-tag-toggle="Taxes"]').check();
+  await page.waitForTimeout(300);
+  check(tag + "ticking a tag with the box off does not make a rule", rulePosts.length === 0);
+  await always.check();
+  await page.waitForTimeout(300);
+  check(tag + "ticking the box saves a rule with the tags this email has now", rulePosts.length === 1 && rulePosts[0].action === "tag" && rulePosts[0].sender === "cara@example.invalid" && rulePosts[0].tags.includes("Taxes") && rulePosts[0].tags.join() === tagsOf["m-other"].join());
+  await page.locator('#tagPop [data-tag-toggle="Work"]').check();
+  await page.waitForTimeout(300);
+  check(tag + "ticking another tag while the box is on updates the rule", rulePosts.length === 2 && rulePosts[1].tags.includes("Work") && rulePosts[1].tags.includes("Taxes"));
+  if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "tags_always_" + width + ".png") });
+  await always.uncheck();
+  await page.waitForTimeout(300);
+  check(tag + "unticking the box removes the rule", rulePosts.length === 3 && rulePosts[2].tags.length === 0);
+  const fb = await page.locator("#tagPop .tag-always").boundingBox();
+  check(tag + "the box is fully on screen", fb && fb.x >= 0 && fb.x + fb.width <= width + 1 && fb.y >= 0 && fb.y + fb.height <= (width > 600 ? 900 : 844));
+  await page.locator("#tagPop .sf-foot [data-tag-close]").click();
+  await page.waitForTimeout(200);
+  await page.locator("[data-tag-open]:visible").first().click();
+  await page.waitForTimeout(400);
+  check(tag + "reopening shows the box matching the saved rule (off)", !(await page.locator("#tagPop [data-tag-always]").isChecked()));
+  check(tag + "no page errors", errors.length === 0);
   await context.close();
 }
 await browser.close();

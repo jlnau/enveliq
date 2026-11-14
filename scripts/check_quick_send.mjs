@@ -18,7 +18,7 @@ const SUGGESTION = "Hi Dana,\n\nThanks for asking. I can make Tuesday at [time].
 
 function makeServer(opts = {}) {
   const calls = [];
-  const features = { compose: true, address_book: true, sent: true, media: true, all_mail: false, shipping: false, waiting: false, messages: false, write_help: opts.feature !== false };
+  const features = { compose: true, address_book: true, sent: true, media: true, all_mail: false, shipping: false, waiting: false, write_help: opts.feature !== false };
   const info = { available: true, quick: opts.quick !== false, on: opts.on !== false, ai_ready: true, instructions: "x", is_default: true, default: "x", max: 2000 };
   const handler = async (route) => {
     const req = route.request(), p = new URL(req.url()).pathname;

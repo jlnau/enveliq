@@ -12,9 +12,9 @@ on:
     branches:
       - "preview/**"
       - "main"
-    paths:
-      - "android/**"
-      - ".github/workflows/build-android.yml"
+    # No "paths" filter on purpose: every push to a preview branch builds the app, so the newest
+    # Android app is always the run right under the newest preview build in Actions, even when
+    # the push changed nothing in android/.
   schedule:
     - cron: "23 3 * * 1"
   release:
@@ -55,7 +55,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"

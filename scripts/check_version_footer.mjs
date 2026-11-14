@@ -33,7 +33,7 @@ function makeServer(mode, meDelay = 0) {
       if (mode === "hang") return new Promise(() => {});
       return json(200, { initialized: true, unlocked: true, setup_required: false, sign_in: { password: true, passkeys: true, sso: { enabled: false, label: null } } });
     }
-    if (p === "/api/v1/system") return json(200, { version: "9.9", cipher: "AES-256-GCM", kdf: "Argon2id", idle_lock_seconds: 900 });
+    if (p === "/api/v1/system") return json(200, { version: "9.9", ...(mode === "build" ? { build: "57" } : mode === "badbuild" ? { build: "<b>7</b>" } : {}), cipher: "AES-256-GCM", kdf: "Argon2id", idle_lock_seconds: 900 });
     if (p === "/api/v1/me") { await sleep(meDelay); return json(200, { id: "u1", username: "riley", display_name: "Riley Example", role: "user", session: { state: "full" }, security: { totp_enabled: true, passkeys: [] } }); }
     if (p === "/api/v1/accounts") return json(200, []);
     if (p === "/api/v1/me/preferences") return json(200, { keep_reviewed: true, keep_archived: true, keep_days: 7, max_days: 14, instructions: "", undo_send_seconds: 0 });
@@ -67,6 +67,18 @@ async function open(mode, width = 1280) {
   await shot(page, "version-footer");
   await page.click("#collapseToggle"); await page.waitForTimeout(300);
   check("with the panel collapsed it is hidden, like the links", !(await v.isVisible()));
+  await page.close();
+}
+{
+  const page = await open("build");
+  const v = page.locator("#brandVer");
+  check("a preview build shows its build number instead of the version", /^Preview build 57$/.test((await v.innerText()).trim()));
+  check("hovering explains it is a test copy of that version", /Preview build 57 of version 9\.9/.test((await v.getAttribute("title")) || ""));
+  await page.close();
+}
+{
+  const page = await open("badbuild");
+  check("a build number that is not a plain number is ignored", /^Version 9\.9$/.test((await page.locator("#brandVer").innerText()).trim()));
   await page.close();
 }
 {

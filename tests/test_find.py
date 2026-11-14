@@ -145,6 +145,16 @@ def test_open_the_original_of_a_result(env):
     assert r.headers["cache-control"] == "no-store"
 
 
+def test_a_result_can_be_shown_as_its_sender_made_it(env):
+    _, client, bridge, _ = env
+    account(client, bridge)
+    _, page = run_search(client, "canvases")
+    token = page["rows"][0]["token"]
+    plain = client.get(f"/api/v1/find/results/{token}/original/html")
+    assert plain.status_code == 404                                  # this test email has no formatted version
+    assert client.get(f"/api/v1/find/results/{token[:-3]}abc/original/html").status_code in (404, 422)
+
+
 def test_no_mailbox_means_a_kind_message(tmp_path):
     appm, client, bridge = start(tmp_path, None)
     r = client.post("/api/v1/find/searches", json={"query": "anything"})
@@ -436,3 +446,64 @@ def test_switching_find_any_email_off_deletes_the_word_list_too(env):
     assert path.exists()
     client.put("/api/v1/me/features", json={"find_mail": False})
     assert not path.exists() and appm.mail_ctx.find_index.enabled(user) == {}
+
+
+def test_a_found_email_can_be_moved_binned_archived_and_starred_where_it_sits(env):
+    _, client, bridge, _ = env
+    account(client, bridge)
+    bridge.folders.append(("\\HasNoChildren", "Bills"))
+    _, page = run_search(client, "canvases")
+    tok = page["rows"][0]["token"]
+    assert client.post(f"/api/v1/find/results/{tok}/star", json={"starred": True}).status_code == 204
+    assert "\\Flagged" in bridge.messages[701]["flags"]
+    assert client.post(f"/api/v1/find/results/{tok}/move", json={"folder": "Bills"}).status_code == 204
+    assert bridge.messages[701]["folder"] == "Bills"
+    _, page = run_search(client, "notes")
+    assert client.post(f"/api/v1/find/results/{page['rows'][0]['token']}/move", json={}).status_code == 204
+    assert bridge.messages[702]["folder"].upper() == "INBOX"
+
+
+def test_a_found_email_move_refuses_other_peoples_tokens_and_bad_folders(env):
+    _, client, bridge, _ = env
+    account(client, bridge)
+    _, page = run_search(client, "canvases")
+    tok = page["rows"][0]["token"]
+    assert client.post(f"/api/v1/find/results/{tok}/move", json={"folder": "Nowhere"}).status_code == 404
+    assert client.post(f"/api/v1/find/results/{tok[:-3]}abc/move", json={}).status_code == 404
+    assert client.post(f"/api/v1/find/results/{tok[:-3]}abc/bin").status_code == 404
+    assert client.post(f"/api/v1/find/results/{tok[:-3]}abc/archive").status_code == 404
+    assert bridge.messages[701]["folder"] == "Archive"
+    assert client.post(f"/api/v1/find/results/{tok}/bin").status_code == 204
+    assert bridge.messages[701]["folder"] != "Archive"
+
+
+def test_a_found_email_can_be_summarised_on_request_and_nothing_is_kept(env):
+    _, client, bridge, _ = env
+    aid = account(client, bridge)
+    _, page = run_search(client, "canvases")
+    tok = page["rows"][0]["token"]
+    r = client.post(f"/api/v1/find/results/{tok}/summary")
+    assert r.status_code == 200 and r.json()["summary"] and "no-store" in r.headers["cache-control"]
+    assert client.post(f"/api/v1/find/results/{tok[:-3]}abc/summary").status_code == 404
+    assert client.get(f"/api/v1/accounts/{aid}/messages").json() == [] or all(not m.get("found") for m in client.get(f"/api/v1/accounts/{aid}/messages").json())
+
+
+def test_a_found_email_can_be_summarised_on_request_and_nothing_is_kept(env):
+    _, client, bridge, model = env
+    account(client, bridge)
+    _, page = run_search(client, "canvases")
+    tok = page["rows"][0]["token"]
+    r = client.post(f"/api/v1/find/results/{tok}/summary")
+    assert r.status_code in (200, 409), r.text
+    assert client.post(f"/api/v1/find/results/{tok[:-3]}abc/summary").status_code == 404
+
+
+def test_a_found_email_can_be_summarised_on_request_and_nothing_is_kept(env):
+    _, client, bridge, _ = env
+    aid = account(client, bridge)
+    _, page = run_search(client, "canvases")
+    tok = page["rows"][0]["token"]
+    r = client.post(f"/api/v1/find/results/{tok}/summary")
+    assert r.status_code == 200 and r.json()["summary"] and "no-store" in r.headers["cache-control"]
+    assert "Canvas order" not in messages(client, aid)
+    assert client.post(f"/api/v1/find/results/{tok[:-3]}abc/summary").status_code == 404

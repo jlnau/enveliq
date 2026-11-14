@@ -66,13 +66,13 @@ const hash = () => page.evaluate(() => location.hash);
 const alive = () => page.evaluate(() => window.__alive === 1);
 const go = async (f) => {
   const item = page.locator(`.nav[data-filter="${f}"]`).first();
-  if (!(await item.isVisible())) { await page.locator("#moreToggle").click(); await page.waitForTimeout(250); }      // Reviewed and Archived live under "More"
+  if (!(await item.isVisible())) { await page.locator("#moreToggle").click(); await page.waitForTimeout(250); }      // Starred and Archived live under "More"
   await item.click();
 };
 
 check("it starts in the inbox", (await active()) === "all" && (await hash()) === "");
-await go("reviewed");
-check("opening Reviewed names it in the address", (await active()) === "reviewed" && (await hash()) === "#/reviewed");
+await go("starred");
+check("opening Starred names it in the address", (await active()) === "starred" && (await hash()) === "#/starred");
 await go("archived");
 check("opening Archived names it in the address", (await active()) === "archived" && (await hash()) === "#/archived");
 await go("tasks");
@@ -83,18 +83,18 @@ await page.waitForTimeout(250);
 check("Back from Tasks returns to Archived, still inside Enveliq", (await active()) === "archived" && (await hash()) === "#/archived" && (await alive()));
 await page.goBack();
 await page.waitForTimeout(250);
-check("Back again returns to Reviewed", (await active()) === "reviewed" && (await hash()) === "#/reviewed" && (await alive()));
+check("Back again returns to Starred", (await active()) === "starred" && (await hash()) === "#/starred" && (await alive()));
 await page.goBack();
 await page.waitForTimeout(250);
 check("Back again returns to the inbox", (await active()) === "all" && (await hash()) === "" && (await alive()));
 check("the inbox list is showing again", (await page.locator("article.mail").count()) >= 1);
 await page.goForward();
 await page.waitForTimeout(250);
-check("Forward goes to Reviewed again", (await active()) === "reviewed" && (await hash()) === "#/reviewed" && (await alive()));
+check("Forward goes to Starred again", (await active()) === "starred" && (await hash()) === "#/starred" && (await alive()));
 await go("archived");
 await page.goBack();
 await page.waitForTimeout(250);
-check("after going somewhere new, Back still returns to the section before it", (await active()) === "reviewed" && (await alive()));
+check("after going somewhere new, Back still returns to the section before it", (await active()) === "starred" && (await alive()));
 
 // Settings: opening it adds a step, and Back closes it
 await page.evaluate(() => openSettings("settings"));
@@ -102,7 +102,7 @@ await page.waitForTimeout(250);
 check("Settings names itself in the address", /^#\/settings\//.test(await hash()) && (await page.locator("#settings.open").count()) === 1);
 await page.goBack();
 await page.waitForTimeout(300);
-check("Back closes Settings and returns to the section before it", (await page.locator("#settings.open").count()) === 0 && (await active()) === "reviewed" && (await alive()));
+check("Back closes Settings and returns to the section before it", (await page.locator("#settings.open").count()) === 0 && (await active()) === "starred" && (await alive()));
 
 // a phone: an email opens full screen, and Back closes it (back to the list) instead of leaving Enveliq
 await page.setViewportSize({ width: 390, height: 800 });

@@ -68,7 +68,7 @@ def test_it_can_be_switched_off(env):
     add_account(client, bridge)
     sync, _ = auto(appm, minutes=0)
     assert not sync.enabled and sync.run_once() == 0
-    assert sync.status_for(set()) == {"enabled": False, "minutes": 0, "source": "environment", "accounts": {}}
+    assert sync.status_for(set()) == {"enabled": False, "minutes": 0, "source": "environment", "accounts": {}, "instant": {}}
 
 
 def test_a_failing_mailbox_backs_off_and_recovers(env):
@@ -187,3 +187,65 @@ def test_the_install_manifest_is_public_and_its_icons_are_served(env):
         got = client.get(icon["src"])
         assert got.status_code == 200 and got.headers["content-type"] == "image/png" and got.content[:4] == b"\x89PNG"
     assert "manifest-src 'self'" in client.get("/login").headers["content-security-policy"]
+
+
+# ---------- Check instantly (Proton Bridge) ----------
+
+def wait_for(condition, seconds=8.0):
+    end = time.monotonic() + seconds
+    while time.monotonic() < end:
+        if condition():
+            return True
+        time.sleep(0.05)
+    return False
+
+
+def test_instant_check_syncs_when_bridge_says_new_mail(env):
+    appm, client, bridge, _ = env
+    aid = account(client, bridge, ai=False)
+    assert client.patch(f"/api/v1/accounts/{aid}", json={"settings": {"smtp_port": bridge.smtp_port, "send_identities": [], "instant": True}}).status_code == 200
+    sync, _clock = auto(appm, minutes=60)                # the timer alone would not look for an hour
+    try:
+        assert sync.run_once() == 1
+        sync._reconcile_instant()
+        assert wait_for(lambda: sync.instant.states().get(aid) == "listening")
+        assert wait_for(lambda: bridge.idles >= 1)
+        bridge.add(9, raw_email("Instant one", "Zed <zed@example.invalid>", MAILBOX, message_id="<inst9@example.invalid>", body="Hi.\n"))
+        assert wait_for(lambda: sync._wake.is_set())      # the connection heard about it and woke the loop
+        assert sync.run_once() == 1                       # not due by the timer, due because of the nudge
+        assert "Instant one" in {m["subject"] for m in listed(client, aid)}
+        assert sync.status_for({aid})["instant"][aid] == "listening"
+    finally:
+        sync.stop()
+
+
+def test_instant_check_is_off_unless_chosen_and_stops_with_the_switch(env):
+    appm, client, bridge, _ = env
+    aid = account(client, bridge, ai=False)
+    sync, _clock = auto(appm, minutes=60)
+    try:
+        sync._reconcile_instant()
+        assert sync.instant.states() == {} and bridge.idles == 0       # nothing is opened unless asked for
+        client.patch(f"/api/v1/accounts/{aid}", json={"settings": {"smtp_port": bridge.smtp_port, "send_identities": [], "instant": True}})
+        sync._reconcile_instant()
+        assert wait_for(lambda: sync.instant.states().get(aid) == "listening")
+        client.patch(f"/api/v1/accounts/{aid}", json={"settings": {"smtp_port": bridge.smtp_port, "send_identities": [], "instant": False}})
+        sync._reconcile_instant()
+        assert sync.instant.states() == {}
+    finally:
+        sync.stop()
+
+
+def test_instant_check_closes_when_the_vault_locks(env):
+    appm, client, bridge, _ = env
+    aid = account(client, bridge, ai=False)
+    client.patch(f"/api/v1/accounts/{aid}", json={"settings": {"smtp_port": bridge.smtp_port, "send_identities": [], "instant": True}})
+    sync, _clock = auto(appm, minutes=60)
+    try:
+        sync._reconcile_instant()
+        assert wait_for(lambda: sync.instant.states().get(aid) == "listening")
+        appm.vault.lock()
+        sync._reconcile_instant()
+        assert sync.instant.states() == {}
+    finally:
+        sync.stop()

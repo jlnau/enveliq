@@ -37,6 +37,7 @@ Writing help is the same on the phone: under the message there is **Write a repl
 ## How it works
 
 - `backend/mail/writehelp.py` holds the record, the fixed rules, the prompt and the answer parsing. `backend/mail/writehelp_routes.py` has the four routes.
+- In a reply the model is told plainly who is who: the writer (the signed-in person and the mailbox address) and the sender it is replying to. It writes as the writer, to the sender, and must not greet the writer or sign with the sender's name. (Smaller models used to mix this up and answer as the sender.)
 - The model gets the email being answered and the draft as data, no tools, and rules that it must not follow instructions inside them, must not invent facts, and must leave a [bracket] where only the person can answer.
 - Nothing is stored or logged except a small per-person record (on or off, your instructions). The audit log says only that it was used.
 - Rate limit: 12 requests a minute per person. Time limit: 90 seconds.
@@ -48,3 +49,11 @@ Writing help is the same on the phone: under the message there is **Write a repl
 - A model cannot be made immune to a hostile email. Its output is only ever shown, never acted on.
 
 The plan this came from, with the mock-ups' decisions, is in `docs/EMAIL_ASSIST.md`. One-tap replies are a later release.
+
+## Check my reply keeps your text
+
+When the box already has your words, the AI treats them as the email: it keeps every point, request, question, list item, number and name, in the same order and in your voice, and fixes only spelling, grammar and clarity. The email you are answering is only background. The AI never adds questions or promises of its own and never writes a different reply in place of yours. When the box is empty, it writes a short reply for you as before.
+
+## Your own text always comes first
+
+When your box already has text, **Check my reply** checks and improves *your* text; the email you are answering is only background. If the AI answers with a brand-new reply that shares little with what you wrote, Enveliq asks again without the other email. If that also ignores your text, your own text is shown unchanged with a note, never a made-up reply. (`backend/mail/writehelp.py`, `keeps_the_draft`.)

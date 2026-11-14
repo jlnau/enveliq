@@ -147,7 +147,7 @@ if (!(await page.locator("#draftNav").isVisible())) await page.click("#moreToggl
 await page.click("#draftNav");
 await page.waitForSelector(".drow");
 check("the Drafts page lists all four, newest first", (await page.locator(".drow").count()) === 4 && (await page.locator(".drow .dkind").first().innerText()) === "New email");
-check("the page is titled Drafts and offers Back to My inbox", (await page.locator(".top-left h2").innerText()) === "Drafts" && (await page.locator("#backInbox").isVisible()));
+check("the page is titled Drafts, with no Back button", (await page.locator(".top-left h2").innerText()) === "Drafts" && (await page.locator("#backInbox").count()) === 0);
 check("each draft says how long it is kept", (await page.locator(".drow").first().innerText()).includes("Kept 14 more days"));
 await shot("drafts_page");
 await page.locator(".drow", { hasText: "Thanks, let me think." }).locator("[data-draft-open]").click();

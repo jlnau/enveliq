@@ -64,8 +64,12 @@ FIXED_PROMPT = (
     "task (null, or an object with title: a short instruction, due: a date or time phrase taken from the email or null, "
     "detail: one sentence), "
     "shipment (null, unless the email is about an online order or a parcel delivery; then an object with "
-    "kind: one of order_confirmed, shipped, out_for_delivery, delivered, delayed; "
-    "shop: the seller's name; "
+    "kind: one of order_confirmed, shipped, out_for_delivery, delivered, delayed. Read the whole email and choose by what it says: "
+    "delivered ONLY when the email says the parcel has already been delivered, left or collected (never for 'will be delivered' or 'arriving soon'); "
+    "out_for_delivery ONLY when the email says 'out for delivery' in so many words; "
+    "order_confirmed only when the email is just about placing the order and says nothing about shipping, a courier or tracking; "
+    "anything else about shipping (dispatched, on its way, tracking details, arriving soon) is shipped; "
+"shop: the seller's name; "
     "order_number: the order number exactly as written, or null; "
     "tracking_number: exactly as written, or null; "
     "carrier: the courier's name, or null; "
@@ -203,28 +207,76 @@ def _trips(raw: Any) -> list[dict[str, Any]]:
     return out
 
 
-def parse_reply(content: Any) -> dict[str, Any]:
+def _why(content: Any, finish: Any, found_json: bool) -> str:
+    """A short plain reason a reply could not be used, said without quoting any of it (it may contain the email's words)."""
+    cut = str(finish or "").lower() in ("length", "max_tokens", "max_output_tokens")
+    if not isinstance(content, str) or not content.strip():
+        return "the reply was empty" + ("; the model ran out of room before it wrote anything, which happens with models that think first, so raise the model's answer limit or use one that does not think" if cut else "")
+    if cut:
+        return "the reply was cut off at the model's length limit before the answer was finished"
+    return "the reply had an answer in it, but no summary" if found_json else "the reply was not in the answer form Enveliq asks for"
+
+
+_STRING = r'"((?:[^"\\]|\\.)*)"'
+
+
+def _salvage(raw: str) -> dict[str, Any] | None:
+    """When the answer is not valid JSON as a whole (a stray quote, a cut-off ending), still take the plain fields it did write."""
+    found = re.search(r'"summary"\s*:\s*' + _STRING, raw)
+    if not found:
+        return None
+    out: dict[str, Any] = {"summary": _unescape(found.group(1))}
+    for key in ("category", "priority", "today_reason"):
+        got = re.search(rf'"{key}"\s*:\s*' + _STRING, raw)
+        if got:
+            out[key] = _unescape(got.group(1))
+    for key in ("action_required", "act_today"):
+        got = re.search(rf'"{key}"\s*:\s*(true|false)', raw, re.I)
+        if got:
+            out[key] = got.group(1).lower() == "true"
+    return out
+
+
+def _unescape(value: str) -> str:
+    try:
+        return json.loads('"' + value + '"', strict=False)
+    except ValueError:
+        return value.replace('\\"', '"').replace("\\n", " ")
+
+
+def parse_reply(content: Any, finish: Any = None) -> dict[str, Any]:
     """Turn the model's answer into the few safe fields Enveliq keeps."""
-    bad = BridgeError("ai_bad_reply", "The AI model did not return a usable summary for this email.")
+    bad = BridgeError("ai_bad_reply", "The AI model did not return a usable summary for this email. (" + _why(content, finish, False) + ")")
     if not isinstance(content, str) or not content.strip():
         raise bad
     raw = content.strip()
+    raw = re.sub(r"<(think|thinking|reasoning)>.*?</\1>", "", raw, flags=re.I | re.S).strip()     # some models write their thinking first
     raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.I)
     data: Any = None
     try:
         data = json.loads(raw)
     except ValueError:
-        start, end = raw.find("{"), raw.rfind("}")
-        if 0 <= start < end:
-            try:
-                data = json.loads(raw[start:end + 1])
-            except ValueError:
-                data = None
+        end = raw.rfind("}")
+        starts = [i for i, ch in enumerate(raw[:end + 1]) if ch == "{"][:40]
+        for start in starts:                    # the first "{" may belong to some text before the answer: try each one
+            piece = raw[start:end + 1]
+            for text in (piece, re.sub(r",\s*([}\]])", r"\1", piece)):          # a small model often leaves a comma before the closing bracket
+                try:
+                    got = json.loads(text, strict=False)         # strict=False lets a line break sit inside a sentence
+                except ValueError:
+                    continue
+                if isinstance(got, dict) and "summary" in got:
+                    data = got
+                    break
+            if data is not None:
+                break
+    if not isinstance(data, dict):
+        data = _salvage(raw)
     if not isinstance(data, dict):
         raise bad
     summary = _text(data.get("summary"), 600)
     if not summary:
-        raise bad
+        raise BridgeError("ai_bad_reply", "The AI model did not return a usable summary for this email. (" + _why(content, finish, True) + ")")
     category = _text(data.get("category"), 40)
     category = next((c for c in CATEGORIES if c.lower() == category.lower()), "Other")
     priority = _text(data.get("priority"), 10).lower()
@@ -448,7 +500,11 @@ class Summariser:
                 content = reply["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError, AttributeError):
             raise BridgeError("ai_bad_reply", "The AI server did not answer in the expected format.") from None
-        return parse_reply(content)
+        try:
+            finish = reply["stop_reason"] if provider.style == "anthropic" else reply["choices"][0].get("finish_reason")
+        except (KeyError, IndexError, TypeError, AttributeError):
+            finish = None
+        return parse_reply(content, finish)
 
     def complete(self, system: str, user: str, max_tokens: int = 900, timeout: float | None = None) -> str:
         """One question, one answer: the model's text. Used for attachment summaries (backend/mail/attach_ai.py)."""

@@ -140,6 +140,13 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
     var askClose by remember { mutableStateOf(false) }
     var askLater by remember { mutableStateOf(false) }
     var laterLabel by remember { mutableStateOf("") }
+    // Send options and Saved replies, the same two things the website has under More options and beside the message box.
+    var important by remember { mutableStateOf(false) }
+    var markRead by remember { mutableStateOf(false) }
+    var askOptions by remember { mutableStateOf(false) }
+    var askSaved by remember { mutableStateOf(false) }
+    var savedList by remember { mutableStateOf<List<SavedReply>?>(null) }
+    var savedNote by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val writeInfo = rememberWriteHelp(api)
     val wh = remember { WriteHelpState() }
@@ -274,15 +281,19 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             try {
                 val result = withContext(Dispatchers.IO) {
                     if (laterAtMs != null) {
-                        val id = api.scheduleSend(kind, if (kind == "new") boxId else mail!!.accountId, mail?.id, toList, ccList, bccList, subj, text, chosen, laterAtMs / 1000.0)
+                        val id = api.scheduleSend(kind, if (kind == "new") boxId else mail!!.accountId, mail?.id, toList, ccList, bccList, subj, text, chosen, laterAtMs / 1000.0, important)
                         return@withContext Sent(false, "", 0, id, laterLabel)
                     }
                     when (kind) {
-                        "reply" -> api.reply(mail!!, false, text, chosen, files.toList(), toList, ccList, bccList, subj)
-                        "reply_all" -> api.reply(mail!!, true, text, chosen, files.toList(), toList, ccList, bccList, subj)
-                        "forward" -> api.forward(mail!!, toList, ccList, bccList, text, chosen, files.toList(), subj)
-                        else -> api.sendNew(boxId, toList, ccList, bccList, subj, text, chosen, files.toList())
+                        "reply" -> api.reply(mail!!, false, text, chosen, files.toList(), toList, ccList, bccList, subj, important)
+                        "reply_all" -> api.reply(mail!!, true, text, chosen, files.toList(), toList, ccList, bccList, subj, important)
+                        "forward" -> api.forward(mail!!, toList, ccList, bccList, text, chosen, files.toList(), subj, important)
+                        else -> api.sendNew(boxId, toList, ccList, bccList, subj, text, chosen, files.toList(), important)
                     }
+                }
+                // "Mark as read when I send": the email you answered is marked as read, the same as the Mark as read button.
+                if (markRead && mail != null && (kind == "reply" || kind == "reply_all")) {
+                    try { withContext(Dispatchers.IO) { api.resolve(mail, Outcome.Reviewed) } } catch (_: Exception) { }
                 }
                 if (draft != null) {
                     try {
@@ -402,7 +413,75 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
                     modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
                 ) { Text("Save draft", color = Ink, fontSize = 14.sp, maxLines = 1) }
             }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = { askSaved = true }, enabled = !busy, contentPadding = tight,
+                    modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line),
+                ) { Text("Saved replies", color = Ink, fontSize = 14.sp, maxLines = 1) }
+                OutlinedButton(
+                    onClick = { askOptions = true }, enabled = !busy, contentPadding = tight,
+                    modifier = Modifier.weight(1f).height(44.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, if (important || markRead) Blue else Line),
+                ) { Text(if (important || markRead) "Send options ●" else "Send options", color = if (important || markRead) Blue else Ink, fontSize = 14.sp, maxLines = 1) }
+            }
         }
+    }
+
+    if (askOptions) {
+        AlertDialog(
+            onDismissRequest = { askOptions = false },
+            containerColor = Panel,
+            title = { Text("Send options", color = Ink) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Send with high importance", color = Ink, fontSize = 16.sp)
+                            Text("Shows as important to the person you send to.", color = Muted, fontSize = 13.sp)
+                        }
+                        androidx.compose.material3.Switch(checked = important, onCheckedChange = { important = it })
+                    }
+                    if (isReply) Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Mark as read when I send", color = Ink, fontSize = 16.sp)
+                            Text("Marks the email you are answering as read.", color = Muted, fontSize = 13.sp)
+                        }
+                        androidx.compose.material3.Switch(checked = markRead, onCheckedChange = { markRead = it })
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { askOptions = false }) { Text("Done", color = Blue) } },
+        )
+    }
+
+    if (askSaved) {
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            try { savedList = withContext(Dispatchers.IO) { api.savedReplies() }; savedNote = "" }
+            catch (e: Exception) { savedNote = "Could not load your saved replies. Check your connection." }
+        }
+        AlertDialog(
+            onDismissRequest = { askSaved = false },
+            containerColor = Panel,
+            title = { Text("Saved replies", color = Ink) },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    val l = savedList
+                    if (l == null && savedNote.isEmpty()) CircularProgressIndicator(color = Blue)
+                    if (savedNote.isNotEmpty()) Text(savedNote, color = Amber, fontSize = 14.sp)
+                    if (l != null && l.isEmpty()) Text("You have no saved replies yet. Add them in Settings, Saved replies.", color = Muted, fontSize = 14.sp)
+                    l?.forEach { r ->
+                        Column(Modifier.fillMaxWidth().clickable {
+                            body = if (body.isBlank()) r.text else body.trimEnd() + "\n\n" + r.text
+                            askSaved = false
+                        }.padding(vertical = 8.dp)) {
+                            Text(r.title, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                            Text(r.text, color = Muted, fontSize = 13.sp, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { askSaved = false }) { Text("Close", color = Muted) } },
+        )
     }
 
     if (askCheck) {

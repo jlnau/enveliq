@@ -7,6 +7,7 @@ import datetime
 import ipaddress
 import re
 import socket
+import select
 import socketserver
 import ssl
 import threading
@@ -67,6 +68,7 @@ class FakeBridge:
         self.folders = folders if folders is not None else [("\\HasNoChildren", "INBOX"), ("\\HasNoChildren \\Archive", "Archive"), ("\\HasNoChildren \\Trash", "Trash")]
         self.uidvalidity = 7
         self.messages: dict[int, dict] = {}          # uid -> {raw, flags, folder}
+        self.idles = 0                                # how many times a client started IDLE
         self.log: list[str] = []                     # IMAP commands received (passwords redacted)
         self.smtp_log: list[str] = []
         self.sent: list[dict] = []
@@ -139,7 +141,7 @@ class FakeBridge:
                     bridge.log.append(f"{cmd} {'***' if cmd == 'LOGIN' else args}".strip() + f" [tls={tls}]")
                     w = self.wfile.write
                     if cmd == "CAPABILITY":
-                        caps = "IMAP4rev1 UIDPLUS AUTH=XOAUTH2" + (" MOVE" if bridge.move_supported else "") + (" STARTTLS" if (not tls and bridge.starttls) else "")
+                        caps = "IMAP4rev1 UIDPLUS IDLE AUTH=XOAUTH2" + (" MOVE" if bridge.move_supported else "") + (" STARTTLS" if (not tls and bridge.starttls) else "")
                         w(f"* CAPABILITY {caps}\r\n{tag} OK done\r\n".encode())
                     elif cmd == "STARTTLS":
                         if not bridge.starttls:
@@ -195,6 +197,20 @@ class FakeBridge:
                         w(f"{tag} OK done\r\n".encode())
                     elif cmd == "UID":
                         self._uid(tag, args)
+                    elif cmd == "IDLE":
+                        bridge.idles += 1
+                        w(b"+ idling\r\n"); self.wfile.flush()
+                        seen = len(bridge.in_folder(self.cur))
+                        while True:
+                            if (hasattr(self.connection, "pending") and self.connection.pending()) or select.select([self.connection], [], [], 0.05)[0]:
+                                break
+                            now = len(bridge.in_folder(self.cur))
+                            if now != seen:
+                                seen = now
+                                w(f"* {now} EXISTS\r\n".encode()); self.wfile.flush()
+                        if not self.rfile.readline():
+                            return
+                        w(f"{tag} OK idle done\r\n".encode())
                     elif cmd == "NOOP":
                         w(f"{tag} OK\r\n".encode())
                     elif cmd == "LOGOUT":
@@ -209,12 +225,25 @@ class FakeBridge:
                 inbox = bridge.in_folder(self.cur)
                 if sub == "SEARCH":
                     hits = [u for u in inbox if "UNSEEN" not in rest or "\\Seen" not in bridge.messages[u]["flags"]]
+                    if "FLAGGED" in rest:
+                        hits = [u for u in hits if "\\Flagged" in bridge.messages[u]["flags"]]
                     wanted = re.search(r'HEADER Message-ID "([^"]+)"', rest)
                     if wanted:
                         hits = [u for u in hits if f"Message-ID: {wanted.group(1)}".encode() in bridge.messages[u]["raw"]]
                     for value in re.findall(r'FROM "((?:[^"\\]|\\.)*)"', rest):        # SEARCH FROM "address": the From line contains it
                         needle = value.lower().encode()
                         hits = [u for u in hits if any(line.lower().startswith(b"from:") and needle in line.lower() for line in bridge.messages[u]["raw"].split(b"\r\n\r\n", 1)[0].split(b"\r\n"))]
+                    for value in re.findall(r'TO "((?:[^"\\]|\\.)*)"', rest):
+                        needle = value.lower().encode()
+                        hits = [u for u in hits if any(line.lower().startswith(b"to:") and needle in line.lower() for line in bridge.messages[u]["raw"].split(b"\r\n"))]
+                    for kind, day in (re.findall(r"(SINCE|BEFORE) (\d{1,2}-[A-Za-z]{3}-\d{4})", rest) if getattr(bridge, "honour_dates", False) else []):
+                        from datetime import datetime as _dt
+                        from email.utils import parsedate_to_datetime as _pd
+                        limit = _dt.strptime(day, "%d-%b-%Y").date()
+                        def _day(u):
+                            m = re.search(rb"(?im)^Date: (.+)$", bridge.messages[u]["raw"])
+                            return _pd(m.group(1).decode()).date() if m else None
+                        hits = [u for u in hits if _day(u) is not None and ((_day(u) >= limit) if kind == "SINCE" else (_day(u) < limit))]
                     # Find any email: TEXT "words" (all must appear) and Gmail's X-GM-RAW "words"
                     for kind, value in re.findall(r'(TEXT|X-GM-RAW) "((?:[^"\\]|\\.)*)"', rest):
                         value = re.sub(r"\\(.)", r"\1", value).lower()
@@ -229,19 +258,20 @@ class FakeBridge:
                             continue
                         seq = inbox.index(uid) + 1
                         raw = m["raw"]
-                        if "RFC822.SIZE" in items:
+                        if "HEADER.FIELDS" in items:
+                            head = raw.split(b"\r\n\r\n", 1)[0] + b"\r\n\r\n"
+                            size_part = f"RFC822.SIZE {bridge.report_size or len(raw)} " if "RFC822.SIZE" in items else ""
+                            w(f"* {seq} FETCH (UID {uid} {size_part}BODY[HEADER.FIELDS (X)] {{{len(head)}}}\r\n".encode() + head + b")\r\n")
+                        elif "RFC822.SIZE" in items:
                             size = bridge.report_size or len(raw)
                             w(f"* {seq} FETCH (UID {uid} RFC822.SIZE {size})\r\n".encode())
-                        elif "HEADER.FIELDS" in items:
-                            head = raw.split(b"\r\n\r\n", 1)[0] + b"\r\n\r\n"
-                            w(f"* {seq} FETCH (UID {uid} BODY[HEADER.FIELDS (X)] {{{len(head)}}}\r\n".encode() + head + b")\r\n")
                         elif "BODY.PEEK[]" in items:
                             w(f"* {seq} FETCH (UID {uid} BODY[] {{{len(raw)}}}\r\n".encode() + raw + b")\r\n")
                     w(f"{tag} OK done\r\n".encode())
                 elif sub == "STORE":
                     uid = int(rest.split(" ")[0])
                     if uid in bridge.messages:
-                        flag = "\\Seen" if "\\Seen" in rest else "\\Deleted"
+                        flag = "\\Seen" if "\\Seen" in rest else "\\Flagged" if "\\Flagged" in rest else "\\Deleted"
                         if "-FLAGS" in rest:
                             bridge.messages[uid]["flags"].discard(flag)
                         else:

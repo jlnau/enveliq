@@ -211,3 +211,7 @@ Syncing runs while Enveliq is unlocked, checks about every 30 seconds after a ch
 ## Emails with a task stay
 
 An email that has an open task is never removed from Enveliq, even if it is older than 14 days or you read or deleted it in another app. It goes only after the task is done or removed.
+
+## Meetings from email invitations
+
+The Google Calendar and CalDAV connections above are also where meetings you **accept** from an email invitation go (see [Calendar invitations](INVITES.md)). Google Calendar is used first when both are connected. These meetings are not tasks: they are not removed when a task ends, and they stay if you disconnect the calendar.

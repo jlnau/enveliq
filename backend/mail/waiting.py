@@ -171,6 +171,11 @@ class WaitBook:
             self._save(user_id, book)
             return True
 
+    def msgids_of(self, user_id: str, account_id: str) -> dict[str, str]:
+        """Note id -> the Message-ID of the sent email, for one mailbox (used to find the sent email again in the Sent folder)."""
+        with self._lock:
+            return {n["id"]: n["msgid"] for n in self._load(user_id)["notes"].values() if n.get("account_id") == account_id and n.get("msgid")}
+
     def waiting_ids(self, user_id: str, account_id: str) -> set[str]:
         with self._lock:
             return {n["msgid"] for n in self._load(user_id)["notes"].values() if n.get("account_id") == account_id and n.get("state") == "waiting"}
