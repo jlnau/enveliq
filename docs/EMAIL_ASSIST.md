@@ -105,7 +105,7 @@ One-tap replies:
 
 ### Default writing instructions (drafted; the person can change all of it)
 
-> Write in plain, friendly, polite English. Keep it short: say the main thing first, then only what is needed. Use the same level of formality as the email I am answering. Start with "Hi" and the person's first name, and end with a simple thanks. Do not invent facts, dates, prices or promises. Where you need something only I know, leave a [bracket] such as [your name] or [time]. Fix spelling and grammar in my own words but keep my meaning and my voice.
+> Write in plain, friendly, polite English. Keep it short: say the main thing first, then only what is needed. Use the same level of formality as the email I am answering. Start with "Hi" and the first name of the person I am writing to, and end with a simple thanks. Do not invent facts, dates, prices or promises. Where you need something only I know, leave a [bracket] such as [your name] or [time]. Fix spelling and grammar in my own words but keep my meaning and my voice.
 
 This text is shown in the box, so nothing is hidden. It is the starting value only; once a person saves their own, theirs is used.
 

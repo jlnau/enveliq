@@ -45,14 +45,13 @@ When the mailbox uses AI summaries, the alert is sent once the new email is read
 
 With **Hold email for the daily summary** on, new email that the AI judged to need you today (and email from important people) still alerts at once and stays in the inbox. Email that can wait is held out of the inbox, listed under **Held for summary**, and gathered in a summary at the top of the inbox (website and Android app). You get **one alert a day**, at the daily summary time, that says how many emails are waiting and opens the summary. See [AI summaries](AI_SUMMARIES.md#needs-you-today-and-the-daily-summary-in-your-inbox). This switch is separate from **Send new email in this summary instead**, which counts new email in the morning message; either one holds back the one-by-one alerts for mail that is not important and not urgent.
 
-## The bell, and messages from Home Assistant and other services
+## The bell: notes from Home Assistant and other services
 
-At the top right of the inbox, beside the news-feed icon (on a phone the bell stays in the top bar and the news feeds are in the menu), a **bell** collects two things in one drop-down (a full-screen window on a phone):
+At the top right of the inbox, beside the news-feed icon (on a phone the bell stays in the top bar and the news feeds are in the menu), a **bell** collects notes in one drop-down (a full-screen window on a phone):
 
 * **Notes sent to you by other services** on your network, such as Home Assistant ("Washer finished"). Each shows its title, its text, where it came from and when. **Dismiss** removes one, **Mark all as read** and **Clear the list** do what they say. Only the newest 100 are kept.
-* **Your chat messages** from the people who share this Enveliq (see [MESSAGES.md](MESSAGES.md)): a line saying how many are unread and from whom, with a **Read messages** button.
 
-The number on the bell adds the unread notes and the unread chat messages. Opening the drop-down and closing it marks the notes as read; chat messages stay unread until you read them in Messages.
+The number on the bell is the unread notes. Opening the drop-down and closing it marks the notes as read.
 
 ### How a service sends you a note
 

@@ -24,6 +24,7 @@ After you change a setting, restart Enveliq so it reads it: `docker compose up -
 | `ENVELIQ_PUBLISH` | Used by the repository's `docker-compose.yml`: which address the port is published on. `0.0.0.0` opens it to your network. | `127.0.0.1` |
 | `ENVELIQ_ALLOWED_HOSTS` | The host names Enveliq answers to, separated by commas. Worked out from `ENVELIQ_PUBLIC_URL`; you rarely need this. | from the public address |
 | `ENVELIQ_PUSH_RELAY` | The address of the push relay that wakes the Enveliq Android app for Google push alerts (`https://...`). The official Enveliq images already have it; you only set it if you run your own relay (see `docs/PUSH_RELAY.md`). Empty means Google push is not offered. | empty (set in official images) |
+| `ENVELIQ_BUILD` | A build number shown instead of the version on preview copies (`Preview build 57`). The preview image build sets it by itself, from the number of the **Build UI Preview** run. Leave it empty: release images have none and show only the version. Anything that is not a plain number is ignored. |
 | `ENVELIQ_ALLOWED_ORIGINS` | The origins the page may call from. Also worked out from the public address. | from the public address |
 | `ENVELIQ_COOKIE_SECURE` | `1` or `0`: whether the sign-in cookie is marked secure. | `1` for `https://` addresses |
 | `ENVELIQ_MAX_JSON_BYTES` | Largest request the server accepts, in bytes. | 1 MB |

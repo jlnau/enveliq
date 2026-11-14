@@ -124,7 +124,7 @@ async function aiSetupPanel(me, onChange, { auto = false } = {}) {
         const out = await api("/ai/models", { method: "POST", body: { provider: current.id, url: current.cloud ? current.url : url.value.trim(), api_key: key.value === "" ? null : key.value } });
         // Each model is a button to tap, so there is nothing to type or work out.
         const chips = out.models.slice(0, 60).map(m => h("button", { class: "chip", type: "button", "aria-pressed": String(model.value === m), text: m, onclick: () => {
-          model.value = m; model.dispatchEvent(new Event("input", { bubbles: true }));
+          model.value = m; model.dispatchEvent(new Event("input", { bubbles: true })); model.dispatchEvent(new Event("change", { bubbles: true }));
           for (const c of list.querySelectorAll(".chip")) c.setAttribute("aria-pressed", String(c.textContent === m));
         } }));
         list.append(...chips);

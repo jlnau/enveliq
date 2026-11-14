@@ -415,6 +415,15 @@ class SecureVault:
         aad = GLOBAL_AAD_PREFIX + record_id.encode("utf-8")
         return self._json_loads(self._decrypt(master, row["nonce"], row["ciphertext"], aad))
 
+    def purge_global_prefix(self, prefix: str) -> int:
+        """Delete every global record whose id starts with `prefix` (used to clear the data of a feature that was removed). Returns how many went."""
+        like = prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+        try:
+            with self._connect() as con:
+                return con.execute("DELETE FROM global_records WHERE id LIKE ? ESCAPE '\\'", (like,)).rowcount
+        except sqlite3.OperationalError:
+            return 0
+
     # ---------- Accounts ----------
 
     def _unwrap_account_dek(self, account_id: str, row: sqlite3.Row | None = None) -> bytes:

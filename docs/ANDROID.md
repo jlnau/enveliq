@@ -6,7 +6,7 @@ A real Android app (not a web page in a frame), written in Kotlin with Jetpack C
 
 **From a release (the normal way).** When you publish a GitHub Release, the **Build Android app** workflow builds the app and attaches `Enveliq-<version>.apk` (and its checksum, `.sha256`) to that release. Open the release on your phone, download the APK, and open it. Android asks to allow installing apps from your browser or Files app; allow it for that one app, then press **Install**. A new version installs over the old one.
 
-**From a test build.** Every time the test branch `preview/vX.YY` changes the `android/` folder, the same workflow runs. Open **Actions**, **Build Android app**, the newest green run, and download **Enveliq-android-apk** under Artifacts (a zip with the APK inside; kept for 90 days). **Run workflow** starts a build by hand.
+**From a test build.** Every push to the test branch `preview/vX.YY` runs the same workflow, even when nothing in `android/` changed, so the newest app is always the run right under the newest preview build in **Actions**. Open **Actions**, **Build Android app**, the newest green run, and download **Enveliq-android-apk** under Artifacts (a zip with the APK inside; kept for 90 days). **Run workflow** starts a build by hand.
 
 ## Signing: one permanent key
 
@@ -29,18 +29,20 @@ The app's version is the release tag (for example `v0.96` gives version `0.96`);
 
 ## Settings
 
-Settings is a short list of topics: **Notifications**, **Swipe on an email**, **Appearance**, **Security**, **Open the next email**, **Blocked senders**, **Account** and **About**. Tap a topic to open its own page, with a Back button fixed at the top. On a page, switches turn things on and off with one tap on the whole row; a choice (for example what a swipe does, or how alerts reach the phone) opens one more page with a tick-list. Nothing needs long scrolling: longer explanations sit under the setting they belong to.
+Settings is a short list of topics: **Notifications**, **Swipe on an email**, **Appearance**, **Security**, **Open the next email**, **Mail rules**, **Blocked senders**, **Account** and **About**. Tap a topic to open its own page, with a Back button fixed at the top. On a page, switches turn things on and off with one tap on the whole row; a choice (for example what a swipe does, or how alerts reach the phone) opens one more page with a tick-list. Nothing needs long scrolling: longer explanations sit under the setting they belong to.
 
 ## Look, alerts and comfort
 
 - **Appearance** (Settings): follow the phone's light or dark setting, or pick Light or Dark yourself; and a text size (Normal, Large, Extra large) that is added to Android's own text size. Rotating the phone or changing these no longer restarts the app, so you keep your place.
 - **What to alert me about** (Settings, Notifications): all new email, only email that needs action, or only email from people on your important list. Email you are not alerted about still waits in your inbox. This is a setting, and "all new email" is the default.
 - **Hide the watching note:** a button that opens Android's own switch for the small "watching" note (alerts keep working).
+- **Copy code:** for a sign-in or verification email, the alert has a **Copy code 123456** button (the lock screen still shows nothing private) and the open email has the same button under the AI summary. The code is read from the subject and AI summary only; it is copied as sensitive so Android hides it in the clipboard preview.
 - **Alerts clear at once:** when an email is reviewed, archived or moved somewhere else, the server tells the phone and its alert is taken down straight away (the phone does not need to wait until the app next looks).
-- **Mark unread:** open an email in the Reviewed view and tap **Mark unread**. The mailbox gets its unread mark back and the email returns to the inbox. Only emails you marked Reviewed can be marked unread (an archived email has moved to another folder). A Reviewed card keeps its pointer to the mailbox for this; an Archived card still drops it.
+- **Star:** a star in the three-dot button of the bottom bar of an open email stars or un-stars it at your mailbox (so it shows in Gmail and Proton too). The filter menu (the tag icon) has a **Starred** choice that lists only starred emails, including read ones.
+- **Mark as read and Mark as unread:** the first icon in the bottom bar of an open email is a green tick, **Mark as read**; once the email is read it is a red tick, **Mark as unread** (both are in the three-dot menu too). The email is not moved or hidden: it loses its "new" look, and with **Include read mail** on it stays in the list. With that off, it leaves the unread list like any read email. There is no Undo; Mark as unread is the way back.
 - **Check connection** on the sign-in screen says in plain words whether the address answers.
 - **A welcome** after your first sign-in explains summaries, alerts and the lock in three short cards, with a button that goes straight to those settings. It shows once.
-- **Screen reader:** every email row offers Mark reviewed, Archive and Move to Bin in TalkBack's actions menu (swiping is hard with a screen reader).
+- **Screen reader:** every email row offers Archive and Move to Bin in TalkBack's actions menu (swiping is hard with a screen reader).
 
 ## Writing: who it comes from
 
@@ -48,7 +50,11 @@ When you have more than one address (a mailbox's own address and its aliases, fr
 
 ## Beyond email
 - **Tasks tab:** the website's task list. Done, Move, Not today, Remove, and Put back for finished ones.
-- **More tab:** Notes and alerts, Messages, Shipping, Trips and calendar, News feeds. Shipping, trips and news are read-only here (set them up on the website); Messages can be read and answered; the bell can be dismissed.
+- **Folders:** a folder button in the bottom bar of an open email (and in the bar for several ticked emails) opens a full-screen box: search, recent folders first, and a box to make a new folder. The email leaves the list at once and is moved at the mailbox when the Undo time has passed. **Folders** in the main menu lists the mailbox's folders; pick one to see its newest emails (read live, never saved) and open any of them.
+- **Find any email** (More) has a **Filters** fold (From, To, Since, Until with a date picker, Has files, Unread only, Starred only, Look in Junk too, and a mailbox and folder choice), recent searches under the box, **Save this search** on the results, and the saved searches listed on the page and in the main menu under **Saved searches** (tap to run).
+- **Always move this sender to a folder:** with one email open, the folder box has a tick box, "Always move new email from (sender) into the folder I pick", and the three-dot menu has **Always move to a folder…**, which opens the same box with it ticked. The rule is made once the Undo time has passed and the move worked; it shows in Mail rules on the website, where it can be removed. A folder takes the email out of the Inbox; use Tags to keep it there too.
+- **Shipping** is in the main menu beside Tasks (with a small count of parcels waiting for you to confirm). Parcels that need you show **Yes, I've got it** and **Not yet**; the three-dot button has Copy tracking number, Add a note and Not an order (or Remove, for an order you added by hand). Parcels you have received fold away under **Received · N** (tap to open; Undo puts one back).
+- **More tab:** Notes and alerts, Trips and calendar, News feeds. Trips and news are read-only here (set them up on the website); the bell can be dismissed.
 - **Share to Enveliq:** use Android's Share menu on text in any app and choose Enveliq. A new email opens with the text in the body (and the shared title as the subject).
 - **Wide screens:** from 720 dp wide (a tablet, or a phone on its side) the inbox and the open email show side by side.
 - **Home-screen widget:** add "Enveliq" from the phone's widget list for a square that says how many emails are waiting. It shows the number only and is updated whenever the inbox loads; signing out clears it.
@@ -73,7 +79,7 @@ Settings, Security, **Your devices** lists the places you are signed in and lets
 - **Files with this email:** each file's size and the AI's note (labelled). **Save to my phone** asks where to save it. The file is fetched at that moment and not kept by the app.
 - **Show the original email:** opens the email full screen as its sender made it: layout, colours, tables, pictures that came inside the email, and links. If an email has no formatted version, you see its plain text instead, and **Plain text** can always be chosen. Pictures that live on the internet are held back (they can tell the sender you opened the email) until you tap **Show pictures**. It uses the same safe copy the website shows: the server rebuilds the email from allowed parts only (no scripts, forms or frames), and the app shows it with JavaScript off, no file or storage access and no network until you allow pictures. Pinch to zoom.
 - **Links:** every link, in the formatted email or the plain text, asks first and names the site it goes to. Unusual links (plain http, look-alike characters, bare numbers) get an extra warning.
-- **Inbox, Reviewed, Archived:** the filter button on the thin row under the top bar switches views. Reviewed and Archived show what the server still keeps (a few days). Back from any of them (or from a needs-action, mailbox or tag filter) returns to the whole inbox first.
+- **Inbox, Archived:** the filter button on the thin row under the top bar switches views. Archived shows what the server still keeps (a few days). There is no Reviewed list. Back from any of them (or from a needs-action, mailbox or tag filter) returns to the whole inbox first.
 - **Needs action, mailbox and tags:** the second button on that row. With more than one mailbox it also lists each mailbox.
 
 ## Added in versions 0.97 and 0.98
@@ -86,7 +92,7 @@ Settings, Security, **Your devices** lists the places you are signed in and lets
 - **Signature.** The signature you saved on the website is put in the box when a new email starts, where you can change or remove it.
 - **Pick from phone contacts** on a new email opens Android's contact picker. Only the one address you choose is handed over, so Enveliq does not need permission to read your contacts.
 - **Links that start an email.** Tapping an email address or `mailto:` link in another app can offer Enveliq, and a new email opens with the address (and subject or text, if the link had them) filled in. Nothing is sent until you press Send.
-- **Open the next email** (Settings): after you archive or mark reviewed the email you are reading, the next one in the list opens.
+- **Open the next email** (Settings): after you archive the email you are reading, the next one in the list opens.
 - **Get the Android app** (Settings, About) opens the download page, for this or another phone. The website's front page and Settings link to this guide, which has the download button.
 
 - **Files and their summaries.** An email's files are listed under the AI summary with the AI's note on each (labelled), or the reason a file was not read. **View** (or **Preview** for a picture) opens the same viewer as the website: PDF pages with zoom, pictures, tables and plain text, made by your server in memory. **Save to my phone** keeps a copy where you choose. Nothing is kept by Enveliq or the app.
@@ -98,19 +104,35 @@ Settings, Security, **Your devices** lists the places you are signed in and lets
 - **Links.** The "Open this link?" box names the site and shows the full address.
 - **Sign-in screen.** It shows the Enveliq logo, the form on one card, and, fixed at the bottom, the Sign in button with **Sign in with a passkey** beneath it after a thin "or" line. The two-factor code box is marked as a one-time code, so password managers such as Bitwarden can recognise and fill it. The terms and privacy notice are linked just above Sign in.
 - **Terms.** **Settings, About** has Terms of use, Privacy and Security. A short "Before you start" notice (provided as it is with no warranty; summaries can be wrong; keep backups; online AI services receive email text) is shown once on each phone and remembered there.
-- **An open email** fills the screen, and its bottom bar is symbols: a tick (Reviewed), an archive box, a bin, a tag, a clock (Remind me later) and a plus (Add a task).
+- **An open email** fills the screen. A slightly floating bar at the bottom holds five symbols: Mark as read / Mark as unread, Bin, Folder, Tag and a three-dot button. The three dots hold **Star** (or Remove star), **Archive**, **Remind me later** and **Add a task**.
 - **Pick date and time (v0.102).** Remind me later and Send later have a **Pick date and time** choice that opens the phone's own day and time pickers (any time from a minute to a year ahead, in the phone's time zone).
 - **Mute conversation (v0.102).** In the three-dot menu under an email's summary. **Settings, Muted conversations** lists them with **Unmute**. See `docs/MUTE.md`.
 - **Signatures (v0.102).** A new message uses the signature of the address you write from and swaps it when you choose another From (until you change the signature yourself). It is plain text on Android; formatting set on the website is kept there.
 - **Send later.** **Later** beside Send on a new email, reply or forward picks a time; **More, Waiting to send** lists and takes back what is waiting. Files cannot wait. See [Send later](SEND_LATER.md).
 - **Attach files to replies and forwards**, as on the website. A forward keeps the files of the original unless you untick them.
-- **Alerts for messages, notes and alerts, tasks due today and parcels to confirm.** **Settings, Notifications** has a switch for each, off until you turn it on. Direct mode only (not Google's push). The server's alert stream tells the app only *which kind* has something new, never any words, so the note says just "New message", "A task is due" and so on. They follow your quiet hours.
+- **Alerts for notes and alerts, tasks due today and parcels to confirm.** **Settings, Notifications** has a switch for each, off until you turn it on. Direct mode only (not Google's push). The server's alert stream tells the app only *which kind* has something new, never any words, so the note says just "New message", "A task is due" and so on. They follow your quiet hours.
 - **Install updates from inside the app.** **Settings, About, Install it**: the app downloads the new version through your own server (which checks it against its published checksum), then Android asks you to confirm. Android asks once to allow Enveliq to install apps. See [Updates](UPDATES.md).
+
+## Added in version 0.104
+
+- **Away reply** (Settings). Switch it on, pick the first and last day with the phone's day picker, write the words, and Save. It is the website's Away reply (see [Away reply](AWAY_REPLY.md)), saved on your server.
+- **Saved replies** (Settings). Add, change or remove the short answers you keep on the website.
+- **Ask Enveliq** (More). A chat about your own Enveliq, the same as the website's Agent chat. Each answer is labelled "Written by AI". An administrator can keep it to administrators, and it needs an AI model to be set up.
+- **Tags** (More). Your mailbox's tags as chips; tap one to read the emails that carry it. Read when you look and never kept.
+- **Subscriptions** (More). The website's list of what you pay for and what renews soon, for reading. Changes are made on the website.
+
+- **Saved replies while writing.** A **Saved replies** button on a new email, reply or forward lists your saved replies; tap one to add it to the message.
+- **Send options.** **Send options** on a new email, reply or forward has **Send with high importance** (also kept for Send later) and, for replies, **Mark as read when I send**. Both start off each time.
+- **Show email headers and Download this email (.eml).** In an open email's three dots. The headers appear in a box with a Copy button; the .eml is saved where you choose. Both are fetched when you ask and are not kept.
+- **Conversation View** (Settings). Groups emails of one conversation under the newest one, with Show and Hide. It is saved on your account, so the website and the app agree. Each email keeps its own swipe and buttons.
+
+- **Highlight colour** (Settings, Appearance). Blue, Green, Purple, Orange, Pink or Teal for buttons, links and chosen items, in light and dark. It is kept on the phone (the website keeps its own).
+- **Forward, Tag and Rules for several emails.** Press and hold an email to pick several. Under the buttons, **Forward** sends each one on its own, with its files, to the address you type (and an optional note). **Tag** adds the tags you pick to every email (one mailbox at a time). **Rules** makes an always-archive, mark-as-read or star rule for each sender; change them later in Settings, Mail rules.
 
 ## Not in the app
 
 - **A calendar of events.** Trips and bookings are listed under More, Trips and calendar.
-- **Settings, Administration and mailbox setup** stay on the website. Shipping, trips and news are read-only in the app (set them up on the website).
+- **Settings, Administration and mailbox setup** stay on the website. Trips and news are read-only in the app (set them up on the website).
 
 ## How new-email alerts work
 
@@ -139,17 +161,17 @@ Which emails alert you, quiet hours and the "important people only" filter are t
 - **Clean up.** Under **More**, **Clean up** lists the mailing lists in your inbox from the last 60 days, one at a time by default. Unsubscribe opens a link only after you confirm the site named (or starts an email), **Archive what's here** asks on a full-screen form, **Always archive new ones** makes a Mail rule, **Keep** hides a sender, and **Undo** lasts 10 minutes. It appears only when Clean up is on for you. See [Clean up](CLEAN_UP.md).
 - **Daily summary.** Under Settings, Notifications you can switch on **Daily summary**: one quiet note each morning, made from the website's daily summary, for example "2 tasks due · 1 parcel out for delivery". It has numbers only, no names or subjects. It needs the daily summary to be on in Settings, Notifications on the website, and it comes over the same quiet connection as the other notes, so it is not available with Google's push service. If you switch on **Send new email in this summary instead** (website, Settings, Notifications), the app no longer announces each new email, except from your important people; the inbox still lists everything.
 - **Tap the alert** and Enveliq opens on that email.
-- **Reviewed** and **Archive** buttons on the alert mark the email at your mailbox without opening the app (they show once the phone is unlocked, never on the lock screen).
+- **Archive** and **Delete** buttons on the alert act on the email at your mailbox without opening the app (they show once the phone is unlocked, never on the lock screen). **Delete** moves the email to your Bin, the same as the Bin button in the app; it does not erase it from your mail service.
 - **The alert goes away by itself** when the email is no longer waiting (for example you reviewed it on the website or another phone). It is taken down when the app next checks, or when you open the app.
 - Several new emails at once make one alert; tap it to open the inbox.
 
 ## Using the app
 
-- **Swipe an email** right or left to Archive, Bin or mark it Reviewed (Settings, Swipe on an email; to begin with right is Archive and left is Bin, or choose Nothing to switch a side off). Every swipe can be undone for a few seconds.
-- **Select several:** press and hold an email, tap more to add them, then Reviewed, Archive or Bin for all of them. **Select all** ticks everything in the list.
+- **Swipe an email** right or left to Archive or Bin (Settings, Swipe on an email; Reviewed is no longer offered, and an older choice of Reviewed becomes the usual one; to begin with right is Archive and left is Bin, or choose Nothing to switch a side off). Every swipe can be undone for a few seconds.
+- **Select several:** press and hold an email, tap more to add them, then Mark as read, Archive or Bin for all of them. **Select all** ticks everything in the list.
 - **Search** your inbox (the Search button at the top): it looks at the sender, subject and summary of the emails already in your inbox. To search all your mail, use More, Find any email.
 - **Remind me later** (on an opened email): put it away until in 3 hours, tomorrow morning or next Monday morning. It comes back in your inbox then, and the website shows it as snoozed too. Undo brings it back at once.
-- **Reply, Reply all and Forward** are icons in one row under the AI summary of an opened email (the three dots on that row hold Important person, Always archive these, Send to Junk, Block sender and Unsubscribe; a small **Show original email** button sits just below). The bottom bar is always visible and holds Bin, Archive, Reviewed, Tags, Remind me later and Add a task (a small popup: Today, Tomorrow, This weekend, Next week). All text can be selected and copied; tapping the sender's address offers Copy. Pinch to zoom pictures and PDFs (it zooms where your fingers are), double-tap to zoom in on that spot or go back to the original size. Tags show as a slim row under the sender, only when there are some. The task card on an email shows when it is due (Today, Tomorrow, a weekday or date, or "Waiting since") and has a three-dot menu with **Move** (including Pick a day) and **Remove**, or **Put back** for a finished task. The email you are answering is added underneath, as on the website.
+- **Reply** is a button at the right of the sender line of an opened email, beside a three-dot button; both scroll with the sender. The three dots hold **Reply all** (when there are other people on the email), **Forward**, **Mark as read** (or **Mark as unread**), Important person, Always archive these, Send to Junk, Block sender and Unsubscribe; a small **Show original email** button sits under the summary. When the big subject has scrolled out of sight, its first words show beside the back arrow. The floating bottom bar is described above; Remind me later and Add a task are in its three dots (a small popup: Today, Tomorrow, This weekend, Next week). All text can be selected and copied; tapping the sender's address offers Copy. Pinch to zoom pictures and PDFs (it zooms where your fingers are), double-tap to zoom in on that spot or go back to the original size. Tags show as a slim row under the sender, only when there are some. The task card on an email shows when it is due (Today, Tomorrow, a weekday or date, or "Waiting since") and has a three-dot menu with **Move** (including Pick a day) and **Remove**, or **Put back** for a finished task. The email you are answering is added underneath, as on the website.
 - **New email:** the round pencil button on the inbox. In To, Cc and Bcc, suggestions from your address list appear as you type (if the address list is switched on in Enveliq). If you have more than one mailbox, you pick which one to send from.
 - **Undo send:** if you have an "undo send" time in Settings on the website, a bar at the bottom says "Sending in … seconds" with **Undo**.
 - **Drafts:** closing a half-written email offers to keep it. The **Drafts** tab lists them (kept for 14 days, the same drafts the website shows); tap one to carry on, or Delete it.
@@ -184,3 +206,6 @@ Anything added that has a screen opens forms full screen with Close at the top a
 ## How it is built
 
 `android/` is a Gradle project (`app/` holds the code). `Api.kt` talks to the same JSON routes the website uses; `Home.kt` and `Screens.kt` are the screens; `SessionVault.kt` keeps the sign-in encrypted; `Notifier.kt` makes the notifications; `Push.kt` is Google's push service (only when chosen); `MailWatcher.kt` is the background service that keeps the one connection and the alert settings; `Data.kt` holds the small data types. The **Build Android app** workflow compiles it with the Android SDK on a GitHub runner, signs it, and attaches the APK. Version 1 for everyone needs the server groundwork in the plan first (per-device tokens, a list of devices, the public API list in Cloudflare).
+- **Calendar invitations.** An email with an invitation shows a card above its summary with **Accept**, **Maybe**, **Decline** and **Propose new time** (a full-screen form with Close at the top and the buttons at the bottom). The answer is sent by email with the usual Undo, and an accepted meeting is added to the calendar connected on the website. If the organiser is not the sender, a warning and a tick box come first. See [Calendar invitations](INVITES.md).
+
+- **Mail rules (Settings).** Lists your rules in order with **Edit**, up and down arrows and **Remove**, **Add a rule** and **Run on existing mail**. The add and edit form opens full screen with **Close** at the top and **Check** and **Save** at the bottom; it has the same conditions as the website (From, Subject has / does not have, Sent to, Mailing list, Has a file, Bigger than) and actions (archive, mark as read, Junk, star, snooze, never send to Junk). **Check** says how many recent emails it would have matched and changes nothing. **Run on existing mail** counts first and asks before doing anything (500 at most). The email's three-dot menu has **Never send to Junk**. See [Mail rules](MAIL_RULES.md).

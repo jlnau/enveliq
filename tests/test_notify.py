@@ -488,6 +488,31 @@ def test_mail_view_preferences_stored_per_user_in_vault(env):
     assert client.put("/api/v1/me/mail-view", json={**chosen, "style": "rail"}).status_code == 200
     assert client.get("/api/v1/me/mail-view").json()["view"]["style"] == "rail"
     assert client.put("/api/v1/me/mail-view", json={**chosen, "style": "neon"}).status_code == 422
+    # The four boxes and the Today / Coming up section can each be hidden; both are shown to begin with.
+    assert client.put("/api/v1/me/mail-view", json=chosen).status_code == 200
+    assert client.get("/api/v1/me/mail-view").json()["view"].get("show_counts", True) is True
+    hidden = {**chosen, "show_counts": False, "show_today": False}
+    assert client.put("/api/v1/me/mail-view", json=hidden).status_code == 200
+    got = client.get("/api/v1/me/mail-view").json()["view"]
+    assert got["show_counts"] is False and got["show_today"] is False
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "show_today": "maybe"}).status_code == 422
+    # The background behind an original email: a very slight tint to begin with, or plain white; nothing else is accepted.
+    assert client.get("/api/v1/me/mail-view").json()["view"].get("paper", "soft") == "soft"
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "paper": "white"}).status_code == 200
+    assert client.get("/api/v1/me/mail-view").json()["view"]["paper"] == "white"
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "paper": "#ff0000"}).status_code == 422
+    # Colour scheme: standard at first, dark can be chosen, anything else is refused
+    assert client.get("/api/v1/me/mail-view").json()["view"].get("scheme", "standard") == "standard"
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "scheme": "dark"}).status_code == 200
+    assert client.get("/api/v1/me/mail-view").json()["view"]["scheme"] == "dark"
+    for ok in ("light", "system", "standard"):
+        assert client.put("/api/v1/me/mail-view", json={**chosen, "scheme": ok}).status_code == 200
+        assert client.get("/api/v1/me/mail-view").json()["view"]["scheme"] == ok
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "scheme": "neon"}).status_code == 422
+    assert client.get("/api/v1/me/mail-view").json()["view"].get("highlight", "blue") == "blue"
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "highlight": "green"}).status_code == 200
+    assert client.get("/api/v1/me/mail-view").json()["view"]["highlight"] == "green"
+    assert client.put("/api/v1/me/mail-view", json={**chosen, "highlight": "#ff0000"}).status_code == 422
     # An older browser that does not know about the style must not reset it.
     assert client.put("/api/v1/me/mail-view", json=chosen).status_code == 200
     assert client.get("/api/v1/me/mail-view").json()["view"]["style"] == "rail"
@@ -694,19 +719,18 @@ def test_other_kinds_only_count_and_only_growth_is_news():
     from backend.mail.notify_routes import grown, other_counts
 
     ctx = NS(
-        messages=NS(enabled=lambda u: True, summary=lambda u: {"unread": 2}),
         inbound=NS(unread=lambda u: 1),
         tasks=NS(view=lambda u: {"tasks": [
             {"state": "open", "days": 0}, {"state": "open", "days": 3}, {"state": "done", "days": -1}]}),
         shipping=NS(view=lambda u: {"orders": [{"needs_confirm": True}, {"needs_confirm": False}]}),
     )
     now = other_counts(ctx, "u1")
-    assert now == {"messages": 2, "bell": 1, "tasks": 1, "shipping": 1}
+    assert now == {"bell": 1, "tasks": 1, "shipping": 1}
     assert grown(now, now) == []
-    assert grown({"messages": 2, "bell": 1, "tasks": 2, "shipping": 1}, now) == []
-    assert grown({"messages": 1, "bell": 1, "tasks": 1, "shipping": 0}, now) == ["messages", "shipping"]
+    assert grown({"bell": 1, "tasks": 2, "shipping": 1}, now) == []
+    assert grown({"bell": 1, "tasks": 1, "shipping": 0}, now) == ["shipping"]
 
-    broken = NS(messages=NS(enabled=lambda u: 1 / 0), inbound=NS(unread=lambda u: 4),
+    broken = NS(inbound=NS(unread=lambda u: 4),
                 tasks=None, shipping=None)
     assert other_counts(broken, "u1") == {"bell": 4}
 

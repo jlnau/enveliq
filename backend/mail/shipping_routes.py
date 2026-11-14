@@ -41,9 +41,23 @@ class StatusBody(StrictModel):
     status: str = Field(max_length=20)
 
 
+OrderIds = Annotated[list[Annotated[str, Field(pattern=r"^s[0-9a-f]{23}$")]], Field(min_length=1, max_length=60)]
+
+
+class BulkBody(StrictModel):
+    ids: OrderIds
+    status: str | None = Field(default=None, max_length=20)
+    action: str | None = Field(default=None, pattern=r"^not_order$")
+
+
+class MergeBody(StrictModel):
+    ids: OrderIds
+
+
 HAND_ERRORS = {"no shop": "Write who the parcel is from.", "bad tracking": "That tracking number does not look right. It needs 8 to 40 letters or digits.",
                "bad status": "Choose where the parcel is up to.", "already listed": "That tracking number is already on your list.",
-               "full": "Your shipping list is full. Remove an order first.", "not by hand": "Only orders you added yourself can be changed by hand."}
+               "full": "Your shipping list is full. Remove an order first.", "not by hand": "Only orders you added yourself can be changed by hand.",
+               "merge": "Choose two or more different shipments to join."}
 
 
 def build_shipping_router(ctx: Any) -> APIRouter:
@@ -72,6 +86,30 @@ def build_shipping_router(ctx: Any) -> APIRouter:
             return book.add_by_hand(user, body.shop, body.tracking, body.status)
         except ValueError as err:
             raise HTTPException(status_code=422, detail=HAND_ERRORS.get(str(err), "That order is not possible.")) from None
+
+    @router.post("/me/shipping/bulk")
+    def bulk(body: BulkBody, response: Response, session: Session = Depends(session_dep)):
+        user = session.principal.user_id
+        if not limit.allow(f"ship:{user}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        if (body.status is None) == (body.action is None):
+            raise HTTPException(status_code=422, detail="Choose one change for the ticked shipments.")
+        response.headers["Cache-Control"] = "no-store"
+        try:
+            return book.not_orders(user, body.ids) if body.action else book.set_status_many(user, body.ids, body.status)
+        except ValueError as err:
+            raise HTTPException(status_code=422, detail=HAND_ERRORS.get(str(err), "That change is not possible.")) from None
+
+    @router.post("/me/shipping/merge")
+    def merge(body: MergeBody, response: Response, session: Session = Depends(session_dep)):
+        user = session.principal.user_id
+        if not limit.allow(f"ship:{user}"):
+            raise HTTPException(status_code=429, detail="Too many requests. Wait a minute.")
+        response.headers["Cache-Control"] = "no-store"
+        try:
+            return book.merge(user, body.ids)
+        except ValueError as err:
+            raise HTTPException(status_code=422, detail=HAND_ERRORS.get(str(err), "Those cannot be joined.")) from None
 
     @router.put("/me/shipping/{order_id}/status")
     def order_status(order_id: OrderId, body: StatusBody, response: Response, session: Session = Depends(session_dep)):

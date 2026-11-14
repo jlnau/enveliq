@@ -305,9 +305,9 @@ def test_resolving_message_purges_attachment_metadata(tmp_path: Path):
     assert r.status_code == 204
     r = client.get(f"/api/v1/accounts/{account_id}/messages", headers=auth(token))
     assert r.status_code == 200
-    # A reviewed card is kept for a few days, but with no attachment details and no mailbox link.
+    # A read email stays listed as read mail, but with no attachment details and no mailbox link in what the page gets.
     kept = r.json()
-    assert len(kept) == 1 and kept[0]["state"] == "reviewed"
+    assert len(kept) == 1 and kept[0]["state"] == "unread" and kept[0]["from_all_mail"] is True
     assert kept[0]["attachments"] == [] and kept[0]["attachment_summaries"] == [] and "source_locator" not in kept[0]
     assert "private.pdf" not in r.text and "opaque-1" not in r.text
 

@@ -45,7 +45,7 @@ for (const link of [...used].sort()) {
 }
 
 const mustLink = {
-  "Settings and Administration pages": [authJs, ["AI_SUMMARIES.md", "MICROSOFT.md", "AGENT.md", "NOTIFICATIONS.md", "CALENDAR.md", "REPORTING.md", "SSO.md", "EMAIL_SERVICES.md", "PROTON_BRIDGE.md", "WRITING_HELP.md", "VAULT_KEY.md", "install/after-install.md"]],
+  "Settings and Administration pages": [authJs, ["AI_SUMMARIES.md", "MICROSOFT.md", "NOTIFICATIONS.md", "CALENDAR.md", "REPORTING.md", "SSO.md", "EMAIL_SERVICES.md", "PROTON_BRIDGE.md", "WRITING_HELP.md", "VAULT_KEY.md", "install/after-install.md"]],
   "the setup guide (/welcome)": [welcomeJs, ["PROTON_BRIDGE.md", "AI_SUMMARIES.md", "install/after-install.md"]],
 };
 for (const [name, [src, files]] of Object.entries(mustLink)) {

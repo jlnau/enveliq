@@ -478,3 +478,44 @@ def test_a_reply_closes_a_note_that_was_made_by_hand_even_if_the_mailbox_switch_
     client.patch(f"/api/v1/accounts/{aid}", json={"settings": {**acct["settings"], "waiting": False}})
     bridge.add(701, b"From: Dana <dana@example.invalid>\r\nTo: me@example.invalid\r\nSubject: Re: Quote for the fence\r\nMessage-ID: <r1@example.invalid>\r\nIn-Reply-To: <q1@example.invalid>\r\n\r\nHere.\r\n")
     assert check(client)["notes"][0]["state"] == "replied"
+
+
+def test_the_sent_folder_lists_who_it_went_to_and_an_email_there_can_be_followed(env):
+    appm, client, bridge, model = env
+    aid = turn_on(client, bridge)
+    add_sent(bridge)
+    rows = client.get(f"/api/v1/accounts/{aid}/folder-mail", params={"folder": "Sent"}).json()["rows"]
+    quote = next(r for r in rows if r["subject"] == "Quote for the fence")
+    assert quote["to_address"] == "dana@example.invalid" and quote["to_name"] == "Dana" and quote["to_more"] == 0
+    followed = client.post(f"/api/v1/folder-mail/{quote['token']}/follow", json={})
+    assert followed.status_code == 200, followed.text
+    assert client.post(f"/api/v1/folder-mail/{quote['token'][:-3]}abc/follow", json={}).status_code == 404
+
+
+def test_the_waiting_list_finds_its_sent_emails_so_they_open_like_folder_emails(env):
+    appm, client, bridge, model = env
+    add_sent(bridge)
+    aid = start_watching(client, bridge)
+    validity, item = sent_item(client, aid, "Quote for the fence")
+    assert client.post(f"/api/v1/accounts/{aid}/sent/{validity}/{item['uid']}/follow", json={}).json()["result"] == "added"
+    note = client.get("/api/v1/me/waiting").json()["notes"][0]
+    r = client.get(f"/api/v1/accounts/{aid}/waiting-mail")
+    assert r.status_code == 200 and r.headers["cache-control"] == "no-store"
+    row = r.json()["rows"][note["id"]]
+    assert row["subject"] == "Quote for the fence" and row["to_address"] == "dana@example.invalid"
+    assert client.get(f"/api/v1/folder-mail/{row['token']}/original").status_code == 200
+
+
+def test_the_waiting_list_still_finds_a_sent_email_when_the_server_search_cannot(env, monkeypatch):
+    from backend.mail import bridge as bridge_mod
+    appm, client, bridge, model = env
+    add_sent(bridge)
+    aid = start_watching(client, bridge)
+    validity, item = sent_item(client, aid, "Quote for the fence")
+    assert client.post(f"/api/v1/accounts/{aid}/sent/{validity}/{item['uid']}/follow", json={}).json()["result"] == "added"
+    note = client.get("/api/v1/me/waiting").json()["notes"][0]
+    target = next(c for c in vars(bridge_mod).values() if isinstance(c, type) and hasattr(c, "recent_uids"))
+    orig = target.search
+    monkeypatch.setattr(target, "search", lambda self, crit, utf8=False: [] if crit[:1] == ["HEADER"] else orig(self, crit, utf8))
+    row = client.get(f"/api/v1/accounts/{aid}/waiting-mail").json()["rows"][note["id"]]
+    assert row["subject"] == "Quote for the fence"

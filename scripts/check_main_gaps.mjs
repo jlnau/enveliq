@@ -34,12 +34,12 @@ for (const calm of ["0", "1"]) for (const theme of ["dark", "light"]) {
     renderToday();
   });
   for (const more of [false, true]) {
-    if (more) await page.evaluate(() => { const cls = { shipBars: "shipcard", subBars: "subcard", tripBars: "tripcard", waitBars: "waitcard", msgBars: "msgcard" }; for (const id in cls) { const el = document.getElementById(id); el.hidden = false; el.innerHTML = `<div class="${cls[id]}" style="min-height:60px">test</div>`; } });
+    if (more) await page.evaluate(() => { const cls = { shipBars: "shipcard", subBars: "subcard", tripBars: "tripcard", waitBars: "waitcard" }; for (const id in cls) { const el = document.getElementById(id); el.hidden = false; el.innerHTML = `<div class="${cls[id]}" style="min-height:60px">test</div>`; } });
     await page.waitForTimeout(150);
     const rows = await page.evaluate(() => {
       const out = []; const add = (name, el) => { if (!el) return; const r = el.getBoundingClientRect(); if (r.height > 0) out.push([name, Math.round(r.top), Math.round(r.bottom)]); };
       add("count tiles", document.querySelector("#previewOverview"));
-      for (const id of ["dueBars", "shipBars", "subBars", "tripBars", "waitBars", "msgBars"]) { const el = document.getElementById(id); if (el && !el.hidden) [...el.children].forEach((c) => add(id + " " + (c.className || c.tagName).toString().split(" ")[0], c)); }
+      for (const id of ["dueBars", "shipBars", "subBars", "tripBars", "waitBars"]) { const el = document.getElementById(id); if (el && !el.hidden) [...el.children].forEach((c) => add(id + " " + (c.className || c.tagName).toString().split(" ")[0], c)); }
       add("Recent emails bar", document.querySelector("#previewListHeading")); add("first email", document.querySelector("article.mail"));
       return out;
     });

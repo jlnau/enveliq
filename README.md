@@ -56,7 +56,6 @@ And unlike another hosted inbox service, **Enveliq runs on infrastructure you co
 | **Attachments** | Summaries of PDFs and other attachments, and a safe preview. The files themselves are never kept. |
 | **Writing help** | Optional. The AI suggests a reply, or checks one you wrote. It only suggests: you decide what is sent. |
 | **Reminders** | Useful reminders through browser notifications, email or Home Assistant. |
-| **Messages** | A small private chat between the people in your household. |
 | **Be careful flag** | A calm note on an email that looks like a scam, and a plain line saying whether your email provider could confirm who sent it, so you do not have to judge. |
 | **Unsubscribe** | One button to leave a mailing list, when the sender allows it. |
 | **Many mailboxes** | Gmail, Outlook and Microsoft 365, iCloud, Yahoo, Fastmail, Proton Mail (through Proton Bridge) and any other IMAP service. Replies work with alias services such as Proton Pass and SimpleLogin. |

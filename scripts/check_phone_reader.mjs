@@ -38,6 +38,7 @@ const handler = async (route) => {
   if (p === "/api/v1/accounts/a1/messages") return json(200, messages);
   if (/\/messages\/[^/]+\/original$/.test(p)) { await new Promise((r) => setTimeout(r, 700)); return json(200, { subject: "Plan for May", from: { name: "Alice", address: "alice@example.invalid" }, to: [], date: "x", text: "Hello", truncated: false, attachments: [{ index: 0, filename: "plan.pdf", mime_type: "application/pdf", size_bytes: 20480, inline: false }, { index: 1, filename: "logo.png", mime_type: "image/png", size_bytes: 900, inline: true }] }); }
   if (/\/messages\/[^/]+\/(reply|forward)$/.test(p)) { calls.push([p.split("/").pop(), JSON.parse(req.postData())]); return json(200, { sent: true, from: "me@example.invalid" }); }
+  if (/\/messages\/[^/]+\/(resolve|unread)$/.test(p) && req.method() === "POST") return json(200, { ok: true });
   if (p === "/api/v1/me/features") return json(200, { effective: features, admin: features, user: { ...features, address_book_auto: true } });
   if (p === "/api/v1/me/drafts" && req.method() === "GET") return json(200, { now: Date.now() / 1000, keep_days: 14, items: [...drafts].reverse() });
   if (p === "/api/v1/me/drafts" && req.method() === "POST") { const b = JSON.parse(req.postData()); const d = { ...b, id: "d" + String(nextId++).padStart(16, "0"), created: Date.now() / 1000, updated: Date.now() / 1000, expires: Date.now() / 1000 + 14 * 86400 }; drafts.push(d); calls.push(["draft-new", b]); return json(201, d); }
@@ -75,7 +76,7 @@ for (const layout of ["list", "right", "bottom", "screen", "deck"]) {
   check(`[${layout}] tapping an email opens it full screen`, await fills(page));
   if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `phone_${layout}.png`) });
   check(`[${layout}] it shows that email`, (await page.locator(".reader h3").innerText()).includes("Plan for May"));
-  check(`[${layout}] there is a Close button and no Next or Previous`, (await page.locator(".reader [data-reader-close]").innerText()).includes("Close") && (await page.locator(".reader [aria-label='Next email'], .reader [aria-label='Previous email']").count()) === 0);
+  check(`[${layout}] there is a Close button, and Next and Previous arrows`, (await page.locator(".reader [data-reader-close]").innerText()).includes("Close") && (await page.locator(".reader [aria-label='Next email'], .reader [aria-label='Previous email']").count()) === 2);
   await page.locator(".reader [data-reader-close]").click();
   check(`[${layout}] Close goes back to the list`, (await page.locator(".reader").count()) === 0 && (await page.locator("article.mail").count()) >= 3);
   await page.locator("article.mail", { hasText: "Third one" }).locator(".qmain").click();
@@ -86,12 +87,19 @@ for (const layout of ["list", "right", "bottom", "screen", "deck"]) {
 }
 
 // Reviewed, Archive and Bin inside the full screen email: it closes at once, the Undo bar still shows, and Undo brings the email back
-for (const [cls, word] of [["reviewed", "Marked reviewed"], ["archive", "Archived"], ["trash", "Moved to Bin"]]) {
+for (const [cls, word] of [["reviewed", "Marked as read"], ["archive", "Archived"], ["trash", "Moved to Bin"]]) {
   const { page, context, errors } = await run("list", 390, 800);
   await page.locator("article.mail", { hasText: "Plan for May" }).locator(".qmain").click();
   await page.waitForSelector(".reader");
   await page.locator(`.reader .ract .action.${cls}`).click();
   check(`[${cls}] the full screen email closes straight away`, (await page.locator(".reader").count()) === 0);
+  if (cls === "reviewed") {            // Mark as read has no Undo: Mark as unread is the way back
+    await page.waitForFunction(() => /Marked as read/.test(document.getElementById("toast").innerText));
+    check("[reviewed] says Marked as read", true);
+    check("[reviewed] no script errors", errors.length === 0);
+    await context.close();
+    continue;
+  }
   check(`[${cls}] the Undo bar shows "${word}"`, (await page.locator("#undoBar .undobar").innerText()).includes(word));
   await page.locator("#undoBar .undobar button").click();
   await page.waitForSelector("article.mail", { hasText: "Plan for May" });

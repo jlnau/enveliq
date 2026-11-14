@@ -22,6 +22,7 @@ const target = path.resolve(process.argv[2] || path.join(here, "..", "prototype"
 const html = fs.readFileSync(target, "utf8");
 const ORIGIN = "http://enveliq.test";
 
+const pickScheme = (page, v) => page.evaluate((v) => { document.getElementById("customiseBtn").click(); document.querySelector(`#viewPanel [data-view="scheme"][data-val="${v}"]`).click(); const t = document.getElementById("viewTab"); if (t.getAttribute("aria-expanded") === "true") t.click(); }, v);
 let failed = false;
 const panelOpen = async (page) => { if (!(await page.evaluate(() => document.body.classList.contains("vopen")))) { await page.click("#viewTab"); await page.waitForTimeout(250); } };   // clicking outside closes the panel, as it should
 const check = (label, good) => { console.log((good ? "✓ " : "✗ ") + label); if (!good) { failed = true; console.log("::error::" + label); } };
@@ -203,7 +204,7 @@ async function open(server, { seen = true } = {}) {
   await page.click("#previewInboxOptions");
   check("existing filters are accessible when requested", await page.locator("#filterBy").isVisible());
   await page.selectOption("#filterBy", "action");
-  check("changing the filter names the page and offers Back to My inbox, and the summary line is unchanged", (await page.locator(".top-left h2").innerText()) === "Needs action" && await page.locator("#backInbox").isVisible() && (await page.locator("#inboxSubtitle").innerText()) === hdr0[1] && hdr0[0] === "One thing at a time");
+  check("changing the filter names the page and has no Back button, and the summary line is unchanged", (await page.locator(".top-left h2").innerText()) === "Needs action" && (await page.locator("#backInbox").count()) === 0 && (await page.locator("#inboxSubtitle").innerText()) === hdr0[1] && hdr0[0] === "One thing at a time");
   await page.selectOption("#filterBy", "");
   const cy = async (sel) => { const b = await page.locator(sel).boundingBox(); return b.y + b.height / 2; };
   check("last-synced text is available in the separate search toolbar", await page.locator("#syncAgo").isVisible() && (await page.locator("#syncAgo").boundingBox()).y < (await page.locator("#inboxSubtitle").boundingBox()).y);
@@ -257,7 +258,7 @@ async function open(server, { seen = true } = {}) {
     check("desktop: Undo brings both back and still nothing was sent", (await page.locator("article.mail").count()) === cardsB && !(await page.locator("#undoBar").isVisible()) && server.calls.length === callsB);
   }
   check("Calm mode is enabled for a new browser and hides counters", (await page.locator("#calmBtn").getAttribute("aria-checked")) === "true" && (await page.locator("#allBadge").isHidden()));
-  await page.click("#calmBtn");
+  await page.evaluate(() => document.getElementById("calmBtn").click());
   check("Calm mode can be switched off to show counts", (await page.locator("#calmBtn").getAttribute("aria-checked")) === "false" && (await page.locator("#allBadge").isVisible()));
   check("a count of zero shows no blue number, other counts do", (await page.locator("#actionBadge").isHidden()) && (await page.locator("#attachBadge").isHidden()) && (await page.locator("#allBadge").isVisible()));
   await page.selectOption("#filterBy", "high");
@@ -273,11 +274,10 @@ async function open(server, { seen = true } = {}) {
   // Light / dark mode
   const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   const darkBg = await bg();
-  check("starts in dark mode and offers appearance choices", (await page.locator("[data-theme-choice]").count()) === 3 && await page.locator('[data-theme-choice="dark"]').getAttribute("aria-pressed")==="true");
-  await page.click("#userPill");
-await page.click('[data-theme-choice="light"]');
+  check("starts in dark mode and offers appearance choices", (await page.locator("#userMenu [data-theme-choice]").count()) === 0 && (await page.evaluate(() => document.documentElement.dataset.theme)) === undefined);
+  await pickScheme(page, "light");
   const lightBg = await bg();
-  check("toggle switches to light mode", (await page.evaluate(() => document.documentElement.dataset.theme)) === "light" && lightBg !== darkBg && (await page.locator('[data-theme-choice="light"]').getAttribute("aria-pressed")) === "true");
+  check("toggle switches to light mode", (await page.evaluate(() => document.documentElement.dataset.theme)) === "light" && lightBg !== darkBg && (await page.locator('#viewPanel [data-view="scheme"][data-val="light"]').getAttribute("aria-checked")) === "true");
   const lum = (c) => c.match(/\d+/g).slice(0, 3).map(Number).reduce((a, b) => a + b, 0) / 3;
   const cardBg = await page.evaluate(() => getComputedStyle(document.querySelector(".sidebar")).backgroundColor);
   const subjectColour = await page.evaluate(() => getComputedStyle(document.querySelector("article.mail .subject")).color);
@@ -288,8 +288,7 @@ await page.click('[data-theme-choice="light"]');
   // A fresh browser reload restores the new right-panel default; these assertions target classic list.
   await page.evaluate(() => { view.layout = "list"; applyView(); render(); });
   check("light mode is remembered after reload", (await page.evaluate(() => document.documentElement.dataset.theme)) === "light");
-  await page.click("#userPill");
-await page.click('[data-theme-choice="dark"]');
+  await pickScheme(page, "standard");
   check("toggle switches back to dark mode", (await page.evaluate(() => document.documentElement.dataset.theme)) === undefined && (await bg()) === darkBg);
 
   // View email (rows hide their extra buttons until opened)
@@ -403,23 +402,21 @@ await page.click('[data-theme-choice="dark"]');
   await page.evaluate(() => { window.__undoMs = 2000; });
   // The three outcomes
   await page.locator("article.mail", { hasText: "Weekly news" }).locator('[data-status="reviewed"]').click();
+  await page.waitForFunction(() => /Marked as read/.test(document.getElementById("toast").innerText));
+  check("desktop: Mark as read goes straight to the mailbox with no Undo bar", (await page.locator("#undoBar .undobar").count()) === 0 && server.calls.filter((c) => c[0] === "resolve").at(-1)[2].outcome === "reviewed");
   await page.waitForFunction(() => document.querySelectorAll("article.mail:not(.leaving)").length === 1);
   await expand(page.locator("article.mail:not(.leaving)").first());
   await page.locator("article.mail:not(.leaving)").first().locator('[data-status="trashed"]').click();
   await page.waitForFunction(() => document.querySelectorAll("article.mail:not(.leaving)").length === 0);
-  check("desktop: two actions in a row each get their own Undo bar, the newest at the bottom", (await page.locator("#undoBar .undobar").count()) === 2 && (await page.locator("#undoBar .undobar").first().innerText()).includes("Marked reviewed") && (await page.locator("#undoBar .undobar").last().innerText()).includes("Moved to Bin"));
+  check("desktop: Bin waits on its own Undo bar", (await page.locator("#undoBar .undobar").count()) === 1 && (await page.locator("#undoBar .undobar").last().innerText()).includes("Moved to Bin"));
   for (let i = 0; i < 60 && server.calls.filter((c) => c[0] === "resolve").length < 4; i++) await page.waitForTimeout(100);
   await page.waitForFunction(() => document.getElementById("undoBar").hidden);
   await page.waitForTimeout(300);
   const outcomes0 = server.calls.filter((c) => c[0] === "resolve").map((c) => c[2].outcome);
   check("archive, reviewed and bin map to archived, reviewed and binned", outcomes0.join(",") === "archived,archived,reviewed,binned");
   await page.evaluate(() => { window.__undoMs = 400; });
-  // Kept in the Status lists
-  await page.click('.nav[data-filter="reviewed"]');
-  await expand(page.locator("article.mail").first());
-  const reviewedCards = await page.locator("article.mail").allInnerTexts();
-  check("the reviewed email is in Reviewed, with how long it is kept", reviewedCards.length === 1 && reviewedCards[0].includes("Weekly news") && reviewedCards[0].includes("Kept here until"));
-  check("kept emails have no Reviewed, Archive, Bin or View buttons, only Remove", (await page.locator("article.mail [data-status=reviewed], article.mail [data-status=archived], article.mail [data-status=trashed], article.mail [data-open-email]").count()) === 0 && (await page.locator('article.mail [data-status="expired"]').count()) === 1);
+  check("there is no Reviewed list any more", (await page.locator('.nav[data-filter="reviewed"]').count()) === 0);
+  if ((await page.getAttribute("#moreToggle", "aria-expanded")) !== "true") await page.click("#moreToggle");
   await page.click('.nav[data-filter="archived"]');
   check("the archived email is in Archived", (await page.locator("article.mail .subject").allInnerTexts()).join("|") === "Older statement");
   await expand(page.locator("article.mail").first());
@@ -466,32 +463,27 @@ await page.click('[data-theme-choice="dark"]');
   await page.click('.nav[data-filter="tasks"]');
   await page.waitForSelector("#tasksPage .tgroup h4");
   check("the Tasks page opens on List by default", (await page.locator("#tasksPage .focus-card").count()) === 0 && (await page.locator("#tasksPage .tgroup h4").allInnerTexts()).join("|").toLowerCase() === "later|done");
-  await page.click('#tasksPage [data-task-mode="focus"]');
-  await page.waitForSelector("#tasksPage .focus-card");
-  check("Focus shows one task, large", (await page.locator("#tasksPage .focus-big").innerText()) === "Call the school" && (await page.locator("#list").isHidden()) && (await page.locator(".filters").isHidden()));
-  check("Focus has Done, Not today and Move", (await page.locator('#tasksPage [data-task-act="done"]').count()) === 1 && (await page.locator('#tasksPage [data-task-act="not_today"]').count()) === 1 && (await page.locator("#tasksPage [data-task-movetoggle]").count()) === 1);
-  await page.click('#tasksPage [data-task-mode="list"]');
   check("List view groups tasks by when", (await page.locator("#tasksPage .tgroup h4").allInnerTexts()).join("|").toLowerCase() === "later|done");
-  await page.click('#tasksPage [data-task-mode="calendar"]');
-  await page.waitForSelector("#tasksPage .cal-grid");
+  await page.click("#tasksPage [data-cal-open]");
+  await page.waitForSelector("#calPop .cal-grid");
   const monthDays = await page.evaluate(() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth() + 1, 0).getDate(); });
-  check("Calendar view shows this month with today marked", (await page.locator("#tasksPage .cal-day").count()) === monthDays && (await page.locator("#tasksPage .cal-day.today").count()) === 1);
+  check("Calendar view shows this month with today marked", (await page.locator("#calPop .cal-day").count()) === monthDays && (await page.locator("#calPop .cal-day.today").count()) === 1);
   const tomorrowNextMonth = await page.evaluate(() => { const n = new Date(), t = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1); return t.getMonth() !== n.getMonth(); });
-  if (tomorrowNextMonth) await page.click('#tasksPage [data-cal-nav="1"]');
-  check("a task shows on the day it is due", (await page.locator("#tasksPage .cal-chip", { hasText: "Call the school" }).count()) === 1);
-  await page.locator("#tasksPage .cal-day", { has: page.locator(".cal-chip", { hasText: "Call the school" }) }).click();
-  check("choosing a day lists its tasks below, with Move", (await page.locator("#tasksPage .cal-sel .trow2", { hasText: "Call the school" }).count()) === 1 && (await page.locator("#tasksPage .cal-sel [data-task-movetoggle]").count()) === 1);
-  const title0 = await page.locator("#tasksPage .cal-title").innerText();
-  await page.click('#tasksPage [data-cal-nav="1"]');
-  check("the arrows change month and Today comes back", (await page.locator("#tasksPage .cal-title").innerText()) !== title0 || tomorrowNextMonth);
-  await page.click('#tasksPage [data-cal-nav="today"]');
-  check("Today returns to this month", (await page.locator("#tasksPage .cal-day.today").count()) === 1);
-  await page.click('#tasksPage [data-task-mode="focus"]');
+  if (tomorrowNextMonth) await page.click('#calPop [data-cal-nav="1"]');
+  check("a task shows on the day it is due", (await page.locator("#calPop .cal-chip", { hasText: "Call the school" }).count()) === 1);
+  await page.locator("#calPop .cal-day", { has: page.locator(".cal-chip", { hasText: "Call the school" }) }).click();
+  check("choosing a day lists its tasks below, with Move", (await page.locator("#calPop .cal-sel .trow2", { hasText: "Call the school" }).count()) === 1 && (await page.locator("#calPop .cal-sel [data-task-movetoggle]").count()) === 1);
+  const title0 = await page.locator("#calPop .cal-title").innerText();
+  await page.click('#calPop [data-cal-nav="1"]');
+  check("the arrows change month and Today comes back", (await page.locator("#calPop .cal-title").innerText()) !== title0 || tomorrowNextMonth);
+  await page.click('#calPop [data-cal-nav="today"]');
+  check("Today returns to this month", (await page.locator("#calPop .cal-day.today").count()) === 1);
+  await page.click("#calPop [data-cal-close]");
   await page.click('#tasksPage [data-task-act="done"]');
   await page.waitForSelector("#tasksPage .focus-card .focus-big:text('Nothing needs doing')");
   check("finishing the last task shows a calm empty page and the finished one under Done", (await page.locator("#tasksPage .tgroup h4").innerText()).toLowerCase() === "done" && (await page.locator("#taskBadge").isHidden()));
   await page.locator("#tasksPage .trow2.fin", { hasText: "Call the school" }).locator(".tick").click();
-  await page.waitForSelector("#tasksPage .focus-big:text('Call the school')");
+  await page.waitForSelector("#tasksPage .trow2:not(.fin) .ttl:text('Call the school')");
   await page.click('.nav[data-filter="all"]');
   check("back in the inbox the list is shown again", (await page.locator("#tasksPage").isHidden()) && (await page.locator("#list").isVisible()));
   check("dates are read in the common forms", await page.evaluate(() => {
@@ -540,10 +532,8 @@ await page.click('[data-theme-choice="dark"]');
   const w0 = (await page.locator(".content").boundingBox()).width;
   await page.setViewportSize({ width: 1700, height: 900 });
   const w1 = (await page.locator(".content").boundingBox()).width;
-  await panelOpen(page); await page.click('#viewPanel [data-view=width][data-val=full]');
-  check("full width widens the page, header included", (await page.locator(".content").boundingBox()).width > w1 + 30 && (await page.locator(".top-inner").boundingBox()).width > 1200);
+  check("there is no Width choice in Customise any more", (await page.locator('#viewPanel [data-view="width"]').count()) === 0);
   check("the Today card sits inside the page column, so it follows the width setting", await page.evaluate(() => !!document.querySelector(".content #dueBars")));
-  await panelOpen(page); await page.click('#viewPanel [data-view=width][data-val=centered]');
   await page.setViewportSize({ width: 1200, height: 900 });
   await panelOpen(page); await page.check("#vOpen");
   check("'show every email open' opens all rows with no collapse", (await page.locator("article.mail.open").count()) === (await page.locator("article.mail").count()) && (await page.locator("article.mail .qrow .qic").count()) === 0);
@@ -631,7 +621,7 @@ await page.click('[data-theme-choice="dark"]');
   const rows0 = await page.locator("article.mail").count();
   const callsP = server.calls.length;
   await swipe(0, 120);
-  check("phone: dragging a row right shows a green Reviewed strip", (await page.locator(".swipebg.armed.ok").count()) === 1 && (await page.locator(".swipebg").innerText()).includes("Reviewed"));
+  check("phone: dragging a row right shows an Archive strip (Reviewed is no longer a swipe)", (await page.locator(".swipebg.armed.arch").count()) === 1 && (await page.locator(".swipebg").innerText()).includes("Archive"));
   await page.mouse.up();
   await page.waitForSelector("#undoBar:not([hidden])");
   check("phone: the email stays greyed while Undo appears at the bottom", (await page.locator("article.mail.leaving").count()) === 1 && (await page.locator("article.mail:not(.leaving)").count()) === rows0 - 1 && (await page.locator("#undoBar").isVisible()));
@@ -671,7 +661,7 @@ await page.click('[data-theme-choice="dark"]');
   await page.evaluate(() => { copyText = window.__copyOriginal; delete window.__copyOriginal; });
 
   const callsQ = server.calls.length;
-  await page.locator(".reader .ract [data-status=reviewed]").click();
+  await page.locator(".reader .ract [data-status=archived]").click();
   await page.waitForSelector("#undoBar:not([hidden])");
   check("phone: the buttons inside an open email also wait for Undo", server.calls.length === callsQ && (await page.locator("article.mail.leaving").count()) === 1 && (await page.locator("article.mail:not(.leaving)").count()) === rows1 - 1);
   await page.click("#undoBar .undobar:last-child button");
@@ -712,7 +702,7 @@ await page.click('[data-theme-choice="dark"]');
     await page.setViewportSize({ width: w, height: 800 });
     await page.waitForTimeout(150);
     const g = await page.locator(".greet h2").boundingBox(), sub = await page.locator("#inboxSubtitle").boundingBox(), se = await page.locator("#search").boundingBox();
-    const ok = g.height < 55 && g.y + g.height <= sub.y + 2 && se.y + se.height <= g.y + 2 && (await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+    const ok = g.height < 55 && (!sub || g.y + g.height <= sub.y + 2) && se.y + se.height <= g.y + 2 && (await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
     check(`new header is tidy at ${w}px wide: search above title, nothing overlaps or runs off`, ok);
   }
   check("back on a wide screen the left sidebar and default reading pane return", (await page.locator("#sidebar").isVisible()) && (await page.locator("body.layout-right").count()) === 1);

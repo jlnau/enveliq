@@ -86,8 +86,9 @@ async function open(server, width = 1200, height = 900) {
   await page.locator("article.mail", { hasText: "School trip form" }).locator(".qmain").click();
   await page.locator("article.mail", { hasText: "Weekly sale" }).locator(".qmain").click();
   menu = await menuOf();
+  await menu.locator("[data-rules-open]").click();         // the rules are in a second list inside the same pop-up
   const btn = menu.locator("[data-rule]");
-  check("another email offers 'Always archive these' in the three-dot menu", (await btn.innerText()) === "Always archive these");
+  check("another email offers 'Always archive these' in the three-dot menu, under Mail rules", (await btn.innerText()) === "Always archive these");
   check("it is no longer a button in the row", (await page.locator("article.mail .qleft [data-rule]").count()) === 0);
   await btn.click();
   await page.waitForFunction(() => /new email from Shop is archived/.test(document.getElementById("toast").innerText));
@@ -113,13 +114,13 @@ async function open(server, width = 1200, height = 900) {
   const text = () => host.evaluate((h) => h.shadowRoot.textContent);
   const t = await text();
   check("it explains that rules only act on new email and never delete", /only on new email as it arrives/.test(t) && /No rule can delete email/.test(t));
-  check("a rule reads in plain words", /Archive it/.test(t) && /New mail from news@example\.invalid/.test(t) && /everyone at shop\.example\.invalid/.test(t) && /with .sale. in the subject/.test(t));
+  check("a rule reads in plain words", /Archive it/.test(t) && /New mail that is from news@example\.invalid/.test(t) && /everyone at shop\.example\.invalid/.test(t) && /has .sale. in the subject/.test(t));
   await shot(page, "rules-settings");
   await host.locator(".li", { hasText: "Add a rule" }).first().click();
   await host.locator("#ru_sender").waitFor({ timeout: 8000 });
   check("the choices are Archive it and Mark it reviewed", (await host.locator("#ru_action option").allInnerTexts()).join("|").startsWith("Archive it|Mark it reviewed"));
   await host.getByRole("button", { name: "Add rule", exact: true }).click();
-  check("adding with nothing typed asks for who it is from", /Type who the email is from first/.test(await host.locator("#toast").innerText()) && server.calls.filter((c) => c[0] === "add").length === 0);
+  check("adding with nothing typed asks for who it is from", /Fill in at least one thing to look for first/.test(await host.locator("#toast").innerText()) && server.calls.filter((c) => c[0] === "add").length === 0);
   await host.locator("#ru_sender").fill("not an address");
   await host.getByRole("button", { name: "Add rule", exact: true }).click();
   await page.waitForTimeout(300);

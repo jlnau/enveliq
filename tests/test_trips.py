@@ -214,7 +214,9 @@ def test_the_event_text_is_escaped_and_private_when_titles_are_off(book):
     private = calsync.calendar_text([calsync.trip_event_lines(b, titles=False, link="", stamp=0)])
     assert "Lisbon" not in private and "QX7K2P" not in private and "SUMMARY:Enveliq trip" in private and "DESCRIPTION" not in private
     g = calsync.trip_google_body(b, True, "")
-    assert g["start"] == {"dateTime": (TODAY + timedelta(days=20)).isoformat() + "T10:45:00"} and g["id"] == b["id"]
+    day = (TODAY + timedelta(days=20)).isoformat()
+    assert g["start"] == {"dateTime": day + "T10:45:00", "timeZone": "UTC"} and g["id"] == b["id"]          # Google refuses a clock time with no zone
+    assert calsync.trip_google_body(b, True, "", "Australia/Sydney")["end"]["timeZone"] == "Australia/Sydney"
     assert calsync.trip_google_body(b, False, "")["summary"] == "Enveliq trip"
 
 

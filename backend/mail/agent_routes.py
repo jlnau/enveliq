@@ -23,13 +23,8 @@ class MessageBody(StrictModel):
 
 
 class SettingsBody(StrictModel):
-    mode: str = Field(pattern=r"^(plain|own)$")
     who: str = Field(pattern=r"^(all|admins)$")
     name: str = Field(default="", max_length=40)
-    url: str | None = Field(default=None, max_length=300)       # None: keep what is saved
-    model: str | None = Field(default=None, max_length=80)
-    key: str | None = Field(default=None, max_length=300)
-    clear_key: bool = False
 
 
 class RenameBody(StrictModel):
@@ -47,7 +42,7 @@ def build_agent_router(ctx: Any) -> APIRouter:
     def ready() -> dict[str, Any]:
         service.refresh_ai(vault)
         conf = agent.settings()
-        return {"name": conf["name"], "mode": conf["mode"], "ready": service.summariser.enabled or (conf["mode"] == "own" and agent.own_connection() is not None)}
+        return {"name": conf["name"], "ready": service.summariser.enabled}
 
     def allowed(session: Session) -> None:
         """The administrator can keep the chat to administrators; the server checks every request."""
@@ -112,27 +107,10 @@ def build_agent_router(ctx: Any) -> APIRouter:
     def admin_put(body: SettingsBody, response: Response, session: Session = Depends(admin_dep)):
         response.headers["Cache-Control"] = "no-store"
         try:
-            saved = agent.save_settings(body.mode, body.who, body.name, body.url, body.model, body.key, body.clear_key)
+            saved = agent.save_settings(body.who, body.name)
         except ChatError as err:
             raise wrong(err) from None
-        vault.audit({"event": "agent_chat_settings_saved", "actor_user_id": session.principal.user_id, "mode": saved["mode"], "who": saved["who"], "own_address": bool(saved["url"]), "at": time.time()})
+        vault.audit({"event": "agent_chat_settings_saved", "actor_user_id": session.principal.user_id, "who": saved["who"], "at": time.time()})
         return saved
-
-    test_limit = SlidingWindowLimiter(max_events=6, window=60)
-
-    @router.post("/admin/agent/test")
-    def admin_test(response: Response, session: Session = Depends(admin_dep)):
-        response.headers["Cache-Control"] = "no-store"
-        if not test_limit.allow(f"agenttest:{session.principal.user_id}"):
-            raise HTTPException(status_code=429, detail="Too many tests. Wait a minute.")
-        try:
-            return agent.test()
-        except ChatError as err:
-            raise wrong(err) from None
-
-    @router.get("/admin/agent/test")
-    def admin_test_state(response: Response, session: Session = Depends(admin_dep)):
-        response.headers["Cache-Control"] = "no-store"
-        return agent.test_state()
 
     return router

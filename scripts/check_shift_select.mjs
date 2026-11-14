@@ -33,6 +33,7 @@ const handler = async (route) => {
   if (p === "/api/v1/me") return json(200, { id: "u1", username: "morgan", display_name: "Morgan", role: "admin", session: { state: "full" }, security: { totp_enabled: true, passkeys: [] } });
   if (p === "/api/v1/accounts") return json(200, [{ id: "a1", provider: "proton", auth_method: "proton_bridge", owner_user_id: "u1", display_name: "Proton test", email_address: "me@example.invalid", server: "172.30.0.1", port: 1144, username: "u", settings: {} }]);
   if (p === "/api/v1/accounts/a1/messages") return json(200, mails);
+  if (/\/messages\/[^/]+\/resolve$/.test(p)) return route.fulfill({ status: 204 });
   if (p === "/api/v1/me/preferences") return json(200, { keep_reviewed: true, keep_archived: true, keep_days: 7, max_days: 14, instructions: "", undo_send_seconds: 0 });
   if (p === "/api/v1/me/features") return json(200, { effective: {}, admin: {}, user: {}, labels: {} });
   if (p === "/api/v1/sync/status") return json(200, { enabled: true, minutes: 10, now: Date.now() / 1000, accounts: { a1: { ok: true, at: now } } });
@@ -120,7 +121,7 @@ await page.waitForTimeout(600);
 check("a finished AI summary does not untick the emails", (await ticked()) === "2,3" && (await page.locator("#selectedCount").innerText()) === "2");
 await all.check();
 await page.locator('[data-bulk="reviewed"]:visible').first().click();
-await page.waitForFunction(() => document.querySelectorAll("article.mail.leaving").length === 7, null, { timeout: 15000 });
+await page.waitForFunction(() => /7 emails marked as read/.test(document.getElementById("toast").innerText), null, { timeout: 15000 });
 check("the bulk Reviewed button acts on every email a Select all ticked", true);
 check("no script errors", errors.length === 0);
 if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, "shift-select.png") });

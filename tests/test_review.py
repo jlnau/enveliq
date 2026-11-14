@@ -34,23 +34,20 @@ def env(tmp_path):
     model.close()
 
 
-def test_reviewed_and_archived_leave_a_card_while_the_real_mailbox_changes(env):
+def test_mark_as_read_sets_the_mailbox_flag_and_keeps_no_reviewed_card_while_archive_keeps_one(env):
     appm, client, bridge, _, aid = env
     m = by_state(client, aid)["unread"]
     assert resolve(client, aid, m["Quarterly update"]["id"], "reviewed").status_code == 204
     assert resolve(client, aid, m["Weekly news"]["id"], "archived").status_code == 204
     assert "\\Seen" in bridge.messages[1]["flags"] and bridge.messages[2]["folder"] == "Archive"
     states = by_state(client, aid)
-    assert set(states["unread"]) == {"Invoice question"}
-    assert set(states["reviewed"]) == {"Quarterly update"} and set(states["archived"]) == {"Weekly news"}
-    card = states["reviewed"]["Quarterly update"]
-    assert card["resolved_at"] > 0 and card["attachments"] == [] and "source_locator" not in card
-    # it never comes back as new, and sync does not delete it
+    assert states["unread"]["Quarterly update"]["from_all_mail"] is True and states["unread"]["Invoice question"]["from_all_mail"] is False    # read: listed with the read mail
+    assert "reviewed" not in states
+    assert set(states["archived"]) == {"Weekly news"}
     assert client.post(f"/api/v1/accounts/{aid}/sync", json={}).json()["added"] == 0
-    assert set(by_state(client, aid)["reviewed"]) == {"Quarterly update"}
 
 
-def test_binning_deletes_the_card_and_view_is_not_offered_for_kept_ones(env):
+def test_binning_deletes_the_card_and_an_archived_card_can_open_its_original_from_the_archive(env):
     _, client, _, _, aid = env
     m = by_state(client, aid)["unread"]
     assert resolve(client, aid, m["Weekly news"]["id"], "binned").status_code == 204
@@ -58,23 +55,10 @@ def test_binning_deletes_the_card_and_view_is_not_offered_for_kept_ones(env):
     assert resolve(client, aid, m["Quarterly update"]["id"], "archived").status_code == 204
     kept = by_state(client, aid)["archived"]["Quarterly update"]
     r = client.get(f"/api/v1/accounts/{aid}/messages/{kept['id']}/original")
-    assert r.status_code >= 400
+    assert r.status_code == 200                                    # the email is in the Archive folder and is found there by its Message-ID
     # removing a kept card only forgets it here
     assert resolve(client, aid, kept["id"], "expired").status_code == 204
     assert "archived" not in by_state(client, aid)
-
-
-def test_turning_a_list_off_means_nothing_is_kept_and_existing_cards_go(env):
-    _, client, _, _, aid = env
-    m = by_state(client, aid)["unread"]
-    assert resolve(client, aid, m["Quarterly update"]["id"], "reviewed").status_code == 204
-    prefs = client.get("/api/v1/me/preferences").json()
-    assert prefs["keep_reviewed"] is True and prefs["keep_archived"] is True and prefs["keep_days"] == 7 and prefs["max_days"] == 14
-    r = client.put("/api/v1/me/preferences", json={**{k: prefs[k] for k in ("keep_days", "instructions")}, "keep_reviewed": False, "keep_archived": True})
-    assert r.status_code == 200 and r.json()["keep_reviewed"] is False
-    assert "reviewed" not in by_state(client, aid)                      # old cards removed
-    assert resolve(client, aid, m["Weekly news"]["id"], "reviewed").status_code == 204
-    assert "reviewed" not in by_state(client, aid)                      # and none are kept now
 
 
 def test_days_cannot_go_over_the_administrators_maximum(env):
@@ -86,15 +70,6 @@ def test_days_cannot_go_over_the_administrators_maximum(env):
     assert client.get("/api/v1/me/preferences").json()["keep_days"] == 10 and client.get("/api/v1/me/preferences").json()["max_days"] == 10
     assert client.put("/api/v1/me/preferences", json={**body, "keep_days": 0}).status_code == 422
     assert client.put("/api/v1/admin/review-settings", json={"max_days": 500, "instructions": ""}).status_code == 422
-
-
-def test_old_cards_are_removed(env):
-    appm, client, _, _, aid = env
-    m = by_state(client, aid)["unread"]
-    assert resolve(client, aid, m["Quarterly update"]["id"], "reviewed").status_code == 204
-    stored = [x for x in appm.vault.list_messages(aid) if x.get("state") == "reviewed"][0]
-    appm.vault.update_message(aid, stored["id"], {**{k: v for k, v in stored.items() if k != "id"}, "resolved_at": time.time() - 8 * 86400})
-    assert "reviewed" not in by_state(client, aid)                       # 8 days > the 7 chosen
 
 
 def test_only_administrators_change_the_maximum_and_each_person_has_their_own_choices(env):
@@ -142,18 +117,17 @@ def test_a_reviewed_email_can_be_marked_unread_again(env):
     assert "\\Seen" not in bridge.messages[1]["flags"]            # the real mailbox has its unread mark back
     states = by_state(client, aid)
     assert "Quarterly update" in states["unread"] and "Quarterly update" not in states.get("reviewed", {})
-    # it can only be done for a Reviewed email, never twice, and never for an email that moved
-    assert client.post(f"/api/v1/accounts/{aid}/messages/{mid}/unread").status_code == 409
+    # marking an already unread email unread is harmless; an email that moved cannot be
+    assert client.post(f"/api/v1/accounts/{aid}/messages/{mid}/unread").status_code == 204
     other = states["unread"]["Weekly news"]["id"]
     assert resolve(client, aid, other, "archived").status_code == 204
     assert client.post(f"/api/v1/accounts/{aid}/messages/{other}/unread").status_code == 409
     assert client.post(f"/api/v1/accounts/{aid}/messages/nope/unread").status_code in (404, 422)
 
 
-def test_only_a_reviewed_card_keeps_its_mailbox_link(env):
-    appm, client, _, _, aid = env
-    m = by_state(client, aid)["unread"]
-    resolve(client, aid, m["Quarterly update"]["id"], "reviewed")
-    resolve(client, aid, m["Weekly news"]["id"], "archived")
-    stored = {x["subject"]: x for x in appm.vault.list_messages(aid) if x.get("state") in ("reviewed", "archived")}
-    assert stored["Quarterly update"]["source_locator"] and stored["Weekly news"]["source_locator"] is None
+def test_with_read_mail_switched_off_a_read_email_leaves_the_list(env):
+    appm, client, bridge, _, aid = env
+    client.put("/api/v1/me/features", json={"all_mail": False})
+    mid = by_state(client, aid)["unread"]["Quarterly update"]["id"]
+    assert resolve(client, aid, mid, "reviewed").status_code == 204
+    assert "\\Seen" in bridge.messages[1]["flags"] and "Quarterly update" not in json.dumps(by_state(client, aid))

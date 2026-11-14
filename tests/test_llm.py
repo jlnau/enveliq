@@ -215,3 +215,34 @@ def test_the_error_message_never_contains_the_email_or_the_key(model):
         summariser(m, api_key="secret-key-123").summarise("Subject line", "a@b.example", "private words here")
     shown = exc.value.message + repr(exc.value)
     assert "secret-key-123" not in shown and "private words" not in shown
+
+
+def test_a_reply_with_thinking_or_braces_before_the_answer_is_still_read():
+    from backend.mail.llm import parse_reply
+    answer = '{"summary": "Your parcel is out for delivery.", "category": "Shopping", "priority": "normal"}'
+    assert parse_reply("<think>I should use {braces} here</think>\n" + answer)["summary"] == "Your parcel is out for delivery."
+    assert parse_reply("Sure! In the form {summary, category} here it is:\n" + answer + "\nHope that helps.")["summary"] == "Your parcel is out for delivery."
+    assert parse_reply("```json\n" + answer + "\n```")["summary"] == "Your parcel is out for delivery."
+
+
+def test_a_failed_reply_says_why_without_quoting_it():
+    import pytest
+    from backend.mail.errors import BridgeError
+    from backend.mail.llm import parse_reply
+    for content, finish, words in (("", "length", "ran out of room"), ('{"a": 1', "length", "cut off"), ("I cannot help with that, Hello Sam", "stop", "not in the answer form"), ('{"category": "Other"}', "stop", "no summary")):
+        with pytest.raises(BridgeError) as err:
+            parse_reply(content, finish)
+        assert words in err.value.message and "Hello Sam" not in err.value.message
+
+
+def test_a_slightly_broken_json_answer_still_gives_a_summary():
+    from backend.mail.llm import parse_reply
+    trailing = '{"summary": "Parcel out for delivery today.", "category": "Shopping", "priority": "normal",}'
+    assert parse_reply(trailing)["summary"] == "Parcel out for delivery today."
+    newline = '{"summary": "Parcel out\nfor delivery.", "category": "Shopping"}'
+    assert parse_reply(newline)["category"] == "Shopping"
+    cut = '{"summary": "Parcel out for delivery today.", "category": "Shopping", "task": {"title": "Be home'
+    got = parse_reply(cut)
+    assert got["summary"] == "Parcel out for delivery today." and got["category"] == "Shopping"
+    stray = '{"summary": "He said "hi" to me", "category": "Other"} {"x": 1'
+    assert parse_reply('Here you go: ' + '{"summary": "Parcel out for delivery.", "category": "Shopping", "action_required": false, "extra": [1,2,}')["summary"].startswith("Parcel")

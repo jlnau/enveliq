@@ -54,9 +54,11 @@ function makeServer(opts = {}) {
       orders.push({ id: "s" + String(orders.length + 1).padStart(23, "1"), shop: b.shop, order_number: null, carrier: null, tracking: b.tracking ? b.tracking.toUpperCase() : null, items: null, status: b.status, expected: null, expected_text: null, prev_expected: null, delayed: false, delivered_at: b.status === "delivered" ? now : null, ack: b.status === "delivered" ? "got_it" : null, unsure: false, manual: true, needs_confirm: false, track_url: null, updated: now, events: [], note: "" });
       return json(200, { enabled: true, orders, now, carriers: carriersView() });
     }
-    const sm = p.match(/^\/api\/v1\/me\/shipping\/(s[0-9a-f]{23})\/status$/);
-    if (sm && req.method() === "PUT") {
-      const o = orders.find((x) => x.id === sm[1]); o.status = JSON.parse(req.postData()).status; calls.push(["status", sm[1], o.status]);
+    const stm = p.match(/^\/api\/v1\/me\/shipping\/(s[0-9a-f]{23})\/status$/);
+    if (stm && req.method() === "PUT") {
+      const o = orders.find((x) => x.id === stm[1]); o.status = JSON.parse(req.postData()).status; calls.push(["status", stm[1], o.status]);
+      o.status_manual = true; if (o.status === "delivered") { o.delivered_at = now; o.ack = "got_it"; } else { o.delivered_at = null; o.ack = null; }
+      recompute();
       return json(200, { enabled: true, orders, now, carriers: carriersView() });
     }
     if (p === "/api/v1/me/shipping") { calls.push(["list"]); return json(200, features.shipping ? { enabled: true, orders, now, carriers: carriersView() } : { enabled: false, orders: [], now }); }
@@ -83,6 +85,22 @@ function makeServer(opts = {}) {
     if (dm && req.method() === "DELETE") {
       calls.push(["carrier-remove", dm[1]]); const i = shared.findIndex((c) => c.id === dm[1]); const gone = shared.splice(i, 1)[0];
       for (const o of orders) if (gone && o.carrier && o.carrier.toLowerCase().includes(gone.name.toLowerCase())) o.track_url = null;
+      return json(200, { enabled: true, orders, now, carriers: carriersView() });
+    }
+    if (p === "/api/v1/me/shipping/bulk" && req.method() === "POST") {
+      const b = JSON.parse(req.postData()); calls.push(["bulk", b]);
+      if (b.action === "not_order") orders = orders.filter((x) => !b.ids.includes(x.id));
+      else for (const o of orders) if (b.ids.includes(o.id)) { o.status = b.status; o.status_manual = true; if (b.status === "delivered") { o.delivered_at = now; o.ack = "got_it"; } else { o.delivered_at = null; o.ack = null; } }
+      recompute();
+      return json(200, { enabled: true, orders, now, carriers: carriersView() });
+    }
+    if (p === "/api/v1/me/shipping/merge" && req.method() === "POST") {
+      const b = JSON.parse(req.postData()); calls.push(["merge", b]);
+      const [keep, ...rest] = orders.filter((x) => b.ids.includes(x.id));
+      keep.events = [...keep.events, ...rest.flatMap((x) => x.events)];
+      keep.tracking = keep.tracking || (rest.find((x) => x.tracking) || {}).tracking;
+      orders = orders.filter((x) => !rest.includes(x));
+      recompute();
       return json(200, { enabled: true, orders, now, carriers: carriersView() });
     }
     const nm = p.match(/^\/api\/v1\/me\/shipping\/(s[0-9a-f]{23})\/note$/);
@@ -119,6 +137,8 @@ async function open(server, { width = 1200, height = 900 } = {}) {
   await page.evaluate(() => { view.layout = "list"; applyView(); render(); });   // these checks look at the classic list; the default is now the reading panel on the right
   return { page, errors, csp, context };
 }
+// Opens a card's three-dot menu. The page refreshes itself now and then, which can swallow one click, so ask again if it did not open.
+const openMenu = async (page, card) => { for (let i = 0; i < 6; i++) { if (await card.locator(".omenu").count()) return; await card.locator("[data-ship-menu]").click(); await page.waitForTimeout(150); } };
 const shot = async (page, name) => { if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, name + ".png") }); };
 
 {
@@ -144,6 +164,8 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.locator("[data-ship-open]").nth(1).click();
   check("the matched emails open on demand", (await page.locator("#shipPage .oevents li").count()) === 3 && (await page.locator("#shipPage .oevents").innerText()).includes("Thanks for your order"));
   await shot(page, "ship-page");
+  await page.evaluate(() => { const t = document.querySelector("#shipPage .otitle"); if (t) t.insertAdjacentHTML("beforeend", '<span class="onum">A very long list of items that goes on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on</span>'); });
+  check("the three dots stay in the top right corner of every card, however long the text is", await page.evaluate(() => [...document.querySelectorAll("#shipPage .ocard")].every((c) => { const d = c.querySelector(".odots"); if (!d) return true; const a = c.getBoundingClientRect(), b = d.getBoundingClientRect(); return b.top - a.top <= 16 && a.right - b.right <= 16; })));
   check("the browser's own hash and this page's agree (a known value)", await page.evaluate(() => sha256Hex("a1|m1").slice(0, 16)) === "a7fa9296c2cfd7f1");
   check("the matched email that is still in the inbox is a link; the others are plain text", (await page.locator("#shipPage .oevents .olinkmail").count()) === 1 && (await page.locator("#shipPage .oevents li").count()) === 3);
   check("the total is shown beside the items", (await page.locator("#shipPage").innerText()).includes("3 books · $54.90"));
@@ -153,12 +175,14 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.click("#shipNav");
   await page.waitForSelector("#shipPage .ocard");
   const bw = page.locator("#shipPage .ocard", { hasText: "Brightwater" });
+  await bw.locator("[data-ship-menu]").click();
+  check("the three-dot menu lists the four steps, with the current one ticked", (await bw.locator(".omenu [data-ship-set]").count()) === 4 && (await bw.locator('.omenu [aria-checked="true"]').innerText()).includes("Shipped"));
   await bw.locator("[data-ship-note]").click();
   await bw.locator("textarea").fill("Birthday present for Sam\nwrap it");
   check("a note box opens", (await bw.locator("textarea").count()) === 1);
   await bw.locator("[data-ship-notesave]").click();
   await page.waitForFunction(() => document.querySelector("#shipPage .onote"));
-  check("saving the note sends it and shows it on the card", server.calls.some((c) => c[0] === "note" && c[2] === "Birthday present for Sam\nwrap it") && (await bw.locator(".onote").innerText()).includes("Birthday present for Sam") && (await bw.locator("[data-ship-note]").innerText()) === "Edit note");
+  check("saving the note sends it and shows it on the card", server.calls.some((c) => c[0] === "note" && c[2] === "Birthday present for Sam\nwrap it") && (await bw.locator(".onote").innerText()).includes("Birthday present for Sam") && (await bw.locator("[data-ship-menu]").click(), (await bw.locator("[data-ship-note]").innerText()) === "Edit note"));
   await bw.locator("[data-ship-note]").click();
   await bw.locator("textarea").fill("half typed");
   await page.evaluate(() => refreshShipping());
@@ -173,7 +197,8 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   await page.locator('#shipPage [data-ship="track"]').click();
   await page.waitForFunction(() => !document.querySelector("#shipPage .ocard.unsure"));
   check("Yes, track it asks the server and the question goes away", server.calls.some((c) => c[0] === "track"));
-  await page.locator('#shipPage .ocard', { hasText: "Evil Shop" }).locator('[data-ship="not_order"]').click();
+  await page.locator('#shipPage .ocard', { hasText: "Evil Shop" }).locator("[data-ship-menu]").click();
+  await page.locator('#shipPage .ocard', { hasText: "Evil Shop" }).locator('.omenu [data-ship="not_order"]').click();
   await page.waitForFunction(() => document.querySelectorAll("#shipPage .ocard").length === 3);
   check("Not an order removes the card", server.calls.some((c) => c[0] === "not_order"));
 
@@ -193,7 +218,11 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("Yes, I've got it removes the Home card", server.calls.some((c) => c[0] === "confirm"));
   check("Home no longer asks", (await page.locator("#shipBars .shiprow").count()) === 0);
   await page.click("#shipNav");
-  check("the order stays on the page as 'You got it' with Undo", (await page.locator("#shipPage").innerText()).includes("You got it") && (await page.locator('#shipPage [data-ship="undo"]').count()) === 1);
+  check("a received order moves into a folded Received list, not the main list", /Received · 1/i.test(await page.locator("#shipPage").innerText()) && !(await page.locator("#shipPage").innerText()).includes("You got it") && (await page.locator('#shipPage [data-ship-recv-toggle]').getAttribute("aria-expanded")) === "false");
+  await page.locator("#shipPage [data-ship-recv-toggle]").click();
+  check("opening the list shows it as 'You got it' with Undo", (await page.locator("#shipPage").innerText()).includes("You got it") && (await page.locator('#shipPage [data-ship="undo"]').count()) === 1);
+  await page.locator("#shipPage [data-ship-recv-toggle]").click();
+  check("folding it again hides it", (await page.locator('#shipPage [data-ship="undo"]').count()) === 0);
   await page.close(); await context.close();
 }
 
@@ -297,10 +326,12 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("the new parcel is on the page as 'Waiting to be shipped'", (await page.locator("#shipPage .ocard").count()) === before + 1 && /Corner Hardware/.test(await page.locator("#shipPage").innerText()) && /Waiting to be shipped/.test(await page.locator("#shipPage").innerText()));
   const card = page.locator("#shipPage .ocard", { hasText: "Corner Hardware" });
   check("it shows its tracking number and has no 'Not an order' or email count", /AB-1234-5678/.test(await card.innerText()) && !/Not an order|matched/.test(await card.innerText()));
-  await card.locator("select.ostatus").selectOption("shipped");
+  await openMenu(page, card);
+  await card.locator('.omenu [data-ship-set="shipped"]').click();
   await page.waitForFunction(() => [...document.querySelectorAll("#shipPage .ocard")].some((c) => /Corner Hardware/.test(c.innerText) && /Shipped/.test(c.querySelector(".opill")?.innerText || "")));
   check("you can change where it is up to", server.calls.some((c) => c[0] === "status" && c[2] === "shipped") && /Shipped/.test(await page.locator("#shipPage .ocard", { hasText: "Corner Hardware" }).locator(".opill").innerText()));
-  await page.locator("#shipPage .ocard", { hasText: "Corner Hardware" }).locator('[data-ship="remove"]').click();
+  await openMenu(page, page.locator("#shipPage .ocard", { hasText: "Corner Hardware" }));
+  await page.locator("#shipPage .ocard", { hasText: "Corner Hardware" }).locator('.omenu [data-ship="remove"]').click();
   await page.waitForFunction((n) => document.querySelectorAll("#shipPage .ocard").length === n, before);
   check("Remove takes the parcel off the list", !/Corner Hardware/.test(await page.locator("#shipPage").innerText()));
   await page.click("[data-ship-add-open]");
@@ -308,6 +339,79 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   check("Cancel closes the form without sending", (await page.locator("[data-ship-add-form]").count()) === 0 && server.calls.filter((c) => c[0] === "add").length === 2);
   check("no script errors", errors.length === 0);
   await shot(page, "ship-add");
+  await page.close(); await context.close();
+}
+
+// Any shipment can have its status changed by hand; tick several to change them together or to merge two into one
+{
+  const server = makeServer();
+  const { page, errors, csp, context } = await open(server);
+  await page.click("#shipNav");
+  await page.waitForSelector("#shipPage .ocard");
+  const bw = page.locator("#shipPage .ocard", { hasText: "Brightwater" });
+  await bw.locator("[data-ship-menu]").click();
+  await bw.locator('.omenu [data-ship-set="out_for_delivery"]').click();
+  await page.waitForFunction(() => [...document.querySelectorAll("#shipPage .ocard")].some((c) => /Brightwater/.test(c.innerText) && /Out for delivery/.test(c.querySelector(".opill")?.innerText || "")));
+  check("a shipment that came from an email can be moved to any step by hand", server.calls.some((c) => c[0] === "status" && c[2] === "out_for_delivery"));
+  await bw.locator("[data-ship-menu]").click();
+  await page.keyboard.press("Escape");
+  check("Escape closes the menu", (await page.locator(".omenu").count()) === 0);
+  await bw.locator("[data-ship-menu]").click();
+  await page.locator("#shipPage .shipall").click({ position: { x: 4, y: 4 } }).catch(() => {});
+  await page.mouse.click(5, 5);
+  check("clicking elsewhere closes the menu", (await page.locator(".omenu").count()) === 0);
+  check("every shipment has a checkbox", (await page.locator("#shipPage .ocard .ocheck").count()) === (await page.locator("#shipPage .ocard").count()));
+  check("no bar until something is ticked", (await page.locator(".shipbar").count()) === 0);
+  await page.locator("#shipPage .ocard .ocheck").nth(0).check();
+  check("one ticked: the bar offers the four steps, Merge is off", (await page.locator(".shipbar [data-ship-bulk]").count()) === 4 && (await page.locator(".shipbar [data-ship-merge]").isDisabled()));
+  await page.locator("#shipPage .ocard .ocheck").nth(1).check();
+  check("two ticked: Merge is on", await page.locator(".shipbar [data-ship-merge]").isEnabled());
+  await shot(page, "ship-selected");
+  await page.locator(".shipbar [data-ship-bulk='delivered']").click();
+  await page.waitForFunction(() => !document.querySelector(".shipbar"));
+  const bulk = server.calls.filter((c) => c[0] === "bulk").pop();
+  check("Mark as Delivered sends both ticked ones and clears the ticks", bulk && bulk[1].ids.length === 2 && bulk[1].status === "delivered" && (await page.locator("#shipPage .ocard .ocheck:checked").count()) === 0);
+  await page.locator("#shipPage .ocard .ocheck").nth(0).check();
+  await page.locator("#shipPage .ocard .ocheck").nth(1).check();
+  await page.locator(".shipbar [data-ship-merge]").click();
+  check("Merge asks first and says what will happen", /Join these 2 into one shipment/.test(await page.locator(".shipbar").innerText()) && (await page.locator("[data-ship-merge-yes]").count()) === 1);
+  await page.locator("[data-ship-merge-no]").click();
+  check("Cancel keeps both", server.calls.filter((c) => c[0] === "merge").length === 0 && (await page.locator(".shipbar [data-ship-merge]").count()) === 1);
+  const cardsBefore = await page.locator("#shipPage .ocard").count();
+  await page.locator(".shipbar [data-ship-merge]").click();
+  await page.locator("[data-ship-merge-yes]").click();
+  await page.waitForFunction((n) => document.querySelectorAll("#shipPage .ocard").length === n - 1, cardsBefore);
+  check("Yes joins them into one card", server.calls.filter((c) => c[0] === "merge").pop()[1].ids.length === 2);
+  await page.locator("#shipPage .ocard .ocheck").nth(0).check();
+  await page.locator(".shipbar [data-ship-bulk-no]").click();
+  await page.waitForFunction((n) => document.querySelectorAll("#shipPage .ocard").length === n - 2, cardsBefore);
+  check("This is not an order removes the ticked one", server.calls.some((c) => c[0] === "bulk" && c[1].action === "not_order"));
+  check("no script errors or blocked requests", errors.length === 0 && csp.length === 0);
+  await page.close(); await context.close();
+}
+
+// With the reading panel on the right, Shipping sits on the left and a matched email opens on the right; a deleted email says so
+{
+  const server = makeServer();
+  const { page, errors, context } = await open(server, { width: 1300, height: 800 });
+  await page.evaluate(() => { view.layout = "right"; applyView(); filter = "shipping"; render(); });
+  await page.waitForSelector("#shipPage .ocard");
+  check("the reading panel is there beside Shipping, empty until you open an email", await page.evaluate(() => document.body.classList.contains("split-read") && document.getElementById("readDock").getBoundingClientRect().left > document.getElementById("shipPage").getBoundingClientRect().right - 40) && /Open one of a shipment/.test(await page.locator("#readDock").innerText()));
+  await page.locator('#shipPage .ocard', { hasText: "Brightwater" }).locator("[data-ship-open]").click();
+  await page.waitForSelector("#shipPage .oevents li");
+  check("a matched email that is gone says so on its line", /Deleted or removed/.test(await page.locator("#shipPage .oevents").innerText()));
+  await page.locator("#shipPage .olinkmail").first().click();
+  await page.waitForFunction(() => document.querySelector("#readDock .rhead h3"));
+  check("pressing a matched email shows it on the right and stays on Shipping", (await page.locator("#readDock .rhead h3").innerText()).length > 0 && await page.locator("#shipPage").isVisible());
+  await shot(page, "ship-split");
+  // An email that is archived (kept here as a card) opens in the same full reading view as the inbox: side rail, buttons, the original email.
+  await page.evaluate(() => { view.style = "rail"; view.show_original = true; const m = data.find((x) => String(x.id) === String(shipMailId)); m.kept = true; m.status = "archived"; m.keptUntil = "20 Nov"; render(); });
+  await page.waitForSelector("#readDock .reading.rail .rl-rail");
+  const rail = await page.locator("#readDock .rl-rail").innerText();
+  check("an archived email opens with the same side-rail buttons (Reply, Forward, Task...) and no Mark as read, Archive or Bin", /Reply/.test(rail) && /Forward/.test(rail) && /Task/.test(rail) && !/Mark as read|Archive\b|Snooze/.test(rail) && /Remove from this list/.test(rail));
+  await shot(page, "ship-split-archived");
+  check("and it shows the original email, not just the summary", (await page.locator("#readDock .qorig").count()) === 1);
+  check("no script errors", errors.length === 0);
   await page.close(); await context.close();
 }
 
