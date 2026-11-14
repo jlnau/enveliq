@@ -84,7 +84,7 @@ const box = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   check("phone: just a small X at the top, not a wide Close button", x && x.w <= 48 && (await p.locator(".reader.rail .rclose").innerText()).trim() === "✕");
   const bar = await p.evaluate(() => [...document.querySelectorAll(".reader.rail .rl-bar > *")].map((e) => { const r = e.getBoundingClientRect(); return { l: e.getAttribute("aria-label"), w: Math.round(r.width), h: Math.round(r.height), txt: e.innerText.trim() }; }));
   check("phone: the bottom bar has square icon buttons only", bar.length >= 4 && bar.every((e) => Math.abs(e.w - e.h) <= 2 && e.w >= 44 && e.txt === ""));
-  check("phone: Reviewed, Archive and Bin are in the bottom bar", ["Reviewed", "Archive", "Bin"].every((l) => bar.some((e) => e.l === l)));
+  check("phone: Mark as read, Archive and Bin are in the bottom bar", ["Mark as read", "Archive", "Bin"].every((l) => bar.some((e) => e.l === l)));
   const bb = await box(p, ".reader.rail .rl-bar");
   check("phone: the bottom bar is fixed at the bottom of the screen", bb && Math.abs(bb.b - 844) <= 2);
   check("phone: the email address opens the copy choices", await (async () => {

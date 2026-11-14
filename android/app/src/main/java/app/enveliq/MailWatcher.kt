@@ -72,9 +72,8 @@ object AlertPrefs {
         otherKinds.forEach { setKind(c, it.first, false) }
     }
 
-    /** Other things worth a quiet note, each off until the person turns it on: "messages", "bell", "tasks", "shipping". */
+    /** Other things worth a quiet note, each off until the person turns it on: "bell", "tasks", "shipping". */
     val otherKinds = listOf(
-        "messages" to ("Messages" to "A note when someone sends you a message in Enveliq."),
         "bell" to ("Notes and alerts" to "A note when something new appears under the bell."),
         "tasks" to ("Tasks due today" to "A note when a task becomes due."),
         "shipping" to ("Parcels to confirm" to "A note when a parcel needs you to confirm it arrived."),

@@ -55,3 +55,15 @@ def test_a_signed_in_person_sees_the_version_and_an_administrator_the_technical_
     assert not {"crypto", "public_url", "auto_unlock", "attachments"} & set(body)
     detail = admin.get("/api/v1/system").json()
     assert detail["crypto"]["argon2_memory_kib"] and "public_url" in detail and "auto_unlock" in detail
+
+
+def test_a_preview_build_number_is_shown_only_when_it_is_a_plain_number(tmp_path, monkeypatch):
+    from backend.version import clean_build
+    assert clean_build("57") == "57" and clean_build(" 120 ") == "120"
+    assert clean_build("") == "" and clean_build("abc") == "" and clean_build("1.2") == "" and clean_build("<b>1</b>") == "" and clean_build("1" * 10) == ""
+    (tmp_path / "data").mkdir()
+    appm = load_app(tmp_path / "data")
+    admin, _ = setup_admin(appm)
+    assert "build" not in admin.get("/api/v1/system").json()          # a release image has no build number
+    monkeypatch.setattr(appm, "BUILD", "57")
+    assert admin.get("/api/v1/system").json()["build"] == "57"

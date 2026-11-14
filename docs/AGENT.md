@@ -1,45 +1,35 @@
-# Talking to your main Hermes agent from the Agent chat
+# The Agent chat
 
-By default the Agent chat talks to the same AI model that writes your email summaries. That model is a plain one: it has no tools, so it cannot reach your Home Assistant, pfSense or Grafana.
+The **Agent** button opens a chat with the AI model set under **Administration, AI model**. It is a plain model: it only talks. It has no tools, it cannot change anything in Enveliq, and it cannot reach anything outside Enveliq (your lights, your network, other agents or services). You can ask it about your own Enveliq, such as "Do I have a flight booked?" or "What was the newest email?".
 
-Your main Hermes agent (the one you talk to on Signal) has those tools. To chat with it from Enveliq, give the Agent chat its own address. Summaries keep using the plain model, so they stay fast and cheap.
+## What it sees
 
-## 1. Switch on the API server in Hermes (on the Hermes host)
+Each time you ask something, Enveliq looks through **your own** Enveliq on the server and hands the AI a short, labelled set of facts with your question:
 
-Each Hermes profile has its own API server, port and key. Use the main profile (the one Signal talks to). In that profile's `.env` file (for the default profile, `~/.hermes/.env`):
+- **Your whole mailbox**: the chat searches it with the same **Fast search** word list the search box uses, for the main words of your question (and your question before it). The best 8 matches are listed with sender, subject, date and folder, and for the best 3 the email is read from your mail service for that moment and its first part (about 1,500 characters) is handed to the AI. That text is not stored, logged or kept in the chat. A mailbox that has Fast search off, or is still being built, is not searched, and the AI is told so. Spam and Bin are left out, as in the search box.
+- **Emails Enveliq has kept**: the sender, subject, date, folder and the AI-written summary (and file summaries and suggested task), never the email's own text. The newest six are always included, plus up to ten more that match the words of your question (and of your question before it, so a follow-up works). These do not need Fast search.
+- **Trips and bookings** coming up, **open tasks**, **orders** and **replies you are waiting for**, each only if you use that feature.
+- Today's date and your time zone.
 
-```
-API_SERVER_ENABLED=true
-API_SERVER_HOST=0.0.0.0
-API_SERVER_PORT=8642
-API_SERVER_KEY=choose-a-long-random-key
-```
+"What's the newest email?" is answered by plain code picking the newest email and telling the AI "this is the one", because a small model is unreliable at picking the first item from a list. The AI is told to answer only from that, to say "I can't find that in what Enveliq has" when it is not there, to name the email or booking it used, to repeat dates and times exactly as written, and not to work things out (for example when to leave for the airport) itself. If it can't read your data at that moment it is told so. The data is rebuilt for every question, kept to about 10,000 characters, and is not saved in the chat: only your question and the answer are. Apart from the start of the best three matches (above), it is never an email's own text, and never a file or another person's mail. Only mailboxes you own are read; an administrator's chat sees the administrator's own mail and nobody else's.
 
-`API_SERVER_KEY` is required when the server listens on more than the host itself. Restart the gateway (`hermes gateway`, or restart its service). Check it from the Enveliq host:
+Small models can still make mistakes, so the answer is a pointer to the email, not a replacement for it. Open the email it names to be sure.
 
-```
-curl http://<hermes-host>:8642/v1/models -H "Authorization: Bearer <your key>"
-```
+Each person's saved chats are kept in their own encrypted record and are never visible to anyone else.
 
-The model name it lists (`hermes-agent` for the default profile, otherwise the profile's name) is what you type into Enveliq. If your plain model router already uses port 8642 or 8088, pick another `API_SERVER_PORT` for the agent.
+## Administration, Agent chat
 
-## 2. Point the Agent chat at it (in Enveliq)
+- **Who can use it:** everyone with an Enveliq account, or administrators only. The server checks every request.
+- **Name shown in the chat:** what the helper is called.
 
-Administration, Agent chat:
+## Connecting a separate agent was removed
 
-1. Choose **My own agent, with its own instructions and tools**.
-2. Under **Use a different agent for this chat**, fill in:
-   - Agent address: `http://<hermes-host>:8642/v1/chat/completions`
-   - Model name: `hermes-agent` (or your profile's name)
-   - Access key: the `API_SERVER_KEY`
-3. Press **Save**, then **Test the agent**. A short reply means it works.
+Earlier versions (v0.56 to v0.104) let an administrator send the Agent chat to a separate agent, such as a main Hermes agent with its own tools. That choice, its address, model name, access key and Test button are gone, so the chat is only ever the plain AI model above. If one was saved, its address, model name and access key are forgotten from the vault the next time the Agent chat settings are read or saved.
 
-Leave the three fields empty to go back to the AI model set under AI model.
+## Ask the agent from the search box
 
-## Good to know
+When something is typed in the search box, an **Ask the agent** button appears beside it. It opens the Agent chat and sends what was typed as the first message.
 
-- Enveliq sends only what the person types and the recent messages of that chat. It never sends email, tasks or settings.
-- The agent can do whatever its tools allow, so consider **Administrators only** under "Who can use it".
-- The address must be on your own network (or listed in `ENVELIQ_LLM_ALLOWED_HOSTS`). A host name needs that list.
-- Replies can take a while when the agent uses tools. Enveliq sends your message at once and keeps checking back for up to about five minutes, so a slow agent works even behind a reverse proxy that gives up after a minute. A "Request failed (504)" on the Test button before v0.57 was that proxy timing out, not a problem with the agent.
-- The access key is stored encrypted and is never shown again. Tick **Remove the saved key** to delete it.
+## Code
+
+`backend/mail/agent.py` (chats and settings), `backend/mail/agent_context.py` (what the chat is shown), `backend/mail/agent_routes.py` (routes: `/api/v1/me/agent*`, `/api/v1/admin/agent`), the chat panel in `prototype/index.html`, the settings in `web/static/auth.js`.

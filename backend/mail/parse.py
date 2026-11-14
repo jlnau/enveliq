@@ -194,6 +194,19 @@ def summarise_headers(raw: bytes, identities: list[str]) -> dict[str, Any] | Non
             skip.add(low)
             others[header].append(addr)
 
+    everyone: list[str] = []                                  # every address on To and Cc, for the "is to or cc" rule condition
+    for header in ("To", "Cc"):
+        for _, addr in _addresses(msg, header):
+            low = addr.lower()
+            if addr and len(addr) <= 320 and _EMAIL.match(addr) and not _HEADER_UNSAFE.search(addr) and low not in everyone:
+                everyone.append(low)
+    list_id = ""
+    found_list = re.search(r"<([^<>\s]{1,200})>", clean(msg.get("List-Id"), 400))
+    if found_list:
+        list_id = found_list.group(1).lower()
+    elif clean(msg.get("List-Id"), 200):
+        list_id = clean(msg.get("List-Id"), 200).lower()
+
     context = None
     if reply_to:
         try:
@@ -221,6 +234,8 @@ def summarise_headers(raw: bytes, identities: list[str]) -> dict[str, Any] | Non
         "unsubscribe": unsub.from_header(msg),
         "scam_warning": scamcheck.from_headers(msg),
         "has_attachments": likely_has_files(msg),
+        "list_id": list_id or None,
+        "recipients": everyone[:40],
     }
 
 

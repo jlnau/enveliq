@@ -15,6 +15,7 @@ import secrets
 import threading
 import time
 from dataclasses import dataclass, field
+from datetime import date, timedelta
 from typing import Any, Callable
 
 from .bridge import Bridge, Target
@@ -33,6 +34,7 @@ MAX_REFS = 5000                 # matches remembered per search (the count still
 HEAD_PER_FOLDER = 100           # headers read up front per folder so the first pages are really newest-first
 MAX_RUNNING = 4
 PAGE = 25
+FILE_CHECK_LIMIT = 1500       # newest matches whose headers are read when a mail service cannot search for files
 
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 _QUOTED = re.compile(r'"([^"]*)"|([^\s",]+)')
@@ -53,9 +55,52 @@ class Term:
     phrase: bool
 
 
-def parse_query(text: str) -> list[Term]:
-    """Typed words are all required. "Quoted words" must appear together. Commas are ignored."""
+@dataclass(frozen=True)
+class Filters:
+    """The tap-to-set filters. All standard mail-service search words, so they behave the same on every kind of mailbox."""
+    sender: str = ""
+    to: str = ""
+    since: str = ""          # YYYY-MM-DD, inclusive
+    until: str = ""          # YYYY-MM-DD, inclusive
+    unread: bool = False
+    starred: bool = False
+    files: bool = False
+    folder: str = ""         # one folder of one mailbox; "" means everywhere
+
+    @property
+    def any(self) -> bool:
+        return bool(self.sender or self.to or self.since or self.until or self.unread or self.starred or self.files or self.folder)
+
+
+_MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+def _imap_day(value: str, plus_days: int = 0) -> str:
+    try:
+        day = date.fromisoformat(value) + timedelta(days=plus_days)
+    except ValueError:
+        raise FindError("That date is not a real date.") from None
+    return f"{day.day}-{_MONTHS[day.month - 1]}-{day.year}"
+
+
+def make_filters(sender: str = "", to: str = "", since: str = "", until: str = "", unread: bool = False, starred: bool = False,
+                 files: bool = False, folder: str = "") -> Filters:
+    f = Filters(_CONTROL.sub(" ", sender or "").strip()[:100], _CONTROL.sub(" ", to or "").strip()[:100], since or "", until or "",
+                bool(unread), bool(starred), bool(files), _CONTROL.sub("", folder or "")[:300])
+    for value in (f.since, f.until):
+        if value:
+            _imap_day(value)
+    if f.since and f.until and f.until < f.since:
+        raise FindError("The Until date is before the Since date.")
+    return f
+
+
+def parse_query(text: str, optional: bool = False) -> list[Term]:
+    """Typed words are all required. "Quoted words" must appear together. Commas are ignored.
+    With optional=True (a filter is set) no words at all is fine."""
     text = _CONTROL.sub(" ", str(text or "")).strip()
+    if optional and not text:
+        return []
     if len(text) < MIN_QUERY:
         raise FindError("Type at least two letters to search.")
     if len(text) > MAX_QUERY:
@@ -81,16 +126,41 @@ def is_gmail(target: Target) -> bool:
     return target.kind == "imap" and (target.host or "").lower() in ("imap.gmail.com", "imap.googlemail.com")
 
 
-def criteria(terms: list[Term], target: Target) -> tuple[list[str], bool]:
-    """IMAP search criteria for these words, and whether they need UTF-8."""
+def filter_criteria(f: Filters, gmail: bool = False) -> list[str]:
+    """IMAP search criteria for the filters alone (no words). Files are checked afterwards, except on Gmail."""
+    out: list[str] = []
+    if f.sender:
+        out += ["FROM", _quote(f.sender)]
+    if f.to:
+        out += ["TO", _quote(f.to)]
+    if f.since:
+        out += ["SINCE", _imap_day(f.since)]
+    if f.until:
+        out += ["BEFORE", _imap_day(f.until, 1)]
+    if f.unread:
+        out.append("UNSEEN")
+    if f.starred:
+        out.append("FLAGGED")
+    return out
+
+
+def criteria(terms: list[Term], target: Target, filters: Filters | None = None) -> tuple[list[str], bool]:
+    """IMAP search criteria for these words and filters, and whether they need UTF-8."""
+    f = filters or Filters()
+    extra = filter_criteria(f)
+    utf8 = not all(x.isascii() for x in (f.sender, f.to))
     if is_gmail(target):
         # Gmail's own search language, so "from:bank" style words work too.
         raw = " ".join(('"' + t.text.replace('"', "") + '"') if t.phrase else t.text for t in terms)
-        return ["X-GM-RAW", _quote(raw)], not raw.isascii()
-    out: list[str] = []
+        if f.files:
+            raw = (raw + " has:attachment").strip()
+        out = (["X-GM-RAW", _quote(raw)] if raw else []) + extra
+        return out or ["ALL"], utf8 or not raw.isascii()
+    out = []
     for term in terms:
         out += ["TEXT", _quote(term.text)]
-    return out, not all(t.text.isascii() for t in terms)
+    out += extra
+    return out or ["ALL"], utf8 or not all(t.text.isascii() for t in terms)
 
 
 def choose_folders(folders: list[tuple[set[str], str]], include_junk: bool) -> list[str]:
@@ -150,6 +220,7 @@ class Job:
     created: float
     terms: list[Term]
     mailboxes: dict[str, Mailbox]
+    filters: Filters = field(default_factory=Filters)
     refs: list[Ref] = field(default_factory=list)
     total: int = 0
     cancelled: bool = False
@@ -212,14 +283,14 @@ class FindJobs:
     def running_for(self, user_id: str) -> int:
         return sum(1 for j in self._jobs.values() if j.user_id == user_id and not j.done)
 
-    def start(self, user_id: str, accounts: list[tuple[str, str]], terms: list[Term], include_junk: bool) -> Job:
+    def start(self, user_id: str, accounts: list[tuple[str, str]], terms: list[Term], include_junk: bool, filters: Filters | None = None) -> Job:
         """accounts: (account_id, label) for every mailbox of this person that can be searched."""
         if not accounts:
             raise FindError("Connect a mailbox first, then you can search it.")
         if self.running_for(user_id) >= 2:
             raise FindError("Two searches are already running. Wait for one to finish or cancel it.", 429)
         job = Job(id=secrets.token_urlsafe(9), user_id=user_id, include_junk=include_junk, created=time.time(), terms=terms,
-                  mailboxes={a: Mailbox(a, label) for a, label in accounts})
+                  mailboxes={a: Mailbox(a, label) for a, label in accounts}, filters=filters or Filters())
         self._forget_old()
         with self._guard:
             self._jobs[job.id] = job
@@ -268,9 +339,10 @@ class FindJobs:
         account = self._load(mb.account_id)
         target = self._target(account)
         started = time.time()
-        crit, utf8 = criteria(job.terms, target)
+        crit, utf8 = criteria(job.terms, target, job.filters)
+        only = filter_criteria(job.filters)
         quick = None
-        if self.fast is not None and not job.include_junk:          # the word list leaves out Spam and Bin
+        if self.fast is not None and not job.include_junk and job.terms and not job.filters.folder:          # the word list leaves out Spam and Bin
             try:
                 quick = self.fast.lookup(job.user_id, mb.account_id, job.terms)
             except Exception:
@@ -285,10 +357,20 @@ class FindJobs:
                         mb.state = "cancelled"
                         return
                     if s.select_folder(folder, True) == validity:            # a reset folder's numbers mean something else now
-                        self._take(job, mb, s, folder, validity, uids)
+                        if only:                                              # the word list knows words; the filters are asked of the mail service
+                            keep = set(s.search(only, not job.filters.sender.isascii() or not job.filters.to.isascii()))
+                            uids = [u for u in uids if u in keep]
+                        self._take(job, mb, s, folder, validity, self._with_files(job, mb, s, uids))
                 mb.state = "done"
                 return
-            folders = choose_folders(s.list_folders(), job.include_junk)
+            listed = s.list_folders()
+            if job.filters.folder:
+                if job.filters.folder not in [n for _f, n in listed]:
+                    mb.state, mb.message = "done", "That folder is not in this mailbox."
+                    return
+                folders = [job.filters.folder]
+            else:
+                folders = choose_folders(listed, job.include_junk)
             for folder in folders:
                 if job.cancelled:
                     mb.state = "cancelled"
@@ -297,8 +379,19 @@ class FindJobs:
                     mb.state, mb.message = "done", "Stopped early because this mailbox took too long. Try more specific words."
                     return
                 validity = s.select_folder(folder, True)
-                self._take(job, mb, s, folder, validity, s.search(crit, utf8))
+                self._take(job, mb, s, folder, validity, self._with_files(job, mb, s, s.search(crit, utf8)))
         mb.state = "done"
+
+    def _with_files(self, job: Job, mb: Mailbox, s: Any, uids: list[int]) -> list[int]:
+        """Has-files for a mail service that cannot search for it (Gmail can): read the headers of the newest matches and keep those that carry a file.
+        Only the newest FILE_CHECK_LIMIT are looked at; the person is told when there were more."""
+        if not job.filters.files or is_gmail(self._target(self._load(mb.account_id))):
+            return uids
+        look = uids[:FILE_CHECK_LIMIT]
+        if len(uids) > len(look):
+            mb.message = f"Files were only checked on the newest {FILE_CHECK_LIMIT} matches. Add a date or a word to narrow it down."
+        keep = {uid for uid, raw in s.header_blocks(look) if likely_has_files(parse_headers(raw))}
+        return [u for u in look if u in keep]
 
     def _take(self, job: Job, mb: Mailbox, s: Any, folder: str, validity: int, uids: list[int]) -> None:
         """Remember where the matches are (numbers only) and read the dates of the newest few so the first pages are truly newest first."""

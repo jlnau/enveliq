@@ -115,12 +115,16 @@ def trip_event_lines(b: dict[str, Any], *, titles: bool, link: str, stamp: float
     return lines
 
 
-def trip_google_body(b: dict[str, Any], titles: bool, link: str) -> dict[str, Any]:
+def trip_google_body(b: dict[str, Any], titles: bool, link: str, tz: str | None = None) -> dict[str, Any]:
     first, last, timed = trip_span(b)
     iso = lambda v: f"{v[:4]}-{v[4:6]}-{v[6:8]}" + (f"T{v[9:11]}:{v[11:13]}:00" if timed else "")
     key = "dateTime" if timed else "date"
     body: dict[str, Any] = {"id": b["id"], "summary": b["summary"] if titles else "Enveliq trip", "status": "confirmed", "transparency": "transparent",
                             "start": {key: iso(first)}, "end": {key: iso(last)}, "extendedProperties": {"private": {"enveliq": b["id"]}}}
+    if timed:
+        # Google refuses a clock time that has no time zone (400). The times are as written in the email; the person's own zone is the best available.
+        for part in ("start", "end"):
+            body[part]["timeZone"] = tz or "UTC"
     if titles and b.get("description"):
         body["description"] = _clean(b["description"], 1000)
     if link:
@@ -536,7 +540,7 @@ class Sync:
             sig = trip_sig(b, rec["titles"])
             if pushed.get(bid, {}).get("sig") == sig:
                 continue
-            body = trip_google_body(b, rec["titles"], self._link())
+            body = trip_google_body(b, rec["titles"], self._link(), self.tasks.timezone_of(uid))
             if bid in pushed:
                 status, _ = self.google.call(uid, rt, "PUT", f"{cal}/events/{bid}", body)
                 if status == 404:
@@ -550,6 +554,61 @@ class Sync:
             if status >= 400:
                 raise OutboundError("error", f"Google refused an event ({status}).")
             pushed[bid] = {"sig": sig}
+
+    # ----- meetings the person accepted from an email invite (mail/invites.py) -----
+    def invite_target(self, uid: str) -> str:
+        """Which connected calendar takes accepted meetings: "google", "caldav" or "" (none). Google first when both are on."""
+        rec = self._load(uid)
+        g, c = rec["google"], rec["caldav"]
+        if g["enabled"] and g["refresh_token"] and g["calendar_id"]:
+            return "google"
+        if c["enabled"] and c["url"] and c["password"]:
+            return "caldav"
+        return ""
+
+    def invite_place(self, uid: str) -> str:
+        return {"google": "Google Calendar", "caldav": "your calendar"}.get(self.invite_target(uid), "")
+
+    def invite_put(self, uid: str, key: str, google_body: dict[str, Any], ics: str) -> str:
+        """Add or update one meeting in the connected calendar. Returns where it went ("" when no calendar is connected). Raises OutboundError."""
+        which = self.invite_target(uid)
+        rec = self._load(uid)
+        if which == "google":
+            g = rec["google"]
+            cal = "/calendars/" + urllib.parse.quote(g["calendar_id"], safe="")
+            status, _ = self.google.call(uid, g["refresh_token"], "POST", f"{cal}/events", google_body)
+            if status == 409:                                          # already there (or removed before): update it
+                status, _ = self.google.call(uid, g["refresh_token"], "PUT", f"{cal}/events/{google_body['id']}", google_body)
+            if status == 404:
+                raise OutboundError("not_found", "Google cannot find the calendar. Connect Google Calendar again.")
+            if status >= 400:
+                raise OutboundError("error", f"Google refused the meeting ({status}).")
+            return "Google Calendar"
+        if which == "caldav":
+            cd = rec["caldav"]
+            status, _ = self._dav(cd, "PUT", cd["url"] + f"enveliq-inv-{key}.ics", body=ics.encode("utf-8"), headers={"Content-Type": "text/calendar; charset=utf-8"})
+            if status not in (200, 201, 204):
+                raise OutboundError("error", f"The calendar refused the meeting ({status}).")
+            return "your calendar"
+        return ""
+
+    def invite_remove(self, uid: str, key: str) -> str:
+        """Take one meeting Enveliq added out of the connected calendar again. Only the event Enveliq made is touched."""
+        which = self.invite_target(uid)
+        rec = self._load(uid)
+        if which == "google":
+            g = rec["google"]
+            status, _ = self.google.call(uid, g["refresh_token"], "DELETE", f"/calendars/{urllib.parse.quote(g['calendar_id'], safe='')}/events/inv{key}")
+            if status not in (200, 204, 404, 410):
+                raise OutboundError("error", f"Google refused to remove the meeting ({status}).")
+            return "Google Calendar"
+        if which == "caldav":
+            cd = rec["caldav"]
+            status, _ = self._dav(cd, "DELETE", cd["url"] + f"enveliq-inv-{key}.ics")
+            if status not in (200, 202, 204, 404, 410):
+                raise OutboundError("error", f"The calendar refused to remove the meeting ({status}).")
+            return "your calendar"
+        return ""
 
     # ----- Home Assistant To-do -----
     def _ha(self, td: dict[str, Any], service: str, data: dict[str, Any], response: bool = False) -> Any:

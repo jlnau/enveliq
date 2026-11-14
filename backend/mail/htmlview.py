@@ -66,7 +66,7 @@ SCRIPT = (
     "addEventListener('load',s);addEventListener('resize',s);setTimeout(s,300);setTimeout(s,1500);"
     "if(window.ResizeObserver&&document.body){var o=new ResizeObserver(s);o.observe(document.body);o.observe(document.documentElement)}"
     "document.addEventListener('click',function(e){var t=e.target,a=t&&t.closest?t.closest('a[href]'):null;if(!a)return;"
-    "e.preventDefault();p.postMessage({enveliq:'link',href:a.href},'*')},true);s()})();"
+    "e.preventDefault();p.postMessage({enveliq:'link',href:a.href,x:e.clientX,y:e.clientY},'*')},true);s()})();"
 )
 SCRIPT_HASH = "sha256-" + base64.b64encode(hashlib.sha256(SCRIPT.encode()).digest()).decode()
 

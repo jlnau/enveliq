@@ -20,7 +20,7 @@ def test_a_new_person_has_no_rules_and_it_is_never_cached(env):
     _, client, _, _ = env
     r = client.get("/api/v1/me/rules")
     assert r.status_code == 200 and r.headers["cache-control"] == "no-store"
-    assert r.json()["rules"] == [] and set(r.json()["actions"]) == {"archived", "reviewed", "junked"}
+    assert r.json()["rules"] == [] and set(r.json()["actions"]) == {"archived", "reviewed", "junked", "notasks", "tag", "moved", "starred", "snoozed", "safe"}
 
 
 def test_adding_listing_and_removing_a_rule(env):
@@ -142,12 +142,12 @@ def test_a_reviewed_rule_marks_it_read_and_leaves_it_in_the_inbox(env):
     assert "\\Seen" in bridge.messages[1]["flags"] and bridge.messages[1]["folder"] == "INBOX"
 
 
-def test_mail_from_an_important_person_is_never_touched_by_a_rule(env):
+def test_a_rule_the_owner_made_applies_to_an_important_person_too(env):
     _, client, bridge, _ = env
     client.post("/api/v1/me/important", json={"address": ALICE})
     add_rule(client, "@example.invalid", "archived")
     synced(client, bridge)
-    assert bridge.messages[1]["folder"] == "INBOX" and "\\Seen" not in bridge.messages[1]["flags"]
+    assert bridge.messages[1]["folder"] == "Archive"
     assert bridge.messages[3]["folder"] == "Archive"
 
 
@@ -193,3 +193,78 @@ def test_one_email_can_be_sent_to_junk_by_hand(env):
     r = client.post(f"/api/v1/accounts/{aid}/messages/{m['Quarterly update']['id']}/resolve", json={"outcome": "junked"})
     assert r.status_code == 204 and bridge.messages[1]["folder"] == "Spam"
     assert "Quarterly update" not in [x["subject"] for x in client.get(f"/api/v1/accounts/{aid}/messages").json()]
+
+
+def test_a_never_make_tasks_rule_does_not_stop_an_archive_rule_for_the_same_sender(env):
+    _, client, bridge, _ = env
+    add_rule(client, ALICE, "notasks")
+    add_rule(client, ALICE, "archived")
+    assert len(rules(client)) == 2
+    synced(client, bridge)
+    assert bridge.messages[1]["folder"] == "Archive"               # the archive rule still ran
+    r = add_rule(client, ALICE, "notasks")
+    assert len(r.json()["rules"]) == 2                              # the same rule twice is one rule
+
+
+def test_a_never_make_tasks_rule_alone_leaves_the_email_where_it_is(env):
+    _, client, bridge, _ = env
+    add_rule(client, ALICE, "notasks")
+    synced(client, bridge)
+    assert all(m["folder"] == "INBOX" for m in bridge.messages.values())
+
+
+# ---------- "Always apply tags" ----------
+
+def add_tag_rule(client, tags, sender=ALICE, subject=""):
+    return client.post("/api/v1/me/rules", json={"sender": sender, "subject": subject, "action": "tag", "tags": tags})
+
+
+def test_an_always_apply_tags_rule_is_listed_replaced_and_removed(env):
+    _, client, _, _ = env
+    out = add_tag_rule(client, ["  Work ", "work", "Taxes"]).json()["rules"]
+    assert [(r["action"], r["tags"]) for r in out] == [("tag", ["Work", "Taxes"])]               # tidied, no repeats
+    out = add_tag_rule(client, ["Home"]).json()["rules"]
+    assert [(r["action"], r["tags"]) for r in out] == [("tag", ["Home"])]                        # saving again replaces it: one per sender
+    assert add_tag_rule(client, ["A"], "@example.invalid").json()["rules"][-1]["sender"] == "@example.invalid"
+    out = add_tag_rule(client, []).json()["rules"]                                               # no tags means the rule is taken away
+    assert [r["sender"] for r in out] == ["@example.invalid"]
+
+
+def test_a_tag_rule_does_not_stop_an_archive_rule_and_leaves_the_email_alone(env):
+    _, client, bridge, _ = env
+    add_tag_rule(client, ["Work"])
+    synced(client, bridge)
+    assert all(m["folder"] == "INBOX" for m in bridge.messages.values())
+    add_rule(client, ALICE, "archived")
+    assert len(rules(client)) == 2
+
+
+def test_tags_are_put_on_new_mail_from_that_sender_only(env, monkeypatch):
+    appm, client, bridge, _ = env
+    calls = []
+    monkeypatch.setattr(appm.tagservice, "set_for_message", lambda account, mid, name, on: calls.append((mid, name, on)) or [name])
+    add_tag_rule(client, ["Work", "Taxes"])
+    aid, _m = synced(client, bridge)
+    subjects = {m["id"]: m["subject"] for m in appm.vault.list_messages(aid)}
+    assert sorted((subjects[mid], name, on) for mid, name, on in calls) == [("Quarterly update", "Taxes", True), ("Quarterly update", "Work", True)]
+
+
+def test_a_tag_that_cannot_be_put_on_never_stops_the_sync_or_an_archive_rule(env, monkeypatch):
+    appm, client, bridge, _ = env
+    def boom(*a, **k):
+        raise RuntimeError("no tags here")
+    monkeypatch.setattr(appm.tagservice, "set_for_message", boom)
+    add_tag_rule(client, ["Work"])
+    add_rule(client, ALICE, "archived")
+    synced(client, bridge)
+    assert bridge.messages[1]["folder"] == "Archive"
+
+
+def test_tag_rules_apply_to_important_people_and_each_person_has_their_own(env, monkeypatch):
+    appm, client, bridge, _ = env
+    calls = []
+    monkeypatch.setattr(appm.tagservice, "set_for_message", lambda account, mid, name, on: calls.append(name) or [name])
+    add_tag_rule(client, ["Work"])
+    client.post("/api/v1/me/important", json={"address": ALICE})
+    synced(client, bridge)
+    assert calls and set(calls) == {"Work"}

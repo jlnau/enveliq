@@ -38,6 +38,7 @@ Project: **Enveliq** ("Turn email into clarity."), a private, self-hosted email-
 - Every version pull request has a **test branch** named `preview/vX.YY` that always holds exactly the same code as the version branch. Pushing to a `preview/` branch builds the preview images (workflow "Build UI Preview", tag `ui-preview`), which the maintainer deploys as the separate `enveliq-preview` project in Arcane to test before anything goes live (see `preview/README.md`).
 - After every push to `feat/vX.YY`, also push the same commit to `preview/vX.YY`, so the test branch is never behind.
 - The first lines of the pull request description must say, clearly: the test branch name, the workflow that builds it, and "redeploy `enveliq-preview` in Arcane when it shows a green tick".
+- **Never tell the maintainer to redeploy, pull or test until every check on that push is finished and shows a green tick**: "Build UI Preview", "Build Android app" and all the rest. Look at the runs (`gh run list --branch preview/vX.YY`) first. If any is still running, say it is still building and wait; if any fails, fix it first. Do not say "redeploy" while anything is pending, cancelled or red.
 
 ## Before opening a pull request, run and pass
 - `python -m pytest -q` (needs `requirements-dev.txt`)

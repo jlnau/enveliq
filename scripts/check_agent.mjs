@@ -77,14 +77,14 @@ const shot = async (page, name) => { if (process.env.SHOTS) await page.screensho
   const server = makeServer();
   const { page, errors, csp } = await open(server);
   const labels = await page.locator(".side-foot .nav .nav-label").allInnerTexts();
-  check("Calm mode and Agent are in the sidebar footer; Light mode and Settings live in the user menu", labels.join("|") === "Calm mode|Agent" && (await page.locator("#userMenu #themeBtn, #userMenu #settingsBtn").count()) === 2 && (await page.locator("#adminBtn").count()) === 0);
+  check("Agent is a round button in the top bar, not in the sidebar; Settings lives in the user menu", labels.join("|") === "Calm mode" && (await page.locator(".preview-toolbar-actions #agentBtn").count()) === 1 && (await page.locator("#userMenu #settingsBtn").count()) === 1 && (await page.locator("#userMenu #themeBtn").count()) === 0 && (await page.locator("#adminBtn").count()) === 0);
   check("the popup is closed to begin with", await page.locator("#agentPop").isHidden());
   await page.click("#agentBtn");
   await page.waitForSelector("#agentPop:not([hidden])");
   await page.waitForSelector(".agent-hello");
   await page.waitForFunction(() => document.activeElement && document.activeElement.id === "agentText");     // focus is set a moment after opening
   check("opening it loads the chat and focuses the box", server.calls.some((c) => c[0] === "get") && (await page.evaluate(() => document.activeElement.id)) === "agentText");
-  check("it says what Hermes can't do", (await page.locator("#agentPop").innerText()).includes("can't see your email"));
+  check("it says what Hermes can look at and can't do", (await page.locator("#agentPop").innerText()).includes("can't change anything"));
   await shot(page, "agent-empty");
   await page.fill("#agentText", "How do I start my day?");
   await page.keyboard.press("Enter");

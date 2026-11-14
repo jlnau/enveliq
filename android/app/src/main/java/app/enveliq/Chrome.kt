@@ -222,3 +222,15 @@ internal fun KeyIcon(tint: Color, modifier: Modifier = Modifier.size(22.dp)) = C
     drawLine(tint, Offset(17.5f * u, 12f * u), Offset(17.5f * u, 15.5f * u), strokeWidth = 2f * u, cap = StrokeCap.Round)
     drawLine(tint, Offset(21f * u, 12f * u), Offset(21f * u, 15.5f * u), strokeWidth = 2f * u, cap = StrokeCap.Round)
 }
+
+/** A folder outline: "move to a folder". */
+@Composable
+internal fun FolderIcon(tint: Color, modifier: Modifier = Modifier.size(24.dp)) = Canvas(modifier) {
+    val u = size.width / 24f
+    val st = Stroke(width = 2f * u, cap = StrokeCap.Round)
+    val p = androidx.compose.ui.graphics.Path().apply {
+        moveTo(3f * u, 7f * u); lineTo(3f * u, 18f * u); lineTo(21f * u, 18f * u); lineTo(21f * u, 9f * u)
+        lineTo(12f * u, 9f * u); lineTo(10f * u, 6f * u); lineTo(4f * u, 6f * u); close()
+    }
+    drawPath(p, tint, style = st)
+}

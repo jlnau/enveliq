@@ -101,11 +101,10 @@ object Notifier {
         context.getSystemService(NotificationManager::class.java).notify(id, note)
     }
 
-    /** A plain note for messages, notes, tasks or parcels. The words are the same on and off the lock screen: they say nothing private. */
+    /** A plain note for notes, tasks or parcels. The words are the same on and off the lock screen: they say nothing private. */
     fun other(context: Context, kind: String, text: String, quiet: Boolean) {
         if (!canNotify(context)) return
         val title = when (kind) {
-            "messages" -> "New message"
             "tasks" -> "A task is due"
             "shipping" -> "A parcel needs you"
             "summary" -> "Your day"
@@ -143,8 +142,14 @@ object Notifier {
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
             builder.setContentIntent(open)
-            builder.addAction(action(context, id, 1, "Reviewed", m, Outcome.Reviewed))
-            builder.addAction(action(context, id, 2, "Archive", m, Outcome.Archived))
+            // A sign-in or verification code gets a one-tap "Copy code" button (the lock screen still shows nothing private).
+            CodeFinder.find(m.subject, m.summary)?.let { code ->
+                val copy = Intent(context, CopyCodeReceiver::class.java).putExtra("code", code).putExtra("nid", id)
+                val pi = PendingIntent.getBroadcast(context, id * 10 + 3, copy, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+                builder.addAction(Notification.Action.Builder(Icon.createWithResource(context, R.drawable.ic_notification), "Copy code $code", pi).build())
+            }
+            builder.addAction(action(context, id, 1, "Archive", m, Outcome.Archived))
+            builder.addAction(action(context, id, 2, "Delete", m, Outcome.Binned))      // Delete moves the email to the Bin, like the Bin button in the app
         } else {
             builder.setContentTitle("${mails.size} new emails")
             builder.setContentText(mails.take(3).joinToString(", ") { it.sender })

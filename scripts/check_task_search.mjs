@@ -1,4 +1,4 @@
-// Browser check for the task search box: typing part of a task's words lists only the tasks that have them (open and done), in every task view.
+// Browser check for the task search box: typing part of a task's words lists only the tasks that have them (open and done), and keeps working around the Calendar pop-up.
 // The page is loaded from a pretend Enveliq server (Playwright intercepts the requests), so this needs no Python.
 //   node scripts/check_task_search.mjs [path/to/prototype/index.html]     (SHOTS=<dir> saves screenshots)
 import { chromium } from "playwright";
@@ -45,7 +45,7 @@ const handler = async (route) => {
 const browser = await chromium.launch();
 const run = async (width, height) => {
   const context = await browser.newContext({ viewport: { width, height } });
-  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-view", JSON.stringify({ layout: "list" })); localStorage.setItem("enveliq-task-mode", "list"); } catch (e) {} });
+  await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); localStorage.setItem("enveliq-view", JSON.stringify({ layout: "list" })); } catch (e) {} });
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
@@ -79,15 +79,11 @@ const titles = (page) => page.locator("#tasksPage").innerText();
   await page.locator("#taskSearch").fill("");
   await page.waitForFunction(() => /school form/.test(document.getElementById("tasksPage").innerText));
   check("clearing the box brings every task back", true);
-  await page.locator('[data-task-mode="focus"]').click();
+  await page.locator("[data-cal-open]").click();
+  await page.waitForSelector("#calPop:not([hidden])");
+  await page.locator("[data-cal-close]").click();
   await page.waitForSelector("#taskSearch");
-  await page.locator("#taskSearch").fill("school");
-  await page.waitForFunction(() => /1 task matches/.test(document.getElementById("tasksPage").innerText));
-  check("searching works in the Focus view too", /school form/.test(await titles(page)));
-  await page.locator("#taskSearch").fill("");
-  await page.locator('[data-task-mode="calendar"]').click();
-  await page.waitForSelector("#taskSearch");
-  check("and the box is there in the Calendar view", true);
+  check("the search box is still there after the Calendar pop-up closes", true);
   check("no script errors", errors.length === 0);
   await context.close();
 }

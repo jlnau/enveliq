@@ -24,3 +24,7 @@ Besides the ready-made times, **Pick date and time** lets you choose any day and
 A waiting email is your own words (addresses, subject and text), kept encrypted inside the vault until it is sent or taken back, then deleted. It survives a restart of Enveliq. This is different from **Undo send** (see [Undo](UNDO.md)), which only holds an email for a few seconds in memory.
 
 Routes: `GET /api/v1/me/scheduled`, `POST /api/v1/me/scheduled`, `DELETE /api/v1/me/scheduled/{id}`. A background job checks every 15 seconds. The backup export includes your waiting emails under "emails to send later".
+
+## High importance
+
+If you tick **Send with high importance** under More options, a scheduled email keeps it and goes out with the standard importance marks (`Importance: high`). Nothing else about the email changes.

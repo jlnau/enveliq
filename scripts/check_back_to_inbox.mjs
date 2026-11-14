@@ -1,4 +1,4 @@
-// Browser check for moving around: a "Back to My inbox" button on every other page, Inbox options on Needs action and the other email pages,
+// Browser check for moving around: no "Back to My inbox" button on any page, one small page heading in the same place on every page, Inbox options on Needs action and the other email pages,
 // and the full-screen email sitting beside the left menu with normal-sized buttons.
 // Uses the demo build (made-up mail, no server).
 // Usage: node scripts/check_back_to_inbox.mjs      Set SHOTS=<folder> to save screenshots.
@@ -31,39 +31,32 @@ const p = await ctx.newPage(); const errors = []; p.on("pageerror", (e) => error
 await p.goto(origin + "/"); await p.waitForTimeout(1200);
 await p.evaluate(() => document.querySelector(".demo-banner")?.remove());
 const vis = (sel) => p.locator(sel).isVisible();
-check("My inbox: there is no Back button", !(await vis("#backInbox")) && (await p.locator(".top-left h2").innerText()) === "My inbox");
+check("My inbox: there is no Back button anywhere", (await p.locator("#backInbox").count()) === 0 && (await p.locator(".top-left h2").innerText()) === "My inbox");
 await p.click('.nav[data-filter="action"]'); await p.waitForTimeout(300);
-check("Needs action: the title is the page name and a Back to My inbox button shows above it", (await p.locator(".top-left h2").innerText()) === "Needs action" && await vis("#backInbox") && /Back to My inbox/.test(await p.locator("#backInbox").innerText()) && await p.evaluate(() => document.getElementById("backInbox").getBoundingClientRect().bottom <= document.querySelector(".top-left h2").getBoundingClientRect().top + 2));
+check("Needs action: the title is the page name, with no Back button", (await p.locator(".top-left h2").innerText()) === "Needs action" && (await p.locator("#backInbox").count()) === 0 && !/need you/.test(await p.locator("#inboxSubtitle").innerText()));
 check("Needs action: the Recent emails panel with Inbox options shows, same as My inbox", await vis("#previewListHeading") && await vis("#previewInboxOptions"));
 await p.click("#previewInboxOptions"); await p.waitForTimeout(200);
 check("Needs action: Inbox options opens the filters and closes again", await vis(".filters") && (await p.locator("#previewInboxOptions").getAttribute("aria-expanded")) === "true");
 await p.click("#previewInboxOptions"); await p.waitForTimeout(200);
 check("Needs action: Inbox options closes", !(await vis(".filters")));
 await p.click('.nav[data-filter="tasks"]'); await p.waitForTimeout(300);
-check("Tasks: the title is Tasks and the Back button shows", (await p.locator(".top-left h2").innerText()) === "Tasks" && await vis("#backInbox") && !(await vis("#previewListHeading")));
+check("Tasks: the title is Tasks", (await p.locator(".top-left h2").innerText()) === "Tasks" && !(await vis("#previewListHeading")));
 await p.evaluate(() => { document.querySelector("[data-view-list], [data-tview=list]")?.click(); });
 check("Tasks: the lists use the full width of the page, not a narrow column", await p.evaluate(() => { const g = document.querySelector("#tasksPage .tgroup, #tasksPage .tp-head"), page = document.querySelector("#tasksPage"); return !g || g.getBoundingClientRect().width > page.getBoundingClientRect().width * 0.9; }));
 if (shots) await p.screenshot({ path: path.join(shots, "back-tasks.png") });
-await p.click("#backInbox"); await p.waitForTimeout(300);
-check("Back to My inbox goes home and lights up My inbox in the menu", (await p.locator(".top-left h2").innerText()) === "My inbox" && !(await vis("#backInbox")) && (await p.locator('.nav[data-filter="all"].active').count()) === 1);
+await p.click('.nav[data-filter="all"]'); await p.waitForTimeout(300);
 await p.evaluate(() => { document.getElementById("sentNav").hidden = false; });
-await p.click('.nav[data-filter="sent"]'); await p.waitForTimeout(400);
-const sentGeo = await p.evaluate(() => { const r = (q) => document.querySelector(q).getBoundingClientRect(), h = document.querySelector(".top-left h2"); return { back: r("#backInbox").left, title: h.getBoundingClientRect().left, size: getComputedStyle(h).fontSize, font: getComputedStyle(h).fontFamily }; });
+await p.evaluate(() => document.querySelector('.nav[data-filter="sent"]').click()); await p.waitForTimeout(400);
+const sentGeo = await p.evaluate(() => { const r = (q) => document.querySelector(q).getBoundingClientRect(), h = document.querySelector(".top-left h2"); return { title: h.getBoundingClientRect().left, top: h.getBoundingClientRect().top, size: getComputedStyle(h).fontSize, font: getComputedStyle(h).fontFamily }; });
 await p.click('.nav[data-filter="archived"]'); await p.waitForTimeout(300);
 if (shots) await p.screenshot({ path: path.join(shots, "back-archived.png") });
-const arcGeo = await p.evaluate(() => { const r = (q) => document.querySelector(q).getBoundingClientRect(), h = document.querySelector(".top-left h2"); return { back: r("#backInbox").left, title: h.getBoundingClientRect().left, size: getComputedStyle(h).fontSize, font: getComputedStyle(h).fontFamily }; });
-await p.click('.nav[data-filter="sent"]'); await p.waitForTimeout(300);
-check("Sent: it uses the same page header as the other pages (Back to My inbox, then the title \"Sent\")", await vis("#backInbox") && /Back to My inbox/.test(await p.locator("#backInbox").innerText()) && (await p.locator(".top-left h2").innerText()) === "Sent");
-check("Sent: the Back button, the title, the title's size and its font are in the same place and style as on Archived", Math.abs(sentGeo.back - arcGeo.back) <= 1 && Math.abs(sentGeo.title - arcGeo.title) <= 1 && sentGeo.size === arcGeo.size && sentGeo.font === arcGeo.font);
-const before = await p.evaluate(() => ({ t: document.querySelector(".top-left h2").getBoundingClientRect().left, b: document.querySelector("#backInbox").getBoundingClientRect().left, n: document.querySelector(".sent-note").getBoundingClientRect().left }));
-await p.evaluate(() => { const l = document.getElementById("sentList"); l.innerHTML = Array.from({ length: 80 }, (_, i) => `<div style="height:46px">row ${i}</div>`).join(""); });
-await p.waitForTimeout(200);
-const after = await p.evaluate(() => ({ t: document.querySelector(".top-left h2").getBoundingClientRect().left, b: document.querySelector("#backInbox").getBoundingClientRect().left, n: document.querySelector(".sent-note").getBoundingClientRect().left, long: document.documentElement.scrollHeight > innerHeight }));
-check("Sent: nothing moves sideways when the emails load and the page becomes long enough to scroll", after.long && Math.abs(after.t - before.t) < 0.5 && Math.abs(after.b - before.b) < 0.5 && Math.abs(after.n - before.n) < 0.5);
-check("Sent: the line under the title says what the page is, like the other pages, not the inbox summary", /last 4 months of sent mail/.test(await p.locator("#inboxSubtitle").innerText()) && !/need you/.test(await p.locator("#inboxSubtitle").innerText()));
+const arcGeo = await p.evaluate(() => { const r = (q) => document.querySelector(q).getBoundingClientRect(), h = document.querySelector(".top-left h2"); return { title: h.getBoundingClientRect().left, top: h.getBoundingClientRect().top, size: getComputedStyle(h).fontSize, font: getComputedStyle(h).fontFamily }; });
+await p.evaluate(() => document.querySelector('.nav[data-filter="sent"]').click()); await p.waitForTimeout(300);
+check("Sent: the title is \"Sent\" and there is no Back button", (await p.locator("#backInbox").count()) === 0 && (await p.locator(".top-left h2").innerText()) === "Sent");
+check("Sent: the line under the title says what the page is, not the inbox summary", !/need you/.test(await p.locator("#inboxSubtitle").innerText()));
 if (shots) await p.screenshot({ path: path.join(shots, "back-sent.png") });
-await p.click("#backInbox"); await p.waitForTimeout(300);
-check("Sent: Back to My inbox goes home and lights up My inbox in the menu", (await p.locator(".top-left h2").innerText()) === "My inbox" && !(await vis("#sentView")) && (await p.locator('.nav[data-filter="all"].active').count()) === 1);
+await p.click('.nav[data-filter="all"]'); await p.waitForTimeout(300);
+check("My inbox is the page after the menu item is pressed again, and My inbox is lit in the menu", (await p.locator(".top-left h2").innerText()) === "My inbox" && !(await vis("#sentView")) && (await p.locator('.nav[data-filter="all"].active').count()) === 1);
 check("The Settings icon in the left menu is the same cogwheel as in the name menu (not a sun)", await p.evaluate(() => document.querySelector("#sideSettings svg").innerHTML.replace(/\s+/g, "") === document.querySelector("#settingsBtn svg").innerHTML.replace(/\s+/g, "")));
 // Open full screen
 await p.evaluate(() => { view.layout = "screen"; readerOpen = true; render(); });

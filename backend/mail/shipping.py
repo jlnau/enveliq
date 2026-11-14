@@ -40,6 +40,16 @@ RANK = {"ordered": 0, "shipped": 1, "out_for_delivery": 2, "delivered": 3}
 ACTIONS = ("confirm", "not_yet", "not_order", "track", "undo", "remove")
 HAND_STATUSES = ("ordered", "shipped", "out_for_delivery", "delivered")      # what a person can pick for an order they enter by hand
 
+# The AI sometimes calls an order confirmation or a "shipped" email "delivered". The subject line settles it: an email whose
+# subject says the order was placed or is on its way, and never says it arrived, cannot be a delivery.
+_SAYS_ARRIVED = re.compile(r"\b(delivered|arrived|has arrived|was delivered|left at|handed over|collected|ready for collection|ready to collect)\b", re.I)
+_SAYS_SHIPPED = re.compile(r"\b(shipped|shipment|on (its|the) way|dispatched|despatched|out for delivery)\b", re.I)
+# Phrases about the future or about what to do later are not a delivery: "will be delivered", "until it is delivered", "not yet delivered".
+_FUTURE = re.compile(r"\b(?:(?:will|would|should|shall|can|may|to|going to)\s+(?:soon\s+|shortly\s+)?(?:be\s+)?(?:\w+\s+){0,2}?(?:delivered|arrive|arrived)|(?:not|never|yet to be|yet to)\s+(?:yet\s+)?(?:been\s+)?(?:delivered|arrived)|(?:until|once|when|if|after|before|as soon as)\s+(?:\w+\s+){0,4}?(?:delivered|arrives?|arrived))\b", re.I)
+# Out for delivery is only ever shown when the email says so in so many words (or says the courier is a few stops away or arriving today).
+_OUT_FOR = re.compile(r"\b(out for delivery|on board for delivery|on vehicle for delivery|with (?:the |our |a )?(?:driver|courier) (?:for|today|now)|a few stops away|arriving today|will be delivered today|being delivered today)\b", re.I)
+_SAYS_ORDERED = re.compile(r"^\W*(ordered\b|order\b.{0,20}\b(confirm|received|placed)|thanks? for your order|your order\b.{0,20}\b(confirm|received|placed)|we(?:'|\u2019)ve received your order)", re.I)
+
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 # Carrier name (lower case, as it appears in the email) -> tracking page. {n} is the tracking number.
@@ -201,13 +211,34 @@ class ShipBook:
             "expected_text": clean(raw.get("expected"), 60) or None,
         }
 
-    def observe(self, user_id: str | None, account_id: str, message_id: str, subject: str, received_at: float | None, shipment: Any) -> bool:
+    @staticmethod
+    def _strict_kind(kind: str, subject: str, text: str, tracking: str | None) -> str:
+        """The rules for each step, whatever the AI said (the subject and the start of the email are read here and never stored):
+        Delivered only when the email says it was delivered; Out for delivery only when it says so in so many words;
+        Ordered only when nothing in the email is about shipping; everything in between is Shipped."""
+        whole = subject + "\n" + text[:4000]
+        arrived = bool(_SAYS_ARRIVED.search(_FUTURE.sub(" ", whole)))
+        out_for = bool(_OUT_FOR.search(whole))
+        if kind == "delivered":
+            if arrived:
+                return "delivered"
+            if out_for:
+                return "out_for_delivery"
+            return "order_confirmed" if _SAYS_ORDERED.search(subject) and not _SAYS_SHIPPED.search(subject) else "shipped"
+        if kind == "out_for_delivery":
+            return "out_for_delivery" if out_for else "delivered" if arrived else "shipped"
+        if kind == "order_confirmed" and (tracking or _SAYS_SHIPPED.search(subject)):
+            return "shipped"
+        return kind
+
+    def observe(self, user_id: str | None, account_id: str, message_id: str, subject: str, received_at: float | None, shipment: Any, text: str = "") -> bool:
         """File what an email says about an order. Returns True when an order was added or changed."""
         if not user_id or not self.enabled(user_id):
             return False
         info = self._clean_shipment(shipment)
         if info is None or not (info["shop"] or info["order"] or info["tracking"]):
             return False
+        info["kind"] = self._strict_kind(info["kind"], subject or "", text or "", info["tracking"])
         now = self.clock()
         at = float(received_at) if received_at and 0 < received_at <= now + 86400 else now
         okey, tkey, skey = order_key(info["order"]), info["tracking"], shop_key(info["shop"])
@@ -222,9 +253,9 @@ class ShipBook:
                 return False
             order = None
             if okey:
-                order = next((o for o in book["orders"].values() if o.get("order_key") == okey), None)
+                order = next((o for o in book["orders"].values() if okey == o.get("order_key") or okey in (o.get("alt_order_keys") or [])), None)
             if order is None and tkey:
-                order = next((o for o in book["orders"].values() if o.get("tracking_key") == tkey), None)
+                order = next((o for o in book["orders"].values() if tkey == o.get("tracking_key") or tkey in (o.get("alt_tracking_keys") or [])), None)
             if order is None and not okey and skey:
                 # No order number: join the shop's one open order. When the email has a tracking number, that order must not have one yet.
                 open_same = [o for o in book["orders"].values()
@@ -236,7 +267,7 @@ class ShipBook:
                     return False
                 oid = "s" + secrets.token_hex(12)[:23]
                 order = {"id": oid, "shop": info["shop"] or None, "shop_key": skey, "order": None, "order_key": None, "carrier": None, "tracking": None,
-                         "tracking_key": None, "items": None, "status": STATUS_OF[info["kind"]], "expected": None, "expected_text": None, "prev_expected": None,
+                         "tracking_key": None, "items": None, "status": STATUS_OF[info["kind"]], "status_at": at, "expected": None, "expected_text": None, "prev_expected": None,
                          "delayed": False, "delivered_at": None, "ack": None, "snooze_until": 0, "unsure": not (okey or tkey), "first_seen": at, "updated": at,
                          "events": []}
                 book["orders"][oid] = order
@@ -260,9 +291,17 @@ class ShipBook:
             order["tracking"], order["tracking_key"] = tkey, tkey
         if (okey or tkey) and order.get("unsure") is True and (order.get("order_key") or order.get("tracking_key")):
             order["unsure"] = False
+        # The newest email decides where an order is up to, even if that moves it back (an email wrongly read as "out for delivery" is
+        # corrected by the next one). A later email that only confirms the order never moves a parcel back to Ordered. A change the person
+        # made by hand stands until an email newer than it arrives.
         status = STATUS_OF[info["kind"]]
-        if RANK[status] > RANK.get(order.get("status"), 0):
-            order["status"] = status
+        since = float(order.get("status_at") or max([e["at"] for e in order["events"]] + [float(order.get("first_seen") or 0)]))
+        if at >= since and not (status == "ordered" and RANK.get(order.get("status"), 0) > 0):
+            if status != order.get("status"):
+                order["status"] = status
+                if status != "delivered":
+                    order["delivered_at"], order["ack"], order["ack_at"] = None, None, None
+            order["status_at"], order["status_manual"] = at, False
         if order["status"] == "delivered" and not order.get("delivered_at"):
             order["delivered_at"] = at
         if info["expected_text"]:
@@ -341,11 +380,24 @@ class ShipBook:
             "id": o["id"], "shop": o.get("shop"), "order_number": o.get("order"), "carrier": o.get("carrier"), "tracking": o.get("tracking"),
             "items": o.get("items"), "total": o.get("total"), "note": o.get("note") or "", "status": o.get("status"), "expected": o.get("expected"), "expected_text": o.get("expected_text"),
             "prev_expected": o.get("prev_expected"), "delayed": bool(o.get("delayed")) and not delivered, "delivered_at": o.get("delivered_at"),
-            "ack": o.get("ack"), "unsure": bool(o.get("unsure")), "manual": bool(o.get("manual")),
+            "ack": o.get("ack"), "unsure": bool(o.get("unsure")), "manual": bool(o.get("manual")), "status_manual": bool(o.get("status_manual")),
             "needs_confirm": delivered and not o.get("unsure") and not o.get("ack") and float(o.get("snooze_until") or 0) <= now,
             "track_url": track_url(o.get("carrier"), o.get("tracking"), shared), "updated": o.get("updated"),
             "events": [{"at": e["at"], "kind": e["kind"], "subject": e["subject"], "m": e.get("m")} for e in reversed(o.get("events") or [])],
         }
+
+    @staticmethod
+    def _heal(o: dict[str, Any]) -> bool:
+        """An order that older versions wrongly moved past Ordered, when every email filed for it is only an order confirmation,
+        goes back to Ordered. Never touches a change the person made by hand."""
+        events = o.get("events") or []
+        if o.get("status") not in ("shipped", "out_for_delivery", "delivered") or o.get("status_manual") or o.get("manual") or not events or o.get("tracking_key"):
+            return False
+        if not all(_SAYS_ORDERED.search(e.get("subject") or "") and not _SAYS_SHIPPED.search(e.get("subject") or "") for e in events):
+            return False
+        o["status"], o["status_at"] = "ordered", max(float(e["at"]) for e in events)
+        o["delivered_at"], o["ack"], o["ack_at"] = None, None, None
+        return True
 
     def view(self, user_id: str) -> dict[str, Any]:
         if not self.enabled(user_id):
@@ -353,7 +405,10 @@ class ShipBook:
         now = self.clock()
         with self._lock:
             book = self._load(user_id)
-            if self._purge(book, now):
+            fixed = self._purge(book, now)
+            for o in book["orders"].values():
+                fixed = self._heal(o) or fixed
+            if fixed:
                 self._save(user_id, book)
         shared = self.shared_carriers()
         rows = [self._row(o, now, shared) for o in book["orders"].values()]
@@ -400,7 +455,7 @@ class ShipBook:
         return self.view(user_id)
 
     def set_status(self, user_id: str, oid: str, status: Any) -> dict[str, Any]:
-        """Change where an order is up to. Only for orders the person entered by hand: for the others the emails decide."""
+        """Change where an order is up to, by hand. It stands until an email newer than this change says otherwise."""
         if status not in HAND_STATUSES:
             raise ValueError("bad status")
         now = self.clock()
@@ -409,14 +464,89 @@ class ShipBook:
             order = book["orders"].get(oid)
             if order is None:
                 raise KeyError(oid)
-            if not order.get("manual"):
-                raise ValueError("not by hand")
-            order["status"], order["updated"] = status, now
+            order["status"], order["status_at"], order["status_manual"], order["updated"], order["unsure"] = status, now, True, now, False
             if status == "delivered":
                 order["delivered_at"] = order.get("delivered_at") or now
                 order["ack"], order["ack_at"] = "got_it", now
             else:
                 order["delivered_at"], order["ack"], order["ack_at"] = None, None, None
+            self._save(user_id, book)
+        return self.view(user_id)
+
+    def set_status_many(self, user_id: str, ids: list[str], status: Any) -> dict[str, Any]:
+        """The same change of status for several orders at once (the ticked ones). Orders that are gone are skipped."""
+        if status not in HAND_STATUSES:
+            raise ValueError("bad status")
+        for oid in ids:
+            try:
+                self.set_status(user_id, oid, status)
+            except KeyError:
+                continue
+        return self.view(user_id)
+
+    def not_orders(self, user_id: str, ids: list[str]) -> dict[str, Any]:
+        """Several orders that are not orders at all: removed, and the same emails are not filed again."""
+        for oid in ids:
+            try:
+                self.act(user_id, oid, "not_order")
+            except KeyError:
+                continue
+        return self.view(user_id)
+
+    def merge(self, user_id: str, ids: list[str]) -> dict[str, Any]:
+        """Join two or more orders that are really one parcel (the shop's email and the courier's did not match up). The oldest one stays and
+        takes everything the others knew: their emails, order numbers and tracking numbers, so a later email from the shop or the courier
+        lands on the joined order. Raises ValueError("merge") unless at least two different orders are named."""
+        want = list(dict.fromkeys(ids))
+        now = self.clock()
+        with self._lock:
+            book = self._load(user_id)
+            orders = [book["orders"][i] for i in want if i in book["orders"]]
+            if len(orders) < 2:
+                raise ValueError("merge")
+            orders.sort(key=lambda o: float(o.get("first_seen") or 0))
+            keep, others = orders[0], orders[1:]
+            pool = orders
+
+            def newest(field: str) -> Any:
+                return max((o for o in pool if o.get(field)), key=lambda o: float(o.get("updated") or 0), default={}).get(field)
+
+            alt_orders = {k for o in pool for k in [o.get("order_key"), *(o.get("alt_order_keys") or [])] if k}
+            alt_tracks = {k for o in pool for k in [o.get("tracking_key"), *(o.get("alt_tracking_keys") or [])] if k}
+            for field in ("shop", "shop_key", "carrier", "total"):
+                keep[field] = keep.get(field) or newest(field)
+            if not keep.get("order_key"):
+                src = next((o for o in others if o.get("order_key")), None)
+                if src:
+                    keep["order"], keep["order_key"] = src["order"], src["order_key"]
+            if not keep.get("tracking_key"):
+                src = next((o for o in others if o.get("tracking_key")), None)
+                if src:
+                    keep["tracking"], keep["tracking_key"] = src["tracking"], src["tracking_key"]
+            keep["alt_order_keys"] = sorted(alt_orders - {keep.get("order_key")})[:10]
+            keep["alt_tracking_keys"] = sorted(alt_tracks - {keep.get("tracking_key")})[:10]
+            items = [o["items"] for o in pool if o.get("items")]
+            keep["items"] = max(items, key=len) if items else None
+            notes = [o["note"] for o in pool if o.get("note")]
+            keep["note"] = "\n".join(dict.fromkeys(notes))[:500]
+            latest = max(pool, key=lambda o: float(o.get("expected_at") or 0))
+            for field in ("expected", "expected_text", "expected_at", "prev_expected"):
+                keep[field] = latest.get(field)
+            keep["delayed"] = bool(latest.get("delayed"))
+            # Where it is up to: the most recent word (an email or the person's own change); but a parcel that has moved on is not sent back to Ordered.
+            lead = max(pool, key=lambda o: float(o.get("status_at") or o.get("updated") or 0))
+            best = max(pool, key=lambda o: RANK.get(o.get("status"), 0))
+            pick = best if RANK.get(lead.get("status"), 0) == 0 and RANK.get(best.get("status"), 0) > 0 else lead
+            keep["status"], keep["status_at"], keep["status_manual"] = pick.get("status"), pick.get("status_at") or pick.get("updated"), bool(pick.get("status_manual"))
+            keep["delivered_at"], keep["ack"], keep["ack_at"] = pick.get("delivered_at"), pick.get("ack"), pick.get("ack_at")
+            keep["snooze_until"] = pick.get("snooze_until") or 0
+            keep["events"] = sorted((e for o in pool for e in o["events"]), key=lambda e: e["at"])[-MAX_EVENTS:]
+            keep["manual"] = all(o.get("manual") for o in pool)
+            keep["unsure"] = all(o.get("unsure") for o in pool)
+            keep["first_seen"] = min(float(o.get("first_seen") or now) for o in pool)
+            keep["updated"] = max(float(o.get("updated") or 0) for o in pool)
+            for o in others:
+                book["orders"].pop(o["id"], None)
             self._save(user_id, book)
         return self.view(user_id)
 

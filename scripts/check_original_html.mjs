@@ -88,7 +88,9 @@ for (const [name, w, h] of [["computer", 1200, 900], ["phone", 390, 800]]) {
   check(`[${name}] tables and their background colours are kept`, await inner.locator("table").evaluate((e) => getComputedStyle(e).backgroundColor === "rgb(255, 238, 170)"));
   await page.waitForFunction(() => document.querySelector("iframe.email-frame").offsetHeight > 150);
   check(`[${name}] the frame grows to the height of the email (one page, no inner scrolling)`, (await frame.evaluate((e) => e.offsetHeight)) > 150);
+  if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + `/original-${name}.png` });
   check(`[${name}] a picture inside the email is shown`, await inner.locator("img[alt='logo']").evaluate((e) => e.complete && e.naturalWidth > 0));
+  check(`[${name}] the paper behind the email has a very slight tint, and the email is blended onto it`, await page.evaluate(() => { const d = getComputedStyle(document.querySelector(".email-doc")).backgroundColor, f = getComputedStyle(document.querySelector("iframe.email-frame")); return d === "rgb(246, 243, 236)" && f.mixBlendMode === "multiply"; }));
   check(`[${name}] no script in the email ran`, (await page.evaluate(() => window.__pwned)) === undefined);
   check(`[${name}] the picture from the internet is held back, with a button to show it`, (await page.locator(".fmt-pics").count()) === 1 && (await inner.locator("img[data-blocked]").count()) >= 1);
   await inner.locator("a", { hasText: "Shop now" }).click();
@@ -119,6 +121,18 @@ for (const [name, w, h] of [["computer", 1200, 900], ["phone", 390, 800]]) {
   await viewOriginal(page, "Broken formatted");
   await page.waitForFunction(() => document.querySelector("pre.email-text") && document.querySelector("pre.email-text").offsetParent !== null, null, { timeout: 15000 });
   check("if the formatted email cannot be opened, the plain text is shown instead", await page.locator("pre.email-text").isVisible());
+  await context.close();
+}
+{
+  const { page, context } = await open(1200, 900);
+  await page.evaluate(() => document.getElementById("customiseBtn").click());
+  await page.waitForSelector('#viewPanel [data-view="paper"]');
+  check("Customise has an Original email background choice with White, Soft and Softer, Soft chosen at first", (await page.locator('#viewPanel [data-view="paper"]').count()) === 3 && (await page.locator('#viewPanel [data-view="paper"][data-val="soft"]').getAttribute("aria-checked")) === "true");
+  await page.click('#viewPanel [data-view="paper"][data-val="white"]');
+  await page.evaluate(() => document.getElementById("viewPanel") && 0);
+  check("choosing White gives plain white paper, everywhere", (await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--paper").trim())) === "#fff");
+  await page.click('#viewPanel [data-view="paper"][data-val="softer"]');
+  check("choosing Softer gives a slightly deeper tint", (await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--paper").trim())) === "#ece7da");
   await context.close();
 }
 await browser.close();

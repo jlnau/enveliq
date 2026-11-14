@@ -20,6 +20,7 @@ PLAIN_RECORDS = {
     "trips": "trips:",
     "junk_mail": "junk:",
     "muted_conversations": "muted:",
+    "recent_and_saved_searches": "searches:",
     "away_reply": "away:",
     "waiting_for_replies": "wait:",
     "writing_help": "writehelp:",
@@ -46,7 +47,7 @@ def strip_secrets(value: Any) -> Any:
 
 
 def build_exporter(vault: Any, users: Any, *, public_account: Callable, public_message: Callable, principal_of: Callable,
-                   prefs: Callable, contacts_of: Callable, threads_of: Callable, notify_state: Callable, sync_state: Callable) -> Callable[[str], dict[str, Any]]:
+                   prefs: Callable, contacts_of: Callable, notify_state: Callable, sync_state: Callable) -> Callable[[str], dict[str, Any]]:
     def export(user_id: str) -> dict[str, Any]:
         user = users.get(user_id)
         me = principal_of(user)
@@ -68,7 +69,6 @@ def build_exporter(vault: Any, users: Any, *, public_account: Callable, public_m
         for key, prefix in PLAIN_RECORDS.items():
             out[key] = strip_secrets(vault.get_global(prefix + user_id) or {})
         out["address_book"] = contacts_of(user_id)
-        out["conversations"] = threads_of(user_id)
         out["notification_settings"] = notify_state(user_id)
         out["calendar_settings"] = sync_state(user_id)
         return out

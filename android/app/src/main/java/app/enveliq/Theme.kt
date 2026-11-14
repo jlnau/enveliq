@@ -22,10 +22,24 @@ import androidx.core.view.WindowCompat
 object Look {
     var theme by mutableStateOf("system")
     var textScale by mutableStateOf(1f)
+    /** The highlight colour: blue (the app's own), green, purple, orange, pink or teal. It is the colour of buttons, links and chosen items. */
+    var highlight by mutableStateOf("blue")
+
+    val highlights = listOf("blue" to "Blue", "green" to "Green", "purple" to "Purple", "orange" to "Orange", "pink" to "Pink", "teal" to "Teal")
+
+    fun accent(dark: Boolean): Color = when (highlight) {
+        "green" -> if (dark) Color(0xFF3DDC97) else Color(0xFF1B9A66)
+        "purple" -> if (dark) Color(0xFF9B7BFF) else Color(0xFF6B46D6)
+        "orange" -> if (dark) Color(0xFFFF9A3D) else Color(0xFFC76A0A)
+        "pink" -> if (dark) Color(0xFFFF6FAE) else Color(0xFFC93C80)
+        "teal" -> if (dark) Color(0xFF26C6D0) else Color(0xFF0E8C96)
+        else -> if (dark) Color(0xFF2F7BFF) else Color(0xFF1F62E0)
+    }
 
     fun load(prefs: SharedPreferences) {
         theme = prefs.getString("theme", "system") ?: "system"
         textScale = scaleOf(prefs.getString("text_size", "normal") ?: "normal")
+        highlight = (prefs.getString("highlight", "blue") ?: "blue").let { h -> if (highlights.any { it.first == h }) h else "blue" }
     }
 
     fun scaleOf(size: String): Float = when (size) { "large" -> 1.15f; "larger" -> 1.3f; else -> 1f }
@@ -40,7 +54,7 @@ val Navy: Color get() = if (Pal.dark) Color(0xFF0B1220) else Color(0xFFF3F5F9)
 val Panel: Color get() = if (Pal.dark) Color(0xFF111826) else Color(0xFFFFFFFF)
 val PanelHigh: Color get() = if (Pal.dark) Color(0xFF172033) else Color(0xFFE8EDF5)
 val Line: Color get() = if (Pal.dark) Color(0xFF232A36) else Color(0xFFD9E0EA)
-val Blue: Color get() = if (Pal.dark) Color(0xFF2F7BFF) else Color(0xFF1F62E0)
+val Blue: Color get() = Look.accent(Pal.dark)
 val Ink: Color get() = if (Pal.dark) Color(0xFFE8EDF5) else Color(0xFF142033)
 val Muted: Color get() = if (Pal.dark) Color(0xFF93A0B5) else Color(0xFF55657B)
 val Green: Color get() = if (Pal.dark) Color(0xFF3DDC97) else Color(0xFF1B9A66)
@@ -90,6 +104,6 @@ fun EnveliqTheme(content: @Composable () -> Unit) {
     }
     val density = LocalDensity.current
     CompositionLocalProvider(LocalDensity provides Density(density.density, density.fontScale * Look.textScale)) {
-        MaterialTheme(colorScheme = if (dark) darkScheme else lightScheme, content = content)
+        MaterialTheme(colorScheme = (if (dark) darkScheme else lightScheme).copy(primary = Look.accent(dark)), content = content)
     }
 }
