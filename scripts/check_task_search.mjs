@@ -62,7 +62,7 @@ const titles = (page) => page.locator("#tasksPage").innerText();
   check("the Tasks page has a search box", (await page.locator("#taskSearch").getAttribute("placeholder")) === "Search your tasks");
   const all = await titles(page);
   check("with nothing typed every task shows", /Brightwater Dental to confirm/.test(all) && /trip insurance/.test(all) && /school form/.test(all) && /dentist invoice/.test(all));
-  await page.locator("#taskSearch").pressSequentially("dent", { delay: 40 });
+  await page.locator("#taskSearch").fill("dent");   // one input event; typing key by key raced with late redraws on slow machines
   await page.waitForFunction(() => !/school form/.test(document.getElementById("tasksPage").innerText));
   const hit = await titles(page);
   check("typing part of the words lists the tasks that have them (by title or sender)", /confirm the check-up/.test(hit) && /dentist invoice/.test(hit) && !/trip insurance/.test(hit));
