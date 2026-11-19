@@ -40,6 +40,7 @@ const handler = async (route) => {
   if (p === "/api/v1/admin/sso") return json(200, { enabled: false, label: "Sign in", issuer: "", client_id: "", scopes: "openid", auto_create: true, allowed_groups: [], admin_groups: [], groups_claim: "groups", username_claim: "preferred_username", require_email_verified: false, client_secret_set: false, redirect_uri: ORIGIN + "/cb" });
   if (p === "/api/v1/admin/backups" && m === "GET") return json(200, view());
   if (p === "/api/v1/admin/backups" && m === "POST") { madeCount++; backups = [{ name: "enveliq-20261011-100000-manual.sqlite3", kind: "manual", at: 1791712800, bytes: 500000 }, ...backups]; return json(200, { ...view(), made: backups[0].name }); }
+  if (p === "/api/v1/admin/export-for-mail" && m === "POST") { exportBody = JSON.parse(req.postData() || "{}"); return json(200, { name: "enveliq-for-mail-20261011-100000.zip", bytes: 2500000, vault_unlock: "key", has_bridge_certificate: true }); }
   if (p === "/api/v1/admin/backups/settings" && m === "PUT") { lastSettings = JSON.parse(req.postData() || "{}"); settings = lastSettings; return json(200, view()); }
   if (/^\/api\/v1\/admin\/backups\/[^/]+\/restore$/.test(p)) {
     restoreBody = JSON.parse(req.postData() || "{}");
@@ -54,6 +55,7 @@ const handler = async (route) => {
 
 const browser = await chromium.launch();
 const shot = async (page, name) => { if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, name + ".png") }); };
+let exportBody = null;
 async function open(width, height, tab, wait) {
   const context = await browser.newContext({ viewport: { width, height } });
   await context.addInitScript(() => { try { localStorage.setItem("enveliq-welcome-seen", "1"); } catch (e) {} });
@@ -83,6 +85,14 @@ async function open(width, height, tab, wait) {
   check("each backup says what kind it is", /Daily backup/.test(text) && /Saved by you/.test(text));
   check("each backup can be downloaded from the server with a plain link", (await host.locator("a.btn", { hasText: "Download" }).count()) === 2 && (await host.locator("a.btn", { hasText: "Download" }).first().getAttribute("href")) === "/api/v1/admin/backups/" + NAMES[0] + "/download");
   check("restoring is folded away", (await host.locator("details:not([open]) summary", { hasText: "Restore this backup" }).count()) === 2);
+  check("the page offers a move to the new Mail, and says the key is not in the zip", /Move to the new Mail/.test(text) && /passphrase or key is not in the zip/.test(text));
+  await host.locator("#mx_pw").fill("a-made-up-password");
+  await host.locator("#mx_word").fill("EXPORT");
+  await host.locator("button", { hasText: "Make the export" }).click();
+  await page.waitForTimeout(500);
+  const zipLink = host.locator("a.btn", { hasText: "Download the zip" });
+  check("the export asks the server with the password and the typed word", exportBody && exportBody.confirm === "EXPORT" && exportBody.password === "a-made-up-password");
+  check("the export gives a plain download link and says to keep the key", (await zipLink.count()) === 1 && /enveliq-for-mail-20261011-100000\.zip$/.test(await zipLink.getAttribute("href")) && /keep a copy of that key/.test(await host.text()));
   await host.locator("button", { hasText: "Make a backup now" }).click();
   await page.waitForTimeout(600);
   check("Make a backup now adds one to the list", madeCount === 1 && (await host.locator(".bkrow").count()) === 3);
