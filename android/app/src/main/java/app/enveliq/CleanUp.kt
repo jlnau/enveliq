@@ -40,9 +40,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-// Clean up: the mailing lists that fill the inbox. Same server route as the website. Enveliq only reads who each email is from, when, and
+// Clean up: the mailing lists that fill the inbox. Same server route as the website. Casier Mail only reads who each email is from, when, and
 // whether it has an unsubscribe link. The Unsubscribe button opens the sender's own page in the browser after the usual link check (or a
-// mail to the sender's address); Enveliq never opens it itself. Nothing is deleted: Archive moves email and marks it read, and Undo lasts ten minutes.
+// mail to the sender's address); Casier Mail never opens it itself. Nothing is deleted: Archive moves email and marks it read, and Undo lasts ten minutes.
 
 private fun agoWords(now: Long, then: Long): String {
     if (then <= 0) return ""
@@ -143,7 +143,7 @@ internal fun CleanUpPage(api: EnveliqApi, onBack: () -> Unit) {
                 }
                 if (stepping && left.isNotEmpty()) item { OutlinedButton(onClick = { skipped.add(left[0].id) }, modifier = Modifier.fillMaxWidth().height(48.dp), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Line)) { Text("Skip for now", color = Ink) } }
                 if (d.kept > 0) item { TextButton(onClick = { run({ api.showKeptSenders() }) }) { Text("Show the ${d.kept} you kept again", color = Blue) } }
-                item { Text("Enveliq only reads who each email is from, when, and whether it has an unsubscribe link. It keeps nothing about the senders except the ones you chose to keep.", color = Muted, fontSize = 12.sp, lineHeight = 17.sp, modifier = Modifier.padding(bottom = 24.dp)) }
+                item { Text("Casier Mail only reads who each email is from, when, and whether it has an unsubscribe link. It keeps nothing about the senders except the ones you chose to keep.", color = Muted, fontSize = 12.sp, lineHeight = 17.sp, modifier = Modifier.padding(bottom = 24.dp)) }
             }
         }
     }

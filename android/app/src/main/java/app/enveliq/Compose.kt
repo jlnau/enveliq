@@ -517,7 +517,7 @@ fun ComposeScreen(target: ComposeTarget, api: EnveliqApi, onClose: () -> Unit, o
             title = { Text("Send later", color = Ink) },
             text = {
                 Column {
-                    Text("Enveliq keeps it, and sends it from your mailbox at that time. Files cannot wait.", color = Muted, fontSize = 13.sp)
+                    Text("Casier Mail keeps it, and sends it from your mailbox at that time. Files cannot wait.", color = Muted, fontSize = 13.sp)
                     TextButton(onClick = { pick(System.currentTimeMillis() + 3 * 3600_000L, "in 3 hours") }) { Text("In 3 hours", color = Blue, fontSize = 16.sp) }
                     TextButton(onClick = {
                         val evening = at(0, 18)

@@ -216,8 +216,8 @@ private fun RuleForm(api: EnveliqApi, editing: Rule?, onClose: () -> Unit, onSav
                 Text("Snooze for", color = Muted, fontSize = 13.sp)
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     snoozeChoices.forEach { (h, t) ->
-                        Surface(onClick = { hours = h }, shape = RoundedCornerShape(20.dp), color = if (hours == h) androidx.compose.ui.graphics.Color(0xFF173056) else PanelHigh) {
-                            Text(t, color = if (hours == h) androidx.compose.ui.graphics.Color(0xFF8DB8FF) else Ink, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), maxLines = 1)
+                        Surface(onClick = { hours = h }, shape = RoundedCornerShape(20.dp), color = if (hours == h) Highlight else PanelHigh) {
+                            Text(t, color = if (hours == h) HighlightInk else Ink, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), maxLines = 1)
                         }
                     }
                 }

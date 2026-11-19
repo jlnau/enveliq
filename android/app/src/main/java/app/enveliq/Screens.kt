@@ -88,7 +88,7 @@ fun SignInScreen(initialAddress: String, notice: String, linkCode: String?, onLi
             try {
                 withContext(Dispatchers.IO) { EnveliqApi(address).checkConnection() }
                 checkOk = true
-                checkNote = "Enveliq answered at that address. You can sign in."
+                checkNote = "Casier Mail answered at that address. You can sign in."
             } catch (e: ApiException) {
                 checkOk = false
                 checkNote = e.message ?: "Could not reach that address."
@@ -234,11 +234,7 @@ fun SignInScreen(initialAddress: String, notice: String, linkCode: String?, onLi
     ) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
             // The name, then what it is for.
-            androidx.compose.foundation.Image(
-                painterResource(R.drawable.wordmark), contentDescription = "Enveliq",
-                contentScale = androidx.compose.ui.layout.ContentScale.Fit,
-                modifier = Modifier.padding(top = 36.dp).height(46.dp).widthIn(max = 180.dp),
-            )
+            Box(Modifier.padding(top = 36.dp)) { CasierBrand(46.dp) }
             Text("Turn email into clarity.", color = Muted, fontSize = 17.sp, modifier = Modifier.padding(top = 8.dp, bottom = 22.dp))
             if (notice.isNotEmpty()) {
                 Text(
@@ -260,8 +256,8 @@ fun SignInScreen(initialAddress: String, notice: String, linkCode: String?, onLi
                         // A pasted full address replaces the https:// that is already there instead of doubling it.
                         onValueChange = { address = it.replace(Regex("^https?://(?=https?://)", RegexOption.IGNORE_CASE), "") },
                         singleLine = true, shape = fieldShape, colors = fieldColors,
-                        label = { Text("Your Enveliq address") },
-                        placeholder = { Text("https://enveliq.example.com") },
+                        label = { Text("Your Casier address") },
+                        placeholder = { Text("https://casier.example.com") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -317,7 +313,7 @@ fun SignInScreen(initialAddress: String, notice: String, linkCode: String?, onLi
         ) {
             if (!needsCode) {
                 val open = { path: String ->
-                    try { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(EnveliqApi.normalise(address) + path))) } catch (_: Exception) { }
+                    try { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(EnveliqApi.siteOf(address) + "/mail" + path))) } catch (_: Exception) { }
                 }
                 val link = androidx.compose.ui.text.TextLinkStyles(androidx.compose.ui.text.SpanStyle(color = Blue, textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline))
                 Text(
@@ -337,7 +333,7 @@ fun SignInScreen(initialAddress: String, notice: String, linkCode: String?, onLi
                 enabled = !busy && (if (needsCode) code.isNotBlank() else addressReady && username.isNotBlank() && password.isNotBlank()),
                 modifier = Modifier.fillMaxWidth().height(54.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Blue, contentColor = Color.White, disabledContainerColor = PanelHigh, disabledContentColor = Muted),
+                colors = ButtonDefaults.buttonColors(containerColor = Blue, contentColor = OnBlue, disabledContainerColor = PanelHigh, disabledContentColor = Muted),
             ) {
                 if (busy) CircularProgressIndicator(Modifier.size(22.dp), color = Ink, strokeWidth = 2.dp)
                 else Text(if (needsCode) "Confirm" else "Sign in", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
@@ -380,8 +376,8 @@ fun LockScreen(onUnlock: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text("Enveliq", color = Blue, fontSize = 40.sp, fontWeight = FontWeight.ExtraBold)
-        Text("Enveliq is locked.", color = Ink, fontSize = 18.sp, modifier = Modifier.padding(top = 6.dp, bottom = 24.dp))
+        Text("Casier Mail", color = Blue, fontSize = 40.sp, fontWeight = FontWeight.ExtraBold)
+        Text("Casier Mail is locked.", color = Ink, fontSize = 18.sp, modifier = Modifier.padding(top = 6.dp, bottom = 24.dp))
         Button(onClick = onUnlock, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
             Text("Unlock", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
         }
@@ -397,8 +393,8 @@ fun WelcomeScreen(onDone: (openSettings: Boolean) -> Unit) {
             Text("You're in.", color = Ink, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 36.dp))
             Text("Three things worth knowing. You can change all of them later in Settings.", color = Muted, fontSize = 16.sp, lineHeight = 23.sp, modifier = Modifier.padding(top = 8.dp, bottom = 12.dp))
             WelcomeCard("✦", "Calm summaries", "Each email has a short summary, marked as written by the AI. It can be wrong, so open the original when it matters. Nothing is deleted until you choose Reviewed, Archive or Bin, and you can always Undo.")
-            WelcomeCard("🔔", "Alerts, if you want them", "Enveliq can tell you when an email is ready, only for the emails that matter to you if you like. The lock screen only says \"New email\". Choose this in Settings, Notifications.")
-            WelcomeCard("🔒", "A lock, if you want one", "Ask for your fingerprint, face or PIN to open Enveliq. Your email is never saved on this phone. Choose this in Settings, Security.")
+            WelcomeCard("🔔", "Alerts, if you want them", "Casier Mail can tell you when an email is ready, only for the emails that matter to you if you like. The lock screen only says \"New email\". Choose this in Settings, Notifications.")
+            WelcomeCard("🔒", "A lock, if you want one", "Ask for your fingerprint, face or PIN to open Casier Mail. Your email is never saved on this phone. Choose this in Settings, Security.")
         }
         Column(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 22.dp, vertical = 12.dp)) {
             Button(onClick = { onDone(false) }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
@@ -429,7 +425,7 @@ private fun WelcomeCard(symbol: String, title: String, text: String) {
 }
 
 /**
- * Shown once on this phone, before the inbox: the few things worth knowing before you use Enveliq. Pressing "I understand" is remembered
+ * Shown once on this phone, before the inbox: the few things worth knowing before you use Casier Mail. Pressing "I understand" is remembered
  * on this phone. The full terms are one tap away.
  */
 @Composable
@@ -443,9 +439,9 @@ fun TermsNotice(server: String, onAccept: () -> Unit) {
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 for (line in listOf(
-                    "Enveliq is free software, run by someone you know on their own server. It is provided as it is, with no warranty, and its author is not liable for loss or damage from using it.",
+                    "Casier Mail is free software, run by someone you know on their own server. It is provided as it is, with no warranty, and its author is not liable for loss or damage from using it.",
                     "The AI summaries can be wrong. Open the original email when it matters.",
-                    "Keep your own backups. Enveliq does not keep copies of your email.",
+                    "Keep your own backups. Casier Mail does not keep copies of your email.",
                     "If the AI summaries use an online AI service, the text of those emails is sent to that company.",
                 )) Text("\u2022  " + line, color = Ink, fontSize = 15.sp, lineHeight = 22.sp, modifier = Modifier.padding(bottom = 8.dp))
                 Text("You can read the full terms any time in Settings, About.", color = Muted, fontSize = 14.sp, lineHeight = 20.sp)
@@ -454,7 +450,7 @@ fun TermsNotice(server: String, onAccept: () -> Unit) {
         confirmButton = { TextButton(onClick = onAccept) { Text("I understand", color = Blue, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) } },
         dismissButton = {
             TextButton(onClick = {
-                try { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(EnveliqApi.normalise(server) + "/terms"))) } catch (_: Exception) { }
+                try { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(EnveliqApi.siteOf(server) + "/mail" + "/terms"))) } catch (_: Exception) { }
             }) { Text("Read the terms", color = Muted) }
         },
     )

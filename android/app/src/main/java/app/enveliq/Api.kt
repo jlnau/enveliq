@@ -50,7 +50,7 @@ fun whenText(seconds: Long): String {
 }
 
 /**
- * Talks to a real Enveliq over HTTPS, using the same sign-in and the same routes as the website.
+ * Talks to a real Casier Mail over HTTPS, using the same sign-in and the same routes as the website.
  * The signed-in session is a cookie held in memory only: it is never written to the phone's storage.
  * The server decides who may read what; the app never says who it is.
  */
@@ -65,15 +65,25 @@ class EnveliqApi(address: String) {
     companion object {
         fun normalise(address: String): String {
             var a = address.trim().trimEnd('/')
-            if (a.isEmpty()) throw ApiException("Type the address of your Enveliq, for example https://enveliq.example.com")
+            if (a.isEmpty()) throw ApiException("Type the address of your Casier, for example https://casier.example.com")
             if (!a.contains("://")) a = "https://$a"
             if (!a.startsWith("https://")) throw ApiException("The address must start with https://. The app only talks to your server over a secure connection.")
-            if (a.removePrefix("https://").isBlank()) throw ApiException("Type the address of your Enveliq after the https://, for example enveliq.example.com")
-            // People may type the address with /api (or /api/v1) on the end, for example when only that path is open
-            // through a security layer such as Cloudflare Access. The app adds /api/v1/... itself, so take it off.
-            a = a.replace(Regex("/api(/v1)?$", RegexOption.IGNORE_CASE), "").trimEnd('/')
-            return a
+            if (a.removePrefix("https://").isBlank()) throw ApiException("Type the address of your Casier after the https://, for example casier.example.com")
+            // People may type more than the main address (the Mail part, or /api or /api/v1 for a security layer). The app adds what it needs
+            // itself, so take it all off and put back the one address it uses.
+            val tail = Regex("/(mail/api/app|mail-app|mail/api|mail|api/v1|api)$", RegexOption.IGNORE_CASE)
+            while (tail.containsMatchIn(a)) a = a.replace(tail, "").trimEnd('/')
+            return a + MAIL_APP
         }
+
+        /** The main Casier address, without the Mail part: for opening pages in the browser. */
+        fun siteOf(address: String): String = normalise(address).removeSuffix(MAIL_APP)
+
+        /**
+         * Where Casier Mail keeps the phone app's address. People only type the main address (for example https://ourdm.net); the app adds this
+         * itself. It sits under /mail/api, which is already open through a security layer such as Cloudflare for the Claude connection.
+         */
+        const val MAIL_APP = "/mail/api/app"
 
         fun forgetSession() {
             val handler = CookieHandler.getDefault()
@@ -84,8 +94,8 @@ class EnveliqApi(address: String) {
     private fun detail(text: String, code: Int): String {
         try {
             val d = JSONObject(text).opt("detail")
-            // A route the server does not have: it is an older Enveliq than this app.
-            if (code == 404 && d == "Not Found") return "Your Enveliq server does not have this yet. Update the server to the newest version, then try again."
+            // A route the server does not have: it is an older Casier Mail than this app.
+            if (code == 404 && d == "Not Found") return "Casier does not have this yet. Update Casier to the newest version, then try again."
             if (d is String && d.isNotBlank()) return d
             if (d is JSONObject && d.str("message").isNotBlank()) return d.str("message")
         } catch (_: Exception) {
@@ -96,8 +106,8 @@ class EnveliqApi(address: String) {
             404 -> "Not found."
             429 -> "Too many tries. Wait a minute and try again."
             400, 422 -> "Something in that was not right. Check what you typed and try again."
-            502, 503, 504 -> "Your Enveliq could not be reached just now. It may be restarting. Try again in a minute."
-            else -> if (code >= 500) "Your Enveliq had a problem. Try again in a moment." else "That did not work. Please try again."
+            502, 503, 504 -> "Casier Mail could not be reached just now. It may be restarting. Try again in a minute."
+            else -> if (code >= 500) "Casier Mail had a problem. Try again in a moment." else "That did not work. Please try again."
         }
     }
 
@@ -109,7 +119,7 @@ class EnveliqApi(address: String) {
             conn.readTimeout = 30000
             conn.setRequestProperty("Accept", "application/json")
             // Lets "Your devices" show a plain name for this phone.
-            conn.setRequestProperty("X-Enveliq-Device", "Enveliq app on " + android.os.Build.MODEL.take(40))
+            conn.setRequestProperty("X-Enveliq-Device", "Casier Mail app on " + android.os.Build.MODEL.take(40))
             if (body != null) {
                 conn.doOutput = true
                 conn.setRequestProperty("Content-Type", "application/json")
@@ -120,7 +130,7 @@ class EnveliqApi(address: String) {
             val text = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
             // A web page instead of an answer: usually a security layer (for example Cloudflare Access) in front of the site.
             if (text.trimStart().startsWith("<")) {
-                throw ApiException("That address did not answer like Enveliq. If your site is behind a security layer such as Cloudflare Access, allow the /api path for the app.")
+                throw ApiException("That address did not answer like Casier Mail. If your site is behind a security layer such as Cloudflare Access, allow the /mail/api path for the app.")
             }
             if (code >= 400) throw ApiException(detail(text, code), code)
             return text
@@ -129,7 +139,7 @@ class EnveliqApi(address: String) {
         } catch (e: SSLException) {
             throw ApiException("The server's security certificate was not accepted, so the app did not connect.")
         } catch (e: IOException) {
-            throw ApiException("Could not reach your Enveliq. Check the address and your connection.")
+            throw ApiException("Could not reach Casier Mail. Check the address and your connection.")
         } finally {
             conn.disconnect()
         }
@@ -150,7 +160,7 @@ class EnveliqApi(address: String) {
     }
 
     /** The page in the phone's browser where the person signs in the usual way (passkey, single sign-on, two-factor) and is handed back to the app. */
-    fun browserSignInUrl(challenge: String): String = "$base/app-signin?c=" + enc(challenge)
+    fun browserSignInUrl(challenge: String): String = base.removeSuffix(MAIL_APP) + "/mail/app-signin?c=" + enc(challenge)
 
     /** Swaps the one-time code the browser handed back, with the secret only this app knows, for a normal session. */
     fun exchangeLink(code: String, verifier: String, keep: Boolean): SignIn {
@@ -312,7 +322,7 @@ class EnveliqApi(address: String) {
     /** Whether the administrator has set up Google push, so the app can offer it. */
     fun pushAvailable(): Boolean = JSONObject(call("GET", "/api/v1/me/notifications/android")).optBoolean("available", false)
 
-    /** Tells Enveliq this phone's Google push address. Also switches on "New email alerts" for this person. Returns the id Enveliq gave the phone. */
+    /** Tells Casier Mail this phone's Google push address. Also switches on "New email alerts" for this person. Returns the id Casier Mail gave the phone. */
     fun registerPush(token: String, label: String, replaces: String?): String {
         val body = JSONObject().put("token", token).put("label", label).put("alerts", true)
         if (replaces != null) body.put("replaces", replaces)
@@ -617,7 +627,7 @@ class EnveliqApi(address: String) {
         try { call("POST", "/api/v1/accounts/" + enc(accountId) + "/inbox/recent", JSONObject()) } catch (e: ApiException) { if (e.code == 401) throw e; recentAt.remove(accountId) }
     }
 
-    /** Emails you have opened in Enveliq (on any device), as "mailbox id:email id". The server keeps this per person. */
+    /** Emails you have opened in Casier Mail (on any device), as "mailbox id:email id". The server keeps this per person. */
     fun openedKeys(): Set<String> {
         val a = JSONObject(call("GET", "/api/v1/me/mail-opened")).optJSONArray("keys") ?: return emptySet()
         return (0 until a.length()).map { a.optString(it) }.toSet()
@@ -798,10 +808,10 @@ class EnveliqApi(address: String) {
     fun newsRefresh(): Section<Feed> = feedsOf(JSONObject(call("POST", "/api/v1/me/rss/refresh")))
     fun newsSeen() { call("POST", "/api/v1/me/rss/seen") }
 
-    /** Asks the address whether it is an Enveliq that answers. Throws a plain-words [ApiException] when it does not. */
+    /** Asks the address whether it is an Casier Mail that answers. Throws a plain-words [ApiException] when it does not. */
     fun checkConnection() {
         val r = JSONObject(call("GET", "/api/v1/health"))
-        if (!r.optBoolean("ok", false)) throw ApiException("That address answered, but it does not look like Enveliq.")
+        if (!r.optBoolean("ok", false)) throw ApiException("That address answered, but it does not look like Casier Mail.")
     }
 
     /** The tags this mailbox has, or null when its mail service does not keep tags (or tags are switched off). */
@@ -1045,7 +1055,7 @@ class EnveliqApi(address: String) {
     }
 
     /** The email as the server describes it: its plain text, and whether a formatted (HTML) version exists. */
-    // ---- Away reply, saved replies, subscriptions, tag emails, headers and the Ask Enveliq chat. Same routes as the website. ----
+    // ---- Away reply, saved replies, subscriptions, tag emails, headers and the Ask Casier Mail chat. Same routes as the website. ----
 
     /** The Conversation View switch, saved on the person's account (the same one the website's Customise has). */
     fun conversationView(): Boolean = JSONObject(call("GET", "/api/v1/me/mail-view")).optBoolean("conversations", false)
@@ -1114,7 +1124,7 @@ class EnveliqApi(address: String) {
         }
     }
 
-    /** The Ask Enveliq chat: the latest chat, or the one with this id. */
+    /** The Ask Casier Mail chat: the latest chat, or the one with this id. */
     fun agent(chat: String? = null): AgentInfo =
         agentOf(JSONObject(call("GET", "/api/v1/me/agent" + if (chat != null) "?chat=" + enc(chat) else "")))
 
@@ -1126,7 +1136,7 @@ class EnveliqApi(address: String) {
 
     private fun agentOf(r: JSONObject): AgentInfo {
         val c = r.optJSONObject("chat")
-        return AgentInfo(r.str("name").ifBlank { "Enveliq" }, r.optBoolean("ready", false), c?.str("id"),
+        return AgentInfo(r.str("name").ifBlank { "Casier Mail" }, r.optBoolean("ready", false), c?.str("id"),
             c?.list("messages")?.map { AgentMessage(it.str("role"), it.str("text")) } ?: emptyList(),
             c?.optBoolean("pending", false) ?: false, c?.str("error") ?: "")
     }

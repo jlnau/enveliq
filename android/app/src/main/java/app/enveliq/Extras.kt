@@ -45,7 +45,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-// Pages that bring the website's Away reply, Saved replies, Subscriptions, Tags and Ask Enveliq to the phone. Each one uses the
+// Pages that bring the website's Away reply, Saved replies, Subscriptions, Tags and Ask Casier Mail to the phone. Each one uses the
 // website's own route, so the server still decides what the signed-in person may see or change.
 
 private fun pickDay(context: android.content.Context, current: String, onPicked: (String) -> Unit) {
@@ -197,7 +197,7 @@ internal fun SubscriptionsPage(api: EnveliqApi, onBack: () -> Unit) {
         Loader(0, { api.subscriptions() }) { info ->
             LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (!info.enabled) item { Empty("Subscriptions is switched off. An administrator can switch it on.") }
-                else if (info.items.isEmpty()) item { Empty("Nothing here yet. Enveliq lists subscriptions it finds in your email receipts.") }
+                else if (info.items.isEmpty()) item { Empty("Nothing here yet. Casier Mail lists subscriptions it finds in your email receipts.") }
                 items(info.items, key = { it.id }) { s ->
                     Card {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -267,8 +267,8 @@ internal fun TagsPage(api: EnveliqApi, accountIds: List<String>, onBack: () -> U
                     androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         for (n in info.names) {
                             val on = chosen == n
-                            Surface(color = if (on) androidx.compose.ui.graphics.Color(0xFF173056) else PanelHigh, shape = RoundedCornerShape(20.dp), modifier = Modifier.clickable { open(n, 0) }) {
-                                Text(n, color = if (on) androidx.compose.ui.graphics.Color(0xFF8DB8FF) else Ink, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp))
+                            Surface(color = if (on) Highlight else PanelHigh, shape = RoundedCornerShape(20.dp), modifier = Modifier.clickable { open(n, 0) }) {
+                                Text(n, color = if (on) HighlightInk else Ink, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp))
                             }
                         }
                     }
@@ -281,13 +281,13 @@ internal fun TagsPage(api: EnveliqApi, accountIds: List<String>, onBack: () -> U
                     }
                 }
                 if (more) item { TextButton(onClick = { open(chosen, rows.size) }) { Text("Show more", color = Blue) } }
-                item { Text("Read from your mailbox when you look. Nothing is saved in Enveliq.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(vertical = 8.dp)) }
+                item { Text("Read from your mailbox when you look. Nothing is saved in Casier Mail.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(vertical = 8.dp)) }
             }
         }
     }
 }
 
-/** Ask Enveliq: a chat about your own Enveliq. Every answer is labelled as written by AI. */
+/** Ask Casier Mail: a chat about your own Casier Mail. Every answer is labelled as written by AI. */
 @Composable
 internal fun AskPage(api: EnveliqApi, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
@@ -313,7 +313,7 @@ internal fun AskPage(api: EnveliqApi, onBack: () -> Unit) {
     }
     val shown = (info?.messages ?: emptyList()) + (if (pending.value.isNotEmpty()) listOf(AgentMessage("user", pending.value)) else emptyList())
     LaunchedEffect(shown.size) { if (shown.isNotEmpty()) listState.animateScrollToItem(shown.size - 1) }
-    SubPage("Ask Enveliq", "Questions about your own Enveliq", onBack = onBack) {
+    SubPage("Ask Casier Mail", "Questions about your own Casier Mail", onBack = onBack) {
         Column(Modifier.fillMaxSize().imePadding()) {
             LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp), state = listState, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (info == null && err.isEmpty()) item { Box0 { CircularProgressIndicator(color = Blue) } }
@@ -323,7 +323,7 @@ internal fun AskPage(api: EnveliqApi, onBack: () -> Unit) {
                     val m = shown[i]
                     val mine = m.role == "user"
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start) {
-                        Surface(color = if (mine) androidx.compose.ui.graphics.Color(0xFF14316B) else PanelHigh, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth(0.86f)) {
+                        Surface(color = if (mine) Highlight else PanelHigh, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth(0.86f)) {
                             Column(Modifier.padding(12.dp)) {
                                 if (!mine) Text("✦ Written by AI", color = Amber, fontSize = 11.sp)
                                 Text(m.text, color = Ink, fontSize = 15.sp, lineHeight = 21.sp)
@@ -349,7 +349,7 @@ internal fun AskPage(api: EnveliqApi, onBack: () -> Unit) {
                     }
                 }, enabled = !busy && text.isNotBlank(), shape = RoundedCornerShape(12.dp), modifier = Modifier.height(52.dp)) { Text("Send") }
             }
-            Text("Written by AI from your Enveliq's own information. It can be wrong, and it never changes anything by itself.", color = Muted, fontSize = 11.sp, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp))
+            Text("Written by AI from Casier Mail's own information. It can be wrong, and it never changes anything by itself.", color = Muted, fontSize = 11.sp, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp))
         }
     }
 }
@@ -395,8 +395,8 @@ internal fun BulkDialog(api: EnveliqApi, kind: String, mails: List<Mail>, onClos
                         else androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             for (n in tagNames ?: emptyList()) {
                                 val on = ticked.contains(n)
-                                Surface(color = if (on) androidx.compose.ui.graphics.Color(0xFF173056) else PanelHigh, shape = RoundedCornerShape(20.dp), modifier = Modifier.clickable { if (on) ticked.remove(n) else ticked.add(n) }) {
-                                    Text((if (on) "✓ " else "") + n, color = if (on) androidx.compose.ui.graphics.Color(0xFF8DB8FF) else Ink, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp))
+                                Surface(color = if (on) Highlight else PanelHigh, shape = RoundedCornerShape(20.dp), modifier = Modifier.clickable { if (on) ticked.remove(n) else ticked.add(n) }) {
+                                    Text((if (on) "✓ " else "") + n, color = if (on) HighlightInk else Ink, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp))
                                 }
                             }
                         }
@@ -406,7 +406,7 @@ internal fun BulkDialog(api: EnveliqApi, kind: String, mails: List<Mail>, onClos
                         senders.take(6).forEach { Text(it, color = Ink, fontSize = 14.sp) }
                         if (senders.size > 6) Text("and ${senders.size - 6} more", color = Muted, fontSize = 13.sp)
                         for ((id, label) in listOf("archived" to "Is archived", "reviewed" to "Is marked as read", "starred" to "Is starred")) {
-                            Surface(color = if (rule == id) androidx.compose.ui.graphics.Color(0xFF173056) else PanelHigh, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().clickable { rule = id }) {
+                            Surface(color = if (rule == id) Highlight else PanelHigh, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().clickable { rule = id }) {
                                 Text((if (rule == id) "✓  " else "") + label, color = Ink, fontSize = 16.sp, modifier = Modifier.padding(14.dp))
                             }
                         }

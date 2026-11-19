@@ -202,11 +202,11 @@ internal fun MoreTab(api: EnveliqApi, start: String = "home", findStart: FindSpe
                 items(listOf(
                     Triple("cleanup", "Clean up", "Quiet the mailing lists you do not need."),
                     Triple("find", "Find any email", "Search everything in your mailboxes, old email too."),
-                    Triple("ask", "Ask Enveliq", "Questions about your own Enveliq. Answers are written by AI."),
+                    Triple("ask", "Ask Casier Mail", "Questions about your own Casier Mail. Answers are written by AI."),
                     Triple("tags", "Tags", "Your tags, and the emails that carry each one."),
                     Triple("subscriptions", "Subscriptions", "What you pay for, and what renews soon."),
                     Triple("later", "Waiting to send", "Emails you set to go later, and any that could not go."),
-                    Triple("bell", "Notes and alerts", "Things your other services told Enveliq."),
+                    Triple("bell", "Notes and alerts", "Things your other services told Casier Mail."),
                     Triple("trips", "Trips and calendar", "Flights, stays and bookings from your email."),
                     Triple("news", "News feeds", "The sites you follow."),
                 ).filter { it.first != "cleanup" || cleanOn }) { (id, title, note) ->
@@ -228,7 +228,7 @@ private fun BellPage(api: EnveliqApi, onBack: () -> Unit) {
     SubPage("Notes and alerts", onBack = onBack) {
         Loader(reload, { api.bell().also { if (it.any { n -> n.unread }) try { api.bellRead() } catch (e: Exception) { } } }) { notes ->
             LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (notes.isEmpty()) item { Empty("Nothing here. When another service of yours sends Enveliq a note, it shows up here.") }
+                if (notes.isEmpty()) item { Empty("Nothing here. When another service of yours sends Casier Mail a note, it shows up here.") }
                 items(notes, key = { it.id }) { n ->
                     Card {
                         Text(n.title.ifBlank { n.source.ifBlank { "Note" } }, color = Ink, fontSize = 16.sp, fontWeight = if (n.unread) FontWeight.Bold else FontWeight.SemiBold)
@@ -335,7 +335,7 @@ internal fun ShippingPage(api: EnveliqApi, onBack: () -> Unit) {
     askNot?.let { o ->
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { askNot = null }, title = { Text("This is not an order?") },
-            text = { Text("It is taken off your list and Enveliq will not pick it up again.") },
+            text = { Text("It is taken off your list and Casier Mail will not pick it up again.") },
             confirmButton = { TextButton(onClick = { askNot = null; act(o.id, "not_order") }) { Text("Not an order", color = Red) } },
             dismissButton = { TextButton(onClick = { askNot = null }) { Text("Cancel", color = Muted) } },
         )
@@ -643,8 +643,8 @@ private fun FindPage(api: EnveliqApi, start: FindSpec? = null, onBack: () -> Uni
 
 @Composable
 private fun FindChip(label: String, on: Boolean, onClick: () -> Unit) {
-    Surface(onClick = onClick, shape = RoundedCornerShape(20.dp), color = if (on) androidx.compose.ui.graphics.Color(0xFF173056) else PanelHigh) {
-        Text(label, color = if (on) androidx.compose.ui.graphics.Color(0xFF8DB8FF) else Ink, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Surface(onClick = onClick, shape = RoundedCornerShape(20.dp), color = if (on) Highlight else PanelHigh) {
+        Text(label, color = if (on) HighlightInk else Ink, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -788,8 +788,8 @@ internal fun FoldersPage(api: EnveliqApi, accountIds: List<String>, onBack: () -
                     androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         for (f in folders) {
                             val on = chosen?.name == f.name
-                            Surface(color = if (on) androidx.compose.ui.graphics.Color(0xFF173056) else PanelHigh, shape = RoundedCornerShape(20.dp), modifier = Modifier.clickable { open(f, 0) }) {
-                                Text(f.label, color = if (on) androidx.compose.ui.graphics.Color(0xFF8DB8FF) else Ink, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp))
+                            Surface(color = if (on) Highlight else PanelHigh, shape = RoundedCornerShape(20.dp), modifier = Modifier.clickable { open(f, 0) }) {
+                                Text(f.label, color = if (on) HighlightInk else Ink, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp))
                             }
                         }
                     }
@@ -802,7 +802,7 @@ internal fun FoldersPage(api: EnveliqApi, accountIds: List<String>, onBack: () -
                     }
                 }
                 if (more) item { TextButton(onClick = { chosen?.let { open(it, rows.size) } }) { Text("Show more", color = Blue) } }
-                item { Text("Read from your mailbox when you look. Nothing is saved in Enveliq.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(vertical = 8.dp)) }
+                item { Text("Read from your mailbox when you look. Nothing is saved in Casier Mail.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(vertical = 8.dp)) }
             }
         }
     }

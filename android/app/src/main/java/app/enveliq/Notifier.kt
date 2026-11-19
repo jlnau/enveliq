@@ -44,7 +44,7 @@ object Notifier {
         reminders.description = "Reminders for tasks that are due."
         reminders.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
         val watch = NotificationChannel(CHANNEL_WATCH, "Watching for new email", NotificationManager.IMPORTANCE_MIN)
-        watch.description = "The small note Android requires while Enveliq waits quietly for new email."
+        watch.description = "The small note Android requires while Casier Mail waits quietly for new email."
         watch.setShowBadge(false)
         val quiet = NotificationChannel(CHANNEL_QUIET, "New email (quiet hours)", NotificationManager.IMPORTANCE_LOW)
         quiet.description = "New email that arrives during your quiet hours: no sound and no buzz."
@@ -108,7 +108,7 @@ object Notifier {
             "tasks" -> "A task is due"
             "shipping" -> "A parcel needs you"
             "summary" -> "Your day"
-            else -> "Something new in Enveliq"
+            else -> "Something new in Casier Mail"
         }
         val note = Notification.Builder(context, if (quiet) CHANNEL_QUIET else CHANNEL_REMINDERS)
             .setSmallIcon(R.drawable.ic_notification)

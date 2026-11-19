@@ -189,7 +189,7 @@ private val tintSecurity = Color(0xFF30A46C)
 private val tintAccount = Color(0xFF8E4EC6)
 private val tintAbout = Color(0xFF6B7A90)
 private val tintAppearance = Color(0xFFF76B15)
-private val tintTool = Color(0xFF2B3A55)
+private val tintTool = Color(0xFF5C6068)
 
 @Composable
 internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, server: String, api: EnveliqApi, onLeave: (Boolean) -> Unit) {
@@ -267,11 +267,11 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
         MailWatcherService.start(context)
     }
     val askMailPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) turnOnAlerts() else alertNote = "Notifications are off for Enveliq. Turn them on in Android's settings, then try again."
+        if (granted) turnOnAlerts() else alertNote = "Notifications are off for Casier Mail. Turn them on in Android's settings, then try again."
     }
     val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         testNote = if (granted && Notifier.sendTest(context)) "Sent. Lock your phone to see how it looks on the lock screen."
-        else "Notifications are off for Enveliq. Turn them on in Android's settings."
+        else "Notifications are off for Casier Mail. Turn them on in Android's settings."
     }
     fun pickTime(from: Boolean) {
         val now = if (from) quietFrom else quietTo
@@ -340,7 +340,7 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                 }
                 if (mailAlerts && !unrestricted && mode == "direct") {
                     HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
-                    NavRow("", tintTool, "Keep alerts on time", note = "If alerts come late, let Enveliq run without Android's battery limit.") {
+                    NavRow("", tintTool, "Keep alerts on time", note = "If alerts come late, let Casier Mail run without Android's battery limit.") {
                         context.startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, android.net.Uri.parse("package:" + context.packageName)))
                         unrestricted = power.isIgnoringBatteryOptimizations(context.packageName)
                     }
@@ -361,7 +361,7 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                 }
             }
             if (testNote.isNotEmpty()) Footnote(testNote)
-            if (mailAlerts) Footnote("Enveliq stays signed in on this phone and keeps one quiet connection to your server. It uses almost no battery, and does nothing while the phone has no signal.")
+            if (mailAlerts) Footnote("Casier Mail stays signed in on this phone and keeps one quiet connection to your server. It uses almost no battery, and does nothing while the phone has no signal.")
         }
         "scope" -> Page("What to alert me about", back("alerts")) {
             Group {
@@ -454,7 +454,7 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
         }
         "security" -> Page("Security", back("home")) {
             Group {
-                ToggleRow("Ask for my fingerprint, face or PIN", "To open Enveliq, and again after it has been out of sight for a minute.", appLock) {
+                ToggleRow("Ask for my fingerprint, face or PIN", "To open Casier Mail, and again after it has been out of sight for a minute.", appLock) {
                     if (it && !activity.canLock()) {
                         lockNote = "Set up a fingerprint, face or PIN in Android's settings first, then switch this on."
                     } else {
@@ -464,7 +464,7 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                     }
                 }
                 HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp))
-                ToggleRow("Hide Enveliq in recent apps", "Also stops screenshots of the app.", hide) {
+                ToggleRow("Hide Casier Mail in recent apps", "Also stops screenshots of the app.", hide) {
                     hide = it
                     prefs.edit().putBoolean("hide_in_recents", it).apply()
                     activity.setSecure(it)
@@ -622,7 +622,7 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
                     NavRow("", Blue, if (upBusy) "Downloading..." else "Install it", note = "Downloads it through your own server, then Android asks you to confirm.") {
                         if (!upBusy) {
                             if (!context.packageManager.canRequestPackageInstalls()) {
-                                upNote = "Android needs your permission first. Allow Enveliq on the next screen, come back, and press Install it again."
+                                upNote = "Android needs your permission first. Allow Casier Mail on the next screen, come back, and press Install it again."
                                 try { context.startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, android.net.Uri.parse("package:" + context.packageName))) } catch (_: Exception) { }
                             } else {
                                 upBusy = true
@@ -666,8 +666,8 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
             }
             Group {
                 for ((title, path) in listOf("Terms of use" to "/terms", "Privacy" to "/privacy", "Security" to "/security")) {
-                    NavRow("", tintTool, title, note = if (path == "/terms") "Plain-language terms, including that Enveliq is provided as it is, with no warranty." else "") {
-                        try { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(EnveliqApi.normalise(server) + path))) } catch (e: Exception) { upNote = "No app on this phone could open the page." }
+                    NavRow("", tintTool, title, note = if (path == "/terms") "Plain-language terms, including that Casier Mail is provided as it is, with no warranty." else "") {
+                        try { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(EnveliqApi.siteOf(server) + "/mail" + path))) } catch (e: Exception) { upNote = "No app on this phone could open the page." }
                     }
                 }
             }
@@ -678,9 +678,9 @@ internal fun SettingsTab(activity: MainActivity, prefs: SharedPreferences, serve
             Heading("Settings", "")
             Group {
                 Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(Blue), contentAlignment = Alignment.Center) { Text("✉", fontSize = 24.sp, color = Color.White) }
+                    Box(Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(Blue), contentAlignment = Alignment.Center) { Text("✉", fontSize = 24.sp, color = OnBlue) }
                     Column(Modifier.padding(start = 14.dp)) {
-                        Text("Enveliq", color = Ink, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Casier Mail", color = Ink, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                         Text(server.removePrefix("https://"), color = Muted, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }

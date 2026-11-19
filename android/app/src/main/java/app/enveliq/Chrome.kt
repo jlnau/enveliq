@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.RowScope
@@ -34,16 +35,69 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+
+/**
+ * The Casier mark: an isometric locker with a C-shaped vent in its door, drawn the way the web app draws it (light or dark colours).
+ * The vent is a cut-out, so [vent] is the colour of whatever the mark sits on.
+ */
+@Composable
+internal fun CasierMark(modifier: Modifier = Modifier.size(28.dp), vent: Color = Navy) {
+    val dark = Pal.dark
+    val top = if (dark) Color(0xFFDFE3EC) else Color(0xFF3B4252)
+    val left = if (dark) Color(0xFF9AA5BB) else Color(0xFF1B1E23)
+    val right = if (dark) Color(0xFF7AA7FF) else Color(0xFF2F62D6)
+    val handle = if (dark) Color(0xFF1B3F9A) else Color(0xFF7AA7FF)
+    Canvas(modifier) {
+        val u = size.width / 72f
+        fun at(x: Float, y: Float) = Offset((x - 14f) * u, (y - 14f) * u)
+        // the door and the vent are drawn on a slant, to follow the side of the locker
+        fun slant(x: Float, y: Float) = at(x, y + 0.41667f * x - 10.83f)
+        fun face(c: Color, vararg pts: Pair<Float, Float>) {
+            val path = Path()
+            pts.forEachIndexed { i, pt -> val o = at(pt.first, pt.second); if (i == 0) path.moveTo(o.x, o.y) else path.lineTo(o.x, o.y) }
+            path.close()
+            drawPath(path, c)
+            drawPath(path, c, style = Stroke(width = 2f * u, join = StrokeJoin.Round))
+        }
+        face(top, 50f to 16f, 74f to 26f, 50f to 36f, 26f to 26f)
+        face(left, 26f to 26f, 50f to 36f, 50f to 84f, 26f to 74f)
+        face(right, 50f to 36f, 74f to 26f, 74f to 74f, 50f to 84f)
+        val c = Path()
+        for (i in 0..24) {
+            val a = Math.toRadians(270.0 - i * 7.5)
+            val o = slant(43f + 8f * Math.cos(a).toFloat(), 45f + 8f * Math.sin(a).toFloat())
+            if (i == 0) c.moveTo(o.x, o.y) else c.lineTo(o.x, o.y)
+        }
+        drawPath(c, vent, style = Stroke(width = 4f * u, cap = StrokeCap.Round, join = StrokeJoin.Round))
+        val h = Path()
+        listOf(42.5f to 62f, 46f to 62f, 46f to 70f, 42.5f to 70f).forEachIndexed { i, pt -> val o = slant(pt.first, pt.second); if (i == 0) h.moveTo(o.x, o.y) else h.lineTo(o.x, o.y) }
+        h.close()
+        drawPath(h, handle)
+    }
+}
+
+/** The mark and the name, side by side. [vent] is the colour behind the mark. */
+@Composable
+internal fun CasierBrand(height: Dp = 28.dp, vent: Color = Navy) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        CasierMark(Modifier.size(height), vent)
+        Spacer(Modifier.width(height / 3))
+        Text("Casier Mail", color = Ink, fontSize = (height.value * 0.6f).sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+    }
+}
 
 // Small line icons drawn by hand, so the app does not need the big icon library.
 
@@ -89,7 +143,7 @@ internal fun AvatarCircle(me: Me?, picture: Bitmap?, size: Int = 34) {
     }
 }
 
-/** The top row of the list screens: menu, the Enveliq logo, search, and the person's picture with its small menu. */
+/** The top row of the list screens: menu, the Casier Mail logo, search, and the person's picture with its small menu. */
 @Composable
 internal fun AppTopBar(
     me: Me?, picture: Bitmap?, showSearch: Boolean, searching: Boolean,
@@ -99,7 +153,7 @@ internal fun AppTopBar(
     var open by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onMenu) { Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = Ink) }
-        Image(painterResource(R.drawable.wordmark), contentDescription = "Enveliq", contentScale = ContentScale.Fit, modifier = Modifier.height(30.dp).widthIn(max = 110.dp))
+        CasierBrand(28.dp)
         Spacer(Modifier.weight(1f))
         IconButton(onClick = onBell) {
             Box(contentAlignment = Alignment.TopEnd) {

@@ -4,11 +4,18 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- An open envelope, in Enveliq blue -->
-    <path
-        android:fillColor="#2F7BFF"
-        android:pathData="M30,38 L78,38 Q82,38 82,42 L82,66 Q82,70 78,70 L30,70 Q26,70 26,66 L26,42 Q26,38 30,38 Z" />
-    <path
-        android:fillColor="#0B1220"
-        android:pathData="M31,43 L54,59 L77,43 L77,47 L54,63 L31,47 Z" />
+    <!-- The Casier mark (an isometric locker with a C-shaped vent), the dark-background colours, on the icon's dark background. -->
+    <group
+        android:pivotX="50"
+        android:pivotY="50"
+        android:scaleX="0.8"
+        android:scaleY="0.8"
+        android:translateX="4"
+        android:translateY="4">
+        <path android:fillColor="#DFE3EC" android:strokeColor="#DFE3EC" android:strokeWidth="2" android:strokeLineJoin="round" android:pathData="M50,16 L74,26 L50,36 L26,26 Z" />
+        <path android:fillColor="#9AA5BB" android:strokeColor="#9AA5BB" android:strokeWidth="2" android:strokeLineJoin="round" android:pathData="M26,26 L50,36 L50,84 L26,74 Z" />
+        <path android:fillColor="#7AA7FF" android:strokeColor="#7AA7FF" android:strokeWidth="2" android:strokeLineJoin="round" android:pathData="M50,36 L74,26 L74,74 L50,84 Z" />
+        <path android:strokeColor="#151618" android:strokeWidth="4" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M43.00,44.09 L41.96,43.72 L40.93,43.50 L39.94,43.42 L39.00,43.49 L38.13,43.71 L37.34,44.07 L36.65,44.57 L36.07,45.20 L35.61,45.95 L35.27,46.80 L35.07,47.74 L35.00,48.75 L35.07,49.83 L35.27,50.94 L35.61,52.07 L36.07,53.20 L36.65,54.31 L37.34,55.39 L38.13,56.40 L39.00,57.35 L39.94,58.20 L40.93,58.95 L41.96,59.58 L43.00,60.09" />
+        <path android:fillColor="#1B3F9A" android:pathData="M42.50,68.88 L46.00,70.34 L46.00,78.34 L42.50,76.88 Z" />
+    </group>
 </vector>

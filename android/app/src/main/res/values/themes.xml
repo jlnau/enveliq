@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Enveliq" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@color/enveliq_navy</item>
-        <item name="android:colorBackground">@color/enveliq_navy</item>
+    <style name="Theme.CasierMail" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/casier_bg</item>
+        <item name="android:colorBackground">@color/casier_bg</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>

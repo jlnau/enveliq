@@ -58,7 +58,7 @@ object AlertPrefs {
     fun mode(c: Context): String = prefs(c).getString("alert_mode", "direct") ?: "direct"
     fun setMode(c: Context, v: String) = prefs(c).edit().putString("alert_mode", v).apply()
 
-    /** The id Enveliq gave this phone when it signed up for Google push (not Google's own address). */
+    /** The id Casier Mail gave this phone when it signed up for Google push (not Google's own address). */
     fun pushDevice(c: Context): String? = prefs(c).getString("push_device", null)
     fun setPushDevice(c: Context, id: String?) = prefs(c).edit().putString("push_device", id).apply()
 
@@ -86,7 +86,7 @@ object AlertPrefs {
 }
 
 /**
- * Keeps one quiet connection to the person's own Enveliq so a new email can be announced as soon as its AI summary is done.
+ * Keeps one quiet connection to the person's own Casier Mail so a new email can be announced as soon as its AI summary is done.
  *
  * Built to be light on the battery:
  *  - one connection, no polling: the server sends a one-line heartbeat once a minute and the app does nothing in between;
@@ -109,7 +109,7 @@ class MailWatcherService : Service() {
         Notifier.ensureChannels(this)
         val note = Notification.Builder(this, Notifier.CHANNEL_WATCH)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Enveliq is watching for new email")
+            .setContentTitle("Casier Mail is watching for new email")
             .setContentText("Quietly. Turn this off in Settings, New email alerts.")
             .setOngoing(true)
             .build()
@@ -129,7 +129,7 @@ class MailWatcherService : Service() {
             // Alerts must never stop the app from opening: switch them off and say so, instead of crashing.
             running = false
             AlertPrefs.setOn(this, false)
-            Notifier.simple(this, 2004, "New-email alerts are off", "Enveliq could not keep watching for new email on this phone. Open Settings in Enveliq to try again.")
+            Notifier.simple(this, 2004, "New-email alerts are off", "Casier Mail could not keep watching for new email on this phone. Open Settings in Casier Mail to try again.")
             stopSelf()
             return START_NOT_STICKY
         }
@@ -355,6 +355,6 @@ object Alerts {
     fun signedOut(context: Context) {
         SessionVault.clear(context)
         AlertPrefs.reset(context)
-        Notifier.simple(context, 2003, "Please sign in to Enveliq again", "Your new-email alerts stopped because you were signed out. Open Enveliq to sign in and turn them back on.")
+        Notifier.simple(context, 2003, "Please sign in to Casier Mail again", "Your new-email alerts stopped because you were signed out. Open Casier Mail to sign in and turn them back on.")
     }
 }

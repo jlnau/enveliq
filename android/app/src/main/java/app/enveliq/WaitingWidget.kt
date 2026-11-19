@@ -35,7 +35,7 @@ class WaitingWidget : AppWidgetProvider() {
             val count = context.getSharedPreferences("enveliq", Context.MODE_PRIVATE).getInt(KEY, -1)
             val v = RemoteViews(context.packageName, R.layout.widget_waiting)
             v.setTextViewText(R.id.widget_count, if (count < 0) "-" else count.toString())
-            v.setTextViewText(R.id.widget_label, if (count < 0) "Open Enveliq" else if (count == 1) "email waiting" else "emails waiting")
+            v.setTextViewText(R.id.widget_label, if (count < 0) "Open Casier Mail" else if (count == 1) "email waiting" else "emails waiting")
             val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             v.setOnClickPendingIntent(R.id.widget_root, open)
             return v

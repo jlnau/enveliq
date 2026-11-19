@@ -21,7 +21,7 @@ class MainActivity : FragmentActivity() {
     /** The one-time code the browser handed back after signing in there. Used once by the sign-in screen. */
     var linkCode by mutableStateOf<String?>(null)
 
-    /** Text shared to Enveliq from another app: (subject, text). The inbox opens a new email with it once the person is signed in. */
+    /** Text shared to Casier Mail from another app: (subject, text). The inbox opens a new email with it once the person is signed in. */
     var shareRequest by mutableStateOf<Pair<String, String>?>(null)
 
     /** A "mailto:" link tapped in another app: (to, subject, body). Opens a new email with those filled in. */
@@ -48,7 +48,7 @@ class MainActivity : FragmentActivity() {
         readRequest(intent)
         addOnNewIntentListener { readRequest(it) }
         setContent {
-            EnveliqTheme {
+            CasierMailTheme {
                 if (locked) LockScreen(onUnlock = { unlock() }) else EnveliqApp(this)
             }
         }
@@ -111,7 +111,7 @@ class MainActivity : FragmentActivity() {
         )
         prompt.authenticate(
             BiometricPrompt.PromptInfo.Builder()
-                .setTitle("Open Enveliq")
+                .setTitle("Open Casier Mail")
                 .setSubtitle("Use your fingerprint, face or PIN")
                 .setAllowedAuthenticators(AUTH)
                 .build(),

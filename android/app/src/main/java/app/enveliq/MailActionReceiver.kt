@@ -18,7 +18,7 @@ class MailActionReceiver : BroadcastReceiver() {
             try {
                 val kept = SessionVault.load(app)
                 if (kept == null) {
-                    Notifier.simple(app, 2004, "Please open Enveliq", "You are signed out, so that could not be done from the alert.")
+                    Notifier.simple(app, 2004, "Please open Casier Mail", "You are signed out, so that could not be done from the alert.")
                 } else {
                     val api = EnveliqApi(kept.first)
                     api.restore(kept.second)
@@ -26,7 +26,7 @@ class MailActionReceiver : BroadcastReceiver() {
                     app.getSystemService(NotificationManager::class.java).cancel(noteId)
                 }
             } catch (e: Exception) {
-                Notifier.simple(app, 2004, "That did not work", "Open Enveliq to look at the email.")
+                Notifier.simple(app, 2004, "That did not work", "Open Casier Mail to look at the email.")
             } finally {
                 pending.finish()
             }

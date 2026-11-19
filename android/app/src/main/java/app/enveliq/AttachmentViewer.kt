@@ -130,7 +130,7 @@ internal fun AttachmentsSection(mail: Mail, api: EnveliqApi) {
             }
         }
         if (status.isNotEmpty()) Text(status, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 6.dp))
-        Text("Fetched from your mailbox when you ask. Not saved in Enveliq or kept on this phone.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+        Text("Fetched from your mailbox when you ask. Not saved in Casier Mail or kept on this phone.", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
     }
     viewing?.let { AttachmentViewer(mail, it, api, onSave = { pending = it; picker.launch(it.name) }) { viewing = null } }
 }

@@ -220,7 +220,7 @@ private fun WritingStyleSettings(api: EnveliqApi) {
             if (err.isNotEmpty()) Text(err, color = Red, fontSize = 14.sp, modifier = Modifier.padding(top = 6.dp))
             return@Card
         }
-        Text("Enveliq can learn how you write from your 20 newest sent emails, using only your own words (never quoted replies, signatures, forwards or files). The guide below is added to Writing help and Quick AI Send so they sound like you.", color = Muted, fontSize = 13.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
+        Text("Casier Mail can learn how you write from your 20 newest sent emails, using only your own words (never quoted replies, signatures, forwards or files). The guide below is added to Writing help and Quick AI Send so they sound like you.", color = Muted, fontSize = 13.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
         SwitchLine("Learn my writing style", "Off until you turn it on.", i.on) { v -> run { api.saveWritingStyle(on = v) } }
         if (i.on) {
             SwitchLine("Update it every week", if (i.mode == "auto") "A new guide is made each week from your latest 20 sent emails." else "Off, because you edited the guide. Your words stay as they are until you turn this on.", i.mode == "auto") { v -> run { api.saveWritingStyle(mode = if (v) "auto" else "manual") } }

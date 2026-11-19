@@ -40,7 +40,7 @@ object Push {
     }
 }
 
-/** Receives Google's tiny wake-up message (it only says "mail" or "test", never any words) and then asks Enveliq itself what is new. */
+/** Receives Google's tiny wake-up message (it only says "mail" or "test", never any words) and then asks Casier Mail itself what is new. */
 class PushService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         if (!AlertPrefs.on(this) || AlertPrefs.mode(this) != "google") return
@@ -50,7 +50,7 @@ class PushService : FirebaseMessagingService() {
         }
     }
 
-    /** Google changed this phone's address: tell Enveliq the new one. */
+    /** Google changed this phone's address: tell Casier Mail the new one. */
     override fun onNewToken(token: String) {
         if (!AlertPrefs.on(this) || AlertPrefs.mode(this) != "google") return
         val kept = SessionVault.load(this) ?: return

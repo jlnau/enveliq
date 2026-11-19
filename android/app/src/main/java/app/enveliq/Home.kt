@@ -203,15 +203,15 @@ fun EnveliqApp(activity: MainActivity) {
             stage = Stage.Home
         } catch (e: ApiException) {
             if (e.code == 401) SessionVault.clear(activity)
-            notice = if (e.code == 401) "You were signed out. Please sign in again." else (e.message ?: "Could not reach your Enveliq.")
+            notice = if (e.code == 401) "You were signed out. Please sign in again." else (e.message ?: "Could not reach Casier Mail.")
             stage = Stage.SignIn
         } catch (e: Exception) {
-            notice = "Could not reach your Enveliq. Try again."
+            notice = "Could not reach Casier Mail. Try again."
             stage = Stage.SignIn
         }
     }
 
-    // Shown once on this phone, once you are in: what Enveliq is and is not. "I understand" is remembered here.
+    // Shown once on this phone, once you are in: what Casier Mail is and is not. "I understand" is remembered here.
     var termsSeen by remember { mutableStateOf(prefs.getBoolean("terms_ack", false)) }
     if (!termsSeen && (stage == Stage.Home || stage == Stage.Welcome) && server.isNotEmpty()) {
         TermsNotice(server) { prefs.edit().putBoolean("terms_ack", true).apply(); termsSeen = true }
@@ -312,7 +312,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
     var includeReadOk by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { includeReadOk = withContext(Dispatchers.IO) { api.includeReadAvailable() } }
 
-    // Which emails you have opened in Enveliq. The ones you have not opened glow softly in the list.
+    // Which emails you have opened in Casier Mail. The ones you have not opened glow softly in the list.
     val openedKeys = remember { androidx.compose.runtime.mutableStateMapOf<String, Boolean>() }
     var openedLoaded by remember { mutableStateOf(false) }
     var lastRefresh by remember { mutableStateOf(0L) }          // when the list was last read, for the quiet refresh
@@ -763,10 +763,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
         gesturesEnabled = drawer.isOpen,      // opened with the menu button; swiping the list is for archiving, so the edge swipe is left off
         drawerContent = {
             ModalDrawerSheet(drawerContainerColor = Panel) {
-                androidx.compose.foundation.Image(
-                    androidx.compose.ui.res.painterResource(R.drawable.wordmark), contentDescription = "Enveliq",
-                    modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 16.dp).height(40.dp),
-                )
+                Box(Modifier.padding(start = 24.dp, top = 24.dp, bottom = 16.dp)) { CasierBrand(36.dp, vent = Panel) }
                 val colors = NavigationDrawerItemDefaults.colors(
                     selectedContainerColor = PanelHigh, unselectedContainerColor = Panel,
                     selectedTextColor = Blue, unselectedTextColor = Ink, selectedIconColor = Blue, unselectedIconColor = Muted,
@@ -855,7 +852,7 @@ private fun HomeScreen(activity: MainActivity, prefs: SharedPreferences, api: En
                 me, picture, showSearch = tab == Tab.Inbox, searching = searching,
                 onMenu = { scope.launch { drawer.open() } },
                 onSearch = { searching = !searching; if (!searching) query = "" },
-                onAccount = { try { activity.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(EnveliqApi.normalise(server) + "/account"))) } catch (_: Exception) { } },
+                onAccount = { try { activity.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(EnveliqApi.siteOf(server) + "/mail" + "/account"))) } catch (_: Exception) { } },
                 onSettings = { goTo(Tab.Settings) },
                 bellUnread = bellUnread,
                 onBell = { tab = Tab.More; opened = null; moreStart = "bell"; moreKey++ },
@@ -1149,9 +1146,9 @@ private fun SwipeRow(
             val toRight = state.dismissDirection == SwipeToDismissBoxValue.StartToEnd
             val outcome = if (toRight) rightOutcome else leftOutcome
             val color = when (outcome) {
-                Outcome.Reviewed -> Color(0xFF16382B)
-                Outcome.Archived -> Color(0xFF173056)
-                Outcome.Binned -> Color(0xFF3A1D22)
+                Outcome.Reviewed -> GoodTint
+                Outcome.Archived -> Highlight
+                Outcome.Binned -> BadTint
                 else -> Navy
             }
             val settled = chosen != null || state.targetValue != SwipeToDismissBoxValue.Settled
@@ -1165,7 +1162,7 @@ private fun SwipeRow(
                 Row(Modifier.graphicsLayer { scaleX = grow; scaleY = grow }, verticalAlignment = Alignment.CenterVertically) {
                     when (outcome) {
                         Outcome.Reviewed -> Icon(Icons.Filled.Check, contentDescription = null, tint = Green)
-                        Outcome.Archived -> ArchiveIcon(Color(0xFF8DB8FF))
+                        Outcome.Archived -> ArchiveIcon(HighlightInk)
                         Outcome.Binned -> Icon(Icons.Filled.Delete, contentDescription = null, tint = Red)
                         else -> {}
                     }
@@ -1544,10 +1541,10 @@ private fun SelectionBar(count: Int, onMove: () -> Unit, onResolve: (Outcome) ->
     Column(Modifier.fillMaxWidth().background(Panel).navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(if (count == 1) "1 email selected" else "$count emails selected", color = Ink, fontSize = 15.sp, modifier = Modifier.padding(bottom = 8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            BarIcon("Mark as read", Green, Color(0xFF16382B), { onResolve(Outcome.Reviewed) }) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
-            BarIcon("Move to a folder", Color(0xFF8DB8FF), Color(0xFF173056), onMove) { FolderIcon(Color(0xFF8DB8FF)) }
-            BarIcon("Archive", Color(0xFF8DB8FF), Color(0xFF173056), { onResolve(Outcome.Archived) }) { ArchiveIcon(Color(0xFF8DB8FF)) }
-            BarIcon("Bin", Red, Color(0xFF3A1D22), { onResolve(Outcome.Binned) }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Red) }
+            BarIcon("Mark as read", Green, GoodTint, { onResolve(Outcome.Reviewed) }) { Icon(Icons.Filled.Check, contentDescription = null, tint = Green) }
+            BarIcon("Move to a folder", HighlightInk, Highlight, onMove) { FolderIcon(HighlightInk) }
+            BarIcon("Archive", HighlightInk, Highlight, { onResolve(Outcome.Archived) }) { ArchiveIcon(HighlightInk) }
+            BarIcon("Bin", Red, BadTint, { onResolve(Outcome.Binned) }) { Icon(Icons.Filled.Delete, contentDescription = null, tint = Red) }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             TextButton(onClick = { onBulk("forward") }) { Text("Forward", color = Blue) }
