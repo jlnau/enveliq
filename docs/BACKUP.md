@@ -46,3 +46,13 @@ Open **Settings, General** and press **Export my data**. You get one readable fi
 ![The Your data section on the General page, with an Export my data button.](images/export-my-data.png)
 
 It never holds passwords, keys, tokens, two-factor or passkey secrets, your calendar link, or anyone else's mail. Enveliq does not keep email bodies or attachments, so those are not in it either. Nobody, administrators included, can export someone else's data.
+
+## Move to the new Mail (administrators)
+
+On the same page, under **Move to the new Mail**, type your password and `EXPORT`, then press **Make the export**. You get one zip (`enveliq-for-mail-<date>.zip`) holding:
+
+- `vault.sqlite3`: a locked copy of everything Enveliq keeps, made the same safe way a backup is;
+- `manifest.json`: the Enveliq version, whether this server unlocks itself with a key or a typed passphrase, and the Bridge and mail-server addresses it was allowed to use;
+- `bridge-ca.pem`: the Proton Bridge certificate, only if one is mounted (a certificate is public).
+
+The vault passphrase or key is **never** in the zip. Keep it: you type it when you import the zip with **Import from Enveliq** in the new Mail (Settings, System). The download works once; the file is then removed from the server, and any export left over is removed after an hour. Making one is written to the activity log.

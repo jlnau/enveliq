@@ -1528,12 +1528,31 @@ async function adminPage(me, only) {
           } })),
         more("Restore this backup", restoreForm));
     };
+    const mailExportBlock = () => {
+      const pw = input("mx_pw", { type: "password", autocomplete: "current-password" });
+      const word = input("mx_word", { autocomplete: "off", spellcheck: "false", placeholder: "EXPORT" });
+      const out = h("div", {});
+      const f = h("form", {},
+        h("p", { class: "hint", text: "Makes one zip file with everything Enveliq knows (your people, mailboxes, summaries, tasks, rules and settings, still locked) so it can be brought into the new Mail with Settings, System, Import from Enveliq. Your vault passphrase or key is not in the zip: you will type it when you import." }),
+        field("Your password", pw), field("Type EXPORT to confirm", word),
+        h("div", {}, h("button", { class: "btn primary", type: "submit", text: "Make the export" })), out);
+      onSubmit(f, async () => {
+        const made = await api("/admin/export-for-mail", { method: "POST", body: { password: pw.value, confirm: word.value } });
+        pw.value = ""; word.value = "";
+        out.replaceChildren(alertBox("ok", `The export is ready (${sizeText(made.bytes)}). Download it now: the file is removed from the server once downloaded, or after an hour. `
+          + (made.vault_unlock === "key" ? "This server unlocks itself with a vault key, so keep a copy of that key: you need it to import." : "You need your vault passphrase to import.")
+          + (made.has_bridge_certificate ? " The Proton Bridge certificate is included." : "")),
+          h("p", {}, h("a", { class: "btn primary", href: `${API}/admin/export-for-mail/${made.name}`, download: made.name, text: "Download the zip" })));
+      });
+      return h("div", {}, h("h3", { text: "Move to the new Mail" }), f);
+    };
     return [
       h("p", { class: "lead", text: "A backup is a copy of everything Enveliq keeps, still locked. It can only be opened with your vault passphrase or key file, which are never part of a backup. Download copies and keep them somewhere other than this computer." }),
       bk.last_error ? alertBox("bad", "The last backup did not work. Check the free space on the disk.") : null,
       h("div", {}, makeBtn),
       bk.backups.length ? h("ul", { class: "bklist" }, ...bk.backups.map(row)) : h("p", { class: "hint", text: "No backups yet." }),
       h("h3", { text: "Daily backup" }), settings,
+      mailExportBlock(),
     ];
   })() : null;
   const up = (!only || only === "updates") ? await api("/admin/update-notice").catch(() => null) : null;

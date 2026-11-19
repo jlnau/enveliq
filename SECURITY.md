@@ -122,6 +122,8 @@ Administrators can create, download and restore backups, subject to authenticati
 
 Backup files do not automatically include the separate vault key file.
 
+An administrator can also make an export for the new Mail (a zip with a locked copy of the vault, a note and the public Bridge certificate). It asks for the administrator's password and a typed word, never contains the vault key or passphrase, is downloaded once and then deleted, and is recorded in the activity log.
+
 Protect backups and encryption keys carefully. Anyone who obtains both may be able to decrypt the stored information.
 
 ## Email privacy

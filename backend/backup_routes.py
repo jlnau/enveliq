@@ -7,9 +7,11 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 from pydantic import Field, SecretStr
 
 from .auth import passwords
+from . import mail_export
 from .backup import BackupError, MAX_KEEP_DAYS, MIN_KEEP_DAYS
 from .mail.limits import SlidingWindowLimiter
 from .models import StrictModel
@@ -17,6 +19,7 @@ from .security import Session
 
 NAME_PATTERN = r"^enveliq-\d{8}-\d{6}-(manual|auto|before-restore)\.sqlite3$"
 CONFIRM_WORD = "RESTORE"
+EXPORT_WORD = "EXPORT"
 
 
 class SettingsBody(StrictModel):
@@ -25,6 +28,11 @@ class SettingsBody(StrictModel):
 
 
 class RestoreBody(StrictModel):
+    password: SecretStr = Field(max_length=1024)
+    confirm: Annotated[str, Field(max_length=40)]
+
+
+class MailExportBody(StrictModel):
     password: SecretStr = Field(max_length=1024)
     confirm: Annotated[str, Field(max_length=40)]
 
@@ -117,6 +125,39 @@ def build_backup_router(ctx: Any) -> APIRouter:
         vault.audit({"event": "vault_restored", "actor_user_id": uid, "at": time.time()})
         sessions.revoke_everyone()                 # what people were signed in as may no longer be the same
         return {"restored": True, "safety_copy": result["safety_copy"], "counts": result["counts"]}
+
+    @router.post("/admin/export-for-mail")
+    def export_for_mail(body: MailExportBody, response: Response, session: Session = Depends(admin_dep)):
+        """Make a zip for moving to the new Mail. Asks for the administrator's password again, like a restore."""
+        response.headers["Cache-Control"] = "no-store"
+        uid = session.principal.user_id
+        throttle(uid)
+        pw_limit.acquire("mailexport:" + uid)
+        user = users.get(uid)
+        if not user.get("password"):
+            raise HTTPException(status_code=409, detail="Set a password in Settings first. This asks for it again.")
+        if not passwords.verify_password(body.password.get_secret_value(), user["password"]):
+            vault.audit({"event": "mail_export_refused", "actor_user_id": uid, "at": time.time()})
+            raise HTTPException(status_code=401, detail="Your password is not correct")
+        if body.confirm.strip() != EXPORT_WORD:
+            raise HTTPException(status_code=400, detail=f"Type {EXPORT_WORD} to confirm")
+        try:
+            made = mail_export.build(vault.db_path, mgr.folder.parent / "exports")
+        except Exception:
+            raise HTTPException(status_code=500, detail="The export could not be made. Check the free space on the disk.") from None
+        vault.audit({"event": "mail_export_created", "actor_user_id": uid, "at": time.time()})
+        return made
+
+    @router.get("/admin/export-for-mail/{name}")
+    def export_for_mail_download(name: Annotated[str, Field(pattern=mail_export.NAME_PATTERN)], session: Session = Depends(admin_dep)):
+        """Download it once: the file is removed afterwards (and after an hour anyway)."""
+        throttle(session.principal.user_id)
+        path = mgr.folder.parent / "exports" / name
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="That export is no longer there. Make a new one.")
+        vault.audit({"event": "mail_export_downloaded", "actor_user_id": session.principal.user_id, "at": time.time()})
+        return FileResponse(path, media_type="application/zip", filename=name, background=BackgroundTask(lambda: path.unlink(missing_ok=True)),
+                            headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
 
     @router.get("/me/export")
     def export(session: Session = Depends(full_dep)):

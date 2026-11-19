@@ -4,7 +4,7 @@ Newest first. Each entry says what changed for people and which parts of the cod
 
 ## Unreleased
 
-No changes recorded yet.
+**Move to the new Mail.** On the backup page an administrator can now press **Make the export** (asking for their password and typing EXPORT). It makes one zip with a locked copy of everything Enveliq keeps, a short note about it, and the Proton Bridge certificate if one is set up. The vault passphrase or key is never in the zip. The zip is downloaded once and then removed from the server (or removed after an hour). It is read by Import from Enveliq in the new Mail. Code: `backend/mail_export.py`, `backend/backup_routes.py`, `web/static/auth.js`.
 
 ## v0.104 (2026-11-14)
 
