@@ -1,0 +1,30 @@
+# One-time, at the owner's request: hands the Android signing key to its owner so it can be saved in the Casier repository. Delete this branch afterwards.
+name: Export Android key once
+on:
+  push:
+    branches: ["export-key-once"]
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Write the four values to a file
+        env:
+          A: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          B: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          C: ${{ secrets.ANDROID_KEY_ALIAS }}
+          D: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          {
+            echo "ANDROID_KEYSTORE_BASE64=$A"
+            echo "ANDROID_KEYSTORE_PASSWORD=$B"
+            echo "ANDROID_KEY_ALIAS=$C"
+            echo "ANDROID_KEY_PASSWORD=$D"
+          } > "$RUNNER_TEMP/android-key.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-key
+          path: ${{ runner.temp }}/android-key.txt
+          retention-days: 1
